@@ -18,6 +18,9 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.vitals.VitalInfo
+import com.datadog.android.rum.internal.vitals.VitalListener
+import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -35,7 +38,9 @@ internal open class RumViewScope(
     internal val name: String,
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
-    internal val firstPartyHostDetector: FirstPartyHostDetector
+    internal val firstPartyHostDetector: FirstPartyHostDetector,
+    internal val cpuVitalMonitor: VitalMonitor,
+    internal val memoryVitalMonitor: VitalMonitor
 ) : RumScope {
 
     internal val url = key.resolveViewUrl().replace('.', '/')
@@ -71,9 +76,35 @@ internal open class RumViewScope(
 
     internal var stopped: Boolean = false
 
+    // region Vitals Fields
+
+    private var cpuTicks: Double? = null
+    private var cpuVitalListener: VitalListener = object : VitalListener {
+        private var initialTickCount: Double = Double.NaN
+        override fun onVitalUpdate(info: VitalInfo) {
+            // The CPU Ticks will always grow, as it's the total ticks since the app started
+            if (initialTickCount.isNaN()) {
+                initialTickCount = info.maxValue
+            } else {
+                cpuTicks = info.maxValue - initialTickCount
+            }
+        }
+    }
+
+    private var lastMemoryVitalInfo: VitalInfo? = null
+    private var memoryVitalListener: VitalListener = object : VitalListener {
+        override fun onVitalUpdate(info: VitalInfo) {
+            lastMemoryVitalInfo = info
+        }
+    }
+
+    // endregion
+
     init {
         GlobalRum.updateRumContext(getRumContext())
         attributes.putAll(GlobalRum.globalAttributes)
+        cpuVitalMonitor.register(cpuVitalListener)
+        memoryVitalMonitor.register(memoryVitalListener)
     }
 
     // region RumScope
@@ -402,7 +433,11 @@ internal open class RumViewScope(
                 crash = ViewEvent.Crash(crashCount),
                 longTask = ViewEvent.LongTask(longTaskCount),
                 customTimings = timings,
-                isActive = !stopped
+                isActive = !stopped,
+                cpuTicksCount = cpuTicks,
+                cpuTicksPerSecond = cpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs },
+                memoryAverage = lastMemoryVitalInfo?.meanValue,
+                memoryMax = lastMemoryVitalInfo?.maxValue
             ),
             usr = ViewEvent.Usr(
                 id = user.id,
@@ -543,6 +578,7 @@ internal open class RumViewScope(
     // endregion
 
     companion object {
+        internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)
 
         internal const val ACTION_DROPPED_WARNING = "RUM Action (%s on %s) was dropped, because" +
             " another action is still active for the same view"
@@ -552,7 +588,9 @@ internal open class RumViewScope(
         internal fun fromEvent(
             parentScope: RumScope,
             event: RumRawEvent.StartView,
-            firstPartyHostDetector: FirstPartyHostDetector
+            firstPartyHostDetector: FirstPartyHostDetector,
+            cpuVitalMonitor: VitalMonitor,
+            memoryVitalMonitor: VitalMonitor
         ): RumViewScope {
             return RumViewScope(
                 parentScope,
@@ -560,7 +598,9 @@ internal open class RumViewScope(
                 event.name,
                 event.eventTime,
                 event.attributes,
-                firstPartyHostDetector
+                firstPartyHostDetector,
+                cpuVitalMonitor,
+                memoryVitalMonitor
             )
         }
     }

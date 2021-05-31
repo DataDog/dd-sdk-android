@@ -249,28 +249,31 @@ internal class DatadogNdkCrashHandler(
         }
         return RumEvent(
             ErrorEvent(
-                ndkCrashLog.timestamp,
-                ErrorEvent.Application(bundledViewEvent.application.id),
-                bundledViewEvent.service,
-                ErrorEvent.Session(bundledViewEvent.session.id, ErrorEvent.SessionType.USER),
-                ErrorEvent.View(
+                date = ndkCrashLog.timestamp,
+                application = ErrorEvent.Application(bundledViewEvent.application.id),
+                service = bundledViewEvent.service,
+                session = ErrorEvent.Session(
+                    bundledViewEvent.session.id,
+                    ErrorEvent.SessionType.USER
+                ),
+                view = ErrorEvent.View(
                     bundledViewEvent.view.id,
                     bundledViewEvent.view.referrer,
                     bundledViewEvent.view.url
                 ),
-                ErrorEvent.Usr(
+                usr = ErrorEvent.Usr(
                     bundledViewEvent.usr?.id,
                     bundledViewEvent.usr?.name,
                     bundledViewEvent.usr?.email
                 ),
-                connectivity,
-                ErrorEvent.Dd(),
-                ErrorEvent.Error(
-                    errorLogMessage,
-                    ErrorEvent.Source.SOURCE,
-                    ndkCrashLog.stacktrace,
-                    true,
-                    ndkCrashLog.signalName
+                connectivity = connectivity,
+                dd = ErrorEvent.Dd(),
+                error = ErrorEvent.Error(
+                    message = errorLogMessage,
+                    source = ErrorEvent.Source.SOURCE,
+                    stack = ndkCrashLog.stacktrace,
+                    isCrash = true,
+                    type = ndkCrashLog.signalName
                 )
             ),
             rumViewEvent.globalAttributes,
