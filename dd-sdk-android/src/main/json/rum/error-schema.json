@@ -28,6 +28,12 @@
             "source"
           ],
           "properties": {
+            "id": {
+              "type": "string",
+              "description": "UUID of the error",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+              "readOnly": true
+            },
             "message": {
               "type": "string",
               "description": "Error message",
@@ -120,6 +126,19 @@
               "type": "string",
               "description": "UUID of the action",
               "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+              "readOnly": true
+            }
+          },
+          "readOnly": true
+        },
+        "view": {
+          "type": "object",
+          "description": "View properties",
+          "required": [],
+          "properties": {
+            "in_foreground": {
+              "type": "boolean",
+              "description": "Is the error starting in the foreground (focus in browser)",
               "readOnly": true
             }
           },
