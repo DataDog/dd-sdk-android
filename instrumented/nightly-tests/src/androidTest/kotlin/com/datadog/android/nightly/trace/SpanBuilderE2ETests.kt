@@ -32,7 +32,7 @@ class SpanBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: SpanBuilder#start()
+     * apiMethodSignature: SpanBuilder#fun start()
      */
     @Test
     fun trace_span_builder_start() {

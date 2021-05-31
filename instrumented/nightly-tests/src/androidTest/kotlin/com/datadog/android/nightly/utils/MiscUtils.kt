@@ -25,6 +25,7 @@ import com.datadog.android.tracing.AndroidTracer
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setStaticValue
+import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.system.measureNanoTime
@@ -72,7 +73,8 @@ fun flushAndShutdownExecutors() {
 fun initializeSdk(
     targetContext: Context,
     consent: TrackingConsent = TrackingConsent.GRANTED,
-    config: Configuration = createDatadogDefaultConfiguration()
+    config: Configuration = createDatadogDefaultConfiguration(),
+    tracerProvider: () -> Tracer = { createDefaultAndroidTracer() }
 ) {
     Datadog.initialize(
         targetContext,
@@ -81,7 +83,7 @@ fun initializeSdk(
         consent
     )
     Datadog.setVerbosity(Log.VERBOSE)
-    GlobalTracer.registerIfAbsent(AndroidTracer.Builder().build())
+    GlobalTracer.registerIfAbsent(tracerProvider.invoke())
     GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
 }
 
@@ -110,3 +112,5 @@ private fun createDatadogDefaultConfiguration(): Configuration {
     )
     return configBuilder.build()
 }
+
+private fun createDefaultAndroidTracer(): Tracer = AndroidTracer.Builder().build()
