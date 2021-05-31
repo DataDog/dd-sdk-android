@@ -10,15 +10,24 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.vitals.VitalMonitor
 
 internal class RumApplicationScope(
     applicationId: String,
     internal val samplingRate: Float,
-    private val firstPartyHostDetector: FirstPartyHostDetector
+    private val firstPartyHostDetector: FirstPartyHostDetector,
+    private val cpuVitalMonitor: VitalMonitor,
+    private val memoryVitalMonitor: VitalMonitor
 ) : RumScope {
 
     private val rumContext = RumContext(applicationId = applicationId.toString())
-    internal val childScope: RumScope = RumSessionScope(this, samplingRate, firstPartyHostDetector)
+    internal val childScope: RumScope = RumSessionScope(
+        this,
+        samplingRate,
+        firstPartyHostDetector,
+        cpuVitalMonitor,
+        memoryVitalMonitor
+    )
 
     // region RumScope
 

@@ -21,6 +21,7 @@ import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
+import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -31,13 +32,17 @@ internal class DatadogRumMonitor(
     internal val samplingRate: Float,
     private val writer: DataWriter<RumEvent>,
     internal val handler: Handler,
-    firstPartyHostDetector: FirstPartyHostDetector
+    firstPartyHostDetector: FirstPartyHostDetector,
+    private val cpuVitalMonitor: VitalMonitor,
+    private val memoryVitalMonitor: VitalMonitor
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal val rootScope: RumScope = RumApplicationScope(
         applicationId,
         samplingRate,
-        firstPartyHostDetector
+        firstPartyHostDetector,
+        cpuVitalMonitor,
+        memoryVitalMonitor
     )
 
     internal val keepAliveRunnable = Runnable {

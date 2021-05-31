@@ -260,7 +260,9 @@ interface RumMonitor {
                     samplingRate = samplingRate,
                     writer = RumFeature.persistenceStrategy.getWriter(),
                     handler = Handler(Looper.getMainLooper()),
-                    firstPartyHostDetector = CoreFeature.firstPartyHostDetector
+                    firstPartyHostDetector = CoreFeature.firstPartyHostDetector,
+                    cpuVitalMonitor = RumFeature.cpuVitalMonitor,
+                    memoryVitalMonitor = RumFeature.memoryVitalMonitor
                 )
             }
         }

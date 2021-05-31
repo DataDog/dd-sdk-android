@@ -22,6 +22,7 @@ import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
+import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
@@ -37,6 +38,9 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
     internal var viewTreeTrackingStrategy: TrackingStrategy = ViewTreeChangeTrackingStrategy()
     internal var rumEventMapper: EventMapper<RumEvent> = NoOpEventMapper()
     internal var longTaskTrackingStrategy: TrackingStrategy = NoOpTrackingStrategy()
+
+    internal val cpuVitalMonitor: VitalMonitor = VitalMonitor()
+    internal val memoryVitalMonitor: VitalMonitor = VitalMonitor()
 
     // region SdkFeature
 
