@@ -42,7 +42,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#setOperationName(String)
+     * apiMethodSignature: Span#fun setOperationName(String)
      */
     @Test
     fun trace_span_set_operation_name() {
@@ -58,7 +58,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#setTag(String, Boolean)
+     * apiMethodSignature: Span#fun setTag(String, Boolean)
      */
     @Test
     fun trace_span_set_tag_boolean() {
@@ -74,7 +74,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#setTag(String, String)
+     * apiMethodSignature: Span#fun setTag(String, String)
      */
     @Test
     fun trace_span_set_tag_string() {
@@ -90,7 +90,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#setTag(String, Number)
+     * apiMethodSignature: Span#fun setTag(String, Number)
      */
     @Test
     fun trace_span_set_tag_number() {
@@ -112,7 +112,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#<T>setTag(Tag<T>, T)
+     * apiMethodSignature: Span#fun <T>setTag(Tag<T>, T)
      */
     @Test
     fun trace_span_set_tag_generic() {
@@ -128,7 +128,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#setBaggageItem(String, String)
+     * apiMethodSignature: Span#fun setBaggageItem(String, String)
      */
     @Test
     fun trace_span_set_baggage_item() {
@@ -144,7 +144,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#log(Map)
+     * apiMethodSignature: Span#fun log(Map)
      */
     @Test
     fun trace_span_log_map() {
@@ -165,7 +165,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#log(String)
+     * apiMethodSignature: Span#fun log(String)
      */
     @Test
     fun trace_span_log_string() {
@@ -181,7 +181,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#log(long, Map)
+     * apiMethodSignature: Span#fun log(long, Map)
      */
     @Test
     fun trace_span_log_timestamp_map() {
@@ -203,7 +203,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#log(long, String)
+     * apiMethodSignature: Span#fun log(long, String)
      */
     @Test
     fun trace_span_log_timestamp_string() {
@@ -220,7 +220,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#finish()
+     * apiMethodSignature: Span#fun finish()
      */
     @Test
     fun trace_span_finish() {
