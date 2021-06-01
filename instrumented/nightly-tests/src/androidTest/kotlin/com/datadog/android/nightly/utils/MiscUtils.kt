@@ -18,13 +18,19 @@ import com.datadog.android.nightly.INITIALIZE_LOGGER_TEST_METHOD_NAME
 import com.datadog.android.nightly.INITIALIZE_SDK_TEST_METHOD_NAME
 import com.datadog.android.nightly.SET_TRACKING_CONSENT_METHOD_NAME
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
+import com.datadog.android.nightly.aResourceMethod
+import com.datadog.android.nightly.exhaustiveAttributes
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setStaticValue
+import fr.xgouchet.elmyr.Forge
 import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
 import java.util.concurrent.atomic.AtomicBoolean
@@ -58,6 +64,43 @@ fun measureLoggerInitialize(codeBlock: () -> Unit) {
 fun defaultTestAttributes(testMethodName: String) = mapOf(
     TEST_METHOD_NAME_KEY to testMethodName
 )
+
+inline fun executeInsideView(
+    viewKey: String,
+    viewName: String,
+    testMethodName: String,
+    codeBlock: () -> Unit
+) {
+    GlobalRum.get().startView(viewKey, viewName, attributes = defaultTestAttributes(testMethodName))
+    codeBlock()
+    GlobalRum.get().stopView(viewKey)
+}
+
+fun sendRandomActionOutcomeEvent(forge: Forge) {
+    if (forge.aBool()) {
+        val key = forge.anAlphabeticalString()
+        GlobalRum.get().startResource(
+            key,
+            forge.aResourceMethod(),
+            key,
+            forge.exhaustiveAttributes()
+        )
+        GlobalRum.get().stopResource(
+            key,
+            forge.anInt(min = 200, max = 500),
+            forge.aLong(min = 1),
+            forge.aValueFrom(RumResourceKind::class.java),
+            forge.exhaustiveAttributes()
+        )
+    } else {
+        GlobalRum.get().addError(
+            forge.anAlphabeticalString(),
+            forge.aValueFrom(RumErrorSource::class.java),
+            forge.aNullable { forge.aThrowable() },
+            forge.exhaustiveAttributes()
+        )
+    }
+}
 
 fun stopSdk() {
     Datadog.invokeMethod("stop")
