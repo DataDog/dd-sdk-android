@@ -22,11 +22,16 @@ import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
+import com.datadog.android.rum.internal.vitals.CPUVitalReader
+import com.datadog.android.rum.internal.vitals.MemoryVitalReader
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.internal.vitals.VitalReaderRunnable
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
 
@@ -42,6 +47,8 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
     internal val cpuVitalMonitor: VitalMonitor = VitalMonitor()
     internal val memoryVitalMonitor: VitalMonitor = VitalMonitor()
 
+    internal lateinit var vitalExecutorService: ScheduledThreadPoolExecutor
+
     // region SdkFeature
 
     override fun onInitialize(context: Context, configuration: Configuration.Feature.RUM) {
@@ -52,15 +59,20 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
         configuration.userActionTrackingStrategy?.let { actionTrackingStrategy = it }
         configuration.longTaskTrackingStrategy?.let { longTaskTrackingStrategy = it }
 
+        initializeVitalMonitors()
+
         registerTrackingStrategies(context)
     }
 
     override fun onStop() {
         unregisterTrackingStrategies(CoreFeature.contextRef.get())
+
         viewTrackingStrategy = NoOpViewTrackingStrategy()
         actionTrackingStrategy = NoOpUserActionTrackingStrategy()
         longTaskTrackingStrategy = NoOpTrackingStrategy()
         rumEventMapper = NoOpEventMapper()
+
+        vitalExecutorService.shutdownNow()
     }
 
     override fun createPersistenceStrategy(
@@ -102,6 +114,36 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
         viewTreeTrackingStrategy.unregister(appContext)
         longTaskTrackingStrategy.unregister(appContext)
     }
+
+    private fun initializeVitalMonitors() {
+        vitalExecutorService = ScheduledThreadPoolExecutor(1)
+        val cpuReaderRunnable = VitalReaderRunnable(
+            CPUVitalReader(),
+            cpuVitalMonitor,
+            vitalExecutorService,
+            VITAL_UPDATE_PERIOD_MS
+        )
+        vitalExecutorService.schedule(
+            cpuReaderRunnable,
+            VITAL_UPDATE_PERIOD_MS,
+            TimeUnit.MILLISECONDS
+        )
+
+        val memoryReaderRunnable = VitalReaderRunnable(
+            MemoryVitalReader(),
+            memoryVitalMonitor,
+            vitalExecutorService,
+            VITAL_UPDATE_PERIOD_MS
+        )
+        vitalExecutorService.schedule(
+            memoryReaderRunnable,
+            VITAL_UPDATE_PERIOD_MS,
+            TimeUnit.MILLISECONDS
+        )
+    }
+
+    // Update Vitals every second
+    private const val VITAL_UPDATE_PERIOD_MS = 100L
 
     // endregion
 }
