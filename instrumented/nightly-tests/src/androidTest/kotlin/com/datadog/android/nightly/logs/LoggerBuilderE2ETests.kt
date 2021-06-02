@@ -174,7 +174,7 @@ class LoggerBuilderE2ETests {
     fun logs_logger_builder_bundle_with_trace_enabled() {
         val testMethodName = "logs_logger_builder_bundle_with_trace_enabled"
         measureLoggerInitialize {
-            logger = Logger.Builder().setBundleWithRumEnabled(true).build()
+            logger = Logger.Builder().setBundleWithTraceEnabled(true).build()
         }
         val spanName = forge.anAlphabeticalString()
         val span = GlobalTracer.get().buildSpan(spanName).start()
@@ -197,6 +197,23 @@ class LoggerBuilderE2ETests {
         GlobalRum.get().startView(viewKey, forge.anAlphabeticalString())
         logger.sendRandomLog(testMethodName, forge)
         GlobalRum.get().stopView(viewKey)
+    }
+
+    /**
+     * apiMethodSignature: Logger#Builder#fun setBundleWithTraceEnabled(Boolean): Builder
+     */
+    @Test
+    fun logs_logger_builder_bundle_with_trace_disabled() {
+        val testMethodName = "logs_logger_builder_bundle_with_trace_disabled"
+        measureLoggerInitialize {
+            logger = Logger.Builder().setBundleWithTraceEnabled(false).build()
+        }
+        val spanName = forge.anAlphabeticalString()
+        val span = GlobalTracer.get().buildSpan(spanName).start()
+        val scope = GlobalTracer.get().scopeManager().activate(span)
+        logger.sendRandomLog(testMethodName, forge)
+        scope.close()
+        span.finish()
     }
 
     companion object {
