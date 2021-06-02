@@ -115,7 +115,7 @@ internal class UploadWorkerTest {
         prepareMainLooper()
         Datadog.initialize(
             mockContext,
-            Credentials("CLIENT_TOKEN", "ENVIRONMENT", "", null),
+            Credentials("CLIENT_TOKEN", "ENVIRONMENT", Credentials.NO_VARIANT, null),
             Configuration.Builder(
                 logsEnabled = true,
                 tracesEnabled = true,

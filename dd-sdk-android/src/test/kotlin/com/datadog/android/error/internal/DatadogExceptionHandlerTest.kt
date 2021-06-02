@@ -129,7 +129,7 @@ internal class DatadogExceptionHandlerTest {
         prepareMainLooper()
         Datadog.initialize(
             mockContext,
-            Credentials(fakeToken, fakeEnvName, "", null),
+            Credentials(fakeToken, fakeEnvName, Credentials.NO_VARIANT, null),
             Configuration.Builder(
                 logsEnabled = true,
                 tracesEnabled = true,
