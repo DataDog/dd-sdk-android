@@ -105,6 +105,8 @@ class com.datadog.android.core.configuration.Configuration
   companion object 
 class com.datadog.android.core.configuration.Credentials
   constructor(String, String, String, String?, String? = null)
+  companion object 
+    const val NO_VARIANT: String
 enum com.datadog.android.core.configuration.UploadFrequency
   constructor(Long)
   - FREQUENT

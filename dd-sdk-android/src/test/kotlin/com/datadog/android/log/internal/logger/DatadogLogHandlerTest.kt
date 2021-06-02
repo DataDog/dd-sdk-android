@@ -444,7 +444,12 @@ internal class DatadogLogHandlerTest {
         // Given
         Datadog.initialize(
             mockContext(),
-            Credentials(forge.anAlphabeticalString(), forge.anAlphabeticalString(), "", null),
+            Credentials(
+                forge.anAlphabeticalString(),
+                forge.anAlphabeticalString(),
+                Credentials.NO_VARIANT,
+                null
+            ),
             Configuration.Builder(
                 logsEnabled = true,
                 tracesEnabled = true,
@@ -504,7 +509,12 @@ internal class DatadogLogHandlerTest {
         // Given
         Datadog.initialize(
             mockContext(),
-            Credentials(forge.anAlphabeticalString(), forge.anAlphabeticalString(), "", null),
+            Credentials(
+                forge.anAlphabeticalString(),
+                forge.anAlphabeticalString(),
+                Credentials.NO_VARIANT,
+                null
+            ),
             Configuration.Builder(
                 logsEnabled = true,
                 tracesEnabled = true,

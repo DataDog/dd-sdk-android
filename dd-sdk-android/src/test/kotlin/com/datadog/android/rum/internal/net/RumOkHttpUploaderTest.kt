@@ -45,7 +45,6 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
     @StringForgery
     lateinit var fakeEnvName: String
 
-    @StringForgery
     lateinit var fakeVariant: String
 
     lateinit var mockAppContext: Application
@@ -53,6 +52,7 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
+        fakeVariant = forge.anElementFrom(forge.anAlphaNumericalString(), "")
         mockAppContext = mockContext(fakePackageName, fakePackageVersion)
         mockCoreFeature(fakePackageName, fakePackageVersion, fakeEnvName, fakeVariant)
     }
@@ -76,11 +76,15 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
     }
 
     override fun expectedQueryParams(): Map<String, String> {
-        val tags = "${RumAttributes.SERVICE_NAME}:$fakePackageName," +
+        var tags = "${RumAttributes.SERVICE_NAME}:$fakePackageName," +
             "${RumAttributes.APPLICATION_VERSION}:$fakePackageVersion," +
             "${RumAttributes.SDK_VERSION}:${BuildConfig.SDK_VERSION_NAME}," +
-            "${RumAttributes.ENV}:$fakeEnvName," +
-            "${RumAttributes.VARIANT}:$fakeVariant"
+            "${RumAttributes.ENV}:$fakeEnvName"
+
+        if (fakeVariant.isNotEmpty()) {
+            tags += ",${RumAttributes.VARIANT}:$fakeVariant"
+        }
+
         return mapOf(
             DataOkHttpUploader.QP_SOURCE to CoreFeature.sourceName,
             RumOkHttpUploader.QP_TAGS to tags

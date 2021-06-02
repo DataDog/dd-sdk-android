@@ -137,7 +137,7 @@ private constructor(
             envName = coreConfig.envName,
             serviceName = coreConfig.serviceName,
             rumApplicationId = rumConfig?.applicationId?.toString(),
-            variant = ""
+            variant = Credentials.NO_VARIANT
         )
     }
 

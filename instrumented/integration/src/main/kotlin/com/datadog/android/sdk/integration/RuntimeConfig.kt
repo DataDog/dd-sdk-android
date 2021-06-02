@@ -55,7 +55,7 @@ internal object RuntimeConfig {
         return Credentials(
             DD_TOKEN,
             INTEGRATION_TESTS_ENVIRONMENT,
-            "",
+            Credentials.NO_VARIANT,
             APP_ID
         )
     }
