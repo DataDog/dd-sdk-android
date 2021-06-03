@@ -30,6 +30,7 @@ import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.TimeZone
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -501,6 +502,8 @@ class LoggerE2ETests {
         val CUSTOM_JSON_OBJECT_ATTRIBUTE: JsonObject = JsonObject().apply {
             addProperty(CUSTOM_JSON_OBJECT_PROPERTY, CUSTOM_INT_ATTRIBUTE)
         }
-        val CUSTOM_DATE_ATTRIBUTE: Date = SimpleDateFormat("yyyy-MM-dd").parse("2021-01-01")!!
+        val CUSTOM_DATE_ATTRIBUTE: Date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
+            .apply { timeZone = TimeZone.getTimeZone("UTC") }
+            .parse("2021-01-01 00:00:00.000")!!
     }
 }
