@@ -36,10 +36,11 @@ import io.opentracing.util.GlobalTracer
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.system.measureNanoTime
 
-inline fun measure(methodName: String, codeBlock: () -> Unit) {
+inline fun <reified R> measure(methodName: String, codeBlock: () -> R): R {
     val span = GlobalTracer.get().buildSpan(methodName).start()
-    codeBlock()
+    val result = codeBlock()
     span.finish()
+    return result
 }
 
 fun measureSdkInitialize(codeBlock: () -> Unit) {
@@ -117,7 +118,8 @@ fun initializeSdk(
     targetContext: Context,
     consent: TrackingConsent = TrackingConsent.GRANTED,
     config: Configuration = createDatadogDefaultConfiguration(),
-    tracerProvider: () -> Tracer = { createDefaultAndroidTracer() }
+    tracerProvider: () -> Tracer = { createDefaultAndroidTracer() },
+    rumMonitorProvider: () -> RumMonitor = { createDefaultRumMonitor() }
 ) {
     Datadog.initialize(
         targetContext,
@@ -127,7 +129,7 @@ fun initializeSdk(
     )
     Datadog.setVerbosity(Log.VERBOSE)
     GlobalTracer.registerIfAbsent(tracerProvider.invoke())
-    GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
+    GlobalRum.registerIfAbsent(rumMonitorProvider.invoke())
 }
 
 fun cleanStorageFiles() {
@@ -157,3 +159,5 @@ private fun createDatadogDefaultConfiguration(): Configuration {
 }
 
 private fun createDefaultAndroidTracer(): Tracer = AndroidTracer.Builder().build()
+
+private fun createDefaultRumMonitor() = RumMonitor.Builder().build()

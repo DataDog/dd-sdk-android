@@ -10,26 +10,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
-import com.datadog.android.nightly.aResourceKey
-import com.datadog.android.nightly.aResourceMethod
-import com.datadog.android.nightly.aViewKey
-import com.datadog.android.nightly.aViewName
-import com.datadog.android.nightly.anActionName
-import com.datadog.android.nightly.anErrorMessage
 import com.datadog.android.nightly.rules.NightlyTestRule
-import com.datadog.android.nightly.utils.defaultTestAttributes
-import com.datadog.android.nightly.utils.executeInsideView
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measureSdkInitialize
 import com.datadog.android.nightly.utils.measureSetTrackingConsent
-import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumActionType
-import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.RumResourceKind
-import com.datadog.tools.unit.forge.aThrowable
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.Rule
 import org.junit.Test
@@ -196,57 +181,5 @@ class GdprRumE2ETests {
             Datadog.setTrackingConsent(TrackingConsent.PENDING)
         }
         sendRandomRumEvent(forge, testMethodName)
-    }
-
-    private fun sendRandomRumEvent(forge: Forge, testMethodName: String) {
-        when (forge.anInt(min = 0, max = 4)) {
-            0 -> {
-                val aViewKey = forge.aViewKey()
-                GlobalRum.get().startView(
-                    aViewKey,
-                    forge.aViewName(),
-                    defaultTestAttributes(testMethodName)
-                )
-                GlobalRum.get().stopView(aViewKey, defaultTestAttributes(testMethodName))
-            }
-            1 -> {
-                val aResourceKey = forge.aResourceKey()
-                executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName) {
-                    GlobalRum.get().startResource(
-                        aResourceKey,
-                        forge.aResourceMethod(),
-                        aResourceKey,
-                        defaultTestAttributes(testMethodName)
-                    )
-                    GlobalRum.get().stopResource(
-                        aResourceKey,
-                        forge.anInt(min = 200, max = 500),
-                        forge.aLong(min = 1),
-                        forge.aValueFrom(RumResourceKind::class.java),
-                        defaultTestAttributes(testMethodName)
-                    )
-                }
-            }
-            2 -> {
-                executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName) {
-                    GlobalRum.get().addError(
-                        forge.anErrorMessage(),
-                        forge.aValueFrom(RumErrorSource::class.java),
-                        forge.aNullable { forge.aThrowable() },
-                        defaultTestAttributes(testMethodName)
-                    )
-                }
-            }
-            3 -> {
-                executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName) {
-                    GlobalRum.get().addUserAction(
-                        forge.aValueFrom(RumActionType::class.java),
-                        forge.anActionName(),
-                        defaultTestAttributes(testMethodName)
-                    )
-                    sendRandomActionOutcomeEvent(forge)
-                }
-            }
-        }
     }
 }
