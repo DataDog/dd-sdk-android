@@ -508,9 +508,9 @@ class PokoDeserializerGenerator(
         }
     }
 
-// endregion
+    // endregion
 
-// region Internal / Enum
+    // region Internal / Enum
 
     /**
      * Generates a function that deserializes a Json into an instance of class [definition].
@@ -543,13 +543,14 @@ class PokoDeserializerGenerator(
         return funBuilder.build()
     }
 
-// endregion
+    // endregion
 
     companion object {
 
         private const val FROM_JSON = "fromJson"
         private const val FROM_JSON_PARAM_NAME = "serializedObject"
         private const val ROOT_JSON_OBJECT_PARAM_NAME = "jsonObject"
+
         private const val EXCEPTION_VAR_NAME = "e"
         private const val ARRAY_COLLECTION_VAR_NAME = "collection"
         private const val JSON_ARRAY_VAR_NAME = "jsonArray"

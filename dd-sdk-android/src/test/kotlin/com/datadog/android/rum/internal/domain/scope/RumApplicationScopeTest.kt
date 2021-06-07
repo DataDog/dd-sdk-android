@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.verify
@@ -50,6 +51,12 @@ internal class RumApplicationScopeTest {
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
 
+    @Mock
+    lateinit var mockCpuVitalMonitor: VitalMonitor
+
+    @Mock
+    lateinit var mockMemoryVitalMonitor: VitalMonitor
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -58,7 +65,13 @@ internal class RumApplicationScopeTest {
 
     @BeforeEach
     fun `set up`() {
-        testedScope = RumApplicationScope(fakeApplicationId, fakeSamplingRate, mockDetector)
+        testedScope = RumApplicationScope(
+            fakeApplicationId,
+            fakeSamplingRate,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor
+        )
     }
 
     @AfterEach

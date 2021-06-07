@@ -32,7 +32,5 @@
       }
     }
   },
-  "additionalProperties": {
-    "type": "object"
-  }
+  "additionalProperties": true
 }

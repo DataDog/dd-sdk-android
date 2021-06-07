@@ -28,6 +28,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.lang.ref.WeakReference
+import java.util.concurrent.ScheduledThreadPoolExecutor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -240,5 +241,29 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
 
         // Then
         assertThat(testedFeature.rumEventMapper).isInstanceOf(NoOpEventMapper::class.java)
+    }
+
+    @Test
+    fun `𝕄 initialize vital executor 𝕎 initialize()`() {
+        // When
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+
+        // Then
+        val scheduledRunnables = testedFeature.vitalExecutorService.shutdownNow()
+        assertThat(scheduledRunnables).isNotEmpty
+    }
+
+    @Test
+    fun `𝕄 shut down vital executor 𝕎 stop()`() {
+        // Given
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        val mockVitalExecutorService: ScheduledThreadPoolExecutor = mock()
+        RumFeature.vitalExecutorService = mockVitalExecutorService
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        verify(mockVitalExecutorService).shutdownNow()
     }
 }

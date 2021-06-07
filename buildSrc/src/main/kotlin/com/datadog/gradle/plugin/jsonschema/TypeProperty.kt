@@ -20,7 +20,7 @@ data class TypeProperty(
             TypeProperty(
                 name,
                 type.mergedWith(other.type),
-                optional || other.optional
+                optional && other.optional
             )
         }
     }

@@ -17,6 +17,7 @@ import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.vitals.VitalMonitor
 import java.security.SecureRandom
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -26,6 +27,8 @@ internal class RumSessionScope(
     private val parentScope: RumScope,
     internal val samplingRate: Float,
     internal val firstPartyHostDetector: FirstPartyHostDetector,
+    private val cpuVitalMonitor: VitalMonitor,
+    private val memoryVitalMonitor: VitalMonitor,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
 ) : RumScope {
@@ -72,7 +75,13 @@ internal class RumSessionScope(
         }
 
         if (event is RumRawEvent.StartView) {
-            val viewScope = RumViewScope.fromEvent(this, event, firstPartyHostDetector)
+            val viewScope = RumViewScope.fromEvent(
+                this,
+                event,
+                firstPartyHostDetector,
+                cpuVitalMonitor,
+                memoryVitalMonitor
+            )
             onApplicationDisplayed(event, viewScope, actualWriter)
             activeChildrenScopes.add(viewScope)
         } else if (activeChildrenScopes.size == 0) {
@@ -122,7 +131,9 @@ internal class RumSessionScope(
             RumViewScope.RUM_BACKGROUND_VIEW_NAME,
             event.eventTime,
             emptyMap(),
-            firstPartyHostDetector
+            firstPartyHostDetector,
+            cpuVitalMonitor,
+            memoryVitalMonitor
         )
     }
 

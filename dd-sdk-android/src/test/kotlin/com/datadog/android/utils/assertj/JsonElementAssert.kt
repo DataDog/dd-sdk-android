@@ -15,17 +15,15 @@ import java.util.Date
 import org.assertj.core.api.AbstractAssert
 import org.assertj.core.api.Assertions
 
-internal class DatadogJsonElementAssert(actual: JsonElement) :
-    AbstractAssert<DatadogJsonElementAssert, JsonElement>(
+internal class JsonElementAssert(actual: JsonElement) :
+    AbstractAssert<JsonElementAssert, JsonElement>(
         actual,
-        DatadogJsonElementAssert::class.java
+        JsonElementAssert::class.java
     ) {
 
-    override fun isEqualTo(expected: Any?): DatadogJsonElementAssert {
+    override fun isEqualTo(expected: Any?): JsonElementAssert {
         when (expected) {
-            null -> Assertions.assertThat(actual).isEqualTo(
-                JsonNull.INSTANCE
-            )
+            null -> Assertions.assertThat(actual).isEqualTo(JsonNull.INSTANCE)
             is Boolean -> Assertions.assertThat(actual.asBoolean).isEqualTo(expected)
             is Int -> Assertions.assertThat(actual.asInt).isEqualTo(expected)
             is Long -> Assertions.assertThat(actual.asLong).isEqualTo(expected)
@@ -33,9 +31,8 @@ internal class DatadogJsonElementAssert(actual: JsonElement) :
             is Double -> Assertions.assertThat(actual.asDouble).isEqualTo(expected)
             is String -> Assertions.assertThat(actual.asString).isEqualTo(expected)
             is Date -> Assertions.assertThat(actual.asLong).isEqualTo(expected.time)
-            is JsonObject ->
-                Assertions.assertThat(actual.asJsonObject.toString())
-                    .isEqualTo(expected.toString())
+            is JsonNull -> Assertions.assertThat(actual).isEqualTo(JsonNull.INSTANCE)
+            is JsonObject -> Assertions.assertThat(actual.toString()).isEqualTo(expected.toString())
             is JsonArray -> Assertions.assertThat(actual.asJsonArray).isEqualTo(expected)
             is Iterable<*> -> Assertions.assertThat(actual.asJsonArray).isEqualTo(
                 expected.toJsonArray()
@@ -46,8 +43,8 @@ internal class DatadogJsonElementAssert(actual: JsonElement) :
     }
 
     companion object {
-        fun assertThat(actual: JsonElement): DatadogJsonElementAssert {
-            return DatadogJsonElementAssert(actual)
+        fun assertThat(actual: JsonElement): JsonElementAssert {
+            return JsonElementAssert(actual)
         }
     }
 }

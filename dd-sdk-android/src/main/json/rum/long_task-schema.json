@@ -27,6 +27,12 @@
             "duration"
           ],
           "properties": {
+            "id": {
+              "type": "string",
+              "description": "UUID of the long task",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+              "readOnly": true
+            },
             "duration": {
               "type": "integer",
               "description": "Duration in ns of the long task",

@@ -9,7 +9,7 @@ package com.datadog.android.log.internal.user
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.utils.assertj.DatadogMapAnyValueAssert
+import com.datadog.android.utils.assertj.DeserializedMapAssert
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -56,7 +56,7 @@ internal class UserInfoDeserializerTest {
             .ignoringFields("additionalProperties")
             .isEqualTo(fakeUserInfo)
 
-        DatadogMapAnyValueAssert.assertThat(deserializedUserInfo!!.additionalProperties)
+        DeserializedMapAssert.assertThat(deserializedUserInfo!!.additionalProperties)
             .isEqualTo(fakeUserInfo.additionalProperties)
     }
 

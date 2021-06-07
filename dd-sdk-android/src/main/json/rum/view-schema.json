@@ -9,11 +9,7 @@
       "$ref": "_common-schema.json"
     },
     {
-      "required": [
-        "type",
-        "view",
-        "_dd"
-      ],
+      "required": ["type", "view", "_dd"],
       "properties": {
         "type": {
           "type": "string",
@@ -42,7 +38,16 @@
             "loading_type": {
               "type": "string",
               "description": "Type of the loading of the view",
-              "enum": ["initial_load", "route_change", "activity_display", "activity_redisplay", "fragment_display", "fragment_redisplay", "view_controller_display", "view_controller_redisplay"],
+              "enum": [
+                "initial_load",
+                "route_change",
+                "activity_display",
+                "activity_redisplay",
+                "fragment_display",
+                "fragment_redisplay",
+                "view_controller_display",
+                "view_controller_redisplay"
+              ],
               "readOnly": true
             },
             "time_spent": {
@@ -123,9 +128,7 @@
             "action": {
               "type": "object",
               "description": "Properties of the actions of the view",
-              "required": [
-                "count"
-              ],
+              "required": ["count"],
               "properties": {
                 "count": {
                   "type": "integer",
@@ -139,9 +142,7 @@
             "error": {
               "type": "object",
               "description": "Properties of the errors of the view",
-              "required": [
-                "count"
-              ],
+              "required": ["count"],
               "properties": {
                 "count": {
                   "type": "integer",
@@ -155,9 +156,7 @@
             "crash": {
               "type": "object",
               "description": "Properties of the crashes of the view",
-              "required": [
-                "count"
-              ],
+              "required": ["count"],
               "properties": {
                 "count": {
                   "type": "integer",
@@ -171,9 +170,7 @@
             "long_task": {
               "type": "object",
               "description": "Properties of the long tasks of the view",
-              "required": [
-                "count"
-              ],
+              "required": ["count"],
               "properties": {
                 "count": {
                   "type": "integer",
@@ -187,9 +184,7 @@
             "resource": {
               "type": "object",
               "description": "Properties of the resources of the view",
-              "required": [
-                "count"
-              ],
+              "required": ["count"],
               "properties": {
                 "count": {
                   "type": "integer",
@@ -199,6 +194,61 @@
                 }
               },
               "readOnly": true
+            },
+            "in_foreground_periods": {
+              "type": "array",
+              "description": "List of the periods of time the user had the view in foreground (focused in the browser)",
+              "items": {
+                "type": "object",
+                "description": "Properties of the foreground period of the view",
+                "required": ["duration", "start"],
+                "properties": {
+                  "start": {
+                    "type": "integer",
+                    "description": "Duration in ns between start of the view and start of foreground period",
+                    "minimum": 0,
+                    "readOnly": true
+                  },
+                  "duration": {
+                    "type": "integer",
+                    "description": "Duration in ns of the view foreground period",
+                    "minimum": 0,
+                    "readOnly": true
+                  }
+                },
+                "readOnly": true
+              },
+              "readOnly": true
+            },
+            "memory_average": {
+              "type": "number",
+              "description": "Average memory used during the view lifetime (in bytes)",
+              "readOnly": true
+            },
+            "memory_max": {
+              "type": "number",
+              "description": "Peak memory used during the view lifetime (in bytes)",
+              "readOnly": true
+            },
+            "cpu_ticks_count": {
+              "type": "number",
+              "description": "Total number of cpu ticks during the view’s lifetime",
+              "readOnly": true
+            },
+            "cpu_ticks_per_second": {
+              "type": "number",
+              "description": "Average number of cpu ticks per second during the view’s lifetime",
+              "readOnly": true
+            },
+            "refresh_rate_average": {
+              "type": "number",
+              "description": "Average refresh rate during the view’s lifetime (in frames per second)",
+              "readOnly": true
+            },
+            "refresh_rate_min": {
+              "type": "number",
+              "description": "Minimum refresh rate during the view’s lifetime (in frames per second)",
+              "readOnly": true
             }
           },
           "readOnly": true
@@ -206,9 +256,7 @@
         "_dd": {
           "type": "object",
           "description": "Internal properties",
-          "required": [
-            "document_version"
-          ],
+          "required": ["document_version"],
           "properties": {
             "document_version": {
               "type": "integer",

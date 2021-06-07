@@ -9,12 +9,12 @@ package com.datadog.gradle.plugin.jsonschema
 import android.databinding.tool.ext.joinToCamelCaseAsVar
 import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.BOOLEAN
-import com.squareup.kotlinpoet.NUMBER
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.DOUBLE
 import com.squareup.kotlinpoet.LIST
 import com.squareup.kotlinpoet.LONG
 import com.squareup.kotlinpoet.NOTHING
+import com.squareup.kotlinpoet.NUMBER
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.SET
 import com.squareup.kotlinpoet.STRING
@@ -83,7 +83,9 @@ internal fun TypeDefinition.Class.withUniqueTypeName(
     nestedClasses: MutableSet<TypeDefinition.Class>,
     knownTypes: MutableList<String>
 ): TypeDefinition.Class {
-    val matchingClass = nestedClasses.firstOrNull { it.properties == properties }
+    val matchingClass = nestedClasses.firstOrNull {
+        it.properties == properties && it.additionalProperties == additionalProperties
+    }
     return matchingClass ?: copy(name = name.uniqueClassName(knownTypes))
 }
 

@@ -267,9 +267,63 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasCpuMetric(expectedTicks: Double?): ViewEventAssert {
+        assertThat(actual.view.cpuTicksCount)
+            .overridingErrorMessage(
+                "Expected RUM event to have view.cpu_ticks_count $expectedTicks " +
+                    "but was ${actual.view.cpuTicksCount}"
+            )
+            .isEqualTo(expectedTicks)
+
+        val expectedTicksPerSeconds = if (expectedTicks != null) {
+            (expectedTicks * ONE_SECOND_NS) / actual.view.timeSpent
+        } else {
+            null
+        }
+        assertThat(actual.view.cpuTicksPerSecond)
+            .overridingErrorMessage(
+                "Expected RUM event to have view.cpu_ticks_per_second $expectedTicksPerSeconds " +
+                    "but was ${actual.view.cpuTicksPerSecond}"
+            )
+            .isEqualTo(expectedTicksPerSeconds)
+        return this
+    }
+
+    fun hasMemoryMetric(average: Double?, max: Double?): ViewEventAssert {
+        assertThat(actual.view.memoryAverage)
+            .overridingErrorMessage(
+                "Expected RUM event to have view.memory_average $average " +
+                    "but was ${actual.view.memoryAverage}"
+            )
+            .isEqualTo(average)
+        assertThat(actual.view.memoryMax)
+            .overridingErrorMessage(
+                "Expected RUM event to have view.memory_max $max " +
+                    "but was ${actual.view.memoryMax}"
+            )
+            .isEqualTo(max)
+        return this
+    }
+
+    fun hasRefreshRateMetric(average: Double?, min: Double?): ViewEventAssert {
+        assertThat(actual.view.refreshRateAverage)
+            .overridingErrorMessage(
+                "Expected RUM event to have view.refresh_rate_average $average " +
+                    "but was ${actual.view.refreshRateAverage}"
+            )
+            .isEqualTo(average)
+        assertThat(actual.view.refreshRateMin)
+            .overridingErrorMessage(
+                "Expected RUM event to have view.refresh_rate_min $min " +
+                    "but was ${actual.view.refreshRateMin}"
+            )
+            .isEqualTo(min)
+        return this
+    }
+
     companion object {
 
-        internal const val DURATION_THRESHOLD_NANOS = 1000L
+        internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)
 
         internal fun assertThat(actual: ViewEvent): ViewEventAssert =
             ViewEventAssert(actual)

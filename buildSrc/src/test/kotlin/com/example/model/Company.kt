@@ -1,6 +1,5 @@
 package com.example.model
 
-import com.datadog.android.core.internal.utils.toJsonElement
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
@@ -103,7 +102,7 @@ data class Company(
     data class Information(
         val date: Long? = null,
         val priority: Long? = null,
-        val additionalProperties: Map<String, Any?> = emptyMap()
+        val additionalProperties: Map<String, Map<String, Any?>> = emptyMap()
     ) {
         fun toJson(): JsonElement {
             val json = JsonObject()
@@ -125,10 +124,10 @@ data class Company(
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                     val date = jsonObject.get("date")?.asLong
                     val priority = jsonObject.get("priority")?.asLong
-                    val additionalProperties = mutableMapOf<String, Any?>()
+                    val additionalProperties = mutableMapOf<String, Map<String, Any?>>()
                     for (entry in jsonObject.entrySet()) {
                         if (entry.key !in RESERVED_PROPERTIES) {
-                            additionalProperties[entry.key] = entry.value
+                            additionalProperties[entry.key] = entry.value.asMap()
                         }
                     }
                     return Information(date, priority, additionalProperties)

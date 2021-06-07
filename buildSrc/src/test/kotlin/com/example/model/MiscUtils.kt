@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.utils
+package com.example.model
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -31,7 +31,31 @@ internal fun Any?.toJsonElement(): JsonElement {
         is JsonObject -> this
         is JsonArray -> this
         is JsonPrimitive -> this
+        is Map<*, *> -> JsonObject().apply {
+            forEach { (k, v) ->
+                add(k.toString(), v.toJsonElement())
+            }
+        }
         else -> JsonPrimitive(toString())
+    }
+}
+
+internal fun Any?.fromJsonElement(): Any? {
+    return when (this) {
+        is JsonNull -> null
+        is JsonPrimitive -> {
+            if (this.isBoolean) {
+                this.asBoolean
+            } else if (this.isNumber) {
+                this.asNumber
+            } else if (this.isString) {
+                this.asString
+            } else {
+                this
+            }
+        }
+        is JsonObject -> this.asMap()
+        else -> this
     }
 }
 
@@ -41,4 +65,20 @@ internal fun Iterable<*>.toJsonArray(): JsonElement {
         array.add(it.toJsonElement())
     }
     return array
+}
+
+internal fun JsonObject.asMap(): Map<String, Any?> {
+    val map = mutableMapOf<String, Any?>()
+    entrySet().forEach {
+        map[it.key] = it.value.fromJsonElement()
+    }
+    return map
+}
+
+internal fun JsonElement?.asMap(): Map<String, Any?> {
+    return if (this is JsonObject) {
+        this.asMap()
+    } else {
+        emptyMap()
+    }
 }

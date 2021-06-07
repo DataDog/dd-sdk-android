@@ -23,6 +23,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -52,7 +53,6 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-import java.util.function.Consumer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.junit.jupiter.api.BeforeEach
@@ -91,6 +91,12 @@ internal class RumSessionScopeTest {
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
 
+    @Mock
+    lateinit var mockCpuVitalMonitor: VitalMonitor
+
+    @Mock
+    lateinit var mockMemoryVitalMonitor: VitalMonitor
+
     lateinit var mockDevLogHandler: LogHandler
 
     @Forgery
@@ -118,6 +124,8 @@ internal class RumSessionScopeTest {
             mockParentScope,
             100f,
             mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -142,6 +150,8 @@ internal class RumSessionScopeTest {
             mockParentScope,
             0f,
             mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -235,6 +245,8 @@ internal class RumSessionScopeTest {
             mockParentScope,
             fakeSamplingRate,
             mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -292,6 +304,8 @@ internal class RumSessionScopeTest {
             mockParentScope,
             0f,
             mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -471,6 +485,8 @@ internal class RumSessionScopeTest {
             mockParentScope,
             0f,
             mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -495,14 +511,12 @@ internal class RumSessionScopeTest {
 
         // THEN
         assertThat(testedScope.activeChildrenScopes).hasSize(1)
-        assertThat(testedScope.activeChildrenScopes[0]).isInstanceOfSatisfying(
-            RumViewScope::class.java,
-            Consumer {
+        assertThat(testedScope.activeChildrenScopes[0])
+            .isInstanceOfSatisfying(RumViewScope::class.java) {
                 assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
                 assertThat(it.keyRef.get()).isEqualTo(RumViewScope.RUM_BACKGROUND_VIEW_URL)
                 assertThat(it.name).isEqualTo(RumViewScope.RUM_BACKGROUND_VIEW_NAME)
             }
-        )
     }
 
     @Test

@@ -23,6 +23,28 @@ data class JsonDefinition(
     @SerializedName("properties") val properties: Map<String, JsonDefinition>?,
     @SerializedName("definitions") val definitions: Map<String, JsonDefinition>?,
     @SerializedName("readOnly") val readOnly: Boolean?,
-    @SerializedName("additionalProperties") val additionalProperties: JsonDefinition?,
+    @SerializedName("additionalProperties") val additionalProperties: Any?,
     @SerializedName("default") val default: Any?
-)
+) {
+
+    companion object {
+        val EMPTY = JsonDefinition(
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        )
+    }
+}

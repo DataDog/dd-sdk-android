@@ -53,6 +53,7 @@ internal class Configurator :
         forge.addFactory(ResourceEventForgeryFactory())
         forge.addFactory(ResourceTimingForgeryFactory())
         forge.addFactory(ViewEventForgeryFactory())
+        forge.addFactory(VitalInfoForgeryFactory())
 
         // NDK Crash
         forge.addFactory(NdkCrashLogForgeryFactory())

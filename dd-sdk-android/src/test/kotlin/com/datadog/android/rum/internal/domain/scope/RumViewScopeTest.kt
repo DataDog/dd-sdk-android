@@ -21,6 +21,9 @@ import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.vitals.VitalInfo
+import com.datadog.android.rum.internal.vitals.VitalListener
+import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -89,6 +92,12 @@ internal class RumViewScopeTest {
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
 
+    @Mock
+    lateinit var mockCpuVitalMonitor: VitalMonitor
+
+    @Mock
+    lateinit var mockMemoryVitalMonitor: VitalMonitor
+
     @StringForgery(regex = "([a-z]+\\.)+[A-Z][a-z]+")
     lateinit var fakeName: String
 
@@ -138,7 +147,9 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor
         )
 
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
@@ -256,6 +267,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -301,6 +315,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -346,6 +363,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -397,6 +417,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -433,6 +456,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -481,6 +507,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -508,7 +537,9 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -538,6 +569,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -567,7 +601,9 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -597,6 +633,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -646,6 +685,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -694,6 +736,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -734,6 +779,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -818,6 +866,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -859,6 +910,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -921,6 +975,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(1)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -982,6 +1039,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(1)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1043,6 +1103,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(1)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1143,6 +1206,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1183,6 +1249,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1245,6 +1314,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(1)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1306,6 +1378,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(1)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1367,6 +1442,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(1)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -1518,6 +1596,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -2831,6 +2912,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -2874,6 +2958,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
@@ -2935,6 +3022,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(true)
                     hasCustomTimings(mapOf(fakeTimingKey to customTimingEstimatedDuration))
                     hasUserInfo(fakeUserInfo)
@@ -2983,6 +3073,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(true)
                     hasCustomTimings(mapOf(fakeTimingKey1 to customTiming1EstimatedDuration))
                     hasUserInfo(fakeUserInfo)
@@ -3004,6 +3097,9 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
                     isActive(true)
                     hasCustomTimings(
                         mapOf(
@@ -3021,6 +3117,112 @@ internal class RumViewScopeTest {
     }
 
     // endregion
+
+    // region Vitals
+
+    @Test
+    fun `𝕄 send View update 𝕎 onVitalUpdate()+handleEvent(KeepAlive) {CPU}`(
+        forge: Forge
+    ) {
+        // Given
+        // cpu ticks should be received in ascending order
+        val cpuTicks = forge.aList { aLong(1L, 65536L).toDouble() }.sorted()
+        val listenerCaptor = argumentCaptor<VitalListener> {
+            verify(mockCpuVitalMonitor).register(capture())
+        }
+        val listener = listenerCaptor.firstValue
+
+        // When
+        cpuTicks.forEachIndexed { index, value ->
+            listener.onVitalUpdate(VitalInfo(index + 1, 0.0, value, value / 2.0))
+        }
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // Then
+        val expectedTotal = cpuTicks.last() - cpuTicks.first()
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasLongTaskCount(0)
+                    hasCpuMetric(expectedTotal)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send View update 𝕎 onVitalUpdate()+handleEvent(KeepAlive) {Memory}`(
+        forge: Forge
+    ) {
+        // Given
+        val vitals = forge.aList { getForgery<VitalInfo>() }
+        val listenerCaptor = argumentCaptor<VitalListener> {
+            verify(mockMemoryVitalMonitor).register(capture())
+        }
+        val listener = listenerCaptor.firstValue
+
+        // When
+        vitals.forEach { listener.onVitalUpdate(it) }
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(vitals.last().meanValue, vitals.last().maxValue)
+                    hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
 
     // region Internal
 

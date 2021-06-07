@@ -111,6 +111,15 @@ val Comment = TypeDefinition.Class(
             TypeDefinition.Class(
                 name = "Flags",
                 properties = listOf(),
+                additionalProperties = TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN)
+            ),
+            true
+        ),
+        TypeProperty(
+            "tags",
+            TypeDefinition.Class(
+                name = "Tags",
+                properties = listOf(),
                 additionalProperties = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
             ),
             true

@@ -19,6 +19,7 @@ import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
+import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
@@ -77,6 +78,12 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
 
+    @Mock
+    lateinit var mockCpuVitalMonitor: VitalMonitor
+
+    @Mock
+    lateinit var mockMemoryVitalMonitor: VitalMonitor
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -96,7 +103,9 @@ internal class DatadogRumMonitorTest {
             fakeSamplingRate,
             mockWriter,
             mockHandler,
-            mockDetector
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor
         )
         testedMonitor.setFieldValue("rootScope", mockScope)
     }
@@ -112,7 +121,9 @@ internal class DatadogRumMonitorTest {
             fakeSamplingRate,
             mockWriter,
             mockHandler,
-            mockDetector
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor
         )
 
         val rootScope = testedMonitor.rootScope

@@ -24,7 +24,7 @@ internal class CompanyForgeryFactory : ForgeryFactory<Company> {
                 Company.Information(
                     forge.aNullable { forge.aLong() },
                     forge.aNullable { forge.aLong() },
-                    additionalProperties = aMap { anAlphabeticalString() to aNullable { anHexadecimalString() } }
+                    additionalProperties = forge.aMap { anAlphabeticalString() to aMap { anHexadecimalString() to aLong() } }
                 )
             },
             additionalProperties = forge.aMap { anAlphabeticalString() to aNullable { anHexadecimalString() } }
