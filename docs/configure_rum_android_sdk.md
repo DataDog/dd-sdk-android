@@ -32,7 +32,7 @@ On top of RUM’s default attributes, you may measure where your application is 
        } 
    ```
 
-Once the timing is sent, the timing will be accessible as `@view.custom_timings.<timing_name>` (For example, `@view.custom_timings.hero_image`). You must create a measure before graphing it in RUM analytics or in dashboards. 
+Once the timing is sent, the timing will be accessible as `@view.custom_timings.<timing_name>` (For example, `@view.custom_timings.hero_image`). You must [create a measure](https://docs.datadoghq.com/real_user_monitoring/explorer/?tab=measures#setup-facets-and-measures) before graphing it in RUM analytics or in dashboards. 
 
 ### Custom Actions
 
