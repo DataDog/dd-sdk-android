@@ -25,6 +25,7 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 internal class DatadogRumMonitor(
@@ -34,7 +35,8 @@ internal class DatadogRumMonitor(
     internal val handler: Handler,
     firstPartyHostDetector: FirstPartyHostDetector,
     private val cpuVitalMonitor: VitalMonitor,
-    private val memoryVitalMonitor: VitalMonitor
+    private val memoryVitalMonitor: VitalMonitor,
+    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal val rootScope: RumScope = RumApplicationScope(
@@ -52,8 +54,6 @@ internal class DatadogRumMonitor(
     init {
         handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
     }
-
-    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 
     // region RumMonitor
 
@@ -276,13 +276,28 @@ internal class DatadogRumMonitor(
 
     // region Internal
 
+    internal fun drainExecutorService() {
+        val tasks = arrayListOf<Runnable>()
+        (executorService as? ThreadPoolExecutor)
+            ?.queue
+            ?.drainTo(tasks)
+        executorService.shutdown()
+        executorService.awaitTermination(10, TimeUnit.SECONDS)
+        tasks.forEach {
+            it.run()
+        }
+    }
+
     internal fun handleEvent(event: RumRawEvent) {
         handler.removeCallbacks(keepAliveRunnable)
-        executorService.submit {
-            synchronized(rootScope) {
-                rootScope.handleEvent(event, writer)
+        // avoid trowing a RejectedExecutionException
+        if (!executorService.isShutdown) {
+            executorService.submit {
+                synchronized(rootScope) {
+                    rootScope.handleEvent(event, writer)
+                }
+                handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
             }
-            handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
         }
     }
 

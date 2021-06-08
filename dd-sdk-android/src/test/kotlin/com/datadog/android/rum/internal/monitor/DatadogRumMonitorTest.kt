@@ -31,10 +31,12 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.same
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -44,6 +46,10 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -992,13 +998,88 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `removes callback from handler on stopKeepAliveCallback`() {
-        // initial post
-        verify(mockHandler).postDelayed(any(), any())
-
+        // When
         testedMonitor.stopKeepAliveCallback()
 
+        // Then
+        // initial post
+        verify(mockHandler).postDelayed(any(), any())
         verify(mockHandler).removeCallbacks(same(testedMonitor.keepAliveRunnable))
         verifyNoMoreInteractions(mockHandler, mockWriter, mockScope)
+    }
+
+    @Test
+    fun `M drain the executor queue W drainExecutorService()`(forge: Forge) {
+        // Given
+        val blockingQueue = LinkedBlockingQueue<Runnable>(forge.aList { mock() })
+        val mockExecutor: ScheduledThreadPoolExecutor = mock()
+        whenever(mockExecutor.queue).thenReturn(blockingQueue)
+        testedMonitor = DatadogRumMonitor(
+            fakeApplicationId,
+            fakeSamplingRate,
+            mockWriter,
+            mockHandler,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockExecutor
+        )
+
+        // When
+        testedMonitor.drainExecutorService()
+
+        // Then
+        blockingQueue.forEach {
+            verify(it).run()
+        }
+    }
+
+    @Test
+    fun `M shutdown with wait the persistence executor W drainAndShutdownExecutors()`() {
+        // Given
+        val mockExecutorService: ExecutorService = mock()
+        testedMonitor = DatadogRumMonitor(
+            fakeApplicationId,
+            fakeSamplingRate,
+            mockWriter,
+            mockHandler,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockExecutorService
+        )
+
+        // When
+        testedMonitor.drainExecutorService()
+
+        // Then
+        inOrder(mockExecutorService) {
+            verify(mockExecutorService).shutdown()
+            verify(mockExecutorService).awaitTermination(10, TimeUnit.SECONDS)
+        }
+    }
+
+    @Test
+    fun `M not schedule any task W executor service shutdown()`() {
+        // Given
+        val mockExecutorService: ExecutorService = mock()
+        testedMonitor = DatadogRumMonitor(
+            fakeApplicationId,
+            fakeSamplingRate,
+            mockWriter,
+            mockHandler,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockExecutorService
+        )
+        whenever(mockExecutorService.isShutdown).thenReturn(true)
+
+        // When
+        testedMonitor.handleEvent(mock())
+
+        // Then
+        verify(mockExecutorService, never()).submit(any())
     }
 
     companion object {

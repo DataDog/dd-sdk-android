@@ -21,7 +21,9 @@ import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.tracing.internal.TracesFeature
 import java.lang.IllegalArgumentException
 import java.util.concurrent.atomic.AtomicBoolean
@@ -217,6 +219,10 @@ object Datadog {
     @Suppress("unused")
     private fun flushAndShutdownExecutors() {
         if (initialized.get()) {
+            (GlobalRum.get() as? DatadogRumMonitor)?.let {
+                it.stopKeepAliveCallback()
+                it.drainExecutorService()
+            }
             // We need to drain and shutdown the executors first to make sure we avoid duplicated
             // data due to async operations.
             CoreFeature.drainAndShutdownExecutors()
