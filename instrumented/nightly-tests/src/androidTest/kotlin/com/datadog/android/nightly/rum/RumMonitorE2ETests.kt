@@ -438,6 +438,8 @@ class RumMonitorE2ETests {
                 attributes = defaultTestAttributes(testMethodName)
             )
         }
+        // wait for the action to be inactive
+        Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
     }
 
     /**
