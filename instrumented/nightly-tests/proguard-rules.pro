@@ -6,6 +6,10 @@
 # Required for some Kotlin-jvm implementation using reflection
 -keepnames class kotlin.jvm.** { *; }
 
+-keepnames class com.datadog.android.rum.internal.monitor.DatadogRumMonitor {
+    public void resetSession();
+ }
+
 # Required because we need access to Datadog by reflection
 -keepnames class com.datadog.android.Datadog {
     private void stop();
