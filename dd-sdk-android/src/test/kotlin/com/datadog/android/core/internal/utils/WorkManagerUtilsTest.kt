@@ -61,7 +61,12 @@ internal class WorkManagerUtilsTest {
     fun `set up`(forge: Forge) {
         Datadog.initialize(
             appContext.mockInstance,
-            Credentials(forge.anHexadecimalString(), forge.anAlphabeticalString(), "", null),
+            Credentials(
+                forge.anHexadecimalString(),
+                forge.anAlphabeticalString(),
+                Credentials.NO_VARIANT,
+                null
+            ),
             Configuration.Builder(
                 logsEnabled = true,
                 tracesEnabled = true,

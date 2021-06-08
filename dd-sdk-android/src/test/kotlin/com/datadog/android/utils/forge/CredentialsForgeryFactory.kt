@@ -17,7 +17,7 @@ internal class CredentialsForgeryFactory :
         return Credentials(
             clientToken = forge.anHexadecimalString(),
             envName = forge.anAlphabeticalString(),
-            variant = forge.anAlphabeticalString(),
+            variant = forge.anElementFrom(forge.anAlphabeticalString(), ""),
             serviceName = forge.aStringMatching("[a-z]+(\\.[a-z]+)+"),
             rumApplicationId = forge.getForgery<UUID>().toString()
         )

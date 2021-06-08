@@ -112,7 +112,7 @@ internal class UploadWorkerTest {
 
         Datadog.initialize(
             appContext.mockInstance,
-            Credentials("CLIENT_TOKEN", "ENVIRONMENT", "", null),
+            Credentials("CLIENT_TOKEN", "ENVIRONMENT", Credentials.NO_VARIANT, null),
             Configuration.Builder(
                 logsEnabled = true,
                 tracesEnabled = true,

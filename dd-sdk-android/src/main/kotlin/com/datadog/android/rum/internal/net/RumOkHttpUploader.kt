@@ -20,13 +20,18 @@ internal open class RumOkHttpUploader(
 ) : DataOkHttpUploader(buildUrl(endpoint, token), callFactory, CONTENT_TYPE_TEXT_UTF8) {
 
     private val tags: String by lazy {
-        arrayOf(
+        val elements = mutableListOf(
             "${RumAttributes.SERVICE_NAME}:${CoreFeature.serviceName}",
             "${RumAttributes.APPLICATION_VERSION}:${CoreFeature.packageVersion}",
             "${RumAttributes.SDK_VERSION}:${BuildConfig.SDK_VERSION_NAME}",
-            "${RumAttributes.ENV}:${CoreFeature.envName}",
-            "${RumAttributes.VARIANT}:${CoreFeature.variant}"
-        ).joinToString(",")
+            "${RumAttributes.ENV}:${CoreFeature.envName}"
+        )
+
+        if (CoreFeature.variant.isNotEmpty()) {
+            elements.add("${RumAttributes.VARIANT}:${CoreFeature.variant}")
+        }
+
+        elements.joinToString(",")
     }
 
     // region DataOkHttpUploader

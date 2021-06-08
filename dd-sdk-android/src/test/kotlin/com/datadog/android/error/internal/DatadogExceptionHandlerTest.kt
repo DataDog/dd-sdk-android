@@ -122,7 +122,7 @@ internal class DatadogExceptionHandlerTest {
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         Datadog.initialize(
             appContext.mockInstance,
-            Credentials(fakeToken, fakeEnvName, "", null),
+            Credentials(fakeToken, fakeEnvName, Credentials.NO_VARIANT, null),
             Configuration.Builder(
                 logsEnabled = true,
                 tracesEnabled = true,

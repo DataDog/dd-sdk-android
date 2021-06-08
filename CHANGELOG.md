@@ -1,9 +1,11 @@
-# 1.9.0 / 2021-04-??
+# 1.9.0 / 2021-06-07
 
 * [BUGFIX] APM: Fix network tracing inconsistencies
 * [BUGFIX] APM: Fix span  with custom `MESSAGE` field [#522](https://github.com/DataDog/dd-sdk-android/issues/522) (Thanks [@JessicaYeh](https://github.com/JessicaYeh))
 * [BUGFIX] Logs: Fix tag name in Timber `DatadogTree` [#483](https://github.com/DataDog/dd-sdk-android/issues/483) (Thanks [@cfa-eric](https://github.com/cfa-eric))
 * [BUGFIX] RUM: Ensure View linked events count is correct when events are discarded
+* [BUGFIX] RUM: Fix Resource network timings
+* [BUGFIX] APM: Fix span logs timestamp conversion
 * [FEATURE] RUM: Detect Long Tasks (tasks blocking the main thread)
 * [FEATURE] RUM: add a callback to enrich RUM Resources created from OkHttp Requests
 * [IMPROVEMENT] RUM: Remove the "Application crash detected" prefix and ensure the message  is kept

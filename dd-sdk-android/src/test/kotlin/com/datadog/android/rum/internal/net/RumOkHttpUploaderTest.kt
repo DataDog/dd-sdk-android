@@ -49,15 +49,20 @@ internal class RumOkHttpUploaderTest : DataOkHttpUploaderTest<RumOkHttpUploader>
     }
 
     override fun expectedQueryParams(): Map<String, String> {
-        val tags = "${RumAttributes.SERVICE_NAME}:${coreFeature.fakeServiceName}," +
-            "${RumAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}," +
-            "${RumAttributes.SDK_VERSION}:${BuildConfig.SDK_VERSION_NAME}," +
-            "${RumAttributes.ENV}:${coreFeature.fakeEnvName}," +
-            "${RumAttributes.VARIANT}:${appContext.fakeVariant}"
+        val tags = mutableListOf(
+            "${RumAttributes.SERVICE_NAME}:${coreFeature.fakeServiceName}",
+            "${RumAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}",
+            "${RumAttributes.SDK_VERSION}:${BuildConfig.SDK_VERSION_NAME}",
+            "${RumAttributes.ENV}:${coreFeature.fakeEnvName}"
+        )
+
+        if (appContext.fakeVariant.isNotBlank()) {
+            tags.add("${RumAttributes.VARIANT}:${appContext.fakeVariant}")
+        }
 
         return mapOf(
             DataOkHttpUploader.QP_SOURCE to CoreFeature.sourceName,
-            RumOkHttpUploader.QP_TAGS to tags
+            RumOkHttpUploader.QP_TAGS to tags.joinToString(",")
         )
     }
 
