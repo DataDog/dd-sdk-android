@@ -139,6 +139,10 @@ fun cleanStorageFiles() {
         .filesDir.deleteRecursively()
 }
 
+fun cleanGlobalAttributes() {
+    GlobalRum.removeAttribute(TEST_METHOD_NAME_KEY)
+}
+
 private fun createDatadogCredentials(): Credentials {
     return Credentials(
         clientToken = BuildConfig.NIGHTLY_TESTS_TOKEN,

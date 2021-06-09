@@ -12,3 +12,4 @@ const val RUM_VIEW_URL_PREFIX = "datadog/rum/"
 const val RUM_RESOURCE_URL_PREFIX = "datadog/resource/rum/"
 const val RUM_RESOURCE_ERROR_MESSAGE_PREFIX = "Rum Resource Error: "
 const val RUM_ERROR_MESSAGE_PREFIX = "Rum Error: "
+const val ACTION_INACTIVITY_THRESHOLD_MS = 100L
