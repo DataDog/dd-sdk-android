@@ -437,7 +437,7 @@ class PokoGenerator(
         val propertyBuilder = PropertySpec.builder(
             RESERVED_PROPERTIES_NAME,
             ARRAY.parameterizedBy(STRING),
-            KModifier.PRIVATE
+            KModifier.INTERNAL
         ).initializer("arrayOf($propertyNames)")
         return propertyBuilder.build()
     }

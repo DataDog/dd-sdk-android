@@ -70,7 +70,7 @@ data class Comment(
         }
 
         companion object {
-            private val RESERVED_PROPERTIES: Array<String> = arrayOf("global")
+            internal val RESERVED_PROPERTIES: Array<String> = arrayOf("global")
 
             @JvmStatic
             @Throws(JsonParseException::class)

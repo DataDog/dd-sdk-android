@@ -32,7 +32,7 @@ data class Company(
     }
 
     companion object {
-        private val RESERVED_PROPERTIES: Array<String> = arrayOf("name", "ratings", "information")
+        internal val RESERVED_PROPERTIES: Array<String> = arrayOf("name", "ratings", "information")
 
         @JvmStatic
         @Throws(JsonParseException::class)
@@ -75,7 +75,7 @@ data class Company(
         }
 
         companion object {
-            private val RESERVED_PROPERTIES: Array<String> = arrayOf("global")
+            internal val RESERVED_PROPERTIES: Array<String> = arrayOf("global")
 
             @JvmStatic
             @Throws(JsonParseException::class)
@@ -115,7 +115,7 @@ data class Company(
         }
 
         companion object {
-            private val RESERVED_PROPERTIES: Array<String> = arrayOf("date", "priority")
+            internal val RESERVED_PROPERTIES: Array<String> = arrayOf("date", "priority")
 
             @JvmStatic
             @Throws(JsonParseException::class)
