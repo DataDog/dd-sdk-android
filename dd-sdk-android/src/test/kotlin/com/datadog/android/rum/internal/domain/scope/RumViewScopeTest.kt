@@ -1831,8 +1831,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
-                    // ActionEvent doesn't record view.name currently
-                    hasView(testedScope.getRumContext().copy(viewName = null))
+                    hasView(testedScope.getRumContext())
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)

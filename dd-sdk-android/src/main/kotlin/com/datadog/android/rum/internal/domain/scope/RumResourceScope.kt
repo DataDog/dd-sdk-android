@@ -158,6 +158,7 @@ internal class RumResourceScope(
             action = context.actionId?.let { ResourceEvent.Action(it) },
             view = ResourceEvent.View(
                 id = context.viewId.orEmpty(),
+                name = context.viewName,
                 url = context.viewUrl.orEmpty()
             ),
             usr = ResourceEvent.Usr(
@@ -225,6 +226,7 @@ internal class RumResourceScope(
             action = context.actionId?.let { ErrorEvent.Action(it) },
             view = ErrorEvent.View(
                 id = context.viewId.orEmpty(),
+                name = context.viewName,
                 url = context.viewUrl.orEmpty()
             ),
             usr = ErrorEvent.Usr(

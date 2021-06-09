@@ -541,6 +541,7 @@ internal open class RumViewScope(
             action = context.actionId?.let { LongTaskEvent.Action(it) },
             view = LongTaskEvent.View(
                 id = context.viewId.orEmpty(),
+                name = context.viewName,
                 url = context.viewUrl.orEmpty()
             ),
             usr = LongTaskEvent.Usr(
