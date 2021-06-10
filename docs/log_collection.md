@@ -62,7 +62,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
    * `TrackingConsent.GRANTED`: The SDK sends all current batched data and future data directly to the data collection endpoint.
    * `TrackingConsent.NOT_GRANTED`: The SDK wipes all batched data and does not collect any future data.
 
-   Note that in the credentials required for initialization, your application variant name is also required. This is important because it enables  the right proguard `mapping.txt` file to be automatically uploaded at build time. This allows a Datadog dashboard to de-obfuscate the stack traces.
+   Note that in the credentials required for initialization, your application variant name is also required, and should use your `BuildConfig.FLAVOR` value (or an empty string if you don't have variants). This is important because it enables the right ProGuard `mapping.txt` file to be automatically uploaded at build time to be able to view de-obfuscated RUM Error stack traces. For more information see the [guide to uploading Android source mapping files][8].
 
    Use the utility method `isInitialized` to check if the SDK is properly initialized:
 
