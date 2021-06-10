@@ -24,7 +24,7 @@ In addition to [tracking views automatically][4], you can also track specific di
 
 ### Add your own performance timing
 
-On top of RUM’s default attributes, you may measure where your application is spending its time with greater flexibility. The `addTiming` API provides you with a simple way to add extra performance timing. The timing measure will be relative to the start of the current RUM view. For example, you can add a timing when your hero image has appeared:
+In addition to RUM’s default attributes, you can measure where your application is spending its time by using the `addTiming` API. The timing measure is relative to the start of the current RUM view. For example, you can time how long it takes for your hero image to appear:
 
    ```kotlin
        fun onHeroImageLoaded() {
