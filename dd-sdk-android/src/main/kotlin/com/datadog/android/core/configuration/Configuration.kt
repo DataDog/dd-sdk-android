@@ -14,6 +14,7 @@ import com.datadog.android.DatadogInterceptor
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpSpanEventMapper
 import com.datadog.android.event.SpanEventMapper
@@ -182,8 +183,14 @@ internal constructor(
                 "com.datadog.android.DatadogSite"
             )
         )
-        @Suppress("DEPRECATION")
+        @Suppress("DEPRECATION", "StringLiteralDuplication")
         fun useEUEndpoints(): Builder {
+            warnDeprecated(
+                target = "Configuration.Builder.useEUEndpoints()",
+                deprecatedSince = "1.10.0",
+                removedInVersion = "1.12.0",
+                alternative = "Configuration.Builder.useSite(DatadogSite.EU1)"
+            )
             logsConfig = logsConfig.copy(endpointUrl = DatadogEndpoint.LOGS_EU)
             tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_EU)
             crashReportConfig = crashReportConfig.copy(endpointUrl = DatadogEndpoint.LOGS_EU)
@@ -205,8 +212,14 @@ internal constructor(
                 "com.datadog.android.DatadogSite"
             )
         )
-        @Suppress("DEPRECATION")
+        @Suppress("DEPRECATION", "StringLiteralDuplication")
         fun useUSEndpoints(): Builder {
+            warnDeprecated(
+                target = "Configuration.Builder.useUSEndpoints()",
+                deprecatedSince = "1.10.0",
+                removedInVersion = "1.12.0",
+                alternative = "Configuration.Builder.useSite(DatadogSite.US1)"
+            )
             logsConfig = logsConfig.copy(endpointUrl = DatadogEndpoint.LOGS_US)
             tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_US)
             crashReportConfig = crashReportConfig.copy(endpointUrl = DatadogEndpoint.LOGS_US)
@@ -228,8 +241,14 @@ internal constructor(
                 "com.datadog.android.DatadogSite"
             )
         )
-        @Suppress("DEPRECATION")
+        @Suppress("DEPRECATION", "StringLiteralDuplication")
         fun useGovEndpoints(): Builder {
+            warnDeprecated(
+                target = "Configuration.Builder.useGovEndpoints()",
+                deprecatedSince = "1.10.0",
+                removedInVersion = "1.12.0",
+                alternative = "Configuration.Builder.useSite(DatadogSite.US1_FED)"
+            )
             logsConfig = logsConfig.copy(endpointUrl = DatadogEndpoint.LOGS_GOV)
             tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_GOV)
             crashReportConfig = crashReportConfig.copy(endpointUrl = DatadogEndpoint.LOGS_GOV)
