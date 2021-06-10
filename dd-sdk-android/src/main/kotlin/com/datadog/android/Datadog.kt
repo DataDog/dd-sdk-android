@@ -15,7 +15,6 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
@@ -46,77 +45,11 @@ object Datadog {
     /**
      * Initializes the Datadog SDK.
      * @param context your application context
-     * @param config the configuration for the SDK library
-     * @see [DatadogConfig]
-     * @throws IllegalArgumentException if the env name is using illegal characters and your
-     * application is in debug mode otherwise returns false and stops initializing the SDK
-     * @deprecated Use the [Datadog.initialize] instead which requires
-     * a privacy [TrackingConsent] parameter.
-     */
-    @Deprecated(
-        "This method is deprecated and uses the [TrackingConsent.GRANTED] " +
-            "flag as a default privacy consent.This means that the SDK will start recording " +
-            "and sending data immediately after initialisation without waiting " +
-            "for the user's consent to be tracked.",
-        ReplaceWith(
-            expression = "Datadog.initialize(context, TrackingConsent.PENDING, config)",
-            imports = ["com.datadog.android.privacy.TrackingConsent"]
-        )
-    )
-    @Suppress("LongMethod", "DEPRECATION")
-    @JvmStatic
-    fun initialize(
-        context: Context,
-        config: DatadogConfig
-    ) {
-        warnDeprecated(
-            "Method Datadog.initialize(Context, DatadogConfig)",
-            "1.7.0",
-            "1.9.0",
-            "Datadog.initialize(Context, TrackingConsent, DatadogConfig)"
-        )
-        initialize(context, TrackingConsent.GRANTED, config)
-    }
-
-    /**
-     * Initializes the Datadog SDK.
-     * @param context your application context
-     * @param trackingConsent as the initial state of the tracking consent flag.
-     * @param config the configuration for the SDK library
-     * @see [DatadogConfig]
-     * @see [TrackingConsent]
-     * @throws IllegalArgumentException if the env name is using illegal characters and your
-     * application is in debug mode otherwise returns false and stops initializing the SDK
-     */
-    @Deprecated(
-        "This method is deprecated, as it doesn't take the application's flavor into account.",
-        ReplaceWith(
-            "initialize(context, credentials, configuration, trackingConsent)",
-            "com.datadog.android.Datadog.initialize"
-        )
-    )
-    @Suppress("LongMethod", "DEPRECATION")
-    @JvmStatic
-    fun initialize(
-        context: Context,
-        trackingConsent: TrackingConsent,
-        config: DatadogConfig
-    ) {
-        initialize(
-            context,
-            config.asCredentials(),
-            config.asConfiguration(),
-            trackingConsent
-        )
-    }
-
-    /**
-     * Initializes the Datadog SDK.
-     * @param context your application context
      * @param credentials your organization credentials
      * @param configuration the configuration for the SDK library
      * @param trackingConsent as the initial state of the tracking consent flag.
-     * @see [DatadogConfig]
+     * @see [Credentials]
+     * @see [Configuration]
      * @see [TrackingConsent]
      * @throws IllegalArgumentException if the env name is using illegal characters and your
      * application is in debug mode otherwise returns false and stops initializing the SDK

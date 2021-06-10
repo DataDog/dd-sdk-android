@@ -6,6 +6,7 @@
 
 package com.datadog.android
 
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.identifyRequest
@@ -41,7 +42,7 @@ import okhttp3.Response
  * From [RumInterceptor]: this interceptor will log the request as a RUM Resource, and fill the
  * request information (url, method, status code, optional error). Note that RUM Resources are only
  * tracked when a view is active. You can use one of the existing [ViewTrackingStrategy] when
- * configuring the SDK (see [DatadogConfig.Builder.useViewTrackingStrategy]) or start a view
+ * configuring the SDK (see [Configuration.Builder.useViewTrackingStrategy]) or start a view
  * manually (see [RumMonitor.startView]).
  *
  * From [TracingInterceptor]: This interceptor will create a [Span] around the request and fill the
