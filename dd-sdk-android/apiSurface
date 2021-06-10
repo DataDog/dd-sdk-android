@@ -84,6 +84,14 @@ open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.
   override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   override fun canSendSpan(): Boolean
   companion object 
+enum com.datadog.android.DatadogSite
+  - US1
+  - US3
+  - US1_FED
+  - EU1
+  fun logsEndpoint(): String
+  fun tracesEndpoint(): String
+  fun rumEndpoint(): String
 enum com.datadog.android.core.configuration.BatchSize
   constructor(Long)
   - SMALL
