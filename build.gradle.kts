@@ -1,3 +1,5 @@
+import com.datadog.gradle.config.nightlyTestsCoverageConfig
+
 /*
  * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
@@ -231,3 +233,5 @@ tasks.register("buildNdkIntegrationTestsArtifacts") {
     // we need this artifact to trick Bitrise
     dependsOn(":instrumented:integration:assembleDebug")
 }
+
+nightlyTestsCoverageConfig()
