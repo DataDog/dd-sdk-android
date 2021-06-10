@@ -190,6 +190,7 @@ internal class RumActionScope(
                 ),
                 view = ActionEvent.View(
                     id = context.viewId.orEmpty(),
+                    name = context.viewName,
                     url = context.viewUrl.orEmpty()
                 ),
                 application = ActionEvent.Application(context.applicationId),

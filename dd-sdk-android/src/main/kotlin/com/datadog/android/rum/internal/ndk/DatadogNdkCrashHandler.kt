@@ -257,9 +257,10 @@ internal class DatadogNdkCrashHandler(
                     ErrorEvent.SessionType.USER
                 ),
                 view = ErrorEvent.View(
-                    bundledViewEvent.view.id,
-                    bundledViewEvent.view.referrer,
-                    bundledViewEvent.view.url
+                    id = bundledViewEvent.view.id,
+                    name = bundledViewEvent.view.name,
+                    referrer = bundledViewEvent.view.referrer,
+                    url = bundledViewEvent.view.url
                 ),
                 usr = ErrorEvent.Usr(
                     bundledViewEvent.usr?.id,
