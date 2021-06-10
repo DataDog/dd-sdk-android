@@ -102,9 +102,10 @@ class com.datadog.android.core.configuration.Configuration
     constructor(Boolean, Boolean, Boolean, Boolean)
     fun build(): Configuration
     fun setFirstPartyHosts(List<String>): Builder
-    fun useEUEndpoints(): Builder
-    fun useUSEndpoints(): Builder
-    fun useGovEndpoints(): Builder
+    fun useSite(com.datadog.android.DatadogSite): Builder
+    DEPRECATED fun useEUEndpoints(): Builder
+    DEPRECATED fun useUSEndpoints(): Builder
+    DEPRECATED fun useGovEndpoints(): Builder
     fun useCustomLogsEndpoint(String): Builder
     fun useCustomTracesEndpoint(String): Builder
     fun useCustomCrashReportsEndpoint(String): Builder

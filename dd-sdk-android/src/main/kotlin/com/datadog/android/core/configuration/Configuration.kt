@@ -11,6 +11,7 @@ import android.os.Looper
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogInterceptor
+import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.event.EventMapper
@@ -157,10 +158,31 @@ internal constructor(
         }
 
         /**
+         * Let the SDK target your preferred Datadog's site.
+         */
+        fun useSite(site: DatadogSite): Builder {
+            logsConfig = logsConfig.copy(endpointUrl = site.logsEndpoint())
+            tracesConfig = tracesConfig.copy(endpointUrl = site.tracesEndpoint())
+            crashReportConfig = crashReportConfig.copy(endpointUrl = site.logsEndpoint())
+            rumConfig = rumConfig.copy(endpointUrl = site.rumEndpoint())
+            coreConfig = coreConfig.copy(needsClearTextHttp = false)
+            return this
+        }
+
+        /**
          * Let the SDK target Datadog's Europe server.
          *
          * Call this if you log on [app.datadoghq.eu](https://app.datadoghq.eu/).
+         * @deprecated use the [useSite] method instead.
          */
+        @Deprecated(
+            "Use the `useSite()` method instead.",
+            ReplaceWith(
+                "useSite(DatadogSite.EU1)",
+                "com.datadog.android.DatadogSite"
+            )
+        )
+        @Suppress("DEPRECATION")
         fun useEUEndpoints(): Builder {
             logsConfig = logsConfig.copy(endpointUrl = DatadogEndpoint.LOGS_EU)
             tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_EU)
@@ -174,7 +196,16 @@ internal constructor(
          * Let the SDK target Datadog's US server.
          *
          * Call this if you log on [app.datadoghq.com](https://app.datadoghq.com/).
+         * @deprecated use the [useSite] method instead.
          */
+        @Deprecated(
+            "Use the `useSite()` method instead.",
+            ReplaceWith(
+                "useSite(DatadogSite.US1)",
+                "com.datadog.android.DatadogSite"
+            )
+        )
+        @Suppress("DEPRECATION")
         fun useUSEndpoints(): Builder {
             logsConfig = logsConfig.copy(endpointUrl = DatadogEndpoint.LOGS_US)
             tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_US)
@@ -188,7 +219,16 @@ internal constructor(
          * Let the SDK target Datadog's Gov server.
          *
          * Call this if you log on [app.ddog-gov.com/](https://app.ddog-gov.com/).
+         * @deprecated use the [useSite] method instead.
          */
+        @Deprecated(
+            "Use the `useSite()` method instead.",
+            ReplaceWith(
+                "useSite(DatadogSite.US1_FED)",
+                "com.datadog.android.DatadogSite"
+            )
+        )
+        @Suppress("DEPRECATION")
         fun useGovEndpoints(): Builder {
             logsConfig = logsConfig.copy(endpointUrl = DatadogEndpoint.LOGS_GOV)
             tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_GOV)
@@ -538,21 +578,21 @@ internal constructor(
             uploadFrequency = UploadFrequency.AVERAGE
         )
         internal val DEFAULT_LOGS_CONFIG = Feature.Logs(
-            endpointUrl = DatadogEndpoint.LOGS_US,
+            endpointUrl = DatadogEndpoint.LOGS_US1,
             plugins = emptyList(),
             logsEventMapper = NoOpEventMapper()
         )
         internal val DEFAULT_CRASH_CONFIG = Feature.CrashReport(
-            endpointUrl = DatadogEndpoint.LOGS_US,
+            endpointUrl = DatadogEndpoint.LOGS_US1,
             plugins = emptyList()
         )
         internal val DEFAULT_TRACING_CONFIG = Feature.Tracing(
-            endpointUrl = DatadogEndpoint.TRACES_US,
+            endpointUrl = DatadogEndpoint.TRACES_US1,
             plugins = emptyList(),
             spanEventMapper = NoOpSpanEventMapper()
         )
         internal val DEFAULT_RUM_CONFIG = Feature.RUM(
-            endpointUrl = DatadogEndpoint.RUM_US,
+            endpointUrl = DatadogEndpoint.RUM_US1,
             plugins = emptyList(),
             samplingRate = DEFAULT_SAMPLING_RATE,
             userActionTrackingStrategy = provideUserTrackingStrategy(emptyArray()),

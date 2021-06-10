@@ -9,6 +9,7 @@ package com.datadog.android.core.configuration
 import android.os.Build
 import android.util.Log
 import com.datadog.android.DatadogEndpoint
+import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpSpanEventMapper
@@ -103,7 +104,7 @@ internal class ConfigurationBuilderTest {
         )
         assertThat(config.logsConfig).isEqualTo(
             Configuration.Feature.Logs(
-                endpointUrl = DatadogEndpoint.LOGS_US,
+                endpointUrl = DatadogEndpoint.LOGS_US1,
                 plugins = emptyList(),
                 logsEventMapper = NoOpEventMapper()
             )
@@ -113,7 +114,7 @@ internal class ConfigurationBuilderTest {
             .ignoringFields("spanEventMapper")
             .isEqualTo(
                 Configuration.Feature.Tracing(
-                    endpointUrl = DatadogEndpoint.TRACES_US,
+                    endpointUrl = DatadogEndpoint.TRACES_US1,
                     plugins = emptyList(),
                     spanEventMapper = NoOpSpanEventMapper()
                 )
@@ -122,13 +123,13 @@ internal class ConfigurationBuilderTest {
             .isInstanceOf(NoOpSpanEventMapper::class.java)
         assertThat(config.crashReportConfig).isEqualTo(
             Configuration.Feature.CrashReport(
-                endpointUrl = DatadogEndpoint.LOGS_US,
+                endpointUrl = DatadogEndpoint.LOGS_US1,
                 plugins = emptyList()
             )
         )
         assertThat(config.rumConfig).isEqualTo(
             Configuration.Feature.RUM(
-                endpointUrl = DatadogEndpoint.RUM_US,
+                endpointUrl = DatadogEndpoint.RUM_US1,
                 plugins = emptyList(),
                 samplingRate = Configuration.DEFAULT_SAMPLING_RATE,
                 userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
@@ -145,6 +146,32 @@ internal class ConfigurationBuilderTest {
         assertThat(config.additionalConfig).isEmpty()
     }
 
+    @Test
+    fun `𝕄 build config with custom site 𝕎 useSite() and build()`(
+        @Forgery site: DatadogSite
+    ) {
+        // When
+        val config = testedBuilder.useSite(site).build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(
+            Configuration.DEFAULT_LOGS_CONFIG.copy(endpointUrl = site.logsEndpoint())
+        )
+        assertThat(config.tracesConfig).isEqualTo(
+            Configuration.DEFAULT_TRACING_CONFIG.copy(endpointUrl = site.tracesEndpoint())
+        )
+        assertThat(config.crashReportConfig).isEqualTo(
+            Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = site.logsEndpoint())
+        )
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = site.rumEndpoint())
+        )
+        assertThat(config.internalLogsConfig).isNull()
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Suppress("DEPRECATION")
     @Test
     fun `𝕄 build config with US endpoints 𝕎 useUSEndpoints() and build()`() {
         // When
@@ -168,6 +195,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.additionalConfig).isEmpty()
     }
 
+    @Suppress("DEPRECATION")
     @Test
     fun `𝕄 build config with EU endpoints 𝕎 useEUEndpoints() and build()`() {
         // When
@@ -191,6 +219,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.additionalConfig).isEmpty()
     }
 
+    @Suppress("DEPRECATION")
     @Test
     fun `𝕄 build config with GOV endpoints 𝕎 useGOVEndpoints() and build()`() {
         // When
