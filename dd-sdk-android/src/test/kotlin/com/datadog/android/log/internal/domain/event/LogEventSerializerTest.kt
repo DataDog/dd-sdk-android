@@ -50,7 +50,7 @@ internal class LogEventSerializerTest {
         // Given
         val logWithoutAttributes = fakeLog.copy(additionalProperties = emptyMap())
         val attributes = forge.aMap {
-            anElementFrom(LogEventSerializer.RESERVED_PROPERTIES) to forge.anAsciiString()
+            anElementFrom(LogEvent.RESERVED_PROPERTIES.asList()) to forge.anAsciiString()
         }
         val logWithReservedAttributes = fakeLog.copy(additionalProperties = attributes)
 
@@ -225,7 +225,7 @@ internal class LogEventSerializerTest {
             doesNotHaveField(KEY_USR_EMAIL)
         }
         containsExtraAttributes(
-            userInfo.additionalProperties
+            userInfo.additionalProperties.minus(LogEvent.Usr.RESERVED_PROPERTIES)
         )
     }
 

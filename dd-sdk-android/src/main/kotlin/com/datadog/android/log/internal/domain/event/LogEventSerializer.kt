@@ -25,10 +25,9 @@ internal class LogEventSerializer(
         val sanitizedTags = dataConstraints
             .validateTags(log.ddtags.split(","))
             .joinToString(",")
-        // TODO: 13/04/2021 RUMM-1298 Handle the RESERVED_ATTRIBUTES in the `toJson` method
         val sanitizedAttributes = dataConstraints
             .validateAttributes(log.additionalProperties)
-            .filterKeys { it.isNotBlank() && it !in RESERVED_PROPERTIES }
+            .filterKeys { it.isNotBlank() }
         val usr = log.usr?.let {
             val sanitizedUserAttributes = dataConstraints.validateAttributes(
                 it.additionalProperties,
@@ -46,10 +45,5 @@ internal class LogEventSerializer(
 
     companion object {
         internal const val USER_EXTRA_GROUP_VERBOSE_NAME = "user extra information"
-
-        internal val RESERVED_PROPERTIES: List<String> = listOf(
-            "status", "service", "message",
-            "date", "logger", "usr", "network", "error", "ddtags"
-        )
     }
 }

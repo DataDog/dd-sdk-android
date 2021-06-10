@@ -3141,7 +3141,12 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        val expectedTotal = cpuTicks.last() - cpuTicks.first()
+        val expectedTotal = if (cpuTicks.size > 1) {
+            cpuTicks.last() - cpuTicks.first()
+        } else {
+            // we need to have at least 2 ticks to submit "ticks on the view" metric
+            null
+        }
         argumentCaptor<RumEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
