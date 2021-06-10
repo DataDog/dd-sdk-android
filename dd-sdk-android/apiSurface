@@ -36,15 +36,27 @@ DEPRECATED class com.datadog.android.DatadogConfig
     fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
     fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
 object com.datadog.android.DatadogEndpoint
-  const val LOGS_US: String
-  const val LOGS_EU: String
-  const val LOGS_GOV: String
-  const val TRACES_US: String
-  const val TRACES_EU: String
-  const val TRACES_GOV: String
-  const val RUM_US: String
-  const val RUM_EU: String
-  const val RUM_GOV: String
+  const val LOGS_US1: String
+  const val LOGS_US3: String
+  const val LOGS_US1_FED: String
+  const val LOGS_EU1: String
+  DEPRECATED const val LOGS_US: String
+  DEPRECATED const val LOGS_EU: String
+  DEPRECATED const val LOGS_GOV: String
+  const val TRACES_US1: String
+  const val TRACES_US3: String
+  const val TRACES_US1_FED: String
+  const val TRACES_EU1: String
+  DEPRECATED const val TRACES_US: String
+  DEPRECATED const val TRACES_EU: String
+  DEPRECATED const val TRACES_GOV: String
+  const val RUM_US1: String
+  const val RUM_US3: String
+  const val RUM_US1_FED: String
+  const val RUM_EU1: String
+  DEPRECATED const val RUM_US: String
+  DEPRECATED const val RUM_EU: String
+  DEPRECATED const val RUM_GOV: String
   const val NTP_0: String
   const val NTP_1: String
   const val NTP_2: String
