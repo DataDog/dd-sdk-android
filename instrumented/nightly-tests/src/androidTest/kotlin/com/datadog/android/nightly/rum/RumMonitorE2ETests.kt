@@ -689,8 +689,4 @@ class RumMonitorE2ETests {
     }
 
     // endregion
-
-    companion object {
-        const val ACTION_INACTIVITY_THRESHOLD_MS = 100L
-    }
 }
