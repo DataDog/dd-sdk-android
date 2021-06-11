@@ -83,7 +83,7 @@ internal fun ResourceTiming.ssl(): ResourceEvent.Ssl? {
 }
 
 internal fun ResourceTiming.firstByte(): ResourceEvent.FirstByte? {
-    return if (firstByteStart > 0) {
+    return if (firstByteStart >= 0 && firstByteDuration > 0) {
         ResourceEvent.FirstByte(duration = firstByteDuration, start = firstByteStart)
     } else null
 }
