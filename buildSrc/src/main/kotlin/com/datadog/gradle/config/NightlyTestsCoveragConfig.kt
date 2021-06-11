@@ -9,14 +9,11 @@ package com.datadog.gradle.config
 import org.gradle.api.Project
 import org.gradle.api.tasks.Exec
 
-const val TEST_COVERAGE_THRESHOLD = 0.54
-fun Project.nightlyTestsCoverageConfig() {
+fun Project.nightlyTestsCoverageConfig(threshold: Float) {
 
     tasks.create("checkNightlyTestsCoverage", Exec::class.java) {
         val generateApiTasks = allprojects.mapNotNull { it.tasks.findByName("generateApiSurface") }
         setDependsOn(generateApiTasks)
-        val threshold = TEST_COVERAGE_THRESHOLD
-        setWorkingDir(".")
         setCommandLine(
             "python3",
             "instrumentation-tools/nightly_tests_code_coverage.py",

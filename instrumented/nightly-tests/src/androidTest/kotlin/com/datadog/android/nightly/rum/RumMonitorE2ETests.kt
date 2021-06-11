@@ -61,7 +61,6 @@ class RumMonitorE2ETests {
     /**
      * apiMethodSignature: RumMonitor#fun startView(Any, String, Map<String, Any?> = emptyMap())
      * apiMethodSignature: GlobalRum#fun get(): RumMonitor
-     * apiMethodSignature: GlobalRum#fun get(): RumMonitor
      */
     @Test
     fun rum_rummonitor_start_view() {
