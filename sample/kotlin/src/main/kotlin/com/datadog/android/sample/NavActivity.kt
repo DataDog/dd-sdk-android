@@ -15,12 +15,13 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sample.service.LogsForegroundService
 import com.google.android.material.snackbar.Snackbar
 import java.security.SecureRandom
 import timber.log.Timber
 
-class NavActivity : AppCompatActivity() {
+class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
 
     lateinit var navController: NavController
     lateinit var rootView: View
@@ -36,7 +37,7 @@ class NavActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_nav)
         rootView = findViewById(R.id.frame_container)
-        appInfoView = findViewById<TextView>(R.id.app_info)
+        appInfoView = findViewById(R.id.app_info)
 
         navController = findNavController(R.id.nav_host_fragment)
     }
@@ -56,7 +57,7 @@ class NavActivity : AppCompatActivity() {
         Timber.d("onResume")
 
         val tracking = Preferences.defaultPreferences(this).getTrackingConsent()
-        appInfoView.text = "${BuildConfig.FLAVOR} / Tracking: $tracking"
+        updateTrackingConsentLabel(tracking)
     }
 
     override fun onPause() {
@@ -104,6 +105,13 @@ class NavActivity : AppCompatActivity() {
         return result
     }
 
+    override fun onTrackingConsentChanged(trackingConsent: TrackingConsent) =
+        updateTrackingConsentLabel(trackingConsent)
+
+    private fun updateTrackingConsentLabel(trackingConsent: TrackingConsent) {
+        appInfoView.text = "${BuildConfig.FLAVOR} / Tracking: $trackingConsent"
+    }
+
     private fun runLongTask() {
         val random = SecureRandom()
         val duration = random.nextInt(500) + 500
@@ -115,4 +123,8 @@ class NavActivity : AppCompatActivity() {
     companion object {
         const val LIPSUM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, …"
     }
+}
+
+interface TrackingConsentChangeListener {
+    fun onTrackingConsentChanged(trackingConsent: TrackingConsent)
 }

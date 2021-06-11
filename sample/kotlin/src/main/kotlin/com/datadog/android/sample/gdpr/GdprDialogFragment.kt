@@ -17,6 +17,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sample.Preferences
 import com.datadog.android.sample.R
+import com.datadog.android.sample.TrackingConsentChangeListener
 
 class GdprDialogFragment : DialogFragment() {
     lateinit var trackingConsentSelector: RadioGroup
@@ -40,6 +41,7 @@ class GdprDialogFragment : DialogFragment() {
             }
             Datadog.setTrackingConsent(trackingConsent)
             Preferences.defaultPreferences(requireContext()).setTrackingConsent(trackingConsent)
+            (activity as? TrackingConsentChangeListener)?.onTrackingConsentChanged(trackingConsent)
         }
         return rootView
     }
