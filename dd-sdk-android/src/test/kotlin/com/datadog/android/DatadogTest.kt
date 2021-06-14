@@ -41,13 +41,11 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
-import java.util.UUID
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
@@ -61,7 +59,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
-@Suppress("DEPRECATION")
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
@@ -85,6 +82,9 @@ internal class DatadogTest {
 
     @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
     lateinit var fakeEnvName: String
+
+    @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+    lateinit var fakeApplicationId: String
 
     @TempDir
     lateinit var tempRootDir: File
@@ -175,15 +175,18 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 return true 𝕎 initialize(context, consent, config) + isInitialized()`(
-        @Forgery applicationId: UUID
-    ) {
+    fun `𝕄 return true 𝕎 initialize(context, credential, , consent) + isInitialized()`() {
         // Given
-        val config = DatadogConfig.Builder(fakeToken, fakeEnvName, applicationId)
-            .build()
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
+        val configuration = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        ).build()
 
         // When
-        Datadog.initialize(appContext.mockInstance, fakeConsent, config)
+        Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
         val initialized = Datadog.isInitialized()
 
         // Then
@@ -191,15 +194,18 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 initialize the ConsentProvider 𝕎 initializing()`(
-        @Forgery applicationId: UUID
-    ) {
+    fun `𝕄 initialize the ConsentProvider 𝕎 initializing()`() {
         // Given
-        val config = DatadogConfig.Builder(fakeToken, fakeEnvName, applicationId)
-            .build()
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
+        val configuration = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        ).build()
 
         // When
-        Datadog.initialize(appContext.mockInstance, fakeConsent, config)
+        Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
 
         // Then
         assertThat(CoreFeature.trackingConsentProvider.getConsent()).isEqualTo(fakeConsent)
@@ -221,17 +227,27 @@ internal class DatadogTest {
 
     @Test
     fun `M return false and log an error W initialize() {envName not valid, isDebug=false}`(
-        forge: Forge,
-        @Forgery applicationId: UUID
+        forge: Forge
     ) {
         // Given
-        stubContextAsNotDebuggable(appContext.mockInstance)
+        stubApplicationInfo(appContext.mockInstance, isDebuggable = false)
         val fakeBadEnvName = forge.aStringMatching("^[\\$%\\*@][a-zA-Z0-9_:./-]{0,200}")
-        val config = DatadogConfig.Builder(fakeToken, fakeBadEnvName, applicationId)
-            .build()
+        val credentials = Credentials(
+            fakeToken,
+            fakeBadEnvName,
+            fakeVariant,
+            fakeApplicationId,
+            null
+        )
+        val configuration = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        ).build()
 
         // When
-        Datadog.initialize(appContext.mockInstance, fakeConsent, config)
+        Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
         val initialized = Datadog.isInitialized()
 
         // Then
@@ -241,22 +257,22 @@ internal class DatadogTest {
 
     @Test
     fun `M throw an exception W initialize() {envName not valid, isDebug=true}`(
-        forge: Forge,
-        @Forgery applicationId: UUID
+        forge: Forge
     ) {
         // Given
-        stubContextAsDebuggable(appContext.mockInstance)
-        val fakeBadEnvName = forge.aStringMatching("^[\\$%\\*@][a-zA-Z0-9_:./-]{0,200}")
-        val config = DatadogConfig.Builder(fakeToken, fakeBadEnvName, applicationId)
-            .build()
+        stubApplicationInfo(appContext.mockInstance, isDebuggable = true)
+        val badEnvName = forge.aStringMatching("^[\\$%\\*@][a-zA-Z0-9_:./-]{0,200}")
+        val credentials = Credentials(fakeToken, badEnvName, fakeVariant, fakeApplicationId, null)
+        val configuration = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        ).build()
 
         // When
         assertThatThrownBy {
-            Datadog.initialize(
-                appContext.mockInstance,
-                fakeConsent,
-                config
-            )
+            Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
         }.isInstanceOf(java.lang.IllegalArgumentException::class.java)
     }
 
@@ -270,15 +286,18 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 initialize features 𝕎 initialize()`(
-        @Forgery applicationId: UUID
-    ) {
+    fun `𝕄 initialize features 𝕎 initialize()`() {
         // Given
-        val config = DatadogConfig.Builder(fakeToken, fakeEnvName, applicationId)
-            .build()
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
+        val configuration = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        ).build()
 
         // When
-        Datadog.initialize(appContext.mockInstance, fakeConsent, config)
+        Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
 
         // Then
         assertThat(CoreFeature.initialized.get()).isTrue()
@@ -291,22 +310,22 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 not initialize features 𝕎 initialize() with features disabled`(
-        @Forgery applicationId: UUID,
         @BoolForgery logsEnabled: Boolean,
-        @BoolForgery crashReportEnabled: Boolean,
         @BoolForgery tracesEnabled: Boolean,
+        @BoolForgery crashReportEnabled: Boolean,
         @BoolForgery rumEnabled: Boolean
     ) {
         // Given
-        val config = DatadogConfig.Builder(fakeToken, fakeEnvName, applicationId)
-            .setLogsEnabled(logsEnabled)
-            .setCrashReportsEnabled(crashReportEnabled)
-            .setTracesEnabled(tracesEnabled)
-            .setRumEnabled(rumEnabled)
-            .build()
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
+        val configuration = Configuration.Builder(
+            logsEnabled = logsEnabled,
+            tracesEnabled = tracesEnabled,
+            crashReportsEnabled = crashReportEnabled,
+            rumEnabled = rumEnabled
+        ).build()
 
         // When
-        Datadog.initialize(appContext.mockInstance, fakeConsent, config)
+        Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
 
         // Then
         assertThat(CoreFeature.initialized.get()).isTrue()
@@ -399,102 +418,6 @@ internal class DatadogTest {
         assertThat(InternalLogsFeature.initialized.get()).isTrue()
     }
 
-    // region Deprecated
-
-    @Test
-    fun `𝕄 return true 𝕎 initialize(context, config) + isInitialized()`(
-        @Forgery applicationId: UUID
-    ) {
-        // Given
-        val config = DatadogConfig.Builder(fakeToken, fakeEnvName, applicationId)
-            .build()
-
-        // When
-        Datadog.initialize(appContext.mockInstance, config)
-        val initialized = Datadog.isInitialized()
-
-        // Then
-        assertThat(initialized).isTrue()
-    }
-
-    @Test
-    fun `𝕄 bypass GDPR by default 𝕎 initialize(context, config) + isInitialized()`(
-        @Forgery applicationId: UUID
-    ) {
-        // Given
-        val config = DatadogConfig.Builder(fakeToken, fakeEnvName, applicationId)
-            .build()
-
-        // When
-        Datadog.initialize(appContext.mockInstance, config)
-
-        // Then
-        assertThat(CoreFeature.trackingConsentProvider.getConsent())
-            .isEqualTo(TrackingConsent.GRANTED)
-    }
-
-    @Test
-    fun `𝕄 initialize features 𝕎 initialize(context, config) deprecated method`(
-        @Forgery applicationId: UUID
-    ) {
-        // Given
-        val config = DatadogConfig.Builder(fakeToken, fakeEnvName, applicationId)
-            .build()
-
-        // When
-        Datadog.initialize(appContext.mockInstance, config)
-
-        // Then
-        assertThat(CoreFeature.initialized.get()).isTrue()
-        assertThat(LogsFeature.initialized.get()).isTrue()
-        assertThat(CrashReportsFeature.initialized.get()).isTrue()
-        assertThat(TracesFeature.initialized.get()).isTrue()
-        assertThat(RumFeature.initialized.get()).isTrue()
-    }
-
-    @Test
-    fun `𝕄 log a warning 𝕎 initialize(context, config) { null applicationID, rumEnabled }`() {
-        // Given
-        val config = DatadogConfig.Builder(fakeToken, fakeEnvName)
-            .setRumEnabled(true)
-            .build()
-
-        // When
-        Datadog.initialize(appContext.mockInstance, config)
-
-        // Then
-        assertThat(CoreFeature.initialized.get()).isTrue()
-        assertThat(LogsFeature.initialized.get()).isTrue()
-        assertThat(CrashReportsFeature.initialized.get()).isTrue()
-        assertThat(TracesFeature.initialized.get()).isTrue()
-        assertThat(RumFeature.initialized.get()).isFalse()
-        verify(mockDevLogHandler).handleLog(
-            android.util.Log.WARN,
-            Datadog.WARNING_MESSAGE_APPLICATION_ID_IS_NULL
-        )
-    }
-
-    @Test
-    fun `𝕄 do nothing 𝕎 initialize(context, config) { null applicationID, rumDisabled }`() {
-        // Given
-        val config = DatadogConfig.Builder(fakeToken, fakeEnvName)
-            .build()
-
-        // When
-        Datadog.initialize(appContext.mockInstance, config)
-
-        // Then
-        assertThat(CoreFeature.initialized.get()).isTrue()
-        assertThat(LogsFeature.initialized.get()).isTrue()
-        assertThat(CrashReportsFeature.initialized.get()).isTrue()
-        assertThat(TracesFeature.initialized.get()).isTrue()
-        assertThat(RumFeature.initialized.get()).isFalse()
-        verify(mockDevLogHandler, never()).handleLog(
-            android.util.Log.WARN,
-            Datadog.WARNING_MESSAGE_APPLICATION_ID_IS_NULL
-        )
-    }
-
     @Test
     fun `𝕄 apply source name 𝕎 applyAdditionalConfig(config) { with source name }`(
         @StringForgery source: String
@@ -561,18 +484,11 @@ internal class DatadogTest {
         assertThat(CoreFeature.sourceName).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
     }
 
-    // endregion
-
     // region Internal
 
-    private fun stubContextAsDebuggable(mockContext: Context) {
+    private fun stubApplicationInfo(mockContext: Context, isDebuggable: Boolean) {
         val applicationInfo = mockContext.applicationInfo
-        applicationInfo.flags = ApplicationInfo.FLAG_DEBUGGABLE
-    }
-
-    private fun stubContextAsNotDebuggable(mockContext: Context) {
-        val applicationInfo = mockContext.applicationInfo
-        applicationInfo.flags = ApplicationInfo.FLAG_DEBUGGABLE.inv()
+        applicationInfo.flags = if (isDebuggable) ApplicationInfo.FLAG_DEBUGGABLE else 0
     }
 
     // endregion

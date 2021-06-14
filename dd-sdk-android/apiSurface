@@ -1,50 +1,32 @@
 object com.datadog.android.Datadog
-  DEPRECATED fun initialize(android.content.Context, DatadogConfig)
-  DEPRECATED fun initialize(android.content.Context, com.datadog.android.privacy.TrackingConsent, DatadogConfig)
   fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
   fun isInitialized(): Boolean
   fun clearAllData()
   fun setVerbosity(Int)
   fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
   fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
-DEPRECATED class com.datadog.android.DatadogConfig
-  DEPRECATED class Builder
-    constructor(String, String, java.util.UUID)
-    constructor(String, String)
-    constructor(String, String, String)
-    fun build(): DatadogConfig
-    fun setLogsEnabled(Boolean): Builder
-    fun setTracesEnabled(Boolean): Builder
-    fun setCrashReportsEnabled(Boolean): Builder
-    fun setRumEnabled(Boolean): Builder
-    fun setServiceName(String): Builder
-    DEPRECATED fun setEnvironmentName(String): Builder
-    fun setFirstPartyHosts(List<String>): Builder
-    fun useEUEndpoints(): Builder
-    fun useUSEndpoints(): Builder
-    fun useGovEndpoints(): Builder
-    fun useCustomLogsEndpoint(String): Builder
-    fun useCustomTracesEndpoint(String): Builder
-    fun useCustomCrashReportsEndpoint(String): Builder
-    fun useCustomRumEndpoint(String): Builder
-    fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray()): Builder
-    fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy): Builder
-    fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
-    fun sampleRumSessions(Float): Builder
-    fun setRumViewEventMapper(com.datadog.android.event.ViewEventMapper): Builder
-    fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
-    fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder
-    fun setRumErrorEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ErrorEvent>): Builder
 object com.datadog.android.DatadogEndpoint
-  const val LOGS_US: String
-  const val LOGS_EU: String
-  const val LOGS_GOV: String
-  const val TRACES_US: String
-  const val TRACES_EU: String
-  const val TRACES_GOV: String
-  const val RUM_US: String
-  const val RUM_EU: String
-  const val RUM_GOV: String
+  const val LOGS_US1: String
+  const val LOGS_US3: String
+  const val LOGS_US1_FED: String
+  const val LOGS_EU1: String
+  DEPRECATED const val LOGS_US: String
+  DEPRECATED const val LOGS_EU: String
+  DEPRECATED const val LOGS_GOV: String
+  const val TRACES_US1: String
+  const val TRACES_US3: String
+  const val TRACES_US1_FED: String
+  const val TRACES_EU1: String
+  DEPRECATED const val TRACES_US: String
+  DEPRECATED const val TRACES_EU: String
+  DEPRECATED const val TRACES_GOV: String
+  const val RUM_US1: String
+  const val RUM_US3: String
+  const val RUM_US1_FED: String
+  const val RUM_EU1: String
+  DEPRECATED const val RUM_US: String
+  DEPRECATED const val RUM_EU: String
+  DEPRECATED const val RUM_GOV: String
   const val NTP_0: String
   const val NTP_1: String
   const val NTP_2: String
@@ -72,6 +54,14 @@ open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.
   override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   override fun canSendSpan(): Boolean
   companion object 
+enum com.datadog.android.DatadogSite
+  - US1
+  - US3
+  - US1_FED
+  - EU1
+  fun logsEndpoint(): String
+  fun tracesEndpoint(): String
+  fun rumEndpoint(): String
 enum com.datadog.android.core.configuration.BatchSize
   constructor(Long)
   - SMALL
@@ -82,9 +72,10 @@ class com.datadog.android.core.configuration.Configuration
     constructor(Boolean, Boolean, Boolean, Boolean)
     fun build(): Configuration
     fun setFirstPartyHosts(List<String>): Builder
-    fun useEUEndpoints(): Builder
-    fun useUSEndpoints(): Builder
-    fun useGovEndpoints(): Builder
+    fun useSite(com.datadog.android.DatadogSite): Builder
+    DEPRECATED fun useEUEndpoints(): Builder
+    DEPRECATED fun useUSEndpoints(): Builder
+    DEPRECATED fun useGovEndpoints(): Builder
     fun useCustomLogsEndpoint(String): Builder
     fun useCustomTracesEndpoint(String): Builder
     fun useCustomCrashReportsEndpoint(String): Builder

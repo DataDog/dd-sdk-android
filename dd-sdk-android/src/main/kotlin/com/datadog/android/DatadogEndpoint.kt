@@ -6,78 +6,198 @@
 
 package com.datadog.android
 
-import com.datadog.android.Datadog.initialize
+import com.datadog.android.core.configuration.Configuration
 
 /**
  * This object contains constant values for all the Datadog Endpoint urls used in the SDK.
  */
 object DatadogEndpoint {
 
+    //  region Logs
+
+    /**
+     * The US1 endpoint for Logs (US based servers), used by default by the SDK.
+     * Use this in your [Configuration] if you log on [app.datadoghq.com](https://app.datadoghq.com)
+     * @see [Configuration]
+     */
+    const val LOGS_US1: String = "https://logs.browser-intake-datadoghq.com"
+
+    /**
+     * The US3 endpoint for Logs (US based servers).
+     * Use this in your [Configuration] if you log on [s3.datadoghq.com](https://us3.datadoghq.com)
+     * @see [Configuration]
+     */
+    const val LOGS_US3: String = "https://logs.browser-intake-us3-datadoghq.com"
+
+    /**
+     * The US1_FED endpoint for Logs (US based servers, FedRAMP compliant).
+     * Use this in your [Configuration] if you log on [app.ddog-gov.com](https://app.ddog-gov.com)
+     * @see [Configuration]
+     */
+    const val LOGS_US1_FED: String = "https://logs.browser-intake-ddog-gov.com"
+
+    /**
+     * The EU1 endpoint for Logs (EU based servers).
+     * Use this in your [Configuration] if you log on [app.datadoghq.eu](https://app.datadoghq.eu)
+     * @see [Configuration]
+     */
+    const val LOGS_EU1: String = "https://mobile-http-intake.logs.datadoghq.eu"
+
     /**
      * The endpoint for Logs (US based servers), used by default by the SDK.
-     * @see [DatadogConfig]
+     * @see [Configuration]
+     * @deprecated use [LOGS_US1] instead
      */
-    const val LOGS_US: String = "https://mobile-http-intake.logs.datadoghq.com"
+    @Deprecated("Use LOGS_US1 instead", ReplaceWith("DatadogEndpoint.LOGS_US1"))
+    const val LOGS_US: String = LOGS_US1
 
     /**
      * The endpoint for Logs (Europe based servers).
-     * Use this in your [DatadogConfig] if you log on
+     * Use this in your [Configuration] if you log on
      * [app.datadoghq.eu](https://app.datadoghq.eu/) instead of
      * [app.datadoghq.com](https://app.datadoghq.com/)
+     * @see [Configuration]
+     * @deprecated use [LOGS_EU1] instead
      */
-    const val LOGS_EU: String = "https://mobile-http-intake.logs.datadoghq.eu"
+    @Deprecated("Use LOGS_EU1 instead", ReplaceWith("DatadogEndpoint.LOGS_EU1"))
+    const val LOGS_EU: String = LOGS_EU1
 
     /**
      * The endpoint for Logs (GovCloud compatible servers).
-     * Use this in your [DatadogConfig] if you log on
+     * Use this in your [Configuration] if you log on
      * [app.ddog-gov.com/](https://app.ddog-gov.com/) instead of
      * [app.datadoghq.com](https://app.datadoghq.com/)
+     * @see [Configuration]
+     * @deprecated use [LOGS_US1_FED] instead
      */
-    const val LOGS_GOV: String = "https://logs.browser-intake-ddog-gov.com"
+    @Deprecated("Use LOGS_US1_FED instead", ReplaceWith("DatadogEndpoint.LOGS_US1_FED"))
+    const val LOGS_GOV: String = LOGS_US1_FED
+
+    // endregion
+
+    //  region Trace
+
+    /**
+     * The US1 endpoint for Traces (US based servers), used by default by the SDK.
+     * Use this in your [Configuration] if you log on [app.datadoghq.com](https://app.datadoghq.com)
+     * @see [Configuration]
+     */
+    const val TRACES_US1: String = "https://trace.browser-intake-datadoghq.com"
+
+    /**
+     * The US3 endpoint for Traces (US based servers).
+     * Use this in your [Configuration] if you log on [s3.datadoghq.com](https://us3.datadoghq.com)
+     * @see [Configuration]
+     */
+    const val TRACES_US3: String = "https://trace.browser-intake-us3-datadoghq.com"
+
+    /**
+     * The US1_FED endpoint for Traces (US based servers, FedRAMP compliant).
+     * Use this in your [Configuration] if you log on [app.ddog-gov.com](https://app.ddog-gov.com)
+     * @see [Configuration]
+     */
+    const val TRACES_US1_FED: String = "https://trace.browser-intake-ddog-gov.com"
+
+    /**
+     * The EU1 endpoint for Traces (EU based servers).
+     * Use this in your [Configuration] if you log on [app.datadoghq.eu](https://app.datadoghq.eu)
+     * @see [Configuration]
+     */
+    const val TRACES_EU1: String = "https:/public-trace-http-intake.logs.datadoghq.eu"
 
     /**
      * The endpoint for Traces (US based servers), used by default by the SDK.
-     * @see [initialize]
+     * @see [Configuration]
+     * @deprecated use [TRACES_US1] instead
      */
-    const val TRACES_US: String = "https://public-trace-http-intake.logs.datadoghq.com"
+    @Deprecated("Use TRACES_US1 instead", ReplaceWith("DatadogEndpoint.TRACES_US1"))
+    const val TRACES_US: String = TRACES_US1
 
     /**
      * The endpoint for Traces (Europe based servers).
-     * Use this in your [DatadogConfig] if you log on
+     * Use this in your [Configuration] if you log on
      * [app.datadoghq.eu](https://app.datadoghq.eu/) instead of
      * [app.datadoghq.com](https://app.datadoghq.com/)
+     * @see [Configuration]
+     * @deprecated use [TRACES_EU1] instead
      */
-    const val TRACES_EU: String = "https://public-trace-http-intake.logs.datadoghq.eu"
+    @Deprecated("Use TRACES_EU1 instead", ReplaceWith("DatadogEndpoint.TRACES_EU1"))
+    const val TRACES_EU: String = TRACES_EU1
 
     /**
      * The endpoint for Traces (GovCloud compatible servers).
-     * Use this in your [DatadogConfig] if you log on
+     * Use this in your [Configuration] if you log on
      * [app.ddog-gov.com/](https://app.ddog-gov.com/) instead of
      * [app.datadoghq.com](https://app.datadoghq.com/)
+     * @see [Configuration]
+     * @deprecated use [TRACES_US1_FED] instead
      */
-    const val TRACES_GOV: String = "https://trace.browser-intake-ddog-gov.com"
+    @Deprecated("Use TRACES_US1_FED instead", ReplaceWith("DatadogEndpoint.TRACES_US1_FED"))
+    const val TRACES_GOV: String = TRACES_US1_FED
+
+    // endregion
+
+    //  region RUM
+
+    /**
+     * The US1 endpoint for RUM (US based servers), used by default by the SDK.
+     * Use this in your [Configuration] if you log on [app.datadoghq.com](https://app.datadoghq.com)
+     * @see [Configuration]
+     */
+    const val RUM_US1: String = "https://rum.browser-intake-datadoghq.com"
+
+    /**
+     * The US3 endpoint for RUM (US based servers).
+     * Use this in your [Configuration] if you log on [s3.datadoghq.com](https://us3.datadoghq.com)
+     * @see [Configuration]
+     */
+    const val RUM_US3: String = "https://rum.browser-intake-us3-datadoghq.com"
+
+    /**
+     * The US1_FED endpoint for RUM (US based servers, FedRAMP compliant).
+     * Use this in your [Configuration] if you log on [app.ddog-gov.com](https://app.ddog-gov.com)
+     * @see [Configuration]
+     */
+    const val RUM_US1_FED: String = "https://rum.browser-intake-ddog-gov.com"
+
+    /**
+     * The EU1 endpoint for RUM (EU based servers).
+     * Use this in your [Configuration] if you log on [app.datadoghq.eu](https://app.datadoghq.eu)
+     * @see [Configuration]
+     */
+    const val RUM_EU1: String = "https://rum-http-intake.logs.datadoghq.eu"
 
     /**
      * The endpoint for Real User Monitoring (US based servers), used by default by the SDK.
-     * @see [DatadogConfig]
+     * @see [Configuration]
+     * @deprecated use [RUM_US1] instead
      */
-    const val RUM_US: String = "https://rum-http-intake.logs.datadoghq.com"
+    @Deprecated("Use RUM_US1 instead", ReplaceWith("DatadogEndpoint.RUM_US1"))
+    const val RUM_US: String = RUM_US1
 
     /**
      * The endpoint for Real User Monitoring (Europe based servers).
-     * Use this in your [DatadogConfig] if you log on
+     * Use this in your [Configuration] if you log on
      * [app.datadoghq.eu](https://app.datadoghq.eu/) instead of
      * [app.datadoghq.com](https://app.datadoghq.com/)
+     * @deprecated use [RUM_EU1] instead
      */
-    const val RUM_EU: String = "https://rum-http-intake.logs.datadoghq.eu"
+    @Deprecated("Use RUM_EU1 instead", ReplaceWith("DatadogEndpoint.RUM_EU1"))
+    const val RUM_EU: String = RUM_EU1
 
     /**
      * The endpoint for Real User Monitoring (GovCloud compatible servers).
-     * Use this in your [DatadogConfig] if you log on
+     * Use this in your [Configuration] if you log on
      * [app.ddog-gov.com/](https://app.ddog-gov.com/) instead of
      * [app.datadoghq.com](https://app.datadoghq.com/)
+     * @deprecated use [RUM_US1_FED] instead
      */
-    const val RUM_GOV: String = "https://rum.browser-intake-ddog-gov.com"
+    @Deprecated("Use RUM_US1_FED instead", ReplaceWith("DatadogEndpoint.RUM_US1_FED"))
+    const val RUM_GOV: String = RUM_US1_FED
+
+    // endregion
+
+    //  region NTP
 
     /**
      * Endpoint for the Network Time Protocol time syncing.
@@ -98,4 +218,6 @@ object DatadogEndpoint {
      * Endpoint for the Network Time Protocol time syncing.
      */
     const val NTP_3: String = "3.datadog.pool.ntp.org"
+
+    // endregion
 }
