@@ -22,6 +22,18 @@ In addition to [tracking views automatically][4], you can also track specific di
       }
    ```
 
+### Add your own performance timing
+
+In addition to RUM’s default attributes, you can measure where your application is spending its time by using the `addTiming` API. The timing measure is relative to the start of the current RUM view. For example, you can time how long it takes for your hero image to appear:
+
+   ```kotlin
+       fun onHeroImageLoaded() {
+           GlobalRum.get().addTiming("hero_image")
+       } 
+   ```
+
+Once the timing is sent, the timing will be accessible as `@view.custom_timings.<timing_name>` (For example, `@view.custom_timings.hero_image`). You must [create a measure](https://docs.datadoghq.com/real_user_monitoring/explorer/?tab=measures#setup-facets-and-measures) before graphing it in RUM analytics or in dashboards. 
+
 ### Custom Actions
 
 In addition to [tracking actions automatically][5], you can also track specific custom user actions (taps, clicks, scrolls, etc.) with `RumMonitor#addUserAction`. For continuous action tracking (for example, tracking a user scrolling a list), use `RumMonitor#startUserAction` and `RumMonitor#stopUserAction`.
