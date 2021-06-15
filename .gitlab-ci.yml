@@ -98,6 +98,15 @@ analysis:api-surface:
     - git fetch --depth=1 origin master
     - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :dd-sdk-android:checkApiSurfaceChanges :dd-sdk-android-timber:checkApiSurfaceChanges --stacktrace --no-daemon
 
+analysis:nightly-tests-coverage:
+  tags: [ "runner:main", "size:large" ]
+  image: $CI_IMAGE_DOCKER
+  stage: analysis
+  timeout: 30m
+  script:
+    - git fetch --depth=1 origin master
+    - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew checkNightlyTestsCoverage --stacktrace --no-daemon
+
 analysis:woke:
   tags: [ "runner:main", "size:large" ]
   image: $CI_IMAGE_DOCKER

@@ -6,8 +6,11 @@ import re
 from math import floor
 
 DIVIDER = "#"
-TESTABLE_API_REGEX = re.compile("^(.+)(constructor|fun)(.+)")
-TYPE_REGEX = re.compile("^(?<!companion)(\\s*)[a-zA-z]*(class|interface|enum|object)(.*)(\\.|\\s)(.+)$")
+DOT = "."
+EXTEND_SEPARATOR = ":"
+TESTABLE_API_REGEX = re.compile("^(?<!deprecated)(\\s*)(constructor|fun)(.+)", re.IGNORECASE)
+TYPE_REGEX = re.compile("(\\s*)(.*)(class|interface|enum|object)(\\s)(.+)$", re.IGNORECASE)
+DEFAULT_IGNORED_TYPE_REGEX = re.compile("(.*)(companion|deprecated)(\\s)(.*)$", re.IGNORECASE)
 INDENT_SIZE = 2
 
 """
@@ -48,32 +51,53 @@ def sanitize_prefix(previous_indent: int,
         return prefix
 
 
+"""
+Resolves the type name from the type_matcher_group and handles several corner cases:
+- if type definition is " class Builder" it will return "Builder"
+- if type definition is "com.datadog.android.Foo" it will return "Foo"
+- if type definition is "com.datadog.android.Foo : com.datadog.android.Bar" it will return "Foo"
+- if type definition is "com.datadog.android.Foo<Any>" it will return "Foo<Any>"
+"""
+
+
+def resolve_type_name(type_definition) -> str:
+    return type_definition.strip().split(EXTEND_SEPARATOR)[0].strip().split(DOT)[-1]
+
+
 class ApiSurface:
     file_path: str
-    ignored_groups_reg_ex: re
+    extra_ignored_types_reg_ex: re
 
-    def __init__(self, file_path: str, ignored_entities: [str] = None):
+    def __init__(self, file_path: str, ignored_types: [str] = None):
         self.file_path = file_path
-        if ignored_entities:
-            self.ignored_groups_reg_ex = re.compile(f"^{'|'.join(ignored_entities)}", re.IGNORECASE)
+        if ignored_types:
+            self.extra_ignored_types_reg_ex = re.compile(f"^{'|'.join(ignored_types)}", re.IGNORECASE)
         else:
-            self.ignored_groups_reg_ex = None
+            self.extra_ignored_types_reg_ex = None
 
     def fetch_testable_methods(self) -> set:
         to_return = set()
         with open(self.file_path, 'r') as file:
             rows = file.readlines()
         prefix = ""
+        # We will need this prefix which holds also the attributes of the type (e.g. "companion", "deprecated", "open")
+        # to be able to ignore some APIs.
+        prefix_with_type_attributes = ""
+
         current_indent = 0
         for row in rows:
-            is_group_root_matcher = TYPE_REGEX.match(row)
-            if is_group_root_matcher:
-                indent = len(is_group_root_matcher.group(1))
+            is_type_matcher = TYPE_REGEX.match(row)
+            if is_type_matcher:
+                indent = len(is_type_matcher.group(1))
                 prefix = sanitize_prefix(current_indent, indent, prefix)
+                sanitize_prefix(current_indent, indent, prefix_with_type_attributes)
                 current_indent = indent
-                group_name = is_group_root_matcher.group(5)
-                prefix += group_name + DIVIDER
-            elif TESTABLE_API_REGEX.match(row) and (
-                    self.ignored_groups_reg_ex is None or not self.ignored_groups_reg_ex.match(prefix)):
+                type_attributes = is_type_matcher.group(2)
+                type_name = resolve_type_name(is_type_matcher.group(5))
+                prefix += type_name + DIVIDER
+                prefix_with_type_attributes = type_attributes + type_name + DIVIDER
+            elif TESTABLE_API_REGEX.match(row) \
+                    and (not DEFAULT_IGNORED_TYPE_REGEX.match(prefix_with_type_attributes)) \
+                    and (self.extra_ignored_types_reg_ex is None or not self.extra_ignored_types_reg_ex.match(prefix)):
                 to_return.add(prefix + row.strip())
         return to_return

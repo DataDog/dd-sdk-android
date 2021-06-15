@@ -26,6 +26,12 @@ class SpanBuilderE2ETests {
     @get:Rule
     val nightlyTestRule = NightlyTestRule()
 
+    /**
+     * apiMethodSignature: Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: Configuration#Builder#fun build(): Configuration
+     * apiMethodSignature: Configuration#Builder#constructor(Boolean, Boolean, Boolean, Boolean)
+     * apiMethodSignature: AndroidTracer#Builder#fun build(): AndroidTracer
+     */
     @Before
     fun setUp() {
         initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
