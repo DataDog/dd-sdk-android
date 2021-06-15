@@ -32,6 +32,8 @@ class RumMonitorBuilderE2ETests {
     /**
      * apiMethodSignature: RumMonitor#Builder#fun sampleRumSessions(Float): Builder
      * apiMethodSignature: RumMonitor#Builder#fun build(): RumMonitor
+     * apiMethodSignature: GlobalRum#fun registerIfAbsent(java.util.concurrent.Callable<RumMonitor>): Boolean
+
      */
     @Test
     fun rum_rummonitor_builder_sample_all_in() {
