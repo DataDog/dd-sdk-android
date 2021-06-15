@@ -159,6 +159,9 @@ unMock {
     keep("android.content.ComponentName")
     keep("android.os.Looper")
     keep("android.os.MessageQueue")
+    keep("android.os.SystemProperties")
+    keep("android.view.Choreographer")
+    keep("android.view.DisplayEventReceiver")
 }
 
 apply(from = "clone_dd_trace.gradle.kts")
