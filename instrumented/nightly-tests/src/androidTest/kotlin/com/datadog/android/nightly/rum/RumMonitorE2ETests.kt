@@ -181,6 +181,8 @@ class RumMonitorE2ETests {
                     attributes = defaultTestAttributes(testMethodName)
                 )
             }
+            // wait for the action to be inactive
+            Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
         }
     }
 
@@ -222,6 +224,8 @@ class RumMonitorE2ETests {
                 )
             }
             sendRandomActionOutcomeEvent(forge)
+            // wait for the action to be inactive
+            Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
         }
     }
 
@@ -387,9 +391,9 @@ class RumMonitorE2ETests {
                 attributes = defaultTestAttributes(testMethodName)
             )
         }
+        sendRandomActionOutcomeEvent(forge)
         // wait for the action to be inactive
         Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
-        sendRandomActionOutcomeEvent(forge)
     }
 
     /**
@@ -408,6 +412,8 @@ class RumMonitorE2ETests {
                     actionName,
                     attributes = defaultTestAttributes(testMethodName)
                 )
+                // wait for the action to be inactive
+                Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
             }
         }
     }
@@ -430,6 +436,8 @@ class RumMonitorE2ETests {
                 )
             }
             sendRandomActionOutcomeEvent(forge)
+            // wait for the action to be inactive
+            Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
         }
     }
 
@@ -465,9 +473,9 @@ class RumMonitorE2ETests {
                 attributes = defaultTestAttributes(testMethodName)
             )
         }
+        sendRandomActionOutcomeEvent(forge)
         // wait for the action to be inactive
         Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
-        sendRandomActionOutcomeEvent(forge)
     }
 
     /**
