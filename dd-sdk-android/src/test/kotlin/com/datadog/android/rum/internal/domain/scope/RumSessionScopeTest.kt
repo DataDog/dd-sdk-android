@@ -97,6 +97,9 @@ internal class RumSessionScopeTest {
     @Mock
     lateinit var mockMemoryVitalMonitor: VitalMonitor
 
+    @Mock
+    lateinit var mockFrameRateVitalMonitor: VitalMonitor
+
     lateinit var mockDevLogHandler: LogHandler
 
     @Forgery
@@ -126,6 +129,7 @@ internal class RumSessionScopeTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -152,6 +156,7 @@ internal class RumSessionScopeTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -247,6 +252,7 @@ internal class RumSessionScopeTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -306,6 +312,7 @@ internal class RumSessionScopeTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -487,6 +494,7 @@ internal class RumSessionScopeTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )

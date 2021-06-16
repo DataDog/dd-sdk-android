@@ -55,6 +55,8 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import kotlin.math.max
+import kotlin.math.min
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
@@ -97,6 +99,9 @@ internal class RumViewScopeTest {
 
     @Mock
     lateinit var mockMemoryVitalMonitor: VitalMonitor
+
+    @Mock
+    lateinit var mockFrameRateVitalMonitor: VitalMonitor
 
     @StringForgery(regex = "([a-z]+\\.)+[A-Z][a-z]+")
     lateinit var fakeName: String
@@ -149,7 +154,8 @@ internal class RumViewScopeTest {
             fakeAttributes,
             mockDetector,
             mockCpuVitalMonitor,
-            mockMemoryVitalMonitor
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor
         )
 
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
@@ -539,7 +545,8 @@ internal class RumViewScopeTest {
             fakeAttributes,
             mockDetector,
             mockCpuVitalMonitor,
-            mockMemoryVitalMonitor
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -603,7 +610,8 @@ internal class RumViewScopeTest {
             fakeAttributes,
             mockDetector,
             mockCpuVitalMonitor,
-            mockMemoryVitalMonitor
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -3216,6 +3224,66 @@ internal class RumViewScopeTest {
                     hasCpuMetric(null)
                     hasMemoryMetric(vitals.last().meanValue, vitals.last().maxValue)
                     hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send View update 𝕎 onVitalUpdate()+handleEvent(KeepAlive) {frameRate}`(
+        forge: Forge
+    ) {
+        // Given
+        val frameRates = forge.aList { aDouble(0.0, 60.0) }.sorted()
+        val listenerCaptor = argumentCaptor<VitalListener> {
+            verify(mockFrameRateVitalMonitor).register(capture())
+        }
+        val listener = listenerCaptor.firstValue
+
+        // When
+        var sum = 0.0
+        var min = 60.0
+        var max = 0.0
+        var count = 0
+        frameRates.forEachIndexed { _, value ->
+            count++
+            sum += value
+            min = min(min, value)
+            max = max(max, value)
+            listener.onVitalUpdate(VitalInfo(count, min, max, sum / count))
+        }
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
+                .hasViewData {
+                    hasTimestamp(fakeEventTime.timestamp)
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasLongTaskCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(sum / frameRates.size, min)
                     isActive(true)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)

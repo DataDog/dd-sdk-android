@@ -29,6 +29,7 @@ internal class RumSessionScope(
     internal val firstPartyHostDetector: FirstPartyHostDetector,
     private val cpuVitalMonitor: VitalMonitor,
     private val memoryVitalMonitor: VitalMonitor,
+    private val frameRateVitalMonitor: VitalMonitor,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
 ) : RumScope {
@@ -80,7 +81,8 @@ internal class RumSessionScope(
                 event,
                 firstPartyHostDetector,
                 cpuVitalMonitor,
-                memoryVitalMonitor
+                memoryVitalMonitor,
+                frameRateVitalMonitor
             )
             onApplicationDisplayed(event, viewScope, actualWriter)
             activeChildrenScopes.add(viewScope)
@@ -133,7 +135,8 @@ internal class RumSessionScope(
             emptyMap(),
             firstPartyHostDetector,
             cpuVitalMonitor,
-            memoryVitalMonitor
+            memoryVitalMonitor,
+            frameRateVitalMonitor
         )
     }
 

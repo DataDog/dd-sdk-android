@@ -15,18 +15,20 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 internal class RumApplicationScope(
     applicationId: String,
     internal val samplingRate: Float,
-    private val firstPartyHostDetector: FirstPartyHostDetector,
-    private val cpuVitalMonitor: VitalMonitor,
-    private val memoryVitalMonitor: VitalMonitor
+    firstPartyHostDetector: FirstPartyHostDetector,
+    cpuVitalMonitor: VitalMonitor,
+    memoryVitalMonitor: VitalMonitor,
+    frameRateVitalMonitor: VitalMonitor
 ) : RumScope {
 
-    private val rumContext = RumContext(applicationId = applicationId.toString())
+    private val rumContext = RumContext(applicationId = applicationId)
     internal val childScope: RumScope = RumSessionScope(
         this,
         samplingRate,
         firstPartyHostDetector,
         cpuVitalMonitor,
-        memoryVitalMonitor
+        memoryVitalMonitor,
+        frameRateVitalMonitor
     )
 
     // region RumScope

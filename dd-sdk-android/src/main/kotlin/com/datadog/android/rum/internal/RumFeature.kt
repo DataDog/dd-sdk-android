@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal
 
 import android.content.Context
+import android.view.Choreographer
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
@@ -23,8 +24,11 @@ import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
 import com.datadog.android.rum.internal.vitals.CPUVitalReader
+import com.datadog.android.rum.internal.vitals.FrameRateVitalReader
 import com.datadog.android.rum.internal.vitals.MemoryVitalReader
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.internal.vitals.VitalObserver
+import com.datadog.android.rum.internal.vitals.VitalReader
 import com.datadog.android.rum.internal.vitals.VitalReaderRunnable
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
@@ -46,6 +50,7 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
 
     internal val cpuVitalMonitor: VitalMonitor = VitalMonitor()
     internal val memoryVitalMonitor: VitalMonitor = VitalMonitor()
+    internal val frameRateVitalMonitor: VitalMonitor = VitalMonitor()
 
     internal lateinit var vitalExecutorService: ScheduledThreadPoolExecutor
 
@@ -117,26 +122,27 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
 
     private fun initializeVitalMonitors() {
         vitalExecutorService = ScheduledThreadPoolExecutor(1)
-        val cpuReaderRunnable = VitalReaderRunnable(
-            CPUVitalReader(),
-            cpuVitalMonitor,
-            vitalExecutorService,
-            VITAL_UPDATE_PERIOD_MS
-        )
-        vitalExecutorService.schedule(
-            cpuReaderRunnable,
-            VITAL_UPDATE_PERIOD_MS,
-            TimeUnit.MILLISECONDS
-        )
 
-        val memoryReaderRunnable = VitalReaderRunnable(
-            MemoryVitalReader(),
-            memoryVitalMonitor,
+        initializeVitalMonitor(CPUVitalReader(), cpuVitalMonitor)
+        initializeVitalMonitor(MemoryVitalReader(), memoryVitalMonitor)
+
+        val frameRateReader = FrameRateVitalReader()
+        initializeVitalMonitor(frameRateReader, frameRateVitalMonitor)
+        Choreographer.getInstance().postFrameCallback(frameRateReader)
+    }
+
+    private fun initializeVitalMonitor(
+        vitalReader: VitalReader,
+        vitalObserver: VitalObserver
+    ) {
+        val readerRunnable = VitalReaderRunnable(
+            vitalReader,
+            vitalObserver,
             vitalExecutorService,
             VITAL_UPDATE_PERIOD_MS
         )
         vitalExecutorService.schedule(
-            memoryReaderRunnable,
+            readerRunnable,
             VITAL_UPDATE_PERIOD_MS,
             TimeUnit.MILLISECONDS
         )

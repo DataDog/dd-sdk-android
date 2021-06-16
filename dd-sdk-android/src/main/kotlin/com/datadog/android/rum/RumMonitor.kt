@@ -262,7 +262,8 @@ interface RumMonitor {
                     handler = Handler(Looper.getMainLooper()),
                     firstPartyHostDetector = CoreFeature.firstPartyHostDetector,
                     cpuVitalMonitor = RumFeature.cpuVitalMonitor,
-                    memoryVitalMonitor = RumFeature.memoryVitalMonitor
+                    memoryVitalMonitor = RumFeature.memoryVitalMonitor,
+                    frameRateVitalMonitor = RumFeature.frameRateVitalMonitor
                 )
             }
         }

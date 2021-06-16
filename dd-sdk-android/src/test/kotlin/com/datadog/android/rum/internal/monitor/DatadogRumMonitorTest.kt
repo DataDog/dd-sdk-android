@@ -90,6 +90,9 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockMemoryVitalMonitor: VitalMonitor
 
+    @Mock
+    lateinit var mockFrameRateVitalMonitor: VitalMonitor
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -111,7 +114,8 @@ internal class DatadogRumMonitorTest {
             mockHandler,
             mockDetector,
             mockCpuVitalMonitor,
-            mockMemoryVitalMonitor
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor
         )
         testedMonitor.setFieldValue("rootScope", mockScope)
     }
@@ -129,7 +133,8 @@ internal class DatadogRumMonitorTest {
             mockHandler,
             mockDetector,
             mockCpuVitalMonitor,
-            mockMemoryVitalMonitor
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor
         )
 
         val rootScope = testedMonitor.rootScope
@@ -1022,6 +1027,7 @@ internal class DatadogRumMonitorTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
             mockExecutor
         )
 
@@ -1046,6 +1052,7 @@ internal class DatadogRumMonitorTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
             mockExecutorService
         )
 
@@ -1071,6 +1078,7 @@ internal class DatadogRumMonitorTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
             mockExecutorService
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)

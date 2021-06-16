@@ -34,8 +34,9 @@ internal class DatadogRumMonitor(
     private val writer: DataWriter<RumEvent>,
     internal val handler: Handler,
     firstPartyHostDetector: FirstPartyHostDetector,
-    private val cpuVitalMonitor: VitalMonitor,
-    private val memoryVitalMonitor: VitalMonitor,
+    cpuVitalMonitor: VitalMonitor,
+    memoryVitalMonitor: VitalMonitor,
+    frameRateVitalMonitor: VitalMonitor,
     private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 ) : RumMonitor, AdvancedRumMonitor {
 
@@ -44,7 +45,8 @@ internal class DatadogRumMonitor(
         samplingRate,
         firstPartyHostDetector,
         cpuVitalMonitor,
-        memoryVitalMonitor
+        memoryVitalMonitor,
+        frameRateVitalMonitor
     )
 
     internal val keepAliveRunnable = Runnable {

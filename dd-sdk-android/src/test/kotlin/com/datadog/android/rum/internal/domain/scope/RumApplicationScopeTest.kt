@@ -57,6 +57,9 @@ internal class RumApplicationScopeTest {
     @Mock
     lateinit var mockMemoryVitalMonitor: VitalMonitor
 
+    @Mock
+    lateinit var mockFrameRateVitalMonitor: VitalMonitor
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -70,7 +73,8 @@ internal class RumApplicationScopeTest {
             fakeSamplingRate,
             mockDetector,
             mockCpuVitalMonitor,
-            mockMemoryVitalMonitor
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor
         )
     }
 

@@ -40,7 +40,8 @@ internal open class RumViewScope(
     initialAttributes: Map<String, Any?>,
     internal val firstPartyHostDetector: FirstPartyHostDetector,
     internal val cpuVitalMonitor: VitalMonitor,
-    internal val memoryVitalMonitor: VitalMonitor
+    internal val memoryVitalMonitor: VitalMonitor,
+    internal val frameRateVitalMonitor: VitalMonitor
 ) : RumScope {
 
     internal val url = key.resolveViewUrl().replace('.', '/')
@@ -98,6 +99,13 @@ internal open class RumViewScope(
         }
     }
 
+    private var lastFrameRateVitalInfo: VitalInfo? = null
+    private var frameRateVitalListenr: VitalListener = object : VitalListener {
+        override fun onVitalUpdate(info: VitalInfo) {
+            lastFrameRateVitalInfo = info
+        }
+    }
+
     // endregion
 
     init {
@@ -105,6 +113,7 @@ internal open class RumViewScope(
         attributes.putAll(GlobalRum.globalAttributes)
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
+        frameRateVitalMonitor.register(frameRateVitalListenr)
     }
 
     // region RumScope
@@ -437,7 +446,9 @@ internal open class RumViewScope(
                 cpuTicksCount = cpuTicks,
                 cpuTicksPerSecond = cpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs },
                 memoryAverage = lastMemoryVitalInfo?.meanValue,
-                memoryMax = lastMemoryVitalInfo?.maxValue
+                memoryMax = lastMemoryVitalInfo?.maxValue,
+                refreshRateAverage = lastFrameRateVitalInfo?.meanValue,
+                refreshRateMin = lastFrameRateVitalInfo?.minValue
             ),
             usr = ViewEvent.Usr(
                 id = user.id,
@@ -586,12 +597,14 @@ internal open class RumViewScope(
         internal const val RUM_BACKGROUND_VIEW_URL = "com/datadog/background/view"
         internal const val RUM_BACKGROUND_VIEW_NAME = "Background"
 
+        @Suppress("LongParameterList")
         internal fun fromEvent(
             parentScope: RumScope,
             event: RumRawEvent.StartView,
             firstPartyHostDetector: FirstPartyHostDetector,
             cpuVitalMonitor: VitalMonitor,
-            memoryVitalMonitor: VitalMonitor
+            memoryVitalMonitor: VitalMonitor,
+            frameRateVitalMonitor: VitalMonitor
         ): RumViewScope {
             return RumViewScope(
                 parentScope,
@@ -601,7 +614,8 @@ internal open class RumViewScope(
                 event.attributes,
                 firstPartyHostDetector,
                 cpuVitalMonitor,
-                memoryVitalMonitor
+                memoryVitalMonitor,
+                frameRateVitalMonitor
             )
         }
     }
