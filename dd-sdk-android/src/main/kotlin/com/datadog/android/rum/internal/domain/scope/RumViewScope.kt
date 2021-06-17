@@ -6,6 +6,11 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.app.Activity
+import android.content.Context
+import android.os.Build
+import android.view.WindowManager
+import androidx.fragment.app.Fragment
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
@@ -92,17 +97,18 @@ internal open class RumViewScope(
         }
     }
 
-    private var lastMemoryVitalInfo: VitalInfo? = null
+    private var lastMemoryInfo: VitalInfo? = null
     private var memoryVitalListener: VitalListener = object : VitalListener {
         override fun onVitalUpdate(info: VitalInfo) {
-            lastMemoryVitalInfo = info
+            lastMemoryInfo = info
         }
     }
 
-    private var lastFrameRateVitalInfo: VitalInfo? = null
+    private var refreshRateScale: Double = 1.0
+    private var lastFrameRateInfo: VitalInfo? = null
     private var frameRateVitalListenr: VitalListener = object : VitalListener {
         override fun onVitalUpdate(info: VitalInfo) {
-            lastFrameRateVitalInfo = info
+            lastFrameRateInfo = info
         }
     }
 
@@ -114,6 +120,8 @@ internal open class RumViewScope(
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
         frameRateVitalMonitor.register(frameRateVitalListenr)
+
+        detectRefreshRateScale(key)
     }
 
     // region RumScope
@@ -445,10 +453,10 @@ internal open class RumViewScope(
                 isActive = !stopped,
                 cpuTicksCount = cpuTicks,
                 cpuTicksPerSecond = cpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs },
-                memoryAverage = lastMemoryVitalInfo?.meanValue,
-                memoryMax = lastMemoryVitalInfo?.maxValue,
-                refreshRateAverage = lastFrameRateVitalInfo?.meanValue,
-                refreshRateMin = lastFrameRateVitalInfo?.minValue
+                memoryAverage = lastMemoryInfo?.meanValue,
+                memoryMax = lastMemoryInfo?.maxValue,
+                refreshRateAverage = lastFrameRateInfo?.meanValue?.let { it * refreshRateScale },
+                refreshRateMin = lastFrameRateInfo?.minValue?.let { it * refreshRateScale }
             ),
             usr = ViewEvent.Usr(
                 id = user.id,
@@ -585,6 +593,28 @@ internal open class RumViewScope(
         // we use <= 0 for pending counter as a safety measure to make sure this ViewScope will
         // be closed.
         return stopped && activeResourceScopes.isEmpty() && (pending <= 0L)
+    }
+
+    /*
+     * The refresh rate needs to be computed with each view because:
+     * - it requires a context with a UI (we can't get this from the application context);
+     * - it can change between different activities (based on window configuration)
+     */
+    @Suppress("DEPRECATION")
+    private fun detectRefreshRateScale(key: Any) {
+        val activity = when (key) {
+            is Activity -> key
+            is Fragment -> key.activity
+            is android.app.Fragment -> key.activity
+            else -> null
+        } ?: return
+
+        val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            activity.display
+        } else {
+            (activity.getSystemService(Context.WINDOW_SERVICE) as? WindowManager)?.defaultDisplay
+        } ?: return
+        refreshRateScale = 60.0 / display.refreshRate
     }
 
     // endregion
