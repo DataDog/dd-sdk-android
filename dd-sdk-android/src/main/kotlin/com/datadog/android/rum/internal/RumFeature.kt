@@ -14,6 +14,7 @@ import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
@@ -128,7 +129,16 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
 
         val frameRateReader = FrameRateVitalReader()
         initializeVitalMonitor(frameRateReader, frameRateVitalMonitor)
-        Choreographer.getInstance().postFrameCallback(frameRateReader)
+        try {
+            Choreographer.getInstance().postFrameCallback(frameRateReader)
+        } catch (e: IllegalStateException) {
+            // This can happen if the SDK is initialized on a Thread with no looper
+            sdkLogger.e("Unable to initialize the Choreographer FrameCallback", e)
+            devLogger.w(
+                "It seems you initialized the SDK on a thread without a Looper: " +
+                    "we won't be able to track your Views' refresh rate."
+            )
+        }
     }
 
     private fun initializeVitalMonitor(

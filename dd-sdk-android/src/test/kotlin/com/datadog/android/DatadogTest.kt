@@ -11,6 +11,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.net.ConnectivityManager
 import android.util.Log as AndroidLog
+import android.view.Choreographer
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
@@ -33,6 +34,7 @@ import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.invokeMethod
+import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
@@ -99,6 +101,16 @@ internal class DatadogTest {
         whenever(appContext.mockInstance.filesDir).thenReturn(tempRootDir)
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
+
+        // Prevent crash when initializing RumFeature
+        Choreographer::class.java.setStaticValue(
+            "sThreadInstance",
+            object : ThreadLocal<Choreographer>() {
+                override fun initialValue(): Choreographer {
+                    return mock()
+                }
+            }
+        )
     }
 
     @AfterEach

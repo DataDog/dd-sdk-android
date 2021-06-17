@@ -6,7 +6,6 @@
 
 package com.datadog.android
 
-import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.rum.RumAttributes
@@ -16,8 +15,6 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorNotSendingSpanTest
-import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
@@ -212,8 +209,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     companion object {
-        val appContext = ApplicationContextTestConfiguration(Context::class.java)
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
 
         @TestConfigurationsProvider
