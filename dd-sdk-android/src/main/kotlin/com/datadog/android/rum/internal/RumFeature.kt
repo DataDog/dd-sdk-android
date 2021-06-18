@@ -127,7 +127,7 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
         initializeVitalMonitor(CPUVitalReader(), cpuVitalMonitor)
         initializeVitalMonitor(MemoryVitalReader(), memoryVitalMonitor)
 
-        val frameRateReader = FrameRateVitalReader()
+        val frameRateReader = FrameRateVitalReader { isInitialized() }
         initializeVitalMonitor(frameRateReader, frameRateVitalMonitor)
         try {
             Choreographer.getInstance().postFrameCallback(frameRateReader)

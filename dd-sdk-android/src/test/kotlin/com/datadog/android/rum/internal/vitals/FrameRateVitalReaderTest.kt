@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.vitals
 import android.view.Choreographer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.setStaticValue
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -38,7 +39,7 @@ internal class FrameRateVitalReaderTest {
 
     @BeforeEach
     fun `set up`() {
-        testedReader = FrameRateVitalReader()
+        testedReader = FrameRateVitalReader { true }
 
         Choreographer::class.java.setStaticValue(
             "sThreadInstance",
@@ -127,7 +128,7 @@ internal class FrameRateVitalReaderTest {
     }
 
     @Test
-    fun `𝕄 schedule callback 𝕎 doFrame() {only one frame timestamp`(
+    fun `𝕄 schedule callback 𝕎 doFrame()`(
         @LongForgery timestampNs: Long
     ) {
         // Given
@@ -137,6 +138,20 @@ internal class FrameRateVitalReaderTest {
 
         // Then
         verify(mockChoreographer).postFrameCallback(testedReader)
+    }
+
+    @Test
+    fun `𝕄 not schedule callback 𝕎 doFrame() {keepRunning returns false}`(
+        @LongForgery timestampNs: Long
+    ) {
+        // Given
+        testedReader = FrameRateVitalReader { false }
+
+        // When
+        testedReader.doFrame(timestampNs)
+
+        // Then
+        verify(mockChoreographer, never()).postFrameCallback(testedReader)
     }
 
     companion object {

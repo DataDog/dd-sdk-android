@@ -12,7 +12,9 @@ import java.util.concurrent.TimeUnit
 /**
  * Reads the UI framerate based on the [Choreographer.FrameCallback].
  */
-internal class FrameRateVitalReader : VitalReader, Choreographer.FrameCallback {
+internal class FrameRateVitalReader(
+    val keepRunning: () -> Boolean
+) : VitalReader, Choreographer.FrameCallback {
 
     private var lastFrameTimestampNs: Long = 0L
     private var lastFrameRate: Double = Double.NaN
@@ -35,7 +37,10 @@ internal class FrameRateVitalReader : VitalReader, Choreographer.FrameCallback {
             }
         }
         lastFrameTimestampNs = frameTimeNanos
-        Choreographer.getInstance().postFrameCallback(this)
+
+        if (keepRunning()) {
+            Choreographer.getInstance().postFrameCallback(this)
+        }
     }
 
     // endregion
