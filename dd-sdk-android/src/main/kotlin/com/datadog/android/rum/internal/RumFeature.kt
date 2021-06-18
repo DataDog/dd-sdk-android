@@ -25,8 +25,8 @@ import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
 import com.datadog.android.rum.internal.vitals.CPUVitalReader
-import com.datadog.android.rum.internal.vitals.FrameRateVitalReader
 import com.datadog.android.rum.internal.vitals.MemoryVitalReader
+import com.datadog.android.rum.internal.vitals.VitalFrameCallback
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalObserver
 import com.datadog.android.rum.internal.vitals.VitalReader
@@ -127,10 +127,9 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
         initializeVitalMonitor(CPUVitalReader(), cpuVitalMonitor)
         initializeVitalMonitor(MemoryVitalReader(), memoryVitalMonitor)
 
-        val frameRateReader = FrameRateVitalReader { isInitialized() }
-        initializeVitalMonitor(frameRateReader, frameRateVitalMonitor)
+        val vitalFrameCallback = VitalFrameCallback(frameRateVitalMonitor) { isInitialized() }
         try {
-            Choreographer.getInstance().postFrameCallback(frameRateReader)
+            Choreographer.getInstance().postFrameCallback(vitalFrameCallback)
         } catch (e: IllegalStateException) {
             // This can happen if the SDK is initialized on a Thread with no looper
             sdkLogger.e("Unable to initialize the Choreographer FrameCallback", e)

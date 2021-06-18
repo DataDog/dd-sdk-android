@@ -9,12 +9,12 @@ package com.datadog.android.rum.internal.vitals
 import android.view.Choreographer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.setStaticValue
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -30,16 +30,19 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class FrameRateVitalReaderTest {
+internal class VitalFrameCallbackTest {
 
-    lateinit var testedReader: FrameRateVitalReader
+    lateinit var testedFrameCallback: Choreographer.FrameCallback
+
+    @Mock
+    lateinit var mockObserver: VitalObserver
 
     @Mock
     lateinit var mockChoreographer: Choreographer
 
     @BeforeEach
     fun `set up`() {
-        testedReader = FrameRateVitalReader { true }
+        testedFrameCallback = VitalFrameCallback(mockObserver) { true }
 
         Choreographer::class.java.setStaticValue(
             "sThreadInstance",
@@ -52,79 +55,32 @@ internal class FrameRateVitalReaderTest {
     }
 
     @Test
-    fun `𝕄 return null 𝕎 readVitalData() {no data}`() {
-        // When
-        val result = testedReader.readVitalData()
-
-        // Then
-        assertThat(result).isNull()
-    }
-
-    @Test
-    fun `𝕄 return null 𝕎 readVitalData() {only one frame timestamp}`(
+    fun `𝕄 do nothing 𝕎 doFrame() {single frame timestamp}`(
         @LongForgery timestampNs: Long
     ) {
         // Given
-        testedReader.doFrame(timestampNs)
 
         // When
-        val result = testedReader.readVitalData()
+        testedFrameCallback.doFrame(timestampNs)
 
         // Then
-        assertThat(result).isNull()
+        verify(mockObserver, never()).onNewSample(any())
     }
 
     @Test
-    fun `𝕄 return null 𝕎 readVitalData() {duration is null}`(
-        @LongForgery timestampNs: Long
-    ) {
-        // Given
-        testedReader.doFrame(timestampNs)
-        testedReader.doFrame(timestampNs)
-
-        // When
-        val result = testedReader.readVitalData()
-
-        // Then
-        assertThat(result).isNull()
-    }
-
-    @Test
-    fun `𝕄 return last frameRate 𝕎 readVitalData() {two frame timestamp}`(
+    fun `𝕄 forward frame rate to observer 𝕎 doFrame() {two frame timestamp}`(
         @LongForgery timestampNs: Long,
         @LongForgery(1, ONE_SECOND_NS) frameDurationNs: Long
     ) {
         // Given
-        testedReader.doFrame(timestampNs)
-        testedReader.doFrame(timestampNs + frameDurationNs)
         val expectedFrameRate = ONE_SECOND_NS.toDouble() / frameDurationNs.toDouble()
 
         // When
-        val result = testedReader.readVitalData()
+        testedFrameCallback.doFrame(timestampNs)
+        testedFrameCallback.doFrame(timestampNs + frameDurationNs)
 
         // Then
-        assertThat(result).isEqualTo(expectedFrameRate)
-    }
-
-    @Test
-    fun `𝕄 return last frameRate 𝕎 readVitalData() {many frame timestamp}`(
-        @LongForgery initialTimestampNs: Long,
-        @LongForgery(1, ONE_SECOND_NS) frameDurationsNs: List<Long>
-    ) {
-        // Given
-        var timestampNs = initialTimestampNs
-        testedReader.doFrame(timestampNs)
-        frameDurationsNs.forEach {
-            timestampNs += it
-            testedReader.doFrame(timestampNs)
-        }
-        val expectedFrameRate = ONE_SECOND_NS.toDouble() / frameDurationsNs.last().toDouble()
-
-        // When
-        val result = testedReader.readVitalData()
-
-        // Then
-        assertThat(result).isEqualTo(expectedFrameRate)
+        verify(mockObserver).onNewSample(expectedFrameRate)
     }
 
     @Test
@@ -134,10 +90,10 @@ internal class FrameRateVitalReaderTest {
         // Given
 
         // When
-        testedReader.doFrame(timestampNs)
+        testedFrameCallback.doFrame(timestampNs)
 
         // Then
-        verify(mockChoreographer).postFrameCallback(testedReader)
+        verify(mockChoreographer).postFrameCallback(testedFrameCallback)
     }
 
     @Test
@@ -145,13 +101,13 @@ internal class FrameRateVitalReaderTest {
         @LongForgery timestampNs: Long
     ) {
         // Given
-        testedReader = FrameRateVitalReader { false }
+        testedFrameCallback = VitalFrameCallback(mockObserver) { false }
 
         // When
-        testedReader.doFrame(timestampNs)
+        testedFrameCallback.doFrame(timestampNs)
 
         // Then
-        verify(mockChoreographer, never()).postFrameCallback(testedReader)
+        verify(mockChoreographer, never()).postFrameCallback(any())
     }
 
     companion object {

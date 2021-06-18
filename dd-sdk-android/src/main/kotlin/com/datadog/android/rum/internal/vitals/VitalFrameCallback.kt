@@ -10,22 +10,14 @@ import android.view.Choreographer
 import java.util.concurrent.TimeUnit
 
 /**
- * Reads the UI framerate based on the [Choreographer.FrameCallback].
+ * Reads the UI framerate based on the [Choreographer.FrameCallback] and notify a [VitalObserver].
  */
-internal class FrameRateVitalReader(
-    val keepRunning: () -> Boolean
-) : VitalReader, Choreographer.FrameCallback {
+internal class VitalFrameCallback(
+    private val observer: VitalObserver,
+    private val keepRunning: () -> Boolean
+) : Choreographer.FrameCallback {
 
     private var lastFrameTimestampNs: Long = 0L
-    private var lastFrameRate: Double = Double.NaN
-
-    // region VitalReader
-
-    override fun readVitalData(): Double? {
-        return if (lastFrameRate.isNaN()) null else lastFrameRate
-    }
-
-    // endregion
 
     // region Choreographer.FrameCallback
 
@@ -33,7 +25,8 @@ internal class FrameRateVitalReader(
         if (lastFrameTimestampNs != 0L) {
             val durationNs = (frameTimeNanos - lastFrameTimestampNs).toDouble()
             if (durationNs > 0.0) {
-                lastFrameRate = ONE_SECOND_NS / durationNs
+                val frameRate = ONE_SECOND_NS / durationNs
+                observer.onNewSample(frameRate)
             }
         }
         lastFrameTimestampNs = frameTimeNanos
@@ -46,6 +39,6 @@ internal class FrameRateVitalReader(
     // endregion
 
     companion object {
-        val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1).toDouble()
+        val ONE_SECOND_NS: Double = TimeUnit.SECONDS.toNanos(1).toDouble()
     }
 }
