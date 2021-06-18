@@ -309,30 +309,6 @@ class RumMonitorE2ETests {
     }
 
     /**
-     * apiMethodSignature: RumMonitor#fun stopUserAction(RumActionType, String, Map<String, Any?> = emptyMap())
-     */
-    @Test
-    fun rum_rummonitor_stop_background_action_with_outcome() {
-        val testMethodName = "rum_rummonitor_stop_background_action_with_outcome"
-        val actionName = forge.anActionName()
-        val type = forge.aValueFrom(RumActionType::class.java)
-        GlobalRum.get().startUserAction(
-            type,
-            actionName,
-            attributes = defaultTestAttributes(testMethodName)
-        )
-        // Our current logic will not allow a non - custom Action event started with
-        // `startUserAction` method to be sent if there is no upcoming event after (as view stop or
-        // new action event) to trigger this operation. The monitor will expect 0 events in this case
-        sendRandomActionOutcomeEvent(forge)
-        // wait for the action to be inactive
-        Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
-        measure(testMethodName) {
-            GlobalRum.get().stopUserAction(type, actionName, forge.exhaustiveAttributes())
-        }
-    }
-
-    /**
      * apiMethodSignature: RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
@@ -352,48 +328,9 @@ class RumMonitorE2ETests {
                     attributes = defaultTestAttributes(testMethodName)
                 )
             }
+            // wait for the action to be inactive
+            Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
         }
-    }
-
-    /**
-     * apiMethodSignature: RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
-     */
-    @Test
-    fun rum_rummonitor_add_background_non_custom_action_with_no_outcome() {
-        val testMethodName = "rum_rummonitor_add_background_non_custom_action_with_no_outcome"
-        val actionName = forge.anActionName()
-        measure(testMethodName) {
-            GlobalRum.get().addUserAction(
-                forge.aValueFrom(
-                    RumActionType::class.java,
-                    exclude = listOf(RumActionType.CUSTOM)
-                ),
-                actionName,
-                attributes = defaultTestAttributes(testMethodName)
-            )
-        }
-    }
-
-    /**
-     * apiMethodSignature: RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
-     */
-    @Test
-    fun rum_rummonitor_add_background_non_custom_action_with_outcome() {
-        val testMethodName = "rum_rummonitor_add_background_non_custom_action_with_outcome"
-        val actionName = forge.anActionName()
-        measure(testMethodName) {
-            GlobalRum.get().addUserAction(
-                forge.aValueFrom(
-                    RumActionType::class.java,
-                    exclude = listOf(RumActionType.CUSTOM)
-                ),
-                actionName,
-                attributes = defaultTestAttributes(testMethodName)
-            )
-        }
-        sendRandomActionOutcomeEvent(forge)
-        // wait for the action to be inactive
-        Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
     }
 
     /**
@@ -412,9 +349,9 @@ class RumMonitorE2ETests {
                     actionName,
                     attributes = defaultTestAttributes(testMethodName)
                 )
-                // wait for the action to be inactive
-                Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
             }
+            // wait for the action to be inactive
+            Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
         }
     }
 
@@ -438,6 +375,86 @@ class RumMonitorE2ETests {
             sendRandomActionOutcomeEvent(forge)
             // wait for the action to be inactive
             Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
+        }
+    }
+
+    /**
+     * apiMethodSignature: RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
+     */
+    @Test
+    fun rum_rummonitor_add_custom_action_while_active_action() {
+        val testMethodName = "rum_rummonitor_add_custom_action_while_active_action"
+        val viewKey = forge.aViewKey()
+        val viewName = forge.aViewName()
+        val activeActionName = forge.anActionName(prefix = "rumActiveAction")
+        val customActionName = forge.anActionName()
+        val type = forge.aValueFrom(RumActionType::class.java)
+        executeInsideView(viewKey, viewName, testMethodName) {
+            GlobalRum.get().startUserAction(
+                type,
+                activeActionName,
+                attributes = defaultTestAttributes(testMethodName)
+            )
+            measure(testMethodName) {
+                GlobalRum.get().addUserAction(
+                    RumActionType.CUSTOM,
+                    customActionName,
+                    attributes = defaultTestAttributes(testMethodName)
+                )
+            }
+            sendRandomActionOutcomeEvent(forge)
+            // wait for the action to be inactive
+            Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
+            GlobalRum.get().stopUserAction(type, activeActionName, forge.exhaustiveAttributes())
+        }
+    }
+
+    // endregion
+
+    // region Background Action
+
+    /**
+     * apiMethodSignature: RumMonitor#fun stopUserAction(RumActionType, String, Map<String, Any?> = emptyMap())
+     */
+    @Test
+    fun rum_rummonitor_stop_background_action_with_outcome() {
+        val testMethodName = "rum_rummonitor_stop_background_action_with_outcome"
+        val actionName = forge.anActionName()
+        val type = forge.aValueFrom(RumActionType::class.java)
+        GlobalRum.get().startUserAction(
+            type,
+            actionName,
+            attributes = defaultTestAttributes(testMethodName)
+        )
+        // In this case the `sendRandomActionEvent`
+        // will mark the event valid to be sent, then we wait to make the event inactive and then
+        // we stop it. In this moment everything is set for the event to be sent but it still needs
+        // another upcoming event (start/stop view, resource, action, error) to trigger
+        // the `sendAction`
+        sendRandomActionOutcomeEvent(forge)
+        // wait for the action to be inactive
+        Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
+        measure(testMethodName) {
+            GlobalRum.get().stopUserAction(type, actionName, forge.exhaustiveAttributes())
+        }
+    }
+
+    /**
+     * apiMethodSignature: RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
+     */
+    @Test
+    fun rum_rummonitor_add_background_non_custom_action_with_no_outcome() {
+        val testMethodName = "rum_rummonitor_add_background_non_custom_action_with_no_outcome"
+        val actionName = forge.anActionName()
+        measure(testMethodName) {
+            GlobalRum.get().addUserAction(
+                forge.aValueFrom(
+                    RumActionType::class.java,
+                    exclude = listOf(RumActionType.CUSTOM)
+                ),
+                actionName,
+                attributes = defaultTestAttributes(testMethodName)
+            )
         }
     }
 
@@ -473,38 +490,38 @@ class RumMonitorE2ETests {
                 attributes = defaultTestAttributes(testMethodName)
             )
         }
-        sendRandomActionOutcomeEvent(forge)
         // wait for the action to be inactive
         Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
+        // send a random action outcome event which will trigger the `sendAction` function.
+        // as this is a custom action it will skip the `sideEffects` verification and it will be
+        // sent immediately.
+        sendRandomActionOutcomeEvent(forge)
     }
 
     /**
      * apiMethodSignature: RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
-    fun rum_rummonitor_add_custom_action_while_active_action() {
-        val testMethodName = "rum_rummonitor_add_custom_action_while_active_action"
-        val viewKey = forge.aViewKey()
-        val viewName = forge.aViewName()
-        val activeActionName = forge.anActionName(prefix = "rumActiveAction")
-        val customActionName = forge.anActionName()
-        val type = forge.aValueFrom(RumActionType::class.java)
-        executeInsideView(viewKey, viewName, testMethodName) {
-            GlobalRum.get().startUserAction(
-                type,
-                activeActionName,
+    fun rum_rummonitor_add_background_non_custom_action_with_outcome() {
+        val testMethodName = "rum_rummonitor_add_background_non_custom_action_with_outcome"
+        val actionName = forge.anActionName()
+        measure(testMethodName) {
+            GlobalRum.get().addUserAction(
+                forge.aValueFrom(
+                    RumActionType::class.java,
+                    exclude = listOf(RumActionType.CUSTOM)
+                ),
+                actionName,
                 attributes = defaultTestAttributes(testMethodName)
             )
-            measure(testMethodName) {
-                GlobalRum.get().addUserAction(
-                    RumActionType.CUSTOM,
-                    customActionName,
-                    attributes = defaultTestAttributes(testMethodName)
-                )
-            }
-            sendRandomActionOutcomeEvent(forge)
-            GlobalRum.get().stopUserAction(type, activeActionName, forge.exhaustiveAttributes())
         }
+        // wait for the action to be inactive
+        Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
+        // send a random action outcome event which will increment the resource/error count making
+        // this action event valid for being sent. Although the action event is valid it will not
+        // be sent in this case because there is no other event to after to trigger the `sendAction`
+        // function.
+        sendRandomActionOutcomeEvent(forge)
     }
 
     // endregion
