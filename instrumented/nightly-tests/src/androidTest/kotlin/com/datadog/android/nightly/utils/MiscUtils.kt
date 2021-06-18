@@ -33,8 +33,8 @@ import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.system.measureNanoTime
 
 inline fun <reified R> measure(methodName: String, codeBlock: () -> R): R {
     val span = GlobalTracer.get().buildSpan(methodName).start()
@@ -45,13 +45,16 @@ inline fun <reified R> measure(methodName: String, codeBlock: () -> R): R {
 
 fun measureSdkInitialize(codeBlock: () -> Unit) {
 
-    val executionTime = measureNanoTime { codeBlock() }
+    val start = TimeUnit.MILLISECONDS.toMicros(System.currentTimeMillis())
+    codeBlock()
+    val stop = TimeUnit.MILLISECONDS.toMicros(System.currentTimeMillis())
+
     val span =
         GlobalTracer.get()
             .buildSpan(INITIALIZE_SDK_TEST_METHOD_NAME)
-            .withStartTimestamp(0)
+            .withStartTimestamp(start)
             .start()
-    span.finish(executionTime)
+    span.finish(stop)
 }
 
 fun measureSetTrackingConsent(codeBlock: () -> Unit) {
