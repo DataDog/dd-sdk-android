@@ -163,9 +163,13 @@ internal open class TracingInterceptorNotSendingSpanTest {
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
         whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId
 
-        val mediaType = forge.anElementFrom("application", "image", "text", "model") +
-            "/" + forge.anAlphabeticalString()
-        fakeMediaType = MediaType.parse(mediaType)
+        fakeMediaType = if (forge.aBool()) {
+            val mediaType = forge.anElementFrom("application", "image", "text", "model") +
+                "/" + forge.anAlphabeticalString()
+            MediaType.parse(mediaType)
+        } else {
+            null
+        }
         fakeUrl = forgeUrl(forge)
         fakeRequest = forgeRequest(forge)
         TracesFeature.initialize(
@@ -697,8 +701,10 @@ internal open class TracingInterceptorNotSendingSpanTest {
             .protocol(Protocol.HTTP_2)
             .code(statusCode)
             .message("HTTP $statusCode")
-            .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type().orEmpty())
             .body(ResponseBody.create(fakeMediaType, fakeResponseBody))
+        if (fakeMediaType != null) {
+            builder.header(TracingInterceptor.HEADER_CT, fakeMediaType?.type().orEmpty())
+        }
         return builder.build()
     }
 

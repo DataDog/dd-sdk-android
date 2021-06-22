@@ -198,7 +198,7 @@ internal constructor(
         val mimeType = response?.header(HEADER_CT)
         val kind = when {
             method in xhrMethods -> RumResourceKind.XHR
-            mimeType == null -> RumResourceKind.UNKNOWN
+            mimeType == null -> RumResourceKind.XHR
             else -> RumResourceKind.fromMimeType(mimeType)
         }
         val attributes = if (span == null) {
