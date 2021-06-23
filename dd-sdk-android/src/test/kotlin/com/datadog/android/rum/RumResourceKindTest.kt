@@ -90,7 +90,7 @@ internal class RumResourceKindTest {
     }
 
     @Test
-    fun `detect unknown MimeType`(
+    fun `detect unknown MimeType as XHR`(
         forge: Forge
     ) {
         val mimeType = forge.aWhitespaceString()
@@ -98,6 +98,6 @@ internal class RumResourceKindTest {
         val kind = RumResourceKind.fromMimeType(mimeType)
 
         assertThat(kind)
-            .isEqualTo(RumResourceKind.UNKNOWN)
+            .isEqualTo(RumResourceKind.XHR)
     }
 }

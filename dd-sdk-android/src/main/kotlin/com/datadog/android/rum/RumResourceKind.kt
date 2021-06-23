@@ -41,7 +41,6 @@ enum class RumResourceKind(val value: String) {
                 baseType == "font" -> FONT
                 baseType == "text" && subtype == "css" -> CSS
                 baseType == "text" && subtype == "javascript" -> JS
-                mimeType.isBlank() -> UNKNOWN
                 else -> XHR
             }
         }
