@@ -435,6 +435,8 @@ internal open class RumViewScope(
             null
         }
 
+        val memoryInfo = lastMemoryInfo
+        val refreshRateInfo = lastFrameRateInfo
         val viewEvent = ViewEvent(
             date = eventTimestamp,
             view = ViewEvent.View(
@@ -453,10 +455,10 @@ internal open class RumViewScope(
                 isActive = !stopped,
                 cpuTicksCount = cpuTicks,
                 cpuTicksPerSecond = cpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs },
-                memoryAverage = lastMemoryInfo?.meanValue,
-                memoryMax = lastMemoryInfo?.maxValue,
-                refreshRateAverage = lastFrameRateInfo?.meanValue?.let { it * refreshRateScale },
-                refreshRateMin = lastFrameRateInfo?.minValue?.let { it * refreshRateScale }
+                memoryAverage = memoryInfo?.meanValue,
+                memoryMax = memoryInfo?.maxValue,
+                refreshRateAverage = refreshRateInfo?.meanValue?.let { it * refreshRateScale },
+                refreshRateMin = refreshRateInfo?.minValue?.let { it * refreshRateScale }
             ),
             usr = ViewEvent.Usr(
                 id = user.id,
