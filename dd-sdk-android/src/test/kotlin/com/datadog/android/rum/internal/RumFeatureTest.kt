@@ -15,6 +15,8 @@ import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
+import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
+import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
@@ -182,6 +184,20 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
     }
 
     @Test
+    fun `𝕄 setup vital monitors 𝕎 initialize()`() {
+        // When
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+
+        // Then
+        assertThat(testedFeature.cpuVitalMonitor)
+            .isInstanceOf(AggregatingVitalMonitor::class.java)
+        assertThat(testedFeature.memoryVitalMonitor)
+            .isInstanceOf(AggregatingVitalMonitor::class.java)
+        assertThat(testedFeature.frameRateVitalMonitor)
+            .isInstanceOf(AggregatingVitalMonitor::class.java)
+    }
+
+    @Test
     fun `𝕄 use noop viewTrackingStrategy 𝕎 stop()`() {
         // Given
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
@@ -265,5 +281,19 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
 
         // Then
         verify(mockVitalExecutorService).shutdownNow()
+    }
+
+    @Test
+    fun `𝕄 reset vital monitors 𝕎 stop()`() {
+        // Given
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        assertThat(testedFeature.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+        assertThat(testedFeature.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+        assertThat(testedFeature.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
     }
 }

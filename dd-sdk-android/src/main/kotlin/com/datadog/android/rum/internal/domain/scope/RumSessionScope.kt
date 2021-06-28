@@ -17,6 +17,7 @@ import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import java.security.SecureRandom
 import java.util.UUID
@@ -134,9 +135,9 @@ internal class RumSessionScope(
             event.eventTime,
             emptyMap(),
             firstPartyHostDetector,
-            cpuVitalMonitor,
-            memoryVitalMonitor,
-            frameRateVitalMonitor
+            NoOpVitalMonitor(),
+            NoOpVitalMonitor(),
+            NoOpVitalMonitor()
         )
     }
 

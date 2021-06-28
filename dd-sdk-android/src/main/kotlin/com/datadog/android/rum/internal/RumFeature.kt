@@ -24,8 +24,10 @@ import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
+import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
 import com.datadog.android.rum.internal.vitals.CPUVitalReader
 import com.datadog.android.rum.internal.vitals.MemoryVitalReader
+import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalFrameCallback
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalObserver
@@ -49,9 +51,9 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
     internal var rumEventMapper: EventMapper<RumEvent> = NoOpEventMapper()
     internal var longTaskTrackingStrategy: TrackingStrategy = NoOpTrackingStrategy()
 
-    internal val cpuVitalMonitor: VitalMonitor = VitalMonitor()
-    internal val memoryVitalMonitor: VitalMonitor = VitalMonitor()
-    internal val frameRateVitalMonitor: VitalMonitor = VitalMonitor()
+    internal var cpuVitalMonitor: VitalMonitor = NoOpVitalMonitor()
+    internal var memoryVitalMonitor: VitalMonitor = NoOpVitalMonitor()
+    internal var frameRateVitalMonitor: VitalMonitor = NoOpVitalMonitor()
 
     internal lateinit var vitalExecutorService: ScheduledThreadPoolExecutor
 
@@ -77,6 +79,10 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
         actionTrackingStrategy = NoOpUserActionTrackingStrategy()
         longTaskTrackingStrategy = NoOpTrackingStrategy()
         rumEventMapper = NoOpEventMapper()
+
+        cpuVitalMonitor = NoOpVitalMonitor()
+        memoryVitalMonitor = NoOpVitalMonitor()
+        frameRateVitalMonitor = NoOpVitalMonitor()
 
         vitalExecutorService.shutdownNow()
     }
@@ -122,6 +128,10 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
     }
 
     private fun initializeVitalMonitors() {
+        cpuVitalMonitor = AggregatingVitalMonitor()
+        memoryVitalMonitor = AggregatingVitalMonitor()
+        frameRateVitalMonitor = AggregatingVitalMonitor()
+
         vitalExecutorService = ScheduledThreadPoolExecutor(1)
 
         initializeVitalMonitor(CPUVitalReader(), cpuVitalMonitor)
