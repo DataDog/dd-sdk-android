@@ -68,9 +68,39 @@ internal class VitalFrameCallbackTest {
     }
 
     @Test
+    fun `𝕄 do nothing 𝕎 doFrame() {too small duration}`(
+        @LongForgery timestampNs: Long,
+        @LongForgery(1, ONE_MILLISSECOND_NS) frameDurationNs: Long
+    ) {
+        // Given
+
+        // When
+        testedFrameCallback.doFrame(timestampNs)
+        testedFrameCallback.doFrame(timestampNs + frameDurationNs)
+
+        // Then
+        verify(mockObserver, never()).onNewSample(any())
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 doFrame() {too large duration}`(
+        @LongForgery timestampNs: Long,
+        @LongForgery(TEN_SECOND_NS, ONE_MINUTE_NS) frameDurationNs: Long
+    ) {
+        // Given
+
+        // When
+        testedFrameCallback.doFrame(timestampNs)
+        testedFrameCallback.doFrame(timestampNs + frameDurationNs)
+
+        // Then
+        verify(mockObserver, never()).onNewSample(any())
+    }
+
+    @Test
     fun `𝕄 forward frame rate to observer 𝕎 doFrame() {two frame timestamp}`(
         @LongForgery timestampNs: Long,
-        @LongForgery(1, ONE_SECOND_NS) frameDurationNs: Long
+        @LongForgery(ONE_MILLISSECOND_NS, ONE_SECOND_NS) frameDurationNs: Long
     ) {
         // Given
         val expectedFrameRate = ONE_SECOND_NS.toDouble() / frameDurationNs.toDouble()
@@ -111,6 +141,9 @@ internal class VitalFrameCallbackTest {
     }
 
     companion object {
+        const val ONE_MILLISSECOND_NS: Long = 1000L * 1000L
         const val ONE_SECOND_NS: Long = 1000L * 1000L * 1000L
+        const val TEN_SECOND_NS: Long = 10L * ONE_SECOND_NS
+        const val ONE_MINUTE_NS: Long = 60L * ONE_SECOND_NS
     }
 }
