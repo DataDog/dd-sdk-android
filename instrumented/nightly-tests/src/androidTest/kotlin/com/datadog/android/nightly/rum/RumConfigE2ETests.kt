@@ -650,8 +650,8 @@ class RumConfigE2ETests {
                 forge.anActionName(),
                 defaultTestAttributes(testMethodName)
             )
-            Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
             sendRandomActionOutcomeEvent(forge)
+            Thread.sleep(ACTION_INACTIVITY_THRESHOLD_MS)
         }
     }
 
