@@ -7,6 +7,8 @@
 package com.datadog.android.rum.internal
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.view.Choreographer
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
@@ -17,6 +19,7 @@ import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.event.EventMapper
+import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
@@ -37,6 +40,8 @@ import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -56,6 +61,9 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
     internal var frameRateVitalMonitor: VitalMonitor = NoOpVitalMonitor()
 
     internal lateinit var vitalExecutorService: ScheduledThreadPoolExecutor
+    internal lateinit var anrDetectorExecutorService: ExecutorService
+    internal lateinit var anrDetectorRunnable: Runnable
+    internal lateinit var anrDetectorHandler: Handler
 
     // region SdkFeature
 
@@ -68,6 +76,7 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
         configuration.longTaskTrackingStrategy?.let { longTaskTrackingStrategy = it }
 
         initializeVitalMonitors()
+        initializeANRDetector()
 
         registerTrackingStrategies(context)
     }
@@ -85,6 +94,7 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
         frameRateVitalMonitor = NoOpVitalMonitor()
 
         vitalExecutorService.shutdownNow()
+        anrDetectorExecutorService.shutdownNow()
     }
 
     override fun createPersistenceStrategy(
@@ -165,6 +175,13 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
             VITAL_UPDATE_PERIOD_MS,
             TimeUnit.MILLISECONDS
         )
+    }
+
+    private fun initializeANRDetector() {
+        anrDetectorHandler = Handler(Looper.getMainLooper())
+        anrDetectorRunnable = ANRDetectorRunnable(anrDetectorHandler)
+        anrDetectorExecutorService = Executors.newSingleThreadExecutor()
+        anrDetectorExecutorService.execute(anrDetectorRunnable)
     }
 
     // Update Vitals every second
