@@ -37,7 +37,7 @@ fun createInstance(
  * @param fieldValue the value to set
  */
 @Suppress("SwallowedException")
-inline fun <reified T, R> Class<T>.setStaticValue(
+fun <T, R> Class<T>.setStaticValue(
     fieldName: String,
     fieldValue: R
 ) {
@@ -46,17 +46,7 @@ inline fun <reified T, R> Class<T>.setStaticValue(
     // make it accessible
     field.isAccessible = true
 
-    // Make it non final
-    try {
-        val modifiersField = Field::class.java.getDeclaredField("modifiers")
-        modifiersField.isAccessible = true
-        modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
-    } catch (e: NoSuchFieldException) {
-        // do nothing
-        @Suppress("PrintStackTrace")
-        e.printStackTrace()
-    }
-    field.set(null, fieldValue)
+    setFieldValue(null, field, fieldValue)
 }
 
 /**
@@ -96,7 +86,7 @@ inline fun <reified T, reified R> Class<T>.getStaticValue(fieldName: String): R 
  * @param fieldValue the value of the field
  */
 @Suppress("SwallowedException")
-inline fun <reified T> Any.setFieldValue(
+fun <T> Any.setFieldValue(
     fieldName: String,
     fieldValue: T
 ): Boolean {
@@ -119,20 +109,10 @@ inline fun <reified T> Any.setFieldValue(
             }
         }
     }
-
-    // make it accessible
-    if (field != null) {
-        field.isAccessible = true
-
-        // Make it non final
-        val modifiersField = Field::class.java.getDeclaredField("modifiers")
-        modifiersField.isAccessible = true
-        modifiersField.setInt(field, field.modifiers and Modifier.FINAL.inv())
-
-        field.set(this, fieldValue)
-        return true
+    return if (field != null) {
+        setFieldValue(this, field, fieldValue)
     } else {
-        return false
+        false
     }
 }
 
@@ -264,4 +244,33 @@ private fun <T : Any> T.getDeclaredMethodRecursively(
     }
 
     return method
+}
+
+@SuppressWarnings("PrintStackTrace")
+private fun <R> setFieldValue(instance: Any?, field: Field, fieldValue: R): Boolean {
+    field.isAccessible = true
+    // Make it non final
+    try {
+        val accessField = resolveAccessField()
+        accessField.isAccessible = true
+        accessField.setInt(field, field.modifiers and Modifier.FINAL.inv())
+    } catch (e: NoSuchFieldException) {
+        e.printStackTrace()
+        return false
+    }
+    field.set(instance, fieldValue)
+    return true
+}
+
+@SuppressWarnings("SwallowedException")
+private fun resolveAccessField(): Field {
+    // Android JVM does not use the JDK sources for reflection therefore the property access type
+    // field is named `accessFlags` instead of `modifiers` as in a default JVM
+    // Because these methods are being shared between JUnit and AndroidJUnit runtimes we will
+    // have to support both implementations.
+    return try {
+        Field::class.java.getDeclaredField("modifiers")
+    } catch (e: NoSuchFieldException) {
+        Field::class.java.getDeclaredField("accessFlags")
+    }
 }

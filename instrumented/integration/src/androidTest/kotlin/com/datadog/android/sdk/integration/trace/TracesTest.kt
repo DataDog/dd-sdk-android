@@ -91,6 +91,7 @@ internal abstract class TracesTest {
                     logObjects.add(it.asJsonObject)
                 }
             }
+        assertThat(expectedLogs.size).isEqualTo(logObjects.size)
         expectedLogs.forEach {
             val toMatch = logObjects.removeFirst()
             assertThat(toMatch)
