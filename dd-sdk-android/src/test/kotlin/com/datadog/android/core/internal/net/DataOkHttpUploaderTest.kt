@@ -178,7 +178,7 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
     }
 
     @Test
-    fun `𝕄 return success 𝕎 upload() {403 status} `(
+    fun `𝕄 return invalid token error 𝕎 upload() {403 status} `(
         @StringForgery message: String
     ) {
         // Given

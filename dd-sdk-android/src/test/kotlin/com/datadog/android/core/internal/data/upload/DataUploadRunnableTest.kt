@@ -305,6 +305,23 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
+    fun `batch dropped on Invalid Token Error`(@Forgery batch: Batch) {
+        whenever(mockReader.lockAndReadNext()) doReturn batch
+        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.INVALID_TOKEN_ERROR
+
+        testedRunnable.run()
+
+        verify(mockReader).drop(batch)
+        verify(mockReader, never()).release(batch)
+        verify(mockDataUploader).upload(batch.data)
+        verify(mockThreadPoolExecutor).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
     fun `batch kept on Server Error`(@Forgery batch: Batch) {
         whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.HTTP_SERVER_ERROR
