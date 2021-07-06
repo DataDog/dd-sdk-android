@@ -63,7 +63,7 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
 
     internal lateinit var vitalExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var anrDetectorExecutorService: ExecutorService
-    internal lateinit var anrDetectorRunnable: Runnable
+    internal lateinit var anrDetectorRunnable: ANRDetectorRunnable
     internal lateinit var anrDetectorHandler: Handler
 
     // region SdkFeature
@@ -97,6 +97,7 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
 
         vitalExecutorService.shutdownNow()
         anrDetectorExecutorService.shutdownNow()
+        anrDetectorRunnable.stop()
     }
 
     override fun createPersistenceStrategy(

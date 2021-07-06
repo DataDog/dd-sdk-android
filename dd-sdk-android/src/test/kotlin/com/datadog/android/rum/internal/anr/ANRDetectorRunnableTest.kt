@@ -19,13 +19,20 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.isA
+import com.nhaarman.mockitokotlin2.reset
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -54,6 +61,10 @@ internal class ANRDetectorRunnableTest {
 
     @BeforeEach
     fun `set up`() {
+        whenever(mockHandler.post(any())) doReturn true
+        whenever(mockHandler.looper) doReturn mockLooper
+        whenever(mockLooper.thread) doReturn Thread.currentThread()
+
         testedRunnable = ANRDetectorRunnable(
             mockHandler,
             TEST_ANR_THRESHOLD_MS,
@@ -63,10 +74,6 @@ internal class ANRDetectorRunnableTest {
 
     @Test
     fun `𝕄 report RUM error 𝕎 run() {ANR detected}`() {
-        // Given
-        whenever(mockHandler.post(any())) doReturn true
-        whenever(mockHandler.looper) doReturn mockLooper
-        whenever(mockLooper.thread) doReturn Thread.currentThread()
 
         // When
         Thread(testedRunnable).start()
@@ -90,9 +97,6 @@ internal class ANRDetectorRunnableTest {
 
     @Test
     fun `𝕄 not report RUM error 𝕎 run() {no ANR}`() {
-        // Given
-        whenever(mockHandler.post(any())) doReturn true
-
         // When
         Thread(testedRunnable).start()
         Thread.sleep(TEST_ANR_TEST_DELAY_MS)
@@ -108,10 +112,28 @@ internal class ANRDetectorRunnableTest {
     }
 
     @Test
-    fun `𝕄 not report RUM error 𝕎 stop() + run()`() {
-        // Given
-        whenever(mockHandler.post(any())) doReturn true
+    fun `𝕄 wait ANR resolution before scheduling next runnable 𝕎 run()`() {
+        // When
+        Thread(testedRunnable).start()
+        Thread.sleep(TEST_ANR_TEST_DELAY_MS)
 
+        // Then
+        argumentCaptor<Runnable> {
+            verify(mockHandler).post(capture())
+            Thread.sleep(TEST_ANR_THRESHOLD_MS)
+            verify(mockHandler).looper
+            verifyNoMoreInteractions(mockHandler)
+            reset(mockHandler)
+
+            lastValue.run()
+            Thread.sleep(TEST_ANR_TEST_DELAY_MS)
+            verify(mockHandler).post(capture())
+            lastValue.run()
+        }
+    }
+
+    @Test
+    fun `𝕄 not report RUM error 𝕎 stop() + run()`() {
         // When
         testedRunnable.stop()
         Thread(testedRunnable).start()
@@ -119,6 +141,49 @@ internal class ANRDetectorRunnableTest {
 
         // Then
         verifyZeroInteractions(rumMonitor.mockInstance, mockHandler)
+    }
+
+    @Test
+    fun `𝕄 not do anything 𝕎 run() {handler returns false}`() {
+        // Given
+        whenever(mockHandler.post(any())) doReturn false
+
+        // When
+        val thread = Thread(testedRunnable)
+        thread.start()
+        Thread.sleep(TEST_ANR_THRESHOLD_MS)
+        Thread.sleep(TEST_ANR_TEST_DELAY_MS)
+
+        // Then
+        verify(mockHandler).post(any())
+        verifyZeroInteractions(rumMonitor.mockInstance)
+        assertThat(thread.isAlive).isFalse()
+    }
+
+    @Test
+    fun `𝕄 schedule runnable regularly 𝕎 run()`(
+        @IntForgery(1, 10) repeatCount: Int
+    ) {
+        // Given
+        whenever(mockHandler.post(any())) doAnswer {
+            Thread(it.getArgument(0) as Runnable).start()
+            true
+        }
+
+        // When
+        Thread(testedRunnable).start()
+        repeat(repeatCount) {
+            Thread.sleep(TEST_ANR_TEST_DELAY_MS)
+        }
+        Thread.sleep(TEST_ANR_TEST_DELAY_MS / 2)
+        testedRunnable.stop()
+
+        // Then
+        verifyZeroInteractions(rumMonitor.mockInstance)
+        verify(
+            mockHandler,
+            times(repeatCount + 1)
+        ).post(isA<ANRDetectorRunnable.CallbackRunnable>())
     }
 
     companion object {

@@ -34,7 +34,10 @@ internal class ANRDetectorRunnable(
                 val callback = CallbackRunnable()
 
                 synchronized(callback) {
-                    handler.post(callback)
+                    if (!handler.post(callback)) {
+                        // callback can't be posted, usually means that the looper is exiting
+                        return
+                    }
                     callback.wait(anrThresholdMs)
 
                     if (!callback.wasCalled()) {
@@ -74,7 +77,6 @@ internal class ANRDetectorRunnable(
             notifyAll()
         }
 
-        @Synchronized
         fun wasCalled(): Boolean {
             return called
         }
