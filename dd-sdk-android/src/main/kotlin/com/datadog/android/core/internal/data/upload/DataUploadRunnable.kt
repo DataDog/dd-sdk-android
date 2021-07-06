@@ -102,7 +102,8 @@ internal class DataUploadRunnable(
             UploadStatus.SUCCESS,
             UploadStatus.HTTP_REDIRECTION,
             UploadStatus.HTTP_CLIENT_ERROR,
-            UploadStatus.UNKNOWN_ERROR
+            UploadStatus.UNKNOWN_ERROR,
+            UploadStatus.INVALID_TOKEN_ERROR
         )
 
         private val batteryFullOrChargingStatus = setOf(
