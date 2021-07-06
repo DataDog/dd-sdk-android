@@ -6,81 +6,13 @@
 
 package com.datadog.android.rum.internal.vitals
 
-import kotlin.math.max
-import kotlin.math.min
+import com.datadog.tools.annotation.NoOpImplementation
 
-internal class VitalMonitor : VitalObserver {
+@NoOpImplementation
+internal interface VitalMonitor : VitalObserver {
+    fun getLastSample(): Double
 
-    private var lastKnownSample: Double = Double.NaN
+    fun register(listener: VitalListener)
 
-    private val listeners: MutableMap<VitalListener, VitalInfo> = mutableMapOf()
-
-    // region VitalObserver
-
-    override fun onNewSample(value: Double) {
-        lastKnownSample = value
-        notifyListeners(value)
-    }
-
-    // endregion
-
-    // region VitalMonitor
-
-    fun getLastSample(): Double {
-        return lastKnownSample
-    }
-
-    fun register(listener: VitalListener) {
-        val value = lastKnownSample
-        synchronized(listeners) {
-            listeners[listener] = VitalInfo.EMPTY
-        }
-        if (!value.isNaN()) {
-            notifyListener(listener, value)
-        }
-    }
-
-    fun unregister(listener: VitalListener) {
-        synchronized(listeners) {
-            listeners.remove(listener)
-        }
-    }
-
-    // endregion
-
-    // region Internal
-
-    private fun notifyListeners(value: Double) {
-        synchronized(listeners) {
-            for (listener in listeners.keys) {
-                notifyListener(listener, value)
-            }
-        }
-    }
-
-    private fun notifyListener(listener: VitalListener, value: Double) {
-        val vitalInfo = listeners[listener] ?: VitalInfo.EMPTY
-        val newSampleCount = vitalInfo.sampleCount + 1
-
-        // Assuming M(n) is the mean value of the first n samples
-        // M(n) = ∑ sample(n) / n
-        // n⨉M(n) = ∑ sample(n)
-        // M(n+1) = ∑ sample(n+1) / (n+1)
-        //        = [ sample(n+1) + ∑ sample(n) ] / (n+1)
-        //        = (sample(n+1) + n⨉M(n)) / (n+1)
-        val meanValue = (value + (vitalInfo.sampleCount * vitalInfo.meanValue)) / newSampleCount
-
-        val updatedInfo = VitalInfo(
-            newSampleCount,
-            min(value, vitalInfo.minValue),
-            max(value, vitalInfo.maxValue),
-            meanValue
-        )
-        listener.onVitalUpdate(updatedInfo)
-        synchronized(listeners) {
-            listeners[listener] = updatedInfo
-        }
-    }
-
-    // endregion
+    fun unregister(listener: VitalListener)
 }

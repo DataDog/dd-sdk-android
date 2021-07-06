@@ -23,6 +23,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEvent
+import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
@@ -97,6 +98,9 @@ internal class RumSessionScopeTest {
     @Mock
     lateinit var mockMemoryVitalMonitor: VitalMonitor
 
+    @Mock
+    lateinit var mockFrameRateVitalMonitor: VitalMonitor
+
     lateinit var mockDevLogHandler: LogHandler
 
     @Forgery
@@ -126,6 +130,7 @@ internal class RumSessionScopeTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -152,6 +157,7 @@ internal class RumSessionScopeTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -247,6 +253,7 @@ internal class RumSessionScopeTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -306,6 +313,7 @@ internal class RumSessionScopeTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -487,6 +495,7 @@ internal class RumSessionScopeTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -516,6 +525,9 @@ internal class RumSessionScopeTest {
                 assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
                 assertThat(it.keyRef.get()).isEqualTo(RumViewScope.RUM_BACKGROUND_VIEW_URL)
                 assertThat(it.name).isEqualTo(RumViewScope.RUM_BACKGROUND_VIEW_NAME)
+                assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+                assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+                assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
             }
     }
 

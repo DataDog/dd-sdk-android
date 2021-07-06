@@ -8,6 +8,7 @@ package com.datadog.android.tracing.internal
 
 import android.content.Context
 import android.util.Log
+import android.view.Choreographer
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.log.LogAttributes
@@ -28,6 +29,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setFieldValue
+import com.datadog.tools.unit.setStaticValue
 import com.datadog.trace.api.Config
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.inOrder
@@ -80,6 +82,16 @@ internal class AndroidTracerTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        // Prevent crash when initializing RumFeature
+        Choreographer::class.java.setStaticValue(
+            "sThreadInstance",
+            object : ThreadLocal<Choreographer>() {
+                override fun initialValue(): Choreographer {
+                    return mock()
+                }
+            }
+        )
+
         mockDevLogsHandler = mockDevLogHandler()
         fakeServiceName = forge.anAlphabeticalString()
         fakeEnvName = forge.anAlphabeticalString()

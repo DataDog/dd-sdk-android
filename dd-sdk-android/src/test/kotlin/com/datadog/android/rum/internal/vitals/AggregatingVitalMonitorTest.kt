@@ -35,16 +35,16 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class VitalMonitorTest {
+internal class AggregatingVitalMonitorTest {
 
-    lateinit var testedMonitor: VitalMonitor
+    lateinit var testedMonitor: AggregatingVitalMonitor
 
     @Mock
     lateinit var mockListener: VitalListener
 
     @BeforeEach
     fun `set up`() {
-        testedMonitor = VitalMonitor()
+        testedMonitor = AggregatingVitalMonitor()
     }
 
     @Test

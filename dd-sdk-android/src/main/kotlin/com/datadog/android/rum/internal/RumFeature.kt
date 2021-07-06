@@ -7,12 +7,14 @@
 package com.datadog.android.rum.internal
 
 import android.content.Context
+import android.view.Choreographer
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
@@ -22,9 +24,14 @@ import com.datadog.android.rum.internal.net.RumOkHttpUploader
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
+import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
 import com.datadog.android.rum.internal.vitals.CPUVitalReader
 import com.datadog.android.rum.internal.vitals.MemoryVitalReader
+import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
+import com.datadog.android.rum.internal.vitals.VitalFrameCallback
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.internal.vitals.VitalObserver
+import com.datadog.android.rum.internal.vitals.VitalReader
 import com.datadog.android.rum.internal.vitals.VitalReaderRunnable
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
@@ -44,8 +51,9 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
     internal var rumEventMapper: EventMapper<RumEvent> = NoOpEventMapper()
     internal var longTaskTrackingStrategy: TrackingStrategy = NoOpTrackingStrategy()
 
-    internal val cpuVitalMonitor: VitalMonitor = VitalMonitor()
-    internal val memoryVitalMonitor: VitalMonitor = VitalMonitor()
+    internal var cpuVitalMonitor: VitalMonitor = NoOpVitalMonitor()
+    internal var memoryVitalMonitor: VitalMonitor = NoOpVitalMonitor()
+    internal var frameRateVitalMonitor: VitalMonitor = NoOpVitalMonitor()
 
     internal lateinit var vitalExecutorService: ScheduledThreadPoolExecutor
 
@@ -71,6 +79,10 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
         actionTrackingStrategy = NoOpUserActionTrackingStrategy()
         longTaskTrackingStrategy = NoOpTrackingStrategy()
         rumEventMapper = NoOpEventMapper()
+
+        cpuVitalMonitor = NoOpVitalMonitor()
+        memoryVitalMonitor = NoOpVitalMonitor()
+        frameRateVitalMonitor = NoOpVitalMonitor()
 
         vitalExecutorService.shutdownNow()
     }
@@ -116,27 +128,40 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
     }
 
     private fun initializeVitalMonitors() {
-        vitalExecutorService = ScheduledThreadPoolExecutor(1)
-        val cpuReaderRunnable = VitalReaderRunnable(
-            CPUVitalReader(),
-            cpuVitalMonitor,
-            vitalExecutorService,
-            VITAL_UPDATE_PERIOD_MS
-        )
-        vitalExecutorService.schedule(
-            cpuReaderRunnable,
-            VITAL_UPDATE_PERIOD_MS,
-            TimeUnit.MILLISECONDS
-        )
+        cpuVitalMonitor = AggregatingVitalMonitor()
+        memoryVitalMonitor = AggregatingVitalMonitor()
+        frameRateVitalMonitor = AggregatingVitalMonitor()
 
-        val memoryReaderRunnable = VitalReaderRunnable(
-            MemoryVitalReader(),
-            memoryVitalMonitor,
+        vitalExecutorService = ScheduledThreadPoolExecutor(1)
+
+        initializeVitalMonitor(CPUVitalReader(), cpuVitalMonitor)
+        initializeVitalMonitor(MemoryVitalReader(), memoryVitalMonitor)
+
+        val vitalFrameCallback = VitalFrameCallback(frameRateVitalMonitor) { isInitialized() }
+        try {
+            Choreographer.getInstance().postFrameCallback(vitalFrameCallback)
+        } catch (e: IllegalStateException) {
+            // This can happen if the SDK is initialized on a Thread with no looper
+            sdkLogger.e("Unable to initialize the Choreographer FrameCallback", e)
+            devLogger.w(
+                "It seems you initialized the SDK on a thread without a Looper: " +
+                    "we won't be able to track your Views' refresh rate."
+            )
+        }
+    }
+
+    private fun initializeVitalMonitor(
+        vitalReader: VitalReader,
+        vitalObserver: VitalObserver
+    ) {
+        val readerRunnable = VitalReaderRunnable(
+            vitalReader,
+            vitalObserver,
             vitalExecutorService,
             VITAL_UPDATE_PERIOD_MS
         )
         vitalExecutorService.schedule(
-            memoryReaderRunnable,
+            readerRunnable,
             VITAL_UPDATE_PERIOD_MS,
             TimeUnit.MILLISECONDS
         )

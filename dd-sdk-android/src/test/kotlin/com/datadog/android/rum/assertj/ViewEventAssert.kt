@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
+import org.assertj.core.data.Percentage
 
 internal class ViewEventAssert(actual: ViewEvent) :
     AbstractObjectAssert<ViewEventAssert, ViewEvent>(
@@ -306,18 +307,36 @@ internal class ViewEventAssert(actual: ViewEvent) :
     }
 
     fun hasRefreshRateMetric(average: Double?, min: Double?): ViewEventAssert {
-        assertThat(actual.view.refreshRateAverage)
-            .overridingErrorMessage(
-                "Expected RUM event to have view.refresh_rate_average $average " +
-                    "but was ${actual.view.refreshRateAverage}"
-            )
-            .isEqualTo(average)
-        assertThat(actual.view.refreshRateMin)
-            .overridingErrorMessage(
-                "Expected RUM event to have view.refresh_rate_min $min " +
-                    "but was ${actual.view.refreshRateMin}"
-            )
-            .isEqualTo(min)
+        if (average == null) {
+            assertThat(actual.view.refreshRateAverage as? Double)
+                .overridingErrorMessage(
+                    "Expected RUM event to have view.refresh_rate_average $average " +
+                        "but was ${actual.view.refreshRateAverage}"
+                )
+                .isNull()
+        } else {
+            assertThat(actual.view.refreshRateAverage as? Double)
+                .overridingErrorMessage(
+                    "Expected RUM event to have view.refresh_rate_average $average " +
+                        "but was ${actual.view.refreshRateAverage}"
+                )
+                .isCloseTo(average, Percentage.withPercentage(1.0))
+        }
+        if (min == null) {
+            assertThat(actual.view.refreshRateMin as? Double)
+                .overridingErrorMessage(
+                    "Expected RUM event to have view.refresh_rate_min $min " +
+                        "but was ${actual.view.refreshRateMin}"
+                )
+                .isNull()
+        } else {
+            assertThat(actual.view.refreshRateMin as? Double)
+                .overridingErrorMessage(
+                    "Expected RUM event to have view.refresh_rate_min $min " +
+                        "but was ${actual.view.refreshRateMin}"
+                )
+                .isCloseTo(min, Percentage.withPercentage(1.0))
+        }
         return this
     }
 

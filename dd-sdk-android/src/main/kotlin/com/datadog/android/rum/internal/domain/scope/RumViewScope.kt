@@ -6,6 +6,11 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.app.Activity
+import android.content.Context
+import android.os.Build
+import android.view.WindowManager
+import androidx.fragment.app.Fragment
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
@@ -40,7 +45,8 @@ internal open class RumViewScope(
     initialAttributes: Map<String, Any?>,
     internal val firstPartyHostDetector: FirstPartyHostDetector,
     internal val cpuVitalMonitor: VitalMonitor,
-    internal val memoryVitalMonitor: VitalMonitor
+    internal val memoryVitalMonitor: VitalMonitor,
+    internal val frameRateVitalMonitor: VitalMonitor
 ) : RumScope {
 
     internal val url = key.resolveViewUrl().replace('.', '/')
@@ -91,10 +97,18 @@ internal open class RumViewScope(
         }
     }
 
-    private var lastMemoryVitalInfo: VitalInfo? = null
+    private var lastMemoryInfo: VitalInfo? = null
     private var memoryVitalListener: VitalListener = object : VitalListener {
         override fun onVitalUpdate(info: VitalInfo) {
-            lastMemoryVitalInfo = info
+            lastMemoryInfo = info
+        }
+    }
+
+    private var refreshRateScale: Double = 1.0
+    private var lastFrameRateInfo: VitalInfo? = null
+    private var frameRateVitalListenr: VitalListener = object : VitalListener {
+        override fun onVitalUpdate(info: VitalInfo) {
+            lastFrameRateInfo = info
         }
     }
 
@@ -105,6 +119,9 @@ internal open class RumViewScope(
         attributes.putAll(GlobalRum.globalAttributes)
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
+        frameRateVitalMonitor.register(frameRateVitalListenr)
+
+        detectRefreshRateScale(key)
     }
 
     // region RumScope
@@ -418,6 +435,8 @@ internal open class RumViewScope(
             null
         }
 
+        val memoryInfo = lastMemoryInfo
+        val refreshRateInfo = lastFrameRateInfo
         val viewEvent = ViewEvent(
             date = eventTimestamp,
             view = ViewEvent.View(
@@ -436,8 +455,10 @@ internal open class RumViewScope(
                 isActive = !stopped,
                 cpuTicksCount = cpuTicks,
                 cpuTicksPerSecond = cpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs },
-                memoryAverage = lastMemoryVitalInfo?.meanValue,
-                memoryMax = lastMemoryVitalInfo?.maxValue
+                memoryAverage = memoryInfo?.meanValue,
+                memoryMax = memoryInfo?.maxValue,
+                refreshRateAverage = refreshRateInfo?.meanValue?.let { it * refreshRateScale },
+                refreshRateMin = refreshRateInfo?.minValue?.let { it * refreshRateScale }
             ),
             usr = ViewEvent.Usr(
                 id = user.id,
@@ -576,6 +597,28 @@ internal open class RumViewScope(
         return stopped && activeResourceScopes.isEmpty() && (pending <= 0L)
     }
 
+    /*
+     * The refresh rate needs to be computed with each view because:
+     * - it requires a context with a UI (we can't get this from the application context);
+     * - it can change between different activities (based on window configuration)
+     */
+    @Suppress("DEPRECATION")
+    private fun detectRefreshRateScale(key: Any) {
+        val activity = when (key) {
+            is Activity -> key
+            is Fragment -> key.activity
+            is android.app.Fragment -> key.activity
+            else -> null
+        } ?: return
+
+        val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            activity.display
+        } else {
+            (activity.getSystemService(Context.WINDOW_SERVICE) as? WindowManager)?.defaultDisplay
+        } ?: return
+        refreshRateScale = 60.0 / display.refreshRate
+    }
+
     // endregion
 
     companion object {
@@ -586,12 +629,14 @@ internal open class RumViewScope(
         internal const val RUM_BACKGROUND_VIEW_URL = "com/datadog/background/view"
         internal const val RUM_BACKGROUND_VIEW_NAME = "Background"
 
+        @Suppress("LongParameterList")
         internal fun fromEvent(
             parentScope: RumScope,
             event: RumRawEvent.StartView,
             firstPartyHostDetector: FirstPartyHostDetector,
             cpuVitalMonitor: VitalMonitor,
-            memoryVitalMonitor: VitalMonitor
+            memoryVitalMonitor: VitalMonitor,
+            frameRateVitalMonitor: VitalMonitor
         ): RumViewScope {
             return RumViewScope(
                 parentScope,
@@ -601,7 +646,8 @@ internal open class RumViewScope(
                 event.attributes,
                 firstPartyHostDetector,
                 cpuVitalMonitor,
-                memoryVitalMonitor
+                memoryVitalMonitor,
+                frameRateVitalMonitor
             )
         }
     }
