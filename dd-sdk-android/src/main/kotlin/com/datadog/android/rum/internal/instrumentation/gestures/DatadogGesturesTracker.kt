@@ -8,11 +8,13 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.content.Context
 import android.view.Window
+import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import java.lang.ref.WeakReference
 
 internal class DatadogGesturesTracker(
-    internal val targetAttributesProviders: Array<ViewAttributesProvider>
+    internal val targetAttributesProviders: Array<ViewAttributesProvider>,
+    internal val interactionPredicate: InteractionPredicate
 ) : GesturesTracker {
 
     // region GesturesTracker
@@ -26,7 +28,7 @@ internal class DatadogGesturesTracker(
         val toWrap = window.callback ?: NoOpWindowCallback()
         val gesturesDetector = generateGestureDetector(context, window)
 
-        window.callback = WindowCallbackWrapper(toWrap, gesturesDetector)
+        window.callback = WindowCallbackWrapper(toWrap, gesturesDetector, interactionPredicate)
     }
 
     override fun stopTracking(window: Window?, context: Context) {
@@ -56,11 +58,17 @@ internal class DatadogGesturesTracker(
 
         if (!targetAttributesProviders.contentEquals(other.targetAttributesProviders)) return false
 
+        if (interactionPredicate.javaClass != other.interactionPredicate.javaClass) return false
+
         return true
     }
 
     override fun hashCode(): Int {
-        return targetAttributesProviders.contentHashCode()
+        var result = 17
+        val multiplier = 31
+        result += result * multiplier + targetAttributesProviders.contentHashCode()
+        result += result * multiplier + interactionPredicate.javaClass.hashCode()
+        return result
     }
 
     override fun toString(): String {
@@ -79,7 +87,8 @@ internal class DatadogGesturesTracker(
             context,
             GesturesListener(
                 WeakReference(window),
-                targetAttributesProviders
+                targetAttributesProviders,
+                interactionPredicate
             )
         )
     }

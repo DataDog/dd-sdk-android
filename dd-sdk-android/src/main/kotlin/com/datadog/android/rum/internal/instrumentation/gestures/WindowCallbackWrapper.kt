@@ -14,11 +14,14 @@ import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.tracking.InteractionPredicate
+import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import java.lang.Exception
 
 internal class WindowCallbackWrapper(
     val wrappedCallback: Window.Callback,
-    val gesturesDetector: GesturesDetectorWrapper
+    val gesturesDetector: GesturesDetectorWrapper,
+    val interactionPredicate: InteractionPredicate = NoOpInteractionPredicate()
 ) : Window.Callback by wrappedCallback {
 
     // region Window.Callback
@@ -44,14 +47,24 @@ internal class WindowCallbackWrapper(
             RumAttributes.ACTION_TARGET_RESOURCE_ID to resourceId,
             RumAttributes.ACTION_TARGET_TITLE to item.title
         )
-        GlobalRum.get().addUserAction(RumActionType.TAP, targetName(item, resourceId), attributes)
+        GlobalRum.get().addUserAction(
+            RumActionType.TAP,
+            resolveTargetName(interactionPredicate, item, resourceId),
+            attributes
+        )
         return wrappedCallback.onMenuItemSelected(featureId, item)
     }
 
     override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
         if (event?.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
             // TODO RUMM-495 add a BACK action to the json schema
-            GlobalRum.get().addUserAction(RumActionType.CUSTOM, "back", emptyMap())
+            val customTargetName = interactionPredicate.getTargetName(event)
+            val targetName = if (customTargetName.isNullOrEmpty()) {
+                BACK_DEFAULT_TARGET_NAME
+            } else {
+                customTargetName
+            }
+            GlobalRum.get().addUserAction(RumActionType.CUSTOM, targetName, emptyMap())
         }
         return wrappedCallback.dispatchKeyEvent(event)
     }
@@ -63,4 +76,8 @@ internal class WindowCallbackWrapper(
     internal fun copyEvent(event: MotionEvent?) = MotionEvent.obtain(event)
 
     // endregion
+
+    companion object {
+        const val BACK_DEFAULT_TARGET_NAME = "back"
+    }
 }

@@ -30,6 +30,8 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
+import com.datadog.android.rum.tracking.InteractionPredicate
+import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.utils.forge.Configurator
@@ -135,7 +137,8 @@ internal class ConfigurationBuilderTest {
                 samplingRate = Configuration.DEFAULT_SAMPLING_RATE,
                 userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
                     DatadogGesturesTracker(
-                        arrayOf(JetpackViewAttributesProvider())
+                        arrayOf(JetpackViewAttributesProvider()),
+                        NoOpInteractionPredicate()
                     )
                 ),
                 viewTrackingStrategy = ActivityViewTrackingStrategy(false),
@@ -320,7 +323,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with gestures enabled 𝕎 trackInteractions() and build()`(
+    fun `𝕄 bundle the custom attributes providers W trackInteractions()`(
         @IntForgery(0, 10) attributesCount: Int
     ) {
         // Given
@@ -342,6 +345,75 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig!!)
             .hasUserActionTrackingStrategyLegacy()
             .hasActionTargetAttributeProviders(mockProviders)
+            .hasViewTrackingStrategy(Configuration.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
+            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
+        assertThat(config.internalLogsConfig).isNull()
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 bundle only the default providers W trackInteractions { providers not provided }`() {
+        // When
+        val config = testedBuilder
+            .trackInteractions()
+            .build()
+
+        // Then
+
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig!!)
+            .hasUserActionTrackingStrategyLegacy()
+            .hasDefaultActionTargetAttributeProviders()
+            .hasViewTrackingStrategy(Configuration.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
+            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
+        assertThat(config.internalLogsConfig).isNull()
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 use the custom predicate 𝕎 trackInteractions()`() {
+        // Given
+        val mockInteractionPredicate: InteractionPredicate = mock()
+
+        // When
+        val config = testedBuilder
+            .trackInteractions(interactionPredicate = mockInteractionPredicate)
+            .build()
+
+        // Then
+
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig!!)
+            .hasUserActionTrackingStrategyLegacy()
+            .hasInteractionPredicate(mockInteractionPredicate)
+            .hasViewTrackingStrategy(Configuration.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
+            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
+        assertThat(config.internalLogsConfig).isNull()
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 use the NoOpInteractionPredicate 𝕎 trackInteractions() { predicate not provided }`() {
+        // When
+        val config = testedBuilder
+            .trackInteractions()
+            .build()
+
+        // Then
+
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig!!)
+            .hasUserActionTrackingStrategyLegacy()
+            .hasInteractionPredicateOfType(NoOpInteractionPredicate::class.java)
             .hasViewTrackingStrategy(Configuration.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
             .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
         assertThat(config.internalLogsConfig).isNull()
@@ -422,7 +494,8 @@ internal class ConfigurationBuilderTest {
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
                     DatadogGesturesTracker(
-                        arrayOf(JetpackViewAttributesProvider())
+                        arrayOf(JetpackViewAttributesProvider()),
+                        NoOpInteractionPredicate()
                     )
                 ),
                 viewTrackingStrategy = strategy
@@ -1098,7 +1171,8 @@ internal class ConfigurationBuilderTest {
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
                     DatadogGesturesTracker(
-                        arrayOf(JetpackViewAttributesProvider())
+                        arrayOf(JetpackViewAttributesProvider()),
+                        NoOpInteractionPredicate()
                     )
                 )
             )
@@ -1242,7 +1316,8 @@ internal class ConfigurationBuilderTest {
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
                     DatadogGesturesTracker(
-                        arrayOf(JetpackViewAttributesProvider())
+                        arrayOf(JetpackViewAttributesProvider()),
+                        NoOpInteractionPredicate()
                     )
                 )
             )
@@ -1276,7 +1351,8 @@ internal class ConfigurationBuilderTest {
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
                     DatadogGesturesTracker(
-                        arrayOf(JetpackViewAttributesProvider())
+                        arrayOf(JetpackViewAttributesProvider()),
+                        NoOpInteractionPredicate()
                     )
                 )
             )
@@ -1375,7 +1451,8 @@ internal class ConfigurationBuilderTest {
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
                     DatadogGesturesTracker(
-                        arrayOf(JetpackViewAttributesProvider())
+                        arrayOf(JetpackViewAttributesProvider()),
+                        NoOpInteractionPredicate()
                     )
                 )
             )

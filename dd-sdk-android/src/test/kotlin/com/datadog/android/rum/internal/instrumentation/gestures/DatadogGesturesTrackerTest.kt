@@ -9,17 +9,20 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 import android.app.Activity
 import android.view.View
 import android.view.Window
+import com.datadog.android.rum.tracking.InteractionPredicate
+import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.tools.unit.ObjectTest
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -44,18 +47,22 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
     lateinit var mockWindow: Window
 
     @Mock
+    lateinit var mockInteractionPredicate: InteractionPredicate
+
+    @Mock
     lateinit var mockGestureDetector: GesturesDetectorWrapper
 
     @BeforeEach
     fun `set up`() {
         testedTracker =
-            DatadogGesturesTracker(emptyArray())
+            DatadogGesturesTracker(emptyArray(), mockInteractionPredicate)
         whenever(mockActivity.window).thenReturn(mockWindow)
     }
 
     override fun createInstance(forge: Forge): DatadogGesturesTracker {
         return DatadogGesturesTracker(
-            forge.aList { StubViewAttributesProvider(anAlphabeticalString()) }.toTypedArray()
+            forge.aList { StubViewAttributesProvider(anAlphabeticalString()) }.toTypedArray(),
+            NoOpInteractionPredicate()
         )
     }
 
@@ -67,7 +74,8 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
             source.targetAttributesProviders.map {
                 check(it is StubViewAttributesProvider)
                 StubViewAttributesProvider(it.name)
-            }.toTypedArray()
+            }.toTypedArray(),
+            NoOpInteractionPredicate()
         )
     }
 
@@ -79,7 +87,8 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
             source.targetAttributesProviders.map {
                 check(it is StubViewAttributesProvider)
                 StubViewAttributesProvider(it.name + forge.aNumericalString())
-            }.toTypedArray()
+            }.toTypedArray(),
+            StubInteractionPredicate()
         )
     }
 
@@ -93,7 +102,10 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
         spyTest.startTracking(mockWindow, mockActivity)
 
         // Then
-        verify(mockWindow).callback = isA<WindowCallbackWrapper>()
+        val argumentCaptor = argumentCaptor<Window.Callback>()
+        verify(mockWindow).callback = argumentCaptor.capture()
+        assertThat((argumentCaptor.firstValue as WindowCallbackWrapper).interactionPredicate)
+            .isEqualTo(mockInteractionPredicate)
     }
 
     @Test
@@ -156,6 +168,12 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
     ) : ViewAttributesProvider {
         override fun extractAttributes(view: View, attributes: MutableMap<String, Any?>) {
             attributes[name] = view.toString()
+        }
+    }
+
+    class StubInteractionPredicate : InteractionPredicate {
+        override fun getTargetName(target: Any): String? {
+            return null
         }
     }
 }
