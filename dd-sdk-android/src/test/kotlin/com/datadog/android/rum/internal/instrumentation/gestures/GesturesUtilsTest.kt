@@ -9,9 +9,12 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 import android.app.Application
 import android.content.res.Resources
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.lang.ref.WeakReference
@@ -42,6 +45,15 @@ class GesturesUtilsTest {
     @Mock
     lateinit var mockResources: Resources
 
+    @Mock
+    lateinit var mockInteractionPredicate: InteractionPredicate
+
+    @Mock
+    lateinit var mockTarget: Any
+
+    @StringForgery(StringForgeryType.ALPHA_NUMERICAL)
+    lateinit var fakeTargetId: String
+
     @BeforeEach
     fun `set up`() {
         CoreFeature.contextRef = WeakReference(mockAppContext)
@@ -50,6 +62,34 @@ class GesturesUtilsTest {
     @AfterEach
     fun `tear down`() {
         CoreFeature.contextRef = WeakReference(null)
+    }
+
+    @Test
+    fun `M return the custom name W resolveTargetName { custom name provided }`(
+        @StringForgery fakeTargetName: String
+    ) {
+        // Given
+        whenever(mockInteractionPredicate.getTargetName(mockTarget)).thenReturn(fakeTargetName)
+
+        // Then
+        assertThat(resolveTargetName(mockInteractionPredicate, mockTarget, fakeTargetId))
+            .isEqualTo(fakeTargetName)
+    }
+
+    @Test
+    fun `M return the default name W resolveTargetName { custom name empty }`() {
+        // Given
+        whenever(mockInteractionPredicate.getTargetName(mockTarget)).thenReturn("")
+
+        // Then
+        assertThat(resolveTargetName(mockInteractionPredicate, mockTarget, fakeTargetId))
+            .isEqualTo("${mockTarget.javaClass.simpleName}($fakeTargetId)")
+    }
+
+    @Test
+    fun `M return the default name W resolveTargetName { custom name null }`() {
+        assertThat(resolveTargetName(mockInteractionPredicate, mockTarget, fakeTargetId))
+            .isEqualTo("${mockTarget.javaClass.simpleName}($fakeTargetId)")
     }
 
     @Test

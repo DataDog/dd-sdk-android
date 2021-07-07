@@ -46,4 +46,5 @@ IGNORED_TYPES = ["errorevent",
                  "batchsize",
                  "trackingconsentprovidercallback",
                  "uploadfrequency",
-                 "feature"]
+                 "feature",
+                 "interactionpredicate"]

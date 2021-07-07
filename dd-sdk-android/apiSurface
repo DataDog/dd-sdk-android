@@ -1059,6 +1059,8 @@ class com.datadog.android.rum.tracking.FragmentViewTrackingStrategy : ActivityLi
   override fun onActivityStopped(android.app.Activity)
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
+interface com.datadog.android.rum.tracking.InteractionPredicate
+  fun getTargetName(Any): String?
 class com.datadog.android.rum.tracking.MixedViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
   constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities(), ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android.app.Fragment> = AcceptAllDefaultFragment())
   override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
