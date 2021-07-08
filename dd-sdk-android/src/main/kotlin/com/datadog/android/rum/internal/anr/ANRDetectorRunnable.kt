@@ -33,6 +33,7 @@ internal class ANRDetectorRunnable(
             try {
                 val callback = CallbackRunnable()
 
+                // Synchronization is required to use `wait`
                 synchronized(callback) {
                     if (!handler.post(callback)) {
                         // callback can't be posted, usually means that the looper is exiting
@@ -60,7 +61,6 @@ internal class ANRDetectorRunnable(
 
     // endregion
 
-    @Synchronized
     fun stop() {
         shouldStop = true
     }
@@ -71,6 +71,7 @@ internal class ANRDetectorRunnable(
 
         private var called = false
 
+        // Synchronization is required to use `wait`
         @Synchronized
         override fun run() {
             called = true
