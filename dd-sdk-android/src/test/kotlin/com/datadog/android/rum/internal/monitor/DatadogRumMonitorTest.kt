@@ -38,6 +38,7 @@ import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -104,12 +105,16 @@ internal class DatadogRumMonitorTest {
     @LongForgery(1000000000000, 2000000000000)
     var fakeTimestamp: Long = 0L
 
+    @BoolForgery
+    var fakeBackgroundTrackingEnabled: Boolean = false
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeAttributes = forge.exhaustiveAttributes()
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
             fakeSamplingRate,
+            fakeBackgroundTrackingEnabled,
             mockWriter,
             mockHandler,
             mockDetector,
@@ -129,6 +134,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
             fakeSamplingRate,
+            fakeBackgroundTrackingEnabled,
             mockWriter,
             mockHandler,
             mockDetector,
@@ -140,6 +146,7 @@ internal class DatadogRumMonitorTest {
         val rootScope = testedMonitor.rootScope
         check(rootScope is RumApplicationScope)
         assertThat(rootScope.samplingRate).isEqualTo(fakeSamplingRate)
+        assertThat(rootScope.backgroundTrackingEnabled).isEqualTo(fakeBackgroundTrackingEnabled)
     }
 
     @Test
@@ -1022,6 +1029,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
             fakeSamplingRate,
+            fakeBackgroundTrackingEnabled,
             mockWriter,
             mockHandler,
             mockDetector,
@@ -1047,6 +1055,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
             fakeSamplingRate,
+            fakeBackgroundTrackingEnabled,
             mockWriter,
             mockHandler,
             mockDetector,
@@ -1073,6 +1082,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
             fakeSamplingRate,
+            fakeBackgroundTrackingEnabled,
             mockWriter,
             mockHandler,
             mockDetector,

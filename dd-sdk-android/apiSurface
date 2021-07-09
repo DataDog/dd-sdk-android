@@ -87,6 +87,7 @@ class com.datadog.android.core.configuration.Configuration
     fun setBatchSize(BatchSize): Builder
     fun setUploadFrequency(UploadFrequency): Builder
     fun sampleRumSessions(Float): Builder
+    fun trackBackgroundRumEvents(Boolean): Builder
     fun setRumViewEventMapper(com.datadog.android.event.ViewEventMapper): Builder
     fun setRumResourceEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ResourceEvent>): Builder
     fun setRumActionEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.ActionEvent>): Builder

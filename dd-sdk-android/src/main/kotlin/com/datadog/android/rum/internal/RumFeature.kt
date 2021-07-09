@@ -43,6 +43,7 @@ import java.util.concurrent.TimeUnit
 internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
 
     internal var samplingRate: Float = 0f
+    internal var backgroundEventTracking: Boolean = false
 
     internal var viewTrackingStrategy: ViewTrackingStrategy = NoOpViewTrackingStrategy()
     internal var actionTrackingStrategy: UserActionTrackingStrategy =
@@ -61,6 +62,7 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
 
     override fun onInitialize(context: Context, configuration: Configuration.Feature.RUM) {
         samplingRate = configuration.samplingRate
+        backgroundEventTracking = configuration.backgroundEventTracking
         rumEventMapper = configuration.rumEventMapper
 
         configuration.viewTrackingStrategy?.let { viewTrackingStrategy = it }

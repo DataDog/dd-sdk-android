@@ -84,6 +84,7 @@ internal class RumMonitorBuilderTest {
             }
         assertThat(monitor.handler.looper).isSameAs(Looper.getMainLooper())
         assertThat(monitor.samplingRate).isEqualTo(fakeConfig.samplingRate)
+        assertThat(monitor.backgroundTrackingEnabled).isEqualTo(fakeConfig.backgroundEventTracking)
     }
 
     @Test
