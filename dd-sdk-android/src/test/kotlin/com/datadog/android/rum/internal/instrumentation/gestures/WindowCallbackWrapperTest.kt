@@ -15,6 +15,7 @@ import android.view.Window
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -151,6 +152,95 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
+    fun `M use the custom target name W onMenuItemSelected { custom target not empty }`(
+        forge: Forge
+    ) {
+        // Given
+        val returnValue = forge.aBool()
+        val itemTitle = forge.aString()
+        val featureId = forge.anInt()
+        val itemId = forge.anInt()
+        val itemResourceName = forge.aString()
+        val fakeCustomTargetName = forge.anAlphabeticalString()
+        whenever(mockResources.getResourceEntryName(itemId)).thenReturn(itemResourceName)
+        val menuItem: MenuItem = mock {
+            whenever(it.itemId).thenReturn(itemId)
+            whenever(it.title).thenReturn(itemTitle)
+        }
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(menuItem)).thenReturn(fakeCustomTargetName)
+        }
+        testedWrapper = WindowCallbackWrapper(
+            mockCallback,
+            mockGestureDetector,
+            mockInteractionPredicate
+        )
+        whenever(mockCallback.onMenuItemSelected(featureId, menuItem)).thenReturn(returnValue)
+
+        // When
+        assertThat(testedWrapper.onMenuItemSelected(featureId, menuItem)).isEqualTo(returnValue)
+
+        // Then
+        inOrder(mockCallback, rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).addUserAction(
+                eq(RumActionType.TAP),
+                eq(fakeCustomTargetName),
+                argThat {
+                    val targetClassName = menuItem.javaClass.canonicalName
+                    this[RumAttributes.ACTION_TARGET_CLASS_NAME] == targetClassName &&
+                        this[RumAttributes.ACTION_TARGET_RESOURCE_ID] == itemResourceName &&
+                        this[RumAttributes.ACTION_TARGET_TITLE] == itemTitle
+                }
+            )
+            verify(mockCallback).onMenuItemSelected(featureId, menuItem)
+        }
+    }
+
+    @Test
+    fun `M use the default target name W onMenuItemSelected { custom target empty }`(
+        forge: Forge
+    ) {
+        // Given
+        val returnValue = forge.aBool()
+        val itemTitle = forge.aString()
+        val featureId = forge.anInt()
+        val itemId = forge.anInt()
+        val itemResourceName = forge.aString()
+        whenever(mockResources.getResourceEntryName(itemId)).thenReturn(itemResourceName)
+        val menuItem: MenuItem = mock {
+            whenever(it.itemId).thenReturn(itemId)
+            whenever(it.title).thenReturn(itemTitle)
+        }
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(menuItem)).thenReturn("")
+        }
+        testedWrapper = WindowCallbackWrapper(
+            mockCallback,
+            mockGestureDetector,
+            mockInteractionPredicate
+        )
+        whenever(mockCallback.onMenuItemSelected(featureId, menuItem)).thenReturn(returnValue)
+
+        // When
+        assertThat(testedWrapper.onMenuItemSelected(featureId, menuItem)).isEqualTo(returnValue)
+
+        // Then
+        inOrder(mockCallback, rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).addUserAction(
+                eq(RumActionType.TAP),
+                eq(targetName(menuItem, itemResourceName)),
+                argThat {
+                    val targetClassName = menuItem.javaClass.canonicalName
+                    this[RumAttributes.ACTION_TARGET_CLASS_NAME] == targetClassName &&
+                        this[RumAttributes.ACTION_TARGET_RESOURCE_ID] == itemResourceName &&
+                        this[RumAttributes.ACTION_TARGET_TITLE] == itemTitle
+                }
+            )
+            verify(mockCallback).onMenuItemSelected(featureId, menuItem)
+        }
+    }
+
+    @Test
     fun `pressing back button will trigger specific user action event`(forge: Forge) {
         // Given
         val returnedValue = forge.aBool()
@@ -164,7 +254,66 @@ internal class WindowCallbackWrapperTest {
         inOrder(rumMonitor.mockInstance, mockCallback) {
             verify(rumMonitor.mockInstance).addUserAction(
                 RumActionType.CUSTOM,
-                "back",
+                WindowCallbackWrapper.BACK_DEFAULT_TARGET_NAME,
+                emptyMap()
+            )
+            verify(mockCallback).dispatchKeyEvent(keyEvent)
+        }
+    }
+
+    @Test
+    fun `M use the custom target name W pressingBack { custom target not empty }`(forge: Forge) {
+        // Given
+        val returnedValue = forge.aBool()
+        val fakeCustomTargetName = forge.anAlphabeticalString()
+        whenever(mockCallback.dispatchKeyEvent(any())).thenReturn(returnedValue)
+        val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(keyEvent)).thenReturn(fakeCustomTargetName)
+        }
+        testedWrapper = WindowCallbackWrapper(
+            mockCallback,
+            mockGestureDetector,
+            mockInteractionPredicate
+        )
+
+        // When
+        assertThat(testedWrapper.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
+
+        // Then
+        inOrder(rumMonitor.mockInstance, mockCallback) {
+            verify(rumMonitor.mockInstance).addUserAction(
+                RumActionType.CUSTOM,
+                fakeCustomTargetName,
+                emptyMap()
+            )
+            verify(mockCallback).dispatchKeyEvent(keyEvent)
+        }
+    }
+
+    @Test
+    fun `M use the default target name W pressingBack { custom target empty }`(forge: Forge) {
+        // Given
+        val returnedValue = forge.aBool()
+        whenever(mockCallback.dispatchKeyEvent(any())).thenReturn(returnedValue)
+        val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(keyEvent)).thenReturn("")
+        }
+        testedWrapper = WindowCallbackWrapper(
+            mockCallback,
+            mockGestureDetector,
+            mockInteractionPredicate
+        )
+
+        // When
+        assertThat(testedWrapper.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
+
+        // Then
+        inOrder(rumMonitor.mockInstance, mockCallback) {
+            verify(rumMonitor.mockInstance).addUserAction(
+                RumActionType.CUSTOM,
+                WindowCallbackWrapper.BACK_DEFAULT_TARGET_NAME,
                 emptyMap()
             )
             verify(mockCallback).dispatchKeyEvent(keyEvent)

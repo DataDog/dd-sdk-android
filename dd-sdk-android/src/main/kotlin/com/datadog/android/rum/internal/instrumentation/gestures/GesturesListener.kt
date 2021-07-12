@@ -17,6 +17,8 @@ import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.tracking.InteractionPredicate
+import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import java.lang.ref.WeakReference
 import java.util.LinkedList
@@ -24,7 +26,8 @@ import kotlin.math.abs
 
 internal class GesturesListener(
     private val windowReference: WeakReference<Window>,
-    private val attributesProviders: Array<ViewAttributesProvider> = emptyArray()
+    private val attributesProviders: Array<ViewAttributesProvider> = emptyArray(),
+    private val interactionPredicate: InteractionPredicate = NoOpInteractionPredicate()
 ) : GestureDetector.OnGestureListener {
 
     private val coordinatesContainer = IntArray(2)
@@ -124,7 +127,7 @@ internal class GesturesListener(
         val attributes = resolveAttributes(scrollTarget, targetId, onUpEvent)
         registeredRumMonitor.stopUserAction(
             type,
-            targetName(scrollTarget, targetId),
+            resolveTargetName(interactionPredicate, scrollTarget, targetId),
             attributes
         )
     }
@@ -135,7 +138,7 @@ internal class GesturesListener(
         onUpEvent: MotionEvent
     ): MutableMap<String, Any?> {
         val attributes = mutableMapOf<String, Any?>(
-            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollTarget.targetName(),
+            RumAttributes.ACTION_TARGET_CLASS_NAME to scrollTarget.targetClassName(),
             RumAttributes.ACTION_TARGET_RESOURCE_ID to targetId
         )
         gestureDirection = resolveGestureDirection(onUpEvent)
@@ -160,7 +163,7 @@ internal class GesturesListener(
             findTargetForTap(decorView, e.x, e.y)?.let { target ->
                 val targetId: String = resourceIdName(target.id)
                 val attributes = mutableMapOf<String, Any?>(
-                    RumAttributes.ACTION_TARGET_CLASS_NAME to target.targetName(),
+                    RumAttributes.ACTION_TARGET_CLASS_NAME to target.targetClassName(),
                     RumAttributes.ACTION_TARGET_RESOURCE_ID to targetId
                 )
                 attributesProviders.forEach {
@@ -168,7 +171,7 @@ internal class GesturesListener(
                 }
                 GlobalRum.get().addUserAction(
                     RumActionType.TAP,
-                    targetName(target, targetId),
+                    resolveTargetName(interactionPredicate, target, targetId),
                     attributes
                 )
             }
@@ -278,7 +281,7 @@ internal class GesturesListener(
         }
     }
 
-    private fun View.targetName(): String {
+    private fun View.targetClassName(): String {
         return this.javaClass.canonicalName ?: this.javaClass.simpleName
     }
 

@@ -8,6 +8,7 @@ package com.datadog.android.rum.assertj
 
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
+import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
@@ -38,6 +39,18 @@ internal class RumGestureTrackerAssert(actual: DatadogGesturesTracker) :
         RumGestureTrackerAssert {
             assertThat(actual.targetAttributesProviders)
                 .containsAll(customProviders.toMutableList())
+            return this
+        }
+
+    fun hasInteractionPredicate(interactionPredicate: InteractionPredicate):
+        RumGestureTrackerAssert {
+            assertThat(actual.interactionPredicate).isEqualTo(interactionPredicate)
+            return this
+        }
+
+    fun hasInteractionPredicateOfType(type: Class<*>):
+        RumGestureTrackerAssert {
+            assertThat(actual.interactionPredicate).isInstanceOf(type)
             return this
         }
 

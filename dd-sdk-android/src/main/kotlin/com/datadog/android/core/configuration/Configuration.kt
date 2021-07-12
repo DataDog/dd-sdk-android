@@ -37,6 +37,8 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
+import com.datadog.android.rum.tracking.InteractionPredicate
+import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
@@ -307,13 +309,20 @@ internal constructor(
          * UI interaction events (e.g.: taps, scrolls, swipes) and automatically send those as RUM UserActions for you.
          * @param touchTargetExtraAttributesProviders an array with your own implementation of the
          * target attributes provider.
+         * @param interactionPredicate an interface to provide custom values for the
+         * actions events properties.
          * @see [ViewAttributesProvider]
+         * @see [InteractionPredicate]
          */
         @JvmOverloads
         fun trackInteractions(
-            touchTargetExtraAttributesProviders: Array<ViewAttributesProvider> = emptyArray()
+            touchTargetExtraAttributesProviders: Array<ViewAttributesProvider> = emptyArray(),
+            interactionPredicate: InteractionPredicate = NoOpInteractionPredicate()
         ): Builder {
-            val strategy = provideUserTrackingStrategy(touchTargetExtraAttributesProviders)
+            val strategy = provideUserTrackingStrategy(
+                touchTargetExtraAttributesProviders,
+                interactionPredicate
+            )
             applyIfFeatureEnabled(PluginFeature.RUM, "trackInteractions") {
                 rumConfig = rumConfig.copy(userActionTrackingStrategy = strategy)
             }
@@ -349,7 +358,6 @@ internal constructor(
          * @see [com.datadog.android.rum.tracking.FragmentViewTrackingStrategy]
          * @see [com.datadog.android.rum.tracking.MixedViewTrackingStrategy]
          * @see [com.datadog.android.rum.tracking.NavigationViewTrackingStrategy]
-
          */
         fun useViewTrackingStrategy(strategy: ViewTrackingStrategy): Builder {
             applyIfFeatureEnabled(PluginFeature.RUM, "useViewTrackingStrategy") {
@@ -629,7 +637,10 @@ internal constructor(
             endpointUrl = DatadogEndpoint.RUM_US1,
             plugins = emptyList(),
             samplingRate = DEFAULT_SAMPLING_RATE,
-            userActionTrackingStrategy = provideUserTrackingStrategy(emptyArray()),
+            userActionTrackingStrategy = provideUserTrackingStrategy(
+                emptyArray(),
+                NoOpInteractionPredicate()
+            ),
             viewTrackingStrategy = ActivityViewTrackingStrategy(false),
             longTaskTrackingStrategy = MainLooperLongTaskStrategy(DEFAULT_LONG_TASK_THRESHOLD_MS),
             rumEventMapper = NoOpEventMapper(),
@@ -694,9 +705,11 @@ internal constructor(
         }
 
         private fun provideUserTrackingStrategy(
-            touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>
+            touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,
+            interactionPredicate: InteractionPredicate
         ): UserActionTrackingStrategy {
-            val gesturesTracker = provideGestureTracker(touchTargetExtraAttributesProviders)
+            val gesturesTracker =
+                provideGestureTracker(touchTargetExtraAttributesProviders, interactionPredicate)
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 UserActionTrackingStrategyApi29(gesturesTracker)
             } else {
@@ -705,11 +718,12 @@ internal constructor(
         }
 
         private fun provideGestureTracker(
-            customProviders: Array<ViewAttributesProvider>
+            customProviders: Array<ViewAttributesProvider>,
+            interactionPredicate: InteractionPredicate
         ): DatadogGesturesTracker {
             val defaultProviders = arrayOf(JetpackViewAttributesProvider())
             val providers = customProviders + defaultProviders
-            return DatadogGesturesTracker(providers)
+            return DatadogGesturesTracker(providers, interactionPredicate)
         }
     }
 }

@@ -12,6 +12,7 @@ import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrate
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
+import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import org.assertj.core.api.AbstractObjectAssert
@@ -62,6 +63,34 @@ internal class ConfigurationRumAssert(actual: Configuration.Feature.RUM) :
         RumGestureTrackerAssert.assertThat(gesturesTracker as DatadogGesturesTracker)
             .hasCustomTargetAttributesProviders(providers)
             .hasDefaultTargetAttributesProviders()
+        return this
+    }
+
+    fun hasDefaultActionTargetAttributeProviders(): ConfigurationRumAssert {
+        val gesturesTracker = actual.userActionTrackingStrategy?.getGesturesTracker()
+        assertThat(gesturesTracker).isInstanceOf(DatadogGesturesTracker::class.java)
+        RumGestureTrackerAssert.assertThat(gesturesTracker as DatadogGesturesTracker)
+            .hasDefaultTargetAttributesProviders()
+        return this
+    }
+
+    fun hasInteractionPredicate(
+        interactionPredicate: InteractionPredicate
+    ): ConfigurationRumAssert {
+        val gesturesTracker = actual.userActionTrackingStrategy?.getGesturesTracker()
+        assertThat(gesturesTracker).isInstanceOf(DatadogGesturesTracker::class.java)
+        RumGestureTrackerAssert.assertThat(gesturesTracker as DatadogGesturesTracker)
+            .hasInteractionPredicate(interactionPredicate)
+        return this
+    }
+
+    fun hasInteractionPredicateOfType(
+        type: Class<*>
+    ): ConfigurationRumAssert {
+        val gesturesTracker = actual.userActionTrackingStrategy?.getGesturesTracker()
+        assertThat(gesturesTracker).isInstanceOf(DatadogGesturesTracker::class.java)
+        RumGestureTrackerAssert.assertThat(gesturesTracker as DatadogGesturesTracker)
+            .hasInteractionPredicateOfType(type)
         return this
     }
 

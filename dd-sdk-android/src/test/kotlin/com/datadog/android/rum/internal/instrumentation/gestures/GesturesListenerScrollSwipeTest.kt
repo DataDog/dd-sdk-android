@@ -14,8 +14,10 @@ import android.widget.ListAdapter
 import androidx.core.view.ScrollingView
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
@@ -450,6 +452,119 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
                 argumentCaptor.capture()
             )
             assertThat(argumentCaptor.firstValue).isEqualTo(expectedAttributes)
+        }
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
+    fun `M use the custom target name W scrollDetected { custom target name provided }`(
+        forge: Forge
+    ) {
+        val startDownEvent: MotionEvent = forge.getForgery()
+        val listSize = forge.anInt(1, 20)
+        val intermediaryEvents =
+            forge.aList(size = listSize) { forge.getForgery(MotionEvent::class.java) }
+        val distancesX = forge.aList(listSize) { forge.aFloat() }
+        val distancesY = forge.aList(listSize) { forge.aFloat() }
+        val targetId = forge.anInt()
+        val endUpEvent = intermediaryEvents[intermediaryEvents.size - 1]
+        val scrollingTarget: ScrollableListView = mockView(
+            id = targetId,
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        )
+        val fakeCustomTargetName = forge.anAlphabeticalString()
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(scrollingTarget)).thenReturn(fakeCustomTargetName)
+        }
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(scrollingTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(scrollingTarget, expectedResourceName)
+        testedListener = GesturesListener(
+            WeakReference(mockWindow),
+            interactionPredicate = mockInteractionPredicate
+        )
+
+        // When
+        testedListener.onDown(startDownEvent)
+        intermediaryEvents.forEachIndexed { index, event ->
+            testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
+        }
+        testedListener.onUp(endUpEvent)
+
+        // Then
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startUserAction(RumActionType.CUSTOM, "", emptyMap())
+            verify(rumMonitor.mockInstance).stopUserAction(
+                eq(RumActionType.SCROLL),
+                eq(fakeCustomTargetName),
+                any()
+            )
+        }
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
+    fun `M use the default target name W scrollDetected { custom target name is empty }`(
+        forge: Forge
+    ) {
+        val startDownEvent: MotionEvent = forge.getForgery()
+        val listSize = forge.anInt(1, 20)
+        val intermediaryEvents =
+            forge.aList(size = listSize) { forge.getForgery(MotionEvent::class.java) }
+        val distancesX = forge.aList(listSize) { forge.aFloat() }
+        val distancesY = forge.aList(listSize) { forge.aFloat() }
+        val targetId = forge.anInt()
+        val endUpEvent = intermediaryEvents[intermediaryEvents.size - 1]
+        val scrollingTarget: ScrollableListView = mockView(
+            id = targetId,
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        )
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(scrollingTarget)).thenReturn("")
+        }
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(scrollingTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(scrollingTarget, expectedResourceName)
+        testedListener = GesturesListener(
+            WeakReference(mockWindow),
+            interactionPredicate = mockInteractionPredicate
+        )
+
+        // When
+        testedListener.onDown(startDownEvent)
+        intermediaryEvents.forEachIndexed { index, event ->
+            testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
+        }
+        testedListener.onUp(endUpEvent)
+
+        // Then
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startUserAction(RumActionType.CUSTOM, "", emptyMap())
+            verify(rumMonitor.mockInstance).stopUserAction(
+                eq(RumActionType.SCROLL),
+                eq(targetName(scrollingTarget, expectedResourceName)),
+                any()
+            )
         }
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }

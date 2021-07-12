@@ -16,6 +16,7 @@ import android.view.Window
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockDevLogHandler
@@ -485,6 +486,103 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             WeakReference(mockWindow),
             providers
         )
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        verify(rumMonitor.mockInstance).addUserAction(
+            RumActionType.TAP,
+            targetName(validTarget, expectedResourceName),
+            expectedAttributes
+        )
+    }
+
+    @Test
+    fun `M use the custom target name W tapIntercepted { custom target name provided }`(
+        forge: Forge
+    ) {
+        val mockEvent: MotionEvent = forge.getForgery()
+        val targetId = forge.anInt()
+        val fakeCustomTargetName = forge.anAlphabeticalString()
+        val validTarget: View = mockView(
+            id = targetId,
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge,
+            clickable = true
+        )
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(validTarget)).thenReturn(fakeCustomTargetName)
+        }
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(validTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(validTarget, expectedResourceName)
+        val expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
+            RumAttributes.ACTION_TARGET_CLASS_NAME to validTarget.javaClass.canonicalName,
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+        )
+
+        testedListener = GesturesListener(
+            WeakReference(mockWindow),
+            interactionPredicate = mockInteractionPredicate
+        )
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        verify(rumMonitor.mockInstance).addUserAction(
+            RumActionType.TAP,
+            fakeCustomTargetName,
+            expectedAttributes
+        )
+    }
+
+    @Test
+    fun `M use the default target name W tapIntercepted { custom target name empty }`(
+        forge: Forge
+    ) {
+        val mockEvent: MotionEvent = forge.getForgery()
+        val targetId = forge.anInt()
+        val validTarget: View = mockView(
+            id = targetId,
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge,
+            clickable = true
+        )
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(validTarget)).thenReturn("")
+        }
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(validTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(validTarget, expectedResourceName)
+        val expectedAttributes: MutableMap<String, Any?> = mutableMapOf(
+            RumAttributes.ACTION_TARGET_CLASS_NAME to validTarget.javaClass.canonicalName,
+            RumAttributes.ACTION_TARGET_RESOURCE_ID to expectedResourceName
+        )
+
+        testedListener = GesturesListener(
+            WeakReference(mockWindow),
+            interactionPredicate = mockInteractionPredicate
+        )
+
         // When
         testedListener.onSingleTapUp(mockEvent)
 
