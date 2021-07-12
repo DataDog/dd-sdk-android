@@ -599,7 +599,7 @@ class RumConfigE2ETests {
     @Test
     fun rum_config_sample_rum_sessions_75_percent_in() {
         val testMethodName = "rum_config_sample_rum_sessions_75_percent_in"
-        val eventsNumber = 10
+        val eventsNumber = 100
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
@@ -614,9 +614,12 @@ class RumConfigE2ETests {
         }
 
         repeat(eventsNumber) {
-            sendRandomRumEvent(forge, testMethodName)
+            // we do not want to add the test method name in the parent View name as
+            // this will add extra events to the monitor query value
+            sendRandomRumEvent(forge, testMethodName, parentViewEventName = "")
             // expire the session here
             GlobalRum.get().invokeMethod("resetSession")
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync()
         }
     }
 
