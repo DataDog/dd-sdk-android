@@ -14,6 +14,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -66,11 +67,15 @@ internal class RumApplicationScopeTest {
     @FloatForgery(min = 0f, max = 100f)
     var fakeSamplingRate: Float = 0f
 
+    @BoolForgery
+    var fakeBackgroundTrackingEnabled: Boolean = false
+
     @BeforeEach
     fun `set up`() {
         testedScope = RumApplicationScope(
             fakeApplicationId,
             fakeSamplingRate,
+            fakeBackgroundTrackingEnabled,
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -88,6 +93,7 @@ internal class RumApplicationScopeTest {
 
         check(childScope is RumSessionScope)
         assertThat(childScope.samplingRate).isEqualTo(fakeSamplingRate)
+        assertThat(childScope.backgroundTrackingEnabled).isEqualTo(fakeBackgroundTrackingEnabled)
         assertThat(childScope.firstPartyHostDetector).isSameAs(mockDetector)
     }
 

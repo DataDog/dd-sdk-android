@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong
 internal class RumSessionScope(
     private val parentScope: RumScope,
     internal val samplingRate: Float,
+    internal val backgroundTrackingEnabled: Boolean,
     internal val firstPartyHostDetector: FirstPartyHostDetector,
     private val cpuVitalMonitor: VitalMonitor,
     private val memoryVitalMonitor: VitalMonitor,
@@ -111,11 +112,12 @@ internal class RumSessionScope(
         event: RumRawEvent,
         actualWriter: DataWriter<RumEvent>
     ) {
-        if (event is RumRawEvent.AddError ||
+        val isValidBackgroundEvent = event is RumRawEvent.AddError ||
             event is RumRawEvent.AddLongTask ||
             event is RumRawEvent.StartAction ||
             event is RumRawEvent.StartResource
-        ) {
+
+        if (isValidBackgroundEvent && backgroundTrackingEnabled) {
             // there is no active ViewScope to handle this event. We will assume the application
             // is in background and we will create a special ViewScope (background)
             // to handle all the events.

@@ -22,7 +22,8 @@ internal class ConfigurationRumForgeryFactory :
             userActionTrackingStrategy = mock(),
             viewTrackingStrategy = mock(),
             rumEventMapper = mock(),
-            longTaskTrackingStrategy = mock()
+            longTaskTrackingStrategy = mock(),
+            backgroundEventTracking = forge.aBool()
         )
     }
 }

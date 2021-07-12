@@ -101,7 +101,8 @@ internal constructor(
             val userActionTrackingStrategy: UserActionTrackingStrategy?,
             val viewTrackingStrategy: ViewTrackingStrategy?,
             val longTaskTrackingStrategy: TrackingStrategy?,
-            val rumEventMapper: EventMapper<RumEvent>
+            val rumEventMapper: EventMapper<RumEvent>,
+            val backgroundEventTracking: Boolean
         ) : Feature()
     }
 
@@ -410,11 +411,25 @@ internal constructor(
          *
          * @param samplingRate the sampling rate must be a value between 0 and 100. A value of 0
          * means no RUM event will be sent, 100 means all sessions will be kept.
-         *
          */
         fun sampleRumSessions(samplingRate: Float): Builder {
             applyIfFeatureEnabled(PluginFeature.RUM, "sampleRumSessions") {
                 rumConfig = rumConfig.copy(samplingRate = samplingRate)
+            }
+            return this
+        }
+
+        /**
+         * Enables/Disables tracking RUM event when no Activity is in foreground.
+         *
+         * By default, background events are not tracked. Enabling this feature might increase the
+         * number of sessions tracked and impact your billing.
+         *
+         * @param enabled whether background events should be tracked in RUM.
+         */
+        fun trackBackgroundRumEvents(enabled: Boolean): Builder {
+            applyIfFeatureEnabled(PluginFeature.RUM, "trackBackgroundRumEvents") {
+                rumConfig = rumConfig.copy(backgroundEventTracking = enabled)
             }
             return this
         }
@@ -617,7 +632,8 @@ internal constructor(
             userActionTrackingStrategy = provideUserTrackingStrategy(emptyArray()),
             viewTrackingStrategy = ActivityViewTrackingStrategy(false),
             longTaskTrackingStrategy = MainLooperLongTaskStrategy(DEFAULT_LONG_TASK_THRESHOLD_MS),
-            rumEventMapper = NoOpEventMapper()
+            rumEventMapper = NoOpEventMapper(),
+            backgroundEventTracking = false
         )
 
         internal val ERROR_FEATURE_DISABLED = "The %s feature has been disabled in your " +

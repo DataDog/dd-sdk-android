@@ -47,6 +47,7 @@ import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -115,6 +116,9 @@ internal class RumSessionScopeTest {
     @FloatForgery(min = 0f, max = 100f)
     var fakeSamplingRate: Float = 0f
 
+    @BoolForgery
+    var fakeBackgroundTrackingEnabled: Boolean = false
+
     @BeforeEach
     fun `set up`() {
         mockDevLogHandler = mockDevLogHandler()
@@ -127,6 +131,7 @@ internal class RumSessionScopeTest {
         testedScope = RumSessionScope(
             mockParentScope,
             100f,
+            fakeBackgroundTrackingEnabled,
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -154,6 +159,7 @@ internal class RumSessionScopeTest {
         testedScope = RumSessionScope(
             mockParentScope,
             0f,
+            fakeBackgroundTrackingEnabled,
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -250,6 +256,7 @@ internal class RumSessionScopeTest {
         testedScope = RumSessionScope(
             mockParentScope,
             fakeSamplingRate,
+            fakeBackgroundTrackingEnabled,
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -310,6 +317,7 @@ internal class RumSessionScopeTest {
         testedScope = RumSessionScope(
             mockParentScope,
             0f,
+            fakeBackgroundTrackingEnabled,
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -492,6 +500,7 @@ internal class RumSessionScopeTest {
         testedScope = RumSessionScope(
             mockParentScope,
             0f,
+            fakeBackgroundTrackingEnabled,
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -513,7 +522,18 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // GIVEN
-        val fakeEvent = forge.forgeValidRumRawEvent()
+        testedScope = RumSessionScope(
+            mockParentScope,
+            100f,
+            true,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            TEST_INACTIVITY_NS,
+            TEST_MAX_DURATION_NS
+        )
+        val fakeEvent = forge.forgeValidBackgroundEvent()
 
         // WHEN
         testedScope.handleEvent(fakeEvent, mockWriter)
@@ -532,11 +552,72 @@ internal class RumSessionScopeTest {
     }
 
     @Test
+    fun `M ignore event W handleEvent { no active scope, event is relevant, background disabled }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        testedScope = RumSessionScope(
+            mockParentScope,
+            100f,
+            false,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            TEST_INACTIVITY_NS,
+            TEST_MAX_DURATION_NS
+        )
+        val fakeEvent = forge.forgeValidBackgroundEvent()
+
+        // WHEN
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        assertThat(testedScope.activeChildrenScopes).hasSize(0)
+    }
+
+    @Test
+    fun `M send warn dev log W handleEvent { no active scope, event is relevant, bg disabled }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        testedScope = RumSessionScope(
+            mockParentScope,
+            100f,
+            false,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            TEST_INACTIVITY_NS,
+            TEST_MAX_DURATION_NS
+        )
+        val fakeEvent = forge.forgeValidBackgroundEvent()
+
+        // WHEN
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        verify(mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
+    }
+
+    @Test
     fun `M handle event in the background ViewScope W handleEvent { event is relevant }`(
         forge: Forge
     ) {
         // GIVEN
-        val fakeEvent = forge.forgeValidRumRawEvent()
+        testedScope = RumSessionScope(
+            mockParentScope,
+            100f,
+            true,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            TEST_INACTIVITY_NS,
+            TEST_MAX_DURATION_NS
+        )
+        val fakeEvent = forge.forgeValidBackgroundEvent()
         val mockBackgroundViewScope: RumViewScope = mock()
 
         // WHEN
@@ -550,11 +631,41 @@ internal class RumSessionScopeTest {
     }
 
     @Test
+    fun `M ignore background event W handleEvent { event is not relevant }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        testedScope = RumSessionScope(
+            mockParentScope,
+            100f,
+            true,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            TEST_INACTIVITY_NS,
+            TEST_MAX_DURATION_NS
+        )
+        val fakeEvent = forge.forgeInvalidBackgroundEvent()
+        val mockBackgroundViewScope: RumViewScope = mock()
+
+        // WHEN
+        val testedSpyScope = spy(testedScope)
+        doReturn(mockBackgroundViewScope).whenever(testedSpyScope)
+            .produceRumBackgroundViewScope(fakeEvent)
+        testedSpyScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        verifyZeroInteractions(mockBackgroundViewScope)
+        verify(mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
+    }
+
+    @Test
     fun `M not start a background ViewScope W handleEvent { no active scope, event not relevant}`(
         forge: Forge
     ) {
         // GIVEN
-        val fakeEvent = forge.forgeAnInvalidRumRawEvent()
+        val fakeEvent = forge.forgeInvalidBackgroundEvent()
 
         // WHEN
         testedScope.handleEvent(fakeEvent, mockWriter)
@@ -568,7 +679,7 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // GIVEN
-        val fakeEvent = forge.forgeAnInvalidRumRawEvent()
+        val fakeEvent = forge.forgeInvalidBackgroundEvent()
 
         // WHEN
         testedScope.handleEvent(fakeEvent, mockWriter)
@@ -577,7 +688,7 @@ internal class RumSessionScopeTest {
         verify(mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
     }
 
-    private fun Forge.forgeValidRumRawEvent(): RumRawEvent {
+    private fun Forge.forgeValidBackgroundEvent(): RumRawEvent {
         val fakeEventTime = Time()
         val fakeName = this.anAlphabeticalString()
 
@@ -611,7 +722,7 @@ internal class RumSessionScopeTest {
         )
     }
 
-    private fun Forge.forgeAnInvalidRumRawEvent(): RumRawEvent {
+    private fun Forge.forgeInvalidBackgroundEvent(): RumRawEvent {
         val fakeEventTime = Time()
         val fakeKey = this.anAlphabeticalString()
 

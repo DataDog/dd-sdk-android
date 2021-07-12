@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit
 internal class DatadogRumMonitor(
     applicationId: String,
     internal val samplingRate: Float,
+    internal val backgroundTrackingEnabled: Boolean,
     private val writer: DataWriter<RumEvent>,
     internal val handler: Handler,
     firstPartyHostDetector: FirstPartyHostDetector,
@@ -43,6 +44,7 @@ internal class DatadogRumMonitor(
     internal val rootScope: RumScope = RumApplicationScope(
         applicationId,
         samplingRate,
+        backgroundTrackingEnabled,
         firstPartyHostDetector,
         cpuVitalMonitor,
         memoryVitalMonitor,

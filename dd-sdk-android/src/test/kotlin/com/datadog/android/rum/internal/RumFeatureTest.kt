@@ -90,6 +90,16 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
     }
 
     @Test
+    fun `𝕄 store background tracking 𝕎 initialize()`() {
+        // When
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+
+        // Then
+        assertThat(testedFeature.backgroundEventTracking)
+            .isEqualTo(fakeConfigurationFeature.backgroundEventTracking)
+    }
+
+    @Test
     fun `𝕄 store and register viewTrackingStrategy 𝕎 initialize()`() {
         // When
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)

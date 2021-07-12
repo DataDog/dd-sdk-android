@@ -263,7 +263,8 @@ interface RumMonitor {
                     firstPartyHostDetector = CoreFeature.firstPartyHostDetector,
                     cpuVitalMonitor = RumFeature.cpuVitalMonitor,
                     memoryVitalMonitor = RumFeature.memoryVitalMonitor,
-                    frameRateVitalMonitor = RumFeature.frameRateVitalMonitor
+                    frameRateVitalMonitor = RumFeature.frameRateVitalMonitor,
+                    backgroundTrackingEnabled = RumFeature.backgroundEventTracking
                 )
             }
         }

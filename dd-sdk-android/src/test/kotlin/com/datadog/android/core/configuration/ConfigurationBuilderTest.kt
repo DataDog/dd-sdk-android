@@ -42,6 +42,7 @@ import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -139,7 +140,8 @@ internal class ConfigurationBuilderTest {
                 ),
                 viewTrackingStrategy = ActivityViewTrackingStrategy(false),
                 rumEventMapper = NoOpEventMapper(),
-                longTaskTrackingStrategy = MainLooperLongTaskStrategy(100L)
+                longTaskTrackingStrategy = MainLooperLongTaskStrategy(100L),
+                backgroundEventTracking = false
             )
         )
         assertThat(config.internalLogsConfig).isNull()
@@ -447,6 +449,29 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 samplingRate = sampling
+            )
+        )
+        assertThat(config.internalLogsConfig).isNull()
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 build config with background event 𝕎 trackBackgroundEvents() and build()`(
+        @BoolForgery backgroundEventEnabled: Boolean
+    ) {
+        // When
+        val config = testedBuilder
+            .trackBackgroundRumEvents(backgroundEventEnabled)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(
+                backgroundEventTracking = backgroundEventEnabled
             )
         )
         assertThat(config.internalLogsConfig).isNull()
