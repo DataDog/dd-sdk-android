@@ -29,7 +29,11 @@ fun measureRumMonitorInitialize(codeBlock: () -> RumMonitor): RumMonitor {
     return measure(INITIALIZE_RUMMONITOR_TEST_METHOD_NAME, codeBlock)
 }
 
-fun sendRandomRumEvent(forge: Forge, testMethodName: String) {
+fun sendRandomRumEvent(
+    forge: Forge,
+    testMethodName: String,
+    parentViewEventName: String = testMethodName
+) {
     when (forge.anInt(min = 0, max = 4)) {
         0 -> {
             val aViewKey = forge.aViewKey()
@@ -42,7 +46,7 @@ fun sendRandomRumEvent(forge: Forge, testMethodName: String) {
         }
         1 -> {
             val aResourceKey = forge.aResourceKey()
-            executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName) {
+            executeInsideView(forge.aViewKey(), forge.aViewName(), parentViewEventName) {
                 GlobalRum.get().startResource(
                     aResourceKey,
                     forge.aResourceMethod(),
@@ -59,7 +63,7 @@ fun sendRandomRumEvent(forge: Forge, testMethodName: String) {
             }
         }
         2 -> {
-            executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName) {
+            executeInsideView(forge.aViewKey(), forge.aViewName(), parentViewEventName) {
                 GlobalRum.get().addError(
                     forge.anErrorMessage(),
                     forge.aValueFrom(RumErrorSource::class.java),
@@ -69,7 +73,7 @@ fun sendRandomRumEvent(forge: Forge, testMethodName: String) {
             }
         }
         3 -> {
-            executeInsideView(forge.aViewKey(), forge.aViewName(), testMethodName) {
+            executeInsideView(forge.aViewKey(), forge.aViewName(), parentViewEventName) {
                 GlobalRum.get().addUserAction(
                     forge.aValueFrom(RumActionType::class.java),
                     forge.anActionName(),
