@@ -417,8 +417,8 @@ class RumMonitorE2ETests {
      * apiMethodSignature: RumMonitor#fun stopUserAction(RumActionType, String, Map<String, Any?> = emptyMap())
      */
     @Test
-    fun rum_rummonitor_stop_background_action_with_outcome() {
-        val testMethodName = "rum_rummonitor_stop_background_action_with_outcome"
+    fun rum_rummonitor_ignore_stop_background_action_with_outcome() {
+        val testMethodName = "rum_rummonitor_ignore_stop_background_action_with_outcome"
         val actionName = forge.anActionName()
         val type = forge.aValueFrom(RumActionType::class.java)
         GlobalRum.get().startUserAction(
@@ -443,8 +443,9 @@ class RumMonitorE2ETests {
      * apiMethodSignature: RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
-    fun rum_rummonitor_add_background_non_custom_action_with_no_outcome() {
-        val testMethodName = "rum_rummonitor_add_background_non_custom_action_with_no_outcome"
+    fun rum_rummonitor_ignore_add_background_non_custom_action_with_no_outcome() {
+        val testMethodName =
+            "rum_rummonitor_ignore_add_background_non_custom_action_with_no_outcome"
         val actionName = forge.anActionName()
         measure(testMethodName) {
             GlobalRum.get().addUserAction(
@@ -462,8 +463,8 @@ class RumMonitorE2ETests {
      * apiMethodSignature: RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
-    fun rum_rummonitor_add_background_custom_action_with_no_outcome() {
-        val testMethodName = "rum_rummonitor_add_background_custom_action_with_no_outcome"
+    fun rum_rummonitor_ignore_add_background_custom_action_with_no_outcome() {
+        val testMethodName = "rum_rummonitor_ignore_add_background_custom_action_with_no_outcome"
         val actionName = forge.anActionName()
         measure(testMethodName) {
             GlobalRum.get().addUserAction(
@@ -480,8 +481,8 @@ class RumMonitorE2ETests {
      * apiMethodSignature: RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
-    fun rum_rummonitor_add_background_custom_action_with_outcome() {
-        val testMethodName = "rum_rummonitor_add_background_custom_action_with_outcome"
+    fun rum_rummonitor_ignore_add_background_custom_action_with_outcome() {
+        val testMethodName = "rum_rummonitor_ignore_add_background_custom_action_with_outcome"
         val actionName = forge.anActionName()
         measure(testMethodName) {
             GlobalRum.get().addUserAction(
@@ -502,8 +503,8 @@ class RumMonitorE2ETests {
      * apiMethodSignature: RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
-    fun rum_rummonitor_add_background_non_custom_action_with_outcome() {
-        val testMethodName = "rum_rummonitor_add_background_non_custom_action_with_outcome"
+    fun rum_rummonitor_ignore_add_background_non_custom_action_with_outcome() {
+        val testMethodName = "rum_rummonitor_ignore_add_background_non_custom_action_with_outcome"
         val actionName = forge.anActionName()
         measure(testMethodName) {
             GlobalRum.get().addUserAction(
@@ -578,30 +579,6 @@ class RumMonitorE2ETests {
     }
 
     /**
-     * apiMethodSignature: RumMonitor#fun stopResource(String, Int?, Long?, RumResourceKind, Map<String, Any?>)
-     */
-    @Test
-    fun rum_rummonitor_stop_background_resource() {
-        val testMethodName = "rum_rummonitor_stop_background_resource"
-        val resourceKey = forge.aResourceKey()
-        GlobalRum.get().startResource(
-            resourceKey,
-            forge.aResourceMethod(),
-            resourceKey,
-            attributes = defaultTestAttributes(testMethodName)
-        )
-        measure(testMethodName) {
-            GlobalRum.get().stopResource(
-                resourceKey,
-                200,
-                forge.aLong(min = 1),
-                forge.aValueFrom(RumResourceKind::class.java),
-                defaultTestAttributes(testMethodName)
-            )
-        }
-    }
-
-    /**
      * apiMethodSignature: RumMonitor#fun stopResourceWithError(String, Int?, String, RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
      */
     @Test
@@ -661,6 +638,59 @@ class RumMonitorE2ETests {
 
     // endregion
 
+    // region Background Resource
+
+    /**
+     * apiMethodSignature: RumMonitor#fun stopResource(String, Int?, Long?, RumResourceKind, Map<String, Any?>)
+     */
+    @Test
+    fun rum_rummonitor_ignore_stop_background_resource() {
+        val testMethodName = "rum_rummonitor_ignore_stop_background_resource"
+        val resourceKey = forge.aResourceKey()
+        GlobalRum.get().startResource(
+            resourceKey,
+            forge.aResourceMethod(),
+            resourceKey,
+            attributes = defaultTestAttributes(testMethodName)
+        )
+        measure(testMethodName) {
+            GlobalRum.get().stopResource(
+                resourceKey,
+                200,
+                forge.aLong(min = 1),
+                forge.aValueFrom(RumResourceKind::class.java),
+                defaultTestAttributes(testMethodName)
+            )
+        }
+    }
+
+    /**
+     * apiMethodSignature: RumMonitor#fun stopResourceWithError(String, Int?, String, RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
+     */
+    @Test
+    fun rum_rummonitor_ignore_stop_background_resource_with_error() {
+        val testMethodName = "rum_rummonitor_ignore_stop_background_resource_with_error"
+        val resourceKey = forge.aResourceKey()
+        GlobalRum.get().startResource(
+            resourceKey,
+            forge.aResourceMethod(),
+            resourceKey,
+            attributes = defaultTestAttributes(testMethodName)
+        )
+        measure(testMethodName) {
+            GlobalRum.get().stopResourceWithError(
+                resourceKey,
+                forge.anInt(min = 400, max = 511),
+                forge.aResourceErrorMessage(),
+                forge.aValueFrom(RumErrorSource::class.java),
+                forge.aThrowable(),
+                defaultTestAttributes(testMethodName)
+            )
+        }
+    }
+
+    // endregion
+
     // region Error
 
     /**
@@ -705,18 +735,39 @@ class RumMonitorE2ETests {
         }
     }
 
+    // endregion
+
+    // region Background Error
+
     /**
      * apiMethodSignature: RumMonitor#fun addError(String, RumErrorSource, Throwable?, Map<String, Any?>)
      */
     @Test
-    fun rum_rummonitor_add_background_error() {
-        val testMethodName = "rum_rummonitor_add_background_error"
+    fun rum_rummonitor_ignore_add_background_error() {
+        val testMethodName = "rum_rummonitor_ignore_add_background_error"
         val errorMessage = forge.anErrorMessage()
         measure(testMethodName) {
             GlobalRum.get().addError(
                 errorMessage,
                 forge.aValueFrom(RumErrorSource::class.java),
                 forge.aNullable { forge.aThrowable() },
+                defaultTestAttributes(testMethodName)
+            )
+        }
+    }
+
+    /**
+     * apiMethodSignature: RumMonitor#fun addErrorWithStacktrace(String, RumErrorSource, String?, Map<String, Any?>)
+     */
+    @Test
+    fun rum_rummonitor_ignore_add_background_error_with_stacktrace() {
+        val testMethodName = "rum_rummonitor_ignore_add_background_error_with_stacktrace"
+        val errorMessage = forge.anErrorMessage()
+        measure(testMethodName) {
+            GlobalRum.get().addErrorWithStacktrace(
+                errorMessage,
+                forge.aValueFrom(RumErrorSource::class.java),
+                forge.aNullable { forge.aThrowable().stackTraceToString() },
                 defaultTestAttributes(testMethodName)
             )
         }
