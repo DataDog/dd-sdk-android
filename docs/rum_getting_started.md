@@ -1,6 +1,6 @@
 # Getting Started with Android RUM Collection
 
-Datadog *Real User Monitoring (RUM)* enables you to visualize and analyze the real-time performance and user journeys of your application's individual users.
+Datadog Real User Monitoring (RUM) enables you to visualize and analyze the real-time performance and user journeys of your application's individual users.
 
 ## Setup
 
@@ -14,7 +14,7 @@ Datadog *Real User Monitoring (RUM)* enables you to visualize and analyze the re
 
 ### Declare SDK as dependency
 
-Declare [dd-sdk-android][1] and [gradle plugin][13] as a dependency in your `build.gradle` file:
+Declare [dd-sdk-android][1] and the [gradle plugin][13] as a dependency in your `build.gradle` file:
 
 ```
 plugins {
