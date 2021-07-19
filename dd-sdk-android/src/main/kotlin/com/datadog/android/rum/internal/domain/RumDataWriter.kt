@@ -42,9 +42,7 @@ internal class RumDataWriter(
             is ActionEvent -> notifyEventSent(event.view.id, EventType.ACTION)
             is ResourceEvent -> notifyEventSent(event.view.id, EventType.RESOURCE)
             is ErrorEvent -> {
-                if (event.error.isCrash == true) {
-                    notifyEventSent(event.view.id, EventType.CRASH)
-                } else {
+                if (event.error.isCrash != true) {
                     notifyEventSent(event.view.id, EventType.ERROR)
                 }
             }

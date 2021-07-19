@@ -298,7 +298,13 @@ internal open class RumViewScope(
             userExtraAttributes = user.additionalProperties
         )
         writer.write(rumEvent)
-        pendingErrorCount++
+        if (event.isFatal) {
+            errorCount++
+            crashCount++
+            sendViewUpdate(event, writer)
+        } else {
+            pendingErrorCount++
+        }
     }
 
     private fun onAddCustomTiming(
@@ -383,7 +389,6 @@ internal open class RumViewScope(
         if (event.viewId == viewId) {
             pendingErrorCount--
             errorCount++
-            if (event.isCrash) crashCount++
             sendViewUpdate(event, writer)
         }
     }

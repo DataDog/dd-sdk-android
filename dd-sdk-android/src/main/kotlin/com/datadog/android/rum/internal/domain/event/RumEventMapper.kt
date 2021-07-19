@@ -42,7 +42,13 @@ internal data class RumEventMapper(
         return when (val bundledEvent = event.event) {
             is ViewEvent -> viewEventMapper.map(bundledEvent)
             is ActionEvent -> actionEventMapper.map(bundledEvent)
-            is ErrorEvent -> errorEventMapper.map(bundledEvent)
+            is ErrorEvent -> {
+                if (bundledEvent.error.isCrash != true) {
+                    errorEventMapper.map(bundledEvent)
+                } else {
+                    bundledEvent
+                }
+            }
             is ResourceEvent -> resourceEventMapper.map(bundledEvent)
             is LongTaskEvent -> longTaskEventMapper.map(bundledEvent)
             else -> {
