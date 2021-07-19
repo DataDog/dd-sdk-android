@@ -11,6 +11,5 @@ internal enum class EventType {
     ACTION,
     RESOURCE,
     ERROR,
-    CRASH,
     LONG_TASK
 }

@@ -497,14 +497,19 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W addCrash()`(
+    fun `M delegate event to rootScope on current thread W addCrash()`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
     ) {
+        // Given
+        testedMonitor.drainExecutorService()
+
+        // When
         testedMonitor.addCrash(message, source, throwable)
         Thread.sleep(PROCESSING_DELAY)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
 

@@ -255,8 +255,7 @@ internal class DatadogRumMonitor(
         when (type) {
             EventType.ACTION -> handleEvent(RumRawEvent.ActionSent(viewId))
             EventType.RESOURCE -> handleEvent(RumRawEvent.ResourceSent(viewId))
-            EventType.ERROR -> handleEvent(RumRawEvent.ErrorSent(viewId, false))
-            EventType.CRASH -> handleEvent(RumRawEvent.ErrorSent(viewId, true))
+            EventType.ERROR -> handleEvent(RumRawEvent.ErrorSent(viewId))
             EventType.LONG_TASK -> handleEvent(RumRawEvent.LongTaskSent(viewId))
             EventType.VIEW -> {
                 // Nothing to do
@@ -268,7 +267,7 @@ internal class DatadogRumMonitor(
         when (type) {
             EventType.ACTION -> handleEvent(RumRawEvent.ActionDropped(viewId))
             EventType.RESOURCE -> handleEvent(RumRawEvent.ResourceDropped(viewId))
-            EventType.ERROR, EventType.CRASH -> handleEvent(RumRawEvent.ErrorDropped(viewId))
+            EventType.ERROR -> handleEvent(RumRawEvent.ErrorDropped(viewId))
             EventType.LONG_TASK -> handleEvent(RumRawEvent.LongTaskDropped(viewId))
             EventType.VIEW -> {
                 // Nothing to do
@@ -293,14 +292,18 @@ internal class DatadogRumMonitor(
     }
 
     internal fun handleEvent(event: RumRawEvent) {
-        handler.removeCallbacks(keepAliveRunnable)
-        // avoid trowing a RejectedExecutionException
-        if (!executorService.isShutdown) {
-            executorService.submit {
-                synchronized(rootScope) {
-                    rootScope.handleEvent(event, writer)
+        if (event is RumRawEvent.AddError && event.isFatal) {
+            rootScope.handleEvent(event, writer)
+        } else {
+            handler.removeCallbacks(keepAliveRunnable)
+            // avoid trowing a RejectedExecutionException
+            if (!executorService.isShutdown) {
+                executorService.submit {
+                    synchronized(rootScope) {
+                        rootScope.handleEvent(event, writer)
+                    }
+                    handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
                 }
-                handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
             }
         }
     }

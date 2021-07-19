@@ -22,6 +22,9 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -210,7 +213,7 @@ internal class RumDataWriterTest {
     }
 
     @Test
-    fun `𝕄 notify the RumMonitor 𝕎 onDataWritten() { ErrorEvent isCrash=true }`(
+    fun `𝕄 not notify the RumMonitor 𝕎 onDataWritten() { ErrorEvent isCrash=true }`(
         @Forgery fakeModel: RumEvent,
         @Forgery errorEvent: ErrorEvent
     ) {
@@ -225,7 +228,7 @@ internal class RumDataWriterTest {
         testedWriter.onDataWritten(rumEvent, fakeSerializedData)
 
         // Then
-        verify(rumMonitor.mockInstance).eventSent(errorEvent.view.id, EventType.CRASH)
+        verify(rumMonitor.mockInstance, never()).eventSent(eq(errorEvent.view.id), any())
         verifyZeroInteractions(mockFileHandler)
     }
 
