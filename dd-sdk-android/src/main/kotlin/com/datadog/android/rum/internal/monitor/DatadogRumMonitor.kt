@@ -292,14 +292,18 @@ internal class DatadogRumMonitor(
     }
 
     internal fun handleEvent(event: RumRawEvent) {
-        handler.removeCallbacks(keepAliveRunnable)
-        // avoid trowing a RejectedExecutionException
-        if (!executorService.isShutdown) {
-            executorService.submit {
-                synchronized(rootScope) {
-                    rootScope.handleEvent(event, writer)
+        if (event is RumRawEvent.AddError && event.isFatal) {
+            rootScope.handleEvent(event, writer)
+        } else {
+            handler.removeCallbacks(keepAliveRunnable)
+            // avoid trowing a RejectedExecutionException
+            if (!executorService.isShutdown) {
+                executorService.submit {
+                    synchronized(rootScope) {
+                        rootScope.handleEvent(event, writer)
+                    }
+                    handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
                 }
-                handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
             }
         }
     }
