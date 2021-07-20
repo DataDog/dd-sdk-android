@@ -2,7 +2,7 @@ Dependencies List
 
 androidx.annotation:annotation:1.1.0                            :   27 Kb
 androidx.sqlite:sqlite:2.1.0                                    :   10 Kb
-com.squareup.okhttp3:okhttp:3.12.6                              :  413 Kb
+com.squareup.okhttp3:okhttp:3.12.13                             :  417 Kb
 com.squareup.okio:okio:1.15.0                                   :   86 Kb
 com.squareup.sqldelight:android-driver:1.4.3                    :   22 Kb
 com.squareup.sqldelight:runtime-jvm:1.4.3                       :   42 Kb
