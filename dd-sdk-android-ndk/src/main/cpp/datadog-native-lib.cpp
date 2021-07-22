@@ -107,7 +107,7 @@ Java_com_datadog_android_ndk_NdkCrashReportsPlugin_registerSignalHandler(
 
     update_main_context(env, storage_path);
     update_tracking_consent(consent);
-    install_signal_handlers();
+    start_monitoring();
 }
 
 
@@ -115,7 +115,7 @@ extern "C" JNIEXPORT void JNICALL
 Java_com_datadog_android_ndk_NdkCrashReportsPlugin_unregisterSignalHandler(
         JNIEnv *env,
         jobject /* this */) {
-    uninstall_signal_handlers();
+    stop_monitoring();
 }
 
 extern "C" JNIEXPORT void JNICALL

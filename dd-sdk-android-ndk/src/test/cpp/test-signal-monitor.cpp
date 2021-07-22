@@ -1,9 +1,14 @@
+#include <csignal>
+#include <thread>
 #include <unistd.h>
 
 #include "greatest/greatest.h"
 #include "utils/signal-monitor.h"
 
 extern bool handlers_installed;
+extern struct sigaction *original_sigaction;
+
+
 #ifndef NDEBUG
 extern int performed_install_ops;
 extern int performed_uninstall_ops;
@@ -11,6 +16,8 @@ extern int performed_uninstall_ops;
 
 void clear_tests() {
 #ifndef NDEBUG
+    // reset the signal_monitor state
+    stop_monitoring();
     performed_install_ops = 0;
     performed_uninstall_ops = 0;
 #endif
@@ -32,49 +39,112 @@ bool performedInstall(int times) {
 #endif
 }
 
-TEST installs_signal_handlers(void) {
-    install_signal_handlers();
-    // give time for the install thread to finish
+void wait_for_watchdog_thread() {
+    // we cannot join on the override_signal_handlers_thread as in case this is not joinable
+    // meaning that it already finished, on Android API < 26 this will crash the process:
+    // See here: [https://android.googlesource.com/platform/bionic/+/master/libc/bionic/pthread_internal.cpp#106]
+    // Furthermore there is no way in C to tell if a thread is joinable :(
     sleep(5);
+}
+
+TEST calling_start_monitoring_will_install_signal_handlers(void) {
+    start_monitoring();
+    wait_for_watchdog_thread();
             ASSERT(handlers_installed);
-    uninstall_signal_handlers();
     clear_tests();
             PASS();
 }
 
-TEST calling_install_more_times_in_a_row_will_only_install_once(void) {
-    install_signal_handlers();
-    install_signal_handlers();
-    install_signal_handlers();
-    // give time for the install thread to finish
-    sleep(5);
+TEST calling_start_monitoring_more_times_in_a_row_will_only_install_once(void) {
+    start_monitoring();
+    start_monitoring();
+    start_monitoring();
+    wait_for_watchdog_thread();
             ASSERT(handlers_installed);
             ASSERT(performedInstall(1));
-    uninstall_signal_handlers();
     clear_tests();
             PASS();
 }
 
 
-TEST uninstalls_signal_handlers(void) {
+TEST calling_stop_monitoring_will_uninstall_the_handlers(void) {
     // given
-    install_signal_handlers();
-    sleep(5);
+    start_monitoring();
+    wait_for_watchdog_thread();
     // when
-    uninstall_signal_handlers();
+    stop_monitoring();
             ASSERT_FALSE(handlers_installed);
     clear_tests();
             PASS();
 }
 
-TEST calling_uninstall_more_times_in_a_row_will_only_uninstall_once(void) {
+TEST calling_stop_monitoring_more_times_in_a_row_will_only_uninstall_once(void) {
     // given
-    install_signal_handlers();
-    sleep(5);
+    start_monitoring();
+    wait_for_watchdog_thread();
     // when
-    uninstall_signal_handlers();
-    uninstall_signal_handlers();
-    uninstall_signal_handlers();
+    stop_monitoring();
+    stop_monitoring();
+    stop_monitoring();
+            ASSERT_FALSE(handlers_installed);
+            ASSERT(performedUninstall(1));
+    clear_tests();
+            PASS();
+}
+
+TEST calling_start_monitor_from_different_threads_will_only_install_once(void) {
+    auto start_monitoring_lambda = [] {
+        start_monitoring();
+    };
+    std::thread t1 = std::thread(start_monitoring_lambda);
+    std::thread t2 = std::thread(start_monitoring_lambda);
+    t1.join();
+    t2.join();
+    wait_for_watchdog_thread();
+            ASSERT(handlers_installed);
+            ASSERT(performedInstall(1));
+    clear_tests();
+            PASS();
+}
+
+TEST calling_start_monitor_from_different_threads_will_not_corrupt_the_memory(void) {
+    auto start_monitoring_lambda = [] {
+        start_monitoring();
+    };
+    std::thread t1 = std::thread(start_monitoring_lambda);
+    std::thread t2 = std::thread(start_monitoring_lambda);
+    t1.join();
+    t2.join();
+    // as the watchdog reference will change here we need to make sure we are waiting for both
+    // to finish so we will sleep for 5 seconds
+    sleep(5);
+    int sigactions_size = 0;
+    const int handled_signals = 6;
+    struct sigaction *end_pointer = original_sigaction + handled_signals;
+    struct sigaction *pointer = original_sigaction;
+    while (pointer != end_pointer && pointer != nullptr) {
+        sigactions_size++;
+        pointer++;
+    }
+            ASSERT(handlers_installed);
+            ASSERT(performedInstall(1));
+            ASSERT_EQ(sigactions_size, handled_signals);
+    clear_tests();
+            PASS();
+}
+
+TEST calling_stop_monitoring_from_2_different_threads_will_only_uninstall_once(void) {
+    // given
+    start_monitoring();
+    wait_for_watchdog_thread();
+    // when
+    auto stop_monitoring_lambda = [] {
+        stop_monitoring();
+    };
+    std::thread t1 = std::thread(stop_monitoring_lambda);
+    std::thread t2 = std::thread(stop_monitoring_lambda);
+    t1.join();
+    t2.join();
             ASSERT_FALSE(handlers_installed);
             ASSERT(performedUninstall(1));
     clear_tests();
@@ -83,8 +153,11 @@ TEST calling_uninstall_more_times_in_a_row_will_only_uninstall_once(void) {
 
 
 SUITE (signal_monitor) {
-            RUN_TEST(installs_signal_handlers);
-            RUN_TEST(calling_install_more_times_in_a_row_will_only_install_once);
-            RUN_TEST(uninstalls_signal_handlers);
-            RUN_TEST(calling_uninstall_more_times_in_a_row_will_only_uninstall_once);
+            RUN_TEST(calling_start_monitor_from_different_threads_will_only_install_once);
+            RUN_TEST(calling_start_monitor_from_different_threads_will_not_corrupt_the_memory);
+            RUN_TEST(calling_stop_monitoring_from_2_different_threads_will_only_uninstall_once);
+            RUN_TEST(calling_start_monitoring_will_install_signal_handlers);
+            RUN_TEST(calling_start_monitoring_more_times_in_a_row_will_only_install_once);
+            RUN_TEST(calling_stop_monitoring_will_uninstall_the_handlers);
+            RUN_TEST(calling_stop_monitoring_more_times_in_a_row_will_only_uninstall_once);
 }

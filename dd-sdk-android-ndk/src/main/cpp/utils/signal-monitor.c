@@ -25,15 +25,15 @@ static const char *LOG_TAG = "DatadogNdkCrashReporter";
 static sigset_t signals_mask;
 static stack_t signal_stack;
 
-/* the signal handler array */
-static struct sigaction *global_sigaction;
+/* the datadog sigaction which overrides the original signal handler */
+static volatile struct sigaction *volatile datadog_sigaction;
 
-/* the previous signal handler array */
-static struct sigaction *global_previous_sigaction;
+/* the original sigaction array which will hold the original handlers for each overridden signal */
+volatile struct sigaction *volatile original_sigaction;
 
-static pthread_t datadog_watchdog_thread;
+static pthread_t override_signal_handlers_thread;
 
-bool handlers_installed = false;
+volatile bool handlers_installed = false;
 
 // for testing purposes
 #ifndef NDEBUG
@@ -63,10 +63,6 @@ struct signal {
     char *signal_error_message;
 };
 
-// TODO https://datadoghq.atlassian.net/browse/RUMM-576
-// We should use a Hashtable (Hashmap) here. For now I could not find something in C so probably
-// will have to implement one or just use a pure array[key] -> value implementation even though
-// this will take more memory.
 static const struct signal handled_signals[] = {
         {SIGILL,  "SIGILL",  "Illegal instruction"},
         {SIGBUS,  "SIGBUS",  "Bus error (bad memory access)"},
@@ -80,17 +76,33 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 size_t handled_signals_size() { return sizeof(handled_signals) / sizeof(handled_signals[0]); }
 
-// It may happen that the process is killed during this function execution.
-// Therefore this function may never return.
-void invoke_previous_handler(int signum, siginfo_t *info, void *user_context) {
 
+void free_up_memory() {
+    if (datadog_sigaction != NULL) {
+        free((void *) datadog_sigaction);
+        datadog_sigaction = NULL;
+    }
+    if (original_sigaction != NULL) {
+        free((void *) original_sigaction);
+        original_sigaction = NULL;
+    }
+    if (signal_stack.ss_sp != NULL) {
+        free(signal_stack.ss_sp);
+        signal_stack.ss_sp = NULL;
+    }
+}
+
+
+void invoke_previous_handler(int signum, siginfo_t *info, void *user_context) {
+    // It may happen that the process is killed during this function execution.
+    // Therefore this function may never return.
     pthread_mutex_lock(&mutex);
 
     const size_t signals_array_size = handled_signals_size();
     for (int i = 0; i < signals_array_size; ++i) {
         const int signal = handled_signals[i].signal_value;
         if (signal == signum) {
-            struct sigaction previous = global_previous_sigaction[i];
+            struct sigaction previous = original_sigaction[i];
             // From sigaction(2):
             //  > If act is non-zero, it specifies an action (SIG_DFL, SIG_IGN, or a
             //  handler routine)
@@ -117,6 +129,22 @@ void invoke_previous_handler(int signum, siginfo_t *info, void *user_context) {
     pthread_mutex_unlock(&mutex);
 }
 
+void uninstall_handlers() {
+    if (!handlers_installed) {
+        return;
+    }
+    const size_t signals_array_size = handled_signals_size();
+    for (int i = 0; i < signals_array_size; i++) {
+        volatile struct sigaction *volatile original_action = &original_sigaction[i];
+        if (original_action) {
+            const int signal = handled_signals[i].signal_value;
+            sigaction(signal, (struct sigaction *) original_action, 0);
+        }
+    }
+    recordUninstallOp();
+    handlers_installed = false;
+}
+
 void handle_signal(int signum, siginfo_t *info, void *user_context) {
     const size_t signals_array_size = handled_signals_size();
     for (int i = 0; i < signals_array_size; i++) {
@@ -136,11 +164,12 @@ void handle_signal(int signum, siginfo_t *info, void *user_context) {
 
     // We need to uninstall our custom handlers otherwise we will go in a continuous loop when
     // calling the prev handler (sigaction) with this signum.
-    uninstall_signal_handlers();
+    uninstall_handlers();
     invoke_previous_handler(signum, info, user_context);
 }
 
 bool configure_signal_stack() {
+    // we increase the intercepted signal stack size to double the normal size
     static size_t stackSize = SIGSTKSZ * 2;
     if ((signal_stack.ss_sp = calloc(1, stackSize)) == NULL) {
         return false;
@@ -153,34 +182,39 @@ bool configure_signal_stack() {
     return true;
 }
 
-bool configure_global_sigaction() {
-    global_sigaction = calloc(handled_signals_size(), sizeof(struct sigaction));
-    if (global_sigaction == NULL) {
+bool init_datadog_signal_handler() {
+    datadog_sigaction = malloc(sizeof(struct sigaction));
+    if (datadog_sigaction == NULL) {
         return false;
     }
-    sigemptyset(&global_sigaction->sa_mask);
-    global_sigaction->sa_sigaction = handle_signal;
+    sigemptyset((sigset_t *) &datadog_sigaction->sa_mask);
+    datadog_sigaction->sa_sigaction = handle_signal;
     // we will use the SA_ONSTACK mask here to handle the signal in a freshly new stack.
-    global_sigaction->sa_flags = SA_SIGINFO | SA_ONSTACK;
+    datadog_sigaction->sa_flags = SA_SIGINFO | SA_ONSTACK;
 
     return true;
 }
 
-// This function should be called inside a locked mutex for Thread safety
+/*
+ * Overriding the signal handlers from the new spawned thread. This will allow us to block (handle)
+ * also the `SIQGUIT` signal triggered when the process is unresponsive - ANR.
+ * This function should be called inside a locked mutex for Thread safety
+ */
 bool override_native_signal_handlers() {
     if (handlers_installed) {
         return false;
     }
+    init_datadog_signal_handler();
     const size_t signals_array_size = handled_signals_size();
-    global_previous_sigaction = calloc(signals_array_size, sizeof(struct sigaction));
-    if (global_previous_sigaction == NULL) {
+    original_sigaction = calloc(signals_array_size, sizeof(struct sigaction));
+    if (original_sigaction == NULL) {
         __android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Was not able to initialise.");
         return false;
     }
     for (int i = 0; i < signals_array_size; i++) {
         const int signal = handled_signals[i].signal_value;
-        int success = sigaction(signal, global_sigaction,
-                                &global_previous_sigaction[i]);
+        int success = sigaction(signal, (struct sigaction *) datadog_sigaction,
+                                (struct sigaction *) &original_sigaction[i]);
         if (success != 0) {
             __android_log_print(ANDROID_LOG_ERROR,
                                 LOG_TAG,
@@ -193,23 +227,27 @@ bool override_native_signal_handlers() {
     return true;
 }
 
-void *initialize_watchdog_thread() {
+void *override_handlers_runnable() {
     pthread_mutex_lock(&mutex);
     override_native_signal_handlers();
     pthread_mutex_unlock(&mutex);
     return NULL;
 }
-
-bool start_watchdog_thread() {
+/*
+ * We need to perform the handlers override operation in this new thread as the main thread does
+ * not block by default the SIGQUIT signals so we will have to
+ * block it and start a new thread for signals handling. When starting a new thread
+ * from main thread the new one will take the signals mask of the parent.
+ */
+bool spawn_thread_to_override_signal_handlers() {
     bool success = false;
     sigemptyset(&signals_mask);
-    // Main thread does not block by default the SIGQUIT signals so we will have to
-    // block it and start a new thread for signals handling. When starting a new thread
-    // from main thread the new one will take the signals mask of the parent.
     sigaddset(&signals_mask, SIGQUIT);
+    // try to modify main thread signal masks by marking the `SIGQUIT` as blockable
     if (pthread_sigmask(SIG_BLOCK, &signals_mask, NULL) == 0) {
-        if (pthread_create(&datadog_watchdog_thread, NULL,
-                           initialize_watchdog_thread, NULL) != 0) {
+        // spawning a new thread will take the current signal mask from the main thread
+        if (pthread_create(&override_signal_handlers_thread, NULL,
+                           override_handlers_runnable, NULL) != 0) {
             __android_log_write(ANDROID_LOG_ERROR,
                                 LOG_TAG,
                                 "Was not able to create the watchdog thread");
@@ -236,54 +274,21 @@ bool try_to_install_handlers() {
     if (handlers_installed) {
         return true;
     }
-
     return (configure_signal_stack() &&
-            configure_global_sigaction() &&
-            start_watchdog_thread());
+            spawn_thread_to_override_signal_handlers());
 }
 
-bool install_signal_handlers() {
+bool start_monitoring() {
     pthread_mutex_lock(&mutex);
     bool installed = try_to_install_handlers();
     pthread_mutex_unlock(&mutex);
     return installed;
 }
 
-void free_up_memory() {
-    if (global_sigaction != NULL) {
-        free(global_sigaction);
-    }
-    if (global_previous_sigaction != NULL) {
-        free(global_previous_sigaction);
-    }
-    if (signal_stack.ss_sp != NULL) {
-        free(signal_stack.ss_sp);
-    }
-    global_sigaction = NULL;
-    global_previous_sigaction = NULL;
-    signal_stack.ss_sp = NULL;
-}
-
-void uninstall_signal_handlers() {
+void stop_monitoring() {
     pthread_mutex_lock(&mutex);
-
-    if (!handlers_installed) {
-        pthread_mutex_unlock(&mutex);
-        return;
-    }
-
-    const size_t signals_array_size = handled_signals_size();
-    for (int i = 0; i < signals_array_size; i++) {
-        struct sigaction *prev_action = &global_previous_sigaction[i];
-        if (prev_action) {
-            const int signal = handled_signals[i].signal_value;
-            sigaction(signal, prev_action, 0);
-        }
-    }
-
+    uninstall_handlers();
     free_up_memory();
-    recordUninstallOp();
-    handlers_installed = false;
     pthread_mutex_unlock(&mutex);
 }
 
