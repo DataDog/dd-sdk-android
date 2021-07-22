@@ -16,43 +16,48 @@ internal enum class UploadStatus {
     HTTP_REDIRECTION,
     HTTP_CLIENT_ERROR,
     HTTP_SERVER_ERROR,
+    HTTP_CLIENT_ERROR_RETRY,
     UNKNOWN_ERROR;
 
     fun logStatus(
         context: String,
         byteSize: Int,
         logger: Logger,
-        ignoreInfo: Boolean
+        ignoreInfo: Boolean,
+        requestId: String? = null
     ) {
+        val batchInfo = if (requestId == null) {
+            "Batch [$byteSize bytes] ($context)"
+        } else {
+            "Batch $requestId [$byteSize bytes] ($context)"
+        }
         when (this) {
             NETWORK_ERROR -> logger.e(
-                "Unable to send batch [$byteSize bytes] ($context)" +
-                    " because of a network error; we will retry later."
+
+                "$batchInfo failed because of a network error; we will retry later."
             )
             INVALID_TOKEN_ERROR -> logger.e(
-                "Unable to send batch [$byteSize bytes] ($context)" +
-                    " because your token is invalid. Make sure that the" +
-                    " provided token still exists."
+                "$batchInfo failed because your token is invalid. " +
+                    "Make sure that the provided token still exists."
             )
             HTTP_REDIRECTION -> logger.w(
-                "Unable to send batch [$byteSize bytes] ($context)" +
-                    " because of a network error (redirection); we will retry later."
+                "$batchInfo failed because of a network error (redirection); we will retry later."
             )
             HTTP_CLIENT_ERROR -> logger.e(
-                "Unable to send batch [$byteSize bytes] ($context)" +
-                    " because of a processing error (possibly because of invalid data); " +
+                "$batchInfo failed because of a processing error or invalid data; " +
                     "the batch was dropped."
             )
+            HTTP_CLIENT_ERROR_RETRY -> logger.e(
+                "$batchInfo failed because of a request error; we will retry later."
+            )
             HTTP_SERVER_ERROR -> logger.e(
-                "Unable to send batch [$byteSize bytes] ($context)" +
-                    " because of a server processing error; we will retry later."
+                "$batchInfo failed because of a server processing error; we will retry later."
             )
             UNKNOWN_ERROR -> logger.e(
-                "Unable to send batch [$byteSize bytes] ($context)" +
-                    " because of an unknown error; we will retry later."
+                "$batchInfo failed because of an unknown error; we will retry later."
             )
             SUCCESS -> if (!ignoreInfo) {
-                logger.v("Batch [$byteSize bytes] sent successfully ($context).")
+                logger.v("$batchInfo sent successfully.")
             }
         }
     }
