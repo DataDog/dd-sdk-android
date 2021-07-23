@@ -54,7 +54,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
-                cppFlags.add("-std=c++14")
+                version = Dependencies.Versions.CMakeVersion
             }
         }
     }
