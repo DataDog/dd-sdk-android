@@ -197,7 +197,7 @@ internal class RumSessionScope(
         internal const val MESSAGE_MISSING_VIEW =
             "A RUM event was detected, but no view is active. " +
                 "To track views automatically, try calling the " +
-                "DatadogConfig.Builder.useViewTrackingStrategy() method.\n" +
+                "Configuration.Builder.useViewTrackingStrategy() method.\n" +
                 "You can also track views manually using the RumMonitor.startView() and " +
                 "RumMonitor.stopView() methods."
     }
