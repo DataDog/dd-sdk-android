@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.vitals
 
 import android.view.Choreographer
-import com.datadog.android.core.internal.utils.sdkLogger
 import java.util.concurrent.TimeUnit
 
 /**
@@ -29,14 +28,6 @@ internal class VitalFrameCallback(
                 val frameRate = ONE_SECOND_NS / durationNs
                 if (frameRate in VALID_FPS_RANGE) {
                     observer.onNewSample(frameRate)
-                } else {
-                    sdkLogger.w(
-                        "Detected an invalid refresh rate",
-                        attributes = mapOf(
-                            "frame_duration" to durationNs,
-                            "frame_rate" to frameRate
-                        )
-                    )
                 }
             }
         }
