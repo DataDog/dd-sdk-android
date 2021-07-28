@@ -18,7 +18,7 @@ internal class RumContextForgeryFactory : ForgeryFactory<RumContext> {
             sessionId = forge.getForgery<UUID>().toString(),
             viewId = forge.aNullable { getForgery<UUID>().toString() },
             viewName = forge.aNullable { forge.anAlphaNumericalString() },
-            viewUrl = forge.aStringMatching("http(s?)://[a-z]+.com/[a-z]+"),
+            viewUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/[a-z]+"),
             actionId = forge.aNullable { getForgery<UUID>().toString() }
         )
     }
