@@ -11,20 +11,11 @@ import com.lyft.kronos.SyncListener
 
 internal class LoggingSyncListener : SyncListener {
     override fun onStartSync(host: String) {
-        sdkLogger.d(
-            "Kronos onStartSync $host",
-            attributes = mapOf("kronos.sync.host" to host)
-        )
+        // no-op
     }
 
     override fun onSuccess(ticksDelta: Long, responseTimeMs: Long) {
-        sdkLogger.d(
-            "Kronos onSuccess @ticksDelta:$ticksDelta @responseTimeMs:$responseTimeMs",
-            attributes = mapOf(
-                "kronos.sync.tick_delta" to ticksDelta,
-                "kronos.sync.response_time_ms" to responseTimeMs
-            )
-        )
+        // no-op
     }
 
     override fun onError(host: String, throwable: Throwable) {

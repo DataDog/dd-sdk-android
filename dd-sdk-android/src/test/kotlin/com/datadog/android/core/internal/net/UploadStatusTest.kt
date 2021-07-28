@@ -140,7 +140,7 @@ internal class UploadStatusTest {
             .handleLog(
                 Log.WARN,
                 "Unable to send batch [$fakeByteSize bytes] ($fakeContext) " +
-                    "because of a network error; we will retry later."
+                    "because of a network error (redirection); we will retry later."
             )
     }
 

@@ -4,12 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.monitor
+package com.datadog.android.rum.internal.anr
 
-internal enum class EventType {
-    VIEW,
-    ACTION,
-    RESOURCE,
-    ERROR,
-    LONG_TASK
+internal class ANRException(thread: Thread) : Exception() {
+
+    init {
+        stackTrace = thread.stackTrace
+    }
 }

@@ -113,7 +113,6 @@ internal sealed class RumRawEvent {
 
     internal data class ErrorSent(
         val viewId: String,
-        val isCrash: Boolean,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 

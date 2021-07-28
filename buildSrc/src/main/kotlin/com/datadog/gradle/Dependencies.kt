@@ -12,7 +12,7 @@ object Dependencies {
         // Commons
         const val Kotlin = "1.4.20"
         const val Gson = "2.8.6"
-        const val OkHttp = "3.12.6"
+        const val OkHttp = "3.12.13"
         const val KronosNTP = "0.0.1-alpha10"
 
         // Android

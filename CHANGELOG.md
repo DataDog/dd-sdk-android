@@ -1,3 +1,20 @@
+# 1.10.0 / 2021-08-06
+
+* [BUGFIX] Global: Fix crash when using old OkHttp dependency [#658](https://github.com/DataDog/dd-sdk-android/issues/658) (Thanks [@JessicaYeh](https://github.com/VladBytsyuk))
+* [BUGFIX] Global: Prevent retrying endlessly data upload when Client Token is invalid
+* [BUGFIX] Global: Support using DD Android SDK with Java 11 
+* [BUGFIX] RUM: Ensure all crashes are reported to RUM
+* [FEATURE] APM: Add Data Scrubbing for Spans
+* [FEATURE] RUM: Detect ANR
+* [FEATURE] RUM: Track Memory and CPU usage, as well as views' refresh rate
+* [FEATURE] RUM: Track Actions, Resources and Errors when the application is in background (see `Configuration.Builder().trackBackgroundRumEvents(true).build()`)
+* [FEATURE] RUM: Add data scrubbing for Long Tasks
+* [IMPROVEMENT] RUM: Replace all `other` or `unknown` resources with xhr (ensuring end-to-end trace is enabled)
+* [IMPROVEMENT] RUM: Let children events have the proper view.name attribute
+* [IMPROVEMENT] RUM: Keep all custom Action even when a previous action is still active
+* [IMPROVEMENT] Global: Update available endpoints (and match documentation names: `US1`, `US3`, `US1_FED` and `EU1`)
+* [IMPROVEMENT] Global: All user info should be in usr.*
+
 # 1.9.0 / 2021-06-07
 
 * [BUGFIX] APM: Fix network tracing inconsistencies

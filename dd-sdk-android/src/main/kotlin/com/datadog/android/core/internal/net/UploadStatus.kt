@@ -36,7 +36,7 @@ internal enum class UploadStatus {
             )
             HTTP_REDIRECTION -> logger.w(
                 "Unable to send batch [$byteSize bytes] ($context)" +
-                    " because of a network error; we will retry later."
+                    " because of a network error (redirection); we will retry later."
             )
             HTTP_CLIENT_ERROR -> logger.e(
                 "Unable to send batch [$byteSize bytes] ($context)" +
