@@ -7,6 +7,7 @@
 package com.datadog.android.utils.assertj
 
 import com.datadog.android.core.internal.utils.toJsonArray
+import com.datadog.android.core.internal.utils.toJsonObject
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
@@ -36,6 +37,9 @@ internal class JsonElementAssert(actual: JsonElement) :
             is JsonArray -> Assertions.assertThat(actual.asJsonArray).isEqualTo(expected)
             is Iterable<*> -> Assertions.assertThat(actual.asJsonArray).isEqualTo(
                 expected.toJsonArray()
+            )
+            is Map<*, *> -> Assertions.assertThat(actual.asJsonObject).isEqualTo(
+                expected.toJsonObject()
             )
             else -> Assertions.assertThat(actual.asString).isEqualTo(expected.toString())
         }

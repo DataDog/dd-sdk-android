@@ -44,6 +44,9 @@ internal fun Forge.exhaustiveAttributes(
         .toMap().toMutableMap()
     map[""] = anHexadecimalString()
     map[aWhitespaceString()] = anHexadecimalString()
+    map[anAlphabeticalString()] = aMap {
+        anAlphaNumericalString() to anAlphaNumericalString()
+    }
 
     val filtered = map.filterKeys { it !in excludedKeys }
 
