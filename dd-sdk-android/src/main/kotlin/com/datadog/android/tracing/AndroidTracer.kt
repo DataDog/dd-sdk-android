@@ -180,11 +180,11 @@ class AndroidTracer internal constructor(
     companion object {
         internal const val TRACING_NOT_ENABLED_ERROR_MESSAGE =
             "You're trying to create an AndroidTracer instance, " +
-                "but the Tracing feature was disabled in your DatadogConfig. " +
+                "but the Tracing feature was disabled in your Configuration. " +
                 "No tracing data will be sent."
         internal const val RUM_NOT_ENABLED_ERROR_MESSAGE =
             "You're trying to bundle the traces with a RUM context, " +
-                "but the RUM feature was disabled in your DatadogConfig. " +
+                "but the RUM feature was disabled in your Configuration. " +
                 "No RUM context will be attached to your traces in this case."
 
         // the minimum closed spans required for triggering a flush and deliver

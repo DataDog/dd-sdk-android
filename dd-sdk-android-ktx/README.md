@@ -21,12 +21,23 @@ in the Datadog dashboard.
 
 ```kotlin
 class SampleApplication : Application() {
-
     override fun onCreate() {
         super.onCreate()
-        val config = DatadogConfig.Builder("<CLIENT_TOKEN>", "<ENVIRONMENT_NAME>", "<APPLICATION_ID>").build()
-        Datadog.initialize(this, config)
-    }
+
+        val configuration = Configuration.Builder(
+            rumEnabled = true,
+            ...
+        )
+                        .trackInteractions()
+                        .useViewTrackingStrategy(strategy)
+                        ...
+                        .build()
+          val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
+          Datadog.initialize(this, credentials, configuration, trackingConsent)
+
+          val monitor = RumMonitor.Builder().build()
+          GlobalRum.registerIfAbsent(monitor)
+   }
 }
 ```
 
