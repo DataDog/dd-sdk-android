@@ -13,6 +13,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.NoOpDataWriter
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
@@ -32,6 +33,7 @@ internal class RumSessionScope(
     private val cpuVitalMonitor: VitalMonitor,
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,
+    private val timeProvider: TimeProvider,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
 ) : RumScope {
@@ -84,7 +86,8 @@ internal class RumSessionScope(
                 firstPartyHostDetector,
                 cpuVitalMonitor,
                 memoryVitalMonitor,
-                frameRateVitalMonitor
+                frameRateVitalMonitor,
+                timeProvider
             )
             onApplicationDisplayed(event, viewScope, actualWriter)
             activeChildrenScopes.add(viewScope)
@@ -139,7 +142,8 @@ internal class RumSessionScope(
             firstPartyHostDetector,
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
-            NoOpVitalMonitor()
+            NoOpVitalMonitor(),
+            timeProvider
         )
     }
 

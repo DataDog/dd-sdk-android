@@ -63,7 +63,7 @@ internal class KronosTimeProviderTest {
         val expectedOffset = TimeUnit.MILLISECONDS.toNanos(fakeDate.time - now)
         assertThat(result).isCloseTo(
             expectedOffset,
-            Offset.offset(TimeUnit.MILLISECONDS.toNanos(1))
+            Offset.offset(TimeUnit.MILLISECONDS.toNanos(TEST_OFFSET))
         )
     }
 
@@ -75,7 +75,7 @@ internal class KronosTimeProviderTest {
         val expectedOffset = fakeDate.time - now
         assertThat(result).isCloseTo(
             expectedOffset,
-            Offset.offset(50L)
+            Offset.offset(TEST_OFFSET)
         )
     }
 
@@ -84,6 +84,10 @@ internal class KronosTimeProviderTest {
         val now = System.currentTimeMillis()
         val result = testedTimeProvider.getDeviceTimestamp()
 
-        assertThat(result).isCloseTo(now, Offset.offset(50L))
+        assertThat(result).isCloseTo(now, Offset.offset(TEST_OFFSET))
+    }
+
+    companion object {
+        const val TEST_OFFSET = 10L
     }
 }

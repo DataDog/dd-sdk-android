@@ -88,10 +88,15 @@ internal class RumActionScopeTest {
 
     lateinit var fakeEvent: RumRawEvent
 
+    var fakeServerOffset: Long = 0L
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeEventTime = Time()
-
+        val maxLimit = Long.MAX_VALUE - fakeEventTime.timestamp
+        val minLimit = -fakeEventTime.timestamp
+        fakeServerOffset =
+            forge.aLong(min = minLimit, max = maxLimit)
         fakeType = forge.aValueFrom(
             RumActionType::class.java,
             exclude = listOf(RumActionType.CUSTOM)
@@ -110,6 +115,7 @@ internal class RumActionScopeTest {
             fakeType,
             fakeName,
             fakeAttributes,
+            fakeServerOffset,
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS
         )
@@ -141,7 +147,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS * 2))
@@ -223,7 +229,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS * 2))
@@ -259,7 +265,7 @@ internal class RumActionScopeTest {
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
         Thread.sleep(TEST_INACTIVITY_MS * 2)
-        fakeEvent = RumRawEvent.StopResourceWithError(
+        val fakeEvent2 = RumRawEvent.StopResourceWithError(
             key2,
             statusCode,
             message,
@@ -267,13 +273,12 @@ internal class RumActionScopeTest {
             throwable,
             emptyMap()
         )
-        val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result2 = testedScope.handleEvent(fakeEvent2, mockWriter)
         Thread.sleep(TEST_INACTIVITY_MS * 2)
         val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        verifyZeroInteractions(mockParentScope, mockWriter)
-        verifyNoMoreInteractions(mockWriter)
+        verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isSameAs(testedScope)
         assertThat(result3).isSameAs(testedScope)
@@ -304,7 +309,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS * 2))
@@ -351,7 +356,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS * 2))
@@ -389,7 +394,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS))
@@ -433,7 +438,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(100))
@@ -471,7 +476,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(100))
@@ -507,7 +512,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
@@ -544,7 +549,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
@@ -581,7 +586,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
@@ -621,7 +626,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
@@ -659,7 +664,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
@@ -705,7 +710,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
@@ -742,7 +747,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
@@ -780,7 +785,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
@@ -818,7 +823,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
@@ -858,7 +863,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
@@ -896,7 +901,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
@@ -1042,7 +1047,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(TEST_MAX_DURATION_NS)
@@ -1077,7 +1082,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
@@ -1111,7 +1116,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(RumActionType.CUSTOM)
                     hasTargetName(fakeName)
                     hasDuration(1)
@@ -1151,7 +1156,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(duration)
@@ -1185,7 +1190,7 @@ internal class RumActionScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasActionData {
                     hasId(testedScope.actionId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasType(ActionEvent.ActionType.CUSTOM)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
@@ -1210,6 +1215,10 @@ internal class RumActionScopeTest {
         val event: RumRawEvent = mock()
         whenever(event.eventTime) doReturn Time()
         return event
+    }
+
+    private fun resolveExpectedTimestamp(): Long {
+        return fakeEventTime.timestamp + fakeServerOffset
     }
 
     // endregion

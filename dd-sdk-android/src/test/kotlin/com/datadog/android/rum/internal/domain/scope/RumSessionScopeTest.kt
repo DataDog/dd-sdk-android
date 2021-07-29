@@ -13,6 +13,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.NoOpDataWriter
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.internal.logger.LogHandler
@@ -102,6 +103,9 @@ internal class RumSessionScopeTest {
     @Mock
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
 
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
     lateinit var mockDevLogHandler: LogHandler
 
     @Forgery
@@ -136,6 +140,7 @@ internal class RumSessionScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
+            mockTimeProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -164,6 +169,7 @@ internal class RumSessionScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
+            mockTimeProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -261,6 +267,7 @@ internal class RumSessionScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
+            mockTimeProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -322,6 +329,7 @@ internal class RumSessionScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
+            mockTimeProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -505,6 +513,7 @@ internal class RumSessionScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
+            mockTimeProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -530,6 +539,7 @@ internal class RumSessionScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
+            mockTimeProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -564,6 +574,7 @@ internal class RumSessionScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
+            mockTimeProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -589,6 +600,7 @@ internal class RumSessionScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
+            mockTimeProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -614,6 +626,7 @@ internal class RumSessionScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
+            mockTimeProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -643,6 +656,7 @@ internal class RumSessionScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
+            mockTimeProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
