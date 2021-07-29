@@ -10,6 +10,7 @@ import android.content.Context
 import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.sampling.RateBasedSampler
@@ -234,6 +235,7 @@ internal class LoggerBuilderTest {
         assertThat(handler.logGenerator.serviceName).isEqualTo(InternalLogsFeature.SERVICE_NAME)
         assertThat(handler.logGenerator.userInfoProvider)
             .isInstanceOf(NoOpUserInfoProvider::class.java)
+        assertThat(handler.logGenerator.timeProvider).isEqualTo(CoreFeature.timeProvider)
     }
 
     @Test

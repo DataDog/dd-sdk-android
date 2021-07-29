@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit
 internal class DatadogNdkCrashHandler(
     appContext: Context,
     private val dataPersistenceExecutorService: ExecutorService,
-    private val logGenerator: LogGenerator,
+    internal val logGenerator: LogGenerator,
     private val ndkCrashLogDeserializer: Deserializer<NdkCrashLog>,
     private val rumEventDeserializer: Deserializer<RumEvent>,
     private val networkInfoDeserializer: Deserializer<NetworkInfo>,

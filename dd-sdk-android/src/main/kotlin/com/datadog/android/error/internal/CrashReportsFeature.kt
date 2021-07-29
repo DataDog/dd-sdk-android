@@ -65,6 +65,7 @@ internal object CrashReportsFeature : SdkFeature<LogEvent, Configuration.Feature
                 DatadogExceptionHandler.LOGGER_NAME,
                 CoreFeature.networkInfoProvider,
                 CoreFeature.userInfoProvider,
+                CoreFeature.timeProvider,
                 CoreFeature.envName,
                 CoreFeature.packageVersion
             ),

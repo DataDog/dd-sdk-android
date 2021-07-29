@@ -7,6 +7,7 @@
 package com.datadog.android.error.internal
 
 import android.content.Context
+import android.view.Choreographer
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
@@ -17,6 +18,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
 import com.datadog.android.core.model.NetworkInfo
@@ -96,6 +98,9 @@ internal class DatadogExceptionHandlerTest {
     lateinit var mockUserInfoProvider: UserInfoProvider
 
     @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
+    @Mock
     lateinit var mockLogWriter: DataWriter<LogEvent>
 
     @Mock
@@ -120,6 +125,16 @@ internal class DatadogExceptionHandlerTest {
     fun `set up`() {
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        // To avoid java.lang.NoClassDefFoundError: android/hardware/display/DisplayManagerGlobal.
+        // This class is only available in a real android JVM at runtime and not in a JUnit env.
+        Choreographer::class.java.setStaticValue(
+            "sThreadInstance",
+            object : ThreadLocal<Choreographer>() {
+                override fun initialValue(): Choreographer {
+                    return mock()
+                }
+            }
+        )
         Datadog.initialize(
             appContext.mockInstance,
             Credentials(fakeToken, fakeEnvName, Credentials.NO_VARIANT, null),
@@ -140,6 +155,7 @@ internal class DatadogExceptionHandlerTest {
                 DatadogExceptionHandler.LOGGER_NAME,
                 mockNetworkInfoProvider,
                 mockUserInfoProvider,
+                mockTimeProvider,
                 CoreFeature.envName,
                 CoreFeature.packageVersion
             ),

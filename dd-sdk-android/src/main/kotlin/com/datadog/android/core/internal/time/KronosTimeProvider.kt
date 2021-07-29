@@ -21,10 +21,14 @@ internal class KronosTimeProvider(
         return clock.getCurrentTimeMs()
     }
 
-    override fun getServerOffsetNanos(): Long {
+    override fun getServerOffsetMillis(): Long {
         val server = clock.getCurrentTimeMs()
         val device = System.currentTimeMillis()
         val delta = server - device
-        return TimeUnit.MILLISECONDS.toNanos(delta)
+        return delta
+    }
+
+    override fun getServerOffsetNanos(): Long {
+        return TimeUnit.MILLISECONDS.toNanos(getServerOffsetMillis())
     }
 }

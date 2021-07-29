@@ -16,4 +16,6 @@ internal interface TimeProvider {
     fun getServerTimestamp(): Long
 
     fun getServerOffsetNanos(): Long
+
+    fun getServerOffsetMillis(): Long
 }
