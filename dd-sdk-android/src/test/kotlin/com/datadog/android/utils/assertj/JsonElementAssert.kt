@@ -33,7 +33,7 @@ internal class JsonElementAssert(actual: JsonElement) :
             is String -> Assertions.assertThat(actual.asString).isEqualTo(expected)
             is Date -> Assertions.assertThat(actual.asLong).isEqualTo(expected.time)
             is JsonNull -> Assertions.assertThat(actual).isEqualTo(JsonNull.INSTANCE)
-            is JsonObject -> Assertions.assertThat(actual.toString()).isEqualTo(expected.toString())
+            is JsonObject -> Assertions.assertThat(actual.asJsonObject).isEqualTo(expected)
             is JsonArray -> Assertions.assertThat(actual.asJsonArray).isEqualTo(expected)
             is Iterable<*> -> Assertions.assertThat(actual.asJsonArray).isEqualTo(
                 expected.toJsonArray()

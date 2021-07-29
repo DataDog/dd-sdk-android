@@ -17,7 +17,7 @@ class JsonArrayForgeryFactory : ForgeryFactory<JsonArray> {
             JsonArray(),
             forge.aStringArray(),
             forge.anIntArray(),
-            forge.aFloatArray()
+            forge.aDoubleArray()
         )
     }
 
@@ -37,9 +37,9 @@ class JsonArrayForgeryFactory : ForgeryFactory<JsonArray> {
         }
     }
 
-    private fun Forge.aFloatArray(): JsonArray {
+    private fun Forge.aDoubleArray(): JsonArray {
         return JsonArray().apply {
-            aList { anInt() }
+            aList { aDouble() }
                 .forEach { add(it) }
         }
     }
