@@ -7,6 +7,7 @@
 package com.datadog.android.utils.assertj
 
 import com.datadog.android.core.internal.utils.toJsonArray
+import com.datadog.android.core.internal.utils.toJsonObject
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
@@ -32,10 +33,13 @@ internal class JsonElementAssert(actual: JsonElement) :
             is String -> Assertions.assertThat(actual.asString).isEqualTo(expected)
             is Date -> Assertions.assertThat(actual.asLong).isEqualTo(expected.time)
             is JsonNull -> Assertions.assertThat(actual).isEqualTo(JsonNull.INSTANCE)
-            is JsonObject -> Assertions.assertThat(actual.toString()).isEqualTo(expected.toString())
+            is JsonObject -> Assertions.assertThat(actual.asJsonObject).isEqualTo(expected)
             is JsonArray -> Assertions.assertThat(actual.asJsonArray).isEqualTo(expected)
             is Iterable<*> -> Assertions.assertThat(actual.asJsonArray).isEqualTo(
                 expected.toJsonArray()
+            )
+            is Map<*, *> -> Assertions.assertThat(actual.asJsonObject).isEqualTo(
+                expected.toJsonObject()
             )
             else -> Assertions.assertThat(actual.asString).isEqualTo(expected.toString())
         }

@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.core.internal.constraints.DataConstraints
 import com.datadog.android.core.internal.utils.toJsonArray
+import com.datadog.android.core.internal.utils.toJsonObject
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.model.ActionEvent
@@ -505,6 +506,7 @@ internal class RumEventSerializerTest {
                     is JsonObject -> assertThat(jsonObject).hasField(keyName, value)
                     is JsonArray -> assertThat(jsonObject).hasField(keyName, value)
                     is Iterable<*> -> assertThat(jsonObject).hasField(keyName, value.toJsonArray())
+                    is Map<*, *> -> assertThat(jsonObject).hasField(keyName, value.toJsonObject())
                     else -> assertThat(jsonObject).hasField(keyName, value.toString())
                 }
             }
@@ -525,6 +527,7 @@ internal class RumEventSerializerTest {
                     is JsonObject -> assertThat(jsonObject).hasField(keyName, value)
                     is JsonArray -> assertThat(jsonObject).hasField(keyName, value)
                     is Iterable<*> -> assertThat(jsonObject).hasField(keyName, value.toJsonArray())
+                    is Map<*, *> -> assertThat(jsonObject).hasField(keyName, value.toJsonObject())
                     else -> assertThat(jsonObject).hasField(keyName, value.toString())
                 }
             }

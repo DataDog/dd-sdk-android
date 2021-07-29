@@ -8,6 +8,7 @@ package com.datadog.android.log.assertj
 
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.toJsonArray
+import com.datadog.android.core.internal.utils.toJsonObject
 import com.datadog.tools.unit.assertj.JsonObjectAssert
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -34,6 +35,7 @@ fun JsonObjectAssert.containsExtraAttributes(
                 is JsonObject -> hasField(key, value)
                 is JsonArray -> hasField(key, value)
                 is Iterable<*> -> hasField(key, value.toJsonArray())
+                is Map<*, *> -> hasField(key, value.toJsonObject())
                 else -> hasField(key, value.toString())
             }
         }

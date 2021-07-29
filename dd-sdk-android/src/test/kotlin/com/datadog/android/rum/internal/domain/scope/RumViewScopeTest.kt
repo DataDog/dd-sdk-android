@@ -1945,7 +1945,7 @@ internal class RumViewScopeTest {
     fun `𝕄 create ResourceScope 𝕎 handleEvent(StartResource)`(
         @StringForgery key: String,
         @StringForgery method: String,
-        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String,
+        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
         forge: Forge
     ) {
         // Given
@@ -1977,7 +1977,7 @@ internal class RumViewScopeTest {
     fun `𝕄 create ResourceScope with active actionId 𝕎 handleEvent(StartResource)`(
         @StringForgery key: String,
         @StringForgery method: String,
-        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String,
+        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
         forge: Forge
     ) {
         // Given
@@ -2061,7 +2061,7 @@ internal class RumViewScopeTest {
     fun `𝕄 wait for pending Resource 𝕎 handleEvent(StartResource) on active view`(
         @StringForgery key: String,
         @StringForgery method: String,
-        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String
+        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
         // Given
         testedScope.pendingResourceCount = 0
