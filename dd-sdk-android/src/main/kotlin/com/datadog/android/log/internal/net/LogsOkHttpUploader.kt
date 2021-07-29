@@ -21,7 +21,6 @@ internal open class LogsOkHttpUploader(
 
     override fun buildQueryParams(): Map<String, Any> {
         return mutableMapOf(
-            QP_BATCH_TIME to System.currentTimeMillis(),
             QP_SOURCE to CoreFeature.sourceName
         )
     }
