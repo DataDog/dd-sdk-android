@@ -27,10 +27,10 @@ class SpanBuilderE2ETests {
     val nightlyTestRule = NightlyTestRule()
 
     /**
-     * apiMethodSignature: Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
-     * apiMethodSignature: Configuration#Builder#fun build(): Configuration
-     * apiMethodSignature: Configuration#Builder#constructor(Boolean, Boolean, Boolean, Boolean)
-     * apiMethodSignature: AndroidTracer#Builder#fun build(): AndroidTracer
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean, Boolean, Boolean, Boolean)
+     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun build(): AndroidTracer
      */
     @Before
     fun setUp() {
@@ -38,7 +38,7 @@ class SpanBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: SpanBuilder#fun start()
+     * apiMethodSignature: io.opentracing.Tracer$SpanBuilder#fun start()
      */
     @Test
     fun trace_span_builder_start() {

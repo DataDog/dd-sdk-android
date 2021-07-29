@@ -37,7 +37,7 @@ class SpanConfigE2ETests {
     val nightlyTestRule = NightlyTestRule()
 
     /**
-     * apiMethodSignature: Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
      */
     @Test
     fun trace_config_feature_enabled() {
@@ -60,7 +60,7 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
      */
     @Test
     fun trace_config_feature_disabled() {
@@ -83,7 +83,7 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: Configuration#Builder#fun setSpanEventMapper(com.datadog.android.event.SpanEventMapper): Builder
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setSpanEventMapper(com.datadog.android.event.SpanEventMapper): Builder
      */
     @Test
     fun trace_config_set_span_event_mapper() {
@@ -117,7 +117,7 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: AndroidTracer#Builder#fun setBundleWithRumEnabled(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun setBundleWithRumEnabled(Boolean): Builder
      */
     @Test
     fun trace_config_set_bundle_with_rum_enabled() {
@@ -145,7 +145,7 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: AndroidTracer#Builder#fun setBundleWithRumEnabled(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun setBundleWithRumEnabled(Boolean): Builder
      */
     @Test
     fun trace_config_set_bundle_with_rum_disabled() {
@@ -174,7 +174,7 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: AndroidTracer#Builder#fun addGlobalTag(String, String): Builder
+     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun addGlobalTag(String, String): Builder
      */
     @Test
     fun trace_config_add_global_tag() {
@@ -199,7 +199,7 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: AndroidTracer#Builder#fun setServiceName(String): Builder
+     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun setServiceName(String): Builder
      */
     @Test
     fun trace_config_set_service_name() {
@@ -221,7 +221,7 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: Datadog#fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.Datadog#fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
      */
     @Test
     fun trace_config_set_user_info() {

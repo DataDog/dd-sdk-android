@@ -37,9 +37,9 @@ class SpanE2ETests {
     val nightlyTestRule = NightlyTestRule()
 
     /**
-     * apiMethodSignature: Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
-     * apiMethodSignature: Configuration#Builder#fun build(): Configuration
-     * apiMethodSignature: Configuration#Builder#constructor(Boolean, Boolean, Boolean, Boolean)
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean, Boolean, Boolean, Boolean)
      */
     @Before
     fun setUp() {
@@ -47,7 +47,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#fun setOperationName(String)
+     * apiMethodSignature: io.opentracing.Span#fun setOperationName(String)
      */
     @Test
     fun trace_span_set_operation_name() {
@@ -63,7 +63,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#fun setTag(String, Boolean)
+     * apiMethodSignature: io.opentracing.Span#fun setTag(String, Boolean)
      */
     @Test
     fun trace_span_set_tag_boolean() {
@@ -79,7 +79,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#fun setTag(String, String)
+     * apiMethodSignature: io.opentracing.Span#fun setTag(String, String)
      */
     @Test
     fun trace_span_set_tag_string() {
@@ -95,7 +95,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#fun setTag(String, Number)
+     * apiMethodSignature: io.opentracing.Span#fun setTag(String, Number)
      */
     @Test
     fun trace_span_set_tag_number() {
@@ -117,7 +117,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#fun <T>setTag(Tag<T>, T)
+     * apiMethodSignature: io.opentracing.Span#fun <T>setTag(Tag<T>, T)
      */
     @Test
     fun trace_span_set_tag_generic() {
@@ -133,7 +133,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#fun setBaggageItem(String, String)
+     * apiMethodSignature: io.opentracing.Span#fun setBaggageItem(String, String)
      */
     @Test
     fun trace_span_set_baggage_item() {
@@ -149,7 +149,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#fun log(Map)
+     * apiMethodSignature: io.opentracing.Span#fun log(Map)
      */
     @Test
     fun trace_span_log_map() {
@@ -170,7 +170,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#fun log(String)
+     * apiMethodSignature: io.opentracing.Span#fun log(String)
      */
     @Test
     fun trace_span_log_string() {
@@ -186,7 +186,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#fun log(long, Map)
+     * apiMethodSignature: io.opentracing.Span#fun log(long, Map)
      */
     @Test
     fun trace_span_log_timestamp_map() {
@@ -208,7 +208,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#fun log(long, String)
+     * apiMethodSignature: io.opentracing.Span#fun log(long, String)
      */
     @Test
     fun trace_span_log_timestamp_string() {
@@ -225,7 +225,7 @@ class SpanE2ETests {
     }
 
     /**
-     * apiMethodSignature: Span#fun finish()
+     * apiMethodSignature: io.opentracing.Span#fun finish()
      */
     @Test
     fun trace_span_finish() {

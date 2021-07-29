@@ -31,7 +31,7 @@ class GdprRumE2ETests {
     val nightlyTestRule = NightlyTestRule()
 
     /**
-     * apiMethodSignature: Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
      */
     @Test
     fun rum_config_consent_pending() {
@@ -46,7 +46,7 @@ class GdprRumE2ETests {
     }
 
     /**
-     * apiMethodSignature: Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
      */
     @Test
     fun rum_config_consent_granted() {
@@ -61,7 +61,7 @@ class GdprRumE2ETests {
     }
 
     /**
-     * apiMethodSignature: Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
      */
     @Test
     fun rum_config_consent_not_granted() {
@@ -76,7 +76,7 @@ class GdprRumE2ETests {
     }
 
     /**
-     * apiMethodSignature: Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
      */
     @Test
     fun rum_config_consent_pending_to_granted() {
@@ -94,7 +94,7 @@ class GdprRumE2ETests {
     }
 
     /**
-     * apiMethodSignature: Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
      */
     @Test
     fun rum_config_consent_pending_to_not_granted() {
@@ -112,7 +112,7 @@ class GdprRumE2ETests {
     }
 
     /**
-     * apiMethodSignature: Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
      */
     @Test
     fun rum_config_consent_granted_to_not_granted() {
@@ -130,7 +130,7 @@ class GdprRumE2ETests {
     }
 
     /**
-     * apiMethodSignature: Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
      */
     @Test
     fun rum_config_consent_granted_to_pending() {
@@ -148,7 +148,7 @@ class GdprRumE2ETests {
     }
 
     /**
-     * apiMethodSignature: Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
      */
     @Test
     fun rum_config_consent_not_granted_to_granted() {
@@ -166,7 +166,7 @@ class GdprRumE2ETests {
     }
 
     /**
-     * apiMethodSignature: Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.Datadog#fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
      */
     @Test
     fun rum_config_consent_not_granted_to_pending() {

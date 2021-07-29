@@ -42,12 +42,13 @@ class RumMonitorBackgroundE2ETests {
     val nightlyTestRule = NightlyTestRule()
 
     /**
-     * apiMethodSignature: Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
-     * apiMethodSignature: Configuration#Builder#fun build(): Configuration
-     * apiMethodSignature: Configuration#Builder#constructor(Boolean, Boolean, Boolean, Boolean)
-     * apiMethodSignature: GlobalRum#fun get(): RumMonitor
-     * apiMethodSignature: GlobalRum#fun isRegistered(): Boolean
-     * apiMethodSignature: GlobalRum#fun registerIfAbsent(RumMonitor): Boolean
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean, Boolean, Boolean, Boolean)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun trackBackgroundRumEvents(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun get(): RumMonitor
+     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun isRegistered(): Boolean
+     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun registerIfAbsent(RumMonitor): Boolean
      */
     @Before
     fun setUp() {
@@ -67,7 +68,7 @@ class RumMonitorBackgroundE2ETests {
     // region Background Action
 
     /**
-     * apiMethodSignature: RumMonitor#fun stopUserAction(RumActionType, String, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun stopUserAction(RumActionType, String, Map<String, Any?> = emptyMap())
      */
     @Test
     fun rum_rummonitor_stop_background_action_with_outcome() {
@@ -96,7 +97,7 @@ class RumMonitorBackgroundE2ETests {
     }
 
     /**
-     * apiMethodSignature: RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_add_background_non_custom_action_with_no_outcome() {
@@ -115,7 +116,7 @@ class RumMonitorBackgroundE2ETests {
     }
 
     /**
-     * apiMethodSignature: RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_add_background_custom_action_with_outcome() {
@@ -137,7 +138,7 @@ class RumMonitorBackgroundE2ETests {
     }
 
     /**
-     * apiMethodSignature: RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_add_background_custom_action_with_no_outcome() {
@@ -155,7 +156,7 @@ class RumMonitorBackgroundE2ETests {
     }
 
     /**
-     * apiMethodSignature: RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addUserAction(RumActionType, String, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_add_background_non_custom_action_with_outcome() {
@@ -187,7 +188,7 @@ class RumMonitorBackgroundE2ETests {
     // region Background Resource
 
     /**
-     * apiMethodSignature: RumMonitor#fun stopResource(String, Int?, Long?, RumResourceKind, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun stopResource(String, Int?, Long?, RumResourceKind, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_stop_background_resource() {
@@ -211,7 +212,7 @@ class RumMonitorBackgroundE2ETests {
     }
 
     /**
-     * apiMethodSignature: RumMonitor#fun stopResourceWithError(String, Int?, String, RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun stopResourceWithError(String, Int?, String, RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
      */
     @Test
     fun rum_rummonitor_stop_background_resource_with_error() {
@@ -240,7 +241,7 @@ class RumMonitorBackgroundE2ETests {
     // region Background Error
 
     /**
-     * apiMethodSignature: RumMonitor#fun addError(String, RumErrorSource, Throwable?, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addError(String, RumErrorSource, Throwable?, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_add_background_error() {
@@ -257,7 +258,7 @@ class RumMonitorBackgroundE2ETests {
     }
 
     /**
-     * apiMethodSignature: RumMonitor#fun addErrorWithStacktrace(String, RumErrorSource, String?, Map<String, Any?>)
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addErrorWithStacktrace(String, RumErrorSource, String?, Map<String, Any?>)
      */
     @Test
     fun rum_rummonitor_add_background_error_with_stacktrace() {

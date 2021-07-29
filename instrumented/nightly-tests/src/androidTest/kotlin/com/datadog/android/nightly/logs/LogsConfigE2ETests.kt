@@ -37,7 +37,7 @@ class LogsConfigE2ETests {
     lateinit var logger: Logger
 
     /**
-     * apiMethodSignature: Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
      */
     @Test
     fun logs_config_feature_enabled() {
@@ -61,7 +61,7 @@ class LogsConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: Credentials#constructor(String, String, String, String?, String? = null)
+     * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
      */
     @Test
     fun logs_config_logs_feature_disabled() {
@@ -85,7 +85,7 @@ class LogsConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: Configuration#Builder#fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
      */
     @Test
     fun logs_config_set_event_mapper() {
@@ -118,7 +118,7 @@ class LogsConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: Configuration#Builder#fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
      */
     @Test
     fun logs_config_set_event_mapper_with_drop_event() {

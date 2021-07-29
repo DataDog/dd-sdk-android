@@ -39,8 +39,8 @@ class LoggerBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#Builder#fun setSampleRate(Float): Builder
-     * apiMethodSignature: Logger#Builder#fun build(): Logger
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setSampleRate(Float): Builder
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      */
     @Test
     fun logs_logger_builder_sample_all_in() {
@@ -52,8 +52,8 @@ class LoggerBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#Builder#fun setSampleRate(Float): Builder
-     * apiMethodSignature: Logger#Builder#fun build(): Logger
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setSampleRate(Float): Builder
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      */
     @Test
     fun logs_logger_builder_sample_all_out() {
@@ -65,8 +65,8 @@ class LoggerBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#Builder#fun setSampleRate(Float): Builder
-     * apiMethodSignature: Logger#Builder#fun build(): Logger
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setSampleRate(Float): Builder
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      */
     @Test
     fun logs_logger_builder_sample_in_75_percent() {
@@ -81,8 +81,8 @@ class LoggerBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#Builder#fun setDatadogLogsEnabled(Boolean): Builder
-     * apiMethodSignature: Logger#Builder#fun build(): Logger
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setDatadogLogsEnabled(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      */
     @Test
     fun logs_logger_builder_datadog_logs_enabled() {
@@ -94,8 +94,8 @@ class LoggerBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#Builder#fun setDatadogLogsEnabled(Boolean): Builder
-     * apiMethodSignature: Logger#Builder#fun build(): Logger
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setDatadogLogsEnabled(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      */
     @Test
     fun logs_logger_builder_datadog_logs_disabled() {
@@ -107,8 +107,8 @@ class LoggerBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#Builder#fun setNetworkInfoEnabled(Boolean): Builder
-     * apiMethodSignature: Logger#Builder#fun build(): Logger
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setNetworkInfoEnabled(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      */
     @Test
     fun logs_logger_builder_network_info_enabled() {
@@ -120,8 +120,8 @@ class LoggerBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#Builder#fun setNetworkInfoEnabled(Boolean): Builder
-     * apiMethodSignature: Logger#Builder#fun build(): Logger
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setNetworkInfoEnabled(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      */
     @Test
     fun logs_logger_builder_network_info_disabled() {
@@ -133,8 +133,8 @@ class LoggerBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#Builder#fun setServiceName(String): Builder
-     * apiMethodSignature: Logger#Builder#fun build(): Logger
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setServiceName(String): Builder
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      */
     @Test
     fun logs_logger_builder_set_service_name() {
@@ -146,8 +146,8 @@ class LoggerBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#Builder#fun setLoggerName(String): Builder
-     * apiMethodSignature: Logger#Builder#fun build(): Logger
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setLoggerName(String): Builder
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      */
     @Test
     fun logs_logger_builder_set_logger_name() {
@@ -159,8 +159,8 @@ class LoggerBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#Builder#fun setBundleWithRumEnabled(Boolean): Builder
-     * apiMethodSignature: Logger#Builder#fun build(): Logger
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setBundleWithRumEnabled(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      */
     @Test
     fun logs_logger_builder_bundle_with_rum_enabled() {
@@ -178,8 +178,8 @@ class LoggerBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#Builder#fun setBundleWithTraceEnabled(Boolean): Builder
-     * apiMethodSignature: Logger#Builder#fun build(): Logger
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setBundleWithTraceEnabled(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      */
     @Test
     fun logs_logger_builder_bundle_with_trace_enabled() {
@@ -196,8 +196,8 @@ class LoggerBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#Builder#fun setBundleWithRumEnabled(Boolean): Builder
-     * apiMethodSignature: Logger#Builder#fun build(): Logger
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setBundleWithRumEnabled(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      */
     @Test
     fun logs_logger_builder_bundle_with_rum_disabled() {
@@ -212,8 +212,8 @@ class LoggerBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#Builder#fun setBundleWithTraceEnabled(Boolean): Builder
-     * apiMethodSignature: Logger#Builder#fun build(): Logger
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setBundleWithTraceEnabled(Boolean): Builder
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
      */
     @Test
     fun logs_logger_builder_bundle_with_trace_disabled() {
