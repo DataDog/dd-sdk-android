@@ -15,11 +15,11 @@ class Feature:
         self.directory_path = directory_path
 
     def fetch_test_cases(self) -> set:
-        print(f'Walking through {self.directory_path}')
+        # print(f'Walking through {self.directory_path}')
         test_cases = set()
         for root, subdirs, files in os.walk(self.directory_path):
             for file in files:
-                print(f'fetching the test cases in {file}')
+                # print(f'fetching the test cases in {file}')
                 self.fetch_test_cases_from_file(f'{root}/{file}', test_cases)
         return test_cases
 
