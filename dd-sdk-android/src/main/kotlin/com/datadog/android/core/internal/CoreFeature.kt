@@ -202,7 +202,8 @@ internal object CoreFeature {
                 RumEventDeserializer(),
                 NetworkInfoDeserializer(sdkLogger),
                 UserInfoDeserializer(sdkLogger),
-                sdkLogger
+                sdkLogger,
+                timeProvider
             )
             ndkCrashHandler.prepareData()
         }
