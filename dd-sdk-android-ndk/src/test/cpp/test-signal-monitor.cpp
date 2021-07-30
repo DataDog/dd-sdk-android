@@ -39,7 +39,7 @@ bool performedInstall(int times) {
 #endif
 }
 
-void wait_for_watchdog_thread() {
+void waitf_for_signal_handlers_override_thread() {
     // we cannot join on the override_signal_handlers_thread as in case this is not joinable
     // meaning that it already finished, on Android API < 26 this will crash the process:
     // See here: [https://android.googlesource.com/platform/bionic/+/master/libc/bionic/pthread_internal.cpp#106]
@@ -49,7 +49,7 @@ void wait_for_watchdog_thread() {
 
 TEST calling_start_monitoring_will_install_signal_handlers(void) {
     start_monitoring();
-    wait_for_watchdog_thread();
+    waitf_for_signal_handlers_override_thread();
             ASSERT(handlers_installed);
     clear_tests();
             PASS();
@@ -59,7 +59,7 @@ TEST calling_start_monitoring_more_times_in_a_row_will_only_install_once(void) {
     start_monitoring();
     start_monitoring();
     start_monitoring();
-    wait_for_watchdog_thread();
+    waitf_for_signal_handlers_override_thread();
             ASSERT(handlers_installed);
             ASSERT(performedInstall(1));
     clear_tests();
@@ -70,7 +70,7 @@ TEST calling_start_monitoring_more_times_in_a_row_will_only_install_once(void) {
 TEST calling_stop_monitoring_will_uninstall_the_handlers(void) {
     // given
     start_monitoring();
-    wait_for_watchdog_thread();
+    waitf_for_signal_handlers_override_thread();
     // when
     stop_monitoring();
             ASSERT_FALSE(handlers_installed);
@@ -81,7 +81,7 @@ TEST calling_stop_monitoring_will_uninstall_the_handlers(void) {
 TEST calling_stop_monitoring_more_times_in_a_row_will_only_uninstall_once(void) {
     // given
     start_monitoring();
-    wait_for_watchdog_thread();
+    waitf_for_signal_handlers_override_thread();
     // when
     stop_monitoring();
     stop_monitoring();
@@ -100,7 +100,7 @@ TEST calling_start_monitor_from_different_threads_will_only_install_once(void) {
     std::thread t2 = std::thread(start_monitoring_lambda);
     t1.join();
     t2.join();
-    wait_for_watchdog_thread();
+    waitf_for_signal_handlers_override_thread();
             ASSERT(handlers_installed);
             ASSERT(performedInstall(1));
     clear_tests();
@@ -136,7 +136,7 @@ TEST calling_start_monitor_from_different_threads_will_not_corrupt_the_memory(vo
 TEST calling_stop_monitoring_from_2_different_threads_will_only_uninstall_once(void) {
     // given
     start_monitoring();
-    wait_for_watchdog_thread();
+    waitf_for_signal_handlers_override_thread();
     // when
     auto stop_monitoring_lambda = [] {
         stop_monitoring();

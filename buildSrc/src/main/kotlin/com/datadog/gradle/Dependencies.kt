@@ -71,8 +71,8 @@ object Dependencies {
         const val Coroutines = "1.4.2"
 
         // NDK
-        const val NdkVersion = "21.3.6528147"
-        const val CMakeVersion = "3.10.2"
+        const val NdkVersion = "22.1.7171670"
+        const val CMakeVersion = "3.18.1"
     }
 
     object Libraries {
