@@ -2,8 +2,6 @@
 #  This product includes software developed at Datadog (https://www.datadoghq.com/).
 #  Copyright 2016-Present Datadog, Inc.
 
-from builtins import *
-from math import floor
 import re
 
 DOT = "."
@@ -50,10 +48,12 @@ def resolve_type_name(type_definition) -> str:
 class ApiSurface:
     file_path: str
     ignored_types: [str]
+    verbose: bool
 
-    def __init__(self, file_path: str, ignored_types: [str] = None):
+    def __init__(self, file_path: str, ignored_types: [str] = None, verbose: bool = False):
         self.file_path = file_path
         self.ignored_types = ignored_types
+        self.verbose = verbose
 
     def fetch_testable_methods(self) -> set:
         to_return = set()
@@ -70,7 +70,6 @@ class ApiSurface:
             is_testable_api = TESTABLE_API_REGEX.match(row)
             if is_type_matcher:
                 depth = int(len(is_type_matcher.group(1)) / INDENT_SIZE)
-                prefix = NESTED_TYPE_SEPARATOR.join(stack[:depth])
                 type_attributes = is_type_matcher.group(2).strip()
                 type = is_type_matcher.group(3)
                 type_name = resolve_type_name(is_type_matcher.group(5))
@@ -79,11 +78,14 @@ class ApiSurface:
                 depth = int(len(is_testable_api.group(1)) / INDENT_SIZE)
                 prefix = NESTED_TYPE_SEPARATOR.join(stack[:depth])
                 if (type_attributes in DEFAULT_IGNORED_TYPE_ATTRS) or (type in DEFAULT_IGNORED_TYPES):
-                    # print(f"Ignored by default {type_attributes} {type} {prefix}{API_SEPARATOR}{row.strip()}")
+                    if self.verbose:
+                        print(f"Ignored by default {type_attributes} {type} {prefix}{API_SEPARATOR}{row.strip()}")
                     pass
                 elif self.ignored_types is not None and prefix in self.ignored_types:
-                    print(f"Ignored manually {type_attributes} {type} {prefix}{API_SEPARATOR}{row.strip()}")
+                    if self.verbose:
+                        print(f"Ignored manually {type_attributes} {type} {prefix}{API_SEPARATOR}{row.strip()}")
                 else:
-                    # print(f"Keeping {type_attributes} {type} {prefix}{API_SEPARATOR}{row.strip()}")
+                    if self.verbose:
+                        print(f"Keeping {type_attributes} {type} {prefix}{API_SEPARATOR}{row.strip()}")
                     to_return.add(prefix + API_SEPARATOR + row.strip())
         return to_return
