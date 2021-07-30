@@ -11,6 +11,7 @@
 #include <jni.h>
 #include <stdbool.h>
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -20,13 +21,13 @@ extern "C" {
  * serialize to disk and invoke the previously-installed handler
  * @return true if monitoring started successfully
  */
-bool install_signal_handlers();
+bool start_monitoring();
 
 /**
  * Stop monitoring for fatal exceptions and reinstall previously-installed
  * handlers
  */
-void uninstall_signal_handlers(void);
+void stop_monitoring(void);
 
 #ifdef __cplusplus
 }
