@@ -3,14 +3,15 @@
 #  Copyright 2016-Present Datadog, Inc.
 
 import re
-from math import floor
 
-DIVIDER = "#"
 DOT = "."
+NESTED_TYPE_SEPARATOR = "$"
+API_SEPARATOR = "#"
 EXTEND_SEPARATOR = ":"
-TESTABLE_API_REGEX = re.compile("^(?<!deprecated)(\\s*)(constructor|fun)(.+)", re.IGNORECASE)
-TYPE_REGEX = re.compile("(\\s*)(.*)(class|interface|enum|object)(\\s)(.+)$", re.IGNORECASE)
-DEFAULT_IGNORED_TYPE_REGEX = re.compile("(.*)(companion|deprecated)(\\s)(.*)$", re.IGNORECASE)
+TESTABLE_API_REGEX = re.compile("^(\\s*)(?<!deprecated)(\\s*)(constructor|fun)(.+)")
+TYPE_REGEX = re.compile("(\\s*)(.*)(class|interface|enum|object)(\\s)(.*)$")
+DEFAULT_IGNORED_TYPE_ATTRS = ["companion", "data"]
+DEFAULT_IGNORED_TYPES = ["enum", "interface"]
 INDENT_SIZE = 2
 
 """
@@ -31,26 +32,6 @@ this point. Going further we will attach the current entity `AnotherFoo#`
 
 """
 
-
-def sanitize_prefix(previous_indent: int,
-                    current_indent: int,
-                    prefix: str) -> str:
-    # we divide the difference to 2 as the indentation step in apiSurface tool is 2
-    difference = floor((current_indent - previous_indent) / INDENT_SIZE)
-    if difference <= 0:
-        split = prefix.split(DIVIDER)
-        # in case the levels of indentation are equal we drop one group
-        # from prefix therefore we need to add 1 to difference
-        drop_number_of_groups = abs(difference) + 1
-        remaining_groups = len(split) - 1 - drop_number_of_groups
-        new_prefix = DIVIDER.join(split[:remaining_groups])
-        if len(new_prefix) > 0:
-            new_prefix += DIVIDER
-        return new_prefix
-    else:
-        return prefix
-
-
 """
 Resolves the type name from the type_matcher_group and handles several corner cases:
 - if type definition is " class Builder" it will return "Builder"
@@ -61,43 +42,50 @@ Resolves the type name from the type_matcher_group and handles several corner ca
 
 
 def resolve_type_name(type_definition) -> str:
-    return type_definition.strip().split(EXTEND_SEPARATOR)[0].strip().split(DOT)[-1]
+    return type_definition.strip().split(EXTEND_SEPARATOR)[0].strip()
 
 
 class ApiSurface:
     file_path: str
-    extra_ignored_types_reg_ex: re
+    ignored_types: [str]
+    verbose: bool
 
-    def __init__(self, file_path: str, ignored_types: [str] = None):
+    def __init__(self, file_path: str, ignored_types: [str] = None, verbose: bool = False):
         self.file_path = file_path
-        if ignored_types:
-            self.extra_ignored_types_reg_ex = re.compile(f"^{'|'.join(ignored_types)}", re.IGNORECASE)
-        else:
-            self.extra_ignored_types_reg_ex = None
+        self.ignored_types = ignored_types
+        self.verbose = verbose
 
     def fetch_testable_methods(self) -> set:
         to_return = set()
         with open(self.file_path, 'r') as file:
             rows = file.readlines()
-        prefix = ""
+        stack = ["", "", "", "", "", ""] # we don't expect nested types with more than 5 levels
         # We will need this prefix which holds also the attributes of the type (e.g. "companion", "deprecated", "open")
         # to be able to ignore some APIs.
-        prefix_with_type_attributes = ""
+        type_attributes = ""
+        type = ""
 
-        current_indent = 0
         for row in rows:
             is_type_matcher = TYPE_REGEX.match(row)
+            is_testable_api = TESTABLE_API_REGEX.match(row)
             if is_type_matcher:
-                indent = len(is_type_matcher.group(1))
-                prefix = sanitize_prefix(current_indent, indent, prefix)
-                sanitize_prefix(current_indent, indent, prefix_with_type_attributes)
-                current_indent = indent
-                type_attributes = is_type_matcher.group(2)
+                depth = int(len(is_type_matcher.group(1)) / INDENT_SIZE)
+                type_attributes = is_type_matcher.group(2).strip()
+                type = is_type_matcher.group(3)
                 type_name = resolve_type_name(is_type_matcher.group(5))
-                prefix += type_name + DIVIDER
-                prefix_with_type_attributes = type_attributes + type_name + DIVIDER
-            elif TESTABLE_API_REGEX.match(row) \
-                    and (not DEFAULT_IGNORED_TYPE_REGEX.match(prefix_with_type_attributes)) \
-                    and (self.extra_ignored_types_reg_ex is None or not self.extra_ignored_types_reg_ex.match(prefix)):
-                to_return.add(prefix + row.strip())
+                stack[depth] = type_name
+            elif is_testable_api:
+                depth = int(len(is_testable_api.group(1)) / INDENT_SIZE)
+                prefix = NESTED_TYPE_SEPARATOR.join(stack[:depth])
+                if (type_attributes in DEFAULT_IGNORED_TYPE_ATTRS) or (type in DEFAULT_IGNORED_TYPES):
+                    if self.verbose:
+                        print(f"Ignored by default {type_attributes} {type} {prefix}{API_SEPARATOR}{row.strip()}")
+                    pass
+                elif self.ignored_types is not None and prefix in self.ignored_types:
+                    if self.verbose:
+                        print(f"Ignored manually {type_attributes} {type} {prefix}{API_SEPARATOR}{row.strip()}")
+                else:
+                    if self.verbose:
+                        print(f"Keeping {type_attributes} {type} {prefix}{API_SEPARATOR}{row.strip()}")
+                    to_return.add(prefix + API_SEPARATOR + row.strip())
         return to_return

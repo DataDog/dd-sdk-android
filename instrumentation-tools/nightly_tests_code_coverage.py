@@ -87,7 +87,7 @@ def compute_test_coverage(
     covered_apis = fetch_already_covered_apis(tests_directory_path)
     coverage = resolve_coverage(all_apis, covered_apis)
     print(f'Test coverage percentage is: {coverage}')
-    uncovered_apis = all_apis.difference(covered_apis)
+    uncovered_apis = sorted(all_apis.difference(covered_apis))
     if len(uncovered_apis) > 0:
         print(f'Not yet covered APIs:\n{chr(10).join(uncovered_apis)}')
     if coverage < threshold:

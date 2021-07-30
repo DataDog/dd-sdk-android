@@ -30,9 +30,9 @@ class RumMonitorBuilderE2ETests {
     val nightlyTestRule = NightlyTestRule()
 
     /**
-     * apiMethodSignature: RumMonitor#Builder#fun sampleRumSessions(Float): Builder
-     * apiMethodSignature: RumMonitor#Builder#fun build(): RumMonitor
-     * apiMethodSignature: GlobalRum#fun registerIfAbsent(java.util.concurrent.Callable<RumMonitor>): Boolean
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun sampleRumSessions(Float): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun build(): RumMonitor
+     * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun registerIfAbsent(java.util.concurrent.Callable<RumMonitor>): Boolean
 
      */
     @Test
@@ -52,8 +52,8 @@ class RumMonitorBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: RumMonitor#Builder#fun sampleRumSessions(Float): Builder
-     * apiMethodSignature: RumMonitor#Builder#fun build(): RumMonitor
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun sampleRumSessions(Float): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun build(): RumMonitor
      */
     @Test
     fun rum_rummonitor_builder_sample_all_out() {
@@ -70,8 +70,8 @@ class RumMonitorBuilderE2ETests {
     }
 
     /**
-     * apiMethodSignature: RumMonitor#Builder#fun sampleRumSessions(Float): Builder
-     * apiMethodSignature: RumMonitor#Builder#fun build(): RumMonitor
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun sampleRumSessions(Float): Builder
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun build(): RumMonitor
      */
     @Test
     fun rum_rummonitor_builder_sample_in_75_percent() {

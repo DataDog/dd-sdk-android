@@ -82,6 +82,7 @@ class KotlinFileVisitor {
 
         // Modifiers
         if (node.isDeprecated()) description.append("DEPRECATED ")
+        if (node.isDataClass()) description.append("data ")
         if (node.isSealed()) description.append("sealed ")
         if (node.isProtected()) description.append("protected ")
         if (node.isOpen()) description.append("open ")
@@ -320,6 +321,10 @@ class KotlinFileVisitor {
 
     private fun AstNode.isSealed(): Boolean {
         return hasModifier("classModifier", "SEALED")
+    }
+
+    private fun AstNode.isDataClass(): Boolean {
+        return hasModifier("classModifier", "DATA")
     }
 
     private fun AstNode.isEnum(): Boolean {

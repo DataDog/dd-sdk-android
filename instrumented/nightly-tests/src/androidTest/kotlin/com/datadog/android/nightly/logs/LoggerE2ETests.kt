@@ -49,9 +49,9 @@ class LoggerE2ETests {
     lateinit var logger: Logger
 
     /**
-     * apiMethodSignature: Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
-     * apiMethodSignature: Configuration#Builder#fun build(): Configuration
-     * apiMethodSignature: Configuration#Builder#constructor(Boolean, Boolean, Boolean, Boolean)
+     * apiMethodSignature: com.datadog.android.Datadog#fun initialize(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration, com.datadog.android.privacy.TrackingConsent)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean, Boolean, Boolean, Boolean)
      */
     @Before
     fun setUp() {
@@ -62,7 +62,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun v(String, Throwable? = null, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.log.Logger#fun v(String, Throwable? = null, Map<String, Any?> = emptyMap())
      */
     @Test
     fun logs_logger_verbose_log() {
@@ -79,7 +79,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun v(String, Throwable? = null, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.log.Logger#fun v(String, Throwable? = null, Map<String, Any?> = emptyMap())
      */
     @Test
     fun logs_logger_verbose_log_with_error() {
@@ -97,7 +97,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun d(String, Throwable? = null, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.log.Logger#fun d(String, Throwable? = null, Map<String, Any?> = emptyMap())
      */
     @Test
     fun logs_logger_debug_log() {
@@ -114,7 +114,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun d(String, Throwable? = null, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.log.Logger#fun d(String, Throwable? = null, Map<String, Any?> = emptyMap())
      */
     @Test
     fun logs_logger_debug_log_with_error() {
@@ -132,7 +132,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun i(String, Throwable? = null, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.log.Logger#fun i(String, Throwable? = null, Map<String, Any?> = emptyMap())
      */
     @Test
     fun logs_logger_info_log() {
@@ -149,7 +149,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun i(String, Throwable? = null, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.log.Logger#fun i(String, Throwable? = null, Map<String, Any?> = emptyMap())
      */
     @Test
     fun logs_logger_info_log_with_error() {
@@ -167,7 +167,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun e(String, Throwable? = null, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.log.Logger#fun e(String, Throwable? = null, Map<String, Any?> = emptyMap())
      */
     @Test
     fun logs_logger_error_log() {
@@ -184,7 +184,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun e(String, Throwable? = null, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.log.Logger#fun e(String, Throwable? = null, Map<String, Any?> = emptyMap())
      */
     @Test
     fun logs_logger_error_log_with_error() {
@@ -202,7 +202,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun w(String, Throwable? = null, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.log.Logger#fun w(String, Throwable? = null, Map<String, Any?> = emptyMap())
      */
     @Test
     fun logs_logger_warning_log() {
@@ -219,7 +219,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun w(String, Throwable? = null, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.log.Logger#fun w(String, Throwable? = null, Map<String, Any?> = emptyMap())
      */
     @Test
     fun logs_logger_warning_log_with_error() {
@@ -237,7 +237,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun wtf(String, Throwable? = null, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.log.Logger#fun wtf(String, Throwable? = null, Map<String, Any?> = emptyMap())
      */
     @Test
     fun logs_logger_wtf_log() {
@@ -254,7 +254,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun wtf(String, Throwable? = null, Map<String, Any?> = emptyMap())
+     * apiMethodSignature: com.datadog.android.log.Logger#fun wtf(String, Throwable? = null, Map<String, Any?> = emptyMap())
      */
     @Test
     fun logs_logger_wtf_log_with_error() {
@@ -272,7 +272,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun addAttribute(String, Boolean)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Boolean)
      */
     @Test
     fun logs_logger_add_boolean_attribute() {
@@ -284,7 +284,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun addAttribute(String, Int)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Int)
      */
     @Test
     fun logs_logger_add_int_attribute() {
@@ -296,7 +296,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun addAttribute(String, String?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, String?)
      */
     @Test
     fun logs_logger_add_string_attribute() {
@@ -309,7 +309,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun addAttribute(String, String?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, String?)
      */
     @Test
     fun logs_logger_add_string_null_attribute() {
@@ -322,7 +322,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun addAttribute(String, Float)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Float)
      */
     @Test
     fun logs_logger_add_float_attribute() {
@@ -334,7 +334,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun addAttribute(String, Double)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Double)
      */
     @Test
     fun logs_logger_add_double_attribute() {
@@ -346,7 +346,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun addAttribute(String, JsonArray?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, JsonArray?)
      */
     @Test
     fun logs_logger_add_jsonarray_attribute() {
@@ -358,7 +358,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun addAttribute(String, JsonArray?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, JsonArray?)
      */
     @Test
     fun logs_logger_add_jsonarray_null_attribute() {
@@ -371,7 +371,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun addAttribute(String, JsonObject?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, JsonObject?)
      */
     @Test
     fun logs_logger_add_jsonobject_attribute() {
@@ -383,7 +383,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun addAttribute(String, JsonObject?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, JsonObject?)
      */
     @Test
     fun logs_logger_add_jsonobject_null_attribute() {
@@ -396,7 +396,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun addDate(String, Date?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addDate(String, Date?)
      */
     @Test
     fun logs_logger_add_date_attribute() {
@@ -408,7 +408,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun addDate(String, Date?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addDate(String, Date?)
      */
     @Test
     fun logs_logger_add_date_null_attribute() {
@@ -421,7 +421,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun removeAttribute(String)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun removeAttribute(String)
      */
     @Test
     fun logs_logger_remove_attribute() {
@@ -455,7 +455,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun addTag(String, String)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addTag(String, String)
      */
     @Test
     fun logs_logger_add_tag() {
@@ -467,7 +467,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun addTag(String, String)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addTag(String, String)
      */
     @Test
     fun logs_logger_add_already_formatted_tag() {
@@ -479,7 +479,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: Logger#fun removeTag(String)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun removeTag(String)
      */
     @Test
     fun logs_logger_remove_tag() {
