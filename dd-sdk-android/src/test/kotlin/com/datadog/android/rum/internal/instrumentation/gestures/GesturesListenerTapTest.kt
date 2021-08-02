@@ -121,7 +121,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verifyMonitorCalledWithUserAction(target, expectedResourceName)
+        verifyMonitorCalledWithUserAction(target, "", expectedResourceName)
     }
 
     @Test
@@ -158,7 +158,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verifyMonitorCalledWithUserAction(target, expectedResourceName)
+        verifyMonitorCalledWithUserAction(target, "", expectedResourceName)
     }
 
     @Test
@@ -200,7 +200,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verifyMonitorCalledWithUserAction(validTarget, expectedResourceName)
+        verifyMonitorCalledWithUserAction(validTarget, "", expectedResourceName)
     }
 
     @Test
@@ -241,7 +241,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verifyMonitorCalledWithUserAction(validTarget, expectedResourceName)
+        verifyMonitorCalledWithUserAction(validTarget, "", expectedResourceName)
     }
 
     @Test
@@ -297,7 +297,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verifyMonitorCalledWithUserAction(mockDecorView, expectedResourceName)
+        verifyMonitorCalledWithUserAction(mockDecorView, "", expectedResourceName)
     }
 
     @Test
@@ -334,7 +334,11 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verifyMonitorCalledWithUserAction(validTarget, "0x${targetId.toString(16)}")
+        verifyMonitorCalledWithUserAction(
+            validTarget,
+            "",
+            "0x${targetId.toString(16)}"
+        )
     }
 
     @Test
@@ -367,7 +371,11 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verifyMonitorCalledWithUserAction(validTarget, "0x${targetId.toString(16)}")
+        verifyMonitorCalledWithUserAction(
+            validTarget,
+            "",
+            "0x${targetId.toString(16)}"
+        )
     }
 
     @Test
@@ -431,13 +439,13 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         // Then
         verify(rumMonitor.mockInstance).addUserAction(
             RumActionType.TAP,
-            targetName(validTarget, expectedResourceName),
+            "",
             expectedAttributes
         )
     }
 
     @Test
-    fun `M use the class simple name as target name W tapIntercepted { cannonicalName is null }`(
+    fun `M use class simple name as target class name W tapIntercepted { cannonicalName is null }`(
         forge: Forge
     ) {
         val mockEvent: MotionEvent = forge.getForgery()
@@ -492,7 +500,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         // Then
         verify(rumMonitor.mockInstance).addUserAction(
             RumActionType.TAP,
-            targetName(validTarget, expectedResourceName),
+            "",
             expectedAttributes
         )
     }
@@ -547,7 +555,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
     }
 
     @Test
-    fun `M use the default target name W tapIntercepted { custom target name empty }`(
+    fun `M use empty string as target name W tapIntercepted { custom target name empty }`(
         forge: Forge
     ) {
         val mockEvent: MotionEvent = forge.getForgery()
@@ -589,17 +597,21 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         // Then
         verify(rumMonitor.mockInstance).addUserAction(
             RumActionType.TAP,
-            targetName(validTarget, expectedResourceName),
+            "",
             expectedAttributes
         )
     }
 
     // region Internal
 
-    private fun verifyMonitorCalledWithUserAction(target: View, expectedResourceName: String) {
+    private fun verifyMonitorCalledWithUserAction(
+        target: View,
+        expectedTargetName: String,
+        expectedResourceName: String
+    ) {
         verify(rumMonitor.mockInstance).addUserAction(
             eq(RumActionType.TAP),
-            argThat { startsWith("${target.javaClass.simpleName}(") },
+            eq(expectedTargetName),
             argThat {
                 val targetClassName = target.javaClass.canonicalName
                 this[RumAttributes.ACTION_TARGET_CLASS_NAME] == targetClassName &&

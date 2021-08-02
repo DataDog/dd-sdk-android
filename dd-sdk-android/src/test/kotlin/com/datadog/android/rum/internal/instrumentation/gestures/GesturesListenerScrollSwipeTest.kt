@@ -106,7 +106,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             val argumentCaptor = argumentCaptor<Map<String, Any?>>()
             verify(rumMonitor.mockInstance).stopUserAction(
                 eq(RumActionType.SCROLL),
-                eq(targetName(scrollingTarget, expectedResourceName)),
+                eq(""),
                 argumentCaptor.capture()
             )
             assertThat(argumentCaptor.firstValue).isEqualTo(expectedAttributes)
@@ -172,7 +172,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             val argumentCaptor = argumentCaptor<Map<String, Any?>>()
             verify(rumMonitor.mockInstance).stopUserAction(
                 eq(RumActionType.SCROLL),
-                eq(targetName(scrollingTarget, expectedResourceName)),
+                eq(""),
                 argumentCaptor.capture()
             )
             assertThat(argumentCaptor.firstValue).isEqualTo(expectedAttributes)
@@ -255,7 +255,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             val argumentCaptor1 = argumentCaptor<Map<String, Any?>>()
             verify(rumMonitor.mockInstance).stopUserAction(
                 eq(RumActionType.SCROLL),
-                eq(targetName(scrollingTarget, expectedResourceName)),
+                eq(""),
                 argumentCaptor1.capture()
             )
             assertThat(argumentCaptor1.firstValue).isEqualTo(expectedAttributes1)
@@ -263,7 +263,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             val argumentCaptor2 = argumentCaptor<Map<String, Any?>>()
             verify(rumMonitor.mockInstance).stopUserAction(
                 eq(RumActionType.SCROLL),
-                eq(targetName(scrollingTarget, expectedResourceName)),
+                eq(""),
                 argumentCaptor2.capture()
             )
             assertThat(argumentCaptor2.firstValue).isEqualTo(expectedAttributes2)
@@ -373,7 +373,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             val argumentCaptor = argumentCaptor<Map<String, Any?>>()
             verify(rumMonitor.mockInstance).stopUserAction(
                 eq(RumActionType.SWIPE),
-                eq(targetName(scrollingTarget, expectedResourceName)),
+                eq(""),
                 argumentCaptor.capture()
             )
             assertThat(argumentCaptor.firstValue).isEqualTo(expectedAttributes)
@@ -448,7 +448,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             val argumentCaptor = argumentCaptor<Map<String, Any?>>()
             verify(rumMonitor.mockInstance).stopUserAction(
                 eq(RumActionType.SWIPE),
-                eq(targetName(scrollingTarget, expectedResourceName)),
+                eq(""),
                 argumentCaptor.capture()
             )
             assertThat(argumentCaptor.firstValue).isEqualTo(expectedAttributes)
@@ -514,7 +514,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
     }
 
     @Test
-    fun `M use the default target name W scrollDetected { custom target name is empty }`(
+    fun `M use an empty target name W scrollDetected { custom target name is empty }`(
         forge: Forge
     ) {
         val startDownEvent: MotionEvent = forge.getForgery()
@@ -562,7 +562,63 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             verify(rumMonitor.mockInstance).startUserAction(RumActionType.CUSTOM, "", emptyMap())
             verify(rumMonitor.mockInstance).stopUserAction(
                 eq(RumActionType.SCROLL),
-                eq(targetName(scrollingTarget, expectedResourceName)),
+                eq(""),
+                any()
+            )
+        }
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
+    fun `M use an empty target name W scrollDetected { custom target name is null }`(
+        forge: Forge
+    ) {
+        val startDownEvent: MotionEvent = forge.getForgery()
+        val listSize = forge.anInt(1, 20)
+        val intermediaryEvents =
+            forge.aList(size = listSize) { forge.getForgery(MotionEvent::class.java) }
+        val distancesX = forge.aList(listSize) { forge.aFloat() }
+        val distancesY = forge.aList(listSize) { forge.aFloat() }
+        val targetId = forge.anInt()
+        val endUpEvent = intermediaryEvents[intermediaryEvents.size - 1]
+        val scrollingTarget: ScrollableListView = mockView(
+            id = targetId,
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        )
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(scrollingTarget)).thenReturn(null)
+        }
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(scrollingTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(scrollingTarget, expectedResourceName)
+        testedListener = GesturesListener(
+            WeakReference(mockWindow),
+            interactionPredicate = mockInteractionPredicate
+        )
+
+        // When
+        testedListener.onDown(startDownEvent)
+        intermediaryEvents.forEachIndexed { index, event ->
+            testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
+        }
+        testedListener.onUp(endUpEvent)
+
+        // Then
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startUserAction(RumActionType.CUSTOM, "", emptyMap())
+            verify(rumMonitor.mockInstance).stopUserAction(
+                eq(RumActionType.SCROLL),
+                eq(""),
                 any()
             )
         }
@@ -648,7 +704,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             val argumentCaptor1 = argumentCaptor<Map<String, Any?>>()
             verify(rumMonitor.mockInstance).stopUserAction(
                 eq(RumActionType.SWIPE),
-                eq(targetName(scrollingTarget, expectedResourceName)),
+                eq(""),
                 argumentCaptor1.capture()
             )
             assertThat(argumentCaptor1.firstValue).isEqualTo(expectedAttributes1)
@@ -656,7 +712,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             val argumentCaptor2 = argumentCaptor<Map<String, Any?>>()
             verify(rumMonitor.mockInstance).stopUserAction(
                 eq(RumActionType.SWIPE),
-                eq(targetName(scrollingTarget, expectedResourceName)),
+                eq(""),
                 argumentCaptor2.capture()
             )
             assertThat(argumentCaptor2.firstValue).isEqualTo(expectedAttributes2)

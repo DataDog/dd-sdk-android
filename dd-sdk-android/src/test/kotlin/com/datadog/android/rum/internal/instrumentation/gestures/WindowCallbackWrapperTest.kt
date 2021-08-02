@@ -139,7 +139,7 @@ internal class WindowCallbackWrapperTest {
         inOrder(mockCallback, rumMonitor.mockInstance) {
             verify(rumMonitor.mockInstance).addUserAction(
                 eq(RumActionType.TAP),
-                eq(targetName(menuItem, itemResourceName)),
+                eq(""),
                 argThat {
                     val targetClassName = menuItem.javaClass.canonicalName
                     this[RumAttributes.ACTION_TARGET_CLASS_NAME] == targetClassName &&
@@ -197,7 +197,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `M use the default target name W onMenuItemSelected { custom target empty }`(
+    fun `M use an empty target name W onMenuItemSelected { custom target empty }`(
         forge: Forge
     ) {
         // Given
@@ -228,7 +228,7 @@ internal class WindowCallbackWrapperTest {
         inOrder(mockCallback, rumMonitor.mockInstance) {
             verify(rumMonitor.mockInstance).addUserAction(
                 eq(RumActionType.TAP),
-                eq(targetName(menuItem, itemResourceName)),
+                eq(""),
                 argThat {
                     val targetClassName = menuItem.javaClass.canonicalName
                     this[RumAttributes.ACTION_TARGET_CLASS_NAME] == targetClassName &&
