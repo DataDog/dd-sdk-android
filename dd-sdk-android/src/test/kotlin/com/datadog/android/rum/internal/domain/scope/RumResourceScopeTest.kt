@@ -100,11 +100,17 @@ internal class RumResourceScopeTest {
     @Forgery
     lateinit var fakeNetworkInfo: NetworkInfo
 
+    var fakeServerOffset: Long = 0L
+
     private lateinit var fakeEventTime: Time
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeEventTime = Time()
+        val maxLimit = Long.MAX_VALUE - fakeEventTime.timestamp
+        val minLimit = -fakeEventTime.timestamp
+        fakeServerOffset =
+            forge.aLong(min = minLimit, max = maxLimit)
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString()
         fakeMethod = forge.anElementFrom("PUT", "POST", "GET", "DELETE")
@@ -123,6 +129,7 @@ internal class RumResourceScopeTest {
             fakeKey,
             fakeEventTime,
             fakeAttributes,
+            fakeServerOffset,
             mockDetector
         )
     }
@@ -153,7 +160,7 @@ internal class RumResourceScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -202,7 +209,7 @@ internal class RumResourceScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -241,6 +248,7 @@ internal class RumResourceScopeTest {
             fakeKey,
             fakeEventTime,
             fakeAttributes,
+            fakeServerOffset,
             mockDetector
         )
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
@@ -262,7 +270,7 @@ internal class RumResourceScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(brokenUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -316,7 +324,7 @@ internal class RumResourceScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -366,7 +374,7 @@ internal class RumResourceScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -406,7 +414,7 @@ internal class RumResourceScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -531,7 +539,7 @@ internal class RumResourceScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -582,7 +590,7 @@ internal class RumResourceScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -635,7 +643,7 @@ internal class RumResourceScopeTest {
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
                     hasId(testedScope.resourceId)
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -727,6 +735,7 @@ internal class RumResourceScopeTest {
             fakeKey,
             fakeEventTime,
             fakeAttributes,
+            fakeServerOffset,
             mockDetector
         )
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
@@ -1041,7 +1050,7 @@ internal class RumResourceScopeTest {
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -1089,7 +1098,7 @@ internal class RumResourceScopeTest {
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -1138,7 +1147,7 @@ internal class RumResourceScopeTest {
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasResourceData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasKind(kind)
@@ -1228,6 +1237,10 @@ internal class RumResourceScopeTest {
         val event: RumRawEvent = mock()
         whenever(event.eventTime) doReturn Time()
         return event
+    }
+
+    private fun resolveExpectedTimestamp(): Long {
+        return fakeEventTime.timestamp + fakeServerOffset
     }
 
     // endregion

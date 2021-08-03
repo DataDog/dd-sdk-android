@@ -8,6 +8,7 @@ package com.datadog.android.log.internal.domain
 
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
@@ -73,6 +74,9 @@ internal class LogGeneratorTest {
 
     @Mock
     lateinit var mockUserInfoProvider: UserInfoProvider
+
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
     lateinit var fakeServiceName: String
     lateinit var fakeLoggerName: String
     lateinit var fakeAttributes: Map<String, Any?>
@@ -96,6 +100,7 @@ internal class LogGeneratorTest {
     var fakeTimestamp = 0L
     var fakeLevel: Int = 0
     lateinit var fakeThreadName: String
+    private var fakeTimeOffset: Long = 0L
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -110,6 +115,10 @@ internal class LogGeneratorTest {
         fakeThrowable = forge.aThrowable()
         fakeTimestamp = System.currentTimeMillis()
         fakeThreadName = forge.anAlphabeticalString()
+        fakeTimeOffset = forge.aLong(
+            min = -fakeTimestamp,
+            max = Long.MAX_VALUE - fakeTimestamp
+        )
 
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
@@ -117,12 +126,14 @@ internal class LogGeneratorTest {
         whenever(mockSpan.context()) doReturn mockSpanContext
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
         whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId
+        whenever(mockTimeProvider.getServerOffsetMillis()).thenReturn(fakeTimeOffset)
         GlobalTracer.registerIfAbsent(mockTracer)
         testedLogGenerator = LogGenerator(
             fakeServiceName,
             fakeLoggerName,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
+            mockTimeProvider,
             fakeEnvName,
             fakeAppVersion
         )
@@ -247,7 +258,7 @@ internal class LogGeneratorTest {
     }
 
     @Test
-    fun `M add the log timestamp W creating the Log`() {
+    fun `M add the log timestamp and correct the server offset W creating the Log`() {
         // WHEN
         val log = testedLogGenerator.generateLog(
             fakeLevel,
@@ -259,7 +270,8 @@ internal class LogGeneratorTest {
         )
 
         // THEN
-        assertThat(log).hasDate(fakeTimestamp.toIsoFormattedTimestamp())
+        val expected = (fakeTimestamp + fakeTimeOffset).toIsoFormattedTimestamp()
+        assertThat(log).hasDate(expected)
     }
 
     @Test
@@ -366,6 +378,7 @@ internal class LogGeneratorTest {
             fakeLoggerName,
             null,
             mockUserInfoProvider,
+            mockTimeProvider,
             fakeEnvName,
             fakeAppVersion
         )
@@ -393,6 +406,7 @@ internal class LogGeneratorTest {
             fakeLoggerName,
             null,
             mockUserInfoProvider,
+            mockTimeProvider,
             fakeEnvName,
             fakeAppVersion
         )
@@ -436,6 +450,7 @@ internal class LogGeneratorTest {
             fakeLoggerName,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
+            mockTimeProvider,
             "",
             fakeAppVersion
         )
@@ -481,6 +496,7 @@ internal class LogGeneratorTest {
             fakeLoggerName,
             mockNetworkInfoProvider,
             mockUserInfoProvider,
+            mockTimeProvider,
             fakeEnvName,
             ""
         )

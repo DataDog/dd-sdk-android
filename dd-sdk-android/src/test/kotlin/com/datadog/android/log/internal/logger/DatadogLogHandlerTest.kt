@@ -8,6 +8,7 @@ package com.datadog.android.log.internal.logger
 
 import android.content.Context
 import android.util.Log as AndroidLog
+import android.view.Choreographer
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
@@ -15,6 +16,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.sampling.Sampler
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
@@ -40,6 +42,7 @@ import com.datadog.tools.unit.setFieldValue
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -99,6 +102,9 @@ internal class DatadogLogHandlerTest {
     lateinit var mockUserInfoProvider: UserInfoProvider
 
     @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
+    @Mock
     lateinit var mockSampler: Sampler
 
     lateinit var fakeAppVersion: String
@@ -107,6 +113,16 @@ internal class DatadogLogHandlerTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        // To avoid java.lang.NoClassDefFoundError: android/hardware/display/DisplayManagerGlobal.
+        // This class is only available in a real android JVM at runtime and not in a JUnit env.
+        Choreographer::class.java.setStaticValue(
+            "sThreadInstance",
+            object : ThreadLocal<Choreographer>() {
+                override fun initialValue(): Choreographer {
+                    return mock()
+                }
+            }
+        )
         fakeAppVersion = forge.aStringMatching("^[0-9]\\.[0-9]\\.[0-9]")
         fakeEnvName = forge.aStringMatching("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
         fakeServiceName = forge.anAlphabeticalString()
@@ -126,6 +142,7 @@ internal class DatadogLogHandlerTest {
                 fakeLoggerName,
                 mockNetworkInfoProvider,
                 mockUserInfoProvider,
+                mockTimeProvider,
                 fakeEnvName,
                 fakeAppVersion
             ),
@@ -382,6 +399,7 @@ internal class DatadogLogHandlerTest {
                 fakeLoggerName,
                 null,
                 mockUserInfoProvider,
+                mockTimeProvider,
                 fakeEnvName,
                 fakeAppVersion
             ),
@@ -433,6 +451,7 @@ internal class DatadogLogHandlerTest {
                 fakeLoggerName,
                 null,
                 mockUserInfoProvider,
+                mockTimeProvider,
                 fakeEnvName,
                 fakeAppVersion
             ),
@@ -587,6 +606,7 @@ internal class DatadogLogHandlerTest {
                 fakeLoggerName,
                 mockNetworkInfoProvider,
                 mockUserInfoProvider,
+                mockTimeProvider,
                 fakeEnvName,
                 fakeAppVersion
             ),
@@ -622,6 +642,7 @@ internal class DatadogLogHandlerTest {
                 fakeLoggerName,
                 mockNetworkInfoProvider,
                 mockUserInfoProvider,
+                mockTimeProvider,
                 fakeEnvName,
                 fakeAppVersion
             ),
@@ -654,6 +675,7 @@ internal class DatadogLogHandlerTest {
                 fakeLoggerName,
                 mockNetworkInfoProvider,
                 mockUserInfoProvider,
+                mockTimeProvider,
                 fakeEnvName,
                 fakeAppVersion
             ),

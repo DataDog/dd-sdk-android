@@ -32,6 +32,7 @@ internal class RumResourceScope(
     internal val key: String,
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
+    serverTimeOffsetInMs: Long,
     internal val firstPartyHostDetector: FirstPartyHostDetector
 ) : RumScope {
 
@@ -40,7 +41,7 @@ internal class RumResourceScope(
     private var timing: ResourceTiming? = null
     private val initialContext = parentScope.getRumContext()
 
-    private val eventTimestamp = eventTime.timestamp
+    internal val eventTimestamp = eventTime.timestamp + serverTimeOffsetInMs
     private val startedNanos: Long = eventTime.nanoTime
     private val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
 
@@ -288,7 +289,8 @@ internal class RumResourceScope(
         fun fromEvent(
             parentScope: RumScope,
             event: RumRawEvent.StartResource,
-            firstPartyHostDetector: FirstPartyHostDetector
+            firstPartyHostDetector: FirstPartyHostDetector,
+            timestampOffset: Long
         ): RumScope {
             return RumResourceScope(
                 parentScope,
@@ -297,6 +299,7 @@ internal class RumResourceScope(
                 event.key,
                 event.eventTime,
                 event.attributes,
+                timestampOffset,
                 firstPartyHostDetector
             )
         }

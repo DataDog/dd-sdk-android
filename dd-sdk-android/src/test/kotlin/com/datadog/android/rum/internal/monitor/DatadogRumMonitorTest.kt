@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.monitor
 import android.os.Handler
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -52,7 +53,6 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -94,6 +94,9 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
 
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -102,7 +105,7 @@ internal class DatadogRumMonitorTest {
     @FloatForgery(min = 0f, max = 100f)
     var fakeSamplingRate: Float = 0f
 
-    @LongForgery(1000000000000, 2000000000000)
+    @LongForgery(TIMESTAMP_MIN, TIMESTAMP_MAX)
     var fakeTimestamp: Long = 0L
 
     @BoolForgery
@@ -120,13 +123,10 @@ internal class DatadogRumMonitorTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor
+            mockFrameRateVitalMonitor,
+            mockTimeProvider
         )
         testedMonitor.setFieldValue("rootScope", mockScope)
-    }
-
-    @AfterEach
-    fun `tear down`() {
     }
 
     @Test
@@ -140,7 +140,8 @@ internal class DatadogRumMonitorTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor
+            mockFrameRateVitalMonitor,
+            mockTimeProvider
         )
 
         val rootScope = testedMonitor.rootScope
@@ -1041,6 +1042,7 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
+            mockTimeProvider,
             mockExecutor
         )
 
@@ -1067,6 +1069,7 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
+            mockTimeProvider,
             mockExecutorService
         )
 
@@ -1094,7 +1097,8 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockExecutorService
+            mockTimeProvider,
+            mockExecutorService,
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -1106,6 +1110,8 @@ internal class DatadogRumMonitorTest {
     }
 
     companion object {
+        const val TIMESTAMP_MIN = 1000000000000
+        const val TIMESTAMP_MAX = 2000000000000
         const val PROCESSING_DELAY = 100L
     }
 }

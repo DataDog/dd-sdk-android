@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.core.model.NetworkInfo
@@ -135,7 +136,14 @@ internal class RumViewScopeTest {
 
     lateinit var fakeEventTime: Time
 
+    var fakeServerOffset: Long = 0L
+
+    var fakeServerOffsetSecond: Long = 0L
+
     lateinit var fakeEvent: RumRawEvent
+
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -143,6 +151,15 @@ internal class RumViewScopeTest {
         val fakeOffset = -forge.aLong(1000, 50000)
         val fakeTimestamp = System.currentTimeMillis() + fakeOffset
         val fakeNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(fakeOffset)
+        val maxLimit = max(Long.MAX_VALUE - fakeTimestamp, Long.MAX_VALUE)
+        val minLimit = min(-fakeTimestamp, maxLimit)
+        fakeServerOffset =
+            forge.aLong(min = minLimit, max = maxLimit)
+        fakeServerOffsetSecond =
+            forge.aLong(min = minLimit, max = maxLimit)
+        whenever(mockTimeProvider.getServerOffsetMillis())
+            .thenReturn(fakeServerOffset)
+            .thenReturn(fakeServerOffsetSecond)
         fakeEventTime = Time(fakeTimestamp, fakeNanos)
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString().toByteArray()
@@ -166,7 +183,8 @@ internal class RumViewScopeTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor
+            mockFrameRateVitalMonitor,
+            mockTimeProvider
         )
 
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
@@ -274,7 +292,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -322,7 +340,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -370,7 +388,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -424,7 +442,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .hasAttributes(expectedAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -463,7 +481,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -514,7 +532,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -548,6 +566,10 @@ internal class RumViewScopeTest {
         val fakeGlobalAttributeKey = forge.anAlphabeticalString()
         val fakeGlobalAttributeValue = forge.anAlphabeticalString()
         GlobalRum.addAttribute(fakeGlobalAttributeKey, fakeGlobalAttributeValue)
+        reset(mockTimeProvider)
+        whenever(mockTimeProvider.getServerOffsetMillis())
+            .thenReturn(fakeServerOffset)
+            .thenReturn(fakeServerOffsetSecond)
         testedScope = RumViewScope(
             mockParentScope,
             fakeKey,
@@ -557,7 +579,8 @@ internal class RumViewScopeTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor
+            mockFrameRateVitalMonitor,
+            mockTimeProvider
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -577,7 +600,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -613,6 +636,10 @@ internal class RumViewScopeTest {
         val fakeGlobalAttributeNewValue =
             fakeGlobalAttributeValue + forge.anAlphabeticalString(size = 2)
         GlobalRum.addAttribute(fakeGlobalAttributeKey, fakeGlobalAttributeValue)
+        reset(mockTimeProvider)
+        whenever(mockTimeProvider.getServerOffsetMillis())
+            .thenReturn(fakeServerOffset)
+            .thenReturn(fakeServerOffsetSecond)
         testedScope = RumViewScope(
             mockParentScope,
             fakeKey,
@@ -622,7 +649,8 @@ internal class RumViewScopeTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor
+            mockFrameRateVitalMonitor,
+            mockTimeProvider
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -642,7 +670,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -694,7 +722,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -745,7 +773,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(expectedAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -788,7 +816,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .hasAttributes(fakeAttributes)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -875,7 +903,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -939,7 +967,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -1003,7 +1031,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -1067,7 +1095,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -1170,7 +1198,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -1234,7 +1262,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -1298,7 +1326,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -1362,7 +1390,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -1516,7 +1544,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -1638,8 +1666,9 @@ internal class RumViewScopeTest {
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
 
         // When
+        val fakeStartActionEvent = RumRawEvent.StartAction(type, name, waitForStop, attributes)
         val result = testedScope.handleEvent(
-            RumRawEvent.StartAction(type, name, waitForStop, attributes),
+            fakeStartActionEvent,
             mockWriter
         )
 
@@ -1649,6 +1678,8 @@ internal class RumViewScopeTest {
         assertThat(testedScope.activeActionScope).isInstanceOf(RumActionScope::class.java)
         val actionScope = testedScope.activeActionScope as RumActionScope
         assertThat(actionScope.name).isEqualTo(name)
+        assertThat(actionScope.eventTimestamp)
+            .isEqualTo(resolveExpectedTimestamp(fakeStartActionEvent.eventTime.timestamp))
         assertThat(actionScope.waitForStop).isEqualTo(waitForStop)
         assertThat(actionScope.attributes).containsAllEntriesOf(attributes)
         assertThat(actionScope.parentScope).isSameAs(testedScope)
@@ -1952,8 +1983,9 @@ internal class RumViewScopeTest {
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
 
         // When
+        val fakeEvent = RumRawEvent.StartResource(key, url, method, attributes)
         val result = testedScope.handleEvent(
-            RumRawEvent.StartResource(key, url, method, attributes),
+            fakeEvent,
             mockWriter
         )
 
@@ -1970,6 +2002,8 @@ internal class RumViewScopeTest {
         assertThat(resourceScope.key).isSameAs(key)
         assertThat(resourceScope.url).isEqualTo(url)
         assertThat(resourceScope.method).isSameAs(method)
+        assertThat(resourceScope.eventTimestamp)
+            .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
         assertThat(resourceScope.firstPartyHostDetector).isSameAs(mockDetector)
     }
 
@@ -2001,6 +2035,8 @@ internal class RumViewScopeTest {
         assertThat(resourceScope.key).isSameAs(key)
         assertThat(resourceScope.url).isEqualTo(url)
         assertThat(resourceScope.method).isSameAs(method)
+        assertThat(resourceScope.eventTimestamp)
+            .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
         assertThat(resourceScope.firstPartyHostDetector).isSameAs(mockDetector)
     }
 
@@ -2168,7 +2204,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(attributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
-                    hasTimestamp(fakeEvent.eventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(stacktrace)
@@ -2212,7 +2248,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(attributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
-                    hasTimestamp(fakeEvent.eventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(stacktrace)
@@ -2258,7 +2294,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(attributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
-                    hasTimestamp(fakeEvent.eventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -2298,7 +2334,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(attributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
-                    hasTimestamp(fakeEvent.eventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(null)
@@ -2338,7 +2374,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(attributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
-                    hasTimestamp(fakeEvent.eventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(null)
@@ -2356,7 +2392,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -2414,7 +2450,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(attributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
-                    hasTimestamp(fakeEvent.eventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -2462,7 +2498,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(attributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
-                    hasTimestamp(fakeEvent.eventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -2480,7 +2516,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -2539,7 +2575,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(attributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
-                    hasTimestamp(fakeEvent.eventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -2588,7 +2624,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(attributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasErrorData {
-                    hasTimestamp(fakeEvent.eventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -2606,7 +2642,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -2793,7 +2829,9 @@ internal class RumViewScopeTest {
             assertThat(firstValue)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasLongTaskData {
-                    hasTimestamp(fakeEvent.eventTime.timestamp - durationMs)
+                    hasTimestamp(
+                        resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) - durationMs
+                    )
                     hasDuration(durationNs)
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
@@ -2830,7 +2868,9 @@ internal class RumViewScopeTest {
                 .hasAttributes(attributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasLongTaskData {
-                    hasTimestamp(fakeEvent.eventTime.timestamp - durationMs)
+                    hasTimestamp(
+                        resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) - durationMs
+                    )
                     hasDuration(durationNs)
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
@@ -2965,7 +3005,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -3011,7 +3051,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -3075,7 +3115,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -3126,7 +3166,7 @@ internal class RumViewScopeTest {
             assertThat(firstValue)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -3150,7 +3190,7 @@ internal class RumViewScopeTest {
             assertThat(lastValue)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -3218,7 +3258,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -3268,7 +3308,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -3328,7 +3368,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasUrl(fakeUrl)
                     hasDurationGreaterThan(1)
@@ -3366,6 +3406,10 @@ internal class RumViewScopeTest {
         whenever(mockActivity.display) doReturn mockDisplay
         whenever(mockDisplay.refreshRate) doReturn deviceRefreshRate
         reset(mockFrameRateVitalMonitor)
+        reset(mockTimeProvider)
+        whenever(mockTimeProvider.getServerOffsetMillis())
+            .thenReturn(fakeServerOffset)
+            .thenReturn(fakeServerOffsetSecond)
         val testedScope = RumViewScope(
             mockParentScope,
             mockActivity,
@@ -3375,7 +3419,8 @@ internal class RumViewScopeTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor
+            mockFrameRateVitalMonitor,
+            mockTimeProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -3395,7 +3440,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -3434,6 +3479,10 @@ internal class RumViewScopeTest {
         whenever(mockActivity.display) doReturn mockDisplay
         whenever(mockDisplay.refreshRate) doReturn deviceRefreshRate
         reset(mockFrameRateVitalMonitor)
+        reset(mockTimeProvider)
+        whenever(mockTimeProvider.getServerOffsetMillis())
+            .thenReturn(fakeServerOffset)
+            .thenReturn(fakeServerOffsetSecond)
         val testedScope = RumViewScope(
             mockParentScope,
             mockFragment,
@@ -3443,7 +3492,8 @@ internal class RumViewScopeTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor
+            mockFrameRateVitalMonitor,
+            mockTimeProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -3463,7 +3513,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -3503,6 +3553,10 @@ internal class RumViewScopeTest {
         whenever(mockActivity.display) doReturn mockDisplay
         whenever(mockDisplay.refreshRate) doReturn deviceRefreshRate
         reset(mockFrameRateVitalMonitor)
+        reset(mockTimeProvider)
+        whenever(mockTimeProvider.getServerOffsetMillis())
+            .thenReturn(fakeServerOffset)
+            .thenReturn(fakeServerOffsetSecond)
         val testedScope = RumViewScope(
             mockParentScope,
             mockFragment,
@@ -3512,7 +3566,8 @@ internal class RumViewScopeTest {
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor
+            mockFrameRateVitalMonitor,
+            mockTimeProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -3532,7 +3587,7 @@ internal class RumViewScopeTest {
                 .hasAttributes(fakeAttributes)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
                 .hasViewData {
-                    hasTimestamp(fakeEventTime.timestamp)
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeName)
                     hasDurationGreaterThan(1)
                     hasVersion(2)
@@ -3572,6 +3627,10 @@ internal class RumViewScopeTest {
         return forge.aFilteredMap(excludedKeys = existingKeys) {
             anHexadecimalString() to anAsciiString()
         }
+    }
+
+    private fun resolveExpectedTimestamp(timestamp: Long): Long {
+        return timestamp + fakeServerOffset
     }
 
     // endregion

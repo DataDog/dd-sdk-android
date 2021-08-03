@@ -123,6 +123,8 @@ internal object CoreFeature {
         setupOkHttpClient(configuration.needsClearTextHttp)
         firstPartyHostDetector.addKnownHosts(configuration.firstPartyHosts)
         setupExecutors()
+        // Time Provider
+        timeProvider = KronosTimeProvider(kronosClock)
         // BIG NOTE !!
         // Please do not move the block bellow.
         // The NDK crash handler `prepareData` function needs to be called exactly at this moment
@@ -192,6 +194,7 @@ internal object CoreFeature {
                     DatadogNdkCrashHandler.LOGGER_NAME,
                     networkInfoProvider,
                     userInfoProvider,
+                    timeProvider,
                     envName,
                     packageVersion
                 ),
@@ -199,7 +202,8 @@ internal object CoreFeature {
                 RumEventDeserializer(),
                 NetworkInfoDeserializer(sdkLogger),
                 UserInfoDeserializer(sdkLogger),
-                sdkLogger
+                sdkLogger,
+                timeProvider
             )
             ndkCrashHandler.prepareData()
         }
@@ -247,9 +251,6 @@ internal object CoreFeature {
     ) {
         // Tracking Consent Provider
         trackingConsentProvider = TrackingConsentProvider(consent)
-
-        // Time Provider
-        timeProvider = KronosTimeProvider(kronosClock)
 
         // System Info Provider
         systemInfoProvider = BroadcastReceiverSystemInfoProvider()

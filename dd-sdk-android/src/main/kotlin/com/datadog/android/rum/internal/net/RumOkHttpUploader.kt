@@ -38,7 +38,6 @@ internal open class RumOkHttpUploader(
 
     override fun buildQueryParams(): MutableMap<String, Any> {
         return mutableMapOf(
-            QP_BATCH_TIME to System.currentTimeMillis(),
             QP_SOURCE to CoreFeature.sourceName,
             QP_TAGS to tags
         )

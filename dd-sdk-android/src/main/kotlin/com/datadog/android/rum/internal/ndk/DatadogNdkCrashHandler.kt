@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.ndk
 import android.content.Context
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
@@ -26,12 +27,13 @@ import java.util.concurrent.TimeUnit
 internal class DatadogNdkCrashHandler(
     appContext: Context,
     private val dataPersistenceExecutorService: ExecutorService,
-    private val logGenerator: LogGenerator,
+    internal val logGenerator: LogGenerator,
     private val ndkCrashLogDeserializer: Deserializer<NdkCrashLog>,
     private val rumEventDeserializer: Deserializer<RumEvent>,
     private val networkInfoDeserializer: Deserializer<NetworkInfo>,
     private val userInfoDeserializer: Deserializer<UserInfo>,
-    private val internalLogger: Logger
+    private val internalLogger: Logger,
+    private val timeProvider: TimeProvider
 ) : NdkCrashHandler {
 
     private val ndkCrashDataDirectory: File = getNdkGrantedDir(appContext)
@@ -249,7 +251,7 @@ internal class DatadogNdkCrashHandler(
         }
         return RumEvent(
             ErrorEvent(
-                date = ndkCrashLog.timestamp,
+                date = ndkCrashLog.timestamp + timeProvider.getServerOffsetMillis(),
                 application = ErrorEvent.Application(bundledViewEvent.application.id),
                 service = bundledViewEvent.service,
                 session = ErrorEvent.Session(

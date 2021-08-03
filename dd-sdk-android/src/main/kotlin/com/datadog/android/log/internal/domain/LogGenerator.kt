@@ -8,6 +8,7 @@ package com.datadog.android.log.internal.domain
 
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
@@ -25,6 +26,7 @@ internal class LogGenerator(
     internal val loggerName: String,
     internal val networkInfoProvider: NetworkInfoProvider?,
     internal val userInfoProvider: UserInfoProvider,
+    internal val timeProvider: TimeProvider,
     envName: String,
     appVersion: String
 ) {
@@ -58,9 +60,10 @@ internal class LogGenerator(
         userInfo: UserInfo? = null,
         networkInfo: NetworkInfo? = null
     ): LogEvent {
+        val resolvedTimestamp = timestamp + timeProvider.getServerOffsetMillis()
         val combinedAttributes = resolveAttributes(attributes, bundleWithTraces, bundleWithRum)
         val formattedDate = synchronized(simpleDateFormat) {
-            simpleDateFormat.format(Date(timestamp))
+            simpleDateFormat.format(Date(resolvedTimestamp))
         }
         val combinedTags = resolveTags(tags)
         val error = throwable?.let {

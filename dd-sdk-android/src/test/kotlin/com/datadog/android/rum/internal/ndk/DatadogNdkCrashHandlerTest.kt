@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.ndk
 import android.content.Context
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
@@ -26,10 +27,10 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.atLeast
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.firstValue
-import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -101,6 +102,9 @@ internal class DatadogNdkCrashHandlerTest {
     @Captor
     lateinit var captureRunnable: ArgumentCaptor<Runnable>
 
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
     @BeforeEach
     fun `set up`() {
         whenever(mockContext.filesDir) doReturn fakeFilesDir
@@ -114,7 +118,8 @@ internal class DatadogNdkCrashHandlerTest {
             mockRumEventDeserializer,
             mockNetworkInfoDeserializer,
             mockUserInfoDeserializer,
-            Logger(mockLogHandler)
+            Logger(mockLogHandler),
+            mockTimeProvider
         )
     }
 
@@ -336,9 +341,13 @@ internal class DatadogNdkCrashHandlerTest {
         @StringForgery rumEventStr: String,
         @Forgery ndkCrashLog: NdkCrashLog,
         @Forgery rumEvent: RumEvent,
-        @Forgery rumViewEvent: ViewEvent
+        @Forgery rumViewEvent: ViewEvent,
+        forge: Forge
     ) {
         // Given
+        val fakeServerOffset =
+            forge.aLong(min = -ndkCrashLog.timestamp, max = Long.MAX_VALUE - ndkCrashLog.timestamp)
+        whenever(mockTimeProvider.getServerOffsetMillis()).thenReturn(fakeServerOffset)
         testedHandler.lastSerializedNdkCrashLog = crashData
         testedHandler.lastSerializedRumViewEvent = rumEventStr
         whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn ndkCrashLog
@@ -373,7 +382,7 @@ internal class DatadogNdkCrashHandlerTest {
                 .hasStackTrace(ndkCrashLog.stacktrace)
                 .isCrash(true)
                 .hasSource(RumErrorSource.SOURCE)
-                .hasTimestamp(ndkCrashLog.timestamp)
+                .hasTimestamp(ndkCrashLog.timestamp + fakeServerOffset)
                 .hasUserInfo(
                     UserInfo(
                         rumViewEvent.usr?.id,

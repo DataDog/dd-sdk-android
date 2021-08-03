@@ -264,7 +264,8 @@ interface RumMonitor {
                     cpuVitalMonitor = RumFeature.cpuVitalMonitor,
                     memoryVitalMonitor = RumFeature.memoryVitalMonitor,
                     frameRateVitalMonitor = RumFeature.frameRateVitalMonitor,
-                    backgroundTrackingEnabled = RumFeature.backgroundEventTracking
+                    backgroundTrackingEnabled = RumFeature.backgroundEventTracking,
+                    timeProvider = CoreFeature.timeProvider
                 )
             }
         }

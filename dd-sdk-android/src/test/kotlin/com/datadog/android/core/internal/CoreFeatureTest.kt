@@ -688,7 +688,11 @@ internal class CoreFeatureTest {
         )
 
         // Then
-        assertThat(CoreFeature.ndkCrashHandler).isInstanceOf(DatadogNdkCrashHandler::class.java)
+        assertThat(CoreFeature.ndkCrashHandler)
+            .isInstanceOfSatisfying(DatadogNdkCrashHandler::class.java) {
+                assertThat(it.logGenerator.timeProvider)
+                    .isInstanceOf(KronosTimeProvider::class.java)
+            }
     }
 
     @Test

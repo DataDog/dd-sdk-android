@@ -27,6 +27,7 @@ internal class RumActionScope(
     initialType: RumActionType,
     initialName: String,
     initialAttributes: Map<String, Any?>,
+    serverTimeOffsetInMs: Long,
     inactivityThresholdMs: Long = ACTION_INACTIVITY_MS,
     maxDurationMs: Long = ACTION_MAX_DURATION_MS
 ) : RumScope {
@@ -34,7 +35,7 @@ internal class RumActionScope(
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
     private val maxDurationNs = TimeUnit.MILLISECONDS.toNanos(maxDurationMs)
 
-    private val eventTimestamp = eventTime.timestamp
+    internal val eventTimestamp = eventTime.timestamp + serverTimeOffsetInMs
     internal val actionId: String = UUID.randomUUID().toString()
     internal var type: RumActionType = initialType
     internal var name: String = initialName
@@ -237,7 +238,8 @@ internal class RumActionScope(
 
         fun fromEvent(
             parentScope: RumScope,
-            event: RumRawEvent.StartAction
+            event: RumRawEvent.StartAction,
+            timestampOffset: Long
         ): RumScope {
             return RumActionScope(
                 parentScope,
@@ -245,7 +247,8 @@ internal class RumActionScope(
                 event.eventTime,
                 event.type,
                 event.name,
-                event.attributes
+                event.attributes,
+                timestampOffset
             )
         }
     }
