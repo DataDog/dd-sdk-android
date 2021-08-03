@@ -195,9 +195,9 @@ internal class RumActionScope(
                     url = context.viewUrl.orEmpty()
                 ),
                 application = ActionEvent.Application(context.applicationId),
-                session = ActionEvent.Session(
+                session = ActionEvent.ActionEventSession(
                     id = context.sessionId,
-                    type = ActionEvent.SessionType.USER
+                    type = ActionEvent.ActionEventSessionType.USER
                 ),
                 usr = ActionEvent.Usr(
                     id = user.id,

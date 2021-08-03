@@ -45,7 +45,7 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
                 email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}")
             ),
             application = ViewEvent.Application(forge.getForgery<UUID>().toString()),
-            session = ViewEvent.Session(
+            session = ViewEvent.ViewEventSession(
                 id = forge.getForgery<UUID>().toString(),
                 type = ViewEvent.Type.USER
             ),

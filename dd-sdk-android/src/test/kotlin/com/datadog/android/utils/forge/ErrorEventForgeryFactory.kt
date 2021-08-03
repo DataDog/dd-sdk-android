@@ -43,9 +43,9 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
             ),
             action = forge.aNullable { ErrorEvent.Action(getForgery<UUID>().toString()) },
             application = ErrorEvent.Application(forge.getForgery<UUID>().toString()),
-            session = ErrorEvent.Session(
+            session = ErrorEvent.ErrorEventSession(
                 id = forge.getForgery<UUID>().toString(),
-                type = ErrorEvent.SessionType.USER
+                type = ErrorEvent.ErrorEventSessionType.USER
             ),
             dd = ErrorEvent.Dd()
         )

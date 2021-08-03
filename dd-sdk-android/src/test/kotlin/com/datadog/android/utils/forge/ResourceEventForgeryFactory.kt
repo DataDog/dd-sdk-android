@@ -50,9 +50,9 @@ internal class ResourceEventForgeryFactory :
             ),
             action = forge.aNullable { ResourceEvent.Action(getForgery<UUID>().toString()) },
             application = ResourceEvent.Application(forge.getForgery<UUID>().toString()),
-            session = ResourceEvent.Session(
+            session = ResourceEvent.ResourceEventSession(
                 id = forge.getForgery<UUID>().toString(),
-                type = ResourceEvent.SessionType.USER
+                type = ResourceEvent.ResourceEventSessionType.USER
             ),
             dd = ResourceEvent.Dd()
         )

@@ -167,6 +167,18 @@
           "const": 2,
           "description": "Version of the RUM event format",
           "readOnly": true
+        },
+        "session": {
+          "type": "object",
+          "description": "Session-related internal properties",
+          "required": ["plan"],
+          "properties": {
+            "plan": {
+              "type": "number",
+              "description": "Session plan: 1 is the 'lite' plan, 2 is the 'replay' plan",
+              "enum": [1, 2]
+            }
+          }
         }
       },
       "readOnly": true

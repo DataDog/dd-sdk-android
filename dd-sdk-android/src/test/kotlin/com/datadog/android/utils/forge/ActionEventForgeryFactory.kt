@@ -37,9 +37,9 @@ internal class ActionEventForgeryFactory :
                 email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}")
             ),
             application = ActionEvent.Application(forge.getForgery<UUID>().toString()),
-            session = ActionEvent.Session(
+            session = ActionEvent.ActionEventSession(
                 id = forge.getForgery<UUID>().toString(),
-                type = ActionEvent.SessionType.USER
+                type = ActionEvent.ActionEventSessionType.USER
             ),
             dd = ActionEvent.Dd()
         )

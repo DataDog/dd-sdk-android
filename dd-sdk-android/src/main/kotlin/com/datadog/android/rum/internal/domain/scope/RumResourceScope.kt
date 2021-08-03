@@ -169,9 +169,9 @@ internal class RumResourceScope(
             ),
             connectivity = networkInfo.toResourceConnectivity(),
             application = ResourceEvent.Application(context.applicationId),
-            session = ResourceEvent.Session(
+            session = ResourceEvent.ResourceEventSession(
                 id = context.sessionId,
-                type = ResourceEvent.SessionType.USER
+                type = ResourceEvent.ResourceEventSessionType.USER
             ),
             dd = ResourceEvent.Dd(
                 traceId = traceId,
@@ -237,9 +237,9 @@ internal class RumResourceScope(
             ),
             connectivity = networkInfo.toErrorConnectivity(),
             application = ErrorEvent.Application(context.applicationId),
-            session = ErrorEvent.Session(
+            session = ErrorEvent.ErrorEventSession(
                 id = context.sessionId,
-                type = ErrorEvent.SessionType.USER
+                type = ErrorEvent.ErrorEventSessionType.USER
             ),
             dd = ErrorEvent.Dd()
         )
