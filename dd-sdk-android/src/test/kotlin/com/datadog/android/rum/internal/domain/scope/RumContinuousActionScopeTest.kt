@@ -213,6 +213,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -258,6 +259,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -302,6 +304,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -348,6 +351,7 @@ internal class RumContinuousActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -404,6 +408,7 @@ internal class RumContinuousActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -450,6 +455,7 @@ internal class RumContinuousActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -500,6 +506,7 @@ internal class RumContinuousActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -543,6 +550,7 @@ internal class RumContinuousActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -593,6 +601,7 @@ internal class RumContinuousActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -629,6 +638,7 @@ internal class RumContinuousActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -664,6 +674,7 @@ internal class RumContinuousActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -700,6 +711,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -738,6 +750,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -776,6 +789,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -823,6 +837,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -862,6 +877,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -901,6 +917,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -941,6 +958,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -981,6 +999,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1064,6 +1083,7 @@ internal class RumContinuousActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1171,6 +1191,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1212,6 +1233,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1254,6 +1276,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1289,6 +1312,7 @@ internal class RumContinuousActionScopeTest {
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())

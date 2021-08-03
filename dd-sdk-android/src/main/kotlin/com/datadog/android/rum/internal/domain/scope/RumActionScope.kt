@@ -204,7 +204,7 @@ internal class RumActionScope(
                     name = user.name,
                     email = user.email
                 ),
-                dd = ActionEvent.Dd()
+                dd = ActionEvent.Dd(session = ActionEvent.DdSession(plan = ActionEvent.Plan.`1`))
             )
             val rumEvent = RumEvent(
                 event = actionEvent,

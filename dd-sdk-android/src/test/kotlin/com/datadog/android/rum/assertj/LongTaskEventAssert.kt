@@ -191,6 +191,16 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
+    fun hasLiteSessionPlan(): LongTaskEventAssert {
+        assertThat(actual.dd.session?.plan)
+            .overridingErrorMessage(
+                "Expected event to have a session plan of 1 instead it was %s",
+                actual.dd.session?.plan ?: "null"
+            )
+            .isEqualTo(LongTaskEvent.Plan.`1`)
+        return this
+    }
+
     companion object {
 
         internal fun assertThat(actual: LongTaskEvent): LongTaskEventAssert =

@@ -294,7 +294,7 @@ internal open class RumViewScope(
                 id = context.sessionId,
                 type = ErrorEvent.ErrorEventSessionType.USER
             ),
-            dd = ErrorEvent.Dd()
+            dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.`1`))
         )
         val rumEvent = RumEvent(
             event = errorEvent,
@@ -479,7 +479,10 @@ internal open class RumViewScope(
                 id = context.sessionId,
                 type = ViewEvent.Type.USER
             ),
-            dd = ViewEvent.Dd(documentVersion = version)
+            dd = ViewEvent.Dd(
+                documentVersion = version,
+                session = ViewEvent.DdSession(plan = ViewEvent.Plan.`1`)
+            )
         )
 
         val rumEvent = RumEvent(
@@ -540,7 +543,7 @@ internal open class RumViewScope(
                 id = context.sessionId,
                 type = ActionEvent.ActionEventSessionType.USER
             ),
-            dd = ActionEvent.Dd()
+            dd = ActionEvent.Dd(session = ActionEvent.DdSession(ActionEvent.Plan.`1`))
         )
         val rumEvent = RumEvent(
             event = actionEvent,
@@ -589,7 +592,7 @@ internal open class RumViewScope(
                 id = context.sessionId,
                 type = LongTaskEvent.Type.USER
             ),
-            dd = LongTaskEvent.Dd()
+            dd = LongTaskEvent.Dd(session = LongTaskEvent.DdSession(LongTaskEvent.Plan.`1`))
         )
         val rumEvent = RumEvent(
             event = longTaskEvent,

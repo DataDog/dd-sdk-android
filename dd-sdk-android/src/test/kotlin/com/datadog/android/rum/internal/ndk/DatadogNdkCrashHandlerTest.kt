@@ -391,6 +391,7 @@ internal class DatadogNdkCrashHandlerTest {
                     )
                 )
                 .hasErrorType(ndkCrashLog.signalName)
+                .hasLiteSessionPlan()
         }
         verify(mockLogWriter).write(fakeLog)
     }
