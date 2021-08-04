@@ -497,9 +497,9 @@ data class com.datadog.android.rum.model.ActionEvent
     companion object 
       fun fromJson(kotlin.String): ActionType
   enum Plan
-    constructor(kotlin.String)
-    - `1`
-    - `2`
+    constructor(kotlin.Number)
+    - PLAN_1
+    - PLAN_2
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Plan
@@ -624,9 +624,9 @@ data class com.datadog.android.rum.model.ErrorEvent
     companion object 
       fun fromJson(kotlin.String): Handling
   enum Plan
-    constructor(kotlin.String)
-    - `1`
-    - `2`
+    constructor(kotlin.Number)
+    - PLAN_1
+    - PLAN_2
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Plan
@@ -752,9 +752,9 @@ data class com.datadog.android.rum.model.LongTaskEvent
     companion object 
       fun fromJson(kotlin.String): Interface
   enum Plan
-    constructor(kotlin.String)
-    - `1`
-    - `2`
+    constructor(kotlin.Number)
+    - PLAN_1
+    - PLAN_2
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Plan
@@ -911,9 +911,9 @@ data class com.datadog.android.rum.model.ResourceEvent
     companion object 
       fun fromJson(kotlin.String): Method
   enum Plan
-    constructor(kotlin.String)
-    - `1`
-    - `2`
+    constructor(kotlin.Number)
+    - PLAN_1
+    - PLAN_2
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Plan
@@ -1066,9 +1066,9 @@ data class com.datadog.android.rum.model.ViewEvent
     companion object 
       fun fromJson(kotlin.String): Interface
   enum Plan
-    constructor(kotlin.String)
-    - `1`
-    - `2`
+    constructor(kotlin.Number)
+    - PLAN_1
+    - PLAN_2
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Plan

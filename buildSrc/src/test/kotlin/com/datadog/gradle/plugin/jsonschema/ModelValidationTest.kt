@@ -198,7 +198,8 @@ class ModelValidationTest(
                 arrayOf("all_of_merged", OutputInfo("UserMerged")),
                 arrayOf("constant_number", OutputInfo("Version")),
                 arrayOf("sets", OutputInfo("Video")),
-                arrayOf("defaults_with_optionals", OutputInfo("Bike"))
+                arrayOf("defaults_with_optionals", OutputInfo("Bike")),
+                arrayOf("enum_number", OutputInfo("Jacket"))
             )
         }
     }

@@ -168,9 +168,13 @@ class PokoGenerator(
         definition: TypeDefinition.Enum
     ): TypeSpec {
         val enumBuilder = TypeSpec.enumBuilder(definition.name)
+        val jsonValueType = definition.jsonValueType()
         enumBuilder.primaryConstructor(
             FunSpec.constructorBuilder()
-                .addParameter(ENUM_CONSTRUCTOR_JSON_VALUE_NAME, String::class)
+                .addParameter(
+                    ENUM_CONSTRUCTOR_JSON_VALUE_NAME,
+                    jsonValueType
+                )
                 .build()
         )
         val docBuilder = CodeBlock.builder()
@@ -180,16 +184,16 @@ class PokoGenerator(
             docBuilder.add("\n")
         }
         enumBuilder.addProperty(
-            PropertySpec.builder(ENUM_CONSTRUCTOR_JSON_VALUE_NAME, String::class, KModifier.PRIVATE)
+            PropertySpec.builder(ENUM_CONSTRUCTOR_JSON_VALUE_NAME, jsonValueType, KModifier.PRIVATE)
                 .initializer(ENUM_CONSTRUCTOR_JSON_VALUE_NAME)
                 .build()
         )
-
+        val parameterFormat = resolveEnumConstantFormat(definition)
         definition.values.forEach { value ->
             enumBuilder.addEnumConstant(
-                value.enumConstantName(),
+                definition.enumConstantName(resolveEnumPropertyName(value)),
                 TypeSpec.anonymousClassBuilder()
-                    .addSuperclassConstructorParameter("%S", value)
+                    .addSuperclassConstructorParameter(parameterFormat, value)
                     .build()
             )
         }
@@ -207,6 +211,13 @@ class PokoGenerator(
             .addType(companionSpecBuilder.build())
             .build()
     }
+
+    private fun resolveEnumConstantFormat(definition: TypeDefinition.Enum) =
+        if (definition.type == JsonType.NUMBER) {
+            "%L"
+        } else {
+            "%S"
+        }
 
     /**
      * Appends a property to a [TypeSpec.Builder].
@@ -263,11 +274,12 @@ class PokoGenerator(
         propertyTypeName: TypeName
     ) {
         val type = property.type
+        val defaultValue = property.defaultValue ?: return
         when (type) {
             is TypeDefinition.Primitive -> {
                 constructorParamBuilder.defaultValue(
                     getKotlinValue(
-                        property.defaultValue,
+                        defaultValue,
                         type.type
                     )
                 )
@@ -276,7 +288,7 @@ class PokoGenerator(
                 constructorParamBuilder.defaultValue(
                     "%T.%L",
                     propertyTypeName,
-                    (property.defaultValue as String).enumConstantName()
+                    type.enumConstantName(resolveEnumPropertyName(defaultValue))
                 )
             }
             else -> {
@@ -286,6 +298,12 @@ class PokoGenerator(
                 )
             }
         }
+    }
+
+    private fun resolveEnumPropertyName(property: Any?): String = if (property is Number) {
+        property.toInt().toString()
+    } else {
+        property.toString()
     }
 
     /**

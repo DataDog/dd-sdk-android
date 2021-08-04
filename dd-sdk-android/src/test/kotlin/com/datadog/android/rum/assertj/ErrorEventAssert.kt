@@ -321,7 +321,7 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
                 "Expected event to have a session plan of 1 instead it was %s",
                 actual.dd.session?.plan ?: "null"
             )
-            .isEqualTo(ErrorEvent.Plan.`1`)
+            .isEqualTo(ErrorEvent.Plan.PLAN_1)
         return this
     }
 

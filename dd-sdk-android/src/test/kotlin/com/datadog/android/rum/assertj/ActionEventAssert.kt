@@ -255,7 +255,7 @@ internal class ActionEventAssert(actual: ActionEvent) :
                 "Expected event to have a session plan of 1 instead it was %s",
                 actual.dd.session?.plan ?: "null"
             )
-            .isEqualTo(ActionEvent.Plan.`1`)
+            .isEqualTo(ActionEvent.Plan.PLAN_1)
         return this
     }
 

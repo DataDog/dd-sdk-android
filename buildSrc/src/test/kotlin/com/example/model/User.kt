@@ -61,8 +61,9 @@ data class User(
 
         companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): ContactType = values().first { it.jsonValue ==
-                    serializedObject }
+            fun fromJson(serializedObject: String): ContactType = values().first {
+                it.jsonValue == serializedObject
+            }
         }
     }
 }

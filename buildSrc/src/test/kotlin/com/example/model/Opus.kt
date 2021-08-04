@@ -130,8 +130,9 @@ data class Opus(
 
         companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): Role = values().first { it.jsonValue ==
-                    serializedObject }
+            fun fromJson(serializedObject: String): Role = values().first {
+                it.jsonValue == serializedObject
+            }
         }
     }
 }

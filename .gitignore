@@ -1,7 +1,7 @@
 
 # IntelliJ
 *.iml
-.idea/
+.idea/**
 
 # Android Studio 3+
 .navigation/

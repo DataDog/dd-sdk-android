@@ -197,7 +197,7 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
                 "Expected event to have a session plan of 1 instead it was %s",
                 actual.dd.session?.plan ?: "null"
             )
-            .isEqualTo(LongTaskEvent.Plan.`1`)
+            .isEqualTo(LongTaskEvent.Plan.PLAN_1)
         return this
     }
 

@@ -346,7 +346,7 @@ internal class ViewEventAssert(actual: ViewEvent) :
                 "Expected event to have a session plan of 1 instead it was %s",
                 actual.dd.session?.plan ?: "null"
             )
-            .isEqualTo(ViewEvent.Plan.`1`)
+            .isEqualTo(ViewEvent.Plan.PLAN_1)
         return this
     }
 

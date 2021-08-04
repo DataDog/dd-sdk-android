@@ -7,29 +7,30 @@ import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import java.lang.IllegalStateException
 import java.lang.NumberFormatException
+import kotlin.Number
 import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Style(
-    val color: Color
+data class Jacket(
+    val size: Size = Size.SIZE_1
 ) {
     fun toJson(): JsonElement {
         val json = JsonObject()
-        json.add("color", color.toJson())
+        json.add("size", size.toJson())
         return json
     }
 
     companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Style {
+        fun fromJson(serializedObject: String): Jacket {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val color = jsonObject.get("color").asString.let {
-                    Color.fromJson(it)
+                val size = jsonObject.get("size").asString.let {
+                    Size.fromJson(it)
                 }
-                return Style(color)
+                return Jacket(size)
             } catch (e: IllegalStateException) {
                 throw JsonParseException(e.message)
             } catch (e: NumberFormatException) {
@@ -38,27 +39,23 @@ data class Style(
         }
     }
 
-    enum class Color(
-        private val jsonValue: String
+    enum class Size(
+        private val jsonValue: Number
     ) {
-        RED("red"),
+        SIZE_1(1),
 
-        AMBER("amber"),
+        SIZE_2(2),
 
-        GREEN("green"),
+        SIZE_3(3),
 
-        DARK_BLUE("dark_blue"),
-
-        LIME_GREEN("lime green"),
-
-        SUNBURST_YELLOW("sunburst-yellow");
+        SIZE_4(4);
 
         fun toJson(): JsonElement = JsonPrimitive(jsonValue)
 
         companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): Color = values().first {
-                it.jsonValue == serializedObject
+            fun fromJson(serializedObject: String): Size = values().first {
+                it.jsonValue.toString() == serializedObject
             }
         }
     }

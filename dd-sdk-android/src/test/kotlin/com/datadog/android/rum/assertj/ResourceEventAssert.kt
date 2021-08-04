@@ -418,7 +418,7 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
                 "Expected event to have a session plan of 1 instead it was %s",
                 actual.dd.session?.plan ?: "null"
             )
-            .isEqualTo(ResourceEvent.Plan.`1`)
+            .isEqualTo(ResourceEvent.Plan.PLAN_1)
         return this
     }
 

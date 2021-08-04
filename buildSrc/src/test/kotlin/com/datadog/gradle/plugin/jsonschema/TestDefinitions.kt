@@ -513,6 +513,22 @@ val Style = TypeDefinition.Class(
     )
 )
 
+val Jacket = TypeDefinition.Class(
+    name = "Jacket",
+    properties = listOf(
+        TypeProperty(
+            "size",
+            TypeDefinition.Enum(
+                "Size",
+                JsonType.NUMBER,
+                listOf("1", "2", "3", "4")
+            ),
+            defaultValue = 1.0,
+            optional = false
+        )
+    )
+)
+
 val Order = TypeDefinition.Class(
     name = "Order",
     properties = listOf(

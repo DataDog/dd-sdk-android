@@ -141,8 +141,9 @@ data class DateTime(
 
         companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): Month = values().first { it.jsonValue ==
-                    serializedObject }
+            fun fromJson(serializedObject: String): Month = values().first {
+                it.jsonValue == serializedObject
+            }
         }
     }
 }

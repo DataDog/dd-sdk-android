@@ -534,14 +534,23 @@ class PokoDeserializerGenerator(
                     rootTypeName
                 )
             )
+        funBuilder.beginControlFlow("return values().first")
         funBuilder.addStatement(
-            "return values().first { it.%L == %L }",
+            resolveEnumFunctionReturnStatement(definition),
             PokoGenerator.ENUM_CONSTRUCTOR_JSON_VALUE_NAME,
             FROM_JSON_PARAM_NAME
         )
+        funBuilder.endControlFlow()
 
         return funBuilder.build()
     }
+
+    private fun resolveEnumFunctionReturnStatement(definition: TypeDefinition.Enum) =
+        if (definition.type == JsonType.NUMBER) {
+            "it.%L.toString() == %L"
+        } else {
+            "it.%L == %L"
+        }
 
     // endregion
 

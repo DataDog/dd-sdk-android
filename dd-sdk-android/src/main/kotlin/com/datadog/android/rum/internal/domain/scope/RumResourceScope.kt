@@ -176,7 +176,7 @@ internal class RumResourceScope(
             dd = ResourceEvent.Dd(
                 traceId = traceId,
                 spanId = spanId,
-                session = ResourceEvent.DdSession(plan = ResourceEvent.Plan.`1`)
+                session = ResourceEvent.DdSession(plan = ResourceEvent.Plan.PLAN_1)
             )
         )
         val rumEvent = RumEvent(
@@ -242,7 +242,7 @@ internal class RumResourceScope(
                 id = context.sessionId,
                 type = ErrorEvent.ErrorEventSessionType.USER
             ),
-            dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.`1`))
+            dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
         )
         val rumEvent = RumEvent(
             event = errorEvent,

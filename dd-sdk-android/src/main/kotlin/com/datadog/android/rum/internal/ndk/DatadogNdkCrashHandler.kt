@@ -270,7 +270,7 @@ internal class DatadogNdkCrashHandler(
                     bundledViewEvent.usr?.email
                 ),
                 connectivity = connectivity,
-                dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.`1`)),
+                dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1)),
                 error = ErrorEvent.Error(
                     message = errorLogMessage,
                     source = ErrorEvent.Source.SOURCE,
