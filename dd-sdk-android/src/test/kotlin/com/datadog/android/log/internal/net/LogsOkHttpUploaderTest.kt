@@ -4,12 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.log.net
+package com.datadog.android.log.internal.net
 
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploader
 import com.datadog.android.core.internal.net.DataOkHttpUploaderTest
-import com.datadog.android.log.internal.net.LogsOkHttpUploader
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
