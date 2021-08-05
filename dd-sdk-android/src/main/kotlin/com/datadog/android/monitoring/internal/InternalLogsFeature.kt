@@ -16,7 +16,7 @@ import com.datadog.android.core.internal.utils.rebuildSdkLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.NoOpLogHandler
-import com.datadog.android.log.internal.net.LogsOkHttpUploader
+import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
 import com.datadog.android.log.model.LogEvent
 
 internal object InternalLogsFeature : SdkFeature<LogEvent, Configuration.Feature.InternalLogs>() {
@@ -51,10 +51,12 @@ internal object InternalLogsFeature : SdkFeature<LogEvent, Configuration.Feature
     }
 
     override fun createUploader(configuration: Configuration.Feature.InternalLogs): DataUploader {
-        return LogsOkHttpUploader(
+        return LogsOkHttpUploaderV2(
             configuration.endpointUrl,
             configuration.internalClientToken,
-            CoreFeature.okHttpClient
+            CoreFeature.sourceName,
+            CoreFeature.okHttpClient,
+            Logger(NoOpLogHandler())
         )
     }
 

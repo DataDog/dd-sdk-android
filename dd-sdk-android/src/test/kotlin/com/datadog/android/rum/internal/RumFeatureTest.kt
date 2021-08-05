@@ -12,7 +12,7 @@ import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
 import com.datadog.android.rum.internal.domain.event.RumEvent
-import com.datadog.android.rum.internal.net.RumOkHttpUploader
+import com.datadog.android.rum.internal.net.RumOkHttpUploaderV2
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
@@ -73,10 +73,10 @@ internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.R
         val uploader = testedFeature.createUploader(fakeConfigurationFeature)
 
         // Then
-        assertThat(uploader).isInstanceOf(RumOkHttpUploader::class.java)
-        val rumUploader = uploader as RumOkHttpUploader
-        assertThat(rumUploader.url).startsWith(fakeConfigurationFeature.endpointUrl)
-        assertThat(rumUploader.url).endsWith(CoreFeature.clientToken)
+        assertThat(uploader).isInstanceOf(RumOkHttpUploaderV2::class.java)
+        val rumUploader = uploader as RumOkHttpUploaderV2
+        assertThat(rumUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
+        assertThat(rumUploader.intakeUrl).endsWith("/api/v2/rum")
         assertThat(rumUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
     }
 

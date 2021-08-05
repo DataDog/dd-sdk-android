@@ -14,7 +14,7 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.tracing.internal.domain.TracesFilePersistenceStrategy
-import com.datadog.android.tracing.internal.net.TracesOkHttpUploader
+import com.datadog.android.tracing.internal.net.TracesOkHttpUploaderV2
 import com.datadog.opentracing.DDSpan
 
 internal object TracesFeature : SdkFeature<DDSpan, Configuration.Feature.Tracing>() {
@@ -39,9 +39,10 @@ internal object TracesFeature : SdkFeature<DDSpan, Configuration.Feature.Tracing
     }
 
     override fun createUploader(configuration: Configuration.Feature.Tracing): DataUploader {
-        return TracesOkHttpUploader(
+        return TracesOkHttpUploaderV2(
             configuration.endpointUrl,
             CoreFeature.clientToken,
+            CoreFeature.sourceName,
             CoreFeature.okHttpClient
         )
     }

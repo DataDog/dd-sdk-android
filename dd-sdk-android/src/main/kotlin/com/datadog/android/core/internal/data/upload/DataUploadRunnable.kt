@@ -14,8 +14,6 @@ import com.datadog.android.core.internal.persistence.Batch
 import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.system.SystemInfo
 import com.datadog.android.core.internal.system.SystemInfoProvider
-import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.NetworkInfo
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -75,8 +73,7 @@ internal class DataUploadRunnable(
 
     private fun consumeBatch(batch: Batch) {
         val status = dataUploader.upload(batch.data)
-        status.logStatus(dataUploader.javaClass.simpleName, batch.data.size, devLogger, false)
-        status.logStatus(dataUploader.javaClass.simpleName, batch.data.size, sdkLogger, true)
+
         if (status in droppableBatchStatus) {
             reader.drop(batch)
             decreaseInterval()
