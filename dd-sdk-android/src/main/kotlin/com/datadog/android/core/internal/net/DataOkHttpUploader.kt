@@ -29,6 +29,7 @@ internal abstract class DataOkHttpUploader(
             val request = buildRequest(data)
             val call = callFactory.newCall(request)
             val response = call.execute()
+            response.close()
             responseCodeToUploadStatus(response.code())
         } catch (e: Throwable) {
             sdkLogger.e(
