@@ -7,18 +7,13 @@ import com.datadog.android.rum.tracking.InteractionPredicate
 internal fun resolveTargetName(
     interactionPredicate: InteractionPredicate,
     target: Any,
-    targetId: String
 ): String {
     val customTargetName = interactionPredicate.getTargetName(target)
     return if (!customTargetName.isNullOrEmpty()) {
         customTargetName
     } else {
-        targetName(target, targetId)
+        ""
     }
-}
-
-internal fun targetName(target: Any, id: String): String {
-    return "${target.javaClass.simpleName}($id)"
 }
 
 internal fun resourceIdName(id: Int): String {

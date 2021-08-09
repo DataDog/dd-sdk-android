@@ -127,7 +127,7 @@ internal class GesturesListener(
         val attributes = resolveAttributes(scrollTarget, targetId, onUpEvent)
         registeredRumMonitor.stopUserAction(
             type,
-            resolveTargetName(interactionPredicate, scrollTarget, targetId),
+            resolveTargetName(interactionPredicate, scrollTarget),
             attributes
         )
     }
@@ -171,7 +171,7 @@ internal class GesturesListener(
                 }
                 GlobalRum.get().addUserAction(
                     RumActionType.TAP,
-                    resolveTargetName(interactionPredicate, target, targetId),
+                    resolveTargetName(interactionPredicate, target),
                     attributes
                 )
             }

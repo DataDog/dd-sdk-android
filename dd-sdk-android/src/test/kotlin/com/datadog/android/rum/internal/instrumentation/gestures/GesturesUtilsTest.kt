@@ -72,24 +72,22 @@ class GesturesUtilsTest {
         whenever(mockInteractionPredicate.getTargetName(mockTarget)).thenReturn(fakeTargetName)
 
         // Then
-        assertThat(resolveTargetName(mockInteractionPredicate, mockTarget, fakeTargetId))
+        assertThat(resolveTargetName(mockInteractionPredicate, mockTarget))
             .isEqualTo(fakeTargetName)
     }
 
     @Test
-    fun `M return the default name W resolveTargetName { custom name empty }`() {
+    fun `M return empty string W resolveTargetName { custom name empty }`() {
         // Given
         whenever(mockInteractionPredicate.getTargetName(mockTarget)).thenReturn("")
 
         // Then
-        assertThat(resolveTargetName(mockInteractionPredicate, mockTarget, fakeTargetId))
-            .isEqualTo("${mockTarget.javaClass.simpleName}($fakeTargetId)")
+        assertThat(resolveTargetName(mockInteractionPredicate, mockTarget)).isEmpty()
     }
 
     @Test
-    fun `M return the default name W resolveTargetName { custom name null }`() {
-        assertThat(resolveTargetName(mockInteractionPredicate, mockTarget, fakeTargetId))
-            .isEqualTo("${mockTarget.javaClass.simpleName}($fakeTargetId)")
+    fun `M return  empty string  W resolveTargetName { custom name null }`() {
+        assertThat(resolveTargetName(mockInteractionPredicate, mockTarget)).isEmpty()
     }
 
     @Test

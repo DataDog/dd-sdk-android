@@ -49,7 +49,7 @@ internal class WindowCallbackWrapper(
         )
         GlobalRum.get().addUserAction(
             RumActionType.TAP,
-            resolveTargetName(interactionPredicate, item, resourceId),
+            resolveTargetName(interactionPredicate, item),
             attributes
         )
         return wrappedCallback.onMenuItemSelected(featureId, item)
@@ -60,6 +60,9 @@ internal class WindowCallbackWrapper(
             // TODO RUMM-495 add a BACK action to the json schema
             val customTargetName = interactionPredicate.getTargetName(event)
             val targetName = if (customTargetName.isNullOrEmpty()) {
+                // We will keep using the default target name as we are not
+                // sending the ACTION_TARGET_CLASSNAME attribute in this case and backend will not
+                // be able to resolve the targetName.
                 BACK_DEFAULT_TARGET_NAME
             } else {
                 customTargetName
