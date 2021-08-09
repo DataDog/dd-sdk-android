@@ -14,6 +14,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -73,6 +74,8 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
 
     lateinit var fakeUserAgent: String
 
+    lateinit var fakeResponse: Response
+
     @BeforeEach
     open fun `set up`(forge: Forge) {
 
@@ -116,6 +119,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
         // Then
         assertThat(result).isEqualTo(UploadStatus.SUCCESS)
         verifyRequest()
+        verifyResponseIsClosed()
     }
 
     @Test
@@ -131,6 +135,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
         // Then
         assertThat(result).isEqualTo(UploadStatus.HTTP_CLIENT_ERROR)
         verifyRequest()
+        verifyResponseIsClosed()
     }
 
     @Test
@@ -146,6 +151,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
         // Then
         assertThat(result).isEqualTo(UploadStatus.INVALID_TOKEN_ERROR)
         verifyRequest()
+        verifyResponseIsClosed()
     }
 
     @Test
@@ -161,6 +167,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
         // Then
         assertThat(result).isEqualTo(UploadStatus.HTTP_CLIENT_ERROR)
         verifyRequest()
+        verifyResponseIsClosed()
     }
 
     @Test
@@ -176,6 +183,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
         // Then
         assertThat(result).isEqualTo(UploadStatus.HTTP_CLIENT_ERROR_RETRY)
         verifyRequest()
+        verifyResponseIsClosed()
     }
 
     @Test
@@ -191,6 +199,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
         // Then
         assertThat(result).isEqualTo(UploadStatus.HTTP_CLIENT_ERROR)
         verifyRequest()
+        verifyResponseIsClosed()
     }
 
     @Test
@@ -206,6 +215,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
         // Then
         assertThat(result).isEqualTo(UploadStatus.HTTP_CLIENT_ERROR_RETRY)
         verifyRequest()
+        verifyResponseIsClosed()
     }
 
     @Test
@@ -221,6 +231,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
         // Then
         assertThat(result).isEqualTo(UploadStatus.HTTP_SERVER_ERROR)
         verifyRequest()
+        verifyResponseIsClosed()
     }
 
     @Test
@@ -236,6 +247,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
         // Then
         assertThat(result).isEqualTo(UploadStatus.HTTP_SERVER_ERROR)
         verifyRequest()
+        verifyResponseIsClosed()
     }
 
     // endregion
@@ -260,6 +272,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
         // Then
         assertThat(result).isEqualTo(UploadStatus.UNKNOWN_ERROR)
         verifyRequest()
+        verifyResponseIsClosed()
     }
 
     @Test
@@ -297,12 +310,14 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
     // region Internal
 
     private fun mockResponse(statusCode: Int, message: String): Response {
-        return Response.Builder()
+        fakeResponse = Response.Builder()
             .request(Request.Builder().url(fakeEndpoint).get().build())
             .code(statusCode)
             .message(message)
             .protocol(Protocol.HTTP_2)
+            .body(mock())
             .build()
+        return fakeResponse
     }
 
     private fun verifyRequest() {
@@ -359,6 +374,10 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
             fakeUserAgent
         }
         assertThat(headers.get("User-Agent")).isEqualTo(expectedUserAgent)
+    }
+
+    private fun verifyResponseIsClosed() {
+        verify(fakeResponse.body())!!.close()
     }
 
     // endregion
