@@ -74,8 +74,9 @@ data class Bike(
 
         companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): FrameMaterial = values().first { it.jsonValue ==
-                    serializedObject }
+            fun fromJson(serializedObject: String): FrameMaterial = values().first {
+                it.jsonValue == serializedObject
+            }
         }
     }
 
@@ -98,8 +99,9 @@ data class Bike(
 
         companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): Color = values().first { it.jsonValue ==
-                    serializedObject }
+            fun fromJson(serializedObject: String): Color = values().first {
+                it.jsonValue == serializedObject
+            }
         }
     }
 }

@@ -32,7 +32,7 @@ internal class LongTaskEventForgeryFactory :
             ),
             action = forge.aNullable { LongTaskEvent.Action(getForgery<UUID>().toString()) },
             application = LongTaskEvent.Application(forge.getForgery<UUID>().toString()),
-            session = LongTaskEvent.Session(
+            session = LongTaskEvent.LongTaskEventSession(
                 id = forge.getForgery<UUID>().toString(),
                 type = LongTaskEvent.Type.USER
             ),

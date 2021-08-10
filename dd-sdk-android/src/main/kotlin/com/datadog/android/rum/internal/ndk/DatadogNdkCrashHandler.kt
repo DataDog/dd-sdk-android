@@ -254,9 +254,9 @@ internal class DatadogNdkCrashHandler(
                 date = ndkCrashLog.timestamp + timeProvider.getServerOffsetMillis(),
                 application = ErrorEvent.Application(bundledViewEvent.application.id),
                 service = bundledViewEvent.service,
-                session = ErrorEvent.Session(
+                session = ErrorEvent.ErrorEventSession(
                     bundledViewEvent.session.id,
-                    ErrorEvent.SessionType.USER
+                    ErrorEvent.ErrorEventSessionType.USER
                 ),
                 view = ErrorEvent.View(
                     id = bundledViewEvent.view.id,
@@ -270,7 +270,7 @@ internal class DatadogNdkCrashHandler(
                     bundledViewEvent.usr?.email
                 ),
                 connectivity = connectivity,
-                dd = ErrorEvent.Dd(),
+                dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1)),
                 error = ErrorEvent.Error(
                     message = errorLogMessage,
                     source = ErrorEvent.Source.SOURCE,

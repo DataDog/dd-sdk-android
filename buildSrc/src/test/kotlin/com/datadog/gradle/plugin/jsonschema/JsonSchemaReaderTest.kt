@@ -69,7 +69,8 @@ class JsonSchemaReaderTest(
                 arrayOf("all_of_merged", UserMerged),
                 arrayOf("constant_number", Version),
                 arrayOf("sets", Video),
-                arrayOf("defaults_with_optionals", Bike)
+                arrayOf("defaults_with_optionals", Bike),
+                arrayOf("enum_number", Jacket)
             )
         }
     }

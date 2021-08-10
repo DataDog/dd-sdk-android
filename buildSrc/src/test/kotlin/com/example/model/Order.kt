@@ -64,8 +64,9 @@ data class Order(
 
         companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): Size = values().first { it.jsonValue ==
-                    serializedObject }
+            fun fromJson(serializedObject: String): Size = values().first {
+                it.jsonValue == serializedObject
+            }
         }
     }
 }

@@ -195,16 +195,16 @@ internal class RumActionScope(
                     url = context.viewUrl.orEmpty()
                 ),
                 application = ActionEvent.Application(context.applicationId),
-                session = ActionEvent.Session(
+                session = ActionEvent.ActionEventSession(
                     id = context.sessionId,
-                    type = ActionEvent.SessionType.USER
+                    type = ActionEvent.ActionEventSessionType.USER
                 ),
                 usr = ActionEvent.Usr(
                     id = user.id,
                     name = user.name,
                     email = user.email
                 ),
-                dd = ActionEvent.Dd()
+                dd = ActionEvent.Dd(session = ActionEvent.DdSession(plan = ActionEvent.Plan.PLAN_1))
             )
             val rumEvent = RumEvent(
                 event = actionEvent,

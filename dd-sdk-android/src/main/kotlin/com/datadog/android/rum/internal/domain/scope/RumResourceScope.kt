@@ -169,13 +169,14 @@ internal class RumResourceScope(
             ),
             connectivity = networkInfo.toResourceConnectivity(),
             application = ResourceEvent.Application(context.applicationId),
-            session = ResourceEvent.Session(
+            session = ResourceEvent.ResourceEventSession(
                 id = context.sessionId,
-                type = ResourceEvent.SessionType.USER
+                type = ResourceEvent.ResourceEventSessionType.USER
             ),
             dd = ResourceEvent.Dd(
                 traceId = traceId,
-                spanId = spanId
+                spanId = spanId,
+                session = ResourceEvent.DdSession(plan = ResourceEvent.Plan.PLAN_1)
             )
         )
         val rumEvent = RumEvent(
@@ -237,11 +238,11 @@ internal class RumResourceScope(
             ),
             connectivity = networkInfo.toErrorConnectivity(),
             application = ErrorEvent.Application(context.applicationId),
-            session = ErrorEvent.Session(
+            session = ErrorEvent.ErrorEventSession(
                 id = context.sessionId,
-                type = ErrorEvent.SessionType.USER
+                type = ErrorEvent.ErrorEventSessionType.USER
             ),
-            dd = ErrorEvent.Dd()
+            dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
         )
         val rumEvent = RumEvent(
             event = errorEvent,

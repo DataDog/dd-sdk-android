@@ -290,11 +290,11 @@ internal open class RumViewScope(
             ),
             connectivity = networkInfo.toErrorConnectivity(),
             application = ErrorEvent.Application(context.applicationId),
-            session = ErrorEvent.Session(
+            session = ErrorEvent.ErrorEventSession(
                 id = context.sessionId,
-                type = ErrorEvent.SessionType.USER
+                type = ErrorEvent.ErrorEventSessionType.USER
             ),
-            dd = ErrorEvent.Dd()
+            dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
         )
         val rumEvent = RumEvent(
             event = errorEvent,
@@ -475,8 +475,14 @@ internal open class RumViewScope(
                 email = user.email
             ),
             application = ViewEvent.Application(context.applicationId),
-            session = ViewEvent.Session(id = context.sessionId, type = ViewEvent.Type.USER),
-            dd = ViewEvent.Dd(documentVersion = version)
+            session = ViewEvent.ViewEventSession(
+                id = context.sessionId,
+                type = ViewEvent.Type.USER
+            ),
+            dd = ViewEvent.Dd(
+                documentVersion = version,
+                session = ViewEvent.DdSession(plan = ViewEvent.Plan.PLAN_1)
+            )
         )
 
         val rumEvent = RumEvent(
@@ -533,11 +539,11 @@ internal open class RumViewScope(
                 email = user.email
             ),
             application = ActionEvent.Application(context.applicationId),
-            session = ActionEvent.Session(
+            session = ActionEvent.ActionEventSession(
                 id = context.sessionId,
-                type = ActionEvent.SessionType.USER
+                type = ActionEvent.ActionEventSessionType.USER
             ),
-            dd = ActionEvent.Dd()
+            dd = ActionEvent.Dd(session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1))
         )
         val rumEvent = RumEvent(
             event = actionEvent,
@@ -582,11 +588,11 @@ internal open class RumViewScope(
             ),
             connectivity = networkInfo.toLongTaskConnectivity(),
             application = LongTaskEvent.Application(context.applicationId),
-            session = LongTaskEvent.Session(
+            session = LongTaskEvent.LongTaskEventSession(
                 id = context.sessionId,
                 type = LongTaskEvent.Type.USER
             ),
-            dd = LongTaskEvent.Dd()
+            dd = LongTaskEvent.Dd(session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1))
         )
         val rumEvent = RumEvent(
             event = longTaskEvent,

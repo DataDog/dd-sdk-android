@@ -311,6 +311,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -359,6 +360,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -407,6 +409,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -461,6 +464,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -500,6 +504,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -551,6 +556,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -619,6 +625,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -689,6 +696,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -741,6 +749,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -792,6 +801,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -835,6 +845,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -922,6 +933,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -986,6 +998,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1050,6 +1063,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1114,6 +1128,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1175,6 +1190,7 @@ internal class RumViewScopeTest {
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1217,6 +1233,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1281,6 +1298,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1345,6 +1363,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1409,6 +1428,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1469,6 +1489,7 @@ internal class RumViewScopeTest {
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1507,6 +1528,7 @@ internal class RumViewScopeTest {
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1563,6 +1585,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1796,6 +1819,7 @@ internal class RumViewScopeTest {
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2215,6 +2239,7 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2259,6 +2284,7 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2306,6 +2332,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2346,6 +2373,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(null)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2386,6 +2414,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(null)
+                    hasLiteSessionPlan()
                 }
 
             assertThat(lastValue)
@@ -2413,6 +2442,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2462,6 +2492,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2510,6 +2541,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasLiteSessionPlan()
                 }
 
             assertThat(lastValue)
@@ -2537,6 +2569,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2587,6 +2620,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(errorType)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2636,6 +2670,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasLiteSessionPlan()
                 }
 
             assertThat(lastValue)
@@ -2663,6 +2698,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2838,6 +2874,7 @@ internal class RumViewScopeTest {
                     hasView(testedScope.viewId, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2878,6 +2915,7 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3025,6 +3063,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3071,6 +3110,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3135,6 +3175,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3186,6 +3227,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
             assertThat(lastValue)
                 .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
@@ -3215,6 +3257,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3277,6 +3320,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3327,6 +3371,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3387,6 +3432,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3458,6 +3504,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3531,6 +3578,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3605,6 +3653,7 @@ internal class RumViewScopeTest {
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)

@@ -412,6 +412,16 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
+    fun hasLiteSessionPlan(): ResourceEventAssert {
+        assertThat(actual.dd.session?.plan)
+            .overridingErrorMessage(
+                "Expected event to have a session plan of 1 instead it was %s",
+                actual.dd.session?.plan ?: "null"
+            )
+            .isEqualTo(ResourceEvent.Plan.PLAN_1)
+        return this
+    }
+
     companion object {
 
         internal const val DURATION_THRESHOLD_NANOS = 1000L

@@ -175,6 +175,7 @@ internal class RumResourceScopeTest {
                     hasTraceId(null)
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -225,6 +226,7 @@ internal class RumResourceScopeTest {
                     hasSpanId(null)
                     hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
                     hasProviderDomain(URL(fakeUrl).host)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -286,6 +288,7 @@ internal class RumResourceScopeTest {
                     hasSpanId(null)
                     hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
                     hasProviderDomain(brokenUrl)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -339,6 +342,7 @@ internal class RumResourceScopeTest {
                     hasTraceId(fakeTraceId)
                     hasSpanId(fakeSpanId)
                     doesNotHaveAResourceProvider()
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -389,6 +393,7 @@ internal class RumResourceScopeTest {
                     hasTraceId(null)
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -429,6 +434,7 @@ internal class RumResourceScopeTest {
                     hasTraceId(null)
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -462,6 +468,7 @@ internal class RumResourceScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -554,6 +561,7 @@ internal class RumResourceScopeTest {
                     hasTraceId(null)
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -606,6 +614,7 @@ internal class RumResourceScopeTest {
                     hasTraceId(null)
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -659,6 +668,7 @@ internal class RumResourceScopeTest {
                     hasTraceId(null)
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -712,6 +722,7 @@ internal class RumResourceScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -778,6 +789,7 @@ internal class RumResourceScopeTest {
                     hasProviderDomain(brokenUrl)
                     hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -834,6 +846,7 @@ internal class RumResourceScopeTest {
                     hasProviderDomain(URL(fakeUrl).host)
                     hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -889,6 +902,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(throwable.javaClass.canonicalName)
                     doesNotHaveAResourceProvider()
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -950,6 +964,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(throwable.javaClass.canonicalName)
                     doesNotHaveAResourceProvider()
+                    hasLiteSessionPlan()
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1063,6 +1078,7 @@ internal class RumResourceScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1111,6 +1127,7 @@ internal class RumResourceScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1161,6 +1178,7 @@ internal class RumResourceScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
+                    hasLiteSessionPlan()
                 }
         }
         verifyNoMoreInteractions(mockWriter)

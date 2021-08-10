@@ -20,6 +20,7 @@ import com.squareup.kotlinpoet.SET
 import com.squareup.kotlinpoet.STRING
 import com.squareup.kotlinpoet.TypeName
 import java.util.Locale
+import kotlin.reflect.KClass
 
 internal val NOTHING_NULLABLE = NOTHING.copy(nullable = true)
 
@@ -30,9 +31,16 @@ internal fun String.variableName(): String {
     return split.joinToCamelCaseAsVar()
 }
 
-internal fun String.enumConstantName(): String {
+private fun String.enumConstantName(): String {
     return toUpperCase(Locale.US).replace(Regex("[^A-Z0-9]+"), "_")
 }
+
+internal fun TypeDefinition.Enum.enumConstantName(constantName: String): String =
+    if (type == JsonType.NUMBER) {
+        "${name.toUpperCase(Locale.US)}_${constantName.enumConstantName()}"
+    } else {
+        constantName.enumConstantName()
+    }
 
 internal fun JsonType?.asKotlinTypeName(): TypeName {
     return when (this) {
@@ -165,3 +173,10 @@ internal fun TypeDefinition.Class.isConstantClass(): Boolean {
     }
     return this.additionalProperties == null
 }
+
+internal fun TypeDefinition.Enum.jsonValueType(): KClass<*> =
+    if (type == JsonType.NUMBER) {
+        Number::class
+    } else {
+        String::class
+    }

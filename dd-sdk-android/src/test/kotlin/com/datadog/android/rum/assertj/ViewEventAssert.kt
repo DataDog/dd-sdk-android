@@ -227,19 +227,19 @@ internal class ViewEventAssert(actual: ViewEvent) :
     fun hasUserInfo(expected: UserInfo?): ViewEventAssert {
         assertThat(actual.usr?.id)
             .overridingErrorMessage(
-                "Expected RUM event to have usr.id ${expected?.id} " +
+                "Expected event to have usr.id ${expected?.id} " +
                     "but was ${actual.usr?.id}"
             )
             .isEqualTo(expected?.id)
         assertThat(actual.usr?.name)
             .overridingErrorMessage(
-                "Expected RUM event to have usr.name ${expected?.name} " +
+                "Expected event to have usr.name ${expected?.name} " +
                     "but was ${actual.usr?.name}"
             )
             .isEqualTo(expected?.name)
         assertThat(actual.usr?.email)
             .overridingErrorMessage(
-                "Expected RUM event to have usr.email ${expected?.email} " +
+                "Expected event to have usr.email ${expected?.email} " +
                     "but was ${actual.usr?.email}"
             )
             .isEqualTo(expected?.email)
@@ -249,19 +249,19 @@ internal class ViewEventAssert(actual: ViewEvent) :
     fun hasUserInfo(expected: ViewEvent.Usr?): ViewEventAssert {
         assertThat(actual.usr?.id)
             .overridingErrorMessage(
-                "Expected RUM event to have usr.id ${expected?.id} " +
+                "Expected event to have usr.id ${expected?.id} " +
                     "but was ${actual.usr?.id}"
             )
             .isEqualTo(expected?.id)
         assertThat(actual.usr?.name)
             .overridingErrorMessage(
-                "Expected RUM event to have usr.name ${expected?.name} " +
+                "Expected event to have usr.name ${expected?.name} " +
                     "but was ${actual.usr?.name}"
             )
             .isEqualTo(expected?.name)
         assertThat(actual.usr?.email)
             .overridingErrorMessage(
-                "Expected RUM event to have usr.email ${expected?.email} " +
+                "Expected event to have usr.email ${expected?.email} " +
                     "but was ${actual.usr?.email}"
             )
             .isEqualTo(expected?.email)
@@ -271,7 +271,7 @@ internal class ViewEventAssert(actual: ViewEvent) :
     fun hasCpuMetric(expectedTicks: Double?): ViewEventAssert {
         assertThat(actual.view.cpuTicksCount)
             .overridingErrorMessage(
-                "Expected RUM event to have view.cpu_ticks_count $expectedTicks " +
+                "Expected event to have view.cpu_ticks_count $expectedTicks " +
                     "but was ${actual.view.cpuTicksCount}"
             )
             .isEqualTo(expectedTicks)
@@ -283,7 +283,7 @@ internal class ViewEventAssert(actual: ViewEvent) :
         }
         assertThat(actual.view.cpuTicksPerSecond)
             .overridingErrorMessage(
-                "Expected RUM event to have view.cpu_ticks_per_second $expectedTicksPerSeconds " +
+                "Expected event to have view.cpu_ticks_per_second $expectedTicksPerSeconds " +
                     "but was ${actual.view.cpuTicksPerSecond}"
             )
             .isEqualTo(expectedTicksPerSeconds)
@@ -293,13 +293,13 @@ internal class ViewEventAssert(actual: ViewEvent) :
     fun hasMemoryMetric(average: Double?, max: Double?): ViewEventAssert {
         assertThat(actual.view.memoryAverage)
             .overridingErrorMessage(
-                "Expected RUM event to have view.memory_average $average " +
+                "Expected event to have view.memory_average $average " +
                     "but was ${actual.view.memoryAverage}"
             )
             .isEqualTo(average)
         assertThat(actual.view.memoryMax)
             .overridingErrorMessage(
-                "Expected RUM event to have view.memory_max $max " +
+                "Expected event to have view.memory_max $max " +
                     "but was ${actual.view.memoryMax}"
             )
             .isEqualTo(max)
@@ -310,14 +310,14 @@ internal class ViewEventAssert(actual: ViewEvent) :
         if (average == null) {
             assertThat(actual.view.refreshRateAverage as? Double)
                 .overridingErrorMessage(
-                    "Expected RUM event to have view.refresh_rate_average $average " +
+                    "Expected event to have view.refresh_rate_average $average " +
                         "but was ${actual.view.refreshRateAverage}"
                 )
                 .isNull()
         } else {
             assertThat(actual.view.refreshRateAverage as? Double)
                 .overridingErrorMessage(
-                    "Expected RUM event to have view.refresh_rate_average $average " +
+                    "Expected event to have view.refresh_rate_average $average " +
                         "but was ${actual.view.refreshRateAverage}"
                 )
                 .isCloseTo(average, Percentage.withPercentage(1.0))
@@ -325,18 +325,28 @@ internal class ViewEventAssert(actual: ViewEvent) :
         if (min == null) {
             assertThat(actual.view.refreshRateMin as? Double)
                 .overridingErrorMessage(
-                    "Expected RUM event to have view.refresh_rate_min $min " +
+                    "Expected event to have view.refresh_rate_min $min " +
                         "but was ${actual.view.refreshRateMin}"
                 )
                 .isNull()
         } else {
             assertThat(actual.view.refreshRateMin as? Double)
                 .overridingErrorMessage(
-                    "Expected RUM event to have view.refresh_rate_min $min " +
+                    "Expected event to have view.refresh_rate_min $min " +
                         "but was ${actual.view.refreshRateMin}"
                 )
                 .isCloseTo(min, Percentage.withPercentage(1.0))
         }
+        return this
+    }
+
+    fun hasLiteSessionPlan(): ViewEventAssert {
+        assertThat(actual.dd.session?.plan)
+            .overridingErrorMessage(
+                "Expected event to have a session plan of 1 instead it was %s",
+                actual.dd.session?.plan ?: "null"
+            )
+            .isEqualTo(ViewEvent.Plan.PLAN_1)
         return this
     }
 

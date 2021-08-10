@@ -113,8 +113,9 @@ data class Conflict(
 
         companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): UserType = values().first { it.jsonValue ==
-                    serializedObject }
+            fun fromJson(serializedObject: String): UserType = values().first {
+                it.jsonValue == serializedObject
+            }
         }
     }
 }
