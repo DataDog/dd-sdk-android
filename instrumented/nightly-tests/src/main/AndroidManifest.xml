@@ -17,6 +17,15 @@
         android:supportsRtl="true"
         android:theme="@style/Platform.MaterialComponents"
         tools:ignore="GoogleAppIndexingWarning,MissingApplicationIcon">
+        <service
+            android:name=".services.CrashHandlerDisabledCrashService"
+            android:process=":crashesdisabled" />
+        <service
+            android:name=".services.RumDisabledCrashService"
+            android:process=":rumdisabled" />
+        <service
+            android:name=".services.RumEnabledCrashService"
+            android:process=":rumenabled" />
     </application>
 
 </manifest>
