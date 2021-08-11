@@ -19,13 +19,19 @@
         tools:ignore="GoogleAppIndexingWarning,MissingApplicationIcon">
         <service
             android:name=".services.CrashHandlerDisabledCrashService"
-            android:process=":crashesdisabled" />
+            android:process=":crashhandler.disabled" />
         <service
             android:name=".services.RumDisabledCrashService"
-            android:process=":rumdisabled" />
+            android:process=":crahshandler.rumdisabled" />
         <service
             android:name=".services.RumEnabledCrashService"
-            android:process=":rumenabled" />
+            android:process=":crashhandler.rumenabled" />
+        <service
+            android:name=".services.NdkHandlerDisabledNdkCrashService"
+            android:process=":ndkcrashhandler.disabled" />
+        <service
+            android:name=".services.RumEnabledNdkCrashService"
+            android:process=":ndkcrashhandler.rumenabled" />
     </application>
 
 </manifest>

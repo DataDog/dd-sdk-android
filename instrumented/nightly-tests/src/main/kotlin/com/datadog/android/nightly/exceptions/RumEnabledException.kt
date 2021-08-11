@@ -6,4 +6,4 @@
 
 package com.datadog.android.nightly.exceptions
 
-class RumEnabledException() : RuntimeException("Rum Enabled Runtime Exception")
+internal class RumEnabledException : RuntimeException("Rum Enabled Runtime Exception")

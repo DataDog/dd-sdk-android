@@ -6,4 +6,14 @@
 
 package com.datadog.android.nightly.services
 
-class CrashHandlerDisabledCrashService : JvmCrashService()
+import android.content.Intent
+
+internal class CrashHandlerDisabledCrashService : JvmCrashService() {
+    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+        return super.onStartCommand(
+            intent.apply { action = CRASH_HANDLER_DISABLED_SCENARIO },
+            flags,
+            startId
+        )
+    }
+}

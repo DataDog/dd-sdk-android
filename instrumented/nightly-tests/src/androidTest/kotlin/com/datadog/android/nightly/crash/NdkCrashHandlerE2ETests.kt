@@ -12,18 +12,18 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
 import com.datadog.android.nightly.rules.NightlyTestRule
-import com.datadog.android.nightly.services.CrashHandlerDisabledCrashService
-import com.datadog.android.nightly.services.JvmCrashService
-import com.datadog.android.nightly.services.RumDisabledCrashService
-import com.datadog.android.nightly.services.RumEnabledCrashService
+import com.datadog.android.nightly.services.NdkCrashService
+import com.datadog.android.nightly.services.NdkHandlerDisabledNdkCrashService
+import com.datadog.android.nightly.services.RumEnabledNdkCrashService
 import com.datadog.android.nightly.utils.initializeSdk
+import com.datadog.android.nightly.utils.stopSdk
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-class JvmCrashHandlerE2ETests {
+class NdkCrashHandlerE2ETests {
 
     // region Tests
 
@@ -32,62 +32,54 @@ class JvmCrashHandlerE2ETests {
 
     /**
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean, Boolean, Boolean, Boolean)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
      */
     @Test
-    fun crash_reports_rum_enabled() {
+    fun ndk_crash_reports_rum_enabled() {
         // We initialize the SDK in this process as both processes are sharing the same data
         // storage space. Flushing the data in this process at the end of this test will also
         // flush the data produced by the service process. Besides this our SDK has a safety
         // measure to prevent sending an event twice from 2 different process. For this reason
         // we are using a NoOpOkHttpUploader in case the process is not the app main process.
-        val testMethodName = "crash_reports_rum_enabled"
+        val testMethodName = "ndk_crash_reports_rum_enabled"
         initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
         startService(
             testMethodName,
-            RumEnabledCrashService::class.java
+            RumEnabledNdkCrashService::class.java
         )
         waitForProcessToIdle()
-        stopService(RumEnabledCrashService::class.java)
+        stopService(RumEnabledNdkCrashService::class.java)
+        // we stop and initialize the SDK again to handle the preserved ndk crash
+        stopSdk()
+        initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
+        waitForProcessToIdle()
     }
 
     /**
      * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean, Boolean, Boolean, Boolean)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
      */
     @Test
-    fun crash_reports_rum_disabled() {
-        val testMethodName = "crash_reports_rum_disabled"
+    fun ndk_crash_reports_feature_disabled() {
+        val testMethodName = "ndk_crash_reports_feature_disabled"
         initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
         startService(
             testMethodName,
-            RumDisabledCrashService::class.java
+            NdkHandlerDisabledNdkCrashService::class.java
         )
         waitForProcessToIdle()
-        stopService(RumDisabledCrashService::class.java)
-    }
-
-    /**
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#constructor(Boolean, Boolean, Boolean, Boolean)
-     */
-    @Test
-    fun crash_reports_feature_disabled() {
-        val testMethodName = "crash_reports_feature_disabled"
+        stopService(NdkHandlerDisabledNdkCrashService::class.java)
+        // we stop and initialize the SDK again to handle the preserved ndk crash
+        stopSdk()
         initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
-        startService(
-            testMethodName,
-            CrashHandlerDisabledCrashService::class.java
-        )
         waitForProcessToIdle()
-        stopService(CrashHandlerDisabledCrashService::class.java)
     }
 
     // endregion
 
     // region Internal
 
-    private fun <T : JvmCrashService> startService(
+    private fun <T : NdkCrashService> startService(
         testMethodName: String,
         serviceClass: Class<T>
     ) {
@@ -101,7 +93,7 @@ class JvmCrashHandlerE2ETests {
         )
     }
 
-    private fun <T : JvmCrashService> stopService(serviceClass: Class<T>) {
+    private fun <T : NdkCrashService> stopService(serviceClass: Class<T>) {
         InstrumentationRegistry.getInstrumentation().targetContext.stopService(
             Intent(
                 InstrumentationRegistry.getInstrumentation().targetContext,

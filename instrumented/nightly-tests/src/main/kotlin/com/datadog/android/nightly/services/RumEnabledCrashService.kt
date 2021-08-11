@@ -6,4 +6,14 @@
 
 package com.datadog.android.nightly.services
 
-class RumEnabledCrashService : JvmCrashService()
+import android.content.Intent
+
+internal class RumEnabledCrashService : JvmCrashService() {
+    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
+        return super.onStartCommand(
+            intent.apply { action = RUM_ENABLED_SCENARIO },
+            flags,
+            startId
+        )
+    }
+}

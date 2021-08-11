@@ -13,11 +13,11 @@ import android.os.Looper
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.nightly.exceptions.RumDisabledException
-import com.datadog.android.nightly.exceptions.RumEnabledException
+import com.datadog.android.ndk.NdkCrashReportsPlugin
+import com.datadog.android.plugin.Feature
 import com.datadog.android.privacy.TrackingConsent
 
-internal open class JvmCrashService : CrashService() {
+internal open class NdkCrashService : CrashService() {
 
     // region Service
 
@@ -28,18 +28,19 @@ internal open class JvmCrashService : CrashService() {
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         when (intent.action) {
             CRASH_HANDLER_DISABLED_SCENARIO -> {
-                startSdk(crashReportsEnabled = false)
+                startSdk(ndkCrashReportsEnabled = false)
                 initRum(intent.extras)
-                scheduleJvmCrash(RumEnabledException())
+                scheduleNdkCrash()
             }
             RUM_DISABLED_SCENARIO -> {
-                startSdk(rumEnabled = false)
-                scheduleJvmCrash(RumDisabledException())
+                // TODO RUMM-1554
+                // NoOp for now as we could not find a way yet to assert the NDK error log
+                // in the monitors
             }
             else -> {
                 startSdk()
                 initRum(intent.extras)
-                scheduleJvmCrash(RumEnabledException())
+                scheduleNdkCrash()
             }
         }
         return START_NOT_STICKY
@@ -49,23 +50,25 @@ internal open class JvmCrashService : CrashService() {
 
     // region Internal
 
-    @SuppressWarnings("ThrowingInternalException")
-    private fun scheduleJvmCrash(exception: Exception) {
+    private fun scheduleNdkCrash() {
         // we will give time to the RUM view event to persist before crashing the process
-        Handler(Looper.getMainLooper()).postDelayed({ throw exception }, 1000)
+        Handler(Looper.getMainLooper()).postDelayed({ simulateNdkCrash() }, 1000)
     }
 
     private fun startSdk(
-        crashReportsEnabled: Boolean = true,
+        ndkCrashReportsEnabled: Boolean = true,
         rumEnabled: Boolean = true
     ) {
         Datadog.setVerbosity(Log.VERBOSE)
         val configBuilder = Configuration.Builder(
             logsEnabled = true,
             tracesEnabled = true,
-            crashReportsEnabled = crashReportsEnabled,
+            crashReportsEnabled = true,
             rumEnabled = rumEnabled
         )
+        if (ndkCrashReportsEnabled) {
+            configBuilder.addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
+        }
         Datadog.initialize(
             this,
             getCredentials(),
@@ -75,4 +78,16 @@ internal open class JvmCrashService : CrashService() {
     }
 
     // endregion
+
+    // region Native
+
+    private external fun simulateNdkCrash()
+
+    // endregion
+
+    companion object {
+        init {
+            System.loadLibrary("datadog-nightly-lib")
+        }
+    }
 }

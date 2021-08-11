@@ -8,10 +8,10 @@ package com.datadog.android.nightly.services
 
 import android.content.Intent
 
-internal class RumDisabledCrashService : JvmCrashService() {
+internal class NdkHandlerDisabledNdkCrashService : NdkCrashService() {
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
         return super.onStartCommand(
-            intent.apply { action = RUM_DISABLED_SCENARIO },
+            intent.apply { action = CRASH_HANDLER_DISABLED_SCENARIO },
             flags,
             startId
         )

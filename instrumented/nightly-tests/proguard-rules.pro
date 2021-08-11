@@ -31,6 +31,6 @@
     *;
 }
 
-# Required to be able to assert the intercepted exception types in the monitor
+# Required to be able to assert the crash related error and log events in the Monitors
 -keepnames class com.datadog.android.nightly.exceptions.** {}
 -keepnames class com.datadog.android.nightly.services.** {}
