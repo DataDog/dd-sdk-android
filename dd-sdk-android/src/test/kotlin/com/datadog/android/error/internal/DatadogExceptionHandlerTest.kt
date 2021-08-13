@@ -7,6 +7,8 @@
 package com.datadog.android.error.internal
 
 import android.content.Context
+import android.util.Log
+import android.view.Choreographer
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
@@ -17,6 +19,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
 import com.datadog.android.core.model.NetworkInfo
@@ -24,6 +27,7 @@ import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.LogGenerator
+import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
@@ -34,6 +38,7 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -46,6 +51,7 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -60,6 +66,7 @@ import java.io.FileNotFoundException
 import java.io.IOException
 import java.lang.RuntimeException
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -116,10 +123,25 @@ internal class DatadogExceptionHandlerTest {
     @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
     lateinit var fakeEnvName: String
 
+    lateinit var mockDevLogHandler: LogHandler
+
     @BeforeEach
     fun `set up`() {
+        mockDevLogHandler = mockDevLogHandler()
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+
+        // To avoid java.lang.NoClassDefFoundError: android/hardware/display/DisplayManagerGlobal.
+        // This class is only available in a real android JVM at runtime and not in a JUnit env.
+        Choreographer::class.java.setStaticValue(
+            "sThreadInstance",
+            object : ThreadLocal<Choreographer>() {
+                override fun initialValue(): Choreographer {
+                    return mock()
+                }
+            }
+        )
+
         Datadog.initialize(
             appContext.mockInstance,
             Credentials(fakeToken, fakeEnvName, Credentials.NO_VARIANT, null),
@@ -191,6 +213,43 @@ internal class DatadogExceptionHandlerTest {
                 )
         }
         verifyZeroInteractions(mockPreviousHandler)
+    }
+
+    @Test
+    fun `M wait for the executor to idle W exception caught`() {
+        val mockScheduledThreadExecutor: ThreadPoolExecutor = mock()
+        CoreFeature.persistenceExecutorService = mockScheduledThreadExecutor
+        Thread.setDefaultUncaughtExceptionHandler(null)
+        testedHandler.register()
+        val currentThread = Thread.currentThread()
+
+        testedHandler.uncaughtException(currentThread, fakeThrowable)
+
+        verify(mockScheduledThreadExecutor)
+            .waitToIdle(DatadogExceptionHandler.MAX_WAIT_FOR_IDLE_TIME_IN_MS)
+        verify(mockDevLogHandler, never()).handleLog(
+            Log.WARN,
+            DatadogExceptionHandler.EXECUTOR_NOT_IDLED_WARNING_MESSAGE
+        )
+    }
+
+    @Test
+    fun `M log warning message W exception caught { executor could not be idled }`() {
+        val mockScheduledThreadExecutor: ThreadPoolExecutor = mock {
+            whenever(it.taskCount).thenReturn(2)
+            whenever(it.completedTaskCount).thenReturn(0)
+        }
+        CoreFeature.persistenceExecutorService = mockScheduledThreadExecutor
+        Thread.setDefaultUncaughtExceptionHandler(null)
+        testedHandler.register()
+        val currentThread = Thread.currentThread()
+
+        testedHandler.uncaughtException(currentThread, fakeThrowable)
+
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            DatadogExceptionHandler.EXECUTOR_NOT_IDLED_WARNING_MESSAGE
+        )
     }
 
     @Test
