@@ -5,9 +5,11 @@
  */
 package com.datadog.android.sample.crash
 
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,12 +20,14 @@ import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
 
 class CrashFragment :
-    Fragment(),
-    View.OnClickListener {
+        Fragment(),
+        View.OnClickListener {
 
     private lateinit var viewModel: CrashViewModel
     private lateinit var spinner: AppCompatSpinner
     private val mainThreadHandler = Handler(Looper.getMainLooper())
+
+    val bitmapList = mutableListOf<Bitmap>()
 
     // region Fragment
 
@@ -39,12 +43,13 @@ class CrashFragment :
         rootView.findViewById<View>(R.id.action_java_crash).setOnClickListener(this)
         rootView.findViewById<View>(R.id.action_ndk_crash).setOnClickListener(this)
         rootView.findViewById<View>(R.id.action_anr).setOnClickListener(this)
+        rootView.findViewById<View>(R.id.action_oom).setOnClickListener(this)
 
         spinner = rootView.findViewById(R.id.signal_type_spinner)
         val arrayAdapter = ArrayAdapter(
-            currentContext,
-            android.R.layout.simple_spinner_item,
-            NATIVE_SIGNALS
+                currentContext,
+                android.R.layout.simple_spinner_item,
+                NATIVE_SIGNALS
         )
         arrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinner.adapter = arrayAdapter
@@ -66,6 +71,7 @@ class CrashFragment :
             R.id.action_java_crash -> triggerCrash()
             R.id.action_ndk_crash -> triggerNdkCrash()
             R.id.action_anr -> triggerANR()
+            R.id.action_oom -> triggerOOM()
         }
     }
 
@@ -86,6 +92,17 @@ class CrashFragment :
 
     private fun triggerANR() {
         mainThreadHandler.postDelayed({ Thread.sleep(100000) }, 1)
+    }
+
+    private fun triggerOOM() {
+
+        Thread {
+            for (i in 0..128) {
+                bitmapList.add(Bitmap.createBitmap(3840, 2160, Bitmap.Config.ARGB_8888))
+                Log.i("OOM", "Allocated ${bitmapList.size} bitmaps")
+                Thread.sleep(10)
+            }
+        }.start()
     }
 
     // endregion
@@ -109,9 +126,9 @@ class CrashFragment :
         const val SIGSEGV = 11 // "Segmentation violation (invalid memory reference)"
 
         private val NATIVE_SIGNALS = listOf(
-            NativeSignal(SIGSEGV, "Invalid Memory"),
-            NativeSignal(SIGABRT, "Abort Program"),
-            NativeSignal(SIGILL, "Illegal Instruction")
+                NativeSignal(SIGSEGV, "Invalid Memory"),
+                NativeSignal(SIGABRT, "Abort Program"),
+                NativeSignal(SIGILL, "Illegal Instruction")
         )
     }
 }
