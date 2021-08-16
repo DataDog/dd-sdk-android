@@ -27,7 +27,7 @@ ci-image:
   stage: ci-image
   when: manual
   except: [ tags, schedules ]
-  tags: [ "runner:docker", "size:large" ]
+  tags: [ "runner:docker" ]
   image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/docker:18.03.1
   script:
     - docker build --tag $CI_IMAGE_DOCKER -f Dockerfile.gitlab .
@@ -38,7 +38,7 @@ ci-image:
 create_key:
   stage: security
   when: manual
-  tags: [ "runner:docker", "size:large" ]
+  tags: [ "runner:docker" ]
   variables:
     PROJECT_NAME: "dd-sdk-android"
     EXPORT_TO_KEYSERVER: "true"
@@ -54,7 +54,7 @@ create_key:
 # STATIC ANALYSIS
 
 analysis:ktlint:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
   timeout: 30m
@@ -63,7 +63,7 @@ analysis:ktlint:
     - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :ktlintCheckAll --stacktrace --no-daemon
 
 analysis:android-lint:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
   timeout: 30m
@@ -72,7 +72,7 @@ analysis:android-lint:
     - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :lintCheckAll --stacktrace --no-daemon
 
 analysis:detekt:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
   timeout: 30m
@@ -81,7 +81,7 @@ analysis:detekt:
     - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :detektAll --stacktrace --no-daemon
 
 analysis:licenses:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
   timeout: 30m
@@ -90,7 +90,7 @@ analysis:licenses:
     - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :dd-sdk-android:checkThirdPartyLicences :dd-sdk-android-timber:checkThirdPartyLicences --stacktrace --no-daemon
 
 analysis:api-surface:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
   timeout: 30m
@@ -99,7 +99,7 @@ analysis:api-surface:
     - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :dd-sdk-android:checkApiSurfaceChanges :dd-sdk-android-timber:checkApiSurfaceChanges --stacktrace --no-daemon
 
 analysis:nightly-tests-coverage:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
   timeout: 30m
@@ -108,7 +108,7 @@ analysis:nightly-tests-coverage:
     - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew checkNightlyTestsCoverage --stacktrace --no-daemon
 
 analysis:woke:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
   stage: analysis
   timeout: 30m
@@ -119,7 +119,7 @@ analysis:woke:
 # TESTS
 
 test:debug:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
   stage: test
   timeout: 1h
@@ -131,7 +131,7 @@ test:debug:
     - bash <(cat ./codecov.sh) -t $CODECOV_TOKEN
 
 test:release:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
   stage: test
   timeout: 1h
@@ -141,7 +141,7 @@ test:release:
     - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :unitTestRelease --stacktrace --no-daemon
 
 test:tools:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
   stage: test
   timeout: 1h
@@ -153,7 +153,7 @@ test:tools:
 # PUBLISH ARTIFACTS ON MAVEN
 
 publish:release:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -169,7 +169,7 @@ publish:release:
     - ./gradlew :dd-sdk-android:publishToSonatype --stacktrace --no-daemon
 
 publish:release-coil:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -185,7 +185,7 @@ publish:release-coil:
     - ./gradlew :dd-sdk-android-coil:publishToSonatype --stacktrace --no-daemon
 
 publish:release-fresco:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -201,7 +201,7 @@ publish:release-fresco:
     - ./gradlew :dd-sdk-android-fresco:publishToSonatype --stacktrace --no-daemon
 
 publish:release-glide:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -217,7 +217,7 @@ publish:release-glide:
     - ./gradlew :dd-sdk-android-glide:publishToSonatype --stacktrace --no-daemon
 
 publish:release-ktx:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -233,7 +233,7 @@ publish:release-ktx:
     - ./gradlew :dd-sdk-android-ktx:publishToSonatype --stacktrace --no-daemon
 
 publish:release-ndk:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -249,7 +249,7 @@ publish:release-ndk:
     - ./gradlew :dd-sdk-android-ndk:publishToSonatype --stacktrace --no-daemon
 
 publish:release-rx:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -265,7 +265,7 @@ publish:release-rx:
     - ./gradlew :dd-sdk-android-rx:publishToSonatype --stacktrace --no-daemon
 
 publish:release-sqldelight:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -281,7 +281,7 @@ publish:release-sqldelight:
     - ./gradlew :dd-sdk-android-sqldelight:publishToSonatype --stacktrace --no-daemon
 
 publish:release-timber:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -321,7 +321,7 @@ notify:failure:
     - postmessage "#mobile-rum" "$MESSAGE_TEXT"
 
 notify:dogfood-app:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
@@ -333,7 +333,7 @@ notify:dogfood-app:
   - python3 dogfood.py -v $CI_COMMIT_TAG -t app
 
 notify:dogfood-demo:
-  tags: [ "runner:main", "size:large" ]
+  tags: [ "runner:main" ]
   only:
     - tags
   image: $CI_IMAGE_DOCKER
