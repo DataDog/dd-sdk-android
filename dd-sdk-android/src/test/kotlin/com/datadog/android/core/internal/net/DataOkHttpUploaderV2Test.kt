@@ -174,7 +174,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
         val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.HTTP_CLIENT_ERROR_RETRY)
+        assertThat(result).isEqualTo(UploadStatus.HTTP_CLIENT_RATE_LIMITING)
         verifyRequest()
     }
 
@@ -204,7 +204,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
         val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.HTTP_CLIENT_ERROR_RETRY)
+        assertThat(result).isEqualTo(UploadStatus.HTTP_CLIENT_RATE_LIMITING)
         verifyRequest()
     }
 

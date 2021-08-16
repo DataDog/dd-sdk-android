@@ -74,12 +74,12 @@ internal class DataUploadRunnable(
     private fun consumeBatch(batch: Batch) {
         val status = dataUploader.upload(batch.data)
 
-        if (status in droppableBatchStatus) {
-            reader.drop(batch)
-            decreaseInterval()
-        } else {
+        if (status.shouldRetry) {
             reader.release(batch)
             increaseInterval()
+        } else {
+            reader.drop(batch)
+            decreaseInterval()
         }
     }
 

@@ -19,7 +19,7 @@ internal open class RumOkHttpUploaderV2(
     source: String,
     callFactory: Call.Factory
 ) : DataOkHttpUploaderV2(
-    buildUrl(endpoint, TRACK_TYPE),
+    buildUrl(endpoint, TrackType.RUM),
     clientToken,
     source,
     callFactory,
@@ -52,9 +52,4 @@ internal open class RumOkHttpUploaderV2(
     }
 
     // endregion
-
-    companion object {
-
-        private const val TRACK_TYPE = "rum"
-    }
 }

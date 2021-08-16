@@ -25,6 +25,12 @@ internal abstract class DataOkHttpUploaderV2(
     internal val internalLogger: Logger
 ) : DataUploader {
 
+    internal enum class TrackType(val trackName: String) {
+        LOGS("logs"),
+        RUM("rum"),
+        SPANS("spans")
+    }
+
     private val uploaderName = javaClass.simpleName
 
     private val userAgent by lazy {
@@ -71,7 +77,7 @@ internal abstract class DataOkHttpUploaderV2(
         return responseCodeToUploadStatus(response.code())
     }
 
-    private fun buildRequest(data: ByteArray, requestId: String?): Request {
+    private fun buildRequest(data: ByteArray, requestId: String): Request {
         val builder = Request.Builder()
             .url(buildUrl())
             .post(RequestBody.create(null, data))
@@ -90,16 +96,13 @@ internal abstract class DataOkHttpUploaderV2(
         }
     }
 
-    private fun buildHeaders(builder: Request.Builder, requestId: String?) {
+    private fun buildHeaders(builder: Request.Builder, requestId: String) {
         builder.addHeader(HEADER_API_KEY, clientToken)
         builder.addHeader(HEADER_EVP_ORIGIN, source)
         builder.addHeader(HEADER_EVP_ORIGIN_VERSION, BuildConfig.SDK_VERSION_NAME)
         builder.addHeader(HEADER_USER_AGENT, userAgent)
         builder.addHeader(HEADER_CONTENT_TYPE, contentType)
-
-        if (!requestId.isNullOrBlank()) {
-            builder.addHeader(HEADER_REQUEST_ID, requestId)
-        }
+        builder.addHeader(HEADER_REQUEST_ID, requestId)
     }
 
     protected open fun buildQueryParameters(): Map<String, Any> {
@@ -112,9 +115,9 @@ internal abstract class DataOkHttpUploaderV2(
             HTTP_BAD_REQUEST -> UploadStatus.HTTP_CLIENT_ERROR
             HTTP_UNAUTHORIZED -> UploadStatus.INVALID_TOKEN_ERROR
             HTTP_FORBIDDEN -> UploadStatus.HTTP_CLIENT_ERROR
-            HTTP_CLIENT_TIMEOUT -> UploadStatus.HTTP_CLIENT_ERROR_RETRY
+            HTTP_CLIENT_TIMEOUT -> UploadStatus.HTTP_CLIENT_RATE_LIMITING
             HTTP_ENTITY_TOO_LARGE -> UploadStatus.HTTP_CLIENT_ERROR
-            HTTP_TOO_MANY_REQUESTS -> UploadStatus.HTTP_CLIENT_ERROR_RETRY
+            HTTP_TOO_MANY_REQUESTS -> UploadStatus.HTTP_CLIENT_RATE_LIMITING
             HTTP_INTERNAL_ERROR -> UploadStatus.HTTP_SERVER_ERROR
             HTTP_UNAVAILABLE -> UploadStatus.HTTP_SERVER_ERROR
             else -> UploadStatus.UNKNOWN_ERROR
@@ -150,12 +153,12 @@ internal abstract class DataOkHttpUploaderV2(
 
         private const val UPLOAD_URL = "%s/api/v2/%s"
 
-        internal fun buildUrl(endpoint: String, tracktype: String): String {
+        internal fun buildUrl(endpoint: String, trackType: TrackType): String {
             return String.format(
                 Locale.US,
                 UPLOAD_URL,
                 endpoint,
-                tracktype
+                trackType.trackName
             )
         }
     }

@@ -16,7 +16,7 @@ internal open class TracesOkHttpUploaderV2(
     source: String,
     callFactory: Call.Factory
 ) : DataOkHttpUploaderV2(
-    buildUrl(endpoint, TRACK_TYPE),
+    buildUrl(endpoint, TrackType.SPANS),
     clientToken,
     source,
     callFactory,

@@ -17,7 +17,7 @@ internal open class LogsOkHttpUploaderV2(
     callFactory: Call.Factory,
     internalLogger: Logger
 ) : DataOkHttpUploaderV2(
-    buildUrl(endpoint, TRACK_TYPE),
+    buildUrl(endpoint, TrackType.LOGS),
     clientToken,
     source,
     callFactory,
@@ -29,9 +29,5 @@ internal open class LogsOkHttpUploaderV2(
         return mapOf(
             QUERY_PARAM_SOURCE to source
         )
-    }
-
-    companion object {
-        private const val TRACK_TYPE = "logs"
     }
 }
