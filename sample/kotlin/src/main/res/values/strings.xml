@@ -27,6 +27,7 @@
     <string name="msg_native_crash">Native Crash</string>
     <string name="msg_java_crash">Java Crash</string>
     <string name="msg_anr">App Not Responding</string>
+    <string name="msg_oom">Out Of Memory Error</string>
     <string name="msg_async_operation">Async Operation (~5s)</string>
     <string name="msg_network_request">Network Request (~1s)</string>
     <string name="msg_coroutine_operation">Coroutine operations (~5s)</string>
@@ -36,6 +37,7 @@
     <string name="button_error">🚨</string>
     <string name="button_critical">💥</string>
     <string name="button_anr">Simulate ANR</string>
+    <string name="button_oom">Simulate OOM</string>
     <string name="button_crash">Crash</string>
     <string name="button_async_operation">Async Operation</string>
     <string name="button_network_request">Network Request</string>
