@@ -73,6 +73,7 @@ internal class DatadogSiteTest {
             return Stream.of(
                 Arguments.of(DatadogSite.US1, DatadogEndpoint.LOGS_US1),
                 Arguments.of(DatadogSite.US3, DatadogEndpoint.LOGS_US3),
+                Arguments.of(DatadogSite.US5, DatadogEndpoint.LOGS_US5),
                 Arguments.of(DatadogSite.US1_FED, DatadogEndpoint.LOGS_US1_FED),
                 Arguments.of(DatadogSite.EU1, DatadogEndpoint.LOGS_EU1)
             )
@@ -83,6 +84,7 @@ internal class DatadogSiteTest {
             return Stream.of(
                 Arguments.of(DatadogSite.US1, DatadogEndpoint.TRACES_US1),
                 Arguments.of(DatadogSite.US3, DatadogEndpoint.TRACES_US3),
+                Arguments.of(DatadogSite.US5, DatadogEndpoint.TRACES_US5),
                 Arguments.of(DatadogSite.US1_FED, DatadogEndpoint.TRACES_US1_FED),
                 Arguments.of(DatadogSite.EU1, DatadogEndpoint.TRACES_EU1)
             )
@@ -93,6 +95,7 @@ internal class DatadogSiteTest {
             return Stream.of(
                 Arguments.of(DatadogSite.US1, DatadogEndpoint.RUM_US1),
                 Arguments.of(DatadogSite.US3, DatadogEndpoint.RUM_US3),
+                Arguments.of(DatadogSite.US5, DatadogEndpoint.RUM_US5),
                 Arguments.of(DatadogSite.US1_FED, DatadogEndpoint.RUM_US1_FED),
                 Arguments.of(DatadogSite.EU1, DatadogEndpoint.RUM_EU1)
             )

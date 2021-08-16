@@ -24,10 +24,17 @@ object DatadogEndpoint {
 
     /**
      * The US3 endpoint for Logs (US based servers).
-     * Use this in your [Configuration] if you log on [s3.datadoghq.com](https://us3.datadoghq.com)
+     * Use this in your [Configuration] if you log on [us3.datadoghq.com](https://us3.datadoghq.com)
      * @see [Configuration]
      */
     const val LOGS_US3: String = "https://logs.browser-intake-us3-datadoghq.com"
+
+    /**
+     * The US5 endpoint for Logs (US based servers).
+     * Use this in your [Configuration] if you log on [us5.datadoghq.com](https://us5.datadoghq.com)
+     * @see [Configuration]
+     */
+    const val LOGS_US5: String = "https://logs.browser-intake-us5-datadoghq.com"
 
     /**
      * The US1_FED endpoint for Logs (US based servers, FedRAMP compliant).
@@ -86,10 +93,17 @@ object DatadogEndpoint {
 
     /**
      * The US3 endpoint for Traces (US based servers).
-     * Use this in your [Configuration] if you log on [s3.datadoghq.com](https://us3.datadoghq.com)
+     * Use this in your [Configuration] if you log on [us3.datadoghq.com](https://us3.datadoghq.com)
      * @see [Configuration]
      */
     const val TRACES_US3: String = "https://trace.browser-intake-us3-datadoghq.com"
+
+    /**
+     * The US5 endpoint for Traces (US based servers).
+     * Use this in your [Configuration] if you log on [us5.datadoghq.com](https://us5.datadoghq.com)
+     * @see [Configuration]
+     */
+    const val TRACES_US5: String = "https://trace.browser-intake-us5-datadoghq.com"
 
     /**
      * The US1_FED endpoint for Traces (US based servers, FedRAMP compliant).
@@ -148,10 +162,17 @@ object DatadogEndpoint {
 
     /**
      * The US3 endpoint for RUM (US based servers).
-     * Use this in your [Configuration] if you log on [s3.datadoghq.com](https://us3.datadoghq.com)
+     * Use this in your [Configuration] if you log on [us3.datadoghq.com](https://us3.datadoghq.com)
      * @see [Configuration]
      */
     const val RUM_US3: String = "https://rum.browser-intake-us3-datadoghq.com"
+
+    /**
+     * The US5 endpoint for RUM (US based servers).
+     * Use this in your [Configuration] if you log on [us5.datadoghq.com](https://us5.datadoghq.com)
+     * @see [Configuration]
+     */
+    const val RUM_US5: String = "https://rum.browser-intake-us5-datadoghq.com"
 
     /**
      * The US1_FED endpoint for RUM (US based servers, FedRAMP compliant).
