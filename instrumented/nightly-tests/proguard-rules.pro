@@ -30,3 +30,7 @@
 -keepnames class com.datadog.android.rum.internal.domain.RumContext {
     *;
 }
+
+# Required to be able to assert the crash related error and log events in the Monitors
+-keepnames class com.datadog.android.nightly.exceptions.** {}
+-keepnames class com.datadog.android.nightly.services.** {}

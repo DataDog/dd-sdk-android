@@ -43,6 +43,11 @@ android {
             nightlyTestsRumAppIdKey,
             "\"${project.findProperty(nightlyTestsRumAppIdKey)}\""
         )
+        externalNativeBuild {
+            cmake {
+                cppFlags.add("-std=c++14")
+            }
+        }
     }
 
     sourceSets.named("main") {
@@ -79,6 +84,14 @@ android {
             )
         }
     }
+
+    externalNativeBuild {
+        cmake {
+            path = File("$projectDir/src/main/cpp/CMakeLists.txt")
+            version = Dependencies.Versions.CMakeVersion
+        }
+    }
+    ndkVersion = Dependencies.Versions.NdkVersion
 }
 
 repositories {
@@ -89,6 +102,7 @@ repositories {
 
 dependencies {
     implementation(project(":dd-sdk-android"))
+    implementation(project(":dd-sdk-android-ndk"))
 
     implementation(Dependencies.Libraries.Gson)
     implementation(Dependencies.Libraries.Kotlin)
