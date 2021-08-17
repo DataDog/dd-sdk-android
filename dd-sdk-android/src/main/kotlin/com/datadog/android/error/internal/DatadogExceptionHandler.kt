@@ -7,7 +7,10 @@
 package com.datadog.android.error.internal
 
 import android.content.Context
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.thread.waitToIdle
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.triggerUploadWorker
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.model.LogEvent
@@ -15,6 +18,7 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import java.lang.ref.WeakReference
+import java.util.concurrent.ThreadPoolExecutor
 
 internal class DatadogExceptionHandler(
     private val logGenerator: LogGenerator,
@@ -38,6 +42,13 @@ internal class DatadogExceptionHandler(
             RumErrorSource.SOURCE,
             e
         )
+
+        // give some time to the persistence executor service to finish its tasks
+        val idled = (CoreFeature.persistenceExecutorService as? ThreadPoolExecutor)
+            ?.waitToIdle(MAX_WAIT_FOR_IDLE_TIME_IN_MS) ?: true
+        if (!idled) {
+            devLogger.w(EXECUTOR_NOT_IDLED_WARNING_MESSAGE)
+        }
 
         // trigger a task to send the logs ASAP
         contextRef.get()?.let {
@@ -90,5 +101,9 @@ internal class DatadogExceptionHandler(
         // also into the datadog-native-lib.cpp file inside the dd-sdk-android-ndk module.
         internal const val LOGGER_NAME = "crash"
         internal const val MESSAGE = "Application crash detected"
+        internal const val MAX_WAIT_FOR_IDLE_TIME_IN_MS = 100L
+        internal const val EXECUTOR_NOT_IDLED_WARNING_MESSAGE =
+            "Datadog SDK is in an unexpected state due to an ongoing crash. " +
+                "Some events could be lost"
     }
 }
