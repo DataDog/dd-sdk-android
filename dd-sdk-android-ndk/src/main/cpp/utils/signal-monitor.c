@@ -152,7 +152,14 @@ void handle_signal(int signum, siginfo_t *info, void *user_context) {
         if (signal == signum) {
             char backtrace[max_stack_size];
             // in case the stacktrace is bigger than the required size it will be truncated
-            generate_backtrace(backtrace, max_stack_size);
+            // because we are unwinding the stack strace at this level we are always going to
+            // to have for the top 3 levels at the top of the trace the executed lines from our
+            // library: handle_signal, generate_backtrace and capture_backtrace.
+            // Make sure that if you are changing this make sure to start from the new frame
+            // index when generating the backtrace.
+            generate_backtrace(backtrace, stack_frames_start_index, max_stack_size);
+
+
             write_crash_report(signal,
                                handled_signals[i].signal_name,
                                handled_signals[i].signal_error_message,

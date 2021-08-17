@@ -56,10 +56,12 @@ namespace {
         return std::string(address_as_hexa);
     }
 
-    void get_info_from_address(size_t index, const uintptr_t address, std::string *backtrace) {
-        backtrace->append(std::to_string(index));
+    void get_info_from_address(size_t index,
+                               const uintptr_t address,
+                               std::string *backtrace) {
         Dl_info info;
         int fetch_info_success = dladdr(reinterpret_cast<void *>(address), &info);
+        backtrace->append(std::to_string(index));
         if (fetch_info_success) {
 
             if (info.dli_fname) {
@@ -98,17 +100,17 @@ bool copyString(const std::string &str, char *ptr, size_t max_size) {
     return copy_size == str_size;
 }
 
-bool generate_backtrace(char *backtrace_ptr, size_t max_size) {
+bool generate_backtrace(char *backtrace_ptr, size_t start_index, size_t max_size) {
     // define the buffer which will hold pointers to stack memory addresses
     uintptr_t buffer[max_stack_frames];
     // we will now unwind the stack and capture all the memory addresses up to max_stack_frames in
     // the buffer
     const size_t number_of_captured_frames = capture_backtrace(buffer, max_stack_frames);
     std::string backtrace;
-    for (size_t idx = 0; idx < number_of_captured_frames; ++idx) {
+    for (size_t idx = start_index; idx < number_of_captured_frames; ++idx) {
         // we will iterate through all the stack addresses and translate each address in
         // readable information
-        get_info_from_address(idx, buffer[idx], &backtrace);
+        get_info_from_address(idx - start_index, buffer[idx], &backtrace);
     }
     return copyString(backtrace, backtrace_ptr, max_size);
 }
