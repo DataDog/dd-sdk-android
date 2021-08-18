@@ -20,8 +20,8 @@ import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
 
 class CrashFragment :
-        Fragment(),
-        View.OnClickListener {
+    Fragment(),
+    View.OnClickListener {
 
     private lateinit var viewModel: CrashViewModel
     private lateinit var spinner: AppCompatSpinner
@@ -47,9 +47,9 @@ class CrashFragment :
 
         spinner = rootView.findViewById(R.id.signal_type_spinner)
         val arrayAdapter = ArrayAdapter(
-                currentContext,
-                android.R.layout.simple_spinner_item,
-                NATIVE_SIGNALS
+            currentContext,
+            android.R.layout.simple_spinner_item,
+            NATIVE_SIGNALS
         )
         arrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinner.adapter = arrayAdapter
@@ -126,9 +126,9 @@ class CrashFragment :
         const val SIGSEGV = 11 // "Segmentation violation (invalid memory reference)"
 
         private val NATIVE_SIGNALS = listOf(
-                NativeSignal(SIGSEGV, "Invalid Memory"),
-                NativeSignal(SIGABRT, "Abort Program"),
-                NativeSignal(SIGILL, "Illegal Instruction")
+            NativeSignal(SIGSEGV, "Invalid Memory"),
+            NativeSignal(SIGABRT, "Abort Program"),
+            NativeSignal(SIGILL, "Illegal Instruction")
         )
     }
 }
