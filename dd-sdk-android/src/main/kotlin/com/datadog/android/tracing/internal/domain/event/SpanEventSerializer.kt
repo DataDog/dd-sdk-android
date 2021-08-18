@@ -40,14 +40,29 @@ internal class SpanEventSerializer(
     // region Internal
 
     private fun sanitizeKeys(model: SpanEvent): SpanEvent {
-        val currentUserObject = model.meta.usr
-        val transformedProperties = dataConstraints.validateAttributes(
-            currentUserObject.additionalProperties
+        val newUserObject = sanitizeUserAttributes(model.meta.usr)
+        val newMetricsObject = sanitizeMetrics(model.metrics)
+        return model.copy(meta = model.meta.copy(usr = newUserObject), metrics = newMetricsObject)
+    }
+
+    private fun sanitizeUserAttributes(usr: SpanEvent.Usr): SpanEvent.Usr {
+        val transformedAttributes = dataConstraints.validateAttributes(
+            usr.additionalProperties,
+            META_USR_KEY_PREFIX
         ).mapValues { toMetaString(it.value) }.filterValues { it != null }
-        val newUserObject = currentUserObject.copy(
-            additionalProperties = transformedProperties
+        return usr.copy(
+            additionalProperties = transformedAttributes
         )
-        return model.copy(meta = model.meta.copy(usr = newUserObject))
+    }
+
+    private fun sanitizeMetrics(metrics: SpanEvent.Metrics): SpanEvent.Metrics {
+        val transformedMetrics = dataConstraints.validateAttributes(
+            metrics.additionalProperties,
+            METRICS_KEY_PREFIX
+        )
+        return metrics.copy(
+            additionalProperties = transformedMetrics
+        )
     }
 
     private fun toMetaString(element: Any?): String? {
@@ -66,5 +81,7 @@ internal class SpanEventSerializer(
         // PAYLOAD TAGS
         internal const val TAG_SPANS = "spans"
         internal const val TAG_ENV = "env"
+        internal const val META_USR_KEY_PREFIX = "meta.usr"
+        internal const val METRICS_KEY_PREFIX = "metrics"
     }
 }

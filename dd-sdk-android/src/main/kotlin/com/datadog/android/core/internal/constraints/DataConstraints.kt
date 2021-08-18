@@ -11,11 +11,11 @@ package com.datadog.android.core.internal.constraints
  */
 internal interface DataConstraints {
 
-    fun validateAttributes(
-        attributes: Map<String, Any?>,
+    fun <T : Any?> validateAttributes(
+        attributes: Map<String, T>,
         keyPrefix: String? = null,
         attributesGroupName: String? = null
-    ): Map<String, Any?>
+    ): Map<String, T>
 
     fun validateTags(tags: List<String>): List<String>
 

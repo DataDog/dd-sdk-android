@@ -43,7 +43,7 @@ internal class RumEventDeserializerTest {
     // we use a NoOpDataConstraints to avoid flaky tests
     private val serializer: RumEventSerializer = RumEventSerializer(
         mock {
-            whenever(it.validateAttributes(any(), anyOrNull(), anyOrNull())).thenAnswer {
+            whenever(it.validateAttributes<Any?>(any(), anyOrNull(), anyOrNull())).thenAnswer {
                 it.getArgument(0)
             }
             whenever(it.validateTags(any())).thenAnswer {
