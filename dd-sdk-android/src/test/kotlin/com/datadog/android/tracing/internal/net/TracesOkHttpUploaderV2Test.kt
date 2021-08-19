@@ -4,12 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.log.net
+package com.datadog.android.tracing.internal.net
 
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.net.DataOkHttpUploader
-import com.datadog.android.core.internal.net.DataOkHttpUploaderTest
-import com.datadog.android.log.internal.net.LogsOkHttpUploader
+import com.datadog.android.core.internal.net.DataOkHttpUploaderV2Test
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -26,21 +23,22 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class LogsOkHttpUploaderTest : DataOkHttpUploaderTest<LogsOkHttpUploader>() {
+internal class TracesOkHttpUploaderV2Test : DataOkHttpUploaderV2Test<TracesOkHttpUploaderV2>() {
 
-    override fun uploader(callFactory: Call.Factory): LogsOkHttpUploader {
-        return LogsOkHttpUploader(
+    override fun buildTestedInstance(callFactory: Call.Factory): TracesOkHttpUploaderV2 {
+        return TracesOkHttpUploaderV2(
             fakeEndpoint,
-            fakeToken,
+            fakeClientToken,
+            fakeSource,
             callFactory
         )
     }
 
     override fun expectedPath(): String {
-        return "/v1/input/$fakeToken"
+        return "/api/v2/spans"
     }
 
     override fun expectedQueryParams(): Map<String, String> {
-        return mapOf(DataOkHttpUploader.QP_SOURCE to CoreFeature.sourceName)
+        return emptyMap()
     }
 }

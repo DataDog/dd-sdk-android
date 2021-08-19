@@ -15,7 +15,7 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.internal.domain.LogFilePersistenceStrategy
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
-import com.datadog.android.log.internal.net.LogsOkHttpUploader
+import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -67,10 +67,10 @@ internal class LogsFeatureTest :
         val uploader = testedFeature.createUploader(fakeConfigurationFeature)
 
         // Then
-        assertThat(uploader).isInstanceOf(LogsOkHttpUploader::class.java)
-        val logsUploader = uploader as LogsOkHttpUploader
-        assertThat(logsUploader.url).startsWith(fakeConfigurationFeature.endpointUrl)
-        assertThat(logsUploader.url).endsWith(CoreFeature.clientToken)
+        assertThat(uploader).isInstanceOf(LogsOkHttpUploaderV2::class.java)
+        val logsUploader = uploader as LogsOkHttpUploaderV2
+        assertThat(logsUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
+        assertThat(logsUploader.intakeUrl).endsWith("/api/v2/logs")
         assertThat(logsUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
     }
 

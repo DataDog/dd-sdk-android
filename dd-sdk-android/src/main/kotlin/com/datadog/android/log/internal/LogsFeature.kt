@@ -14,7 +14,7 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.domain.LogFilePersistenceStrategy
-import com.datadog.android.log.internal.net.LogsOkHttpUploader
+import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
 import com.datadog.android.log.model.LogEvent
 
 internal object LogsFeature : SdkFeature<LogEvent, Configuration.Feature.Logs>() {
@@ -35,10 +35,12 @@ internal object LogsFeature : SdkFeature<LogEvent, Configuration.Feature.Logs>()
     }
 
     override fun createUploader(configuration: Configuration.Feature.Logs): DataUploader {
-        return LogsOkHttpUploader(
+        return LogsOkHttpUploaderV2(
             configuration.endpointUrl,
             CoreFeature.clientToken,
-            CoreFeature.okHttpClient
+            CoreFeature.sourceName,
+            CoreFeature.okHttpClient,
+            sdkLogger
         )
     }
 

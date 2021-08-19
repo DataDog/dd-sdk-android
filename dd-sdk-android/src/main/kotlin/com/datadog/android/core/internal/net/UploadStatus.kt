@@ -9,50 +9,57 @@ package com.datadog.android.core.internal.net
 import com.datadog.android.log.Logger
 
 @Suppress("StringLiteralDuplication")
-internal enum class UploadStatus {
-    SUCCESS,
-    NETWORK_ERROR,
-    INVALID_TOKEN_ERROR,
-    HTTP_REDIRECTION,
-    HTTP_CLIENT_ERROR,
-    HTTP_SERVER_ERROR,
-    UNKNOWN_ERROR;
+internal enum class UploadStatus(val shouldRetry: Boolean) {
+    SUCCESS(shouldRetry = false),
+    NETWORK_ERROR(shouldRetry = true),
+    INVALID_TOKEN_ERROR(shouldRetry = false),
+    HTTP_REDIRECTION(shouldRetry = false),
+    HTTP_CLIENT_ERROR(shouldRetry = false),
+    HTTP_SERVER_ERROR(shouldRetry = true),
+    HTTP_CLIENT_RATE_LIMITING(shouldRetry = true),
+    UNKNOWN_ERROR(shouldRetry = false);
 
     fun logStatus(
         context: String,
         byteSize: Int,
         logger: Logger,
-        ignoreInfo: Boolean
+        ignoreInfo: Boolean,
+        requestId: String? = null
     ) {
+        val batchInfo = if (requestId == null) {
+            "Batch [$byteSize bytes] ($context)"
+        } else {
+            "Batch $requestId [$byteSize bytes] ($context)"
+        }
         when (this) {
             NETWORK_ERROR -> logger.e(
-                "Unable to send batch [$byteSize bytes] ($context)" +
-                    " because of a network error; we will retry later."
+
+                "$batchInfo failed because of a network error; we will retry later."
             )
-            INVALID_TOKEN_ERROR -> logger.e(
-                "Unable to send batch [$byteSize bytes] ($context)" +
-                    " because your token is invalid. Make sure that the" +
-                    " provided token still exists."
-            )
+            INVALID_TOKEN_ERROR -> if (!ignoreInfo) {
+                logger.e(
+                    "$batchInfo failed because your token is invalid. " +
+                        "Make sure that the provided token still exists."
+                )
+            }
             HTTP_REDIRECTION -> logger.w(
-                "Unable to send batch [$byteSize bytes] ($context)" +
-                    " because of a network error (redirection); we will retry later."
+                "$batchInfo failed because of a network redirection; the batch was dropped."
             )
             HTTP_CLIENT_ERROR -> logger.e(
-                "Unable to send batch [$byteSize bytes] ($context)" +
-                    " because of a processing error (possibly because of invalid data); " +
+                "$batchInfo failed because of a processing error or invalid data; " +
                     "the batch was dropped."
             )
+            HTTP_CLIENT_RATE_LIMITING -> logger.e(
+                "$batchInfo failed because of a request error; we will retry later."
+            )
             HTTP_SERVER_ERROR -> logger.e(
-                "Unable to send batch [$byteSize bytes] ($context)" +
-                    " because of a server processing error; we will retry later."
+                "$batchInfo failed because of a server processing error; we will retry later."
             )
             UNKNOWN_ERROR -> logger.e(
-                "Unable to send batch [$byteSize bytes] ($context)" +
-                    " because of an unknown error; we will retry later."
+                "$batchInfo failed because of an unknown error; the batch was dropped."
             )
             SUCCESS -> if (!ignoreInfo) {
-                logger.v("Batch [$byteSize bytes] sent successfully ($context).")
+                logger.v("$batchInfo sent successfully.")
             }
         }
     }

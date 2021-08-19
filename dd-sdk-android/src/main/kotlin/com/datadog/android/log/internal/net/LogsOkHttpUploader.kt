@@ -11,7 +11,7 @@ import com.datadog.android.core.internal.net.DataOkHttpUploader
 import java.util.Locale
 import okhttp3.Call
 
-internal open class LogsOkHttpUploader(
+internal class LogsOkHttpUploader(
     endpoint: String,
     token: String,
     callFactory: Call.Factory

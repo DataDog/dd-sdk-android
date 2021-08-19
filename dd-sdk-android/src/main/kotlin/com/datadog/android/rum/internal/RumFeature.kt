@@ -23,7 +23,7 @@ import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
-import com.datadog.android.rum.internal.net.RumOkHttpUploader
+import com.datadog.android.rum.internal.net.RumOkHttpUploaderV2
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
@@ -115,9 +115,10 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
     }
 
     override fun createUploader(configuration: Configuration.Feature.RUM): DataUploader {
-        return RumOkHttpUploader(
+        return RumOkHttpUploaderV2(
             configuration.endpointUrl,
             CoreFeature.clientToken,
+            CoreFeature.sourceName,
             CoreFeature.okHttpClient
         )
     }

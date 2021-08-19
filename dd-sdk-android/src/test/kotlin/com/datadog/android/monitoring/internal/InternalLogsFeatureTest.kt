@@ -10,7 +10,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.net.LogsOkHttpUploader
+import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -54,6 +54,7 @@ internal class InternalLogsFeatureTest :
         assertThat(testedFeature.persistenceStrategy)
             .isInstanceOf(InternalLogFilePersistenceStrategy::class.java)
     }
+
     @Test
     fun `𝕄 rebuild the sdkLogger 𝕎 initialize()`() {
         // Given
@@ -65,6 +66,7 @@ internal class InternalLogsFeatureTest :
         // Then
         assertThat(sdkLogger.handler).isNotSameAs(originalHandler)
     }
+
     @Test
     fun `𝕄 rebuild the sdkLogger 𝕎 stop()`() {
         // Given
@@ -86,10 +88,10 @@ internal class InternalLogsFeatureTest :
         val uploader = testedFeature.createUploader(fakeConfigurationFeature)
 
         // Then
-        assertThat(uploader).isInstanceOf(LogsOkHttpUploader::class.java)
-        val logsUploader = uploader as LogsOkHttpUploader
-        assertThat(logsUploader.url).startsWith(fakeConfigurationFeature.endpointUrl)
-        assertThat(logsUploader.url).endsWith(fakeConfigurationFeature.internalClientToken)
+        assertThat(uploader).isInstanceOf(LogsOkHttpUploaderV2::class.java)
+        val logsUploader = uploader as LogsOkHttpUploaderV2
+        assertThat(logsUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
+        assertThat(logsUploader.intakeUrl).endsWith("/api/v2/logs")
         assertThat(logsUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
     }
 }

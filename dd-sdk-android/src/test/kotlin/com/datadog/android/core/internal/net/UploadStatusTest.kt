@@ -83,7 +83,7 @@ internal class UploadStatusTest {
         verify(mockLogHandler)
             .handleLog(
                 Log.VERBOSE,
-                "Batch [$fakeByteSize bytes] sent successfully ($fakeContext)."
+                "Batch [$fakeByteSize bytes] ($fakeContext) sent successfully."
             )
     }
 
@@ -101,11 +101,24 @@ internal class UploadStatusTest {
         verify(mockLogHandler)
             .handleLog(
                 Log.ERROR,
-                "Unable to send batch [$fakeByteSize bytes] ($fakeContext) " +
+                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                     "because of a network error; we will retry later."
             )
     }
 
+    @Test
+    fun `𝕄 log INVALID_TOKEN_ERROR 𝕎 logStatus()  {ignoreInfo=true}`() {
+        // When
+        UploadStatus.INVALID_TOKEN_ERROR.logStatus(
+            fakeContext,
+            fakeByteSize,
+            mockLogger,
+            true
+        )
+
+        // Then
+        verifyZeroInteractions(mockLogHandler)
+    }
     @Test
     fun `𝕄 log INVALID_TOKEN_ERROR 𝕎 logStatus()`() {
         // When
@@ -113,14 +126,14 @@ internal class UploadStatusTest {
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeIgnoreInfo
+            false
         )
 
         // Then
         verify(mockLogHandler)
             .handleLog(
                 Log.ERROR,
-                "Unable to send batch [$fakeByteSize bytes] ($fakeContext) " +
+                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                     "because your token is invalid. Make sure that the provided token still exists."
             )
     }
@@ -139,8 +152,8 @@ internal class UploadStatusTest {
         verify(mockLogHandler)
             .handleLog(
                 Log.WARN,
-                "Unable to send batch [$fakeByteSize bytes] ($fakeContext) " +
-                    "because of a network error (redirection); we will retry later."
+                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
+                    "because of a network redirection; the batch was dropped."
             )
     }
 
@@ -158,9 +171,28 @@ internal class UploadStatusTest {
         verify(mockLogHandler)
             .handleLog(
                 Log.ERROR,
-                "Unable to send batch [$fakeByteSize bytes] ($fakeContext) " +
-                    "because of a processing error (possibly because of invalid data); " +
+                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
+                    "because of a processing error or invalid data; " +
                     "the batch was dropped."
+            )
+    }
+
+    @Test
+    fun `𝕄 log HTTP_CLIENT_ERROR_RETRY 𝕎 logStatus()`() {
+        // When
+        UploadStatus.HTTP_CLIENT_RATE_LIMITING.logStatus(
+            fakeContext,
+            fakeByteSize,
+            mockLogger,
+            fakeIgnoreInfo
+        )
+
+        // Then
+        verify(mockLogHandler)
+            .handleLog(
+                Log.ERROR,
+                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
+                    "because of a request error; we will retry later."
             )
     }
 
@@ -178,7 +210,7 @@ internal class UploadStatusTest {
         verify(mockLogHandler)
             .handleLog(
                 Log.ERROR,
-                "Unable to send batch [$fakeByteSize bytes] ($fakeContext) " +
+                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                     "because of a server processing error; we will retry later."
             )
     }
@@ -197,8 +229,8 @@ internal class UploadStatusTest {
         verify(mockLogHandler)
             .handleLog(
                 Log.ERROR,
-                "Unable to send batch [$fakeByteSize bytes] ($fakeContext) " +
-                    "because of an unknown error; we will retry later."
+                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
+                    "because of an unknown error; the batch was dropped."
             )
     }
 }
