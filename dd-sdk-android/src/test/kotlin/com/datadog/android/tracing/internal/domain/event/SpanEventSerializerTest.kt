@@ -54,7 +54,7 @@ internal class SpanEventSerializerTest {
     @BeforeEach
     fun `set up`() {
         whenever(
-            mockDatadogConstraints.validateAttributes(
+            mockDatadogConstraints.validateAttributes<Any?>(
                 any(),
                 anyOrNull(),
                 anyOrNull()
@@ -81,7 +81,7 @@ internal class SpanEventSerializerTest {
     }
 
     @Test
-    fun `M sanitise the user extra info keys W level deeper than 8`(
+    fun `M sanitise with the right prefix the user extra info keys W serialize`(
         @Forgery fakeSpanEvent: SpanEvent,
         forge: Forge
     ) {
@@ -89,9 +89,11 @@ internal class SpanEventSerializerTest {
         val fakeSanitizedAttributes = forge.exhaustiveAttributes()
         whenever(
             mockDatadogConstraints
-                .validateAttributes(fakeSpanEvent.meta.usr.additionalProperties)
-        )
-            .thenReturn(fakeSanitizedAttributes)
+                .validateAttributes(
+                    fakeSpanEvent.meta.usr.additionalProperties,
+                    SpanEventSerializer.META_USR_KEY_PREFIX
+                )
+        ).thenReturn(fakeSanitizedAttributes)
 
         // WHEN
         val serialized = testedSerializer.serialize(fakeSpanEvent)
@@ -103,6 +105,34 @@ internal class SpanEventSerializerTest {
             hasField(KEY_USR) {
                 containsExtraAttributesMappedToMetaStrings(fakeSanitizedAttributes)
             }
+        }
+    }
+
+    @Test
+    fun `M sanitise with the right prefix then span metrics keys W serialize`(
+        @Forgery fakeSpanEvent: SpanEvent,
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeSanitizedAttributes = forge.aMap(size = 10) {
+            forge.anAlphabeticalString() to forge.aLong()
+        }
+        whenever(
+            mockDatadogConstraints
+                .validateAttributes(
+                    fakeSpanEvent.metrics.additionalProperties,
+                    SpanEventSerializer.METRICS_KEY_PREFIX
+                )
+        ).thenReturn(fakeSanitizedAttributes)
+
+        // WHEN
+        val serialized = testedSerializer.serialize(fakeSpanEvent)
+
+        // THEN
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        val spanObject = jsonObject.getAsJsonArray(KEY_SPANS).first() as JsonObject
+        JsonObjectAssert.assertThat(spanObject).hasField(KEY_METRICS) {
+            containsExtraAttributesAsMetrics(fakeSanitizedAttributes)
         }
     }
 

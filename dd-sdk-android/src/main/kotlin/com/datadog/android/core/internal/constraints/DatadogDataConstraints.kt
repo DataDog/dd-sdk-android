@@ -33,11 +33,11 @@ internal class DatadogDataConstraints : DataConstraints {
         return convertedTags.take(MAX_TAG_COUNT)
     }
 
-    override fun validateAttributes(
-        attributes: Map<String, Any?>,
+    override fun <T : Any?> validateAttributes(
+        attributes: Map<String, T>,
         keyPrefix: String?,
         attributesGroupName: String?
-    ): Map<String, Any?> {
+    ): Map<String, T> {
 
         // prefix = "a.b" => dotCount = 1+1 ("a.b." + key)
         val prefixDotCount = keyPrefix?.let { it.count { character -> character == '.' } + 1 } ?: 0
