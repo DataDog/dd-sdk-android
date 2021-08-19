@@ -74,6 +74,7 @@ internal abstract class DataOkHttpUploaderV2(
         val request = buildRequest(data, requestId)
         val call = callFactory.newCall(request)
         val response = call.execute()
+        response.close()
         return responseCodeToUploadStatus(response.code())
     }
 
