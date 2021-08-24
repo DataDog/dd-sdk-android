@@ -441,6 +441,7 @@ internal open class RumViewScope(
         }
     }
 
+    @Suppress("LongMethod")
     private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<RumEvent>) {
         attributes.putAll(GlobalRum.globalAttributes)
         version++
@@ -455,6 +456,11 @@ internal open class RumViewScope(
 
         val memoryInfo = lastMemoryInfo
         val refreshRateInfo = lastFrameRateInfo
+        val isSlowRendered = if (refreshRateInfo == null) {
+            null
+        } else {
+            refreshRateInfo.meanValue < SLOW_RENDERED_THRESHOLD_FPS
+        }
         val viewEvent = ViewEvent(
             date = eventTimestamp,
             view = ViewEvent.View(
@@ -477,7 +483,8 @@ internal open class RumViewScope(
                 memoryAverage = memoryInfo?.meanValue,
                 memoryMax = memoryInfo?.maxValue,
                 refreshRateAverage = refreshRateInfo?.meanValue?.let { it * refreshRateScale },
-                refreshRateMin = refreshRateInfo?.minValue?.let { it * refreshRateScale }
+                refreshRateMin = refreshRateInfo?.minValue?.let { it * refreshRateScale },
+                isSlowRendered = isSlowRendered
             ),
             usr = ViewEvent.Usr(
                 id = user.id,
@@ -659,6 +666,7 @@ internal open class RumViewScope(
         internal const val RUM_BACKGROUND_VIEW_NAME = "Background"
 
         internal const val FROZEN_FRAME_THRESHOLD_MS = 700L
+        internal const val SLOW_RENDERED_THRESHOLD_FPS = 55
 
         @Suppress("LongParameterList")
         internal fun fromEvent(

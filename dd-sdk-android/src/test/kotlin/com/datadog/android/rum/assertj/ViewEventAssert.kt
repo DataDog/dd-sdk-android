@@ -215,6 +215,18 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun isSlowRendered(
+        expected: Boolean?
+    ): ViewEventAssert {
+        assertThat(actual.view.isSlowRendered)
+            .overridingErrorMessage(
+                "Expected event to have isSlowRendered $expected" +
+                    " but was ${actual.view.isSlowRendered}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasNoCustomTimings(): ViewEventAssert {
         assertThat(actual.view.customTimings).isNull()
         return this
