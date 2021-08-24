@@ -38,6 +38,11 @@
               "description": "Duration in ns of the long task",
               "minimum": 0,
               "readOnly": true
+            },
+            "is_frozen_frame": {
+              "type": "boolean",
+              "description": "Whether this long task is considered a frozen frame",
+              "readOnly": true
             }
           },
           "readOnly": true
