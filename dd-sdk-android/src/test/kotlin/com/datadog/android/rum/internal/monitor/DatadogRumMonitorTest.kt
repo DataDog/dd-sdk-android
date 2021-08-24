@@ -914,6 +914,24 @@ internal class DatadogRumMonitorTest {
 
             val event = firstValue as RumRawEvent.LongTaskSent
             assertThat(event.viewId).isEqualTo(viewId)
+            assertThat(event.isFrozenFrame).isFalse()
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W eventSent {frozenFrame}`(
+        @StringForgery viewId: String
+    ) {
+        testedMonitor.eventSent(viewId, EventType.FROZEN_FRAME)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.LongTaskSent
+            assertThat(event.viewId).isEqualTo(viewId)
+            assertThat(event.isFrozenFrame).isTrue()
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
@@ -978,6 +996,24 @@ internal class DatadogRumMonitorTest {
 
             val event = firstValue as RumRawEvent.LongTaskDropped
             assertThat(event.viewId).isEqualTo(viewId)
+            assertThat(event.isFrozenFrame).isFalse()
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W eventDropped {frozenFrame}`(
+        @StringForgery viewId: String
+    ) {
+        testedMonitor.eventDropped(viewId, EventType.FROZEN_FRAME)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.LongTaskDropped
+            assertThat(event.viewId).isEqualTo(viewId)
+            assertThat(event.isFrozenFrame).isTrue()
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }

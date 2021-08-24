@@ -142,6 +142,16 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasFrozenFrameCount(expected: Long): ViewEventAssert {
+        assertThat(actual.view.frozenFrame?.count)
+            .overridingErrorMessage(
+                "Expected event data to have view.frozenFrame.count $expected " +
+                    "but was ${actual.view.frozenFrame?.count}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasViewId(expectedId: String): ViewEventAssert {
         assertThat(actual.view.id)
             .overridingErrorMessage(

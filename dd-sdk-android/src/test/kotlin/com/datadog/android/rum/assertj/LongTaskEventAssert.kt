@@ -43,6 +43,16 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
+    fun isFrozenFrame(expected: Boolean?): LongTaskEventAssert {
+        assertThat(actual.longTask.isFrozenFrame)
+            .overridingErrorMessage(
+                "Expected event data to have longTask.isFrozenFrame $expected " +
+                    "but was ${actual.longTask.isFrozenFrame}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasUserInfo(expected: UserInfo?): LongTaskEventAssert {
         assertThat(actual.usr?.id)
             .overridingErrorMessage(
