@@ -99,7 +99,13 @@ internal data class RumEventMapper(
             is ActionEvent -> monitor.eventDropped(rumEvent.view.id, EventType.ACTION)
             is ResourceEvent -> monitor.eventDropped(rumEvent.view.id, EventType.RESOURCE)
             is ErrorEvent -> monitor.eventDropped(rumEvent.view.id, EventType.ERROR)
-            is LongTaskEvent -> monitor.eventDropped(rumEvent.view.id, EventType.LONG_TASK)
+            is LongTaskEvent -> {
+                if (rumEvent.longTask.isFrozenFrame == true) {
+                    monitor.eventDropped(rumEvent.view.id, EventType.FROZEN_FRAME)
+                } else {
+                    monitor.eventDropped(rumEvent.view.id, EventType.LONG_TASK)
+                }
+            }
             else -> {
                 // Nothing to do
             }

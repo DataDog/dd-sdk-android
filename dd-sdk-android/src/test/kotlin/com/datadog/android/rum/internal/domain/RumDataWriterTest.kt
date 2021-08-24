@@ -253,13 +253,43 @@ internal class RumDataWriterTest {
         @Forgery longTaskEvent: LongTaskEvent
     ) {
         // Given
-        val rumEvent = fakeModel.copy(event = longTaskEvent)
+        val longTask = longTaskEvent.copy(
+            longTask = LongTaskEvent.LongTask(
+                id = longTaskEvent.longTask.id,
+                duration = longTaskEvent.longTask.duration,
+                isFrozenFrame = false
+            )
+        )
+        val rumEvent = fakeModel.copy(event = longTask)
 
         // When
         testedWriter.onDataWritten(rumEvent, fakeSerializedData)
 
         // Then
-        verify(rumMonitor.mockInstance).eventSent(longTaskEvent.view.id, EventType.LONG_TASK)
+        verify(rumMonitor.mockInstance).eventSent(longTask.view.id, EventType.LONG_TASK)
+        verifyZeroInteractions(mockFileHandler)
+    }
+
+    @Test
+    fun `𝕄 notify the RumMonitor 𝕎 onDataWritten() { FrozenFrame Event }`(
+        @Forgery fakeModel: RumEvent,
+        @Forgery longTaskEvent: LongTaskEvent
+    ) {
+        // Given
+        val frozenFrame = longTaskEvent.copy(
+            longTask = LongTaskEvent.LongTask(
+                id = longTaskEvent.longTask.id,
+                duration = longTaskEvent.longTask.duration,
+                isFrozenFrame = true
+            )
+        )
+        val rumEvent = fakeModel.copy(event = frozenFrame)
+
+        // When
+        testedWriter.onDataWritten(rumEvent, fakeSerializedData)
+
+        // Then
+        verify(rumMonitor.mockInstance).eventSent(frozenFrame.view.id, EventType.FROZEN_FRAME)
         verifyZeroInteractions(mockFileHandler)
     }
 

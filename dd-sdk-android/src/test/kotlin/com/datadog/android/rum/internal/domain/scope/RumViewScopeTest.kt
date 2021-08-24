@@ -302,6 +302,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -351,6 +352,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -400,6 +402,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -455,6 +458,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -495,6 +499,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -547,6 +552,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -616,6 +622,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -687,6 +694,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -740,6 +748,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -792,6 +801,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -836,6 +846,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -924,6 +935,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -989,6 +1001,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(1)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -1054,6 +1067,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(1)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -1092,12 +1106,14 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(LongTaskSent) on active view`(
-        @LongForgery(1) pending: Long
+    fun `𝕄 send event 𝕎 handleEvent(LongTaskSent) on active view {not frozen}`(
+        @LongForgery(1) pendingLongTask: Long,
+        @LongForgery(1) pendingFrozenFrame: Long
     ) {
         // Given
         fakeEvent = RumRawEvent.LongTaskSent(testedScope.viewId)
-        testedScope.pendingLongTaskCount = pending
+        testedScope.pendingLongTaskCount = pendingLongTask
+        testedScope.pendingFrozenFrameCount = pendingFrozenFrame
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -1119,6 +1135,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(1)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -1133,7 +1150,57 @@ internal class RumViewScopeTest {
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
-        assertThat(testedScope.pendingLongTaskCount).isEqualTo(pending - 1)
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(pendingLongTask - 1)
+        assertThat(testedScope.pendingFrozenFrameCount).isEqualTo(pendingFrozenFrame)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent(LongTaskSent) on active view {frozen}`(
+        @LongForgery(1) pendingLongTask: Long,
+        @LongForgery(1) pendingFrozenFrame: Long
+    ) {
+        // Given
+        fakeEvent = RumRawEvent.LongTaskSent(testedScope.viewId, true)
+        testedScope.pendingLongTaskCount = pendingLongTask
+        testedScope.pendingFrozenFrameCount = pendingFrozenFrame
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(fakeAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
+                .hasViewData {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasLongTaskCount(1)
+                    hasFrozenFrameCount(1)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(pendingLongTask - 1)
+        assertThat(testedScope.pendingFrozenFrameCount).isEqualTo(pendingFrozenFrame - 1)
     }
 
     @Test
@@ -1224,6 +1291,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -1289,6 +1357,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(1)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -1354,6 +1423,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(1)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -1419,6 +1489,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(1)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -1576,6 +1647,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -2433,6 +2505,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -2560,6 +2633,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -2689,6 +2763,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -2848,8 +2923,8 @@ internal class RumViewScopeTest {
     // region Long Task
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(AddLongTask) on active view`(
-        @LongForgery(0) durationNs: Long,
+    fun `𝕄 send event 𝕎 handleEvent(AddLongTask) on active view {not frozen}`(
+        @LongForgery(0, 700) durationNs: Long,
         @StringForgery target: String
     ) {
         // Given
@@ -2869,6 +2944,7 @@ internal class RumViewScopeTest {
                         resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) - durationMs
                     )
                     hasDuration(durationNs)
+                    isFrozenFrame(false)
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
                     hasView(testedScope.viewId, testedScope.url)
@@ -2882,8 +2958,43 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with global attributes 𝕎 handleEvent(AddLongTask)`(
-        @LongForgery(0) durationNs: Long,
+    fun `𝕄 send event 𝕎 handleEvent(AddLongTask) on active view {frozen}`(
+        @LongForgery(700) durationNs: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        testedScope.activeActionScope = null
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        val durationMs = TimeUnit.NANOSECONDS.toMillis(durationNs)
+
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+
+            assertThat(firstValue)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
+                .hasLongTaskData {
+                    hasTimestamp(
+                        resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) - durationMs
+                    )
+                    hasDuration(durationNs)
+                    isFrozenFrame(true)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(testedScope.viewId, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send event with global attributes 𝕎 handleEvent(AddLongTask) {not frozen}`(
+        @LongForgery(0, 700) durationNs: Long,
         @StringForgery target: String,
         forge: Forge
     ) {
@@ -2909,6 +3020,49 @@ internal class RumViewScopeTest {
                         resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) - durationMs
                     )
                     hasDuration(durationNs)
+                    isFrozenFrame(false)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(testedScope.viewId, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                    hasLiteSessionPlan()
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send event with global attributes 𝕎 handleEvent(AddLongTask) {frozen}`(
+        @LongForgery(700) durationNs: Long,
+        @StringForgery target: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        val attributes = forgeGlobalAttributes(forge, fakeAttributes)
+        val durationMs = TimeUnit.NANOSECONDS.toMillis(durationNs)
+        GlobalRum.globalAttributes.putAll(attributes)
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+
+            assertThat(firstValue)
+                .hasAttributes(attributes)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
+                .hasLongTaskData {
+                    hasTimestamp(
+                        resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) - durationMs
+                    )
+                    hasDuration(durationNs)
+                    isFrozenFrame(true)
                     hasUserInfo(fakeUserInfo)
                     hasConnectivityInfo(fakeNetworkInfo)
                     hasView(testedScope.viewId, testedScope.url)
@@ -2944,8 +3098,8 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 wait for pending Long Task 𝕎 handleEvent(AddLongTask) on active view`(
-        @LongForgery(0) duration: Long,
+    fun `𝕄 wait for pending Long Task 𝕎 handleEvent(AddLongTask) on active view {not frozen}`(
+        @LongForgery(0, 700) duration: Long,
         @StringForgery target: String
     ) {
         // Given
@@ -2955,32 +3109,94 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         assertThat(testedScope.pendingLongTaskCount).isEqualTo(1)
+        assertThat(testedScope.pendingFrozenFrameCount).isEqualTo(0)
         assertThat(result).isSameAs(testedScope)
     }
 
     @Test
-    fun `𝕄 decrease pending Long Task 𝕎 handleEvent(LongTaskDropped) on active view`(
-        @LongForgery(1) pending: Long
+    fun `𝕄 wait for pending LT and FF 𝕎 handleEvent(AddLongTask) on active view {frozen}`(
+        @LongForgery(700) duration: Long,
+        @StringForgery target: String
     ) {
         // Given
-        testedScope.pendingLongTaskCount = pending
-        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId)
+        testedScope.pendingLongTaskCount = 0
+        fakeEvent = RumRawEvent.AddLongTask(duration, target)
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
-        assertThat(testedScope.pendingLongTaskCount).isEqualTo(pending - 1)
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(1)
+        assertThat(testedScope.pendingFrozenFrameCount).isEqualTo(1)
         assertThat(result).isSameAs(testedScope)
     }
 
     @Test
-    fun `𝕄 decrease pending Long Task 𝕎 handleEvent(LongTaskDropped) on stopped view`() {
+    fun `𝕄 decrease pending Long Task 𝕎 handleEvent(LongTaskDropped) on active view {not frozen}`(
+        @LongForgery(1) pendingLongTask: Long,
+        @LongForgery(1) pendingFrozenFrame: Long
+    ) {
         // Given
-        testedScope.pendingLongTaskCount = 1
-        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId)
-        testedScope.stopped = true
+        testedScope.pendingLongTaskCount = pendingLongTask
+        testedScope.pendingFrozenFrameCount = pendingFrozenFrame
+        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId, false)
 
+        // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
+        // Then
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(pendingLongTask - 1)
+        assertThat(testedScope.pendingFrozenFrameCount).isEqualTo(pendingFrozenFrame)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 decrease pending LT and FF 𝕎 handleEvent(LongTaskDropped) on active view {frozen}`(
+        @LongForgery(1) pendingLongTask: Long,
+        @LongForgery(1) pendingFrozenFrame: Long
+    ) {
+        // Given
+        testedScope.pendingLongTaskCount = pendingLongTask
+        testedScope.pendingFrozenFrameCount = pendingFrozenFrame
+        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId, true)
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(pendingLongTask - 1)
+        assertThat(testedScope.pendingFrozenFrameCount).isEqualTo(pendingFrozenFrame - 1)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 decrease pending LT 𝕎 handleEvent(LongTaskDropped) on stopped view {not frozen}`() {
+        // Given
+        testedScope.pendingLongTaskCount = 1
+        testedScope.pendingFrozenFrameCount = 0
+        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId, false)
+        testedScope.stopped = true
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(0)
+        assertThat(testedScope.pendingFrozenFrameCount).isEqualTo(0)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 decrease pending LT and FF 𝕎 handleEvent(LongTaskDropped) on stopped view {frozen}`() {
+        // Given
+        testedScope.pendingLongTaskCount = 1
+        testedScope.pendingFrozenFrameCount = 1
+        fakeEvent = RumRawEvent.LongTaskDropped(testedScope.viewId, true)
+        testedScope.stopped = true
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        assertThat(testedScope.pendingLongTaskCount).isEqualTo(0)
         assertThat(testedScope.pendingLongTaskCount).isEqualTo(0)
         assertThat(result).isNull()
     }
@@ -2988,13 +3204,14 @@ internal class RumViewScopeTest {
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(LongTaskDropped) on active view {unknown viewId}`(
         @LongForgery(1) pending: Long,
+        @BoolForgery isFrozenFrame: Boolean,
         @Forgery viewUuid: UUID
     ) {
         // Given
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
         testedScope.pendingLongTaskCount = pending
-        fakeEvent = RumRawEvent.LongTaskDropped(viewId)
+        fakeEvent = RumRawEvent.LongTaskDropped(viewId, isFrozenFrame)
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
@@ -3005,13 +3222,14 @@ internal class RumViewScopeTest {
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(LongTaskDropped) on stopped view {unknown viewId}`(
         @LongForgery(1) pending: Long,
+        @BoolForgery isFrozenFrame: Boolean,
         @Forgery viewUuid: UUID
     ) {
         // Given
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
         testedScope.pendingLongTaskCount = pending
-        fakeEvent = RumRawEvent.LongTaskDropped(viewId)
+        fakeEvent = RumRawEvent.LongTaskDropped(viewId, isFrozenFrame)
         testedScope.stopped = true
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -3054,6 +3272,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -3101,6 +3320,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -3166,6 +3386,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -3218,6 +3439,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -3243,6 +3465,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -3311,6 +3534,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(expectedTotal)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
@@ -3362,6 +3586,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(vitals.last().meanValue, vitals.last().maxValue)
                     hasRefreshRateMetric(null, null)
@@ -3423,6 +3648,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(sum / frameRates.size, min)
@@ -3495,6 +3721,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(expectedAverage, expectedMinimum)
@@ -3569,6 +3796,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(expectedAverage, expectedMinimum)
@@ -3644,6 +3872,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasActionCount(0)
                     hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(expectedAverage, expectedMinimum)
