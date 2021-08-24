@@ -65,12 +65,24 @@ android {
             dimension = "version"
             com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
         }
-        register("production") {
+        register("us1") {
             isDefault = true
             dimension = "version"
             com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
         }
-        register("gov") {
+        register("us1_fed") {
+            dimension = "version"
+            com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
+        }
+        register("us3") {
+            dimension = "version"
+            com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
+        }
+        register("us5") {
+            dimension = "version"
+            com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
+        }
+        register("eu1") {
             dimension = "version"
             com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
         }
