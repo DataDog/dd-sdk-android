@@ -97,6 +97,7 @@ class com.datadog.android.core.configuration.Configuration
     fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
     fun setInternalLogsEnabled(String, String): Builder
     fun setAdditionalConfiguration(Map<String, Any>): Builder
+    fun setProxy(java.net.Proxy, okhttp3.Authenticator?): Builder
   companion object 
 data class com.datadog.android.core.configuration.Credentials
   constructor(String, String, String, String?, String? = null)

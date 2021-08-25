@@ -43,8 +43,10 @@ import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import java.net.MalformedURLException
+import java.net.Proxy
 import java.net.URL
 import java.util.Locale
+import okhttp3.Authenticator
 
 /**
  * An object describing the configuration of the Datadog SDK.
@@ -66,7 +68,9 @@ internal constructor(
         var needsClearTextHttp: Boolean,
         val firstPartyHosts: List<String>,
         val batchSize: BatchSize,
-        val uploadFrequency: UploadFrequency
+        val uploadFrequency: UploadFrequency,
+        val proxy: Proxy?,
+        val proxyAuth: Authenticator
     )
 
     internal sealed class Feature {
@@ -573,6 +577,19 @@ internal constructor(
             }
         }
 
+        /**
+         * Enables a custom proxy for uploading tracked data to Datadog's intake.
+         * @param proxy the [Proxy] configuration
+         * @param authenticator the optional [Authenticator] for the proxy
+         */
+        fun setProxy(proxy: Proxy, authenticator: Authenticator?): Builder {
+            coreConfig = coreConfig.copy(
+                proxy = proxy,
+                proxyAuth = authenticator ?: Authenticator.NONE
+            )
+            return this
+        }
+
         private fun checkCustomEndpoint(endpoint: String) {
             if (endpoint.startsWith("http://")) {
                 coreConfig = coreConfig.copy(needsClearTextHttp = true)
@@ -617,7 +634,9 @@ internal constructor(
             needsClearTextHttp = false,
             firstPartyHosts = emptyList(),
             batchSize = BatchSize.MEDIUM,
-            uploadFrequency = UploadFrequency.AVERAGE
+            uploadFrequency = UploadFrequency.AVERAGE,
+            proxy = null,
+            proxyAuth = Authenticator.NONE
         )
         internal val DEFAULT_LOGS_CONFIG = Feature.Logs(
             endpointUrl = DatadogEndpoint.LOGS_US1,
