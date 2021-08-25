@@ -13,6 +13,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
+import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
@@ -21,6 +22,7 @@ import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -110,6 +112,37 @@ internal class RumMonitorBuilderTest {
             }
         assertThat(monitor.handler.looper).isSameAs(Looper.getMainLooper())
         assertThat(monitor.samplingRate).isEqualTo(samplingRate)
+    }
+
+    @Test
+    fun `𝕄 builds a RumMonitor without session listener 𝕎 build()`() {
+        // When
+        val monitor = testedBuilder.build()
+
+        // Then
+        check(monitor is DatadogRumMonitor)
+        assertThat(monitor.rootScope).isInstanceOf(RumApplicationScope::class.java)
+        val appScope = monitor.rootScope as RumApplicationScope
+        assertThat(appScope.childScope).isInstanceOf(RumSessionScope::class.java)
+        val sessionScope = appScope.childScope as RumSessionScope
+        assertThat(sessionScope.sessionListener).isNull()
+    }
+
+    @Test
+    fun `𝕄 builds a RumMonitor with session callback 𝕎 setSessionListener() + build()`() {
+        // When
+        val mockListener: RumSessionListener = mock()
+        val monitor = testedBuilder
+            .setSessionListener(mockListener)
+            .build()
+
+        // Then
+        check(monitor is DatadogRumMonitor)
+        assertThat(monitor.rootScope).isInstanceOf(RumApplicationScope::class.java)
+        val appScope = monitor.rootScope as RumApplicationScope
+        assertThat(appScope.childScope).isInstanceOf(RumSessionScope::class.java)
+        val sessionScope = appScope.childScope as RumSessionScope
+        assertThat(sessionScope.sessionListener).isSameAs(mockListener)
     }
 
     @Test

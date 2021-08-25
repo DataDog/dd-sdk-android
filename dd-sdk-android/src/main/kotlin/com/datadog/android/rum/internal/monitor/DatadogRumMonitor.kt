@@ -15,6 +15,7 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.asTime
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -40,6 +41,7 @@ internal class DatadogRumMonitor(
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     timeProvider: TimeProvider,
+    sessionListener: RumSessionListener?,
     private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 ) : RumMonitor, AdvancedRumMonitor {
 
@@ -51,7 +53,8 @@ internal class DatadogRumMonitor(
         cpuVitalMonitor,
         memoryVitalMonitor,
         frameRateVitalMonitor,
-        timeProvider
+        timeProvider,
+        sessionListener
     )
 
     internal val keepAliveRunnable = Runnable {

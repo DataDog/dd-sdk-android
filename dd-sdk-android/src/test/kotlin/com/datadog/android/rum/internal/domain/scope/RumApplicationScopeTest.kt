@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.forge.Configurator
@@ -65,6 +66,9 @@ internal class RumApplicationScopeTest {
     @Mock
     lateinit var mockTimeProvider: TimeProvider
 
+    @Mock
+    lateinit var mockSessionListener: RumSessionListener
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -84,7 +88,8 @@ internal class RumApplicationScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider
+            mockTimeProvider,
+            mockSessionListener
         )
     }
 
