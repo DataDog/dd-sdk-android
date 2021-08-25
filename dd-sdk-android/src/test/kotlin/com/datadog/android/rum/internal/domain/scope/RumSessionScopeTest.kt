@@ -153,6 +153,8 @@ internal class RumSessionScopeTest {
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
     }
 
+    // region Session management
+
     @Test
     fun `updates sessionId if first call`() {
         val context = testedScope.getRumContext()
@@ -298,6 +300,30 @@ internal class RumSessionScopeTest {
         val actualRate = (sessionsKept.toFloat() * 100f) / sessions
         assertThat(actualRate).isCloseTo(fakeSamplingRate, Offset.offset(5f))
     }
+
+    // endregion
+
+    // region Listener
+
+    @Test
+    fun `𝕄 notify listener 𝕎 session is updated`() {
+        // Given
+        val firstSessionId = testedScope.getRumContext().sessionId
+        val isFirstSessionDiscarded = !testedScope.keepSession
+
+        // When
+        Thread.sleep(TEST_INACTIVITY_MS)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(context.sessionId)
+            .isNotEqualTo(UUID(0, 0))
+            .isNotEqualTo(firstSessionId)
+        verify(mockSessionListener).onSessionStarted(firstSessionId, isFirstSessionDiscarded)
+        verify(mockSessionListener).onSessionStarted(context.sessionId, !testedScope.keepSession)
+    }
+
+    // endregion
 
     @Test
     fun `M log warning W handleEvent() without child scope`() {

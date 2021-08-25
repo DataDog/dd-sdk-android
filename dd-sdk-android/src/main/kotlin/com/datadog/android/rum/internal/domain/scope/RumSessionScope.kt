@@ -189,6 +189,7 @@ internal class RumSessionScope(
             keepSession = (random.nextFloat() * 100f) < samplingRate
             sessionStartNs.set(nanoTime)
             sessionId = UUID.randomUUID().toString()
+            sessionListener?.onSessionStarted(sessionId, !keepSession)
         }
 
         lastUserInteractionNs.set(nanoTime)
