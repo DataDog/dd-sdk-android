@@ -2948,7 +2948,7 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send event 𝕎 handleEvent(AddLongTask) on active view {not frozen}`(
-        @LongForgery(0, 700) durationNs: Long,
+        @LongForgery(0L, 700_000_000L) durationNs: Long,
         @StringForgery target: String
     ) {
         // Given
@@ -2983,7 +2983,7 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send event 𝕎 handleEvent(AddLongTask) on active view {frozen}`(
-        @LongForgery(700) durationNs: Long,
+        @LongForgery(700_000_000L, 10_000_000_000L) durationNs: Long,
         @StringForgery target: String
     ) {
         // Given
@@ -3018,7 +3018,7 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send event with global attributes 𝕎 handleEvent(AddLongTask) {not frozen}`(
-        @LongForgery(0, 700) durationNs: Long,
+        @LongForgery(0L, 700_000_000L) durationNs: Long,
         @StringForgery target: String,
         forge: Forge
     ) {
@@ -3060,7 +3060,7 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send event with global attributes 𝕎 handleEvent(AddLongTask) {frozen}`(
-        @LongForgery(700) durationNs: Long,
+        @LongForgery(700_000_000L, 10_000_000_000L) durationNs: Long,
         @StringForgery target: String,
         forge: Forge
     ) {
@@ -3123,12 +3123,12 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 wait for pending Long Task 𝕎 handleEvent(AddLongTask) on active view {not frozen}`(
-        @LongForgery(0, 700) duration: Long,
+        @LongForgery(0L, 700_000_000L) durationNs: Long,
         @StringForgery target: String
     ) {
         // Given
         testedScope.pendingLongTaskCount = 0
-        fakeEvent = RumRawEvent.AddLongTask(duration, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
@@ -3139,12 +3139,12 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 wait for pending LT and FF 𝕎 handleEvent(AddLongTask) on active view {frozen}`(
-        @LongForgery(700) duration: Long,
+        @LongForgery(700_000_000L, 10_000_000_000L) durationNs: Long,
         @StringForgery target: String
     ) {
         // Given
         testedScope.pendingLongTaskCount = 0
-        fakeEvent = RumRawEvent.AddLongTask(duration, target)
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
 
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 

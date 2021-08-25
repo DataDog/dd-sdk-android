@@ -587,7 +587,7 @@ internal open class RumViewScope(
         )
         val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
         val timestamp = event.eventTime.timestamp + serverTimeOffsetInMs
-        val isFrozenFrame = event.durationNs > FROZEN_FRAME_THRESHOLD_MS
+        val isFrozenFrame = event.durationNs > FROZEN_FRAME_THRESHOLD_NS
         val longTaskEvent = LongTaskEvent(
             date = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
             longTask = LongTaskEvent.LongTask(
@@ -665,7 +665,7 @@ internal open class RumViewScope(
         internal const val RUM_BACKGROUND_VIEW_URL = "com/datadog/background/view"
         internal const val RUM_BACKGROUND_VIEW_NAME = "Background"
 
-        internal const val FROZEN_FRAME_THRESHOLD_MS = 700L
+        internal val FROZEN_FRAME_THRESHOLD_NS = TimeUnit.MILLISECONDS.toNanos(700)
         internal const val SLOW_RENDERED_THRESHOLD_FPS = 55
 
         @Suppress("LongParameterList")
