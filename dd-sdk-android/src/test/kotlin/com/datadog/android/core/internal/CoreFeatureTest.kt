@@ -53,12 +53,14 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.net.Proxy
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import okhttp3.Authenticator
 import okhttp3.ConnectionSpec
 import okhttp3.Protocol
 import org.assertj.core.api.Assertions.assertThat
@@ -402,6 +404,40 @@ internal class CoreFeatureTest {
             .isEqualTo(CoreFeature.NETWORK_TIMEOUT_MS.toInt())
         assertThat(okHttpClient.connectionSpecs())
             .containsExactly(ConnectionSpec.CLEARTEXT)
+    }
+
+    @Test
+    fun `𝕄 initialize okhttp with proxy 𝕎 initialize() {proxy configured}`() {
+        // When
+        val proxy: Proxy = mock()
+        val proxyAuth: Authenticator = mock()
+        CoreFeature.initialize(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeConfig.copy(proxy = proxy, proxyAuth = proxyAuth),
+            fakeConsent
+        )
+
+        // Then
+        val okHttpClient = CoreFeature.okHttpClient
+        assertThat(okHttpClient.proxy()).isSameAs(proxy)
+        assertThat(okHttpClient.proxyAuthenticator()).isSameAs(proxyAuth)
+    }
+
+    @Test
+    fun `𝕄 initialize okhttp without proxy 𝕎 initialize() {proxy not configured}`() {
+        // When
+        CoreFeature.initialize(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeConfig.copy(proxy = null),
+            fakeConsent
+        )
+
+        // Then
+        val okHttpClient = CoreFeature.okHttpClient
+        assertThat(okHttpClient.proxy()).isNull()
+        assertThat(okHttpClient.proxyAuthenticator()).isEqualTo(Authenticator.NONE)
     }
 
     @Test

@@ -54,8 +54,10 @@ import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.net.MalformedURLException
+import java.net.Proxy
 import java.net.URL
 import java.util.Locale
+import okhttp3.Authenticator
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -102,7 +104,9 @@ internal class ConfigurationBuilderTest {
                 needsClearTextHttp = false,
                 firstPartyHosts = emptyList(),
                 batchSize = BatchSize.MEDIUM,
-                uploadFrequency = UploadFrequency.AVERAGE
+                uploadFrequency = UploadFrequency.AVERAGE,
+                proxy = null,
+                proxyAuth = Authenticator.NONE
             )
         )
         assertThat(config.logsConfig).isEqualTo(
@@ -1588,6 +1592,53 @@ internal class ConfigurationBuilderTest {
                 logsEventMapper = mockEventMapper
             )
         )
+        assertThat(config.internalLogsConfig).isNull()
+    }
+
+    @Test
+    fun `𝕄 build config with Proxy and Auth configuration 𝕎 setProxy() and build()`() {
+        // Given
+        val mockProxy: Proxy = mock()
+        val mockAuthenticator: Authenticator = mock()
+
+        // When
+        val config = testedBuilder
+            .setProxy(mockProxy, mockAuthenticator)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(
+                proxy = mockProxy,
+                proxyAuth = mockAuthenticator
+            )
+        )
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.internalLogsConfig).isNull()
+    }
+
+    @Test
+    fun `𝕄 build config with Proxy configuration 𝕎 setProxy() and build()`() {
+        // Given
+        val mockProxy: Proxy = mock()
+
+        // When
+        val config = testedBuilder
+            .setProxy(mockProxy, null)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(
+                proxy = mockProxy,
+                proxyAuth = Authenticator.NONE
+            )
+        )
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.internalLogsConfig).isNull()
     }
 }

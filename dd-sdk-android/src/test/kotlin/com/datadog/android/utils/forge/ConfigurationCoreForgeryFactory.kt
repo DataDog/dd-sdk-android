@@ -7,18 +7,29 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.core.configuration.Configuration
+import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
+import java.net.Proxy
 import java.net.URL
+import okhttp3.Authenticator
 
 internal class ConfigurationCoreForgeryFactory :
     ForgeryFactory<Configuration.Core> {
     override fun getForgery(forge: Forge): Configuration.Core {
+        val (proxy, auth) = if (forge.aBool()) {
+            mock<Proxy>() to mock()
+        } else {
+            null to Authenticator.NONE
+        }
+
         return Configuration.Core(
             needsClearTextHttp = forge.aBool(),
             firstPartyHosts = forge.aList { getForgery<URL>().host },
             batchSize = forge.getForgery(),
-            uploadFrequency = forge.getForgery()
+            uploadFrequency = forge.getForgery(),
+            proxy = proxy,
+            proxyAuth = auth
         )
     }
 }

@@ -120,7 +120,7 @@ internal object CoreFeature {
         readApplicationInformation(appContext, credentials)
         resolveIsMainProcess(appContext)
         initializeClockSync(appContext)
-        setupOkHttpClient(configuration.needsClearTextHttp)
+        setupOkHttpClient(configuration)
         firstPartyHostDetector.addKnownHosts(configuration.firstPartyHosts)
         setupExecutors()
         // Time Provider
@@ -302,20 +302,25 @@ internal object CoreFeature {
         networkInfoProvider.register(appContext)
     }
 
-    private fun setupOkHttpClient(needsClearTextHttp: Boolean) {
+    private fun setupOkHttpClient(configuration: Configuration.Core) {
         val connectionSpec = when {
-            needsClearTextHttp -> ConnectionSpec.CLEARTEXT
+            configuration.needsClearTextHttp -> ConnectionSpec.CLEARTEXT
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP -> ConnectionSpec.RESTRICTED_TLS
             else -> ConnectionSpec.MODERN_TLS
         }
 
-        okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(GzipRequestInterceptor())
+        val builder = OkHttpClient.Builder()
+        builder.addInterceptor(GzipRequestInterceptor())
             .callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
             .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
             .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
             .connectionSpecs(listOf(connectionSpec))
-            .build()
+
+        if (configuration.proxy != null) {
+            builder.proxy(configuration.proxy)
+            builder.proxyAuthenticator(configuration.proxyAuth)
+        }
+        okHttpClient = builder.build()
     }
 
     private fun setupExecutors() {
