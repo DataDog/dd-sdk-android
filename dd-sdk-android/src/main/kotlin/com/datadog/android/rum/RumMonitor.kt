@@ -231,6 +231,7 @@ interface RumMonitor {
     class Builder {
 
         private var samplingRate: Float = RumFeature.samplingRate
+        private var sessionListener: RumSessionListener? = null
 
         /**
          * Sets the sampling rate for RUM Sessions.
@@ -240,6 +241,15 @@ interface RumMonitor {
          */
         fun sampleRumSessions(@FloatRange(from = 0.0, to = 100.0) samplingRate: Float): Builder {
             this.samplingRate = samplingRate
+            return this
+        }
+
+        /**
+         * Sets the Session listener.
+         * @param sessionListener the listener to notify whenever a new Session starts.
+         */
+        fun setSessionListener(sessionListener: RumSessionListener): Builder {
+            this.sessionListener = sessionListener
             return this
         }
 
@@ -265,7 +275,8 @@ interface RumMonitor {
                     memoryVitalMonitor = RumFeature.memoryVitalMonitor,
                     frameRateVitalMonitor = RumFeature.frameRateVitalMonitor,
                     backgroundTrackingEnabled = RumFeature.backgroundEventTracking,
-                    timeProvider = CoreFeature.timeProvider
+                    timeProvider = CoreFeature.timeProvider,
+                    sessionListener = sessionListener
                 )
             }
         }

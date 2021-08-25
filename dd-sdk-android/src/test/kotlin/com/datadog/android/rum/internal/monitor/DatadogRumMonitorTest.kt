@@ -14,6 +14,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEvent
@@ -97,6 +98,9 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockTimeProvider: TimeProvider
 
+    @Mock
+    lateinit var mockSessionListener: RumSessionListener
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -124,7 +128,8 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider
+            mockTimeProvider,
+            mockSessionListener
         )
         testedMonitor.setFieldValue("rootScope", mockScope)
     }
@@ -141,7 +146,8 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider
+            mockTimeProvider,
+            mockSessionListener
         )
 
         val rootScope = testedMonitor.rootScope
@@ -1043,6 +1049,7 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
+            mockSessionListener,
             mockExecutor
         )
 
@@ -1070,6 +1077,7 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
+            mockSessionListener,
             mockExecutorService
         )
 
@@ -1098,7 +1106,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
-            mockExecutorService,
+            mockSessionListener,
+            mockExecutorService
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 

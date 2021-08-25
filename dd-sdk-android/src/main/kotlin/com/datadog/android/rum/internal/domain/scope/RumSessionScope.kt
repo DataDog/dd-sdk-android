@@ -16,6 +16,7 @@ import com.datadog.android.core.internal.persistence.NoOpDataWriter
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
@@ -34,6 +35,7 @@ internal class RumSessionScope(
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,
     private val timeProvider: TimeProvider,
+    internal val sessionListener: RumSessionListener?,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
 ) : RumScope {
@@ -187,6 +189,7 @@ internal class RumSessionScope(
             keepSession = (random.nextFloat() * 100f) < samplingRate
             sessionStartNs.set(nanoTime)
             sessionId = UUID.randomUUID().toString()
+            sessionListener?.onSessionStarted(sessionId, !keepSession)
         }
 
         lastUserInteractionNs.set(nanoTime)

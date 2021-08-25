@@ -356,6 +356,7 @@ interface com.datadog.android.rum.RumMonitor
   fun addTiming(String)
   class Builder
     fun sampleRumSessions(Float): Builder
+    fun setSessionListener(RumSessionListener): Builder
     fun build(): RumMonitor
     companion object 
 interface com.datadog.android.rum.RumResourceAttributesProvider
@@ -374,6 +375,8 @@ enum com.datadog.android.rum.RumResourceKind
   - MEDIA
   - OTHER
   companion object 
+interface com.datadog.android.rum.RumSessionListener
+  fun onSessionStarted(String, Boolean)
 data class com.datadog.android.rum.model.ActionEvent
   constructor(kotlin.Long, Application, kotlin.String? = null, ActionEventSession, View, Usr? = null, Connectivity? = null, Dd, Context? = null, Action)
   val type: kotlin.String
