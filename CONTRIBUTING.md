@@ -278,7 +278,9 @@ Because we sometimes need to reuse some setup or assertions in our tests, we ten
 
 ### Nightly Tests
 
-Each public API method in the SDK is covered by a test case in the `nightly-tests` module. All test cases are executed on a Bitrise emulator by a Datadog Synthetic Test every 24 hours. Each test case
+#### Implementation
+
+Each public API method in the SDK is covered by a test case in the `nightly-tests` module. All test cases are executed on a Bitrise emulator by a Datadog Synthetic Test every 12 hours. Each test case
 output is measured by 2 Datadog Monitors (one for performance and one for functionality). There are some best practices when writing a nightly test as follows: 
 
 - The test method name must follow the following format: `[rootFeature]_[subFeature]_[method]_[additionalInfo]` where:
@@ -309,3 +311,10 @@ fun $EXP$(){
 }
 
 ```
+
+#### Execution
+
+Because of our crash handling [test cases](instrumented/nightly-tests/src/androidTest/kotlin/com/datadog/android/nightly/crash), when running the nightly tests through gradle,  
+the process does not finish properly so it may happen that will keep hanging until it will eventually timeout.To avoid this issue you should run the tests through adb shell directly 
+using the instrumentation tool: `adb shell am instrumentation -w -e package com.datadog.android.nightly.[package] com.datadog.android.nightly.test/androidx.test.runner.AndroidJUnitRunner`
+or through your IDE (AndroidStudio, IntelliJ).
