@@ -36,8 +36,7 @@ internal class RumDataWriter(
 ) {
 
     override fun onDataWritten(data: RumEvent, rawData: ByteArray) {
-        val event = data.event
-        when (event) {
+        when (val event = data.event) {
             is ViewEvent -> persistViewEvent(rawData)
             is ActionEvent -> notifyEventSent(event.view.id, EventType.ACTION)
             is ResourceEvent -> notifyEventSent(event.view.id, EventType.RESOURCE)
@@ -46,7 +45,13 @@ internal class RumDataWriter(
                     notifyEventSent(event.view.id, EventType.ERROR)
                 }
             }
-            is LongTaskEvent -> notifyEventSent(event.view.id, EventType.LONG_TASK)
+            is LongTaskEvent -> {
+                if (event.longTask.isFrozenFrame == true) {
+                    notifyEventSent(event.view.id, EventType.FROZEN_FRAME)
+                } else {
+                    notifyEventSent(event.view.id, EventType.LONG_TASK)
+                }
+            }
         }
     }
 

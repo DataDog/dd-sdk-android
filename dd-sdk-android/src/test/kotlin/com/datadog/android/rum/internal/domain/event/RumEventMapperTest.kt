@@ -479,8 +479,14 @@ internal class RumEventMapperTest {
         @Forgery longTaskEvent: LongTaskEvent
     ) {
         // Given
-        fakeRumEvent = fakeRumEvent.copy(event = longTaskEvent)
-        // whenever(mockLongTaskEventMapper.map(longTaskEvent)) doReturn null
+        val longTask = longTaskEvent.copy(
+            longTask = LongTaskEvent.LongTask(
+                id = longTaskEvent.longTask.id,
+                duration = longTaskEvent.longTask.duration,
+                isFrozenFrame = false
+            )
+        )
+        fakeRumEvent = fakeRumEvent.copy(event = longTask)
 
         // WHEN
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
@@ -488,6 +494,28 @@ internal class RumEventMapperTest {
         // THEN
         assertThat(mappedRumEvent).isNull()
         verify(rumMonitor.mockInstance).eventDropped(longTaskEvent.view.id, EventType.LONG_TASK)
+    }
+
+    @Test
+    fun `𝕄 warn the RUM Monitor 𝕎 map() {frozenFrame dropped}`(
+        @Forgery longTaskEvent: LongTaskEvent
+    ) {
+        // Given
+        val frozenFrame = longTaskEvent.copy(
+            longTask = LongTaskEvent.LongTask(
+                id = longTaskEvent.longTask.id,
+                duration = longTaskEvent.longTask.duration,
+                isFrozenFrame = true
+            )
+        )
+        fakeRumEvent = fakeRumEvent.copy(event = frozenFrame)
+
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
+
+        // THEN
+        assertThat(mappedRumEvent).isNull()
+        verify(rumMonitor.mockInstance).eventDropped(longTaskEvent.view.id, EventType.FROZEN_FRAME)
     }
 
     companion object {

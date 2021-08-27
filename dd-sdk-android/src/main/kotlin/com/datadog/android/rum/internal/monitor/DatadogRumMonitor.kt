@@ -262,7 +262,8 @@ internal class DatadogRumMonitor(
             EventType.ACTION -> handleEvent(RumRawEvent.ActionSent(viewId))
             EventType.RESOURCE -> handleEvent(RumRawEvent.ResourceSent(viewId))
             EventType.ERROR -> handleEvent(RumRawEvent.ErrorSent(viewId))
-            EventType.LONG_TASK -> handleEvent(RumRawEvent.LongTaskSent(viewId))
+            EventType.LONG_TASK -> handleEvent(RumRawEvent.LongTaskSent(viewId, false))
+            EventType.FROZEN_FRAME -> handleEvent(RumRawEvent.LongTaskSent(viewId, true))
             EventType.VIEW -> {
                 // Nothing to do
             }
@@ -274,7 +275,8 @@ internal class DatadogRumMonitor(
             EventType.ACTION -> handleEvent(RumRawEvent.ActionDropped(viewId))
             EventType.RESOURCE -> handleEvent(RumRawEvent.ResourceDropped(viewId))
             EventType.ERROR -> handleEvent(RumRawEvent.ErrorDropped(viewId))
-            EventType.LONG_TASK -> handleEvent(RumRawEvent.LongTaskDropped(viewId))
+            EventType.LONG_TASK -> handleEvent(RumRawEvent.LongTaskDropped(viewId, false))
+            EventType.FROZEN_FRAME -> handleEvent(RumRawEvent.LongTaskDropped(viewId, true))
             EventType.VIEW -> {
                 // Nothing to do
             }

@@ -157,6 +157,24 @@
         }
       }
     },
+    "synthetics": {
+      "type": "object",
+      "description": "Synthetics properties",
+      "required": ["test_id", "result_id"],
+      "properties": {
+        "test_id": {
+          "type": "string",
+          "description": "The identifier of the current Synthetics test",
+          "readOnly": true
+        },
+        "result_id": {
+          "type": "string",
+          "description": "The identifier of the current Synthetics test results",
+          "readOnly": true
+        }
+      },
+      "readOnly": true
+    },
     "_dd": {
       "type": "object",
       "description": "Internal properties",

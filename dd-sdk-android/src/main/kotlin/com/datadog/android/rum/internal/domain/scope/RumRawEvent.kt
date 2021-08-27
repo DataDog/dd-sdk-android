@@ -118,6 +118,7 @@ internal sealed class RumRawEvent {
 
     internal data class LongTaskSent(
         val viewId: String,
+        val isFrozenFrame: Boolean = false,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
@@ -138,6 +139,7 @@ internal sealed class RumRawEvent {
 
     internal data class LongTaskDropped(
         val viewId: String,
+        val isFrozenFrame: Boolean = false,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 

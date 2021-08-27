@@ -142,6 +142,16 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasFrozenFrameCount(expected: Long): ViewEventAssert {
+        assertThat(actual.view.frozenFrame?.count)
+            .overridingErrorMessage(
+                "Expected event data to have view.frozenFrame.count $expected " +
+                    "but was ${actual.view.frozenFrame?.count}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasViewId(expectedId: String): ViewEventAssert {
         assertThat(actual.view.id)
             .overridingErrorMessage(
@@ -200,6 +210,18 @@ internal class ViewEventAssert(actual: ViewEvent) :
             .overridingErrorMessage(
                 "Expected event to have isActive $expected" +
                     " but was ${actual.view.isActive}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun isSlowRendered(
+        expected: Boolean?
+    ): ViewEventAssert {
+        assertThat(actual.view.isSlowRendered)
+            .overridingErrorMessage(
+                "Expected event to have isSlowRendered $expected" +
+                    " but was ${actual.view.isSlowRendered}"
             )
             .isEqualTo(expected)
         return this

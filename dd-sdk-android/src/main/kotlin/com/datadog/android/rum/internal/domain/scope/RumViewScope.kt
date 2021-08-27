@@ -72,11 +72,13 @@ internal open class RumViewScope(
     private var errorCount: Long = 0
     private var crashCount: Long = 0
     private var longTaskCount: Long = 0
+    private var frozenFrameCount: Long = 0
 
     internal var pendingResourceCount: Long = 0
     internal var pendingActionCount: Long = 0
     internal var pendingErrorCount: Long = 0
     internal var pendingLongTaskCount: Long = 0
+    internal var pendingFrozenFrameCount: Long = 0
 
     private var version: Long = 1
     private var loadingTime: Long? = null
@@ -404,6 +406,10 @@ internal open class RumViewScope(
         if (event.viewId == viewId) {
             pendingLongTaskCount--
             longTaskCount++
+            if (event.isFrozenFrame) {
+                pendingFrozenFrameCount--
+                frozenFrameCount++
+            }
             sendViewUpdate(event, writer)
         }
     }
@@ -429,9 +435,13 @@ internal open class RumViewScope(
     private fun onLongTaskDropped(event: RumRawEvent.LongTaskDropped) {
         if (event.viewId == viewId) {
             pendingLongTaskCount--
+            if (event.isFrozenFrame) {
+                pendingFrozenFrameCount--
+            }
         }
     }
 
+    @Suppress("LongMethod")
     private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<RumEvent>) {
         attributes.putAll(GlobalRum.globalAttributes)
         version++
@@ -446,6 +456,11 @@ internal open class RumViewScope(
 
         val memoryInfo = lastMemoryInfo
         val refreshRateInfo = lastFrameRateInfo
+        val isSlowRendered = if (refreshRateInfo == null) {
+            null
+        } else {
+            refreshRateInfo.meanValue < SLOW_RENDERED_THRESHOLD_FPS
+        }
         val viewEvent = ViewEvent(
             date = eventTimestamp,
             view = ViewEvent.View(
@@ -460,6 +475,7 @@ internal open class RumViewScope(
                 error = ViewEvent.Error(errorCount),
                 crash = ViewEvent.Crash(crashCount),
                 longTask = ViewEvent.LongTask(longTaskCount),
+                frozenFrame = ViewEvent.FrozenFrame(frozenFrameCount),
                 customTimings = timings,
                 isActive = !stopped,
                 cpuTicksCount = cpuTicks,
@@ -467,7 +483,8 @@ internal open class RumViewScope(
                 memoryAverage = memoryInfo?.meanValue,
                 memoryMax = memoryInfo?.maxValue,
                 refreshRateAverage = refreshRateInfo?.meanValue?.let { it * refreshRateScale },
-                refreshRateMin = refreshRateInfo?.minValue?.let { it * refreshRateScale }
+                refreshRateMin = refreshRateInfo?.minValue?.let { it * refreshRateScale },
+                isSlowRendered = isSlowRendered
             ),
             usr = ViewEvent.Usr(
                 id = user.id,
@@ -570,10 +587,12 @@ internal open class RumViewScope(
         )
         val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
         val timestamp = event.eventTime.timestamp + serverTimeOffsetInMs
+        val isFrozenFrame = event.durationNs > FROZEN_FRAME_THRESHOLD_NS
         val longTaskEvent = LongTaskEvent(
             date = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
             longTask = LongTaskEvent.LongTask(
-                duration = event.durationNs
+                duration = event.durationNs,
+                isFrozenFrame = isFrozenFrame
             ),
             action = context.actionId?.let { LongTaskEvent.Action(it) },
             view = LongTaskEvent.View(
@@ -601,6 +620,7 @@ internal open class RumViewScope(
         )
         writer.write(rumEvent)
         pendingLongTaskCount++
+        if (isFrozenFrame) pendingFrozenFrameCount++
     }
 
     private fun isViewComplete(): Boolean {
@@ -644,6 +664,9 @@ internal open class RumViewScope(
             " another action is still active for the same view"
         internal const val RUM_BACKGROUND_VIEW_URL = "com/datadog/background/view"
         internal const val RUM_BACKGROUND_VIEW_NAME = "Background"
+
+        internal val FROZEN_FRAME_THRESHOLD_NS = TimeUnit.MILLISECONDS.toNanos(700)
+        internal const val SLOW_RENDERED_THRESHOLD_FPS = 55
 
         @Suppress("LongParameterList")
         internal fun fromEvent(

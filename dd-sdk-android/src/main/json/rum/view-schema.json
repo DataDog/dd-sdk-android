@@ -125,6 +125,11 @@
               "description": "Whether the View corresponding to this event is considered active",
               "readOnly": true
             },
+            "is_slow_rendered": {
+              "type": "boolean",
+              "description": "Whether the View had a low average refresh rate",
+              "readOnly": true
+            },
             "action": {
               "type": "object",
               "description": "Properties of the actions of the view",
@@ -175,6 +180,20 @@
                 "count": {
                   "type": "integer",
                   "description": "Number of long tasks that occurred on the view",
+                  "minimum": 0,
+                  "readOnly": true
+                }
+              },
+              "readOnly": true
+            },
+            "frozen_frame": {
+              "type": "object",
+              "description": "Properties of the frozen frames of the view",
+              "required": ["count"],
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "description": "Number of frozen frames that occurred on the view",
                   "minimum": 0,
                   "readOnly": true
                 }
