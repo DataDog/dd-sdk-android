@@ -1,3 +1,5 @@
+import com.datadog.gradle.config.AndroidConfig
+
 import static com.datadog.gradle.config.FlavorBuildConfigKt.configureFlavorForSampleApp
 
 
@@ -19,10 +21,10 @@ def getGitHash = { ->
 }
 
 android {
-    compileSdkVersion 29
+    compileSdkVersion AndroidConfig.TARGET_SDK
     defaultConfig {
-        minSdkVersion 19
-        targetSdkVersion 29
+        minSdkVersion AndroidConfig.MIN_SDK
+        targetSdkVersion AndroidConfig.TARGET_SDK
         versionCode = 1
         versionName = "1.0"
         applicationId = "com.datadog.android.sample"
