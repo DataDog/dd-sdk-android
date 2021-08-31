@@ -69,7 +69,9 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
     }
 
     override fun onActivityPostResumed(activity: Activity) {
-        super.onActivityPostResumed(activity)
+        // this method doesn't call super, because having super call creates a crash
+        // during DD SDK initialization on KitKat with ProGuard enabled, default super is
+        // empty anyway
         // this method is only available from API 29 and above
         componentPredicate.runIfValid(activity) {
             viewLoadingTimer.onFinishedLoading(it)
