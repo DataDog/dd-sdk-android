@@ -9,6 +9,7 @@ package com.datadog.gradle.config
 import com.android.build.gradle.internal.dsl.ProductFlavor
 import com.google.gson.Gson
 import java.io.File
+import java.util.Locale
 
 private fun sampleAppConfig(filePath: String): SampleAppConfig {
     val file = File(filePath)
@@ -67,6 +68,6 @@ fun configureFlavorForSampleApp(flavor: ProductFlavor, rootDir: File) {
     flavor.buildConfigField(
             "String",
             "DD_SITE_NAME",
-            "\"${flavor.name.toUpperCase()}\""
+            "\"${flavor.name.toUpperCase(Locale.US)}\""
     )
 }
