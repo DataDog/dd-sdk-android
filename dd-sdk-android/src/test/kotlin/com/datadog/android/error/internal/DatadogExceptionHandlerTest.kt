@@ -8,7 +8,6 @@ package com.datadog.android.error.internal
 
 import android.content.Context
 import android.util.Log
-import android.view.Choreographer
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
@@ -38,6 +37,7 @@ import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
+import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -132,19 +132,10 @@ internal class DatadogExceptionHandlerTest {
     @BeforeEach
     fun `set up`() {
         mockDevLogHandler = mockDevLogHandler()
+        mockChoreographerInstance()
+
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
-
-        // To avoid java.lang.NoClassDefFoundError: android/hardware/display/DisplayManagerGlobal.
-        // This class is only available in a real android JVM at runtime and not in a JUnit env.
-        Choreographer::class.java.setStaticValue(
-            "sThreadInstance",
-            object : ThreadLocal<Choreographer>() {
-                override fun initialValue(): Choreographer {
-                    return mock()
-                }
-            }
-        )
 
         Datadog.initialize(
             appContext.mockInstance,
