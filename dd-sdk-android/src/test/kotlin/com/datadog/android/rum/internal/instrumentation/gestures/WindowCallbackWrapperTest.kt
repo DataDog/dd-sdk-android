@@ -27,6 +27,7 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -115,6 +116,20 @@ internal class WindowCallbackWrapperTest {
         // Then
         verify(mockGestureDetector).onTouchEvent(copyMotionEvent)
         verify(copyMotionEvent).recycle()
+    }
+
+    @Test
+    fun `dispatchTouchEvent won't call gesture detector when null is received`() {
+        // Given
+        val spyTest = spy(testedWrapper)
+
+        // When
+        spyTest.dispatchTouchEvent(null)
+
+        // Then
+        verifyZeroInteractions(mockGestureDetector)
+        verify(spyTest, never()).copyEvent(any())
+        verify(mockCallback).dispatchTouchEvent(null)
     }
 
     @Test
