@@ -60,7 +60,7 @@ analysis:ktlint:
   timeout: 30m
   script:
     - git fetch --depth=1 origin master
-    - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :ktlintCheckAll --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx2560m" ./gradlew :ktlintCheckAll --stacktrace --no-daemon
 
 analysis:android-lint:
   tags: [ "runner:main" ]
@@ -69,7 +69,7 @@ analysis:android-lint:
   timeout: 30m
   script:
     - git fetch --depth=1 origin master
-    - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :lintCheckAll --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx2560m" ./gradlew :lintCheckAll --stacktrace --no-daemon
 
 analysis:detekt:
   tags: [ "runner:main" ]
@@ -78,7 +78,7 @@ analysis:detekt:
   timeout: 30m
   script:
     - git fetch --depth=1 origin master
-    - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :detektAll --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx2560m" ./gradlew :detektAll --stacktrace --no-daemon
 
 analysis:licenses:
   tags: [ "runner:main" ]
@@ -87,7 +87,7 @@ analysis:licenses:
   timeout: 30m
   script:
     - git fetch --depth=1 origin master
-    - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :dd-sdk-android:checkThirdPartyLicences :dd-sdk-android-timber:checkThirdPartyLicences --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx2560m" ./gradlew :dd-sdk-android:checkThirdPartyLicences :dd-sdk-android-timber:checkThirdPartyLicences --stacktrace --no-daemon
 
 analysis:api-surface:
   tags: [ "runner:main" ]
@@ -96,7 +96,7 @@ analysis:api-surface:
   timeout: 30m
   script:
     - git fetch --depth=1 origin master
-    - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :dd-sdk-android:checkApiSurfaceChanges :dd-sdk-android-timber:checkApiSurfaceChanges --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx2560m" ./gradlew :dd-sdk-android:checkApiSurfaceChanges :dd-sdk-android-timber:checkApiSurfaceChanges --stacktrace --no-daemon
 
 analysis:nightly-tests-coverage:
   tags: [ "runner:main" ]
@@ -105,7 +105,7 @@ analysis:nightly-tests-coverage:
   timeout: 30m
   script:
     - git fetch --depth=1 origin master
-    - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew checkNightlyTestsCoverage --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx2560m" ./gradlew checkNightlyTestsCoverage --stacktrace --no-daemon
 
 analysis:woke:
   tags: [ "runner:main" ]
@@ -127,7 +127,7 @@ test:debug:
     - git fetch --depth=1 origin master
     - rm -rf ~/.gradle/daemon/
     - CODECOV_TOKEN=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.codecov-token  --with-decryption --query "Parameter.Value" --out text)
-    - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :unitTestDebug --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx2560m" ./gradlew :unitTestDebug --stacktrace --no-daemon
     - bash <(cat ./codecov.sh) -t $CODECOV_TOKEN
 
 test:release:
@@ -138,7 +138,7 @@ test:release:
   script:
     - git fetch --depth=1 origin master
     - rm -rf ~/.gradle/daemon/
-    - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :unitTestRelease --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx2560m" ./gradlew :unitTestRelease --stacktrace --no-daemon
 
 test:tools:
   tags: [ "runner:main" ]
@@ -148,7 +148,7 @@ test:tools:
   script:
     - git fetch --depth=1 origin master
     - rm -rf ~/.gradle/daemon/
-    - GRADLE_OPTS="-XX:MaxPermSize=512m -Xmx2560m" ./gradlew :unitTestTools --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx2560m" ./gradlew :unitTestTools --stacktrace --no-daemon
 
 # PUBLISH ARTIFACTS ON MAVEN
 
