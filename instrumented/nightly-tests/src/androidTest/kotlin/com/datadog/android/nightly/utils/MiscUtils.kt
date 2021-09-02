@@ -26,6 +26,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.opentracing.DDTracer
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.invokeMethod
@@ -37,7 +38,8 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 inline fun <reified R> measure(methodName: String, codeBlock: () -> R): R {
-    val span = GlobalTracer.get().buildSpan(methodName).start()
+    val builder = GlobalTracer.get().buildSpan("perf_measure") as DDTracer.DDSpanBuilder
+    val span = builder.withResourceName(methodName).start()
     val result = codeBlock()
     span.finish()
     return result
