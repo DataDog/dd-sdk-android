@@ -1,8 +1,9 @@
-# 1.10.0 / 2021-08-06
+# 1.10.0 / 2021-09-02
 
 * [BUGFIX] Global: Fix crash when using old OkHttp dependency [#658](https://github.com/DataDog/dd-sdk-android/issues/658) (Thanks [@JessicaYeh](https://github.com/VladBytsyuk))
 * [BUGFIX] Global: Prevent retrying endlessly data upload when Client Token is invalid
 * [BUGFIX] Global: Support using DD Android SDK with Java 11 
+* [BUGFIX] Global: Support proper serialization of nested maps for custom attributes
 * [BUGFIX] RUM: Ensure all crashes are reported to RUM
 * [FEATURE] APM: Add Data Scrubbing for Spans
 * [FEATURE] RUM: Detect ANR
