@@ -85,7 +85,7 @@ internal class RumResourceScopeTest {
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
 
-    @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+")
+    @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+")
     lateinit var fakeUrl: String
     lateinit var fakeKey: String
     lateinit var fakeMethod: String

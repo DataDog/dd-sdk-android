@@ -284,7 +284,7 @@ interface RumMonitor {
         companion object {
             internal const val RUM_NOT_ENABLED_ERROR_MESSAGE =
                 "You're trying to create a RumMonitor instance, " +
-                    "but the RUM feature was disabled in your DatadogConfig. " +
+                    "but the RUM feature was disabled in your Configuration. " +
                     "No RUM data will be sent."
         }
     }

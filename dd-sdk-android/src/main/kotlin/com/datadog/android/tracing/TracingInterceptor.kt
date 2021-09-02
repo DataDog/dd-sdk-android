@@ -334,7 +334,7 @@ internal constructor(
                 "but you did not specify any first party hosts. " +
                 "Your requests won't be traced.\n" +
                 "To set a list of known hosts, you can use the " +
-                "DatadogConfig.Builder::setFirstPartyHosts() method."
+                "Configuration.Builder::setFirstPartyHosts() method."
         internal const val WARNING_TRACING_DISABLED =
             "You added a TracingInterceptor to your OkHttpClient, " +
                 "but you did not enable the TracesFeature. " +

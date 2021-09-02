@@ -52,6 +52,7 @@ internal fun Any?.toJsonElement(): JsonElement {
         is String -> JsonPrimitive(this)
         is Date -> JsonPrimitive(this.time)
         is Iterable<*> -> this.toJsonArray()
+        is Map<*, *> -> this.toJsonObject()
         is JsonObject -> this
         is JsonArray -> this
         is JsonPrimitive -> this
@@ -84,6 +85,14 @@ internal fun Iterable<*>.toJsonArray(): JsonElement {
         array.add(it.toJsonElement())
     }
     return array
+}
+
+internal fun Map<*, *>.toJsonObject(): JsonElement {
+    val obj = JsonObject()
+    forEach {
+        obj.add(it.key.toString(), it.value.toJsonElement())
+    }
+    return obj
 }
 
 internal fun JsonObject.asMap(): Map<String, Any?> {

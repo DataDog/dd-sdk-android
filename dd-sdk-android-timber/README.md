@@ -23,19 +23,30 @@ dedicated builder, and integrate it in Timber, as follows:
 
 ```kotlin
 class SampleApplication : Application() {
-
     override fun onCreate() {
         super.onCreate()
-        val config = DatadogConfig.Builder(BuildConfig.DD_CLIENT_TOKEN).build()
-        Datadog.initialize(this, config)
 
-        val logger = Logger.Builder()
-                .setNetworkInfoEnabled(true)
-                .setLogcatLogsEnabled(true)
-                .setDatadogLogsEnabled(true)
-                .build();
-        Timber.plant(DatadogTree(logger))
-    }
+        val configuration = Configuration.Builder(
+            rumEnabled = true,
+            ...
+        )
+                        .trackInteractions()
+                        .useViewTrackingStrategy(strategy)
+                        ...
+                        .build()
+          val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
+          Datadog.initialize(this, credentials, configuration, trackingConsent)
+
+          val monitor = RumMonitor.Builder().build()
+          GlobalRum.registerIfAbsent(monitor)
+
+          val logger = Logger.Builder()
+                          .setNetworkInfoEnabled(true)
+                          .setLogcatLogsEnabled(true)
+                          .setDatadogLogsEnabled(true)
+                          .build();
+          Timber.plant(DatadogTree(logger))
+   }
 }
 ```
 

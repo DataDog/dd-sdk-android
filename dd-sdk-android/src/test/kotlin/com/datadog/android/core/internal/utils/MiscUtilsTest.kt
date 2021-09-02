@@ -113,8 +113,10 @@ internal class MiscUtilsTest {
 
         // WHEN
         attributes.forEach {
-            val jsonElement = it.toJsonElement()
-            assertJsonElement(it, jsonElement)
+            // be careful here, we shouldn't pass `it`, because it has Map.Entry type, so will fall
+            // always into `else` branch of underlying assertion
+            val jsonElement = it.value.toJsonElement()
+            assertJsonElement(it.value, jsonElement)
         }
     }
 
@@ -139,6 +141,13 @@ internal class MiscUtilsTest {
             is Iterable<*> -> assertThat(jsonElement.asJsonArray).containsExactlyElementsOf(
                 kotlinObject.map { it.toJsonElement() }
             )
+            is Map<*, *> -> assertThat(jsonElement.asJsonObject).satisfies {
+                assertThat(kotlinObject.keys.map { key -> key.toString() })
+                    .containsExactlyElementsOf(it.keySet())
+                kotlinObject.entries.forEach { entry ->
+                    assertJsonElement(entry.value, it[entry.key.toString()])
+                }
+            }
             else -> assertThat(jsonElement.asString).isEqualTo(kotlinObject.toString())
         }
     }

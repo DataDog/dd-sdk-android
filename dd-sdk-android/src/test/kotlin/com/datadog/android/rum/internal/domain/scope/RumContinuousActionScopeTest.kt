@@ -317,7 +317,7 @@ internal class RumContinuousActionScopeTest {
     fun `𝕄 send Action after threshold 𝕎 handleEvent(StartResource+StopAction+StopResource+any)`(
         @StringForgery key: String,
         @StringForgery method: String,
-        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String,
+        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
         @LongForgery(200, 600) statusCode: Long,
         @LongForgery(0, 1024) size: Long,
         @Forgery kind: RumResourceKind
@@ -366,7 +366,7 @@ internal class RumContinuousActionScopeTest {
     fun `𝕄 send Action 𝕎 handleEvent(StartResource+StopAction+StopResourceWithError+any)`(
         @StringForgery key: String,
         @StringForgery method: String,
-        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String,
+        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
         @LongForgery(200, 600) statusCode: Long,
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
@@ -422,7 +422,7 @@ internal class RumContinuousActionScopeTest {
     @Test
     fun `𝕄 send Action 𝕎 handleEvent(StartResource+StopAction+any) missing resource key`(
         @StringForgery method: String,
-        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String
+        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
         // Given
         var key: Any? = Object()
@@ -1125,7 +1125,7 @@ internal class RumContinuousActionScopeTest {
     fun `𝕄 do nothing 𝕎 handleEvent(StartResource+any)`(
         @StringForgery key: String,
         @StringForgery method: String,
-        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String
+        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
         // When
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
@@ -1143,7 +1143,7 @@ internal class RumContinuousActionScopeTest {
     fun `𝕄 do nothing 𝕎 handleEvent(StartResource+StopAction+any)`(
         @StringForgery key: String,
         @StringForgery method: String,
-        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String
+        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
         // When
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
@@ -1165,7 +1165,7 @@ internal class RumContinuousActionScopeTest {
     fun `𝕄 send Action after timeout 𝕎 handleEvent(StartResource+any)`(
         @StringForgery key: String,
         @StringForgery method: String,
-        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String
+        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
         // When
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
@@ -1204,7 +1204,7 @@ internal class RumContinuousActionScopeTest {
     fun `𝕄 send Action after timeout 𝕎 handleEvent(StartResource+StopAction+any)`(
         @StringForgery key: String,
         @StringForgery method: String,
-        @StringForgery(regex = "http(s?)://[a-z]+.com/[a-z]+") url: String
+        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
         // When
         fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())

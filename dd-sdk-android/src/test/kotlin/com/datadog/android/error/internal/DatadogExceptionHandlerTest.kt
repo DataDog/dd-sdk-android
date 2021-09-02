@@ -134,6 +134,7 @@ internal class DatadogExceptionHandlerTest {
         mockDevLogHandler = mockDevLogHandler()
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+
         // To avoid java.lang.NoClassDefFoundError: android/hardware/display/DisplayManagerGlobal.
         // This class is only available in a real android JVM at runtime and not in a JUnit env.
         Choreographer::class.java.setStaticValue(
@@ -144,6 +145,7 @@ internal class DatadogExceptionHandlerTest {
                 }
             }
         )
+
         Datadog.initialize(
             appContext.mockInstance,
             Credentials(fakeToken, fakeEnvName, Credentials.NO_VARIANT, null),
