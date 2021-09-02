@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.data.upload
 
 import android.content.Context
-import android.view.Choreographer
 import androidx.work.ListenableWorker
 import androidx.work.Worker
 import androidx.work.WorkerParameters
@@ -28,16 +27,15 @@ import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.tracing.internal.TracesFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
+import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.invokeMethod
-import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -114,14 +112,7 @@ internal class UploadWorkerTest {
         whenever(mockRumStrategy.getReader()) doReturn mockRumReader
 
         // Prevent crash when initializing RumFeature
-        Choreographer::class.java.setStaticValue(
-            "sThreadInstance",
-            object : ThreadLocal<Choreographer>() {
-                override fun initialValue(): Choreographer {
-                    return mock()
-                }
-            }
-        )
+        mockChoreographerInstance()
 
         Datadog.initialize(
             appContext.mockInstance,

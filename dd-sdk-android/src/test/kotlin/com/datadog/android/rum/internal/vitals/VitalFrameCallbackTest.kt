@@ -7,8 +7,8 @@
 package com.datadog.android.rum.internal.vitals
 
 import android.view.Choreographer
+import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
@@ -44,14 +44,7 @@ internal class VitalFrameCallbackTest {
     fun `set up`() {
         testedFrameCallback = VitalFrameCallback(mockObserver) { true }
 
-        Choreographer::class.java.setStaticValue(
-            "sThreadInstance",
-            object : ThreadLocal<Choreographer>() {
-                override fun initialValue(): Choreographer {
-                    return mockChoreographer
-                }
-            }
-        )
+        mockChoreographerInstance(mockChoreographer)
     }
 
     @Test
