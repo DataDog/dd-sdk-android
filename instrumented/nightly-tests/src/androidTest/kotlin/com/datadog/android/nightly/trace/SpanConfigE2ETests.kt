@@ -238,7 +238,7 @@ class SpanConfigE2ETests {
             "another.level2" to forge.anAlphaNumericalString()
         )
 
-        measure(PERF_PREFIX + testMethodName) {
+        measure(testMethodName) {
             Datadog.setUserInfo(
                 id = userId,
                 name = userName,
@@ -250,10 +250,5 @@ class SpanConfigE2ETests {
             .buildSpan(testMethodName)
             .start()
             .finish()
-    }
-
-    private companion object {
-        // this is needed because pure test method names are reserved for the spans under test
-        const val PERF_PREFIX = "perf_"
     }
 }

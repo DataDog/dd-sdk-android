@@ -45,17 +45,12 @@ class SpanBuilderE2ETests {
         val testMethodName = "trace_span_builder_start"
         val tracer = GlobalTracer.get()
         var span: Span? = null
-        measure(PERF_PREFIX + testMethodName) {
+        measure(testMethodName) {
             // here we don't measure individual method, but a chain, because this chain is probably
             // most common way to start a span, so these methods will always be used together
             span = tracer.buildSpan(testMethodName)
                 .start()
         }
         span?.finish()
-    }
-
-    private companion object {
-        // this is needed because pure test method names are reserved for the spans under test
-        const val PERF_PREFIX = "perf_"
     }
 }
