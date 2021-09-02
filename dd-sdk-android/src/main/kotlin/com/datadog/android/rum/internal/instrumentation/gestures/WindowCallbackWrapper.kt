@@ -27,15 +27,19 @@ internal class WindowCallbackWrapper(
     // region Window.Callback
 
     override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
-        // we copy it and delegate it to the gesture detector for analysis
-        val copy = copyEvent(event)
-        @Suppress("TooGenericExceptionCaught")
-        try {
-            gesturesDetector.onTouchEvent(copy)
-        } catch (e: Exception) {
-            sdkLogger.e("Error processing MotionEvent", e)
-        } finally {
-            copy.recycle()
+        if (event != null) {
+            // we copy it and delegate it to the gesture detector for analysis
+            val copy = copyEvent(event)
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                gesturesDetector.onTouchEvent(copy)
+            } catch (e: Exception) {
+                sdkLogger.e("Error processing MotionEvent", e)
+            } finally {
+                copy.recycle()
+            }
+        } else {
+            sdkLogger.e("Received MotionEvent=null")
         }
         return wrappedCallback.dispatchTouchEvent(event)
     }
@@ -76,7 +80,7 @@ internal class WindowCallbackWrapper(
 
     // region Internal
 
-    internal fun copyEvent(event: MotionEvent?) = MotionEvent.obtain(event)
+    internal fun copyEvent(event: MotionEvent) = MotionEvent.obtain(event)
 
     // endregion
 
