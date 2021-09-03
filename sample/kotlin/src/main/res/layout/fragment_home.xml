@@ -3,130 +3,146 @@
   ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
   ~ Copyright 2016-Present Datadog, Inc.
   -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            xmlns:tools="http://schemas.android.com/tools"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
 
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                                                   xmlns:app="http://schemas.android.com/apk/res-auto"
-                                                   xmlns:tools="http://schemas.android.com/tools"
-                                                   android:layout_width="match_parent"
-                                                   android:layout_height="match_parent"
-                                                   android:padding="10dp"
-                                                   tools:context=".logs.LogsFragment">
-
-    <androidx.appcompat.widget.AppCompatTextView
-        android:id="@+id/title"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:padding="16dp"
-        android:text="@string/title_home"
-        android:textAppearance="@style/TextAppearance.AppCompat.Title"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
+    <androidx.constraintlayout.widget.ConstraintLayout android:layout_width="match_parent"
+                                                       android:layout_height="wrap_content"
+                                                       android:padding="10dp"
+                                                       tools:context=".logs.LogsFragment">
 
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/navigation_logs"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:text="@string/title_logs"
-        android:drawableStart="@drawable/ic_logs_black_24dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/title"/>
+        <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:padding="16dp"
+                android:text="@string/title_home"
+                android:textAppearance="@style/TextAppearance.AppCompat.Title"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"/>
 
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/navigation_crash"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:text="@string/title_crash"
-        android:drawableStart="@drawable/ic_crash_black_24dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/navigation_logs"/>
+        <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/navigation_logs"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/title_logs"
+                android:drawableStart="@drawable/ic_logs_black_24dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/title"/>
 
 
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/navigation_traces"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:text="@string/title_traces"
-        android:drawableStart="@drawable/ic_traces_black_24dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/navigation_crash"/>
-
-    <androidx.appcompat.widget.AppCompatTextView
-        android:id="@+id/rum_section"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:padding="16dp"
-        android:layout_margin="8dp"
-        android:text="@string/msg_rum_use_cases"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/navigation_traces"/>
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/navigation_webview"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:text="@string/title_webview"
-        android:drawableStart="@drawable/ic_webview_black_24dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/rum_section"/>
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/navigation_data_list"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:text="@string/title_data_list"
-        android:drawableStart="@drawable/ic_data_list_black_24dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/navigation_webview"/>
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/navigation_view_pager"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:text="@string/title_view_pager"
-        android:drawableStart="@drawable/ic_view_pager_black_24dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/navigation_data_list"/>
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/navigation_picture"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:text="@string/title_picture"
-        android:drawableStart="@drawable/ic_picture_black_24dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/navigation_view_pager"/>
-
-    <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/navigation_about"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:text="@string/title_about"
-        android:drawableStart="@drawable/ic_info_black_24"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/navigation_picture"/>
+        <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/navigation_crash"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/title_crash"
+                android:drawableStart="@drawable/ic_crash_black_24dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/navigation_logs"/>
 
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/navigation_traces"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/title_traces"
+                android:drawableStart="@drawable/ic_traces_black_24dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/navigation_crash"/>
+
+        <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/rum_section"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:padding="16dp"
+                android:layout_margin="8dp"
+                android:text="@string/msg_rum_use_cases"
+                android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/navigation_traces"/>
+
+
+        <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/navigation_vitals"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/title_vitals"
+                android:drawableStart="@drawable/ic_vitals_black_24"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/rum_section"/>
+
+        <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/navigation_webview"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/title_webview"
+                android:drawableStart="@drawable/ic_webview_black_24dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/navigation_vitals"/>
+
+        <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/navigation_data_list"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/title_data_list"
+                android:drawableStart="@drawable/ic_data_list_black_24dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/navigation_webview"/>
+
+        <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/navigation_view_pager"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/title_view_pager"
+                android:drawableStart="@drawable/ic_view_pager_black_24dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/navigation_data_list"/>
+
+        <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/navigation_picture"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/title_picture"
+                android:drawableStart="@drawable/ic_picture_black_24dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/navigation_view_pager"/>
+
+        <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/navigation_about"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:text="@string/title_about"
+                android:drawableStart="@drawable/ic_info_black_24"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/navigation_picture"/>
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

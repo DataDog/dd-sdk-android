@@ -23,7 +23,6 @@
         android:name="com.datadog.android.sample.logs.LogsFragment"
         android:label="@string/title_logs"/>
 
-
     <fragment
         android:id="@+id/fragment_crash"
         android:name="com.datadog.android.sample.crash.CrashFragment"
@@ -34,6 +33,10 @@
         android:name="com.datadog.android.sample.traces.TracesFragment"
         android:label="@string/title_traces"/>
 
+    <fragment
+            android:id="@+id/fragment_vitals"
+            android:name="com.datadog.android.sample.vitals.VitalsFragment"
+            android:label="@string/title_vitals"/>
 
     <fragment
         android:id="@+id/fragment_webview"

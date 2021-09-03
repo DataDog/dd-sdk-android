@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
@@ -33,8 +34,10 @@ class HomeFragment :
     ): View? {
         val rootView = inflater.inflate(R.layout.fragment_home, container, false)
         if (rootView is ViewGroup) {
-            rootView.children.filterIsInstance<Button>()
-                .forEach { it.setOnClickListener(this) }
+            val constraintLayout = rootView.children.filterIsInstance<ConstraintLayout>()
+                    .firstOrNull()
+            constraintLayout?.children?.filterIsInstance<Button>()
+                    ?.forEach { it.setOnClickListener(this) }
         }
         return rootView
     }
@@ -54,6 +57,7 @@ class HomeFragment :
             R.id.navigation_logs -> R.id.fragment_logs
             R.id.navigation_crash -> R.id.fragment_crash
             R.id.navigation_traces -> R.id.fragment_trace
+            R.id.navigation_vitals -> R.id.fragment_vitals
             R.id.navigation_webview -> R.id.fragment_webview
             R.id.navigation_data_list -> R.id.fragment_data_list
             R.id.navigation_view_pager -> R.id.activity_view_pager

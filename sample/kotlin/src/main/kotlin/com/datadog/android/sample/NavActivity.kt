@@ -18,7 +18,6 @@ import androidx.navigation.findNavController
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sample.service.LogsForegroundService
 import com.google.android.material.snackbar.Snackbar
-import java.security.SecureRandom
 import timber.log.Timber
 
 class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
@@ -97,9 +96,6 @@ class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
             R.id.gdpr -> {
                 navController.navigate(R.id.fragment_gdpr)
             }
-            R.id.long_task -> {
-                runLongTask()
-            }
             else -> result = super.onOptionsItemSelected(item)
         }
         return result
@@ -110,12 +106,6 @@ class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
 
     private fun updateTrackingConsentLabel(trackingConsent: TrackingConsent) {
         appInfoView.text = "${BuildConfig.FLAVOR} / Tracking: $trackingConsent"
-    }
-
-    private fun runLongTask() {
-        val random = SecureRandom()
-        val duration = random.nextInt(500) + 500
-        Thread.sleep(duration.toLong())
     }
 
     // endregion
