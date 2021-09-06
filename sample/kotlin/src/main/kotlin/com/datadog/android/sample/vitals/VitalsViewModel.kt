@@ -5,24 +5,26 @@
  */
 package com.datadog.android.sample.vitals
 
+import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import timber.log.Timber
 import java.security.SecureRandom
 
 class VitalsViewModel : ViewModel() {
 
-    val rng = SecureRandom()
+    private val rng = SecureRandom()
     private val piComputer = PiDigitComputerBBP()
     private val handler = Handler(Looper.getMainLooper())
     private val bitmapList = mutableListOf<Bitmap>()
 
-    var isResumed = false
-    var isCpuUsageEnabled = false
-    var isMemoryUsageEnabled = false
-    var isForegroundTasksEnabled = false
+    private var isResumed = false
+    private var isCpuUsageEnabled = false
+    private var isMemoryUsageEnabled = false
+    private var isForegroundTasksEnabled = false
 
     private val foregroundRunnable = object : Runnable {
         override fun run() {
@@ -51,14 +53,12 @@ class VitalsViewModel : ViewModel() {
     }
 
     fun runLongTask() {
-        val random = SecureRandom()
-        val duration = random.nextInt(250) + 100
+        val duration = rng.nextInt(250) + 100
         Thread.sleep(duration.toLong())
     }
 
     fun runFrozenFrame() {
-        val random = SecureRandom()
-        val duration = random.nextInt(500) + 700
+        val duration = rng.nextInt(500) + 700
         Thread.sleep(duration.toLong())
     }
 
@@ -92,6 +92,7 @@ class VitalsViewModel : ViewModel() {
         handler.post(foregroundRunnable)
     }
 
+    @SuppressLint("TimberArgCount")
     private fun fillUpMemory() {
         Thread {
             loop@ for (i in 0..128) {
@@ -99,12 +100,12 @@ class VitalsViewModel : ViewModel() {
                     val bitmap = Bitmap.createBitmap(3840, 2160, Bitmap.Config.ARGB_8888)
                     bitmapList.add(bitmap)
                 } catch (e: OutOfMemoryError) {
-                    Log.e("Vitals", "Unable to allocte more bitmaps…")
+                    Timber.e("Unable to allocate more bitmaps…")
                     break@loop
                 }
                 Thread.sleep(10)
             }
-            Log.i("Vitals", "Allocated ${bitmapList.size} bitmaps")
+            Timber.i("Allocated ${bitmapList.size} bitmaps")
         }.start()
     }
 }

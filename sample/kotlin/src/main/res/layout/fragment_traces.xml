@@ -9,7 +9,7 @@
                                                    xmlns:tools="http://schemas.android.com/tools"
                                                    android:layout_width="match_parent"
                                                    android:layout_height="match_parent"
-                                                   tools:context=".traces.TracesFragment">
+                                                   tools:context=".NavActivity">
 
 
     <androidx.appcompat.widget.AppCompatTextView
@@ -139,6 +139,5 @@
         app:layout_constraintEnd_toEndOf="parent"
         tools:src="@drawable/ic_check_circle_green_24dp"
     />
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

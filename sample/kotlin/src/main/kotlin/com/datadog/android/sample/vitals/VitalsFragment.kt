@@ -62,11 +62,9 @@ class VitalsFragment :
     // region View.OnClickListener
 
     override fun onClick(v: View) {
-        requireActivity().runOnUiThread {
-            when (v.id) {
-                R.id.vital_long_task -> viewModel.runLongTask()
-                R.id.vital_frozen_frame -> viewModel.runFrozenFrame()
-            }
+        when (v.id) {
+            R.id.vital_long_task -> viewModel.runLongTask()
+            R.id.vital_frozen_frame -> viewModel.runFrozenFrame()
         }
     }
 
