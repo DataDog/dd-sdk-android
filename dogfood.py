@@ -18,17 +18,20 @@ from git import Repo
 
 TARGET_APP = "app"
 TARGET_DEMO = "demo"
+TARGET_BRIDGE = "bridge"
 
-REPOSITORIES = {TARGET_APP: "datadog-android", TARGET_DEMO: "shopist-android"}
+REPOSITORIES = {TARGET_APP: "datadog-android", TARGET_DEMO: "shopist-android", TARGET_BRIDGE: "dd-bridge-android"}
 
 FILE_PATH = {
     TARGET_APP: os.path.join("dd-build", "dependencies", "src", "main", "java", "com", "datadog", "build", "dependency", "android", "Datadog.kt"),
-    TARGET_DEMO: os.path.join("buildSrc", "src", "main", "kotlin", "com", "datadog", "gradle", "Dependencies.kt")
+    TARGET_DEMO: os.path.join("buildSrc", "src", "main", "kotlin", "com", "datadog", "gradle", "Dependencies.kt"),
+    TARGET_BRIDGE: os.path.join("buildSrc", "src", "main", "kotlin", "com", "datadog", "gradle", "Dependencies.kt")
 }
 
 PREFIX = {
     TARGET_APP: "val version",
-    TARGET_DEMO: "val Datadog"
+    TARGET_DEMO: "val Datadog",
+    TARGET_BRIDGE: "val DatadogSdkVersion"
 }
 
 
@@ -37,7 +40,7 @@ def parse_arguments(args: list) -> Namespace:
 
     parser.add_argument("-v", "--version", required=True, help="the version of the SDK")
     parser.add_argument("-t", "--target", required=True,
-                        choices=[TARGET_APP, TARGET_DEMO],
+                        choices=[TARGET_APP, TARGET_DEMO, TARGET_BRIDGE],
                         help="the target repository")
 
     return parser.parse_args(args)
