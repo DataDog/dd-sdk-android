@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.nightly
+package com.datadog.android.nightly.utils
 
 import com.datadog.android.nightly.rum.RUM_ACTION_PREFIX
 import com.datadog.android.nightly.rum.RUM_ERROR_MESSAGE_PREFIX
@@ -28,15 +28,15 @@ fun Forge.exhaustiveAttributes(): Map<String, Any?> {
 }
 
 fun Forge.aViewName(prefix: String = RUM_VIEW_PREFIX): String {
-    return this.aStringMatching("$prefix[a-zA-z](.+)")
+    return prefix + this.aStringMatching("[a-zA-z](.+)")
 }
 
 fun Forge.aViewKey(prefix: String = RUM_VIEW_URL_PREFIX): String {
-    return this.aStringMatching("$prefix[a-zA-z]{3,5}/[a-zA-z]{3,5}")
+    return prefix + this.aStringMatching("[a-zA-z]{3,5}/[a-zA-z]{3,5}")
 }
 
 fun Forge.anActionName(prefix: String = RUM_ACTION_PREFIX): String {
-    return this.aStringMatching("$prefix[a-zA-z](.+)")
+    return prefix + this.aStringMatching("[a-zA-z](.+)")
 }
 
 fun Forge.aResourceKey(prefix: String = RUM_RESOURCE_URL_PREFIX): String {
@@ -44,11 +44,11 @@ fun Forge.aResourceKey(prefix: String = RUM_RESOURCE_URL_PREFIX): String {
 }
 
 fun Forge.aResourceErrorMessage(prefix: String = RUM_RESOURCE_ERROR_MESSAGE_PREFIX): String {
-    return this.aStringMatching("$prefix[a-zA-z](.+)")
+    return prefix + this.aStringMatching("[a-zA-z](.+)")
 }
 
 fun Forge.anErrorMessage(prefix: String = RUM_ERROR_MESSAGE_PREFIX): String {
-    return this.aStringMatching("$prefix[a-zA-z](.+)")
+    return prefix + this.aStringMatching("[a-zA-z](.+)")
 }
 
 fun Forge.aResourceMethod(): String {

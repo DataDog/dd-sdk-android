@@ -7,12 +7,12 @@
 package com.datadog.android.nightly.rum
 
 import com.datadog.android.nightly.INITIALIZE_RUMMONITOR_TEST_METHOD_NAME
-import com.datadog.android.nightly.aResourceKey
-import com.datadog.android.nightly.aResourceMethod
-import com.datadog.android.nightly.aViewKey
-import com.datadog.android.nightly.aViewName
-import com.datadog.android.nightly.anActionName
-import com.datadog.android.nightly.anErrorMessage
+import com.datadog.android.nightly.utils.aResourceKey
+import com.datadog.android.nightly.utils.aResourceMethod
+import com.datadog.android.nightly.utils.aViewKey
+import com.datadog.android.nightly.utils.aViewName
+import com.datadog.android.nightly.utils.anActionName
+import com.datadog.android.nightly.utils.anErrorMessage
 import com.datadog.android.nightly.utils.defaultTestAttributes
 import com.datadog.android.nightly.utils.executeInsideView
 import com.datadog.android.nightly.utils.measure

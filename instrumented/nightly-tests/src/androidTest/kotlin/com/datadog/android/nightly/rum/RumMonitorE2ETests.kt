@@ -9,17 +9,17 @@ package com.datadog.android.nightly.rum
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.datadog.android.nightly.aResourceErrorMessage
-import com.datadog.android.nightly.aResourceKey
-import com.datadog.android.nightly.aResourceMethod
-import com.datadog.android.nightly.aViewKey
-import com.datadog.android.nightly.aViewName
-import com.datadog.android.nightly.anActionName
-import com.datadog.android.nightly.anErrorMessage
-import com.datadog.android.nightly.exhaustiveAttributes
 import com.datadog.android.nightly.rules.NightlyTestRule
+import com.datadog.android.nightly.utils.aResourceErrorMessage
+import com.datadog.android.nightly.utils.aResourceKey
+import com.datadog.android.nightly.utils.aResourceMethod
+import com.datadog.android.nightly.utils.aViewKey
+import com.datadog.android.nightly.utils.aViewName
+import com.datadog.android.nightly.utils.anActionName
+import com.datadog.android.nightly.utils.anErrorMessage
 import com.datadog.android.nightly.utils.defaultTestAttributes
 import com.datadog.android.nightly.utils.executeInsideView
+import com.datadog.android.nightly.utils.exhaustiveAttributes
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measure
 import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
@@ -155,6 +155,23 @@ class RumMonitorE2ETests {
             actionName,
             defaultTestAttributes(testMethodName)
         )
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun addTiming(String)
+     */
+    @Test
+    fun rum_rummonitor_add_timing() {
+        val testMethodName = "rum_rummonitor_add_timing"
+        val viewKey = forge.aViewKey()
+        val viewName = forge.aViewName()
+        val timing = forge.aLong(200, 700)
+        executeInsideView(viewKey, viewName, testMethodName) {
+            Thread.sleep(timing)
+            measure(testMethodName) {
+                GlobalRum.get().addTiming(RUM_TIMING_NAME)
+            }
+        }
     }
 
     // endregion
