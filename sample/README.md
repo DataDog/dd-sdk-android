@@ -3,7 +3,7 @@
 ## Getting Started
 
 These sample apps are configured based on configuration JSON files which need to be added in `config` folder in your root directory.
-For each flavor, you must provide a config file named `[flavorName].json`. By default, flavors should match one of the existing sites in the `DatadogSite` enum (i.e.: `us1`, `us1_fed`, `us3`, `us5`, `eu1`).
+For each flavor, you must provide a config file named `[flavorName].json`. By default, flavors should match one of the existing sites in the `DatadogSite` enum (for example: `us1`, `us1_fed`, `us3`, `us5`, `eu1`).
 
 Example of a minimal sample app configuration file:
 
