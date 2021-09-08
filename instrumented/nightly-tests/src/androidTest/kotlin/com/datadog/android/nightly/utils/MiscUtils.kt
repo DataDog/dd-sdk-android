@@ -18,8 +18,6 @@ import com.datadog.android.nightly.INITIALIZE_LOGGER_TEST_METHOD_NAME
 import com.datadog.android.nightly.INITIALIZE_SDK_TEST_METHOD_NAME
 import com.datadog.android.nightly.SET_TRACKING_CONSENT_METHOD_NAME
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
-import com.datadog.android.nightly.aResourceMethod
-import com.datadog.android.nightly.exhaustiveAttributes
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
