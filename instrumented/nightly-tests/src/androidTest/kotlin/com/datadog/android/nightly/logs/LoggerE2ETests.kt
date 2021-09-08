@@ -12,15 +12,18 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.log.Logger
 import com.datadog.android.nightly.SPECIAL_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_BOOL_ATTRIBUTE_NAME
+import com.datadog.android.nightly.SPECIAL_BUNDLED_TAG_NAME
 import com.datadog.android.nightly.SPECIAL_DATE_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_DOUBLE_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_FLOAT_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_INT_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_JSONARRAY_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_JSONOBJECT_ATTRIBUTE_NAME
+import com.datadog.android.nightly.SPECIAL_LONG_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_STRING_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_TAG_NAME
 import com.datadog.android.nightly.rules.NightlyTestRule
+import com.datadog.android.nightly.utils.aTagValue
 import com.datadog.android.nightly.utils.defaultTestAttributes
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measure
@@ -296,6 +299,20 @@ class LoggerE2ETests {
     }
 
     /**
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, Long)
+     */
+    @Test
+    fun logs_logger_add_long_attribute() {
+        val testMethodName = "logs_logger_add_long_attribute"
+        measure(testMethodName) {
+            // we need to use wrapped Int here as DD facets only supports Integers for facets types
+            // and to avoid overflows at conversion
+            logger.addAttribute(SPECIAL_LONG_ATTRIBUTE_NAME, forge.anInt(min = 11).toLong())
+        }
+        logger.sendRandomLog(testMethodName, forge)
+    }
+
+    /**
      * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, String?)
      */
     @Test
@@ -346,7 +363,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, JsonArray?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, com.google.gson.JsonArray?)
      */
     @Test
     fun logs_logger_add_jsonarray_attribute() {
@@ -358,7 +375,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, JsonArray?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, com.google.gson.JsonArray?)
      */
     @Test
     fun logs_logger_add_jsonarray_null_attribute() {
@@ -371,7 +388,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, JsonObject?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, com.google.gson.JsonObject?)
      */
     @Test
     fun logs_logger_add_jsonobject_attribute() {
@@ -383,7 +400,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, JsonObject?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, com.google.gson.JsonObject?)
      */
     @Test
     fun logs_logger_add_jsonobject_null_attribute() {
@@ -396,7 +413,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addDate(String, Date?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, java.util.Date?)
      */
     @Test
     fun logs_logger_add_date_attribute() {
@@ -408,7 +425,7 @@ class LoggerE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.log.Logger#fun addDate(String, Date?)
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, java.util.Date?)
      */
     @Test
     fun logs_logger_add_date_null_attribute() {
@@ -460,9 +477,22 @@ class LoggerE2ETests {
     @Test
     fun logs_logger_add_tag() {
         val testMethodName = "logs_logger_add_tag"
+        val tagValue = forge.aTagValue()
         measure(testMethodName) {
-            logger.addTag(SPECIAL_TAG_NAME, forge.aStringMatching("customTag[a-z0-9_:./-]{1,20}"))
+            logger.addTag(SPECIAL_TAG_NAME, tagValue)
         }
+        logger.sendRandomLog(testMethodName, forge)
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addTag(String)
+     */
+    @Test
+    fun logs_logger_add_tag_with_bundled_key() {
+        val testMethodName = "logs_logger_add_bundled_tag"
+        val tagValue = forge.aTagValue()
+        val bundledTag = "$SPECIAL_BUNDLED_TAG_NAME:$tagValue"
+        measure(testMethodName) { logger.addTag(bundledTag) }
         logger.sendRandomLog(testMethodName, forge)
     }
 
@@ -491,6 +521,23 @@ class LoggerE2ETests {
         }
         measure(testMethodName) {
             logger.removeTag("$SPECIAL_TAG_NAME:$CUSTOM_STRING_TAG")
+        }
+        logger.sendRandomLog(testMethodName, forge)
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.log.Logger#fun removeTagsWithKey(String)
+     */
+    @Test
+    fun logs_logger_remove_tag_with_key() {
+        val testMethodName = "logs_logger_remove_tags_with_key"
+        if (forge.aBool()) {
+            logger.addTag(SPECIAL_TAG_NAME, CUSTOM_STRING_TAG)
+        } else {
+            logger.addTag("$SPECIAL_TAG_NAME:$CUSTOM_STRING_TAG")
+        }
+        measure(testMethodName) {
+            logger.removeTagsWithKey(SPECIAL_TAG_NAME)
         }
         logger.sendRandomLog(testMethodName, forge)
     }

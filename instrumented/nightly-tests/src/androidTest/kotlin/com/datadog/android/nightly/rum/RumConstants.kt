@@ -16,4 +16,5 @@ const val RUM_TIMING_NAME = "time_event"
 const val RUM_CUSTOM_STR_ATTRIBUTE = "custom_attribute.string"
 const val RUM_CUSTOM_INT_ATTRIBUTE = "custom_attribute.int"
 const val ACTION_INACTIVITY_THRESHOLD_MS = 100L
+const val TAG_VALUE_PREFIX = "customTag"
 const val WRITE_DELAY_MS = 100L
