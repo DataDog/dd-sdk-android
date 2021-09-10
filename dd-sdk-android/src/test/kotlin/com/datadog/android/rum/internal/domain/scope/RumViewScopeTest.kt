@@ -522,19 +522,89 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event with global attributes 𝕎 handleEvent(StopView) on active view`(
+    fun `𝕄 send event with initial global attributes 𝕎 handleEvent(StopView) on active view`(
         forge: Forge
     ) {
         // Given
-        val attributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
             anHexadecimalString() to anAsciiString()
         }
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(attributes)
+        expectedAttributes.putAll(fakeGlobalAttributes)
+        GlobalRum.globalAttributes.putAll(fakeGlobalAttributes)
+        whenever(mockTimeProvider.getServerOffsetMillis())
+            .thenReturn(fakeServerOffset)
+            .thenReturn(fakeServerOffsetSecond)
+        testedScope = RumViewScope(
+            mockParentScope,
+            fakeKey,
+            fakeName,
+            fakeEventTime,
+            fakeAttributes,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockTimeProvider
+        )
+        fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
 
         // When
-        GlobalRum.globalAttributes.putAll(attributes)
+        val result = testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(expectedAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
+                .hasViewData {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(false)
+                    isSlowRendered(null)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 send event with global attributes 𝕎 handleEvent(StopView) on active view`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeGlobalAttributes)
+
+        // When
+        GlobalRum.globalAttributes.putAll(fakeGlobalAttributes)
         val result = testedScope.handleEvent(
             RumRawEvent.StopView(fakeKey, emptyMap()),
             mockWriter

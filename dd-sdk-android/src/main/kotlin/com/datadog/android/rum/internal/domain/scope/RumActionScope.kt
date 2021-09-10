@@ -42,7 +42,9 @@ internal class RumActionScope(
     private val startedNanos: Long = eventTime.nanoTime
     private var lastInteractionNanos: Long = startedNanos
 
-    internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
+    internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap().apply {
+        putAll(GlobalRum.globalAttributes)
+    }
 
     private val ongoingResourceKeys = mutableListOf<WeakReference<Any>>()
 
