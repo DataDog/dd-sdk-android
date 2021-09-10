@@ -54,7 +54,9 @@ internal open class RumViewScope(
     internal val url = key.resolveViewUrl().replace('.', '/')
 
     internal val keyRef: Reference<Any> = WeakReference(key)
-    internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
+    internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap().apply {
+        putAll(GlobalRum.globalAttributes)
+    }
 
     private var sessionId: String = parentScope.getRumContext().sessionId
     internal var viewId: String = UUID.randomUUID().toString()

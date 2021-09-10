@@ -799,19 +799,80 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
+    fun `𝕄 send Action with initial global attributes 𝕎 handleEvent(StopAction+any)`(
+        @IntForgery(1) count: Int,
+        forge: Forge
+    ) {
+        // Given
+        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeGlobalAttributes)
+        testedScope.viewTreeChangeCount = count
+        GlobalRum.globalAttributes.putAll(fakeGlobalAttributes)
+        testedScope = RumActionScope(
+            mockParentScope,
+            true,
+            fakeEventTime,
+            fakeType,
+            fakeName,
+            fakeAttributes,
+            fakeServerOffset,
+            TEST_INACTIVITY_MS,
+            TEST_MAX_DURATION_MS
+        )
+        testedScope.viewTreeChangeCount = count
+        fakeGlobalAttributes.keys.forEach { GlobalRum.globalAttributes.remove(it) }
+        fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(TEST_INACTIVITY_MS)
+        val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .hasAttributes(expectedAttributes)
+                .hasActionData {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasView(fakeParentContext)
+                    hasUserInfo(fakeUserInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isNull()
+    }
+
+    @Test
     fun `𝕄 send Action with global attributes after threshold 𝕎 handleEvent(StopAction+any)`(
         @IntForgery(1) count: Int,
         forge: Forge
     ) {
         // Given
-        val attributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
             anHexadecimalString() to anAsciiString()
         }
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(attributes)
+        expectedAttributes.putAll(fakeGlobalAttributes)
         testedScope.viewTreeChangeCount = count
-        GlobalRum.globalAttributes.putAll(attributes)
+        GlobalRum.globalAttributes.putAll(fakeGlobalAttributes)
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
 
         // When

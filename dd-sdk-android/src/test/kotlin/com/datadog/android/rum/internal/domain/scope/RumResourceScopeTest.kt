@@ -518,6 +518,69 @@ internal class RumResourceScopeTest {
     }
 
     @Test
+    fun `𝕄 send Resource with initial global attributes 𝕎 handleEvent(StopResource)`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeGlobalAttributes)
+        GlobalRum.globalAttributes.putAll(fakeGlobalAttributes)
+        testedScope = RumResourceScope(
+            mockParentScope,
+            fakeUrl,
+            fakeMethod,
+            fakeKey,
+            fakeEventTime,
+            fakeAttributes,
+            fakeServerOffset,
+            mockDetector
+        )
+        fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
+
+        // When
+        Thread.sleep(RESOURCE_DURATION_MS)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        argumentCaptor<RumEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(firstValue)
+                .hasAttributes(expectedAttributes)
+                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
+                .hasResourceData {
+                    hasId(testedScope.resourceId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasUrl(fakeUrl)
+                    hasMethod(fakeMethod)
+                    hasKind(kind)
+                    hasStatusCode(statusCode)
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
+                    hasTraceId(null)
+                    hasSpanId(null)
+                    doesNotHaveAResourceProvider()
+                    hasLiteSessionPlan()
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isEqualTo(null)
+    }
+
+    @Test
     fun `𝕄 send Resource with global attributes 𝕎 handleEvent(StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,
@@ -525,13 +588,13 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
             anHexadecimalString() to anAsciiString()
         }
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(attributes)
-        GlobalRum.globalAttributes.putAll(attributes)
+        expectedAttributes.putAll(fakeGlobalAttributes)
+        GlobalRum.globalAttributes.putAll(fakeGlobalAttributes)
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)

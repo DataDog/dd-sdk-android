@@ -37,7 +37,9 @@ internal class RumResourceScope(
 ) : RumScope {
 
     internal val resourceId: String = UUID.randomUUID().toString()
-    internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
+    internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap().apply {
+        putAll(GlobalRum.globalAttributes)
+    }
     private var timing: ResourceTiming? = null
     private val initialContext = parentScope.getRumContext()
 
