@@ -12,6 +12,7 @@ import com.datadog.android.nightly.rum.RUM_RESOURCE_ERROR_MESSAGE_PREFIX
 import com.datadog.android.nightly.rum.RUM_RESOURCE_URL_PREFIX
 import com.datadog.android.nightly.rum.RUM_VIEW_PREFIX
 import com.datadog.android.nightly.rum.RUM_VIEW_URL_PREFIX
+import com.datadog.android.nightly.rum.TAG_VALUE_PREFIX
 import fr.xgouchet.elmyr.Forge
 
 fun Forge.exhaustiveAttributes(): Map<String, Any?> {
@@ -53,4 +54,8 @@ fun Forge.anErrorMessage(prefix: String = RUM_ERROR_MESSAGE_PREFIX): String {
 
 fun Forge.aResourceMethod(): String {
     return this.anElementFrom(listOf("GET", "POST"))
+}
+
+fun Forge.aTagValue(prefix: String = TAG_VALUE_PREFIX): String {
+    return prefix + this.aStringMatching("[a-z0-9_:./-]{1,20}")
 }
