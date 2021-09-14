@@ -25,11 +25,6 @@
         app:showAsAction="ifRoom"/>
 
     <item
-        android:id="@+id/long_task"
-        android:icon="@drawable/ic_hourglass_empty_24"
-        android:title="@string/title_long_task"
-        app:showAsAction="ifRoom"/>
-    <item
         android:id="@+id/gdpr"
         android:icon="@drawable/ic_baseline_lock_open_24"
         android:title="@string/title_gdpr"

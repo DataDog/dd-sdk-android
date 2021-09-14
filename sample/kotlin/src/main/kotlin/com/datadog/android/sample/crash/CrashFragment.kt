@@ -27,7 +27,7 @@ class CrashFragment :
     private lateinit var spinner: AppCompatSpinner
     private val mainThreadHandler = Handler(Looper.getMainLooper())
 
-    val bitmapList = mutableListOf<Bitmap>()
+    private val bitmapList = mutableListOf<Bitmap>()
 
     // region Fragment
 
