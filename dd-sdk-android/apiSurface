@@ -8,6 +8,7 @@ object com.datadog.android.Datadog
 object com.datadog.android.DatadogEndpoint
   const val LOGS_US1: String
   const val LOGS_US3: String
+  const val LOGS_US5: String
   const val LOGS_US1_FED: String
   const val LOGS_EU1: String
   DEPRECATED const val LOGS_US: String
@@ -15,6 +16,7 @@ object com.datadog.android.DatadogEndpoint
   DEPRECATED const val LOGS_GOV: String
   const val TRACES_US1: String
   const val TRACES_US3: String
+  const val TRACES_US5: String
   const val TRACES_US1_FED: String
   const val TRACES_EU1: String
   DEPRECATED const val TRACES_US: String
@@ -22,6 +24,7 @@ object com.datadog.android.DatadogEndpoint
   DEPRECATED const val TRACES_GOV: String
   const val RUM_US1: String
   const val RUM_US3: String
+  const val RUM_US5: String
   const val RUM_US1_FED: String
   const val RUM_EU1: String
   DEPRECATED const val RUM_US: String
@@ -57,6 +60,7 @@ open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.
 enum com.datadog.android.DatadogSite
   - US1
   - US3
+  - US5
   - US1_FED
   - EU1
   fun logsEndpoint(): String

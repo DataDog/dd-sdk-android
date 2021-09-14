@@ -21,6 +21,11 @@ enum class DatadogSite {
     US3,
 
     /**
+     *  The US5 site: [us5.datadoghq.com](https://us5.datadoghq.com).
+     */
+    US5,
+
+    /**
      *  The US1_FED site (FedRAMP compatible): [app.ddog-gov.com](https://app.ddog-gov.com).
      */
     US1_FED,
@@ -37,6 +42,7 @@ enum class DatadogSite {
         return when (this) {
             US1 -> DatadogEndpoint.LOGS_US1
             US3 -> DatadogEndpoint.LOGS_US3
+            US5 -> DatadogEndpoint.LOGS_US5
             US1_FED -> DatadogEndpoint.LOGS_US1_FED
             EU1 -> DatadogEndpoint.LOGS_EU1
         }
@@ -49,6 +55,7 @@ enum class DatadogSite {
         return when (this) {
             US1 -> DatadogEndpoint.TRACES_US1
             US3 -> DatadogEndpoint.TRACES_US3
+            US5 -> DatadogEndpoint.TRACES_US5
             US1_FED -> DatadogEndpoint.TRACES_US1_FED
             EU1 -> DatadogEndpoint.TRACES_EU1
         }
@@ -61,6 +68,7 @@ enum class DatadogSite {
         return when (this) {
             US1 -> DatadogEndpoint.RUM_US1
             US3 -> DatadogEndpoint.RUM_US3
+            US5 -> DatadogEndpoint.RUM_US5
             US1_FED -> DatadogEndpoint.RUM_US1_FED
             EU1 -> DatadogEndpoint.RUM_EU1
         }

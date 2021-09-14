@@ -61,18 +61,14 @@ android {
 
     flavorDimensions("version")
     productFlavors {
-        register("staging") {
-            dimension = "version"
-            com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
-        }
-        register("production") {
-            isDefault = true
-            dimension = "version"
-            com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
-        }
-        register("gov") {
-            dimension = "version"
-            com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
+        val regions = arrayOf("us1", "us3", "us5", "us1_fed", "eu1", "staging")
+
+        regions.forEachIndexed { index, region ->
+            register(region) {
+                isDefault = index == 0
+                dimension = "version"
+                com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
+            }
         }
     }
 

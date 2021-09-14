@@ -14,6 +14,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.Datadog.setUserInfo
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogEventListener
+import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.log.Logger
@@ -138,6 +139,12 @@ class SampleApplication : Application() {
                 BuildConfig.DD_INTERNAL_MONITORING_CLIENT_TOKEN,
                 DatadogEndpoint.LOGS_US
             )
+
+        try {
+            configBuilder.useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
+        } catch (e: IllegalArgumentException) {
+            // no-op
+        }
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
             configBuilder.useCustomLogsEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)

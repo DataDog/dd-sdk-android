@@ -9,6 +9,7 @@ package com.datadog.gradle.config
 import com.android.build.gradle.internal.dsl.ProductFlavor
 import com.google.gson.Gson
 import java.io.File
+import java.util.Locale
 
 private fun sampleAppConfig(filePath: String): SampleAppConfig {
     val file = File(filePath)
@@ -22,8 +23,7 @@ private fun sampleAppConfig(filePath: String): SampleAppConfig {
 }
 
 fun configureFlavorForSampleApp(flavor: ProductFlavor, rootDir: File) {
-    val config =
-        sampleAppConfig("${rootDir.absolutePath}/config/${flavor.name}.json")
+    val config = sampleAppConfig("${rootDir.absolutePath}/config/${flavor.name}.json")
     println("Configuring flavor: [${flavor.name}] with config: [$config]")
     flavor.buildConfigField(
         "String",
@@ -64,5 +64,10 @@ fun configureFlavorForSampleApp(flavor: ProductFlavor, rootDir: File) {
         "String",
         "DD_INTERNAL_MONITORING_CLIENT_TOKEN",
         "\"${config.internalMonitoringToken}\""
+    )
+    flavor.buildConfigField(
+            "String",
+            "DD_SITE_NAME",
+            "\"${flavor.name.toUpperCase(Locale.US)}\""
     )
 }
