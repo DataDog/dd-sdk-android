@@ -194,11 +194,9 @@ internal constructor(
     ) {
         val requestId = identifyRequest(request)
         val statusCode = response?.code()
-        val method = request.method()
         val mimeType = response?.header(HEADER_CT)
         val kind = when {
-            method in xhrMethods -> RumResourceKind.XHR
-            mimeType == null -> RumResourceKind.XHR
+            mimeType == null -> RumResourceKind.NATIVE
             else -> RumResourceKind.fromMimeType(mimeType)
         }
         val attributes = if (span == null) {
@@ -253,8 +251,6 @@ internal constructor(
         internal const val ERROR_MSG_FORMAT = "OkHttp request error %s %s"
 
         internal const val ORIGIN_RUM = "rum"
-
-        internal val xhrMethods = arrayOf("POST", "PUT", "DELETE")
 
         // We need to limit this value as the body will be loaded in memory
         private const val MAX_BODY_PEEK: Long = 32 * 1024L * 1024L

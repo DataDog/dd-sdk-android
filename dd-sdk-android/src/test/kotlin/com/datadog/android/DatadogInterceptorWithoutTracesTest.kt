@@ -200,9 +200,8 @@ internal class DatadogInterceptorWithoutTracesTest {
         val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type()
         val kind = when {
-            fakeMethod in DatadogInterceptor.xhrMethods -> RumResourceKind.XHR
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
-            else -> RumResourceKind.UNKNOWN
+            else -> RumResourceKind.NATIVE
         }
 
         // When
@@ -237,9 +236,8 @@ internal class DatadogInterceptorWithoutTracesTest {
         val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type()
         val kind = when {
-            fakeMethod in DatadogInterceptor.xhrMethods -> RumResourceKind.XHR
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
-            else -> RumResourceKind.UNKNOWN
+            else -> RumResourceKind.NATIVE
         }
 
         // When

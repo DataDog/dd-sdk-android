@@ -48,6 +48,7 @@ internal fun RumResourceKind.toSchemaType(): ResourceEvent.ResourceType {
         RumResourceKind.FONT -> ResourceEvent.ResourceType.FONT
         RumResourceKind.CSS -> ResourceEvent.ResourceType.CSS
         RumResourceKind.MEDIA -> ResourceEvent.ResourceType.MEDIA
+        RumResourceKind.NATIVE -> ResourceEvent.ResourceType.NATIVE
         RumResourceKind.UNKNOWN,
         RumResourceKind.OTHER -> ResourceEvent.ResourceType.OTHER
     }
