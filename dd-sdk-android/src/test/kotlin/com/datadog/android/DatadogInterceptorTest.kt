@@ -108,9 +108,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type()
         val kind = when {
-            fakeMethod in DatadogInterceptor.xhrMethods -> RumResourceKind.XHR
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
-            else -> RumResourceKind.XHR
+            else -> RumResourceKind.NATIVE
         }
 
         // When
@@ -148,9 +147,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type()
         val kind = when {
-            fakeMethod in DatadogInterceptor.xhrMethods -> RumResourceKind.XHR
             mimeType != null -> RumResourceKind.fromMimeType(mimeType)
-            else -> RumResourceKind.XHR
+            else -> RumResourceKind.NATIVE
         }
 
         // When

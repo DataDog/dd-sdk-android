@@ -20,6 +20,7 @@ enum class RumResourceKind(val value: String) {
     DOCUMENT("document"),
 
     // Common kinds
+    NATIVE("native"),
     UNKNOWN("unknown"),
     IMAGE("image"),
     JS("js"),
@@ -41,7 +42,7 @@ enum class RumResourceKind(val value: String) {
                 baseType == "font" -> FONT
                 baseType == "text" && subtype == "css" -> CSS
                 baseType == "text" && subtype == "javascript" -> JS
-                else -> XHR
+                else -> NATIVE
             }
         }
     }

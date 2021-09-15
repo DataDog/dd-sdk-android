@@ -38,7 +38,7 @@
             "type": {
               "type": "string",
               "description": "Resource type",
-              "enum": ["document", "xhr", "beacon", "fetch", "css", "js", "image", "font", "media", "other"],
+              "enum": ["document", "xhr", "beacon", "fetch", "css", "js", "image", "font", "media", "other", "native"],
               "readOnly": true
             },
             "method": {
