@@ -174,6 +174,58 @@ class SpanConfigE2ETests {
     }
 
     /**
+     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun setPartialFlushThreshold(Int): Builder
+     */
+    @Test
+    fun trace_config_flush_threshold_not_reached() {
+        val testMethodName = "trace_config_flush_threshold_not_reached"
+        val partialFlushThreshold = 1
+        measureSdkInitialize {
+            initializeSdk(
+                InstrumentationRegistry.getInstrumentation().targetContext,
+                tracerProvider = {
+                    AndroidTracer.Builder().setPartialFlushThreshold(partialFlushThreshold).build()
+                }
+            )
+        }
+
+        val tracer = GlobalTracer.get()
+        val container = tracer.buildSpan("container").start()
+        // In this case the parent span was never closed so this is considered a PendingTrace.
+        // A PendingTrace can persist intermediary closed child spans only if
+        // the threshold (partialFlushThreshold) was reached or in case there is no other pending
+        // child span waiting to be closed. In this case the closed span will never be sent.
+        tracer.buildSpan(forge.anAlphabeticalString()).asChildOf(container).start()
+        tracer.buildSpan(testMethodName).asChildOf(container).start().finish()
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun setPartialFlushThreshold(Int): Builder
+     */
+    @Test
+    fun trace_config_flush_threshold_reached() {
+        val testMethodName = "trace_config_flush_threshold_reached"
+        val partialFlushThreshold = 1
+        measureSdkInitialize {
+            initializeSdk(
+                InstrumentationRegistry.getInstrumentation().targetContext,
+                tracerProvider = {
+                    AndroidTracer.Builder().setPartialFlushThreshold(partialFlushThreshold).build()
+                }
+            )
+        }
+
+        val tracer = GlobalTracer.get()
+        val container = tracer.buildSpan("container").start()
+        // The partialFlushThreshold was set to 1 and therefore reached meaning that the
+        // finished child span will be sent.
+        tracer.buildSpan(forge.anAlphabeticalString()).asChildOf(container).start()
+        tracer.buildSpan(forge.anAlphabeticalString()).asChildOf(container).start().finish()
+        // the threshold was reached (completedSpans > threshold)
+        tracer.buildSpan(testMethodName).asChildOf(container).start().finish()
+    }
+
+    /**
      * apiMethodSignature: com.datadog.android.tracing.AndroidTracer$Builder#fun addGlobalTag(String, String): Builder
      */
     @Test
