@@ -37,7 +37,7 @@ dependencies {
     implementation("com.android.tools.build:gradle:4.1.2")
     implementation("com.github.ben-manes:gradle-versions-plugin:0.27.0")
     implementation("me.xdrop:fuzzywuzzy:1.2.0")
-    implementation("org.jetbrains.dokka:dokka-gradle-plugin:1.4.10")
+    implementation("org.jetbrains.dokka:dokka-gradle-plugin:1.4.32")
     implementation("org.apache.maven:maven-model:3.6.3")
     implementation("io.github.gradle-nexus:publish-plugin:1.1.0")
 

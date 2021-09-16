@@ -11,6 +11,10 @@ import com.datadog.android.privacy.TrackingConsent
 
 /**
  * Used to deliver the context from the SDK internals to a [DatadogPlugin] implementation.
+ * @param context [Context] object.
+ * @param envName Environment name.
+ * @param serviceName Service name.
+ * @param trackingConsent Tracking consent.
  */
 class DatadogPluginConfig(
     val context: Context,

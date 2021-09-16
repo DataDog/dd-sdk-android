@@ -36,6 +36,7 @@ import okhttp3.Response
  *       .build();
  * ```
  *
+ * @param key Call identity.
  * @see [Factory]
  */
 class DatadogEventListener

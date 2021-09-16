@@ -50,7 +50,7 @@ class TodoWithoutTask : Rule() {
         super.visitProperty(property)
     }
 
-    override fun visitComment(comment: PsiComment?) {
+    override fun visitComment(comment: PsiComment) {
         reportIfInvalid(comment)
 
         super.visitComment(comment)
