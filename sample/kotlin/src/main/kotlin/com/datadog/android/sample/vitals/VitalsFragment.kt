@@ -17,8 +17,9 @@ import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
 
 class VitalsFragment :
-        Fragment(),
-        View.OnClickListener, CompoundButton.OnCheckedChangeListener {
+    Fragment(),
+    View.OnClickListener,
+    CompoundButton.OnCheckedChangeListener {
 
     private lateinit var viewModel: VitalsViewModel
     private lateinit var progressView: ProgressBar

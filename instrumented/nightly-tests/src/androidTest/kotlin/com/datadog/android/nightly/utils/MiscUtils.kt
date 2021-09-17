@@ -14,9 +14,6 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.nightly.BuildConfig
 import com.datadog.android.nightly.ENV_NAME
-import com.datadog.android.nightly.INITIALIZE_LOGGER_TEST_METHOD_NAME
-import com.datadog.android.nightly.INITIALIZE_SDK_TEST_METHOD_NAME
-import com.datadog.android.nightly.SET_TRACKING_CONSENT_METHOD_NAME
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
@@ -24,7 +21,6 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.tracing.AndroidTracer
-import com.datadog.opentracing.DDTracer
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.getStaticValue
 import com.datadog.tools.unit.invokeMethod
@@ -32,38 +28,7 @@ import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-
-inline fun <reified R> measure(methodName: String, codeBlock: () -> R): R {
-    val builder = GlobalTracer.get().buildSpan("perf_measure") as DDTracer.DDSpanBuilder
-    val span = builder.withResourceName(methodName).start()
-    val result = codeBlock()
-    span.finish()
-    return result
-}
-
-fun measureSdkInitialize(codeBlock: () -> Unit) {
-
-    val start = TimeUnit.MILLISECONDS.toMicros(System.currentTimeMillis())
-    codeBlock()
-    val stop = TimeUnit.MILLISECONDS.toMicros(System.currentTimeMillis())
-
-    val span =
-        GlobalTracer.get()
-            .buildSpan(INITIALIZE_SDK_TEST_METHOD_NAME)
-            .withStartTimestamp(start)
-            .start()
-    span.finish(stop)
-}
-
-fun measureSetTrackingConsent(codeBlock: () -> Unit) {
-    measure(SET_TRACKING_CONSENT_METHOD_NAME, codeBlock)
-}
-
-fun measureLoggerInitialize(codeBlock: () -> Unit) {
-    measure(INITIALIZE_LOGGER_TEST_METHOD_NAME, codeBlock)
-}
 
 fun defaultTestAttributes(testMethodName: String) = mapOf(
     TEST_METHOD_NAME_KEY to testMethodName

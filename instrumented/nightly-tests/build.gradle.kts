@@ -104,6 +104,7 @@ dependencies {
     implementation(project(":dd-sdk-android"))
     implementation(project(":dd-sdk-android-ndk"))
 
+    implementation(Dependencies.Libraries.AndroidXNavigation)
     implementation(Dependencies.Libraries.Gson)
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.AndroidxSupportBase)

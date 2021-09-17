@@ -9,10 +9,9 @@ import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import androidx.lifecycle.ViewModel
-import timber.log.Timber
 import java.security.SecureRandom
+import timber.log.Timber
 
 class VitalsViewModel : ViewModel() {
 

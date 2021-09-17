@@ -35,9 +35,9 @@ class HomeFragment :
         val rootView = inflater.inflate(R.layout.fragment_home, container, false)
         if (rootView is ViewGroup) {
             val constraintLayout = rootView.children.filterIsInstance<ConstraintLayout>()
-                    .firstOrNull()
+                .firstOrNull()
             constraintLayout?.children?.filterIsInstance<Button>()
-                    ?.forEach { it.setOnClickListener(this) }
+                ?.forEach { it.setOnClickListener(this) }
         }
         return rootView
     }
