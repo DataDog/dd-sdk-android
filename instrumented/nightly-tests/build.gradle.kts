@@ -110,6 +110,7 @@ dependencies {
     implementation(Dependencies.Libraries.AndroidxSupportBase)
     implementation(Dependencies.Libraries.AndroidXMultidex)
     implementation(Dependencies.Libraries.Elmyr)
+    implementation(Dependencies.Libraries.OkHttp)
 
     androidTestImplementation(project(":tools:unit")) {
         // We need to exclude this otherwise R8 will fail while trying to desugar a function

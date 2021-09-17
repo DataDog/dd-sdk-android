@@ -23,6 +23,7 @@
         <activity android:name=".activities.UserInteractionTrackingActivity"/>
         <activity android:name=".activities.ViewTrackingMixedFragmentActivity"/>
         <activity android:name=".activities.ViewTrackingMixedNoFragmentActivity"/>
+        <activity android:name=".activities.ResourceTrackingActivity"/>
         <service
             android:name=".services.CrashHandlerDisabledCrashService"
             android:process=":crashhandler.disabled" />
