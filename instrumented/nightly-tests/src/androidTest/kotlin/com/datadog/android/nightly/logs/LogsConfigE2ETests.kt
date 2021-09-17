@@ -9,6 +9,7 @@ package com.datadog.android.nightly.logs
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.Logger
@@ -52,6 +53,30 @@ class LogsConfigE2ETests {
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).build()
+            )
+        }
+        measureLoggerInitialize {
+            logger = initializeLogger()
+        }
+        logger.sendRandomLog(testMethodName, forge)
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setBatchSize(BatchSize): Builder
+     */
+    @Test
+    fun logs_config_custom_batch_size() {
+        val testMethodName = "logs_config_custom_batch_size"
+        measureSdkInitialize {
+            initializeSdk(
+                InstrumentationRegistry.getInstrumentation().targetContext,
+                TrackingConsent.GRANTED,
+                Configuration.Builder(
+                    logsEnabled = true,
+                    tracesEnabled = true,
+                    rumEnabled = true,
+                    crashReportsEnabled = true
+                ).setBatchSize(forge.aValueFrom(BatchSize::class.java)).build()
             )
         }
         measureLoggerInitialize {
