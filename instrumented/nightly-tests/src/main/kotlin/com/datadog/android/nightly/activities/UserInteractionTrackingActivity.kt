@@ -14,8 +14,6 @@ import com.datadog.android.nightly.R
 
 internal class UserInteractionTrackingActivity : AppCompatActivity() {
 
-    val testMethodName = "rum_user_interaction_tracking_strategy"
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.user_interaction_tracking_strategy_activity)

@@ -23,7 +23,6 @@ import okhttp3.Response
 
 internal class ResourceTrackingActivity : AppCompatActivity() {
 
-    val testMethodName = "rum_activity_view_tracking_strategy"
     lateinit var okHttpClient: OkHttpClient
     private val countDownLatch = CountDownLatch(1)
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -12,8 +12,6 @@ import com.datadog.android.nightly.R
 
 internal class ViewTrackingNavigationActivity : AppCompatActivity() {
 
-    val testMethodName = "rum_activity_view_tracking_strategy"
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.tracking_strategy_navigation)
