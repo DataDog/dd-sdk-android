@@ -54,7 +54,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
-                version = Dependencies.Versions.CMakeVersion
+                version = Dependencies.Versions.CMake
             }
         }
     }
@@ -89,7 +89,7 @@ android {
     externalNativeBuild {
         cmake {
             path = File("$projectDir/CMakeLists.txt")
-            version = Dependencies.Versions.CMakeVersion
+            version = Dependencies.Versions.CMake
         }
     }
 
@@ -98,7 +98,7 @@ android {
         exclude("META-INF/LICENSE-notice.md")
     }
 
-    ndkVersion = Dependencies.Versions.NdkVersion
+    ndkVersion = Dependencies.Versions.Ndk
 }
 
 dependencies {

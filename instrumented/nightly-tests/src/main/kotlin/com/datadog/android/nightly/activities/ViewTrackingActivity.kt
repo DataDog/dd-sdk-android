@@ -13,16 +13,18 @@ import com.datadog.android.nightly.utils.measure
 
 internal class ViewTrackingActivity : AppCompatActivity() {
 
-    val testMethodName = "rum_activity_view_tracking_strategy"
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.tracking_strategy_activity)
     }
 
     override fun onResume() {
-        measure(testMethodName) {
+        measure(TEST_METHOD_NAME) {
             super.onResume()
         }
+    }
+
+    companion object {
+        private const val TEST_METHOD_NAME = "rum_activity_view_tracking_strategy"
     }
 }
