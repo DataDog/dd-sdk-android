@@ -30,7 +30,7 @@ internal class PiDigitComputerBBP {
 
             val numerator = (kSquared * 120.bd()) + (k * 151.bd()) + 47.bd()
             val denominator = (kQuad * 512.bd()) + (kCubed * 1024.bd()) +
-                    (kSquared * 712.bd()) + (k * 194.bd()) + 15.bd()
+                (kSquared * 712.bd()) + (k * 194.bd()) + 15.bd()
             val pow16 = 16.bd().pow(i)
 
             val contrib = numerator.divide(denominator * pow16, MathContext(128))

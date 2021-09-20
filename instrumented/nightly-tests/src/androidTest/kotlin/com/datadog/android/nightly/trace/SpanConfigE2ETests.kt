@@ -10,6 +10,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
+import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.nightly.SPECIAL_STRING_TAG_NAME
@@ -51,6 +52,29 @@ class SpanConfigE2ETests {
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).build()
+            )
+        }
+        GlobalTracer.get()
+            .buildSpan(testMethodName)
+            .start()
+            .finish()
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setBatchSize(BatchSize): Builder
+     */
+    @Test
+    fun trace_config_custom_batch_size() {
+        val testMethodName = "trace_config_custom_batch_size"
+        measureSdkInitialize {
+            initializeSdk(
+                InstrumentationRegistry.getInstrumentation().targetContext,
+                config = Configuration.Builder(
+                    logsEnabled = true,
+                    tracesEnabled = true,
+                    rumEnabled = true,
+                    crashReportsEnabled = true
+                ).setBatchSize(forge.aValueFrom(BatchSize::class.java)).build()
             )
         }
         GlobalTracer.get()

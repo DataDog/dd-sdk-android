@@ -17,6 +17,13 @@
         android:supportsRtl="true"
         android:theme="@style/Platform.MaterialComponents"
         tools:ignore="GoogleAppIndexingWarning,MissingApplicationIcon">
+        <activity android:name=".activities.ViewTrackingActivity"/>
+        <activity android:name=".activities.ViewTrackingFragmentActivity"/>
+        <activity android:name=".activities.ViewTrackingNavigationActivity"/>
+        <activity android:name=".activities.UserInteractionTrackingActivity"/>
+        <activity android:name=".activities.ViewTrackingMixedFragmentActivity"/>
+        <activity android:name=".activities.ViewTrackingMixedNoFragmentActivity"/>
+        <activity android:name=".activities.ResourceTrackingActivity"/>
         <service
             android:name=".services.CrashHandlerDisabledCrashService"
             android:process=":crashhandler.disabled" />

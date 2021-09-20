@@ -11,6 +11,7 @@ import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.ViewEventMapper
@@ -72,6 +73,27 @@ class RumConfigE2ETests {
                     rumEnabled = true,
                     crashReportsEnabled = true
                 ).build()
+            )
+        }
+        sendRandomRumEvent(forge, testMethodName)
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setBatchSize(BatchSize): Builder
+     */
+    @Test
+    fun rum_config_custom_batch_size() {
+        val testMethodName = "rum_config_custom_batch_size"
+        measureSdkInitialize {
+            initializeSdk(
+                InstrumentationRegistry.getInstrumentation().targetContext,
+                TrackingConsent.GRANTED,
+                Configuration.Builder(
+                    logsEnabled = true,
+                    tracesEnabled = true,
+                    rumEnabled = true,
+                    crashReportsEnabled = true
+                ).setBatchSize(forge.aValueFrom(BatchSize::class.java)).build()
             )
         }
         sendRandomRumEvent(forge, testMethodName)
