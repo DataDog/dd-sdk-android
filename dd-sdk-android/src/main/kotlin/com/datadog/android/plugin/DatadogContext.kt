@@ -8,6 +8,7 @@ package com.datadog.android.plugin
 
 /**
  * Provides general information about the current context of the library.
+ * @param rum RUM Context.
  * @see DatadogRumContext
  */
 data class DatadogContext(

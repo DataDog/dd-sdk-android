@@ -12,7 +12,7 @@ import java.util.Locale
  * Describe the category of a RUM Resource.
  * @see [RumMonitor]
  */
-enum class RumResourceKind(val value: String) {
+enum class RumResourceKind(internal val value: String) {
     // Specific kind of JS resources loading
     BEACON("beacon"),
     FETCH("fetch"),

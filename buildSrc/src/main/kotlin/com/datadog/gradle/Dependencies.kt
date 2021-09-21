@@ -42,9 +42,9 @@ object Dependencies {
         const val JetpackBenchmark = "1.0.0"
 
         // Tools
-        const val Detekt = "1.6.0"
+        const val Detekt = "1.17.0"
         const val KtLint = "9.4.0"
-        const val Dokka = "1.4.10"
+        const val Dokka = "1.4.32"
         const val Unmock = "0.7.5"
         const val Robolectric = "4.4_r1-robolectric-r2" // Use lowest API
 
@@ -63,7 +63,7 @@ object Dependencies {
         const val Fresco = "2.3.0"
         const val Glide = "4.11.0"
         const val Picasso = "2.8"
-        const val Realm = "6.0.2"
+        const val Realm = "10.4.0"
         const val Room = "2.2.5"
         const val RxJava = "3.0.0"
         const val SQLDelight = "1.4.3"
