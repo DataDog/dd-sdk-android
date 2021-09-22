@@ -57,6 +57,7 @@ internal class SpanEventSerializerTest {
             mockDatadogConstraints.validateAttributes<Any?>(
                 any(),
                 anyOrNull(),
+                anyOrNull(),
                 anyOrNull()
             )
         ).thenAnswer {
@@ -91,7 +92,8 @@ internal class SpanEventSerializerTest {
             mockDatadogConstraints
                 .validateAttributes(
                     fakeSpanEvent.meta.usr.additionalProperties,
-                    SpanEventSerializer.META_USR_KEY_PREFIX
+                    SpanEventSerializer.META_USR_KEY_PREFIX,
+                    reservedKeys = emptySet<String>()
                 )
         ).thenReturn(fakeSanitizedAttributes)
 
@@ -121,7 +123,8 @@ internal class SpanEventSerializerTest {
             mockDatadogConstraints
                 .validateAttributes(
                     fakeSpanEvent.metrics.additionalProperties,
-                    SpanEventSerializer.METRICS_KEY_PREFIX
+                    SpanEventSerializer.METRICS_KEY_PREFIX,
+                    reservedKeys = emptySet<String>()
                 )
         ).thenReturn(fakeSanitizedAttributes)
 

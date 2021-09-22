@@ -10,7 +10,6 @@ import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.monitor.EventType
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -53,7 +52,7 @@ internal class RumDataWriterTest {
     lateinit var testedWriter: RumDataWriter
 
     @Mock
-    lateinit var mockSerializer: Serializer<RumEvent>
+    lateinit var mockSerializer: Serializer<Any>
 
     @Mock
     lateinit var mockOrchestrator: FileOrchestrator
@@ -86,14 +85,11 @@ internal class RumDataWriterTest {
 
     @Test
     fun `𝕄 do not notify the RumMonitor 𝕎 onDataWritten() { ViewEvent }`(
-        @Forgery fakeModel: RumEvent,
         @Forgery viewEvent: ViewEvent
     ) {
-        // Given
-        val rumEvent = fakeModel.copy(event = viewEvent)
 
         // When
-        testedWriter.onDataWritten(rumEvent, fakeSerializedData)
+        testedWriter.onDataWritten(viewEvent, fakeSerializedData)
 
         // Then
         verifyZeroInteractions(rumMonitor.mockInstance)
@@ -101,14 +97,10 @@ internal class RumDataWriterTest {
 
     @Test
     fun `𝕄 persist the event into the NDK crash folder 𝕎 onDataWritten() { ViewEvent }`(
-        @Forgery fakeModel: RumEvent,
         @Forgery viewEvent: ViewEvent
     ) {
-        // Given
-        val rumEvent = fakeModel.copy(event = viewEvent)
-
         // When
-        testedWriter.onDataWritten(rumEvent, fakeSerializedData)
+        testedWriter.onDataWritten(viewEvent, fakeSerializedData)
 
         // Then
         verify(mockFileHandler)
@@ -117,14 +109,10 @@ internal class RumDataWriterTest {
 
     @Test
     fun `𝕄 do not notify the RumMonitor 𝕎 onDataWriteFailed() { ViewEvent }`(
-        @Forgery fakeModel: RumEvent,
-        @Forgery actionEvent: ViewEvent
+        @Forgery viewEvent: ViewEvent
     ) {
-        // Given
-        val rumEvent = fakeModel.copy(event = actionEvent)
-
         // When
-        testedWriter.onDataWriteFailed(rumEvent)
+        testedWriter.onDataWriteFailed(viewEvent)
 
         // Then
         verifyZeroInteractions(rumMonitor.mockInstance, mockFileHandler)
@@ -132,14 +120,10 @@ internal class RumDataWriterTest {
 
     @Test
     fun `𝕄 notify the RumMonitor 𝕎 onDataWritten() { ActionEvent }`(
-        @Forgery fakeModel: RumEvent,
         @Forgery actionEvent: ActionEvent
     ) {
-        // Given
-        val rumEvent = fakeModel.copy(event = actionEvent)
-
         // When
-        testedWriter.onDataWritten(rumEvent, fakeSerializedData)
+        testedWriter.onDataWritten(actionEvent, fakeSerializedData)
 
         // Then
         verify(rumMonitor.mockInstance).eventSent(actionEvent.view.id, EventType.ACTION)
@@ -148,14 +132,10 @@ internal class RumDataWriterTest {
 
     @Test
     fun `𝕄 do not notify the RumMonitor 𝕎 onDataWriteFailed() { ActionEvent }`(
-        @Forgery fakeModel: RumEvent,
         @Forgery actionEvent: ActionEvent
     ) {
-        // Given
-        val rumEvent = fakeModel.copy(event = actionEvent)
-
         // When
-        testedWriter.onDataWriteFailed(rumEvent)
+        testedWriter.onDataWriteFailed(actionEvent)
 
         // Then
         verifyZeroInteractions(rumMonitor.mockInstance, mockFileHandler)
@@ -163,14 +143,10 @@ internal class RumDataWriterTest {
 
     @Test
     fun `𝕄 notify the RumMonitor 𝕎 onDataWritten() { ResourceEvent }`(
-        @Forgery fakeModel: RumEvent,
         @Forgery resourceEvent: ResourceEvent
     ) {
-        // Given
-        val rumEvent = fakeModel.copy(event = resourceEvent)
-
         // When
-        testedWriter.onDataWritten(rumEvent, fakeSerializedData)
+        testedWriter.onDataWritten(resourceEvent, fakeSerializedData)
 
         // Then
         verify(rumMonitor.mockInstance).eventSent(resourceEvent.view.id, EventType.RESOURCE)
@@ -179,14 +155,10 @@ internal class RumDataWriterTest {
 
     @Test
     fun `𝕄 do not notify the RumMonitor 𝕎 onDataWriteFailed() { ResourceEvent }`(
-        @Forgery fakeModel: RumEvent,
-        @Forgery actionEvent: ResourceEvent
+        @Forgery resourceEvent: ResourceEvent
     ) {
-        // Given
-        val rumEvent = fakeModel.copy(event = actionEvent)
-
         // When
-        testedWriter.onDataWriteFailed(rumEvent)
+        testedWriter.onDataWriteFailed(resourceEvent)
 
         // Then
         verifyZeroInteractions(rumMonitor.mockInstance, mockFileHandler)
@@ -194,54 +166,40 @@ internal class RumDataWriterTest {
 
     @Test
     fun `𝕄 notify the RumMonitor 𝕎 onDataWritten() { ErrorEvent isCrash=false }`(
-        @Forgery fakeModel: RumEvent,
-        @Forgery errorEvent: ErrorEvent
+        @Forgery fakeEvent: ErrorEvent
     ) {
         // Given
-        val rumEvent = fakeModel.copy(
-            event = errorEvent.copy(
-                error = errorEvent.error.copy(isCrash = false)
-            )
-        )
+        val errorEvent = fakeEvent.copy(error = fakeEvent.error.copy(isCrash = false))
 
         // When
-        testedWriter.onDataWritten(rumEvent, fakeSerializedData)
+        testedWriter.onDataWritten(errorEvent, fakeSerializedData)
 
         // Then
-        verify(rumMonitor.mockInstance).eventSent(errorEvent.view.id, EventType.ERROR)
+        verify(rumMonitor.mockInstance).eventSent(fakeEvent.view.id, EventType.ERROR)
         verifyZeroInteractions(mockFileHandler)
     }
 
     @Test
     fun `𝕄 not notify the RumMonitor 𝕎 onDataWritten() { ErrorEvent isCrash=true }`(
-        @Forgery fakeModel: RumEvent,
-        @Forgery errorEvent: ErrorEvent
+        @Forgery fakeEvent: ErrorEvent
     ) {
         // Given
-        val rumEvent = fakeModel.copy(
-            event = errorEvent.copy(
-                error = errorEvent.error.copy(isCrash = true)
-            )
-        )
+        val errorEvent = fakeEvent.copy(error = fakeEvent.error.copy(isCrash = true))
 
         // When
-        testedWriter.onDataWritten(rumEvent, fakeSerializedData)
+        testedWriter.onDataWritten(errorEvent, fakeSerializedData)
 
         // Then
-        verify(rumMonitor.mockInstance, never()).eventSent(eq(errorEvent.view.id), any())
+        verify(rumMonitor.mockInstance, never()).eventSent(eq(fakeEvent.view.id), any())
         verifyZeroInteractions(mockFileHandler)
     }
 
     @Test
     fun `𝕄 do not notify the RumMonitor 𝕎 onDataWriteFailed() { ErrorEvent }`(
-        @Forgery fakeModel: RumEvent,
-        @Forgery actionEvent: ErrorEvent
+        @Forgery fakeEvent: ErrorEvent
     ) {
-        // Given
-        val rumEvent = fakeModel.copy(event = actionEvent)
-
         // When
-        testedWriter.onDataWriteFailed(rumEvent)
+        testedWriter.onDataWriteFailed(fakeEvent)
 
         // Then
         verifyZeroInteractions(rumMonitor.mockInstance, mockFileHandler)
@@ -249,60 +207,52 @@ internal class RumDataWriterTest {
 
     @Test
     fun `𝕄 notify the RumMonitor 𝕎 onDataWritten() { LongTaskEvent }`(
-        @Forgery fakeModel: RumEvent,
-        @Forgery longTaskEvent: LongTaskEvent
+        @Forgery fakeEvent: LongTaskEvent
     ) {
         // Given
-        val longTask = longTaskEvent.copy(
+        val longTaskEvent = fakeEvent.copy(
             longTask = LongTaskEvent.LongTask(
-                id = longTaskEvent.longTask.id,
-                duration = longTaskEvent.longTask.duration,
+                id = fakeEvent.longTask.id,
+                duration = fakeEvent.longTask.duration,
                 isFrozenFrame = false
             )
         )
-        val rumEvent = fakeModel.copy(event = longTask)
 
         // When
-        testedWriter.onDataWritten(rumEvent, fakeSerializedData)
+        testedWriter.onDataWritten(longTaskEvent, fakeSerializedData)
 
         // Then
-        verify(rumMonitor.mockInstance).eventSent(longTask.view.id, EventType.LONG_TASK)
+        verify(rumMonitor.mockInstance).eventSent(longTaskEvent.view.id, EventType.LONG_TASK)
         verifyZeroInteractions(mockFileHandler)
     }
 
     @Test
     fun `𝕄 notify the RumMonitor 𝕎 onDataWritten() { FrozenFrame Event }`(
-        @Forgery fakeModel: RumEvent,
-        @Forgery longTaskEvent: LongTaskEvent
+        @Forgery fakeEvent: LongTaskEvent
     ) {
         // Given
-        val frozenFrame = longTaskEvent.copy(
+        val frozenFrameEvent = fakeEvent.copy(
             longTask = LongTaskEvent.LongTask(
-                id = longTaskEvent.longTask.id,
-                duration = longTaskEvent.longTask.duration,
+                id = fakeEvent.longTask.id,
+                duration = fakeEvent.longTask.duration,
                 isFrozenFrame = true
             )
         )
-        val rumEvent = fakeModel.copy(event = frozenFrame)
 
         // When
-        testedWriter.onDataWritten(rumEvent, fakeSerializedData)
+        testedWriter.onDataWritten(frozenFrameEvent, fakeSerializedData)
 
         // Then
-        verify(rumMonitor.mockInstance).eventSent(frozenFrame.view.id, EventType.FROZEN_FRAME)
+        verify(rumMonitor.mockInstance).eventSent(frozenFrameEvent.view.id, EventType.FROZEN_FRAME)
         verifyZeroInteractions(mockFileHandler)
     }
 
     @Test
     fun `𝕄 do not notify the RumMonitor 𝕎 onDataWriteFailed() { LongTaskEvent }`(
-        @Forgery fakeModel: RumEvent,
-        @Forgery actionEvent: LongTaskEvent
+        @Forgery fakeEvent: LongTaskEvent
     ) {
-        // Given
-        val rumEvent = fakeModel.copy(event = actionEvent)
-
         // When
-        testedWriter.onDataWriteFailed(rumEvent)
+        testedWriter.onDataWriteFailed(fakeEvent)
 
         // Then
         verifyZeroInteractions(rumMonitor.mockInstance, mockFileHandler)

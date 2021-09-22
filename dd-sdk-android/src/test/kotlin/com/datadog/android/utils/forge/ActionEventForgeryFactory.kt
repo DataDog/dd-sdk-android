@@ -34,13 +34,17 @@ internal class ActionEventForgeryFactory :
             usr = ActionEvent.Usr(
                 id = forge.anHexadecimalString(),
                 name = forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+"),
-                email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}")
+                email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}"),
+                additionalProperties = forge.exhaustiveAttributes()
             ),
             application = ActionEvent.Application(forge.getForgery<UUID>().toString()),
             session = ActionEvent.ActionEventSession(
                 id = forge.getForgery<UUID>().toString(),
                 type = ActionEvent.ActionEventSessionType.USER
             ),
+            context = forge.aNullable {
+                ActionEvent.Context(additionalProperties = forge.exhaustiveAttributes())
+            },
             dd = ActionEvent.Dd()
         )
     }

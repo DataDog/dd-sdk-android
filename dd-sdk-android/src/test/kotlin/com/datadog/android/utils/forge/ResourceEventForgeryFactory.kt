@@ -46,7 +46,8 @@ internal class ResourceEventForgeryFactory :
             usr = ResourceEvent.Usr(
                 id = forge.anHexadecimalString(),
                 name = forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+"),
-                email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}")
+                email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}"),
+                additionalProperties = forge.exhaustiveAttributes()
             ),
             action = forge.aNullable { ResourceEvent.Action(getForgery<UUID>().toString()) },
             application = ResourceEvent.Application(forge.getForgery<UUID>().toString()),
@@ -54,6 +55,11 @@ internal class ResourceEventForgeryFactory :
                 id = forge.getForgery<UUID>().toString(),
                 type = ResourceEvent.ResourceEventSessionType.USER
             ),
+            context = forge.aNullable {
+                ResourceEvent.Context(
+                    additionalProperties = forge.exhaustiveAttributes()
+                )
+            },
             dd = ResourceEvent.Dd()
         )
     }

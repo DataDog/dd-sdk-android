@@ -13,10 +13,9 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
+import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
@@ -71,7 +70,7 @@ internal class RumContinuousActionScopeTest {
     lateinit var mockParentScope: RumScope
 
     @Mock
-    lateinit var mockWriter: DataWriter<RumEvent>
+    lateinit var mockWriter: DataWriter<Any>
 
     @Forgery
     lateinit var fakeType: RumActionType
@@ -196,11 +195,10 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -214,6 +212,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -242,11 +241,10 @@ internal class RumContinuousActionScopeTest {
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(expectedAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasTargetName(name)
@@ -260,6 +258,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -287,11 +286,10 @@ internal class RumContinuousActionScopeTest {
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(expectedAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasTargetName(fakeName)
@@ -305,6 +303,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -334,11 +333,10 @@ internal class RumContinuousActionScopeTest {
         val result4 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -352,6 +350,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -391,11 +390,10 @@ internal class RumContinuousActionScopeTest {
         val result4 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -409,6 +407,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -439,11 +438,10 @@ internal class RumContinuousActionScopeTest {
         val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -456,6 +454,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -489,11 +488,10 @@ internal class RumContinuousActionScopeTest {
         val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -507,6 +505,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -534,11 +533,10 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -551,6 +549,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -585,11 +584,10 @@ internal class RumContinuousActionScopeTest {
         val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -602,6 +600,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -622,11 +621,10 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -639,6 +637,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -658,11 +657,10 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -675,6 +673,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -694,11 +693,10 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -712,6 +710,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -733,11 +732,10 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -751,6 +749,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -772,11 +771,10 @@ internal class RumContinuousActionScopeTest {
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -790,6 +788,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -833,11 +832,10 @@ internal class RumContinuousActionScopeTest {
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(expectedAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -851,6 +849,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -881,11 +880,10 @@ internal class RumContinuousActionScopeTest {
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(expectedAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -899,6 +897,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -921,11 +920,10 @@ internal class RumContinuousActionScopeTest {
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -939,6 +937,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -961,11 +960,10 @@ internal class RumContinuousActionScopeTest {
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -979,6 +977,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1003,11 +1002,10 @@ internal class RumContinuousActionScopeTest {
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -1020,6 +1018,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1043,11 +1042,10 @@ internal class RumContinuousActionScopeTest {
         val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -1061,6 +1059,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1128,11 +1127,10 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(RumActionType.CUSTOM)
@@ -1145,6 +1143,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1235,11 +1234,10 @@ internal class RumContinuousActionScopeTest {
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -1253,6 +1251,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1277,11 +1276,10 @@ internal class RumContinuousActionScopeTest {
         val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -1295,6 +1293,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1320,11 +1319,10 @@ internal class RumContinuousActionScopeTest {
         val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(fakeType)
@@ -1338,6 +1336,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1354,12 +1353,10 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(event, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ActionEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasActionData {
+                .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasType(ActionEvent.ActionType.CUSTOM)
@@ -1374,6 +1371,7 @@ internal class RumContinuousActionScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())

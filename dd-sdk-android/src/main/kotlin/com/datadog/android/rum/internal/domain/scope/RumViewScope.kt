@@ -23,7 +23,6 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -135,7 +134,7 @@ internal open class RumViewScope(
 
     override fun handleEvent(
         event: RumRawEvent,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ): RumScope? {
         when (event) {
             is RumRawEvent.ResourceSent -> onResourceSent(event, writer)
@@ -193,7 +192,7 @@ internal open class RumViewScope(
 
     private fun onStartView(
         event: RumRawEvent.StartView,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         if (!stopped) {
             stopped = true
@@ -204,7 +203,7 @@ internal open class RumViewScope(
 
     private fun onStopView(
         event: RumRawEvent.StopView,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         delegateEventToChildren(event, writer)
         val startedKey = keyRef.get()
@@ -218,7 +217,7 @@ internal open class RumViewScope(
 
     private fun onStartAction(
         event: RumRawEvent.StartAction,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         delegateEventToChildren(event, writer)
 
@@ -243,7 +242,7 @@ internal open class RumViewScope(
 
     private fun onStartResource(
         event: RumRawEvent.StartResource,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         delegateEventToChildren(event, writer)
         if (stopped) return
@@ -262,7 +261,7 @@ internal open class RumViewScope(
 
     private fun onAddError(
         event: RumRawEvent.AddError,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         delegateEventToChildren(event, writer)
         if (stopped) return
@@ -290,7 +289,8 @@ internal open class RumViewScope(
             usr = ErrorEvent.Usr(
                 id = user.id,
                 name = user.name,
-                email = user.email
+                email = user.email,
+                additionalProperties = user.additionalProperties
             ),
             connectivity = networkInfo.toErrorConnectivity(),
             application = ErrorEvent.Application(context.applicationId),
@@ -298,14 +298,10 @@ internal open class RumViewScope(
                 id = context.sessionId,
                 type = ErrorEvent.ErrorEventSessionType.USER
             ),
+            context = ErrorEvent.Context(additionalProperties = updatedAttributes),
             dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
         )
-        val rumEvent = RumEvent(
-            event = errorEvent,
-            globalAttributes = updatedAttributes,
-            userExtraAttributes = user.additionalProperties
-        )
-        writer.write(rumEvent)
+        writer.write(errorEvent)
         if (event.isFatal) {
             errorCount++
             crashCount++
@@ -317,7 +313,7 @@ internal open class RumViewScope(
 
     private fun onAddCustomTiming(
         event: RumRawEvent.AddCustomTiming,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         customTimings[event.name] = max(event.eventTime.nanoTime - startedNanos, 1L)
         sendViewUpdate(event, writer)
@@ -325,7 +321,7 @@ internal open class RumViewScope(
 
     private fun onKeepAlive(
         event: RumRawEvent.KeepAlive,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         delegateEventToChildren(event, writer)
         if (stopped) return
@@ -335,7 +331,7 @@ internal open class RumViewScope(
 
     private fun delegateEventToChildren(
         event: RumRawEvent,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         delegateEventToResources(event, writer)
         delegateEventToAction(event, writer)
@@ -343,7 +339,7 @@ internal open class RumViewScope(
 
     private fun delegateEventToAction(
         event: RumRawEvent,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         val currentAction = activeActionScope
         if (currentAction != null) {
@@ -356,7 +352,7 @@ internal open class RumViewScope(
 
     private fun delegateEventToResources(
         event: RumRawEvent,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         val iterator = activeResourceScopes.iterator()
         while (iterator.hasNext()) {
@@ -370,7 +366,7 @@ internal open class RumViewScope(
 
     private fun onResourceSent(
         event: RumRawEvent.ResourceSent,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         if (event.viewId == viewId) {
             pendingResourceCount--
@@ -381,7 +377,7 @@ internal open class RumViewScope(
 
     private fun onActionSent(
         event: RumRawEvent.ActionSent,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         if (event.viewId == viewId) {
             pendingActionCount--
@@ -392,7 +388,7 @@ internal open class RumViewScope(
 
     private fun onErrorSent(
         event: RumRawEvent.ErrorSent,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         if (event.viewId == viewId) {
             pendingErrorCount--
@@ -403,7 +399,7 @@ internal open class RumViewScope(
 
     private fun onLongTaskSent(
         event: RumRawEvent.LongTaskSent,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         if (event.viewId == viewId) {
             pendingLongTaskCount--
@@ -444,7 +440,7 @@ internal open class RumViewScope(
     }
 
     @Suppress("LongMethod")
-    private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<RumEvent>) {
+    private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<Any>) {
         attributes.putAll(GlobalRum.globalAttributes)
         version++
         val updatedDurationNs = event.eventTime.nanoTime - startedNanos
@@ -491,25 +487,22 @@ internal open class RumViewScope(
             usr = ViewEvent.Usr(
                 id = user.id,
                 name = user.name,
-                email = user.email
+                email = user.email,
+                additionalProperties = user.additionalProperties
             ),
             application = ViewEvent.Application(context.applicationId),
             session = ViewEvent.ViewEventSession(
                 id = context.sessionId,
                 type = ViewEvent.Type.USER
             ),
+            context = ViewEvent.Context(additionalProperties = attributes),
             dd = ViewEvent.Dd(
                 documentVersion = version,
                 session = ViewEvent.DdSession(plan = ViewEvent.Plan.PLAN_1)
             )
         )
 
-        val rumEvent = RumEvent(
-            event = viewEvent,
-            globalAttributes = attributes,
-            userExtraAttributes = user.additionalProperties
-        )
-        writer.write(rumEvent)
+        writer.write(viewEvent)
     }
 
     private fun addExtraAttributes(
@@ -521,7 +514,7 @@ internal open class RumViewScope(
 
     private fun onUpdateViewLoadingTime(
         event: RumRawEvent.UpdateViewLoadingTime,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         val startedKey = keyRef.get()
         if (event.key != startedKey) {
@@ -534,7 +527,7 @@ internal open class RumViewScope(
 
     private fun onApplicationStarted(
         event: RumRawEvent.ApplicationStarted,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         pendingActionCount++
         val context = getRumContext()
@@ -555,21 +548,18 @@ internal open class RumViewScope(
             usr = ActionEvent.Usr(
                 id = user.id,
                 name = user.name,
-                email = user.email
+                email = user.email,
+                additionalProperties = user.additionalProperties
             ),
             application = ActionEvent.Application(context.applicationId),
             session = ActionEvent.ActionEventSession(
                 id = context.sessionId,
                 type = ActionEvent.ActionEventSessionType.USER
             ),
+            context = ActionEvent.Context(additionalProperties = GlobalRum.globalAttributes),
             dd = ActionEvent.Dd(session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1))
         )
-        val rumEvent = RumEvent(
-            event = actionEvent,
-            globalAttributes = GlobalRum.globalAttributes,
-            userExtraAttributes = user.additionalProperties
-        )
-        writer.write(rumEvent)
+        writer.write(actionEvent)
     }
 
     private fun getStartupTime(event: RumRawEvent.ApplicationStarted): Long {
@@ -578,7 +568,7 @@ internal open class RumViewScope(
         return max(now - startupTime, 1L)
     }
 
-    private fun onAddLongTask(event: RumRawEvent.AddLongTask, writer: DataWriter<RumEvent>) {
+    private fun onAddLongTask(event: RumRawEvent.AddLongTask, writer: DataWriter<Any>) {
         delegateEventToChildren(event, writer)
         if (stopped) return
 
@@ -605,7 +595,8 @@ internal open class RumViewScope(
             usr = LongTaskEvent.Usr(
                 id = user.id,
                 name = user.name,
-                email = user.email
+                email = user.email,
+                additionalProperties = user.additionalProperties
             ),
             connectivity = networkInfo.toLongTaskConnectivity(),
             application = LongTaskEvent.Application(context.applicationId),
@@ -613,14 +604,10 @@ internal open class RumViewScope(
                 id = context.sessionId,
                 type = LongTaskEvent.Type.USER
             ),
+            context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
             dd = LongTaskEvent.Dd(session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1))
         )
-        val rumEvent = RumEvent(
-            event = longTaskEvent,
-            globalAttributes = updatedAttributes,
-            userExtraAttributes = user.additionalProperties
-        )
-        writer.write(rumEvent)
+        writer.write(longTaskEvent)
         pendingLongTaskCount++
         if (isFrozenFrame) pendingFrozenFrameCount++
     }

@@ -11,7 +11,6 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 
 internal class RumApplicationScope(
@@ -43,7 +42,7 @@ internal class RumApplicationScope(
 
     override fun handleEvent(
         event: RumRawEvent,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ): RumScope {
         childScope.handleEvent(event, writer)
         return this

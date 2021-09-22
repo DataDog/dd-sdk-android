@@ -26,9 +26,9 @@ internal data class RumEventMapper(
     val resourceEventMapper: EventMapper<ResourceEvent> = NoOpEventMapper(),
     val actionEventMapper: EventMapper<ActionEvent> = NoOpEventMapper(),
     val longTaskEventMapper: EventMapper<LongTaskEvent> = NoOpEventMapper()
-) : EventMapper<RumEvent> {
+) : EventMapper<Any> {
 
-    override fun map(event: RumEvent): RumEvent? {
+    override fun map(event: Any): Any? {
         val mappedEvent = resolveEvent(event)
         if (mappedEvent == null) {
             notifyEventDropped(event)
@@ -38,52 +38,50 @@ internal data class RumEventMapper(
 
     // region Internal
 
-    private fun mapRumEvent(event: RumEvent): Any? {
-        return when (val bundledEvent = event.event) {
-            is ViewEvent -> viewEventMapper.map(bundledEvent)
-            is ActionEvent -> actionEventMapper.map(bundledEvent)
+    private fun mapRumEvent(event: Any): Any? {
+        return when (event) {
+            is ViewEvent -> viewEventMapper.map(event)
+            is ActionEvent -> actionEventMapper.map(event)
             is ErrorEvent -> {
-                if (bundledEvent.error.isCrash != true) {
-                    errorEventMapper.map(bundledEvent)
+                if (event.error.isCrash != true) {
+                    errorEventMapper.map(event)
                 } else {
-                    bundledEvent
+                    event
                 }
             }
-            is ResourceEvent -> resourceEventMapper.map(bundledEvent)
-            is LongTaskEvent -> longTaskEventMapper.map(bundledEvent)
+            is ResourceEvent -> resourceEventMapper.map(event)
+            is LongTaskEvent -> longTaskEventMapper.map(event)
             else -> {
                 sdkLogger.w(
                     NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE
-                        .format(Locale.US, bundledEvent.javaClass.simpleName)
+                        .format(Locale.US, event.javaClass.simpleName)
                 )
-                bundledEvent
+                event
             }
         }
     }
 
     private fun resolveEvent(
-        event: RumEvent
-    ): RumEvent? {
-        val bundledMappedEvent = mapRumEvent(event)
+        event: Any
+    ): Any? {
+        val mappedEvent = mapRumEvent(event)
 
         // we need to check if the returned bundled mapped object is not null and same instance
         // as the original one. Otherwise we will drop the event.
         // In case the event is of type ViewEvent this cannot be null according with the interface
         // but it can happen that if used from Java code to have null values. In this case we will
         // log a warning and we will use the original event.
-        return if (event.event is ViewEvent &&
-            (bundledMappedEvent == null || bundledMappedEvent != event.event)
-        ) {
+        return if (event is ViewEvent && (mappedEvent == null || mappedEvent != event)) {
             devLogger.w(
                 VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event)
             )
             event
-        } else if (bundledMappedEvent == null) {
+        } else if (mappedEvent == null) {
             devLogger.w(
                 EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event)
             )
             null
-        } else if (bundledMappedEvent !== event.event) {
+        } else if (mappedEvent !== event) {
             devLogger.w(
                 NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, event)
             )
@@ -93,17 +91,17 @@ internal data class RumEventMapper(
         }
     }
 
-    private fun notifyEventDropped(event: RumEvent) {
+    private fun notifyEventDropped(event: Any) {
         val monitor = (GlobalRum.get() as? AdvancedRumMonitor) ?: return
-        when (val rumEvent = event.event) {
-            is ActionEvent -> monitor.eventDropped(rumEvent.view.id, EventType.ACTION)
-            is ResourceEvent -> monitor.eventDropped(rumEvent.view.id, EventType.RESOURCE)
-            is ErrorEvent -> monitor.eventDropped(rumEvent.view.id, EventType.ERROR)
+        when (event) {
+            is ActionEvent -> monitor.eventDropped(event.view.id, EventType.ACTION)
+            is ResourceEvent -> monitor.eventDropped(event.view.id, EventType.RESOURCE)
+            is ErrorEvent -> monitor.eventDropped(event.view.id, EventType.ERROR)
             is LongTaskEvent -> {
-                if (rumEvent.longTask.isFrozenFrame == true) {
-                    monitor.eventDropped(rumEvent.view.id, EventType.FROZEN_FRAME)
+                if (event.longTask.isFrozenFrame == true) {
+                    monitor.eventDropped(event.view.id, EventType.FROZEN_FRAME)
                 } else {
-                    monitor.eventDropped(rumEvent.view.id, EventType.LONG_TASK)
+                    monitor.eventDropped(event.view.id, EventType.LONG_TASK)
                 }
             }
             else -> {

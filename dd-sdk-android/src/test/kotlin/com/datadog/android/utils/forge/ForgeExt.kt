@@ -6,6 +6,10 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.ViewEvent
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
@@ -69,6 +73,15 @@ internal fun Forge.aFormattedTimestamp(format: String = "yyyy-MM-dd'T'HH:mm:ss.S
         timeZone = TimeZone.getTimeZone("UTC")
     }
     return simpleDateFormat.format(this.aTimestamp())
+}
+
+internal fun Forge.aRumEvent(): Any {
+    return this.anElementFrom(
+        this.getForgery<ViewEvent>(),
+        this.getForgery<ActionEvent>(),
+        this.getForgery<ResourceEvent>(),
+        this.getForgery<ErrorEvent>()
+    )
 }
 
 private fun assumeDifferenceIsNoMore(result: Int, base: Int, maxDifference: Float) {

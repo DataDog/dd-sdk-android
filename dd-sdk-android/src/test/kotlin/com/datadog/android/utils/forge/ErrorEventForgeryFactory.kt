@@ -39,7 +39,8 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
             usr = ErrorEvent.Usr(
                 id = forge.anHexadecimalString(),
                 name = forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+"),
-                email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}")
+                email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}"),
+                additionalProperties = forge.exhaustiveAttributes()
             ),
             action = forge.aNullable { ErrorEvent.Action(getForgery<UUID>().toString()) },
             application = ErrorEvent.Application(forge.getForgery<UUID>().toString()),
@@ -47,6 +48,9 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
                 id = forge.getForgery<UUID>().toString(),
                 type = ErrorEvent.ErrorEventSessionType.USER
             ),
+            context = forge.aNullable {
+                ErrorEvent.Context(additionalProperties = forge.exhaustiveAttributes())
+            },
             dd = ErrorEvent.Dd()
         )
     }

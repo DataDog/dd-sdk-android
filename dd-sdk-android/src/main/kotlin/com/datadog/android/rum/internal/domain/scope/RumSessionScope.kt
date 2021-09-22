@@ -18,7 +18,6 @@ import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import java.security.SecureRandom
@@ -52,7 +51,7 @@ internal class RumSessionScope(
     private var applicationDisplayed: Boolean = false
 
     private val random = SecureRandom()
-    private val noOpWriter = NoOpDataWriter<RumEvent>()
+    private val noOpWriter = NoOpDataWriter<Any>()
 
     init {
         GlobalRum.updateRumContext(getRumContext())
@@ -62,7 +61,7 @@ internal class RumSessionScope(
 
     override fun handleEvent(
         event: RumRawEvent,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ): RumScope {
         if (event is RumRawEvent.ResetSession) {
             sessionId = RumContext.NULL_UUID
@@ -115,7 +114,7 @@ internal class RumSessionScope(
     @Suppress("ComplexCondition")
     private fun handleOrphanEvent(
         event: RumRawEvent,
-        actualWriter: DataWriter<RumEvent>
+        actualWriter: DataWriter<Any>
     ) {
         val isValidBackgroundEvent = event is RumRawEvent.AddError ||
             event is RumRawEvent.AddLongTask ||
@@ -152,7 +151,7 @@ internal class RumSessionScope(
     internal fun onApplicationDisplayed(
         event: RumRawEvent.StartView,
         viewScope: RumViewScope,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         if (!applicationDisplayed) {
             applicationDisplayed = true

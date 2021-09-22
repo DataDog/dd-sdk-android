@@ -19,7 +19,6 @@ import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
@@ -77,7 +76,7 @@ internal class DatadogNdkCrashHandlerTest {
     lateinit var mockNdkCrashLogDeserializer: Deserializer<NdkCrashLog>
 
     @Mock
-    lateinit var mockRumEventDeserializer: Deserializer<RumEvent>
+    lateinit var mockRumEventDeserializer: Deserializer<Any>
 
     @Mock
     lateinit var mockNetworkInfoDeserializer: Deserializer<NetworkInfo>
@@ -89,7 +88,7 @@ internal class DatadogNdkCrashHandlerTest {
     lateinit var mockLogWriter: DataWriter<LogEvent>
 
     @Mock
-    lateinit var mockRumWriter: DataWriter<RumEvent>
+    lateinit var mockRumWriter: DataWriter<Any>
 
     @Mock
     lateinit var mockLogHandler: LogHandler
@@ -144,11 +143,11 @@ internal class DatadogNdkCrashHandlerTest {
 
     @Test
     fun `𝕄 read last RUM View event 𝕎 prepareData()`(
-        @StringForgery rumEvent: String
+        @StringForgery viewEvent: String
     ) {
         // Given
         fakeNdkFilesDir.mkdirs()
-        File(fakeNdkFilesDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(rumEvent)
+        File(fakeNdkFilesDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(viewEvent)
 
         // When
         testedHandler.prepareData()
@@ -158,7 +157,7 @@ internal class DatadogNdkCrashHandlerTest {
         verify(mockExecutorService).submit(captureRunnable.capture())
         captureRunnable.firstValue.run()
         assertThat(testedHandler.lastSerializedRumViewEvent)
-            .isEqualTo(rumEvent)
+            .isEqualTo(viewEvent)
     }
 
     @Test
@@ -215,13 +214,13 @@ internal class DatadogNdkCrashHandlerTest {
 
     @Test
     fun `𝕄 do nothing 𝕎 handleNdkCrash() {no crash data}`(
-        @StringForgery rumEvent: String,
+        @StringForgery viewEvent: String,
         @StringForgery networkInfo: String,
         @StringForgery userInfo: String
     ) {
         // Given
         fakeNdkFilesDir.mkdirs()
-        File(fakeNdkFilesDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(rumEvent)
+        File(fakeNdkFilesDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(viewEvent)
         File(fakeNdkFilesDir, DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME).writeText(networkInfo)
         File(fakeNdkFilesDir, DatadogNdkCrashHandler.USER_INFO_FILE_NAME).writeText(userInfo)
 
@@ -237,13 +236,13 @@ internal class DatadogNdkCrashHandlerTest {
     @Test
     fun `𝕄 do nothing 𝕎 handleNdkCrash() {crash data can't be deserialized}`(
         @StringForgery crashData: String,
-        @StringForgery rumEvent: String,
+        @StringForgery viewEvent: String,
         @StringForgery networkInfo: String,
         @StringForgery userInfo: String
     ) {
         // Given
         fakeNdkFilesDir.mkdirs()
-        File(fakeNdkFilesDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(rumEvent)
+        File(fakeNdkFilesDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(viewEvent)
         File(fakeNdkFilesDir, DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME).writeText(networkInfo)
         File(fakeNdkFilesDir, DatadogNdkCrashHandler.USER_INFO_FILE_NAME).writeText(userInfo)
         File(fakeNdkFilesDir, DatadogNdkCrashHandler.CRASH_DATA_FILE_NAME).writeText(crashData)
@@ -338,10 +337,9 @@ internal class DatadogNdkCrashHandlerTest {
     @Test
     fun `𝕄 send log 𝕎 handleNdkCrash() {with RUM last view}`(
         @StringForgery crashData: String,
-        @StringForgery rumEventStr: String,
+        @StringForgery viewEventStr: String,
         @Forgery ndkCrashLog: NdkCrashLog,
-        @Forgery rumEvent: RumEvent,
-        @Forgery rumViewEvent: ViewEvent,
+        @Forgery viewEvent: ViewEvent,
         forge: Forge
     ) {
         // Given
@@ -349,11 +347,11 @@ internal class DatadogNdkCrashHandlerTest {
             forge.aLong(min = -ndkCrashLog.timestamp, max = Long.MAX_VALUE - ndkCrashLog.timestamp)
         whenever(mockTimeProvider.getServerOffsetMillis()).thenReturn(fakeServerOffset)
         testedHandler.lastSerializedNdkCrashLog = crashData
-        testedHandler.lastSerializedRumViewEvent = rumEventStr
+        testedHandler.lastSerializedRumViewEvent = viewEventStr
         whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn ndkCrashLog
-        whenever(mockRumEventDeserializer.deserialize(rumEventStr))
-            .doReturn(rumEvent.copy(event = rumViewEvent))
-        stubLogGenerator(ndkCrashLog, null, null, rumViewEvent)
+        whenever(mockRumEventDeserializer.deserialize(viewEventStr))
+            .doReturn(viewEvent)
+        stubLogGenerator(ndkCrashLog, null, null, viewEvent)
 
         // When
         testedHandler.handleNdkCrash(mockLogWriter, mockRumWriter)
@@ -362,16 +360,16 @@ internal class DatadogNdkCrashHandlerTest {
         verify(mockExecutorService).submit(captureRunnable.capture())
         verifyZeroInteractions(mockLogWriter)
         captureRunnable.firstValue.run()
-        argumentCaptor<RumEvent> {
+        argumentCaptor<Any> {
             verify(mockRumWriter, atLeast(1)).write(capture())
 
-            assertThat(firstValue.event as ErrorEvent)
-                .hasApplicationId(rumViewEvent.application.id)
-                .hasSessionId(rumViewEvent.session.id)
+            assertThat(firstValue as ErrorEvent)
+                .hasApplicationId(viewEvent.application.id)
+                .hasSessionId(viewEvent.session.id)
                 .hasView(
-                    rumViewEvent.view.id,
-                    rumViewEvent.view.name,
-                    rumViewEvent.view.url
+                    viewEvent.view.id,
+                    viewEvent.view.name,
+                    viewEvent.view.url
                 )
                 .hasMessage(
                     DatadogNdkCrashHandler.LOG_CRASH_MSG.format(
@@ -385,9 +383,10 @@ internal class DatadogNdkCrashHandlerTest {
                 .hasTimestamp(ndkCrashLog.timestamp + fakeServerOffset)
                 .hasUserInfo(
                     UserInfo(
-                        rumViewEvent.usr?.id,
-                        rumViewEvent.usr?.name,
-                        rumViewEvent.usr?.email
+                        viewEvent.usr?.id,
+                        viewEvent.usr?.name,
+                        viewEvent.usr?.email,
+                        viewEvent.usr?.additionalProperties ?: emptyMap()
                     )
                 )
                 .hasErrorType(ndkCrashLog.signalName)

@@ -17,7 +17,6 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import java.net.MalformedURLException
@@ -56,7 +55,7 @@ internal class RumResourceScope(
 
     // region RumScope
 
-    override fun handleEvent(event: RumRawEvent, writer: DataWriter<RumEvent>): RumScope? {
+    override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope? {
         when (event) {
             is RumRawEvent.WaitForResourceTiming -> if (key == event.key) waitForTiming = true
             is RumRawEvent.AddResourceTiming -> onAddResourceTiming(event, writer)
@@ -77,7 +76,7 @@ internal class RumResourceScope(
 
     private fun onStopResource(
         event: RumRawEvent.StopResource,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         if (key != event.key) return
 
@@ -94,7 +93,7 @@ internal class RumResourceScope(
 
     private fun onAddResourceTiming(
         event: RumRawEvent.AddResourceTiming,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         if (key != event.key) return
 
@@ -106,7 +105,7 @@ internal class RumResourceScope(
 
     private fun onStopResourceWithError(
         event: RumRawEvent.StopResourceWithError,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         if (key != event.key) return
 
@@ -127,7 +126,7 @@ internal class RumResourceScope(
         statusCode: Long?,
         size: Long?,
         eventTime: Time,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         attributes.putAll(GlobalRum.globalAttributes)
         val traceId = attributes.remove(RumAttributes.TRACE_ID)?.toString()
@@ -167,7 +166,8 @@ internal class RumResourceScope(
             usr = ResourceEvent.Usr(
                 id = user.id,
                 name = user.name,
-                email = user.email
+                email = user.email,
+                additionalProperties = user.additionalProperties
             ),
             connectivity = networkInfo.toResourceConnectivity(),
             application = ResourceEvent.Application(context.applicationId),
@@ -175,18 +175,14 @@ internal class RumResourceScope(
                 id = context.sessionId,
                 type = ResourceEvent.ResourceEventSessionType.USER
             ),
+            context = ResourceEvent.Context(additionalProperties = attributes),
             dd = ResourceEvent.Dd(
                 traceId = traceId,
                 spanId = spanId,
                 session = ResourceEvent.DdSession(plan = ResourceEvent.Plan.PLAN_1)
             )
         )
-        val rumEvent = RumEvent(
-            event = resourceEvent,
-            globalAttributes = attributes,
-            userExtraAttributes = user.additionalProperties
-        )
-        writer.write(rumEvent)
+        writer.write(resourceEvent)
         sent = true
     }
 
@@ -206,7 +202,7 @@ internal class RumResourceScope(
         source: RumErrorSource,
         statusCode: Long?,
         throwable: Throwable?,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         attributes.putAll(GlobalRum.globalAttributes)
 
@@ -236,7 +232,8 @@ internal class RumResourceScope(
             usr = ErrorEvent.Usr(
                 id = user.id,
                 name = user.name,
-                email = user.email
+                email = user.email,
+                additionalProperties = user.additionalProperties
             ),
             connectivity = networkInfo.toErrorConnectivity(),
             application = ErrorEvent.Application(context.applicationId),
@@ -244,14 +241,10 @@ internal class RumResourceScope(
                 id = context.sessionId,
                 type = ErrorEvent.ErrorEventSessionType.USER
             ),
+            context = ErrorEvent.Context(additionalProperties = attributes),
             dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
         )
-        val rumEvent = RumEvent(
-            event = errorEvent,
-            globalAttributes = attributes,
-            userExtraAttributes = user.additionalProperties
-        )
-        writer.write(rumEvent)
+        writer.write(errorEvent)
         sent = true
     }
 

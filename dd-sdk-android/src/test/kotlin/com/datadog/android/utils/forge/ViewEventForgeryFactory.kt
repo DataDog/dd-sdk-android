@@ -42,12 +42,16 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
             usr = ViewEvent.Usr(
                 id = forge.anHexadecimalString(),
                 name = forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+"),
-                email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}")
+                email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}"),
+                additionalProperties = forge.exhaustiveAttributes()
             ),
             application = ViewEvent.Application(forge.getForgery<UUID>().toString()),
             session = ViewEvent.ViewEventSession(
                 id = forge.getForgery<UUID>().toString(),
                 type = ViewEvent.Type.USER
+            ),
+            context = ViewEvent.Context(
+                additionalProperties = forge.exhaustiveAttributes()
             ),
             dd = ViewEvent.Dd(
                 documentVersion = forge.aPositiveLong(strict = true)

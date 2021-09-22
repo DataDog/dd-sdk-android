@@ -13,31 +13,20 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.util.Locale
 
-internal class RumEventDeserializer : Deserializer<RumEvent> {
+internal class RumEventDeserializer : Deserializer<Any> {
 
     // region Deserializer
 
-    override fun deserialize(model: String): RumEvent? {
+    override fun deserialize(model: String): Any? {
         return try {
             val jsonObject = JsonParser.parseString(model).asJsonObject
-            val userAttributes: MutableMap<String, Any?> = mutableMapOf()
-            val globalAttributes: MutableMap<String, Any?> = mutableMapOf()
-
-            resolveCustomAttributes(userAttributes, globalAttributes, jsonObject)
-
-            val deserializedBundledEvent = parseEvent(
+            parseEvent(
                 jsonObject.getAsJsonPrimitive(EVENT_TYPE_KEY_NAME)?.asString,
                 model
-            )
-            RumEvent(
-                deserializedBundledEvent,
-                globalAttributes,
-                userAttributes
             )
         } catch (e: JsonParseException) {
             sdkLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model), e)
@@ -51,28 +40,6 @@ internal class RumEventDeserializer : Deserializer<RumEvent> {
     // endregion
 
     // region Internal
-
-    private fun resolveCustomAttributes(
-        userAttributes: MutableMap<String, Any?>,
-        globalAttributes: MutableMap<String, Any?>,
-        jsonObject: JsonObject
-    ) {
-        val globalAttrPrefix = RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX + '.'
-        val userAttrPrefix = RumEventSerializer.USER_ATTRIBUTE_PREFIX + '.'
-        val globalAttrPrefixLength = globalAttrPrefix.length
-        val userAttrPrefixLength = userAttrPrefix.length
-
-        jsonObject.keySet().forEach {
-            when {
-                it.startsWith(userAttrPrefix) -> {
-                    userAttributes[it.substring(userAttrPrefixLength)] = jsonObject.get(it)
-                }
-                it.startsWith(globalAttrPrefix) -> {
-                    globalAttributes[it.substring(globalAttrPrefixLength)] = jsonObject.get(it)
-                }
-            }
-        }
-    }
 
     @SuppressWarnings("ThrowingInternalException")
     @Throws(JsonParseException::class)
@@ -94,7 +61,6 @@ internal class RumEventDeserializer : Deserializer<RumEvent> {
     companion object {
         const val EVENT_TYPE_KEY_NAME = "type"
 
-        // Maybe we need to expose these as static constants in the POKOs from the Generator ??
         const val EVENT_TYPE_VIEW = "view"
         const val EVENT_TYPE_RESOURCE = "resource"
         const val EVENT_TYPE_ACTION = "action"
