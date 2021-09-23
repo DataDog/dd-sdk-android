@@ -11,7 +11,6 @@ import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.DatadogEventListener
 import com.datadog.android.nightly.R
 import com.datadog.android.rum.RumInterceptor
-import com.datadog.android.tracing.TracingInterceptor
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -21,23 +20,27 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 
-internal class ResourceTrackingActivity : AppCompatActivity() {
+internal open class ResourceTrackingActivity : AppCompatActivity() {
 
-    lateinit var okHttpClient: OkHttpClient
-    private val countDownLatch = CountDownLatch(1)
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        okHttpClient = OkHttpClient.Builder()
+    open val okHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
             .addInterceptor(RumInterceptor())
-            .addNetworkInterceptor(TracingInterceptor())
             .eventListenerFactory(DatadogEventListener.Factory())
             .build()
+    }
+    open val randomUrl: String = RANDOM_URL
+    private val countDownLatch = CountDownLatch(1)
+
+    // region activity lifecycle
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
         setContentView(R.layout.tracking_strategy_activity)
     }
 
     override fun onResume() {
         super.onResume()
-        okHttpClient.newCall(Request.Builder().url(RANDOM_URL).build()).enqueue(
+        okHttpClient.newCall(Request.Builder().url(randomUrl).build()).enqueue(
             object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     countDownLatch.countDown()
@@ -51,7 +54,10 @@ internal class ResourceTrackingActivity : AppCompatActivity() {
         countDownLatch.await(2, TimeUnit.MINUTES)
     }
 
+    // endregion
+
     companion object {
-        internal const val RANDOM_URL = "https://source.unsplash.com/random/800x450"
+        internal const val HOST = "source.unsplash.com"
+        internal const val RANDOM_URL = "https://$HOST/random/800x450"
     }
 }

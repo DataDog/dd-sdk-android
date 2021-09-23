@@ -16,8 +16,6 @@ import com.datadog.android.nightly.utils.measure
 
 internal class ViewTrackingFragment : Fragment() {
 
-    val testMethodName = "rum_fragment_view_tracking_strategy"
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -27,8 +25,12 @@ internal class ViewTrackingFragment : Fragment() {
     }
 
     override fun onResume() {
-        measure(testMethodName) {
+        measure(TEST_METHOD_NAME) {
             super.onResume()
         }
+    }
+
+    companion object {
+        private const val TEST_METHOD_NAME = "rum_fragment_view_tracking_strategy"
     }
 }

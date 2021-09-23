@@ -98,10 +98,10 @@ android {
     externalNativeBuild {
         cmake {
             path = File("$projectDir/src/main/cpp/CMakeLists.txt")
-            version = Dependencies.Versions.CMakeVersion
+            version = Dependencies.Versions.CMake
         }
     }
-    ndkVersion = Dependencies.Versions.NdkVersion
+    ndkVersion = Dependencies.Versions.Ndk
 }
 
 dependencies {
@@ -134,9 +134,7 @@ dependencies {
     }
 
     // Ktor (local web server)
-    implementation("io.ktor:ktor:1.4.3")
-    implementation("io.ktor:ktor-server-netty:1.4.3")
-    implementation("io.ktor:ktor-gson:1.4.3")
+    implementation(Dependencies.Libraries.Ktor)
 
     // Image Loading Library
     implementation(Dependencies.Libraries.Coil)

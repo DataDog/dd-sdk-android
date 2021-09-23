@@ -63,9 +63,7 @@ android {
     }
 
     packagingOptions {
-        exclude("META-INF/jvm.kotlin_module")
-        exclude("META-INF/LICENSE.md")
-        exclude("META-INF/LICENSE-notice.md")
+        exclude("META-INF/*")
     }
 
     buildTypes {
@@ -88,10 +86,10 @@ android {
     externalNativeBuild {
         cmake {
             path = File("$projectDir/src/main/cpp/CMakeLists.txt")
-            version = Dependencies.Versions.CMakeVersion
+            version = Dependencies.Versions.CMake
         }
     }
-    ndkVersion = Dependencies.Versions.NdkVersion
+    ndkVersion = Dependencies.Versions.Ndk
 }
 
 repositories {
@@ -111,6 +109,9 @@ dependencies {
     implementation(Dependencies.Libraries.AndroidXMultidex)
     implementation(Dependencies.Libraries.Elmyr)
     implementation(Dependencies.Libraries.OkHttp)
+
+    // Ktor (local server)
+    implementation(Dependencies.Libraries.Ktor)
 
     androidTestImplementation(project(":tools:unit")) {
         // We need to exclude this otherwise R8 will fail while trying to desugar a function

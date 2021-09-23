@@ -71,8 +71,11 @@ object Dependencies {
         const val Coroutines = "1.4.2"
 
         // NDK
-        const val NdkVersion = "22.1.7171670"
-        const val CMakeVersion = "3.18.1"
+        const val Ndk = "22.1.7171670"
+        const val CMake = "3.18.1"
+
+        // Local Server
+        const val Ktor = "1.4.3"
     }
 
     object Libraries {
@@ -188,6 +191,14 @@ object Dependencies {
         const val DetektTest = "io.gitlab.arturbosch.detekt:detekt-test:${Versions.Detekt}"
         const val OkHttpMock = "com.squareup.okhttp3:mockwebserver:${Versions.OkHttp}"
         const val Robolectric = "org.robolectric:android-all:${Versions.Robolectric}"
+
+        // Local Server
+
+        val Ktor = arrayOf(
+            "io.ktor:ktor:${Versions.Ktor}",
+            "io.ktor:ktor-server-netty:${Versions.Ktor}",
+            "io.ktor:ktor-gson:${Versions.Ktor}"
+        )
     }
 
     object ClassPaths {

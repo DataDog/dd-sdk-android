@@ -38,3 +38,6 @@
 # Required to be able to assert the events produced by the instrumentation strategies in the Monitors
 -keepnames class com.datadog.android.nightly.activities.** {}
 -keepnames class com.datadog.android.nightly.fragments.** {}
+
+# Required to be able to use ktor - local server
+-keepnames class io.ktor.** {}
