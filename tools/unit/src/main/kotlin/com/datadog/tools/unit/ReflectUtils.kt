@@ -200,7 +200,7 @@ fun <T : Any> T.invokeGenericMethod(
     return output
 }
 
-@Suppress("TooGenericExceptionCaught", "SwallowedException", "SpreadOperator")
+@Suppress("TooGenericExceptionCaught", "SwallowedException", "SpreadOperator", "ComplexMethod")
 private fun <T : Any> T.getDeclaredMethodRecursively(
     methodName: String,
     matchingParams: Boolean,
