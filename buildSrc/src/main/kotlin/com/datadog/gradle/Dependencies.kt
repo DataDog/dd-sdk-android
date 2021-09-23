@@ -11,12 +11,12 @@ object Dependencies {
     object Versions {
         // Commons
         const val Kotlin = "1.4.20"
-        const val Gson = "2.8.6"
+        const val Gson = "2.8.8"
         const val OkHttp = "3.12.13"
-        const val KronosNTP = "0.0.1-alpha10"
+        const val KronosNTP = "0.0.1-alpha11"
 
         // Android
-        const val AndroidToolsPlugin = "4.1.2"
+        const val AndroidToolsPlugin = "4.2.1"
         const val AndroidXAnnotations = "1.1.0"
         const val AndroidXAppCompat = "1.2.0"
         const val AndroidXCore = "1.3.1"

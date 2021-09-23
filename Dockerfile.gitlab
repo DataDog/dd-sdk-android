@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN ln -sf /usr/share/zoneinfo/Etc/UTC /etc/localtime
 
 RUN apt-get update \
-    && apt-get -y install openjdk-8-jdk \
+    && apt-get -y install openjdk-11-jdk \
     && rm -rf /var/lib/apt/lists/*
 
 RUN set -x \
@@ -24,10 +24,10 @@ RUN set -x \
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/*
 
-ENV GRADLE_VERSION 6.8.3
+ENV GRADLE_VERSION 6.9.1
 ENV ANDROID_COMPILE_SDK 30
 ENV ANDROID_BUILD_TOOLS 31.0.0
-ENV ANDROID_SDK_TOOLS  4333796
+ENV ANDROID_SDK_TOOLS 7583922
 ENV NDK_VERSION 22.1.7171670
 ENV CMAKE_VERSION 3.18.1
 
@@ -61,14 +61,16 @@ RUN mkdir /root/.android \
 
 # Android SDK
 RUN \
-    wget --quiet --output-document=android-sdk.zip https://dl.google.com/android/repository/sdk-tools-linux-${ANDROID_SDK_TOOLS}.zip && \
-    unzip -d android-sdk-linux android-sdk.zip && \
-    echo y | android-sdk-linux/tools/bin/sdkmanager "platforms;android-${ANDROID_COMPILE_SDK}" >/dev/null && \
-    echo y | android-sdk-linux/tools/bin/sdkmanager "platform-tools" >/dev/null && \
-    echo y | android-sdk-linux/tools/bin/sdkmanager "build-tools;${ANDROID_BUILD_TOOLS}" >/dev/null && \
-    echo y | android-sdk-linux/tools/bin/sdkmanager --install "ndk;${NDK_VERSION}" >/dev/null && \
-    echo y | android-sdk-linux/tools/bin/sdkmanager --install "cmake;${CMAKE_VERSION}" >/dev/null && \
-    yes | android-sdk-linux/tools/bin/sdkmanager --licenses
+    wget --quiet --output-document=android-sdk.zip https://dl.google.com/android/repository/commandlinetools-linux-${ANDROID_SDK_TOOLS}_latest.zip && \
+    mkdir -p android-sdk-linux/cmdline-tools && \
+    unzip -d android-sdk-linux/cmdline-tools android-sdk.zip && \
+    mv android-sdk-linux/cmdline-tools/cmdline-tools android-sdk-linux/cmdline-tools/latest && \
+    echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager "platforms;android-${ANDROID_COMPILE_SDK}" >/dev/null && \
+    echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager "platform-tools" >/dev/null && \
+    echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager "build-tools;${ANDROID_BUILD_TOOLS}" >/dev/null && \
+    echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager --install "ndk;${NDK_VERSION}" >/dev/null && \
+    echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager --install "cmake;${CMAKE_VERSION}" >/dev/null && \
+    yes | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager --licenses
 
 RUN set -x \
  && curl -OL https://s3.amazonaws.com/dd-package-public/dd-package.deb && dpkg -i dd-package.deb && rm dd-package.deb \
