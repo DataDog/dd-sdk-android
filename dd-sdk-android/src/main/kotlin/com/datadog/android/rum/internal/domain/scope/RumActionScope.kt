@@ -13,7 +13,6 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ActionEvent
 import java.lang.ref.WeakReference
 import java.util.UUID
@@ -59,7 +58,7 @@ internal class RumActionScope(
 
     // endregion
 
-    override fun handleEvent(event: RumRawEvent, writer: DataWriter<RumEvent>): RumScope? {
+    override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope? {
         val now = event.eventTime.nanoTime
         val isInactive = now - lastInteractionNanos > inactivityThresholdNs
         val isLongDuration = now - startedNanos > maxDurationNs
@@ -99,7 +98,7 @@ internal class RumActionScope(
 
     private fun onStopView(
         now: Long,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         ongoingResourceKeys.clear()
         sendAction(now, writer)
@@ -139,7 +138,7 @@ internal class RumActionScope(
     private fun onError(
         event: RumRawEvent.AddError,
         now: Long,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         lastInteractionNanos = now
         errorCount++
@@ -168,7 +167,7 @@ internal class RumActionScope(
 
     private fun sendAction(
         endNanos: Long,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ) {
         if (sent) return
 
@@ -204,16 +203,13 @@ internal class RumActionScope(
                 usr = ActionEvent.Usr(
                     id = user.id,
                     name = user.name,
-                    email = user.email
+                    email = user.email,
+                    additionalProperties = user.additionalProperties
                 ),
+                context = ActionEvent.Context(additionalProperties = attributes),
                 dd = ActionEvent.Dd(session = ActionEvent.DdSession(plan = ActionEvent.Plan.PLAN_1))
             )
-            val rumEvent = RumEvent(
-                event = actionEvent,
-                globalAttributes = attributes,
-                userExtraAttributes = user.additionalProperties
-            )
-            writer.write(rumEvent)
+            writer.write(actionEvent)
         } else {
             parentScope.handleEvent(
                 RumRawEvent.ActionDropped(getRumContext().viewId.orEmpty()),

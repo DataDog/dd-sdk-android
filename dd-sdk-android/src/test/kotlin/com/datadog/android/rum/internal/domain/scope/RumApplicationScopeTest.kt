@@ -10,7 +10,6 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionListener
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.setFieldValue
@@ -49,7 +48,7 @@ internal class RumApplicationScopeTest {
     lateinit var mockEvent: RumRawEvent
 
     @Mock
-    lateinit var mockWriter: DataWriter<RumEvent>
+    lateinit var mockWriter: DataWriter<Any>
 
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector

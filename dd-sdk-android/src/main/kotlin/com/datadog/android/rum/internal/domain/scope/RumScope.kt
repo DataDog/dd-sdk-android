@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
@@ -22,7 +21,7 @@ internal interface RumScope {
      */
     fun handleEvent(
         event: RumRawEvent,
-        writer: DataWriter<RumEvent>
+        writer: DataWriter<Any>
     ): RumScope?
 
     fun getRumContext(): RumContext

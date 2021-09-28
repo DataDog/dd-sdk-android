@@ -16,7 +16,6 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import java.io.File
@@ -29,7 +28,7 @@ internal class DatadogNdkCrashHandler(
     private val dataPersistenceExecutorService: ExecutorService,
     internal val logGenerator: LogGenerator,
     private val ndkCrashLogDeserializer: Deserializer<NdkCrashLog>,
-    private val rumEventDeserializer: Deserializer<RumEvent>,
+    private val rumEventDeserializer: Deserializer<Any>,
     private val networkInfoDeserializer: Deserializer<NetworkInfo>,
     private val userInfoDeserializer: Deserializer<UserInfo>,
     private val internalLogger: Logger,
@@ -53,7 +52,7 @@ internal class DatadogNdkCrashHandler(
 
     override fun handleNdkCrash(
         logWriter: DataWriter<LogEvent>,
-        rumWriter: DataWriter<RumEvent>
+        rumWriter: DataWriter<Any>
     ) {
         dataPersistenceExecutorService.submit {
             checkAndHandleNdkCrashReport(logWriter, rumWriter)
@@ -86,7 +85,7 @@ internal class DatadogNdkCrashHandler(
 
     private fun checkAndHandleNdkCrashReport(
         logWriter: DataWriter<LogEvent>,
-        rumWriter: DataWriter<RumEvent>
+        rumWriter: DataWriter<Any>
     ) {
         val lastSerializedRumViewEvent = lastSerializedRumViewEvent
         val lastSerializedUserInformation: String? = lastSerializedUserInformation
@@ -95,7 +94,7 @@ internal class DatadogNdkCrashHandler(
         if (lastSerializedNdkCrashLog != null) {
             val lastNdkCrashLog = ndkCrashLogDeserializer.deserialize(lastSerializedNdkCrashLog)
             val lastRumViewEvent = lastSerializedRumViewEvent?.let {
-                rumEventDeserializer.deserialize(it)
+                rumEventDeserializer.deserialize(it) as? ViewEvent
             }
             val lastUserInfo = lastSerializedUserInformation?.let {
                 userInfoDeserializer.deserialize(it)
@@ -125,9 +124,9 @@ internal class DatadogNdkCrashHandler(
     @SuppressWarnings("LongParameterList")
     private fun handleNdkCrashLog(
         logWriter: DataWriter<LogEvent>,
-        rumWriter: DataWriter<RumEvent>,
+        rumWriter: DataWriter<Any>,
         ndkCrashLog: NdkCrashLog?,
-        lastRumViewEvent: RumEvent?,
+        lastViewEvent: ViewEvent?,
         lastUserInfo: UserInfo?,
         lastNetworkInfo: NetworkInfo?
     ) {
@@ -135,21 +134,19 @@ internal class DatadogNdkCrashHandler(
             return
         }
         val errorLogMessage = LOG_CRASH_MSG.format(Locale.US, ndkCrashLog.signalName)
-        val bundledViewEvent = lastRumViewEvent?.event as? ViewEvent
         val logAttributes: Map<String, String>
-        if (lastRumViewEvent != null && bundledViewEvent != null) {
+        if (lastViewEvent != null) {
             logAttributes = mapOf(
-                LogAttributes.RUM_SESSION_ID to bundledViewEvent.session.id,
-                LogAttributes.RUM_APPLICATION_ID to bundledViewEvent.application.id,
-                LogAttributes.RUM_VIEW_ID to bundledViewEvent.view.id,
+                LogAttributes.RUM_SESSION_ID to lastViewEvent.session.id,
+                LogAttributes.RUM_APPLICATION_ID to lastViewEvent.application.id,
+                LogAttributes.RUM_VIEW_ID to lastViewEvent.view.id,
                 LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace
             )
             updateViewEventAndSendError(
                 rumWriter,
                 errorLogMessage,
                 ndkCrashLog,
-                lastRumViewEvent,
-                bundledViewEvent
+                lastViewEvent
             )
         } else {
             logAttributes = mapOf(
@@ -168,23 +165,21 @@ internal class DatadogNdkCrashHandler(
     }
 
     private fun updateViewEventAndSendError(
-        rumWriter: DataWriter<RumEvent>,
+        rumWriter: DataWriter<Any>,
         errorLogMessage: String,
         ndkCrashLog: NdkCrashLog,
-        lastRumViewEvent: RumEvent,
-        bundledViewEvent: ViewEvent
+        lastViewEvent: ViewEvent
     ) {
         val toSendErrorEvent = resolveErrorEventFromViewEvent(
             errorLogMessage,
             ndkCrashLog,
-            lastRumViewEvent,
-            bundledViewEvent
+            lastViewEvent
         )
         rumWriter.write(toSendErrorEvent)
-        val sessionsTimeDifference = System.currentTimeMillis() - bundledViewEvent.date
+        val sessionsTimeDifference = System.currentTimeMillis() - lastViewEvent.date
         if (sessionsTimeDifference < VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD
         ) {
-            val updatedViewEvent = updateViewEvent(lastRumViewEvent, bundledViewEvent)
+            val updatedViewEvent = updateViewEvent(lastViewEvent)
             rumWriter.write(updatedViewEvent)
         }
     }
@@ -214,21 +209,16 @@ internal class DatadogNdkCrashHandler(
         logWriter.write(log)
     }
 
-    private fun updateViewEvent(
-        lastRumViewEvent: RumEvent,
-        bundledViewEvent: ViewEvent
-    ): RumEvent {
-        val currentCrash = bundledViewEvent.view.crash
+    private fun updateViewEvent(lastViewEvent: ViewEvent): ViewEvent {
+        val currentCrash = lastViewEvent.view.crash
         val newCrash = currentCrash?.copy(count = currentCrash.count + 1) ?: ViewEvent.Crash(1)
-        return lastRumViewEvent.copy(
-            event = bundledViewEvent.copy(
-                view = bundledViewEvent.view.copy(
-                    crash = newCrash,
-                    isActive = false
-                ),
-                dd = bundledViewEvent.dd.copy(
-                    documentVersion = bundledViewEvent.dd.documentVersion + 1
-                )
+        return lastViewEvent.copy(
+            view = lastViewEvent.view.copy(
+                crash = newCrash,
+                isActive = false
+            ),
+            dd = lastViewEvent.dd.copy(
+                documentVersion = lastViewEvent.dd.documentVersion + 1
             )
         )
     }
@@ -236,10 +226,9 @@ internal class DatadogNdkCrashHandler(
     private fun resolveErrorEventFromViewEvent(
         errorLogMessage: String,
         ndkCrashLog: NdkCrashLog,
-        rumViewEvent: RumEvent,
-        bundledViewEvent: ViewEvent
-    ): RumEvent {
-        val connectivity = bundledViewEvent.connectivity?.let {
+        viewEvent: ViewEvent
+    ): ErrorEvent {
+        val connectivity = viewEvent.connectivity?.let {
             val connectivityStatus =
                 ErrorEvent.Status.valueOf(it.status.name)
             val connectivityInterfaces = it.interfaces.map { ErrorEvent.Interface.valueOf(it.name) }
@@ -249,38 +238,38 @@ internal class DatadogNdkCrashHandler(
             )
             ErrorEvent.Connectivity(connectivityStatus, connectivityInterfaces, cellular)
         }
-        return RumEvent(
-            ErrorEvent(
-                date = ndkCrashLog.timestamp + timeProvider.getServerOffsetMillis(),
-                application = ErrorEvent.Application(bundledViewEvent.application.id),
-                service = bundledViewEvent.service,
-                session = ErrorEvent.ErrorEventSession(
-                    bundledViewEvent.session.id,
-                    ErrorEvent.ErrorEventSessionType.USER
-                ),
-                view = ErrorEvent.View(
-                    id = bundledViewEvent.view.id,
-                    name = bundledViewEvent.view.name,
-                    referrer = bundledViewEvent.view.referrer,
-                    url = bundledViewEvent.view.url
-                ),
-                usr = ErrorEvent.Usr(
-                    bundledViewEvent.usr?.id,
-                    bundledViewEvent.usr?.name,
-                    bundledViewEvent.usr?.email
-                ),
-                connectivity = connectivity,
-                dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1)),
-                error = ErrorEvent.Error(
-                    message = errorLogMessage,
-                    source = ErrorEvent.Source.SOURCE,
-                    stack = ndkCrashLog.stacktrace,
-                    isCrash = true,
-                    type = ndkCrashLog.signalName
-                )
+        val additionalProperties = viewEvent.context?.additionalProperties ?: emptyMap()
+        val additionalUserProperties = viewEvent.usr?.additionalProperties ?: emptyMap()
+        return ErrorEvent(
+            date = ndkCrashLog.timestamp + timeProvider.getServerOffsetMillis(),
+            application = ErrorEvent.Application(viewEvent.application.id),
+            service = viewEvent.service,
+            session = ErrorEvent.ErrorEventSession(
+                viewEvent.session.id,
+                ErrorEvent.ErrorEventSessionType.USER
             ),
-            rumViewEvent.globalAttributes,
-            rumViewEvent.userExtraAttributes
+            view = ErrorEvent.View(
+                id = viewEvent.view.id,
+                name = viewEvent.view.name,
+                referrer = viewEvent.view.referrer,
+                url = viewEvent.view.url
+            ),
+            usr = ErrorEvent.Usr(
+                viewEvent.usr?.id,
+                viewEvent.usr?.name,
+                viewEvent.usr?.email,
+                additionalUserProperties
+            ),
+            connectivity = connectivity,
+            dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1)),
+            context = ErrorEvent.Context(additionalProperties = additionalProperties),
+            error = ErrorEvent.Error(
+                message = errorLogMessage,
+                source = ErrorEvent.Source.SOURCE,
+                stack = ndkCrashLog.stacktrace,
+                isCrash = true,
+                type = ndkCrashLog.signalName
+            )
         )
     }
 

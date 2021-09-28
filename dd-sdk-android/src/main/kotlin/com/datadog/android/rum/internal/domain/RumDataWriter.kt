@@ -12,7 +12,6 @@ import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileDataWriter
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.EventType
 import com.datadog.android.rum.model.ActionEvent
@@ -24,32 +23,32 @@ import java.io.File
 
 internal class RumDataWriter(
     fileOrchestrator: FileOrchestrator,
-    serializer: Serializer<RumEvent>,
+    serializer: Serializer<Any>,
     decoration: PayloadDecoration,
     handler: FileHandler,
     private val lastViewEventFile: File
-) : BatchFileDataWriter<RumEvent>(
+) : BatchFileDataWriter<Any>(
     fileOrchestrator,
     serializer,
     decoration,
     handler
 ) {
 
-    override fun onDataWritten(data: RumEvent, rawData: ByteArray) {
-        when (val event = data.event) {
+    override fun onDataWritten(data: Any, rawData: ByteArray) {
+        when (data) {
             is ViewEvent -> persistViewEvent(rawData)
-            is ActionEvent -> notifyEventSent(event.view.id, EventType.ACTION)
-            is ResourceEvent -> notifyEventSent(event.view.id, EventType.RESOURCE)
+            is ActionEvent -> notifyEventSent(data.view.id, EventType.ACTION)
+            is ResourceEvent -> notifyEventSent(data.view.id, EventType.RESOURCE)
             is ErrorEvent -> {
-                if (event.error.isCrash != true) {
-                    notifyEventSent(event.view.id, EventType.ERROR)
+                if (data.error.isCrash != true) {
+                    notifyEventSent(data.view.id, EventType.ERROR)
                 }
             }
             is LongTaskEvent -> {
-                if (event.longTask.isFrozenFrame == true) {
-                    notifyEventSent(event.view.id, EventType.FROZEN_FRAME)
+                if (data.longTask.isFrozenFrame == true) {
+                    notifyEventSent(data.view.id, EventType.FROZEN_FRAME)
                 } else {
-                    notifyEventSent(event.view.id, EventType.LONG_TASK)
+                    notifyEventSent(data.view.id, EventType.LONG_TASK)
                 }
             }
         }

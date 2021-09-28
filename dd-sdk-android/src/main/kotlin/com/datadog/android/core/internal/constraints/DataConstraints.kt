@@ -14,10 +14,11 @@ internal interface DataConstraints {
     fun <T : Any?> validateAttributes(
         attributes: Map<String, T>,
         keyPrefix: String? = null,
-        attributesGroupName: String? = null
+        attributesGroupName: String? = null,
+        reservedKeys: Set<String> = emptySet()
     ): Map<String, T>
 
     fun validateTags(tags: List<String>): List<String>
 
-    fun validateEvent(rumEvent: Any): Any
+    fun validateTimings(timings: Map<String, Long>): Map<String, Long>
 }

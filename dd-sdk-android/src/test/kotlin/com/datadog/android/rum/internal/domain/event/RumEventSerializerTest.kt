@@ -7,8 +7,6 @@
 package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.core.internal.constraints.DataConstraints
-import com.datadog.android.core.internal.utils.toJsonArray
-import com.datadog.android.core.internal.utils.toJsonObject
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.model.ActionEvent
@@ -20,7 +18,6 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -28,7 +25,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.Date
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -54,16 +50,10 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `𝕄 serialize RUM event 𝕎 serialize() with ResourceEvent`(
-        @Forgery fakeEvent: RumEvent,
-        @Forgery event: ResourceEvent
-    ) {
-        val rumEvent = fakeEvent.copy(event = event)
-
-        val serialized = testedSerializer.serialize(rumEvent)
+    fun `𝕄 serialize RUM event 𝕎 serialize() with ResourceEvent`(@Forgery event: ResourceEvent) {
+        val serialized = testedSerializer.serialize(event)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertSerializedJsonMatchesInputEvent(jsonObject, rumEvent)
         assertThat(jsonObject)
             .hasField("type", "resource")
             .hasField("date", event.date)
@@ -87,27 +77,31 @@ internal class RumEventSerializerTest {
                 hasField("id", event.view.id)
                 hasField("url", event.view.url)
             }
-            .hasField("usr") {
-                hasNullableField("id", event.usr?.id)
-                hasNullableField("name", event.usr?.name)
-                hasNullableField("email", event.usr?.email)
-            }
             .hasField("_dd") {
                 hasField("format_version", 2L)
             }
+        event.usr?.let {
+            assertThat(jsonObject).hasField("usr") {
+                hasNullableField("id", event.usr?.id)
+                hasNullableField("name", event.usr?.name)
+                hasNullableField("email", event.usr?.email)
+                containsAttributes(it.additionalProperties)
+            }
+        }
+        event.context?.additionalProperties?.let {
+            assertThat(jsonObject).hasField("context") {
+                containsAttributes(it)
+            }
+        }
     }
 
     @Test
     fun `𝕄 serialize RUM event 𝕎 serialize() with ActionEvent`(
-        @Forgery fakeEvent: RumEvent,
         @Forgery event: ActionEvent
     ) {
-        val rumEvent = fakeEvent.copy(event = event)
-
-        val serialized = testedSerializer.serialize(rumEvent)
+        val serialized = testedSerializer.serialize(event)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertSerializedJsonMatchesInputEvent(jsonObject, rumEvent)
         assertThat(jsonObject)
             .hasField("type", "action")
             .hasField("date", event.date)
@@ -147,27 +141,29 @@ internal class RumEventSerializerTest {
                 hasField("id", event.view.id)
                 hasField("url", event.view.url)
             }
-            .hasField("usr") {
-                hasNullableField("id", event.usr?.id)
-                hasNullableField("name", event.usr?.name)
-                hasNullableField("email", event.usr?.email)
-            }
             .hasField("_dd") {
                 hasField("format_version", 2L)
             }
+        event.usr?.let {
+            assertThat(jsonObject).hasField("usr") {
+                hasNullableField("id", event.usr?.id)
+                hasNullableField("name", event.usr?.name)
+                hasNullableField("email", event.usr?.email)
+                containsAttributes(it.additionalProperties)
+            }
+        }
+        event.context?.additionalProperties?.let {
+            assertThat(jsonObject).hasField("context") {
+                containsAttributes(it)
+            }
+        }
     }
 
     @Test
-    fun `𝕄 serialize RUM event 𝕎 serialize() with ViewEvent`(
-        @Forgery fakeEvent: RumEvent,
-        @Forgery event: ViewEvent
-    ) {
-        val rumEvent = fakeEvent.copy(event = event)
-
-        val serialized = testedSerializer.serialize(rumEvent)
+    fun `𝕄 serialize RUM event 𝕎 serialize() with ViewEvent`(@Forgery event: ViewEvent) {
+        val serialized = testedSerializer.serialize(event)
 
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertSerializedJsonMatchesInputEvent(jsonObject, rumEvent)
         assertThat(jsonObject)
             .hasField("type", "view")
             .hasField("date", event.date)
@@ -197,27 +193,28 @@ internal class RumEventSerializerTest {
                     }
                 }
             }
-            .hasField("usr") {
-                hasNullableField("id", event.usr?.id)
-                hasNullableField("name", event.usr?.name)
-                hasNullableField("email", event.usr?.email)
-            }
             .hasField("_dd") {
                 hasField("format_version", 2L)
             }
+        event.usr?.let {
+            assertThat(jsonObject).hasField("usr") {
+                hasNullableField("id", event.usr?.id)
+                hasNullableField("name", event.usr?.name)
+                hasNullableField("email", event.usr?.email)
+                containsAttributes(it.additionalProperties)
+            }
+        }
+        event.context?.additionalProperties?.let {
+            assertThat(jsonObject).hasField("context") {
+                containsAttributes(it)
+            }
+        }
     }
 
     @Test
-    fun `𝕄 serialize RUM event 𝕎 serialize() with ErrorEvent`(
-        @Forgery fakeEvent: RumEvent,
-        @Forgery event: ErrorEvent
-    ) {
-        val rumEvent = fakeEvent.copy(event = event)
-
-        val serialized = testedSerializer.serialize(rumEvent)
-
+    fun `𝕄 serialize RUM event 𝕎 serialize() with ErrorEvent`(@Forgery event: ErrorEvent) {
+        val serialized = testedSerializer.serialize(event)
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertSerializedJsonMatchesInputEvent(jsonObject, rumEvent)
         assertThat(jsonObject)
             .hasField("type", "error")
             .hasField("date", event.date)
@@ -252,19 +249,27 @@ internal class RumEventSerializerTest {
             .hasField("_dd") {
                 hasField("format_version", 2L)
             }
+        event.usr?.let {
+            assertThat(jsonObject).hasField("usr") {
+                hasNullableField("id", event.usr?.id)
+                hasNullableField("name", event.usr?.name)
+                hasNullableField("email", event.usr?.email)
+                containsAttributes(it.additionalProperties)
+            }
+        }
+        event.context?.additionalProperties?.let {
+            assertThat(jsonObject).hasField("context") {
+                containsAttributes(it)
+            }
+        }
     }
 
     @Test
     fun `𝕄 serialize RUM event 𝕎 serialize() with LongTaskEvent`(
-        @Forgery fakeEvent: RumEvent,
         @Forgery event: LongTaskEvent
     ) {
-        val rumEvent = fakeEvent.copy(event = event)
-
-        val serialized = testedSerializer.serialize(rumEvent)
-
+        val serialized = testedSerializer.serialize(event)
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertSerializedJsonMatchesInputEvent(jsonObject, rumEvent)
         assertThat(jsonObject)
             .hasField("type", "long_task")
             .hasField("date", event.date)
@@ -309,15 +314,10 @@ internal class RumEventSerializerTest {
 
     @Test
     fun `𝕄 serialize RUM event 𝕎 serialize() with unknown event`(
-        @Forgery fakeEvent: RumEvent,
         @Forgery unknownEvent: UserInfo
     ) {
-        val rumEvent = fakeEvent.copy(event = unknownEvent)
-
-        val serialized = testedSerializer.serialize(rumEvent)
-
+        val serialized = testedSerializer.serialize(unknownEvent)
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
-        assertSerializedJsonMatchesInputEvent(jsonObject, rumEvent)
         assertThat(jsonObject)
             .doesNotHaveField("type")
             .doesNotHaveField("date")
@@ -332,13 +332,10 @@ internal class RumEventSerializerTest {
     }
 
     @Test
-    fun `𝕄 keep known custom attributes as is 𝕎 serialize()`(
-        @Forgery fakeEvent: RumEvent,
-        forge: Forge
-    ) {
+    fun `𝕄 keep known custom attributes as is 𝕎 serialize()`(forge: Forge) {
         val key = forge.anElementFrom(RumEventSerializer.knownAttributes)
         val value = forge.anAlphabeticalString()
-        val event = fakeEvent.copy(globalAttributes = mapOf(key to value))
+        val event = forge.forgeRumEvent(mapOf(key to value))
 
         val serialized = testedSerializer.serialize(event)
 
@@ -357,8 +354,8 @@ internal class RumEventSerializerTest {
         val expectedSanitisedKey =
             fakeBadKey.replaceRange(lastIndexOf..lastIndexOf, "_")
         val fakeAttributeValue = forge.anAlphabeticalString()
-        val fakeEvent: RumEvent = forge.getForgery(RumEvent::class.java).copy(
-            globalAttributes = mapOf(
+        val fakeEvent = forge.forgeRumEvent(
+            mapOf(
                 fakeBadKey to fakeAttributeValue
             )
         )
@@ -368,13 +365,14 @@ internal class RumEventSerializerTest {
         val jsonObject = JsonParser.parseString(serializedEvent).asJsonObject
 
         // THEN
-        assertThat(jsonObject)
+        val contextObject = jsonObject.getAsJsonObject(RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX)
+        assertThat(contextObject)
             .hasField(
-                "${RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX}.$expectedSanitisedKey",
+                expectedSanitisedKey,
                 fakeAttributeValue
             )
-        assertThat(jsonObject)
-            .doesNotHaveField("${RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX}.$fakeBadKey")
+        assertThat(contextObject)
+            .doesNotHaveField(fakeBadKey)
     }
 
     @Test
@@ -385,8 +383,8 @@ internal class RumEventSerializerTest {
         val expectedSanitisedKey =
             fakeBadKey.replaceRange(lastIndexOf..lastIndexOf, "_")
         val fakeAttributeValue = forge.anAlphabeticalString()
-        val fakeEvent: RumEvent = forge.getForgery(RumEvent::class.java).copy(
-            userExtraAttributes = mapOf(
+        val fakeEvent = forge.forgeRumEvent(
+            userAttributes = mapOf(
                 fakeBadKey to fakeAttributeValue
             )
         )
@@ -396,18 +394,19 @@ internal class RumEventSerializerTest {
         val jsonObject = JsonParser.parseString(serializedEvent).asJsonObject
 
         // THEN
-        assertThat(jsonObject)
+        val userObject = jsonObject.getAsJsonObject(RumEventSerializer.USER_ATTRIBUTE_PREFIX)
+        assertThat(userObject)
             .hasField(
-                "${RumEventSerializer.USER_ATTRIBUTE_PREFIX}.$expectedSanitisedKey",
+                expectedSanitisedKey,
                 fakeAttributeValue
             )
-        assertThat(jsonObject)
-            .doesNotHaveField("${RumEventSerializer.USER_ATTRIBUTE_PREFIX}.$fakeBadKey")
+        assertThat(userObject)
+            .doesNotHaveField(fakeBadKey)
     }
 
     @Test
-    fun `M use the attributes group verbose name W validateAttributes { user extra info }`(
-        @Forgery fakeEvent: RumEvent
+    fun `M use the attributes group verbose name W validateAttributes { ViewEvent }`(
+        @Forgery fakeEvent: ViewEvent
     ) {
 
         // GIVEN
@@ -418,11 +417,106 @@ internal class RumEventSerializerTest {
         testedSerializer.serialize(fakeEvent)
 
         // THEN
-        verify(mockedDataConstrains).validateAttributes(
-            fakeEvent.userExtraAttributes,
-            RumEventSerializer.USER_ATTRIBUTE_PREFIX,
-            RumEventSerializer.USER_EXTRA_GROUP_VERBOSE_NAME
-        )
+        fakeEvent.usr?.let {
+            verify(mockedDataConstrains).validateAttributes(
+                it.additionalProperties,
+                RumEventSerializer.USER_ATTRIBUTE_PREFIX,
+                RumEventSerializer.USER_EXTRA_GROUP_VERBOSE_NAME,
+                RumEventSerializer.ignoredAttributes
+            )
+        }
+    }
+
+    @Test
+    fun `M use the attributes group verbose name W validateAttributes { ActionEvent }`(
+        @Forgery fakeEvent: ActionEvent
+    ) {
+
+        // GIVEN
+        val mockedDataConstrains: DataConstraints = mock()
+        testedSerializer = RumEventSerializer(mockedDataConstrains)
+
+        // WHEN
+        testedSerializer.serialize(fakeEvent)
+
+        // THEN
+        fakeEvent.usr?.let {
+            verify(mockedDataConstrains).validateAttributes(
+                it.additionalProperties,
+                RumEventSerializer.USER_ATTRIBUTE_PREFIX,
+                RumEventSerializer.USER_EXTRA_GROUP_VERBOSE_NAME,
+                RumEventSerializer.ignoredAttributes
+            )
+        }
+    }
+
+    @Test
+    fun `M use the attributes group verbose name W validateAttributes { ResourceEvent }`(
+        @Forgery fakeEvent: ResourceEvent
+    ) {
+
+        // GIVEN
+        val mockedDataConstrains: DataConstraints = mock()
+        testedSerializer = RumEventSerializer(mockedDataConstrains)
+
+        // WHEN
+        testedSerializer.serialize(fakeEvent)
+
+        // THEN
+        fakeEvent.usr?.let {
+            verify(mockedDataConstrains).validateAttributes(
+                it.additionalProperties,
+                RumEventSerializer.USER_ATTRIBUTE_PREFIX,
+                RumEventSerializer.USER_EXTRA_GROUP_VERBOSE_NAME,
+                RumEventSerializer.ignoredAttributes
+            )
+        }
+    }
+
+    @Test
+    fun `M use the attributes group verbose name W validateAttributes { ErrorEvent }`(
+        @Forgery fakeEvent: ErrorEvent
+    ) {
+
+        // GIVEN
+        val mockedDataConstrains: DataConstraints = mock()
+        testedSerializer = RumEventSerializer(mockedDataConstrains)
+
+        // WHEN
+        testedSerializer.serialize(fakeEvent)
+
+        // THEN
+        fakeEvent.usr?.let {
+            verify(mockedDataConstrains).validateAttributes(
+                it.additionalProperties,
+                RumEventSerializer.USER_ATTRIBUTE_PREFIX,
+                RumEventSerializer.USER_EXTRA_GROUP_VERBOSE_NAME,
+                RumEventSerializer.ignoredAttributes
+            )
+        }
+    }
+
+    @Test
+    fun `M use the attributes group verbose name W validateAttributes { LongTaskEvent }`(
+        @Forgery fakeEvent: LongTaskEvent
+    ) {
+
+        // GIVEN
+        val mockedDataConstrains: DataConstraints = mock()
+        testedSerializer = RumEventSerializer(mockedDataConstrains)
+
+        // WHEN
+        testedSerializer.serialize(fakeEvent)
+
+        // THEN
+        fakeEvent.usr?.let {
+            verify(mockedDataConstrains).validateAttributes(
+                it.additionalProperties,
+                RumEventSerializer.USER_ATTRIBUTE_PREFIX,
+                RumEventSerializer.USER_EXTRA_GROUP_VERBOSE_NAME,
+                RumEventSerializer.ignoredAttributes
+            )
+        }
     }
 
     @Test
@@ -432,9 +526,8 @@ internal class RumEventSerializerTest {
         // GIVEN
         val fakeInternalTimestamp = forge.aLong()
         val fakeErrorType = forge.aString()
-        val fakeEvent: RumEvent = forge.getForgery()
-        val fakeEventWithInternalGlobalAttributes = fakeEvent.copy(
-            globalAttributes = fakeEvent.globalAttributes + mapOf(
+        val fakeEventWithInternalGlobalAttributes = forge.forgeRumEvent(
+            attributes = mapOf(
                 RumAttributes.INTERNAL_ERROR_TYPE to fakeErrorType,
                 RumAttributes.INTERNAL_TIMESTAMP to fakeInternalTimestamp
             )
@@ -459,10 +552,17 @@ internal class RumEventSerializerTest {
         forge: Forge
     ) {
         // GIVEN
-        val fakeEvent: RumEvent = forge.getForgery()
+        val fakeInternalTimestamp = forge.aLong()
+        val fakeErrorType = forge.aString()
+        val fakeEventWithInternalUserAttributes = forge.forgeRumEvent(
+            userAttributes = mapOf(
+                RumAttributes.INTERNAL_ERROR_TYPE to fakeErrorType,
+                RumAttributes.INTERNAL_TIMESTAMP to fakeInternalTimestamp
+            )
+        )
 
         // WHEN
-        val serializedEvent = testedSerializer.serialize(fakeEvent)
+        val serializedEvent = testedSerializer.serialize(fakeEventWithInternalUserAttributes)
         val jsonObject = JsonParser.parseString(serializedEvent).asJsonObject
 
         // THEN
@@ -478,59 +578,42 @@ internal class RumEventSerializerTest {
 
     // region Internal
 
-    private fun assertSerializedJsonMatchesInputEvent(
-        jsonObject: JsonObject,
-        event: RumEvent
-    ) {
-        assertJsonContainsCustomAttributes(jsonObject, event)
-    }
-
-    private fun assertJsonContainsCustomAttributes(
-        jsonObject: JsonObject,
-        event: RumEvent
-    ) {
-        event.globalAttributes
-            .filter { it.key.isNotBlank() }
-            .forEach {
-                val value = it.value
-                val keyName = "${RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX}.${it.key}"
-                when (value) {
-                    null -> assertThat(jsonObject).hasNullField(keyName)
-                    is Boolean -> assertThat(jsonObject).hasField(keyName, value)
-                    is Int -> assertThat(jsonObject).hasField(keyName, value)
-                    is Long -> assertThat(jsonObject).hasField(keyName, value)
-                    is Float -> assertThat(jsonObject).hasField(keyName, value)
-                    is Double -> assertThat(jsonObject).hasField(keyName, value)
-                    is String -> assertThat(jsonObject).hasField(keyName, value)
-                    is Date -> assertThat(jsonObject).hasField(keyName, value.time)
-                    is JsonObject -> assertThat(jsonObject).hasField(keyName, value)
-                    is JsonArray -> assertThat(jsonObject).hasField(keyName, value)
-                    is Iterable<*> -> assertThat(jsonObject).hasField(keyName, value.toJsonArray())
-                    is Map<*, *> -> assertThat(jsonObject).hasField(keyName, value.toJsonObject())
-                    else -> assertThat(jsonObject).hasField(keyName, value.toString())
-                }
+    private fun Forge.forgeRumEvent(
+        attributes: Map<String, Any?> = emptyMap(),
+        userAttributes: Map<String, Any?> = emptyMap()
+    ): Any {
+        return when (this.anInt(min = 0, max = 5)) {
+            1 -> this.getForgery(ViewEvent::class.java).let {
+                it.copy(
+                    context = ViewEvent.Context(additionalProperties = attributes),
+                    usr = it.usr?.copy(additionalProperties = userAttributes)
+                )
             }
-        event.userExtraAttributes
-            .filter { it.key.isNotBlank() }
-            .forEach {
-                val value = it.value
-                val keyName = "${RumEventSerializer.USER_ATTRIBUTE_PREFIX}.${it.key}"
-                when (value) {
-                    null -> assertThat(jsonObject).hasNullField(keyName)
-                    is Boolean -> assertThat(jsonObject).hasField(keyName, value)
-                    is Int -> assertThat(jsonObject).hasField(keyName, value)
-                    is Long -> assertThat(jsonObject).hasField(keyName, value)
-                    is Float -> assertThat(jsonObject).hasField(keyName, value)
-                    is Double -> assertThat(jsonObject).hasField(keyName, value)
-                    is String -> assertThat(jsonObject).hasField(keyName, value)
-                    is Date -> assertThat(jsonObject).hasField(keyName, value.time)
-                    is JsonObject -> assertThat(jsonObject).hasField(keyName, value)
-                    is JsonArray -> assertThat(jsonObject).hasField(keyName, value)
-                    is Iterable<*> -> assertThat(jsonObject).hasField(keyName, value.toJsonArray())
-                    is Map<*, *> -> assertThat(jsonObject).hasField(keyName, value.toJsonObject())
-                    else -> assertThat(jsonObject).hasField(keyName, value.toString())
-                }
+            2 -> this.getForgery(ActionEvent::class.java).let {
+                it.copy(
+                    context = ActionEvent.Context(additionalProperties = attributes),
+                    usr = it.usr?.copy(additionalProperties = userAttributes)
+                )
             }
+            3 -> this.getForgery(ErrorEvent::class.java).let {
+                it.copy(
+                    context = ErrorEvent.Context(additionalProperties = attributes),
+                    usr = it.usr?.copy(additionalProperties = userAttributes)
+                )
+            }
+            4 -> this.getForgery(ResourceEvent::class.java).let {
+                it.copy(
+                    context = ResourceEvent.Context(additionalProperties = attributes),
+                    usr = it.usr?.copy(additionalProperties = userAttributes)
+                )
+            }
+            else -> this.getForgery(LongTaskEvent::class.java).let {
+                it.copy(
+                    context = LongTaskEvent.Context(additionalProperties = attributes),
+                    usr = it.usr?.copy(additionalProperties = userAttributes)
+                )
+            }
+        }
     }
 
     // endregion

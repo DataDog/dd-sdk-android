@@ -23,7 +23,6 @@ import com.datadog.android.log.model.LogEvent
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature as PluginFeature
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyApi29
@@ -107,7 +106,7 @@ internal constructor(
             val userActionTrackingStrategy: UserActionTrackingStrategy?,
             val viewTrackingStrategy: ViewTrackingStrategy?,
             val longTaskTrackingStrategy: TrackingStrategy?,
-            val rumEventMapper: EventMapper<RumEvent>,
+            val rumEventMapper: EventMapper<Any>,
             val backgroundEventTracking: Boolean
         ) : Feature()
     }

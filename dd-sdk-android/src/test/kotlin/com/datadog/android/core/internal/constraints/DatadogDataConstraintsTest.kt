@@ -10,7 +10,6 @@ import android.os.Build
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.android.utils.times
@@ -19,7 +18,6 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Case
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Locale
@@ -241,7 +239,10 @@ internal class DatadogDataConstraintsTest {
         val key = (topLevels + lowerLevels).joinToString(".")
         val value = forge.aNumericalString()
         val result =
-            testedConstraints.validateAttributes(mapOf(key to value), keyPrefix = keyPrefix)
+            testedConstraints.validateAttributes(
+                mapOf(key to value),
+                keyPrefix = keyPrefix
+            )
 
         val expectedKey = topLevels.joinToString(".") + "_" + lowerLevels.joinToString("_")
         assertThat(result)
@@ -292,13 +293,33 @@ internal class DatadogDataConstraintsTest {
         )
     }
 
+    @Test
+    fun `M drop the reserved attributes W validateAttributes { reservedKeys provided }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val attributes = forge.aMap(size = 10) {
+            forge.anAlphaNumericalString() to forge.anAlphabeticalString()
+        }
+        val reservedKeys = attributes.keys.take(2).toHashSet()
+
+        // WHEN
+        val sanitizedAttributes =
+            testedConstraints.validateAttributes(attributes, reservedKeys = reservedKeys)
+
+        // THEN
+        assertThat(sanitizedAttributes.entries)
+            .containsExactlyElementsOf(
+                attributes.entries.filterNot { reservedKeys.contains(it.key) }
+            )
+    }
+
     // endregion
 
     // region Events
 
     @Test
     fun `M sanitize custom timings and log warning W validateEvent`(
-        @Forgery viewEvent: ViewEvent,
         forge: Forge
     ) {
         // Given
@@ -308,29 +329,17 @@ internal class DatadogDataConstraintsTest {
 
         val malformedKey = (goodTimingPart + badTimingPart)
 
-        val viewEventWithMalformedTiming = viewEvent.copy(
-            view = viewEvent.view.copy(
-                customTimings = ViewEvent.CustomTimings(
-                    additionalProperties = mapOf(
-                        malformedKey to forge.aGaussianLong()
-                    )
-                )
-            )
+        val customTimings = mapOf(
+            malformedKey to forge.aGaussianLong()
         )
 
         // When
-        val validatedEvent = testedConstraints.validateEvent(viewEventWithMalformedTiming)
+        val sanitizedTimings =
+            testedConstraints.validateTimings(customTimings)
 
         // Then
-        assertThat(validatedEvent)
-            .isNotEqualTo(viewEventWithMalformedTiming)
-
-        val originalTimings = viewEventWithMalformedTiming.view.customTimings!!.additionalProperties
-        val sanitizedTimings = (validatedEvent as ViewEvent).view
-            .customTimings!!.additionalProperties
-
         assertThat(sanitizedTimings.size)
-            .isEqualTo(originalTimings.size)
+            .isEqualTo(customTimings.size)
 
         val sanitizedBadTimingPart = "_".repeat(badTimingPart.length)
 

@@ -18,7 +18,6 @@ import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.Logger
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import java.io.File
 import java.util.concurrent.ExecutorService
@@ -26,11 +25,11 @@ import java.util.concurrent.ExecutorService
 internal class RumFilePersistenceStrategy(
     consentProvider: ConsentProvider,
     context: Context,
-    eventMapper: EventMapper<RumEvent>,
+    eventMapper: EventMapper<Any>,
     executorService: ExecutorService,
     internalLogger: Logger,
     private val lastViewEventFile: File
-) : BatchFilePersistenceStrategy<RumEvent>(
+) : BatchFilePersistenceStrategy<Any>(
     FeatureFileOrchestrator(
         consentProvider,
         context,
@@ -50,10 +49,10 @@ internal class RumFilePersistenceStrategy(
     override fun createWriter(
         fileOrchestrator: FileOrchestrator,
         executorService: ExecutorService,
-        serializer: Serializer<RumEvent>,
+        serializer: Serializer<Any>,
         payloadDecoration: PayloadDecoration,
         internalLogger: Logger
-    ): DataWriter<RumEvent> {
+    ): DataWriter<Any> {
         return ScheduledWriter(
             RumDataWriter(
                 fileOrchestrator,

@@ -45,7 +45,6 @@ internal class Configurator :
         forge.addFactory(ErrorEventForgeryFactory())
         forge.addFactory(LongTaskEventForgeryFactory())
         forge.addFactory(MotionEventForgeryFactory())
-        forge.addFactory(RumEventForgeryFactory())
         forge.addFactory(RumEventMapperFactory())
         forge.addFactory(RumContextForgeryFactory())
         forge.addFactory(ResourceEventForgeryFactory())

@@ -11,7 +11,6 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.net.RumOkHttpUploaderV2
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
@@ -47,7 +46,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class RumFeatureTest : SdkFeatureTest<RumEvent, Configuration.Feature.RUM, RumFeature>() {
+internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, RumFeature>() {
 
     override fun createTestedFeature(): RumFeature {
         return RumFeature

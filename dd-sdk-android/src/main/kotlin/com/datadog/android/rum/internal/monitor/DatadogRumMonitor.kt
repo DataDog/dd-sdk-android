@@ -19,7 +19,6 @@ import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.asTime
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
@@ -34,7 +33,7 @@ internal class DatadogRumMonitor(
     applicationId: String,
     internal val samplingRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
-    private val writer: DataWriter<RumEvent>,
+    private val writer: DataWriter<Any>,
     internal val handler: Handler,
     firstPartyHostDetector: FirstPartyHostDetector,
     cpuVitalMonitor: VitalMonitor,

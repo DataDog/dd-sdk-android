@@ -22,7 +22,7 @@ internal class ViewEventAssert(actual: ViewEvent) :
 
     fun hasTimestamp(
         expected: Long,
-        offset: Long = RumEventAssert.TIMESTAMP_THRESHOLD_MS
+        offset: Long = TIMESTAMP_THRESHOLD_MS
     ): ViewEventAssert {
         assertThat(actual.date)
             .overridingErrorMessage(
@@ -265,6 +265,13 @@ internal class ViewEventAssert(actual: ViewEvent) :
                     "but was ${actual.usr?.email}"
             )
             .isEqualTo(expected?.email)
+        assertThat(actual.usr?.additionalProperties)
+            .overridingErrorMessage(
+                "Expected event to have user additional" +
+                    " properties ${expected?.additionalProperties} " +
+                    "but was ${actual.usr?.additionalProperties}"
+            )
+            .containsExactlyInAnyOrderEntriesOf(expected?.additionalProperties)
         return this
     }
 
@@ -287,6 +294,13 @@ internal class ViewEventAssert(actual: ViewEvent) :
                     "but was ${actual.usr?.email}"
             )
             .isEqualTo(expected?.email)
+        assertThat(actual.usr?.additionalProperties)
+            .overridingErrorMessage(
+                "Expected event to have user additional " +
+                    "properties ${expected?.additionalProperties} " +
+                    "but was ${actual.usr?.additionalProperties}"
+            )
+            .containsExactlyInAnyOrderEntriesOf(expected?.additionalProperties)
         return this
     }
 
@@ -362,6 +376,16 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun containsExactlyContextAttributes(expected: Map<String, Any?>) {
+        assertThat(actual.context?.additionalProperties)
+            .overridingErrorMessage(
+                "Expected event to have context " +
+                    "additional properties $expected " +
+                    "but was ${actual.context?.additionalProperties}"
+            )
+            .containsExactlyInAnyOrderEntriesOf(expected)
+    }
+
     fun hasLiteSessionPlan(): ViewEventAssert {
         assertThat(actual.dd.session?.plan)
             .overridingErrorMessage(
@@ -375,7 +399,7 @@ internal class ViewEventAssert(actual: ViewEvent) :
     companion object {
 
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)
-
+        internal const val TIMESTAMP_THRESHOLD_MS = 50L
         internal fun assertThat(actual: ViewEvent): ViewEventAssert =
             ViewEventAssert(actual)
     }

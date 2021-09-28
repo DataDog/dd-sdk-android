@@ -23,7 +23,7 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
 
     fun hasTimestamp(
         expected: Long,
-        offset: Long = RumEventAssert.TIMESTAMP_THRESHOLD_MS
+        offset: Long = TIMESTAMP_THRESHOLD_MS
     ): LongTaskEventAssert {
         assertThat(actual.date)
             .overridingErrorMessage(
@@ -72,7 +72,24 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
                     "but was ${actual.usr?.email}"
             )
             .isEqualTo(expected?.email)
+        assertThat(actual.usr?.additionalProperties)
+            .overridingErrorMessage(
+                "Expected event to have user additional " +
+                    "properties ${expected?.additionalProperties} " +
+                    "but was ${actual.usr?.additionalProperties}"
+            )
+            .containsExactlyInAnyOrderEntriesOf(expected?.additionalProperties)
         return this
+    }
+
+    fun containsExactlyContextAttributes(expected: Map<String, Any?>) {
+        assertThat(actual.context?.additionalProperties)
+            .overridingErrorMessage(
+                "Expected event to have context " +
+                    "additional properties $expected " +
+                    "but was ${actual.context?.additionalProperties}"
+            )
+            .containsExactlyInAnyOrderEntriesOf(expected)
     }
 
     fun hasConnectivityInfo(expected: NetworkInfo?): LongTaskEventAssert {
@@ -212,7 +229,7 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
     }
 
     companion object {
-
+        internal const val TIMESTAMP_THRESHOLD_MS = 50L
         internal fun assertThat(actual: LongTaskEvent): LongTaskEventAssert =
             LongTaskEventAssert(actual)
     }

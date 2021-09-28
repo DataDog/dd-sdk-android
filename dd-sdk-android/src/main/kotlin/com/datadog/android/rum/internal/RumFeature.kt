@@ -21,7 +21,6 @@ import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.rum.internal.net.RumOkHttpUploaderV2
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
@@ -45,7 +44,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
-internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
+internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
 
     internal var samplingRate: Float = 0f
     internal var backgroundEventTracking: Boolean = false
@@ -54,7 +53,7 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
     internal var actionTrackingStrategy: UserActionTrackingStrategy =
         NoOpUserActionTrackingStrategy()
     internal var viewTreeTrackingStrategy: TrackingStrategy = ViewTreeChangeTrackingStrategy()
-    internal var rumEventMapper: EventMapper<RumEvent> = NoOpEventMapper()
+    internal var rumEventMapper: EventMapper<Any> = NoOpEventMapper()
     internal var longTaskTrackingStrategy: TrackingStrategy = NoOpTrackingStrategy()
 
     internal var cpuVitalMonitor: VitalMonitor = NoOpVitalMonitor()
@@ -103,7 +102,7 @@ internal object RumFeature : SdkFeature<RumEvent, Configuration.Feature.RUM>() {
     override fun createPersistenceStrategy(
         context: Context,
         configuration: Configuration.Feature.RUM
-    ): PersistenceStrategy<RumEvent> {
+    ): PersistenceStrategy<Any> {
         return RumFilePersistenceStrategy(
             CoreFeature.trackingConsentProvider,
             context,

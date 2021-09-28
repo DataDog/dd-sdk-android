@@ -13,8 +13,8 @@ import org.assertj.core.api.Assertions
 
 internal const val TARGET_CLASS_NAME = "action.target.classname"
 internal const val TARGET_RESOURCE_ID = "action.target.resource_id"
-internal const val VIEW_ARGUMENTS_PREFIX = "context.view.arguments."
-internal const val CONTEXT_PREFIX = "context."
+internal const val VIEW_ARGUMENTS_PREFIX = "view.arguments."
+internal const val CONTEXT_KEY = "context"
 
 internal fun rumPayloadToJsonList(payload: String): List<JsonObject> {
     return payload.split(Regex("\n"))
@@ -89,7 +89,9 @@ private fun JsonObject.verifyEventMatches(event: ExpectedViewEvent) {
         .containsAttributes(event.extraViewAttributes)
     assertThat(this.getAsJsonObject("view"))
         .containsAttributesMatchingPredicate(event.extraViewAttributesWithPredicate)
-    assertThat(this).containsAttributes(viewArguments)
+    if (viewArguments.isNotEmpty()) {
+        assertThat(this.getAsJsonObject(CONTEXT_KEY)).containsAttributes(viewArguments)
+    }
 }
 
 private fun JsonObject.verifyEventMatches(event: ExpectedResourceEvent) {
@@ -101,11 +103,10 @@ private fun JsonObject.verifyEventMatches(event: ExpectedResourceEvent) {
             hasField("url", event.url)
         }
 
-    val extraAttributes = event.extraAttributes
-        .mapKeys { "$CONTEXT_PREFIX${it.key}" }
-
-    assertThat(this)
-        .containsAttributes(extraAttributes)
+    if (event.extraAttributes.isNotEmpty()) {
+        assertThat(this.getAsJsonObject(CONTEXT_KEY))
+            .containsAttributes(event.extraAttributes)
+    }
 }
 
 private fun JsonObject.verifyEventMatches(event: ExpectedErrorEvent) {
@@ -122,11 +123,9 @@ private fun JsonObject.verifyEventMatches(event: ExpectedErrorEvent) {
             }
         }
 
-    val extraAttributes = event.extraAttributes
-        .mapKeys { "$CONTEXT_PREFIX${it.key}" }
-
-    assertThat(this)
-        .containsAttributes(extraAttributes)
+    if (event.extraAttributes.isNotEmpty()) {
+        assertThat(this.getAsJsonObject(CONTEXT_KEY)).containsAttributes(event.extraAttributes)
+    }
 }
 
 private fun JsonObject.verifyRootMatches(event: ExpectedEvent) {

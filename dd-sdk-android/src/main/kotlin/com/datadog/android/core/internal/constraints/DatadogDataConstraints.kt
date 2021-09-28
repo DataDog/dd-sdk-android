@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.constraints
 
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.rum.model.ViewEvent
 import java.util.Locale
 
 internal typealias StringTransform = (String) -> String?
@@ -36,7 +35,8 @@ internal class DatadogDataConstraints : DataConstraints {
     override fun <T : Any?> validateAttributes(
         attributes: Map<String, T>,
         keyPrefix: String?,
-        attributesGroupName: String?
+        attributesGroupName: String?,
+        reservedKeys: Set<String>
     ): Map<String, T> {
 
         // prefix = "a.b" => dotCount = 1+1 ("a.b." + key)
@@ -47,6 +47,9 @@ internal class DatadogDataConstraints : DataConstraints {
             @Suppress("SENSELESS_COMPARISON")
             if (it.key == null) {
                 devLogger.e("\"$it\" is an invalid attribute, and was ignored.")
+                null
+            } else if (it.key in reservedKeys) {
+                devLogger.e("\"$it\" key was in the reservedKeys set, and was dropped.")
                 null
             } else {
                 val key = convertAttributeKey(it.key, prefixDotCount)
@@ -70,35 +73,20 @@ internal class DatadogDataConstraints : DataConstraints {
         return convertedAttributes.take(MAX_ATTR_COUNT).toMap()
     }
 
-    override fun validateEvent(rumEvent: Any): Any {
-        return if (rumEvent is ViewEvent) {
-
-            val customTimings = rumEvent.view.customTimings?.let {
-                it.copy(
-                    additionalProperties = it.additionalProperties.mapKeys { entry ->
-                        val sanitizedKey =
-                            entry.key.replace(Regex("[^a-zA-Z0-9\\-_.@$]"), "_")
-                        if (sanitizedKey != entry.key) {
-                            devLogger.w(
-                                CUSTOM_TIMING_KEY_REPLACED_WARNING.format(
-                                    Locale.US,
-                                    entry.key,
-                                    sanitizedKey
-                                )
-                            )
-                        }
+    override fun validateTimings(timings: Map<String, Long>): Map<String, Long> {
+        return timings.mapKeys { entry ->
+            val sanitizedKey =
+                entry.key.replace(Regex("[^a-zA-Z0-9\\-_.@$]"), "_")
+            if (sanitizedKey != entry.key) {
+                devLogger.w(
+                    CUSTOM_TIMING_KEY_REPLACED_WARNING.format(
+                        Locale.US,
+                        entry.key,
                         sanitizedKey
-                    }
+                    )
                 )
             }
-
-            rumEvent.copy(
-                view = rumEvent.view.copy(
-                    customTimings = customTimings
-                )
-            )
-        } else {
-            rumEvent
+            sanitizedKey
         }
     }
 

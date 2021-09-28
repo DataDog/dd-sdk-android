@@ -11,14 +11,17 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.utils.assertj.DeserializedMapAssert.Companion.assertThat
+import com.datadog.android.utils.assertj.DeserializedActionEventAssert.Companion.assertThat
+import com.datadog.android.utils.assertj.DeserializedErrorEventAssert.Companion.assertThat
+import com.datadog.android.utils.assertj.DeserializedLongTaskEventAssert.Companion.assertThat
+import com.datadog.android.utils.assertj.DeserializedResourceEventAssert.Companion.assertThat
+import com.datadog.android.utils.assertj.DeserializedViewEventAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -43,13 +46,20 @@ internal class RumEventDeserializerTest {
     // we use a NoOpDataConstraints to avoid flaky tests
     private val serializer: RumEventSerializer = RumEventSerializer(
         mock {
-            whenever(it.validateAttributes<Any?>(any(), anyOrNull(), anyOrNull())).thenAnswer {
+            whenever(
+                it.validateAttributes<Any?>(
+                    any(),
+                    anyOrNull(),
+                    anyOrNull(),
+                    anyOrNull()
+                )
+            ).thenAnswer {
                 it.getArgument(0)
             }
             whenever(it.validateTags(any())).thenAnswer {
                 it.getArgument(0)
             }
-            whenever(it.validateEvent(any())).thenAnswer {
+            whenever(it.validateTimings(any())).thenAnswer {
                 it.getArgument(0)
             }
         }
@@ -68,22 +78,13 @@ internal class RumEventDeserializerTest {
     ) {
         // GIVEN
         val fakeViewEvent = forge.getForgery(ViewEvent::class.java)
-        val fakeEvent: RumEvent = forge.getForgery(RumEvent::class.java)
-            .copy(event = fakeViewEvent)
-        val serializedEvent = serializer.serialize(fakeEvent)
+        val serializedEvent = serializer.serialize(fakeViewEvent)
 
         // WHEN
-        val deserializedEvent = testedDeserializer.deserialize(serializedEvent)
+        val deserializedEvent = testedDeserializer.deserialize(serializedEvent) as ViewEvent
 
         // THEN
-        assertThat(deserializedEvent).isNotNull()
-        assertThat(deserializedEvent!!.globalAttributes)
-            .isEqualTo(fakeEvent.globalAttributes)
-        assertThat(deserializedEvent.userExtraAttributes)
-            .isEqualTo(fakeEvent.userExtraAttributes)
-        val deserializedViewEvent = deserializedEvent.event as ViewEvent
-        assertThat(deserializedViewEvent)
-            .isEqualTo(fakeViewEvent)
+        assertThat(deserializedEvent).isEqualTo(fakeViewEvent)
     }
 
     @Test
@@ -92,21 +93,13 @@ internal class RumEventDeserializerTest {
     ) {
         // GIVEN
         val fakeResourceEvent = forge.getForgery(ResourceEvent::class.java)
-        val fakeEvent: RumEvent = forge.getForgery(RumEvent::class.java)
-            .copy(event = fakeResourceEvent)
-        val serializedEvent = serializer.serialize(fakeEvent)
+        val serializedEvent = serializer.serialize(fakeResourceEvent)
 
         // WHEN
-        val deserializedEvent = testedDeserializer.deserialize(serializedEvent)
+        val deserializedEvent = testedDeserializer.deserialize(serializedEvent) as ResourceEvent
 
         // THEN
-        assertThat(deserializedEvent).isNotNull()
-        assertThat(deserializedEvent!!.globalAttributes)
-            .isEqualTo(fakeEvent.globalAttributes)
-        assertThat(deserializedEvent.userExtraAttributes)
-            .isEqualTo(fakeEvent.userExtraAttributes)
-        val deserializedResourceEvent = deserializedEvent.event as ResourceEvent
-        assertThat(deserializedResourceEvent).isEqualTo(fakeResourceEvent)
+        assertThat(deserializedEvent).isEqualTo(fakeResourceEvent)
     }
 
     @Test
@@ -115,24 +108,13 @@ internal class RumEventDeserializerTest {
     ) {
         // GIVEN
         val fakeActionEvent = forge.getForgery(ActionEvent::class.java)
-        val fakeEvent: RumEvent = forge.getForgery(RumEvent::class.java)
-            .copy(event = fakeActionEvent)
-        val serializedEvent = serializer.serialize(fakeEvent)
+        val serializedEvent = serializer.serialize(fakeActionEvent)
 
         // WHEN
-        val deserializedEvent = testedDeserializer.deserialize(serializedEvent)
+        val deserializedEvent = testedDeserializer.deserialize(serializedEvent) as ActionEvent
 
         // THEN
-        assertThat(deserializedEvent).isNotNull()
-        assertThat(deserializedEvent!!.globalAttributes)
-            .isEqualTo(fakeEvent.globalAttributes)
-        assertThat(deserializedEvent.userExtraAttributes)
-            .isEqualTo(fakeEvent.userExtraAttributes)
-        val deserializedActionEvent = deserializedEvent.event as ActionEvent
-        assertThat(deserializedActionEvent)
-            .usingRecursiveComparison()
-            .ignoringFields("dd")
-            .isEqualTo(fakeActionEvent)
+        assertThat(deserializedEvent).isEqualTo(fakeActionEvent)
     }
 
     @Test
@@ -141,24 +123,13 @@ internal class RumEventDeserializerTest {
     ) {
         // GIVEN
         val fakeErrorEvent = forge.getForgery(ErrorEvent::class.java)
-        val fakeEvent: RumEvent = forge.getForgery(RumEvent::class.java)
-            .copy(event = fakeErrorEvent)
-        val serializedEvent = serializer.serialize(fakeEvent)
+        val serializedEvent = serializer.serialize(fakeErrorEvent)
 
         // WHEN
-        val deserializedEvent = testedDeserializer.deserialize(serializedEvent)
+        val deserializedEvent = testedDeserializer.deserialize(serializedEvent) as ErrorEvent
 
         // THEN
-        assertThat(deserializedEvent).isNotNull()
-        assertThat(deserializedEvent!!.globalAttributes)
-            .isEqualTo(fakeEvent.globalAttributes)
-        assertThat(deserializedEvent.userExtraAttributes)
-            .isEqualTo(fakeEvent.userExtraAttributes)
-        val deserializedErrorEvent = deserializedEvent.event as ErrorEvent
-        assertThat(deserializedErrorEvent)
-            .usingRecursiveComparison()
-            .ignoringFields("dd")
-            .isEqualTo(fakeErrorEvent)
+        assertThat(deserializedEvent).isEqualTo(fakeErrorEvent)
     }
 
     @Test
@@ -167,24 +138,13 @@ internal class RumEventDeserializerTest {
     ) {
         // GIVEN
         val fakeLongTaskEvent = forge.getForgery(LongTaskEvent::class.java)
-        val fakeEvent: RumEvent = forge.getForgery(RumEvent::class.java)
-            .copy(event = fakeLongTaskEvent)
-        val serializedEvent = serializer.serialize(fakeEvent)
+        val serializedEvent = serializer.serialize(fakeLongTaskEvent)
 
         // WHEN
-        val deserializedEvent = testedDeserializer.deserialize(serializedEvent)
+        val deserializedEvent = testedDeserializer.deserialize(serializedEvent) as LongTaskEvent
 
         // THEN
-        assertThat(deserializedEvent).isNotNull()
-        assertThat(deserializedEvent!!.globalAttributes)
-            .isEqualTo(fakeEvent.globalAttributes)
-        assertThat(deserializedEvent.userExtraAttributes)
-            .isEqualTo(fakeEvent.userExtraAttributes)
-        val deserializedLongTaskEvent = deserializedEvent.event as LongTaskEvent
-        assertThat(deserializedLongTaskEvent)
-            .usingRecursiveComparison()
-            .ignoringFields("dd")
-            .isEqualTo(fakeLongTaskEvent)
+        assertThat(deserializedEvent).isEqualTo(fakeLongTaskEvent)
     }
 
     @Test
@@ -197,11 +157,9 @@ internal class RumEventDeserializerTest {
     }
 
     @Test
-    fun `𝕄 return null W deserialize { wrong bundled RUM event type }`(
-        @Forgery fakeEvent: RumEvent
-    ) {
+    fun `𝕄 return null W deserialize { wrong bundled RUM event type }`() {
         // GIVEN
-        val fakeBadFormatEvent = fakeEvent.copy(event = Any())
+        val fakeBadFormatEvent = Any()
         val serializedEvent = serializer.serialize(fakeBadFormatEvent)
 
         // WHEN

@@ -16,11 +16,11 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.rum.assertj.RumEventAssert.Companion.assertThat
+import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
+import com.datadog.android.rum.assertj.ResourceEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.utils.asTimingsPayload
@@ -80,7 +80,7 @@ internal class RumResourceScopeTest {
     lateinit var mockEvent: RumRawEvent
 
     @Mock
-    lateinit var mockWriter: DataWriter<RumEvent>
+    lateinit var mockWriter: DataWriter<Any>
 
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
@@ -153,12 +153,10 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(capture())
             assertThat(firstValue)
-                .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasResourceData {
+                .apply {
                     hasId(testedScope.resourceId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
@@ -176,6 +174,7 @@ internal class RumResourceScopeTest {
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -203,12 +202,10 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(capture())
             assertThat(firstValue)
-                .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasResourceData {
+                .apply {
                     hasId(testedScope.resourceId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
@@ -227,6 +224,7 @@ internal class RumResourceScopeTest {
                     hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
                     hasProviderDomain(URL(fakeUrl).host)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -265,12 +263,10 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(capture())
             assertThat(firstValue)
-                .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasResourceData {
+                .apply {
                     hasId(testedScope.resourceId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(brokenUrl)
@@ -289,6 +285,7 @@ internal class RumResourceScopeTest {
                     hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
                     hasProviderDomain(brokenUrl)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -320,12 +317,10 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(capture())
             assertThat(firstValue)
-                .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasResourceData {
+                .apply {
                     hasId(testedScope.resourceId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
@@ -343,6 +338,7 @@ internal class RumResourceScopeTest {
                     hasSpanId(fakeSpanId)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -371,12 +367,10 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(capture())
             assertThat(firstValue)
-                .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasResourceData {
+                .apply {
                     hasId(testedScope.resourceId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
@@ -394,6 +388,7 @@ internal class RumResourceScopeTest {
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -413,11 +408,10 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(capture())
             assertThat(firstValue)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasResourceData {
+                .apply {
                     hasId(testedScope.resourceId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
@@ -435,6 +429,7 @@ internal class RumResourceScopeTest {
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -454,12 +449,10 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(capture())
             assertThat(firstValue)
-                .hasAttributes(fakeAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasResourceData {
+                .apply {
                     hasKind(kind)
                     hasStatusCode(statusCode)
                     hasUserInfo(fakeUserInfo)
@@ -469,6 +462,7 @@ internal class RumResourceScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -488,9 +482,9 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<Any> {
             verify(mockWriter).write(capture())
-            assertThat(lastValue.event).isNotInstanceOf(ErrorEvent::class.java)
+            assertThat(lastValue).isNotInstanceOf(ErrorEvent::class.java)
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
@@ -508,9 +502,9 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<Any> {
             verify(mockWriter).write(capture())
-            assertThat(lastValue.event).isNotInstanceOf(ErrorEvent::class.java)
+            assertThat(lastValue).isNotInstanceOf(ErrorEvent::class.java)
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
@@ -550,12 +544,10 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(capture())
             assertThat(firstValue)
-                .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasResourceData {
+                .apply {
                     hasId(testedScope.resourceId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
@@ -573,6 +565,7 @@ internal class RumResourceScopeTest {
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -602,12 +595,10 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(capture())
             assertThat(firstValue)
-                .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasResourceData {
+                .apply {
                     hasId(testedScope.resourceId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
@@ -625,6 +616,7 @@ internal class RumResourceScopeTest {
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -654,12 +646,10 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(capture())
             assertThat(firstValue)
-                .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasResourceData {
+                .apply {
                     hasId(testedScope.resourceId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
@@ -678,6 +668,7 @@ internal class RumResourceScopeTest {
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -708,12 +699,10 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(capture())
             assertThat(firstValue)
-                .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasResourceData {
+                .apply {
                     hasId(testedScope.resourceId)
                     hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
@@ -732,6 +721,7 @@ internal class RumResourceScopeTest {
                     hasSpanId(null)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -767,12 +757,10 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ErrorEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasErrorData {
+                .apply {
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -786,6 +774,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -832,12 +821,10 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ErrorEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasErrorData {
+                .apply {
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -853,6 +840,7 @@ internal class RumResourceScopeTest {
                     hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -889,12 +877,10 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ErrorEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasErrorData {
+                .apply {
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -910,6 +896,7 @@ internal class RumResourceScopeTest {
                     hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -946,12 +933,10 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ErrorEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasErrorData {
+                .apply {
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -966,6 +951,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1008,12 +994,10 @@ internal class RumResourceScopeTest {
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ErrorEvent> {
             verify(mockWriter).write(capture())
             assertThat(lastValue)
-                .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasErrorData {
+                .apply {
                     hasMessage(message)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
@@ -1028,6 +1012,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1122,12 +1107,10 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
 
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(capture())
             assertThat(firstValue)
-                .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasResourceData {
+                .apply {
                     hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
@@ -1142,6 +1125,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1171,12 +1155,10 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
         val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
 
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(capture())
             assertThat(firstValue)
-                .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasResourceData {
+                .apply {
                     hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
@@ -1191,6 +1173,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1221,12 +1204,10 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
         val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
 
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(capture())
             assertThat(firstValue)
-                .hasAttributes(expectedAttributes)
-                .hasUserExtraAttributes(fakeUserInfo.additionalProperties)
-                .hasResourceData {
+                .apply {
                     hasTimestamp(resolveExpectedTimestamp())
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
@@ -1242,6 +1223,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1275,12 +1257,9 @@ internal class RumResourceScopeTest {
             ?.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(capture())
-            assertThat(firstValue)
-                .hasResourceData {
-                    hasTiming(timing)
-                }
+            assertThat(firstValue).hasTiming(timing)
         }
     }
 
@@ -1303,12 +1282,9 @@ internal class RumResourceScopeTest {
         testedScope.handleEvent(mockEvent, mockWriter)
 
         // Then
-        argumentCaptor<RumEvent> {
+        argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(capture())
-            assertThat(firstValue)
-                .hasResourceData {
-                    hasTiming(timing)
-                }
+            assertThat(firstValue).hasTiming(timing)
         }
     }
 

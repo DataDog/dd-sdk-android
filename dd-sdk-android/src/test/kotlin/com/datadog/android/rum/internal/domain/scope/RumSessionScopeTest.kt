@@ -24,7 +24,6 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.event.RumEvent
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -90,7 +89,7 @@ internal class RumSessionScopeTest {
     lateinit var mockEvent: RumRawEvent
 
     @Mock
-    lateinit var mockWriter: DataWriter<RumEvent>
+    lateinit var mockWriter: DataWriter<Any>
 
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
@@ -371,7 +370,7 @@ internal class RumSessionScopeTest {
 
         val result = testedScope.handleEvent(mockEvent, mockWriter)
 
-        argumentCaptor<DataWriter<RumEvent>> {
+        argumentCaptor<DataWriter<Any>> {
             verify(mockChildScope).handleEvent(same(mockEvent), capture())
 
             assertThat(firstValue)
