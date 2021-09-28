@@ -184,7 +184,8 @@ internal class DatadogLogHandlerTest {
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
                         LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
+                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
                     )
                 )
                 .hasExactlyTags(
@@ -225,7 +226,8 @@ internal class DatadogLogHandlerTest {
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
                         LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
+                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
                     )
                 )
                 .hasExactlyTags(
@@ -328,7 +330,8 @@ internal class DatadogLogHandlerTest {
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
                         LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
+                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
                     )
                 )
                 .hasExactlyTags(
@@ -378,7 +381,8 @@ internal class DatadogLogHandlerTest {
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
                         LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
+                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
                     )
                 )
                 .hasExactlyTags(
@@ -429,7 +433,8 @@ internal class DatadogLogHandlerTest {
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
                         LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
+                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
                     )
                 )
                 .hasExactlyTags(
@@ -481,7 +486,7 @@ internal class DatadogLogHandlerTest {
                 .hasExactlyTags(
                     setOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion"
+                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion",
                     )
                 )
                 .doesNotHaveError()
@@ -593,6 +598,7 @@ internal class DatadogLogHandlerTest {
                 )
                 .containsEntry(LogAttributes.RUM_SESSION_ID, rumMonitor.context.sessionId)
                 .containsEntry(LogAttributes.RUM_VIEW_ID, rumMonitor.context.viewId)
+                .containsEntry(LogAttributes.RUM_ACTION_ID, rumMonitor.context.actionId)
         }
         Datadog.invokeMethod("stop")
     }
@@ -709,7 +715,8 @@ internal class DatadogLogHandlerTest {
                     fakeAttributes + mapOf(
                         LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
                         LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
+                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
                     )
                 )
                 .hasExactlyTags(

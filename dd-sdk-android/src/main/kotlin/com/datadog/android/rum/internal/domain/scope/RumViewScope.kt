@@ -236,7 +236,7 @@ internal open class RumViewScope(
             }
         }
 
-        activeActionScope = RumActionScope.fromEvent(this, event, serverTimeOffsetInMs)
+        updateActiveActionScope(RumActionScope.fromEvent(this, event, serverTimeOffsetInMs))
         pendingActionCount++
     }
 
@@ -345,9 +345,15 @@ internal open class RumViewScope(
         if (currentAction != null) {
             val updatedAction = currentAction.handleEvent(event, writer)
             if (updatedAction == null) {
-                activeActionScope = null
+                updateActiveActionScope(null)
             }
         }
+    }
+
+    private fun updateActiveActionScope(scope: RumScope?) {
+        activeActionScope = scope
+        // update the Rum Context to make it available for Logs/Trace bundling
+        GlobalRum.updateRumContext(getRumContext())
     }
 
     private fun delegateEventToResources(

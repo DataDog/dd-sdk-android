@@ -556,7 +556,8 @@ internal class LogGeneratorTest {
         val expectedAttributes = fakeAttributes + mapOf(
             LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
             LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-            LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+            LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
+            LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
         )
         assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
@@ -580,7 +581,8 @@ internal class LogGeneratorTest {
         val expectedAttributes = fakeAttributes + mapOf(
             LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
             LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-            LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+            LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
+            LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
         )
         assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
@@ -605,7 +607,8 @@ internal class LogGeneratorTest {
         val expectedAttributes = fakeAttributes + mapOf(
             LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
             LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-            LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+            LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
+            LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
         )
         assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
@@ -627,7 +630,8 @@ internal class LogGeneratorTest {
             mapOf(
                 LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
                 LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
+                LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
             )
         )
     }
