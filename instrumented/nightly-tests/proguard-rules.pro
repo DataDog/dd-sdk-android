@@ -32,12 +32,13 @@
 }
 
 # Required to be able to assert the crash related error and log events in the Monitors
--keepnames class com.datadog.android.nightly.exceptions.** {}
--keepnames class com.datadog.android.nightly.services.** {}
+-keepnames class com.datadog.android.nightly.exceptions.** { *;}
+-keepnames class com.datadog.android.nightly.services.** { *; }
 
 # Required to be able to assert the events produced by the instrumentation strategies in the Monitors
--keepnames class com.datadog.android.nightly.activities.** {}
--keepnames class com.datadog.android.nightly.fragments.** {}
+-keepnames class com.datadog.android.nightly.activities.** { *; }
+-keepnames class com.datadog.android.nightly.fragments.** { *; }
 
 # Required to be able to use ktor - local server
--keepnames class io.ktor.** {}
+-keep class io.ktor.** { *; }
+-keep class io.netty.** { *; }
