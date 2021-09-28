@@ -20,7 +20,6 @@ This project hosts the following modules:
   - `dd-sdk-android-ndk`: a Plugin to allow tracking NDK information;
   - `dd-sdk-android-glide`: a lightweight library providing a bridge integration between `dd-sdk-android` and [Glide](https://bumptech.github.io/glide/);
   - `dd-sdk-android-timber`: a lightweight library providing a bridge integration between `dd-sdk-android` and [Timber](https://github.com/JakeWharton/timber);
-  - `instrumented/benchmark`: a test module to verify the performance of the library;
   - `instrumented/integration`: a test module with integration tests using Espresso;
   - `tools/detekt`: a few custom [Detekt](https://github.com/arturbosch/detekt) static analysis rules;
   - `tools/noopfactory`: an annotation processor generating no-op implementation of interfaces;
