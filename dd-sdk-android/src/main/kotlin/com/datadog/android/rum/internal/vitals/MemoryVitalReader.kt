@@ -23,12 +23,18 @@ internal class MemoryVitalReader(
             return null
         }
 
-        return statusFile.readLines()
+        val memorySizeKb = statusFile.readLines()
             .mapNotNull { line ->
                 VM_RSS_REGEX.matchEntire(line)?.groupValues?.get(1)
             }
             .firstOrNull()
             ?.toDoubleOrNull()
+
+        if (memorySizeKb == null) {
+            return null
+        } else {
+            return memorySizeKb * 1000
+        }
     }
 
     companion object {

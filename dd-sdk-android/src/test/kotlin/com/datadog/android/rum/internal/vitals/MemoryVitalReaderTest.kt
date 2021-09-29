@@ -73,24 +73,24 @@ internal class MemoryVitalReaderTest {
         val result = testedReader.readVitalData()
 
         // Then
-        assertThat(result).isEqualTo(fakeVmRss.toDouble())
+        assertThat(result).isEqualTo(fakeVmRss.toDouble() * 1000)
     }
 
     @Test
     fun `𝕄 read correct data 𝕎 readVitalData() {multiple times}`(
-        @IntForgery(1) vmRssValues: List<Int>
+        @IntForgery(1) vmRssValuesKb: List<Int>
     ) {
         // Given
         val results = mutableListOf<Double>()
         // When
-        vmRssValues.forEach { vmRss ->
+        vmRssValuesKb.forEach { vmRss ->
             fakeFile.writeText(generateStatusContent(vmRss))
             val result = testedReader.readVitalData()
             results.add(result!!)
         }
 
         // Then
-        assertThat(results).isEqualTo(vmRssValues.map { vmRss -> vmRss.toDouble() })
+        assertThat(results).isEqualTo(vmRssValuesKb.map { vmRssKb -> vmRssKb.toDouble() * 1000 })
     }
 
     @Test
