@@ -18,7 +18,9 @@ import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measure
 import com.datadog.android.nightly.utils.measureSdkInitialize
+import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumActionType
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.tracing.model.SpanEvent
 import fr.xgouchet.elmyr.junit4.ForgeRule
@@ -145,7 +147,7 @@ class SpanConfigE2ETests {
      */
     @Test
     fun trace_config_set_bundle_with_rum_enabled() {
-        // this one will have application_id tag
+        // this one will have application_id, session_id, view_id, action_id tags
         val testMethodName = "trace_config_set_bundle_with_rum_enabled"
         measureSdkInitialize {
             initializeSdk(
@@ -155,8 +157,11 @@ class SpanConfigE2ETests {
         }
         val viewKey = "some-view-key"
         val viewName = "some-view-name"
+        val actionName = "some-action-name"
         val rumMonitor = GlobalRum.get()
         rumMonitor.startView(viewKey, viewName)
+        rumMonitor.startUserAction(RumActionType.TAP, actionName, emptyMap())
+        sendRandomActionOutcomeEvent(forge)
 
         // we need to wait a bit until RUM Context is updated
         Thread.sleep(2000)
@@ -165,6 +170,7 @@ class SpanConfigE2ETests {
             .start()
             .finish()
 
+        rumMonitor.stopUserAction(RumActionType.TAP, actionName)
         rumMonitor.stopView(viewKey)
     }
 
@@ -173,7 +179,7 @@ class SpanConfigE2ETests {
      */
     @Test
     fun trace_config_set_bundle_with_rum_disabled() {
-        // this one won't have application_id tag
+        // this one won't have application_id, session_id, view_id or action_id tags
         val testMethodName = "trace_config_set_bundle_with_rum_disabled"
         measureSdkInitialize {
             initializeSdk(

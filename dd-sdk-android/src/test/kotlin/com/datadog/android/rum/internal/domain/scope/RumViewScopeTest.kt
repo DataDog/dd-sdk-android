@@ -2066,7 +2066,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 update the RumContext in GlobalRum when removing the ActionScoppe`() {
+    fun `𝕄 update the RumContext in GlobalRum when removing the ActionScope`() {
         // Given
         testedScope.activeActionScope = mockChildScope
         whenever(mockChildScope.handleEvent(fakeEvent, mockWriter)) doReturn null

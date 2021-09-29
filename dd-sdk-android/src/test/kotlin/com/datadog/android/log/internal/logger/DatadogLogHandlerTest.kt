@@ -486,7 +486,7 @@ internal class DatadogLogHandlerTest {
                 .hasExactlyTags(
                     setOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion",
+                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion"
                     )
                 )
                 .doesNotHaveError()
