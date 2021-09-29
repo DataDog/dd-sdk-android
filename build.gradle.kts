@@ -20,7 +20,6 @@ buildscript {
 
     dependencies {
         classpath(com.datadog.gradle.Dependencies.ClassPaths.AndroidTools)
-        classpath(com.datadog.gradle.Dependencies.ClassPaths.AndroidBenchmark)
         classpath(com.datadog.gradle.Dependencies.ClassPaths.Kotlin)
         classpath(com.datadog.gradle.Dependencies.ClassPaths.KtLint)
         classpath(com.datadog.gradle.Dependencies.ClassPaths.Dokka)
@@ -146,7 +145,6 @@ tasks.register("ktlintCheckAll") {
         ":dd-sdk-android-sqldelight:ktlintCheck",
         ":dd-sdk-android-timber:ktlintCheck",
         ":instrumented:integration:ktlintCheck",
-        ":instrumented:benchmark:ktlintCheck",
         ":instrumented:nightly-tests:ktlintCheck",
         ":tools:detekt:ktlintCheck",
         ":tools:unit:ktlintCheck"
@@ -179,7 +177,6 @@ tasks.register("detektAll") {
         ":dd-sdk-android-sqldelight:detekt",
         ":dd-sdk-android-timber:detekt",
         ":instrumented:integration:detekt",
-        ":instrumented:benchmark:detekt",
         ":instrumented:nightly-tests:detekt",
         ":tools:unit:detekt"
     )
@@ -213,7 +210,6 @@ tasks.register("jacocoReportAll") {
 
 tasks.register("instrumentTestAll") {
     dependsOn(":instrumented:integration:connectedCheck")
-    dependsOn(":instrumented:benchmark:connectedCheck")
 }
 
 tasks.register("buildIntegrationTestsArtifacts") {

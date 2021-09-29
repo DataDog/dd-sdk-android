@@ -39,7 +39,6 @@ object Dependencies {
         const val Elmyr = "1.3.0"
         const val Jacoco = "0.8.4"
         const val MockitoKotlin = "2.2.0"
-        const val JetpackBenchmark = "1.0.0"
 
         // Tools
         const val Detekt = "1.17.0"
@@ -96,11 +95,6 @@ object Dependencies {
         const val KronosNTP = "com.lyft.kronos:kronos-android:${Versions.KronosNTP}"
 
         const val AndroidXMultidex = "androidx.multidex:multidex:${Versions.AndroidXMultidex}"
-
-        val JetpackBenchmark = arrayOf(
-            "androidx.benchmark:benchmark-junit4:${Versions.JetpackBenchmark}",
-            "androidx.test.ext:junit:1.1.1"
-        )
 
         const val AndroidXAnnotation =
             "androidx.annotation:annotation:${Versions.AndroidXAnnotations}"
@@ -205,8 +199,6 @@ object Dependencies {
         const val AndroidTools = "com.android.tools.build:gradle:${Versions.AndroidToolsPlugin}"
         const val Kotlin = "org.jetbrains.kotlin:kotlin-gradle-plugin:${Versions.Kotlin}"
         const val KtLint = "org.jlleitschuh.gradle:ktlint-gradle:${Versions.KtLint}"
-        const val AndroidBenchmark =
-            "androidx.benchmark:benchmark-gradle-plugin:${Versions.JetpackBenchmark}"
         const val Dokka = "org.jetbrains.dokka:dokka-gradle-plugin:${Versions.Dokka}"
         const val Unmock = "de.mobilej.unmock:UnMockPlugin:${Versions.Unmock}"
         const val Realm = "io.realm:realm-gradle-plugin:${Versions.Realm}"
