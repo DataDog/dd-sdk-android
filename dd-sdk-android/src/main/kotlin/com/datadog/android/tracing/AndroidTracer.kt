@@ -170,6 +170,7 @@ class AndroidTracer internal constructor(
             withTag(LogAttributes.RUM_APPLICATION_ID, rumContext.applicationId)
                 .withTag(LogAttributes.RUM_SESSION_ID, rumContext.sessionId)
                 .withTag(LogAttributes.RUM_VIEW_ID, rumContext.viewId)
+                .withTag(LogAttributes.RUM_ACTION_ID, rumContext.actionId)
         } else {
             this
         }
