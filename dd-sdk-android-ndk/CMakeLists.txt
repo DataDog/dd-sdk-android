@@ -1,5 +1,5 @@
 project("dd-sdk-android-ndk")
-cmake_minimum_required(VERSION 3.18.1)
+cmake_minimum_required(VERSION 3.10.2)
 # use the C++ 17 compiler
 set(CMAKE_CXX_STANDARD 17)
 add_subdirectory(src/main/cpp)
