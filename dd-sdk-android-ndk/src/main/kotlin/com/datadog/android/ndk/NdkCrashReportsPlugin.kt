@@ -70,6 +70,9 @@ class NdkCrashReportsPlugin : DatadogPlugin {
     // region TrackingConsentProviderCallback
 
     override fun onConsentUpdated(previousConsent: TrackingConsent, newConsent: TrackingConsent) {
+        if (!nativeLibraryLoaded) {
+            return
+        }
         updateTrackingConsent(consentToInt(newConsent))
     }
 
