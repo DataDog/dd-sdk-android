@@ -1,5 +1,5 @@
 project("datadog-nightly-tests")
-cmake_minimum_required(VERSION 3.18.1)
+cmake_minimum_required(VERSION 3.10.2)
 
 add_library( # Sets the name of the library.
         datadog-nightly-lib
