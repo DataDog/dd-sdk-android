@@ -6,14 +6,20 @@
 
 package com.datadog.android.core.internal.persistence.file.single
 
+import android.util.Log
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.isNull
+import com.nhaarman.mockitokotlin2.same
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -23,6 +29,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
+import java.util.Locale
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -52,11 +59,21 @@ internal class SingleItemDataWriterTest {
     @Mock
     lateinit var mockFileHandler: FileHandler
 
+    @Mock
+    lateinit var mockLogHandler: LogHandler
+
+    @Forgery
+    lateinit var fakeThrowable: Throwable
+
     private val stubReverseSerializerAnswer = Answer<String?> { invocation ->
         (invocation.getArgument<String>(0)).reversed()
     }
 
     private val stubFailingSerializerAnswer = Answer<String?> { null }
+
+    private val stubThrowingSerializerAnswer = Answer<String?> {
+        throw fakeThrowable
+    }
 
     @BeforeEach
     fun `set up`() {
@@ -65,7 +82,8 @@ internal class SingleItemDataWriterTest {
         testedWriter = SingleItemDataWriter(
             mockOrchestrator,
             mockSerializer,
-            mockFileHandler
+            mockFileHandler,
+            Logger(mockLogHandler)
         )
     }
 
@@ -114,7 +132,7 @@ internal class SingleItemDataWriterTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 write(element) { serialization failure }`(
+    fun `𝕄 do nothing 𝕎 write(element) { serialization to null }`(
         @StringForgery data: String
     ) {
         // Given
@@ -125,5 +143,27 @@ internal class SingleItemDataWriterTest {
 
         // Then
         verifyZeroInteractions(mockFileHandler)
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 write(element) { serialization exception }`(
+        @StringForgery data: String
+    ) {
+        // Given
+        whenever(mockSerializer.serialize(data)) doAnswer stubThrowingSerializerAnswer
+
+        // When
+        testedWriter.write(data)
+
+        // Then
+        verifyZeroInteractions(mockFileHandler)
+        verify(mockLogHandler).handleLog(
+            eq(Log.ERROR),
+            eq(Serializer.ERROR_SERIALIZING.format(Locale.US, data.javaClass.simpleName)),
+            same(fakeThrowable),
+            eq(emptyMap()),
+            eq(emptySet()),
+            isNull()
+        )
     }
 }

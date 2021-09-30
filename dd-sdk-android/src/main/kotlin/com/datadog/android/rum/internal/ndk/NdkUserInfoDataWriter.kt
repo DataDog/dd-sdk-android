@@ -40,5 +40,6 @@ internal class NdkUserInfoDataWriter(
         )
     ),
     UserInfoSerializer(),
-    fileHandler
+    fileHandler,
+    internalLogger
 )
