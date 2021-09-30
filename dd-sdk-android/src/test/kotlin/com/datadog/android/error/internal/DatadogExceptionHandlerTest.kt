@@ -204,7 +204,8 @@ internal class DatadogExceptionHandlerTest {
                     mapOf(
                         LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
                         LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
+                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
                     )
                 )
         }
@@ -304,7 +305,8 @@ internal class DatadogExceptionHandlerTest {
                     mapOf(
                         LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
                         LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
+                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
                     )
                 )
         }
@@ -339,7 +341,8 @@ internal class DatadogExceptionHandlerTest {
                     mapOf(
                         LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
                         LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
+                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
                     )
                 )
         }
@@ -376,7 +379,8 @@ internal class DatadogExceptionHandlerTest {
                     mapOf(
                         LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
                         LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
+                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
                     )
                 )
         }
@@ -419,7 +423,8 @@ internal class DatadogExceptionHandlerTest {
                     mapOf(
                         LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
                         LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
+                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
                     )
                 )
         }
@@ -448,7 +453,8 @@ internal class DatadogExceptionHandlerTest {
                         LogAttributes.DD_SPAN_ID to tracer.spanId,
                         LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
                         LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
+                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
                     )
                 )
         }

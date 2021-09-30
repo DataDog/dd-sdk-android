@@ -149,6 +149,7 @@ internal class LogGenerator(
             combinedAttributes[LogAttributes.RUM_APPLICATION_ID] = activeContext.applicationId
             combinedAttributes[LogAttributes.RUM_SESSION_ID] = activeContext.sessionId
             combinedAttributes[LogAttributes.RUM_VIEW_ID] = activeContext.viewId
+            combinedAttributes[LogAttributes.RUM_ACTION_ID] = activeContext.actionId
         }
         return combinedAttributes
     }

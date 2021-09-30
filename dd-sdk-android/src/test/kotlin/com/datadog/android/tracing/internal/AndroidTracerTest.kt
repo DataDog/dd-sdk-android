@@ -11,7 +11,9 @@ import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.log.LogAttributes
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
@@ -46,6 +48,7 @@ import io.opentracing.log.Fields
 import io.opentracing.util.GlobalTracer
 import java.math.BigInteger
 import java.util.Random
+import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
@@ -204,12 +207,94 @@ internal class AndroidTracerTest {
             .isEqualTo(rumMonitor.context.sessionId)
         val viewId = rumMonitor.context.viewId
         if (viewId == null) {
-            assertThat(meta.containsKey(LogAttributes.RUM_VIEW_ID))
-                .isFalse()
+            assertThat(meta.containsKey(LogAttributes.RUM_VIEW_ID)).isFalse()
         } else {
-            assertThat(meta[LogAttributes.RUM_VIEW_ID])
-                .isEqualTo(viewId)
+            assertThat(meta[LogAttributes.RUM_VIEW_ID]).isEqualTo(viewId)
         }
+        val actionId = rumMonitor.context.actionId
+        if (actionId == null) {
+            assertThat(meta.containsKey(LogAttributes.RUM_ACTION_ID)).isFalse()
+        } else {
+            assertThat(meta[LogAttributes.RUM_ACTION_ID]).isEqualTo(actionId)
+        }
+    }
+
+    @Test
+    fun `M inject Rum ViewId W buildSpan { bundleWithRum enabled and ViewId not null }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeViewId = forge.getForgery<UUID>().toString()
+        val fakeRumContext = forge.getForgery(RumContext::class.java).copy(viewId = fakeViewId)
+        GlobalRum.updateRumContext(fakeRumContext)
+        val fakeOperationName = forge.anAlphaNumericalString()
+        val tracer = AndroidTracer.Builder()
+            .build()
+
+        // When
+        val span = tracer.buildSpan(fakeOperationName).start() as DDSpan
+        val meta = span.meta
+
+        // Then
+        assertThat(meta[LogAttributes.RUM_VIEW_ID]).isEqualTo(fakeViewId)
+    }
+
+    @Test
+    fun `M not inject Rum ViewId W buildSpan { bundleWithRum enabled and ViewId is null }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeRumContext = forge.getForgery(RumContext::class.java).copy(viewId = null)
+        GlobalRum.updateRumContext(fakeRumContext)
+        val fakeOperationName = forge.anAlphaNumericalString()
+        val tracer = AndroidTracer.Builder()
+            .build()
+
+        // When
+        val span = tracer.buildSpan(fakeOperationName).start() as DDSpan
+        val meta = span.meta
+
+        // Then
+        assertThat(meta.containsKey(LogAttributes.RUM_VIEW_ID)).isFalse()
+    }
+
+    @Test
+    fun `M inject Rum actionId W buildSpan { bundleWithRum enabled and ActionId not null }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeActionId = forge.getForgery<UUID>().toString()
+        val fakeRumContext = forge.getForgery(RumContext::class.java).copy(actionId = fakeActionId)
+        GlobalRum.updateRumContext(fakeRumContext)
+        val fakeOperationName = forge.anAlphaNumericalString()
+        val tracer = AndroidTracer.Builder()
+            .build()
+
+        // When
+        val span = tracer.buildSpan(fakeOperationName).start() as DDSpan
+        val meta = span.meta
+
+        // Then
+        assertThat(meta[LogAttributes.RUM_ACTION_ID]).isEqualTo(fakeActionId)
+    }
+
+    @Test
+    fun `M not inject Rum ActionId W buildSpan { bundleWithRum enabled and ActionId is null }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeRumContext = forge.getForgery(RumContext::class.java).copy(actionId = null)
+        GlobalRum.updateRumContext(fakeRumContext)
+        val fakeOperationName = forge.anAlphaNumericalString()
+        val tracer = AndroidTracer.Builder()
+            .build()
+
+        // When
+        val span = tracer.buildSpan(fakeOperationName).start() as DDSpan
+        val meta = span.meta
+
+        // Then
+        assertThat(meta.containsKey(LogAttributes.RUM_ACTION_ID)).isFalse()
     }
 
     @Test

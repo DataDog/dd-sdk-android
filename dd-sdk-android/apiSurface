@@ -184,6 +184,7 @@ object com.datadog.android.log.LogAttributes
   const val RUM_APPLICATION_ID: String
   const val RUM_SESSION_ID: String
   const val RUM_VIEW_ID: String
+  const val RUM_ACTION_ID: String
   const val SERVICE_NAME: String
   const val SOURCE: String
   const val STATUS: String

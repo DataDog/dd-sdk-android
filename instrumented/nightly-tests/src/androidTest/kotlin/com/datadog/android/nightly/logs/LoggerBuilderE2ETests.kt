@@ -13,7 +13,9 @@ import com.datadog.android.log.Logger
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measureLoggerInitialize
+import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumActionType
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import io.opentracing.util.GlobalTracer
 import org.junit.Before
@@ -169,11 +171,15 @@ class LoggerBuilderE2ETests {
             logger = Logger.Builder().setBundleWithRumEnabled(true).build()
         }
         val viewKey = forge.anAlphabeticalString()
+        val actionName = forge.anAlphabeticalString()
         GlobalRum.get().startView(viewKey, forge.anAlphabeticalString())
+        GlobalRum.get().startUserAction(RumActionType.TAP, actionName, emptyMap())
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+        sendRandomActionOutcomeEvent(forge)
         // Give time to the View event to be propagated
         Thread.sleep(200)
         logger.sendRandomLog(testMethodName, forge)
+        GlobalRum.get().stopUserAction(RumActionType.TAP, actionName)
         GlobalRum.get().stopView(viewKey)
     }
 

@@ -256,6 +256,14 @@ object LogAttributes {
     const val RUM_VIEW_ID: String = "view.id"
 
     /**
+     * The id of the active RUM Action. (String)
+     * This lets the RUM and Logs features to be linked.
+     * This value is filled automatically by the [Logger].
+     * @see [Logger.Builder.bundleWithRumEnabled]
+     */
+    const val RUM_ACTION_ID: String = "user_action.id"
+
+    /**
      * The name of the application or service generating the log events. (String)
      * This value is filled automatically by the [Logger].
      * @see [Credentials.serviceName]

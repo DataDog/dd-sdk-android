@@ -1857,6 +1857,28 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `𝕄 update the RumContext in GlobalRum W ActionScope created`(
+        @Forgery type: RumActionType,
+        @StringForgery name: String,
+        @BoolForgery waitForStop: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+
+        // When
+        val fakeStartActionEvent = RumRawEvent.StartAction(type, name, waitForStop, attributes)
+        testedScope.handleEvent(
+            fakeStartActionEvent,
+            mockWriter
+        )
+
+        // Then
+        assertThat(GlobalRum.getRumContext().actionId)
+            .isEqualTo((testedScope.activeActionScope as RumActionScope).actionId)
+    }
+
+    @Test
     fun `𝕄 do nothing + log warning 𝕎 handleEvent(StartAction+!CUSTOM)+active child ActionScope`(
         @StringForgery name: String,
         @BoolForgery waitForStop: Boolean,
@@ -2041,6 +2063,19 @@ internal class RumViewScopeTest {
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isNull()
+    }
+
+    @Test
+    fun `𝕄 update the RumContext in GlobalRum when removing the ActionScope`() {
+        // Given
+        testedScope.activeActionScope = mockChildScope
+        whenever(mockChildScope.handleEvent(fakeEvent, mockWriter)) doReturn null
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        assertThat(GlobalRum.getRumContext().actionId).isNull()
     }
 
     @Test
