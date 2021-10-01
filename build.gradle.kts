@@ -118,7 +118,6 @@ tasks.register("unitTestDebug") {
 
 tasks.register("unitTestTools") {
     dependsOn(
-        ":sample:java:assembleRelease",
         ":sample:kotlin:assembleRelease",
         ":tools:detekt:test",
         ":tools:unit:testReleaseUnitTest"

@@ -6,6 +6,7 @@
 
 import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.configureFlavorForSampleApp
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.javadocConfig
@@ -67,7 +68,7 @@ android {
             register(region) {
                 isDefault = index == 0
                 dimension = "version"
-                com.datadog.gradle.config.configureFlavorForSampleApp(this, rootDir)
+                configureFlavorForSampleApp(this, projectDir)
             }
         }
     }
