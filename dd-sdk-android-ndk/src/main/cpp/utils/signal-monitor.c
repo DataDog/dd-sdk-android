@@ -172,14 +172,24 @@ void handle_signal(int signum, siginfo_t *info, void *user_context) {
 }
 
 bool configure_signal_stack() {
-    // we increase the intercepted signal stack size to double the normal size
-    static size_t stackSize = SIGSTKSZ * 2;
-    if ((signal_stack.ss_sp = calloc(1, stackSize)) == NULL) {
+
+    // we increase the intercepted signal stack size to be able to handle the memory allocation
+    // to unwind the backstack. By using the SA_ONSTACK flag in the sigaction below,
+    // we are specifically requesting that the signal handler should be executed in a freshly new
+    // signal stack for which we allocate extra memory here.
+    // Art is already allocating memory for the signal stack here:
+    // https://android.googlesource.com/platform/art/+/master/runtime/thread_linux.cc#35) but
+    // because we need a bit more than that we will re - allocate it on our end.
+
+    static size_t stack_size = max_stack_size < MINSIGSTKSZ ? MINSIGSTKSZ : max_stack_size;
+    if ((signal_stack.ss_sp = calloc(1, stack_size)) == NULL) {
         return false;
     }
-    signal_stack.ss_size = stackSize;
+    signal_stack.ss_size = stack_size;
     signal_stack.ss_flags = 0;
     if (sigaltstack(&signal_stack, 0) < 0) {
+        free(signal_stack.ss_sp);
+        signal_stack.ss_sp=NULL;
         return false;
     }
     return true;
@@ -194,7 +204,7 @@ bool init_datadog_signal_handler() {
         return false;
     }
     datadog_sigaction->sa_sigaction = handle_signal;
-    // we will use the SA_ONSTACK mask here to handle the signal in a freshly new stack.
+    // we will use the SA_ONSTACK mask here to handle the signal in a freshly new signal stack.
     datadog_sigaction->sa_flags = SA_SIGINFO | SA_ONSTACK;
 
     return true;
