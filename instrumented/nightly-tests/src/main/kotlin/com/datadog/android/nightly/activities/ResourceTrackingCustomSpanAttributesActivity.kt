@@ -6,7 +6,6 @@
 
 package com.datadog.android.nightly.activities
 
-import com.datadog.android.DatadogEventListener
 import com.datadog.android.rum.RumInterceptor
 import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.TracingInterceptor
@@ -34,7 +33,6 @@ internal class ResourceTrackingCustomSpanAttributesActivity : ResourceTrackingAc
                     }
                 )
             )
-            .eventListenerFactory(DatadogEventListener.Factory())
             .build()
     }
 

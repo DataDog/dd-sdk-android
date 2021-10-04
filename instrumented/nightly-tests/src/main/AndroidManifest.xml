@@ -28,6 +28,7 @@
         <activity android:name=".activities.ResourceTrackingCustomAttributesActivity"/>
         <activity android:name=".activities.ResourceTrackingCustomSpanAttributesActivity"/>
         <activity android:name=".activities.ResourceTrackingNetworkInterceptorActivity"/>
+        <activity android:name=".activities.ResourceTrackingFirstPartyHostsActivity"/>
         <service
             android:name=".services.CrashHandlerDisabledCrashService"
             android:process=":crashhandler.disabled" />

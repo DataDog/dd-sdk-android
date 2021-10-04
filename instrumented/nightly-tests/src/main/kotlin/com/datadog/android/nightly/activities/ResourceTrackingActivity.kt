@@ -8,7 +8,6 @@ package com.datadog.android.nightly.activities
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.datadog.android.DatadogEventListener
 import com.datadog.android.nightly.R
 import com.datadog.android.rum.RumInterceptor
 import java.io.IOException
@@ -25,7 +24,6 @@ internal open class ResourceTrackingActivity : AppCompatActivity() {
     open val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .addInterceptor(RumInterceptor())
-            .eventListenerFactory(DatadogEventListener.Factory())
             .build()
     }
     open val randomUrl: String = RANDOM_URL
