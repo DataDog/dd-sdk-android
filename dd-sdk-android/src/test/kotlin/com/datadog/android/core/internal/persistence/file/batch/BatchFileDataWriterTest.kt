@@ -6,17 +6,21 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
+import android.util.Log
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.isNull
 import com.nhaarman.mockitokotlin2.same
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
@@ -27,6 +31,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
+import java.util.Locale
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -58,8 +63,14 @@ internal class BatchFileDataWriterTest {
     @Mock
     lateinit var mockFileHandler: FileHandler
 
+    @Mock
+    lateinit var mockLogHandler: LogHandler
+
     @Forgery
     lateinit var fakeDecoration: PayloadDecoration
+
+    @Forgery
+    lateinit var fakeThrowable: Throwable
 
     private val successfulData: MutableList<String> = mutableListOf()
     private val failedData: MutableList<String> = mutableListOf()
@@ -70,6 +81,10 @@ internal class BatchFileDataWriterTest {
 
     private val stubFailingSerializerAnswer = Answer<String?> { null }
 
+    private val stubThrowingSerializerAnswer = Answer<String?> {
+        throw fakeThrowable
+    }
+
     @BeforeEach
     fun `set up`() {
         whenever(mockSerializer.serialize(any())).doAnswer(stubReverseSerializerAnswer)
@@ -78,7 +93,8 @@ internal class BatchFileDataWriterTest {
             mockOrchestrator,
             mockSerializer,
             fakeDecoration,
-            mockFileHandler
+            mockFileHandler,
+            Logger(mockLogHandler)
         ) {
             override fun onDataWritten(data: String, rawData: ByteArray) {
                 successfulData.add(data)
@@ -182,7 +198,7 @@ internal class BatchFileDataWriterTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 write(element) { serialization failure }`(
+    fun `𝕄 do nothing 𝕎 write(element) { serialization to null }`(
         @StringForgery data: String
     ) {
         // Given
@@ -195,5 +211,29 @@ internal class BatchFileDataWriterTest {
         assertThat(successfulData).isEmpty()
         assertThat(failedData).isEmpty()
         verifyZeroInteractions(mockFileHandler)
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 write(element) { serialization exception }`(
+        @StringForgery data: String
+    ) {
+        // Given
+        whenever(mockSerializer.serialize(data)) doAnswer stubThrowingSerializerAnswer
+
+        // When
+        testedWriter.write(data)
+
+        // Then
+        assertThat(successfulData).isEmpty()
+        assertThat(failedData).isEmpty()
+        verifyZeroInteractions(mockFileHandler)
+        verify(mockLogHandler).handleLog(
+            eq(Log.ERROR),
+            eq(Serializer.ERROR_SERIALIZING.format(Locale.US, data.javaClass.simpleName)),
+            same(fakeThrowable),
+            eq(emptyMap()),
+            eq(emptySet()),
+            isNull()
+        )
     }
 }
