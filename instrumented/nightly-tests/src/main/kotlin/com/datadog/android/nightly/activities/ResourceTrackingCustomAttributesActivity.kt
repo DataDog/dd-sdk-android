@@ -6,7 +6,6 @@
 
 package com.datadog.android.nightly.activities
 
-import com.datadog.android.DatadogEventListener
 import com.datadog.android.nightly.SPECIAL_INT_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_NULL_ATTRIBUTE_NAME
 import com.datadog.android.nightly.SPECIAL_STRING_ATTRIBUTE_NAME
@@ -38,7 +37,6 @@ internal class ResourceTrackingCustomAttributesActivity : ResourceTrackingActivi
                     }
                 )
             )
-            .eventListenerFactory(DatadogEventListener.Factory())
             .build()
     }
 }
