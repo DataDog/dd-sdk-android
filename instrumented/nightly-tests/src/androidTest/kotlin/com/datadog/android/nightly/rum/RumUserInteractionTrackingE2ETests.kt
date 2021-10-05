@@ -15,6 +15,7 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.nightly.R
+import com.datadog.android.nightly.activities.UserInteractionCustomTargetActivity
 import com.datadog.android.nightly.activities.UserInteractionTrackingActivity
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.initializeSdk
@@ -79,7 +80,7 @@ internal class RumUserInteractionTrackingE2ETests {
                 config = config
             )
         }
-        launch(UserInteractionTrackingActivity::class.java)
+        launch(UserInteractionCustomTargetActivity::class.java)
         onView(withId(R.id.user_interaction_strategy_button)).perform(click())
     }
 }
