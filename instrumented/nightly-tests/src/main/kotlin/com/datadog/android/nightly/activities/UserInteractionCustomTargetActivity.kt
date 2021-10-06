@@ -13,12 +13,12 @@ import com.datadog.android.nightly.R
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumResourceKind
 
-internal class UserInteractionTrackingActivity : AppCompatActivity() {
+internal class UserInteractionCustomTargetActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.user_interaction_tracking_strategy_activity)
-        val key = UserInteractionTrackingActivity::class.java.simpleName
+        val key = UserInteractionCustomTargetActivity::class.java.simpleName
         findViewById<Button>(R.id.user_interaction_strategy_button).setOnClickListener {
             GlobalRum.get().startResource(
                 key,
