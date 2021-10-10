@@ -22,7 +22,7 @@ Datadog.setVerbosity(Log.INFO)
 To be compliant with the GDPR regulation, the SDK requires the tracking consent value at initialization.
 Tracking consent can be one of the following values:
 
-- `TrackingConsent.PENDING`: (Default) The SDK starts collecting and batching the data but does not send it to the data.
+- `TrackingConsent.PENDING`: (Default) The SDK starts collecting and batching the data but does not send it to the
  collection endpoint. The SDK waits for the new tracking consent value to decide what to do with the batched data.
 - `TrackingConsent.GRANTED`: The SDK starts collecting the data and sends it to the data collection endpoint.
 - `TrackingConsent.NOT_GRANTED`: The SDK does not collect any data. You are not able to manually send any logs, traces, or
