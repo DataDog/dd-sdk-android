@@ -38,12 +38,12 @@ internal class FeatureFileOrchestrator(
     ) : this(
         consentProvider,
         BatchFileOrchestrator(
-            File(context.filesDir, PENDING_DIR.format(Locale.US, featureName)),
+            File(context.cacheDir, PENDING_DIR.format(Locale.US, featureName)),
             PERSISTENCE_CONFIG,
             internalLogger
         ),
         BatchFileOrchestrator(
-            File(context.filesDir, GRANTED_DIR.format(Locale.US, featureName)),
+            File(context.cacheDir, GRANTED_DIR.format(Locale.US, featureName)),
             PERSISTENCE_CONFIG,
             internalLogger
         ),
@@ -56,8 +56,8 @@ internal class FeatureFileOrchestrator(
 
     companion object {
         internal const val VERSION = 1
-        private const val PENDING_DIR = "dd-%s-pending-v$VERSION"
-        private const val GRANTED_DIR = "dd-%s-v$VERSION"
+        internal const val PENDING_DIR = "dd-%s-pending-v$VERSION"
+        internal const val GRANTED_DIR = "dd-%s-v$VERSION"
 
         private val PERSISTENCE_CONFIG = FilePersistenceConfig()
     }

@@ -61,7 +61,7 @@ internal class DatadogNdkCrashHandlerTest {
     lateinit var testedHandler: DatadogNdkCrashHandler
 
     @TempDir
-    lateinit var fakeFilesDir: File
+    lateinit var fakeCacheDir: File
 
     @Mock
     lateinit var mockContext: Context
@@ -93,7 +93,7 @@ internal class DatadogNdkCrashHandlerTest {
     @Mock
     lateinit var mockLogHandler: LogHandler
 
-    lateinit var fakeNdkFilesDir: File
+    lateinit var fakeNdkCacheDir: File
 
     @Forgery
     lateinit var fakeLog: LogEvent
@@ -106,8 +106,8 @@ internal class DatadogNdkCrashHandlerTest {
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockContext.filesDir) doReturn fakeFilesDir
-        fakeNdkFilesDir = File(fakeFilesDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME)
+        whenever(mockContext.cacheDir) doReturn fakeCacheDir
+        fakeNdkCacheDir = File(fakeCacheDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME)
 
         testedHandler = DatadogNdkCrashHandler(
             mockContext,
@@ -127,8 +127,8 @@ internal class DatadogNdkCrashHandlerTest {
         @StringForgery crashData: String
     ) {
         // Given
-        fakeNdkFilesDir.mkdirs()
-        File(fakeNdkFilesDir, DatadogNdkCrashHandler.CRASH_DATA_FILE_NAME).writeText(crashData)
+        fakeNdkCacheDir.mkdirs()
+        File(fakeNdkCacheDir, DatadogNdkCrashHandler.CRASH_DATA_FILE_NAME).writeText(crashData)
 
         // When
         testedHandler.prepareData()
@@ -146,8 +146,8 @@ internal class DatadogNdkCrashHandlerTest {
         @StringForgery viewEvent: String
     ) {
         // Given
-        fakeNdkFilesDir.mkdirs()
-        File(fakeNdkFilesDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(viewEvent)
+        fakeNdkCacheDir.mkdirs()
+        File(fakeNdkCacheDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(viewEvent)
 
         // When
         testedHandler.prepareData()
@@ -165,8 +165,8 @@ internal class DatadogNdkCrashHandlerTest {
         @StringForgery networkInfo: String
     ) {
         // Given
-        fakeNdkFilesDir.mkdirs()
-        File(fakeNdkFilesDir, DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME).writeText(networkInfo)
+        fakeNdkCacheDir.mkdirs()
+        File(fakeNdkCacheDir, DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME).writeText(networkInfo)
 
         // When
         testedHandler.prepareData()
@@ -184,8 +184,8 @@ internal class DatadogNdkCrashHandlerTest {
         @StringForgery userInfo: String
     ) {
         // Given
-        fakeNdkFilesDir.mkdirs()
-        File(fakeNdkFilesDir, DatadogNdkCrashHandler.USER_INFO_FILE_NAME).writeText(userInfo)
+        fakeNdkCacheDir.mkdirs()
+        File(fakeNdkCacheDir, DatadogNdkCrashHandler.USER_INFO_FILE_NAME).writeText(userInfo)
 
         // When
         testedHandler.prepareData()
@@ -219,10 +219,10 @@ internal class DatadogNdkCrashHandlerTest {
         @StringForgery userInfo: String
     ) {
         // Given
-        fakeNdkFilesDir.mkdirs()
-        File(fakeNdkFilesDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(viewEvent)
-        File(fakeNdkFilesDir, DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME).writeText(networkInfo)
-        File(fakeNdkFilesDir, DatadogNdkCrashHandler.USER_INFO_FILE_NAME).writeText(userInfo)
+        fakeNdkCacheDir.mkdirs()
+        File(fakeNdkCacheDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(viewEvent)
+        File(fakeNdkCacheDir, DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME).writeText(networkInfo)
+        File(fakeNdkCacheDir, DatadogNdkCrashHandler.USER_INFO_FILE_NAME).writeText(userInfo)
 
         // When
         testedHandler.handleNdkCrash(mockLogWriter, mockRumWriter)
@@ -241,11 +241,11 @@ internal class DatadogNdkCrashHandlerTest {
         @StringForgery userInfo: String
     ) {
         // Given
-        fakeNdkFilesDir.mkdirs()
-        File(fakeNdkFilesDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(viewEvent)
-        File(fakeNdkFilesDir, DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME).writeText(networkInfo)
-        File(fakeNdkFilesDir, DatadogNdkCrashHandler.USER_INFO_FILE_NAME).writeText(userInfo)
-        File(fakeNdkFilesDir, DatadogNdkCrashHandler.CRASH_DATA_FILE_NAME).writeText(crashData)
+        fakeNdkCacheDir.mkdirs()
+        File(fakeNdkCacheDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME).writeText(viewEvent)
+        File(fakeNdkCacheDir, DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME).writeText(networkInfo)
+        File(fakeNdkCacheDir, DatadogNdkCrashHandler.USER_INFO_FILE_NAME).writeText(userInfo)
+        File(fakeNdkCacheDir, DatadogNdkCrashHandler.CRASH_DATA_FILE_NAME).writeText(crashData)
         whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn null
 
         // When

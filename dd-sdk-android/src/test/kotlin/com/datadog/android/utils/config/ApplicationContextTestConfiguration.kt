@@ -17,6 +17,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import java.io.File
+import java.nio.file.Files
 
 internal open class ApplicationContextTestConfiguration<T : Context>(klass: Class<T>) :
     MockTestConfiguration<T>(klass) {
@@ -29,6 +30,10 @@ internal open class ApplicationContextTestConfiguration<T : Context>(klass: Clas
     lateinit var fakePackageInfo: PackageInfo
     lateinit var fakeAppInfo: ApplicationInfo
     lateinit var mockPackageManager: PackageManager
+
+    lateinit var fakeSandboxDir: File
+    lateinit var fakeCacheDir: File
+    lateinit var fakeFilesDir: File
 
     // region Internal
 
@@ -46,11 +51,18 @@ internal open class ApplicationContextTestConfiguration<T : Context>(klass: Clas
         // ???
         whenever(mockInstance.getSystemService(Context.ACTIVITY_SERVICE)) doReturn mock()
         whenever(mockInstance.getSharedPreferences(any(), any())) doReturn mock()
-        whenever(mockInstance.filesDir) doReturn File("/dev/null")
+
+        // Filesystem
+        fakeSandboxDir = Files.createTempDirectory("app-context").toFile()
+        fakeCacheDir = File(fakeSandboxDir, "cache")
+        fakeFilesDir = File(fakeSandboxDir, "files")
+        whenever(mockInstance.cacheDir) doReturn fakeCacheDir
+        whenever(mockInstance.filesDir) doReturn fakeFilesDir
     }
 
     override fun tearDown(forge: Forge) {
         super.tearDown(forge)
+        fakeSandboxDir.deleteRecursively()
     }
 
     // endregion
