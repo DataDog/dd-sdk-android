@@ -7,14 +7,13 @@
 package com.datadog.android.core.internal.persistence.file.advanced
 
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
-import com.datadog.android.privacy.TrackingConsent
 
-internal interface DataMigrator {
+internal interface DataMigrator<S : Any> {
 
     fun migrateData(
-        previousConsent: TrackingConsent?,
+        previousState: S?,
         previousFileOrchestrator: FileOrchestrator,
-        newConsent: TrackingConsent,
+        newState: S,
         newFileOrchestrator: FileOrchestrator
     )
 }

@@ -18,15 +18,15 @@ internal class ConsentAwareFileMigrator(
     private val fileHandler: FileHandler,
     private val executorService: ExecutorService,
     private val internalLogger: Logger
-) : DataMigrator {
+) : DataMigrator<TrackingConsent> {
 
     override fun migrateData(
-        previousConsent: TrackingConsent?,
+        previousState: TrackingConsent?,
         previousFileOrchestrator: FileOrchestrator,
-        newConsent: TrackingConsent,
+        newState: TrackingConsent,
         newFileOrchestrator: FileOrchestrator
     ) {
-        val operation = when (previousConsent to newConsent) {
+        val operation = when (previousState to newState) {
             null to TrackingConsent.PENDING,
             null to TrackingConsent.GRANTED,
             null to TrackingConsent.NOT_GRANTED,
@@ -65,7 +65,7 @@ internal class ConsentAwareFileMigrator(
             }
 
             else -> {
-                sdkLogger.w("Unexpected consent migration from $previousConsent to $newConsent")
+                sdkLogger.w("Unexpected consent migration from $previousState to $newState")
                 NoOpDataMigrationOperation()
             }
         }

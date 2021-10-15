@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.log.Logger
+import com.datadog.android.privacy.TrackingConsent
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.ExecutorService
@@ -21,7 +22,7 @@ internal class FeatureFileOrchestrator(
     consentProvider: ConsentProvider,
     pendingOrchestrator: FileOrchestrator,
     grantedOrchestrator: FileOrchestrator,
-    dataMigrator: DataMigrator
+    dataMigrator: DataMigrator<TrackingConsent>
 ) : ConsentAwareFileOrchestrator(
     consentProvider,
     pendingOrchestrator,
