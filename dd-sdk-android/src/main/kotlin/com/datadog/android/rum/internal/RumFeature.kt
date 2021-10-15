@@ -46,6 +46,8 @@ import java.util.concurrent.TimeUnit
 
 internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
 
+    internal const val RUM_FEATURE_NAME = "rum"
+
     internal var samplingRate: Float = 0f
     internal var backgroundEventTracking: Boolean = false
 
@@ -120,6 +122,10 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
             CoreFeature.sourceName,
             CoreFeature.okHttpClient
         )
+    }
+
+    override fun onPostInitialized(context: Context) {
+        migrateToCacheDir(context, RUM_FEATURE_NAME, sdkLogger)
     }
 
     // endregion

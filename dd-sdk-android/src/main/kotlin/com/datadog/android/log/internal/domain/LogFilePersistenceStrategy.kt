@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.internal.domain.event.LogEventSerializer
 import com.datadog.android.log.model.LogEvent
@@ -31,7 +32,7 @@ internal class LogFilePersistenceStrategy(
         FeatureFileOrchestrator(
             consentProvider,
             context,
-            "logs",
+            LogsFeature.LOGS_FEATURE_NAME,
             executorService,
             internalLogger
         ),

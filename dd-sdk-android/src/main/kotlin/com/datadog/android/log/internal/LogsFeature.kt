@@ -19,6 +19,8 @@ import com.datadog.android.log.model.LogEvent
 
 internal object LogsFeature : SdkFeature<LogEvent, Configuration.Feature.Logs>() {
 
+    internal const val LOGS_FEATURE_NAME = "logs"
+
     // region SdkFeature
 
     override fun createPersistenceStrategy(
@@ -42,6 +44,10 @@ internal object LogsFeature : SdkFeature<LogEvent, Configuration.Feature.Logs>()
             CoreFeature.okHttpClient,
             sdkLogger
         )
+    }
+
+    override fun onPostInitialized(context: Context) {
+        migrateToCacheDir(context, LOGS_FEATURE_NAME, sdkLogger)
     }
 
     // endregion

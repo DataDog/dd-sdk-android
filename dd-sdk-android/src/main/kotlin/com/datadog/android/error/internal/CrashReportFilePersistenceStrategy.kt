@@ -26,7 +26,7 @@ internal class CrashReportFilePersistenceStrategy(
     FeatureFileOrchestrator(
         consentProvider,
         context,
-        "crash",
+        CrashReportsFeature.CRASH_FEATURE_NAME,
         executorService,
         internalLogger
     ),

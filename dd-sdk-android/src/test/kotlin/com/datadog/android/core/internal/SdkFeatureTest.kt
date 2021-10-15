@@ -27,16 +27,20 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.capture
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.io.File
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -93,6 +97,8 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     abstract fun createTestedFeature(): F
 
     abstract fun forgeConfiguration(forge: Forge): C
+
+    abstract fun featureDirName(): String
 
     @Test
     fun `𝕄 mark itself as initialized 𝕎 initialize()`() {
@@ -271,6 +277,37 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
 
         // Then
         verify(mockDataFlusher).flush(testedFeature.uploader)
+    }
+
+    @Test
+    fun `𝕄 migrate batch files 𝕎 initialize()`(
+        @StringForgery message: String
+    ) {
+        // Given
+        val fileName = System.currentTimeMillis().toString()
+        val oldFilesDir = File(appContext.fakeFilesDir, "dd-${featureDirName()}-v1")
+        oldFilesDir.mkdirs()
+        val oldBatchFile = File(oldFilesDir, fileName)
+        val content = "{\"message\":\"$message\"}"
+        oldBatchFile.writeText(content)
+
+        // When
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+
+        // Then
+        val newFilesDir = File(appContext.fakeCacheDir, "dd-${featureDirName()}-v1")
+        val newBatchFile = File(newFilesDir, fileName)
+
+        val captor = argumentCaptor<Runnable>()
+        // we expect one operation for the ConsentAware mechanism, and two for this migration
+        verify(coreFeature.mockPersistenceExecutor, times(3)).submit(captor.capture())
+        assertThat(newBatchFile).doesNotExist()
+        captor.secondValue.run()
+        assertThat(newBatchFile).exists().hasContent(content)
+        assertThat(oldBatchFile).doesNotExist()
+        assertThat(oldFilesDir).exists()
+        captor.thirdValue.run()
+        assertThat(oldFilesDir).doesNotExist()
     }
 
     companion object {

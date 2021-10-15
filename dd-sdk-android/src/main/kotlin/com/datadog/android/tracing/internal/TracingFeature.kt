@@ -19,6 +19,8 @@ import com.datadog.opentracing.DDSpan
 
 internal object TracingFeature : SdkFeature<DDSpan, Configuration.Feature.Tracing>() {
 
+    internal const val TRACING_FEATURE_NAME = "tracing"
+
     // region SdkFeature
 
     override fun createPersistenceStrategy(
@@ -45,6 +47,10 @@ internal object TracingFeature : SdkFeature<DDSpan, Configuration.Feature.Tracin
             CoreFeature.sourceName,
             CoreFeature.okHttpClient
         )
+    }
+
+    override fun onPostInitialized(context: Context) {
+        migrateToCacheDir(context, TRACING_FEATURE_NAME, sdkLogger)
     }
 
     // endregion

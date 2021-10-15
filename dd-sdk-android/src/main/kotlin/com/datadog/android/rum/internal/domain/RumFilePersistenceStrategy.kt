@@ -18,6 +18,7 @@ import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.Logger
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import java.io.File
 import java.util.concurrent.ExecutorService
@@ -33,7 +34,7 @@ internal class RumFilePersistenceStrategy(
     FeatureFileOrchestrator(
         consentProvider,
         context,
-        "rum",
+        RumFeature.RUM_FEATURE_NAME,
         executorService,
         internalLogger
     ),
