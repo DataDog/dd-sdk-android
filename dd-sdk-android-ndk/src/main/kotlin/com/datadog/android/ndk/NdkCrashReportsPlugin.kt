@@ -46,7 +46,7 @@ class NdkCrashReportsPlugin : DatadogPlugin {
         }
         val ndkCrashesDirs =
             File(
-                config.context.filesDir,
+                config.context.cacheDir,
                 NDK_CRASH_REPORTS_FOLDER
             )
         ndkCrashesDirs.mkdirs()

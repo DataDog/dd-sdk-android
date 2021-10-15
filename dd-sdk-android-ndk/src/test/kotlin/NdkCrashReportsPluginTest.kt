@@ -68,7 +68,7 @@ internal class NdkCrashReportsPluginTest {
     ) {
         // GIVEN
         val mockedContext: Context = mock {
-            whenever(it.filesDir).thenReturn(tempDir)
+            whenever(it.cacheDir).thenReturn(tempDir)
         }
         val config = DatadogPluginConfig(
             mockedContext,
@@ -96,7 +96,7 @@ internal class NdkCrashReportsPluginTest {
     ) {
         // GIVEN
         val mockedContext: Context = mock {
-            whenever(it.filesDir).thenReturn(tempDir)
+            whenever(it.cacheDir).thenReturn(tempDir)
         }
         val config = DatadogPluginConfig(
             mockedContext,
