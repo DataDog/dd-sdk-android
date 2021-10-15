@@ -40,11 +40,11 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class TracesFeatureTest :
-    SdkFeatureTest<DDSpan, Configuration.Feature.Tracing, TracesFeature>() {
+internal class TracingFeatureTest :
+    SdkFeatureTest<DDSpan, Configuration.Feature.Tracing, TracingFeature>() {
 
-    override fun createTestedFeature(): TracesFeature {
-        return TracesFeature
+    override fun createTestedFeature(): TracingFeature {
+        return TracingFeature
     }
 
     override fun forgeConfiguration(forge: Forge): Configuration.Feature.Tracing {

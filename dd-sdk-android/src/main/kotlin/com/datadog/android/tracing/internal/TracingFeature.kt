@@ -17,7 +17,7 @@ import com.datadog.android.tracing.internal.domain.TracesFilePersistenceStrategy
 import com.datadog.android.tracing.internal.net.TracesOkHttpUploaderV2
 import com.datadog.opentracing.DDSpan
 
-internal object TracesFeature : SdkFeature<DDSpan, Configuration.Feature.Tracing>() {
+internal object TracingFeature : SdkFeature<DDSpan, Configuration.Feature.Tracing>() {
 
     // region SdkFeature
 

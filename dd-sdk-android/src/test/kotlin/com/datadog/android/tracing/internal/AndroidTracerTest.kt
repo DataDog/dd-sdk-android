@@ -91,7 +91,7 @@ internal class AndroidTracerTest {
         fakeServiceName = forge.anAlphabeticalString()
         fakeEnvName = forge.anAlphabeticalString()
         fakeToken = forge.anHexadecimalString()
-        TracesFeature.initialize(appContext.mockInstance, Configuration.DEFAULT_TRACING_CONFIG)
+        TracingFeature.initialize(appContext.mockInstance, Configuration.DEFAULT_TRACING_CONFIG)
         RumFeature.initialize(appContext.mockInstance, Configuration.DEFAULT_RUM_CONFIG)
         testedTracerBuilder = AndroidTracer.Builder()
         testedTracerBuilder.setFieldValue("logsHandler", mockLogsHandler)
@@ -120,7 +120,7 @@ internal class AndroidTracerTest {
     @Test
     fun `M log a developer error W buildTracer { TracingFeature not enabled }`() {
         // GIVEN
-        TracesFeature.stop()
+        TracingFeature.stop()
 
         // WHEN
         testedTracerBuilder.build()

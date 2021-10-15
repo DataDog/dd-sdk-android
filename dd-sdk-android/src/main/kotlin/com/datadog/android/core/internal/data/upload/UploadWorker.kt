@@ -19,7 +19,7 @@ import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.android.tracing.internal.TracingFeature
 
 internal class UploadWorker(
     appContext: Context,
@@ -48,8 +48,8 @@ internal class UploadWorker(
 
         // Upload Traces
         uploadAllBatches(
-            TracesFeature.persistenceStrategy.getReader(),
-            TracesFeature.uploader
+            TracingFeature.persistenceStrategy.getReader(),
+            TracingFeature.uploader
         )
 
         // Upload RUM

@@ -23,7 +23,7 @@ import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
@@ -307,7 +307,7 @@ internal class DatadogTest {
         assertThat(CoreFeature.initialized.get()).isTrue()
         assertThat(LogsFeature.initialized.get()).isTrue()
         assertThat(CrashReportsFeature.initialized.get()).isTrue()
-        assertThat(TracesFeature.initialized.get()).isTrue()
+        assertThat(TracingFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isTrue()
         assertThat(InternalLogsFeature.initialized.get()).isFalse()
     }
@@ -335,7 +335,7 @@ internal class DatadogTest {
         assertThat(CoreFeature.initialized.get()).isTrue()
         assertThat(LogsFeature.initialized.get()).isEqualTo(logsEnabled)
         assertThat(CrashReportsFeature.initialized.get()).isEqualTo(crashReportEnabled)
-        assertThat(TracesFeature.initialized.get()).isEqualTo(tracesEnabled)
+        assertThat(TracingFeature.initialized.get()).isEqualTo(tracesEnabled)
         assertThat(RumFeature.initialized.get()).isEqualTo(rumEnabled)
         assertThat(InternalLogsFeature.initialized.get()).isFalse()
     }
@@ -358,7 +358,7 @@ internal class DatadogTest {
         assertThat(CoreFeature.initialized.get()).isTrue()
         assertThat(LogsFeature.initialized.get()).isTrue()
         assertThat(CrashReportsFeature.initialized.get()).isTrue()
-        assertThat(TracesFeature.initialized.get()).isTrue()
+        assertThat(TracingFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isTrue()
         assertThat(InternalLogsFeature.initialized.get()).isFalse()
         verify(mockDevLogHandler).handleLog(
@@ -385,7 +385,7 @@ internal class DatadogTest {
         assertThat(CoreFeature.initialized.get()).isTrue()
         assertThat(LogsFeature.initialized.get()).isTrue()
         assertThat(CrashReportsFeature.initialized.get()).isTrue()
-        assertThat(TracesFeature.initialized.get()).isTrue()
+        assertThat(TracingFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isFalse()
         assertThat(InternalLogsFeature.initialized.get()).isFalse()
         verify(mockDevLogHandler, never()).handleLog(
@@ -417,7 +417,7 @@ internal class DatadogTest {
         assertThat(CoreFeature.initialized.get()).isTrue()
         assertThat(LogsFeature.initialized.get()).isTrue()
         assertThat(CrashReportsFeature.initialized.get()).isTrue()
-        assertThat(TracesFeature.initialized.get()).isTrue()
+        assertThat(TracingFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isTrue()
         assertThat(InternalLogsFeature.initialized.get()).isTrue()
     }

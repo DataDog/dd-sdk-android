@@ -23,7 +23,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
-import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.android.tracing.internal.TracingFeature
 import java.lang.IllegalArgumentException
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -124,7 +124,7 @@ object Datadog {
         LogsFeature.clearAllData()
         CrashReportsFeature.clearAllData()
         RumFeature.clearAllData()
-        TracesFeature.clearAllData()
+        TracingFeature.clearAllData()
         InternalLogsFeature.clearAllData()
     }
 
@@ -133,7 +133,7 @@ object Datadog {
     private fun stop() {
         if (initialized.get()) {
             LogsFeature.stop()
-            TracesFeature.stop()
+            TracingFeature.stop()
             RumFeature.stop()
             CrashReportsFeature.stop()
             CoreFeature.stop()
@@ -160,7 +160,7 @@ object Datadog {
             // data due to async operations.
             CoreFeature.drainAndShutdownExecutors()
             LogsFeature.flushStoredData()
-            TracesFeature.flushStoredData()
+            TracingFeature.flushStoredData()
             RumFeature.flushStoredData()
             CrashReportsFeature.flushStoredData()
         }
@@ -246,7 +246,7 @@ object Datadog {
         appContext: Context
     ) {
         if (configuration != null) {
-            TracesFeature.initialize(appContext, configuration)
+            TracingFeature.initialize(appContext, configuration)
         }
     }
 

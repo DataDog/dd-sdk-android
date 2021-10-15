@@ -13,7 +13,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -172,7 +172,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         }
         fakeUrl = forgeUrl(forge)
         fakeRequest = forgeRequest(forge)
-        TracesFeature.initialize(
+        TracingFeature.initialize(
             appContext.mockInstance,
             fakeConfig
         )
@@ -186,7 +186,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
     @AfterEach
     fun `tear down`() {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        TracesFeature.stop()
+        TracingFeature.stop()
     }
 
     open fun instantiateTestedInterceptor(
@@ -416,7 +416,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        TracesFeature.invokeMethod("stop")
+        TracingFeature.invokeMethod("stop")
         stubChain(mockChain, statusCode)
 
         testedInterceptor.intercept(mockChain)
