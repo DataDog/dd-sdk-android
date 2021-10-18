@@ -11,7 +11,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDTracer
 import com.datadog.trace.api.DDTags
@@ -207,7 +207,7 @@ internal constructor(
 
     @Synchronized
     private fun resolveTracer(): Tracer? {
-        return if (!TracesFeature.initialized.get()) {
+        return if (!TracingFeature.initialized.get()) {
             devLogger.w(WARNING_TRACING_DISABLED)
             null
         } else if (GlobalTracer.isRegistered()) {

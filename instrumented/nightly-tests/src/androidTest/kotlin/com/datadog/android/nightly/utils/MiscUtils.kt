@@ -104,7 +104,7 @@ fun cleanStorageFiles() {
     InstrumentationRegistry
         .getInstrumentation()
         .targetContext
-        .filesDir.deleteRecursively()
+        .cacheDir.deleteRecursively()
 }
 
 fun cleanGlobalAttributes() {

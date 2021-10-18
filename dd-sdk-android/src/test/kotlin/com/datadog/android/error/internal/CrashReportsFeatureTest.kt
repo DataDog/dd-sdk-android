@@ -59,6 +59,10 @@ internal class CrashReportsFeatureTest :
         return forge.getForgery()
     }
 
+    override fun featureDirName(): String {
+        return "crash"
+    }
+
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
         // When

@@ -15,9 +15,9 @@ import java.io.File
 
 internal open class ConsentAwareFileOrchestrator(
     consentProvider: ConsentProvider,
-    private val pendingOrchestrator: FileOrchestrator,
-    private val grantedOrchestrator: FileOrchestrator,
-    private val dataMigrator: DataMigrator
+    internal val pendingOrchestrator: FileOrchestrator,
+    internal val grantedOrchestrator: FileOrchestrator,
+    internal val dataMigrator: DataMigrator<TrackingConsent>
 ) : FileOrchestrator, TrackingConsentProviderCallback {
 
     private lateinit var delegateOrchestrator: FileOrchestrator

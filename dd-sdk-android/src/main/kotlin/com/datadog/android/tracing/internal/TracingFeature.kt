@@ -17,7 +17,9 @@ import com.datadog.android.tracing.internal.domain.TracesFilePersistenceStrategy
 import com.datadog.android.tracing.internal.net.TracesOkHttpUploaderV2
 import com.datadog.opentracing.DDSpan
 
-internal object TracesFeature : SdkFeature<DDSpan, Configuration.Feature.Tracing>() {
+internal object TracingFeature : SdkFeature<DDSpan, Configuration.Feature.Tracing>() {
+
+    internal const val TRACING_FEATURE_NAME = "tracing"
 
     // region SdkFeature
 
@@ -45,6 +47,10 @@ internal object TracesFeature : SdkFeature<DDSpan, Configuration.Feature.Tracing
             CoreFeature.sourceName,
             CoreFeature.okHttpClient
         )
+    }
+
+    override fun onPostInitialized(context: Context) {
+        migrateToCacheDir(context, TRACING_FEATURE_NAME, sdkLogger)
     }
 
     // endregion

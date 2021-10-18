@@ -12,7 +12,7 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.tracing.internal.data.TraceWriter
 import com.datadog.android.tracing.internal.handlers.AndroidSpanLogsHandler
 import com.datadog.opentracing.DDTracer
@@ -75,7 +75,7 @@ class AndroidTracer internal constructor(
          * Builds a [AndroidTracer] based on the current state of this Builder.
          */
         fun build(): AndroidTracer {
-            if (!TracesFeature.isInitialized()) {
+            if (!TracingFeature.isInitialized()) {
                 devLogger.e(TRACING_NOT_ENABLED_ERROR_MESSAGE)
             }
             if (bundleWithRumEnabled && !RumFeature.isInitialized()) {
@@ -84,7 +84,7 @@ class AndroidTracer internal constructor(
             }
             return AndroidTracer(
                 config(),
-                TraceWriter(TracesFeature.persistenceStrategy.getWriter()),
+                TraceWriter(TracingFeature.persistenceStrategy.getWriter()),
                 random,
                 logsHandler,
                 bundleWithRumEnabled

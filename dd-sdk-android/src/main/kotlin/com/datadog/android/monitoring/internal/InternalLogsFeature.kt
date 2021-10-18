@@ -21,6 +21,8 @@ import com.datadog.android.log.model.LogEvent
 
 internal object InternalLogsFeature : SdkFeature<LogEvent, Configuration.Feature.InternalLogs>() {
 
+    internal const val INTERNAL_LOGS_FEATURE_NAME = "internal-logs"
+
     internal const val SERVICE_NAME = "dd-sdk-android"
     internal const val ENV_NAME = "prod"
     private const val APPLICATION_PACKAGE_KEY = "application.name"
@@ -32,6 +34,7 @@ internal object InternalLogsFeature : SdkFeature<LogEvent, Configuration.Feature
         // while the feature was not yet initialized
         rebuildSdkLogger()
         sdkLogger.addAttribute(APPLICATION_PACKAGE_KEY, CoreFeature.packageName)
+        migrateToCacheDir(context, INTERNAL_LOGS_FEATURE_NAME, Logger(NoOpLogHandler()))
     }
 
     override fun onPostStopped() {

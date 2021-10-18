@@ -310,11 +310,11 @@ internal class DatadogNdkCrashHandler(
             "Error while trying to deserialize the ndk crash log event"
 
         internal fun getNdkGrantedDir(context: Context): File {
-            return File(context.filesDir, NDK_CRASH_REPORTS_FOLDER_NAME)
+            return File(context.cacheDir, NDK_CRASH_REPORTS_FOLDER_NAME)
         }
 
         internal fun getNdkPendingDir(context: Context): File {
-            return File(context.filesDir, NDK_CRASH_REPORTS_PENDING_FOLDER_NAME)
+            return File(context.cacheDir, NDK_CRASH_REPORTS_PENDING_FOLDER_NAME)
         }
 
         internal fun getLastViewEventFile(context: Context): File {

@@ -17,7 +17,7 @@ import com.datadog.android.rum.GlobalRum.registerIfAbsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.android.tracing.internal.TracingFeature
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -159,7 +159,7 @@ object GlobalRum {
         updateContextInPlugins(pluginContext, RumFeature.getPlugins())
         updateContextInPlugins(pluginContext, CrashReportsFeature.getPlugins())
         updateContextInPlugins(pluginContext, LogsFeature.getPlugins())
-        updateContextInPlugins(pluginContext, TracesFeature.getPlugins())
+        updateContextInPlugins(pluginContext, TracingFeature.getPlugins())
     }
 
     private fun updateContextInPlugins(

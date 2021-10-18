@@ -23,7 +23,7 @@ import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
@@ -46,7 +46,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.File
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
@@ -54,7 +53,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -87,9 +85,6 @@ internal class DatadogTest {
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
-    @TempDir
-    lateinit var tempRootDir: File
-
     lateinit var fakeConsent: TrackingConsent
 
     @BeforeEach
@@ -97,7 +92,6 @@ internal class DatadogTest {
         fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
         mockDevLogHandler = mockDevLogHandler()
 
-        whenever(appContext.mockInstance.filesDir).thenReturn(tempRootDir)
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
 
@@ -307,7 +301,7 @@ internal class DatadogTest {
         assertThat(CoreFeature.initialized.get()).isTrue()
         assertThat(LogsFeature.initialized.get()).isTrue()
         assertThat(CrashReportsFeature.initialized.get()).isTrue()
-        assertThat(TracesFeature.initialized.get()).isTrue()
+        assertThat(TracingFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isTrue()
         assertThat(InternalLogsFeature.initialized.get()).isFalse()
     }
@@ -335,7 +329,7 @@ internal class DatadogTest {
         assertThat(CoreFeature.initialized.get()).isTrue()
         assertThat(LogsFeature.initialized.get()).isEqualTo(logsEnabled)
         assertThat(CrashReportsFeature.initialized.get()).isEqualTo(crashReportEnabled)
-        assertThat(TracesFeature.initialized.get()).isEqualTo(tracesEnabled)
+        assertThat(TracingFeature.initialized.get()).isEqualTo(tracesEnabled)
         assertThat(RumFeature.initialized.get()).isEqualTo(rumEnabled)
         assertThat(InternalLogsFeature.initialized.get()).isFalse()
     }
@@ -358,7 +352,7 @@ internal class DatadogTest {
         assertThat(CoreFeature.initialized.get()).isTrue()
         assertThat(LogsFeature.initialized.get()).isTrue()
         assertThat(CrashReportsFeature.initialized.get()).isTrue()
-        assertThat(TracesFeature.initialized.get()).isTrue()
+        assertThat(TracingFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isTrue()
         assertThat(InternalLogsFeature.initialized.get()).isFalse()
         verify(mockDevLogHandler).handleLog(
@@ -385,7 +379,7 @@ internal class DatadogTest {
         assertThat(CoreFeature.initialized.get()).isTrue()
         assertThat(LogsFeature.initialized.get()).isTrue()
         assertThat(CrashReportsFeature.initialized.get()).isTrue()
-        assertThat(TracesFeature.initialized.get()).isTrue()
+        assertThat(TracingFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isFalse()
         assertThat(InternalLogsFeature.initialized.get()).isFalse()
         verify(mockDevLogHandler, never()).handleLog(
@@ -417,7 +411,7 @@ internal class DatadogTest {
         assertThat(CoreFeature.initialized.get()).isTrue()
         assertThat(LogsFeature.initialized.get()).isTrue()
         assertThat(CrashReportsFeature.initialized.get()).isTrue()
-        assertThat(TracesFeature.initialized.get()).isTrue()
+        assertThat(TracingFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isTrue()
         assertThat(InternalLogsFeature.initialized.get()).isTrue()
     }

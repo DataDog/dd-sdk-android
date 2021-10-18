@@ -56,6 +56,10 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
         return forge.getForgery()
     }
 
+    override fun featureDirName(): String {
+        return "rum"
+    }
+
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
         // When

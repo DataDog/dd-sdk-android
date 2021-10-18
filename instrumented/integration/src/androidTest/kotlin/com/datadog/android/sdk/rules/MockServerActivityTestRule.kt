@@ -57,7 +57,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
         InstrumentationRegistry
             .getInstrumentation()
             .targetContext
-            .filesDir.deleteRecursively {
+            .cacheDir.deleteRecursively {
                 Log.i("MockServerActivityTestRule", "Before activity launched, deleting file $it")
             }
         requests.clear()
@@ -95,7 +95,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
         InstrumentationRegistry
             .getInstrumentation()
             .targetContext
-            .filesDir.deleteRecursively {
+            .cacheDir.deleteRecursively {
                 Log.i("MockServerActivityTestRule", "After activity finished, deleting file $it")
             }
         GlobalRum.getFieldValue<AtomicBoolean, GlobalRum>("isRegistered").set(false)

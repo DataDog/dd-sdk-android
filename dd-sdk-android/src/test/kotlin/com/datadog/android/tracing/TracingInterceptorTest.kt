@@ -13,7 +13,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -164,7 +164,7 @@ internal open class TracingInterceptorTest {
         fakeMediaType = MediaType.parse(mediaType)
         fakeUrl = forgeUrl(forge)
         fakeRequest = forgeRequest(forge)
-        TracesFeature.initialize(
+        TracingFeature.initialize(
             appContext.mockInstance,
             fakeConfig
         )
@@ -194,7 +194,7 @@ internal open class TracingInterceptorTest {
 
     @AfterEach
     fun `tear down`() {
-        TracesFeature.stop()
+        TracingFeature.stop()
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
     }
 
@@ -450,7 +450,7 @@ internal open class TracingInterceptorTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        TracesFeature.invokeMethod("stop")
+        TracingFeature.invokeMethod("stop")
         whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 

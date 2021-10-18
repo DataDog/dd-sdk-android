@@ -53,7 +53,7 @@ internal class ConsentAwareFileOrchestratorTest {
     lateinit var mockGrantedOrchestrator: FileOrchestrator
 
     @Mock
-    lateinit var mockDataMigrator: DataMigrator
+    lateinit var mockDataMigrator: DataMigrator<TrackingConsent>
 
     @BeforeEach
     fun `set up`() {

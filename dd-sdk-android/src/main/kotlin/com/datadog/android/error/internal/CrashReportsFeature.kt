@@ -19,6 +19,8 @@ import com.datadog.android.log.model.LogEvent
 
 internal object CrashReportsFeature : SdkFeature<LogEvent, Configuration.Feature.CrashReport>() {
 
+    internal const val CRASH_FEATURE_NAME = "crash"
+
     private var originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
 
     // region SdkFeature
@@ -49,6 +51,10 @@ internal object CrashReportsFeature : SdkFeature<LogEvent, Configuration.Feature
             CoreFeature.clientToken,
             CoreFeature.okHttpClient
         )
+    }
+
+    override fun onPostInitialized(context: Context) {
+        migrateToCacheDir(context, CRASH_FEATURE_NAME, sdkLogger)
     }
 
     // endregion

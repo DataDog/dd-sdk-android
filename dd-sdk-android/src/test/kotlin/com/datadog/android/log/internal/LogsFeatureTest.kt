@@ -51,6 +51,10 @@ internal class LogsFeatureTest :
         return forge.getForgery()
     }
 
+    override fun featureDirName(): String {
+        return "logs"
+    }
+
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
         // When

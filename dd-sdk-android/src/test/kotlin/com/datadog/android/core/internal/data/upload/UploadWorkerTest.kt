@@ -23,7 +23,7 @@ import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.tracing.internal.TracesFeature
+import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
@@ -127,8 +127,8 @@ internal class UploadWorkerTest {
 
         LogsFeature.persistenceStrategy = mockLogsStrategy
         LogsFeature.uploader = mockLogsUploader
-        TracesFeature.persistenceStrategy = mockTracesStrategy
-        TracesFeature.uploader = mockTracesUploader
+        TracingFeature.persistenceStrategy = mockTracesStrategy
+        TracingFeature.uploader = mockTracesUploader
         CrashReportsFeature.persistenceStrategy = mockCrashReportsStrategy
         CrashReportsFeature.uploader = mockCrashUploader
         RumFeature.persistenceStrategy = mockRumStrategy

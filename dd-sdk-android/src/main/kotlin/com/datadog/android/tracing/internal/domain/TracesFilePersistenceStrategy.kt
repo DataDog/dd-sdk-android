@@ -16,6 +16,7 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.tracing.internal.domain.event.DdSpanToSpanEventMapper
 import com.datadog.android.tracing.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.tracing.internal.domain.event.SpanEventSerializer
@@ -37,7 +38,7 @@ internal class TracesFilePersistenceStrategy(
     FeatureFileOrchestrator(
         consentProvider,
         context,
-        "tracing",
+        TracingFeature.TRACING_FEATURE_NAME,
         executorService,
         internalLogger
     ),

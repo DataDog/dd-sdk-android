@@ -45,7 +45,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class ConsentAwareFileMigratorTest {
 
-    lateinit var testedMigrator: DataMigrator
+    lateinit var testedMigrator: DataMigrator<TrackingConsent>
 
     @Mock
     lateinit var mockPreviousOrchestrator: FileOrchestrator
