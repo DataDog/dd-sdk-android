@@ -271,10 +271,16 @@ internal open class RumViewScope(
         val updatedAttributes = addExtraAttributes(event.attributes)
         val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
         val errorType = event.type ?: event.throwable?.javaClass?.canonicalName
+        val throwableMessage = event.throwable?.message ?: ""
+        val message = if (throwableMessage.isNotBlank() && event.message != throwableMessage) {
+            "${event.message}: $throwableMessage"
+        } else {
+            event.message
+        }
         val errorEvent = ErrorEvent(
             date = event.eventTime.timestamp + serverTimeOffsetInMs,
             error = ErrorEvent.Error(
-                message = event.message,
+                message = message,
                 source = event.source.toSchemaSource(),
                 stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
                 isCrash = event.isFatal,
