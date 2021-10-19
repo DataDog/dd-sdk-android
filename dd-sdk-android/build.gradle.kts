@@ -4,8 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.Dependencies
-import com.datadog.gradle.api
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.BuildConfigPropertiesKeys
 import com.datadog.gradle.config.GradlePropertiesKeys
@@ -17,8 +15,6 @@ import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.config.publishingConfig
-import com.datadog.gradle.implementation
-import com.datadog.gradle.testImplementation
 
 plugins {
     // Build
@@ -119,35 +115,35 @@ android {
 }
 
 dependencies {
-    implementation(Dependencies.Libraries.Kotlin)
+    implementation(libs.kotlin)
 
     // Network
-    implementation(Dependencies.Libraries.OkHttp)
-    implementation(Dependencies.Libraries.Gson)
-    implementation(Dependencies.Libraries.KronosNTP)
+    implementation(libs.okHttp)
+    implementation(libs.gson)
+    implementation(libs.kronosNTP)
 
     // Android Instrumentation
-    implementation(Dependencies.Libraries.AndroidXCore)
-    implementation(Dependencies.Libraries.AndroidXNavigation)
-    implementation(Dependencies.Libraries.AndroidXRecyclerView)
-    implementation(Dependencies.Libraries.AndroidXWorkManager)
+    implementation(libs.androidXCore)
+    implementation(libs.bundles.androidXNavigation)
+    implementation(libs.androidXRecyclerView)
+    implementation(libs.androidXWorkManager)
 
     // OpenTracing
-    api(Dependencies.Libraries.OpenTracing)
+    api(libs.bundles.openTracing)
 
     // Generate NoOp implementations
     kapt(project(":tools:noopfactory"))
 
     // Testing
     testImplementation(project(":tools:unit"))
-    testImplementation(Dependencies.Libraries.JUnit5)
-    testImplementation(Dependencies.Libraries.TestTools)
-    testImplementation(Dependencies.Libraries.OkHttpMock)
-    unmock(Dependencies.Libraries.Robolectric)
+    testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.testTools)
+    testImplementation(libs.okHttpMock)
+    unmock(libs.robolectric)
 
     // Static Analysis
     detekt(project(":tools:detekt"))
-    detekt(Dependencies.Libraries.DetektCli)
+    detekt(libs.detektCli)
 }
 
 unMock {

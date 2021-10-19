@@ -1,10 +1,13 @@
-import com.datadog.gradle.Dependencies
-import com.datadog.gradle.androidTestImplementation
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
-import com.datadog.gradle.implementation
 import org.gradle.api.JavaVersion
 
 plugins {
@@ -84,11 +87,11 @@ repositories {
 dependencies {
     implementation(project(":dd-sdk-android"))
 
-    implementation(Dependencies.Libraries.Gson)
-    implementation(Dependencies.Libraries.Kotlin)
-    implementation(Dependencies.Libraries.AndroidxSupportBase)
-    implementation(Dependencies.Libraries.AndroidXMultidex)
-    implementation(Dependencies.Libraries.Elmyr)
+    implementation(libs.gson)
+    implementation(libs.kotlin)
+    implementation(libs.bundles.androidXSupportBase)
+    implementation(libs.androidXMultidex)
+    implementation(libs.elmyr)
 
     androidTestImplementation(project(":tools:unit")) {
         // We need to exclude this otherwise R8 will fail while trying to desugar a function
@@ -96,9 +99,9 @@ dependencies {
         exclude(group = "org.junit.jupiter")
         exclude(group = "org.mockito")
     }
-    androidTestImplementation(Dependencies.Libraries.AssertJ)
-    androidTestImplementation(Dependencies.Libraries.IntegrationTests)
-    androidTestImplementation(Dependencies.Libraries.OkHttpMock)
+    androidTestImplementation(libs.assertJ)
+    androidTestImplementation(libs.bundles.integrationTests)
+    androidTestImplementation(libs.okHttpMock)
 
     if (project.hasProperty(com.datadog.gradle.Properties.USE_API21_JAVA_BACKPORT)) {
         // this is needed to make AssertJ working on APIs <24
@@ -106,7 +109,7 @@ dependencies {
     }
 
     detekt(project(":tools:detekt"))
-    detekt(Dependencies.Libraries.DetektCli)
+    detekt(libs.detektCli)
 }
 
 kotlinConfig()

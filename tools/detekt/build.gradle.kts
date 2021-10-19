@@ -4,13 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
-import com.datadog.gradle.testImplementation
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
@@ -21,13 +19,13 @@ plugins {
 }
 
 dependencies {
-    implementation(Dependencies.Libraries.Kotlin)
-    implementation(Dependencies.Libraries.KotlinReflect)
-    compileOnly(Dependencies.Libraries.DetektApi)
+    implementation(libs.kotlin)
+    implementation(libs.kotlinReflect)
+    compileOnly(libs.detektApi)
 
-    testImplementation(Dependencies.Libraries.JUnit5)
-    testImplementation(Dependencies.Libraries.TestTools)
-    testImplementation(Dependencies.Libraries.DetektTest)
+    testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.testTools)
+    testImplementation(libs.detektTest)
 }
 
 kotlinConfig()

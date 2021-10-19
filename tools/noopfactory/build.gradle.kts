@@ -4,14 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
-import com.datadog.gradle.implementation
-import com.datadog.gradle.testImplementation
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
@@ -22,12 +19,12 @@ plugins {
 }
 
 dependencies {
-    implementation(Dependencies.Libraries.Kotlin)
-    implementation(Dependencies.Libraries.KotlinReflect)
-    implementation("com.squareup:kotlinpoet:1.7.2")
+    implementation(libs.kotlin)
+    implementation(libs.kotlinReflect)
+    implementation(libs.kotlinPoet)
 
-    testImplementation(Dependencies.Libraries.JUnit5)
-    testImplementation(Dependencies.Libraries.TestTools)
+    testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.testTools)
     testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.2.7")
 }
 

@@ -1,0 +1,261 @@
+[versions]
+# Commons
+kotlin = "1.4.20"
+gson = "2.8.8"
+okHttp = "3.12.13"
+kronosNTP = "0.0.1-alpha11"
+
+# Android
+androidToolsPlugin = "4.2.1"
+androidXAnnotations = "1.1.0"
+androidXAppCompat = "1.3.0"
+androidXCore = "1.3.1"
+androidXMultidex = "2.0.1"
+androidXNavigation = "2.3.0"
+androidXRecyclerView = "1.1.0"
+androidXWorkManager = "2.4.0"
+androidXConstraintLayout = "2.0.4"
+googleMaterial = "1.3.0"
+
+# DD-TRACE-OT
+openTracing = "0.32.0"
+
+# JUnit
+jUnit4 = "4.13.2"
+jUnitJupiter = "5.6.2"
+jUnitPlatform = "1.6.2"
+jUnitVintage = "5.6.2"
+jUnitMockitoExt = "3.4.6"
+
+# Android JUnit
+androidXJunitRunner = "1.3.0"
+androidXJunitRules = "1.3.0"
+androidXExtJunit = "1.1.2"
+androidXJunitCore = "1.3.0"
+espresso = "3.3.0"
+
+# Tests Tools
+assertJ = "3.18.1"
+elmyr = "1.3.1"
+mockitoKotlin = "2.2.0"
+
+# Tools
+detekt = "1.17.0"
+ktLint = "9.4.0"
+dokka = "1.4.32"
+unmock = "0.7.9"
+robolectric = "4.4_r1-robolectric-r2"
+
+fuzzyWuzzy = "1.2.0"
+mavenModel = "3.6.3"
+
+versionsPluginGradle = "0.27.0"
+nexusPublishPluginGradle = "1.1.0"
+
+kotlinPoet = "1.7.2"
+kotlinGrammarParser = "c35b50fa44"
+jsonSchemaValidator = "1.12.1"
+
+# Integrations
+realm = "10.4.0"
+sqlDelight = "1.4.3"
+coil = "1.0.0"
+fresco = "2.3.0"
+glide = "4.11.0"
+picasso = "2.8"
+room = "2.2.5"
+rxJava3 = "3.0.0"
+timber = "4.7.1"
+coroutines = "1.4.2"
+
+# Local Server
+ktor = "1.4.3"
+
+[libraries]
+
+# Classpaths
+# Gradle version catalog doesn't allow names to end with plugin, that is why strange names
+androidToolsPluginGradle = { module = "com.android.tools.build:gradle", version.ref = "androidToolsPlugin" }
+kotlinPluginGradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+ktLintPluginGradle = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktLint" }
+dokkaPluginGradle = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
+unmockPluginGradle = { module = "com.github.bjoernq:unmockplugin", version.ref = "unmock" }
+detektPluginGradle = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+realmPluginGradle = { module = "io.realm:realm-gradle-plugin", version.ref = "realm" }
+sqlDelightPluginGradle = { module = "com.squareup.sqldelight:gradle-plugin", version.ref = "sqlDelight" }
+
+versionsPluginGradle = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "versionsPluginGradle" }
+
+# Annotation processors
+glideCompiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
+roomCompiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+
+# Common
+
+kotlin = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin" }
+
+okHttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okHttp" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+kronosNTP = { module = "com.lyft.kronos:kronos-android", version.ref = "kronosNTP" }
+assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
+
+# Android libs
+androidXMultidex = { module = "androidx.multidex:multidex", version.ref = "androidXMultidex" }
+androidXAnnotation = { module = "androidx.annotation:annotation", version.ref = "androidXAnnotations" }
+androidXAppCompat = { module = "androidx.appcompat:appcompat", version.ref = "androidXAppCompat" }
+androidXCore = { module = "androidx.core:core", version.ref = "androidXCore" }
+androidXNavigationFragment = { module = "androidx.navigation:navigation-fragment", version.ref = "androidXNavigation" }
+androidXNavigationRuntimeKtx = { module = "androidx.navigation:navigation-runtime-ktx", version.ref = "androidXNavigation" }
+androidXRecyclerView = { module = "androidx.recyclerview:recyclerview", version.ref = "androidXRecyclerView" }
+androidXWorkManager = { module = "androidx.work:work-runtime", version.ref = "androidXWorkManager" }
+androidXConstraintLayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidXConstraintLayout" }
+googleMaterial = { module = "com.google.android.material:material", version.ref = "googleMaterial" }
+
+# DD-TRACE-OT
+openTracingApi = { module = "io.opentracing:opentracing-api", version.ref = "openTracing" }
+openTracingNoOp = { module = "io.opentracing:opentracing-noop", version.ref = "openTracing" }
+openTracingUtil = { module = "io.opentracing:opentracing-util", version.ref = "openTracing" }
+
+# Junit 4 (for buildSrc)
+jUnit4 = { module = "junit:junit", version.ref = "jUnit4" }
+
+# Junit 5
+jUnitPlatform = { module = "org.junit.platform:junit-platform-launcher", version.ref = "jUnitPlatform" }
+jUnitJupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "jUnitJupiter" }
+jUnitVintageEngine = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "jUnitVintage" }
+jUnitMockitoExt = { module = "org.mockito:mockito-junit-jupiter", version.ref = "jUnitMockitoExt" }
+
+# Android JUnit
+androidXTestCore = { module = "androidx.test:core", version.ref = "androidXJunitCore" }
+# AndroidJUnitRunner and JUnit Rules
+androidXTestRunner = { module = "androidx.test:runner", version.ref = "androidXJunitRunner" }
+androidXTestRules = { module = "androidx.test:rules", version.ref = "androidXJunitRules" }
+androidXTestJUnitExt = { module = "androidx.test.ext:junit", version.ref = "androidXExtJunit" }
+# Espresso
+androidXEspressoCore = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
+androidXEspressoContrib = { module = "androidx.test.espresso:espresso-contrib", version.ref = "espresso" }
+androidXEspressoIntents = { module = "androidx.test.espresso:espresso-intents", version.ref = "espresso" }
+
+# Test tools
+elmyr = { module = "com.github.xgouchet.Elmyr:core", version.ref = "elmyr" }
+elmyrInject = { module = "com.github.xgouchet.Elmyr:inject", version.ref = "elmyr" }
+elmyrJUnit4 = { module = "com.github.xgouchet.Elmyr:junit4", version.ref = "elmyr" }
+elmyrJUnit5 = { module = "com.github.xgouchet.Elmyr:junit5", version.ref = "elmyr" }
+elmyrJVM = { module = "com.github.xgouchet.Elmyr:jvm", version.ref = "elmyr" }
+mockitoKotlin = { module = "com.nhaarman.mockitokotlin2:mockito-kotlin", version.ref = "mockitoKotlin" }
+kotlinReflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+
+# Tools
+detektCli = { module = "io.gitlab.arturbosch.detekt:detekt-cli", version.ref = "detekt" }
+detektApi = { module = "io.gitlab.arturbosch.detekt:detekt-api", version.ref = "detekt" }
+detektTest = { module = "io.gitlab.arturbosch.detekt:detekt-test", version.ref = "detekt" }
+okHttpMock = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okHttp" }
+robolectric = { module = "org.robolectric:android-all", version.ref = "robolectric" }
+
+fuzzyWuzzy = { module = "me.xdrop:fuzzywuzzy", version.ref = "fuzzyWuzzy" }
+mavenModel = { module = "org.apache.maven:maven-model", version.ref = "mavenModel" }
+nexusPublishPluginGradle = { module = "io.github.gradle-nexus:publish-plugin", version.ref = "nexusPublishPluginGradle" }
+
+kotlinPoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinPoet" }
+kotlinGrammarParser = { module = "com.github.kotlinx.ast:grammar-kotlin-parser-antlr-kotlin-jvm", version.ref = "kotlinGrammarParser" }
+jsonSchemaValidator = { module = "com.github.everit-org.json-schema:org.everit.json.schema", version.ref = "jsonSchemaValidator" }
+
+# Integrations
+sqlDelight = { module = "com.squareup.sqldelight:android-driver", version.ref = "sqlDelight" }
+coil = { module = "io.coil-kt:coil", version.ref = "coil" }
+
+frescoCore = { module = "com.facebook.fresco:fresco", version.ref = "fresco" }
+frescoOkHttp3 = { module = "com.facebook.fresco:imagepipeline-okhttp3", version.ref = "fresco" }
+
+glideAnnotations = { module = "com.github.bumptech.glide:annotations", version.ref = "glide" }
+glideCore = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
+glideOkHttp3 = { module = "com.github.bumptech.glide:okhttp3-integration", version.ref = "glide" }
+
+picasso = { module = "com.squareup.picasso:picasso", version.ref = "picasso" }
+
+room = { module = "androidx.room:room-runtime", version.ref = "room" }
+rxJava3 = { module = "io.reactivex.rxjava3:rxjava", version.ref = "rxJava3" }
+rxJava3Android = { module = "io.reactivex.rxjava3:rxandroid", version.ref = "rxJava3" }
+timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
+
+coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+coroutinesAndroid = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+
+# Local Server
+ktorCore = { module = "io.ktor:ktor", version.ref = "ktor" }
+ktorNetty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
+ktorGson = { module = "io.ktor:ktor-gson", version.ref = "ktor" }
+
+[bundles]
+
+jUnit5 = [
+    "jUnitPlatform",
+    "jUnitJupiter",
+    "jUnitVintageEngine",
+    "jUnitMockitoExt"
+]
+
+testTools = [
+    "assertJ",
+    "elmyr",
+    "elmyrInject",
+    "elmyrJUnit5",
+    "elmyrJVM",
+    "mockitoKotlin",
+    "kotlinReflect"
+]
+
+androidXNavigation = [
+    "androidXNavigationFragment",
+    "androidXNavigationRuntimeKtx"
+]
+
+androidXSupportBase = [
+    "androidXAppCompat",
+    "androidXConstraintLayout",
+    "googleMaterial"
+]
+
+openTracing = [
+    "openTracingApi",
+    "openTracingNoOp",
+    "openTracingUtil"
+]
+
+integrationTests = [
+    "androidXTestCore",
+    "androidXTestRunner",
+    "androidXTestRules",
+    "androidXTestJUnitExt",
+    "androidXEspressoCore",
+    "androidXEspressoContrib",
+    "androidXEspressoIntents",
+    "elmyr",
+    "elmyrInject",
+    "elmyrJUnit4"
+]
+
+fresco = [
+    "frescoCore",
+    "frescoOkHttp3"
+]
+
+glide = [
+    "glideAnnotations",
+    "glideCore",
+    "glideOkHttp3",
+]
+
+coroutines = [
+    "coroutinesCore",
+    "coroutinesAndroid"
+]
+
+ktor = [
+    "ktorCore",
+    "ktorNetty",
+    "ktorGson"
+]
+
+[plugins]
+versionsPluginGradle = { id = "com.github.ben-manes.versions", version.ref = "versionsPluginGradle" }

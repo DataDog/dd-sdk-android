@@ -5,7 +5,6 @@
  */
 
 import com.datadog.gradle.Dependencies
-import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektConfig
@@ -15,7 +14,6 @@ import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.config.publishingConfig
-import com.datadog.gradle.testImplementation
 
 plugins {
     // Build
@@ -103,18 +101,18 @@ android {
 
 dependencies {
     api(project(":dd-sdk-android"))
-    implementation(Dependencies.Libraries.Kotlin)
-    implementation(Dependencies.Libraries.OkHttp)
-    implementation(Dependencies.Libraries.AndroidXMultidex)
+    implementation(libs.kotlin)
+    implementation(libs.okHttp)
+    implementation(libs.androidXMultidex)
 
     testImplementation(project(":tools:unit"))
-    testImplementation(Dependencies.Libraries.JUnit5)
-    testImplementation(Dependencies.Libraries.TestTools)
+    testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.testTools)
 
     androidTestImplementation(project(":tools:unit"))
-    androidTestImplementation(Dependencies.Libraries.IntegrationTests)
-    androidTestImplementation(Dependencies.Libraries.Gson)
-    androidTestImplementation(Dependencies.Libraries.AssertJ)
+    androidTestImplementation(libs.bundles.integrationTests)
+    androidTestImplementation(libs.gson)
+    androidTestImplementation(libs.assertJ)
 
     if (project.hasProperty(com.datadog.gradle.Properties.USE_API21_JAVA_BACKPORT)) {
         // this is needed to make AssertJ working on APIs <24
@@ -122,7 +120,7 @@ dependencies {
     }
 
     detekt(project(":tools:detekt"))
-    detekt(Dependencies.Libraries.DetektCli)
+    detekt(libs.detektCli)
 }
 
 kotlinConfig()

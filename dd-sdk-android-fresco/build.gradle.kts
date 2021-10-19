@@ -4,7 +4,6 @@
  * Copyright 2016-2019 Datadog, Inc.
  */
 
-import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektConfig
@@ -14,8 +13,6 @@ import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.config.publishingConfig
-import com.datadog.gradle.implementation
-import com.datadog.gradle.testImplementation
 
 plugins {
     // Build
@@ -76,17 +73,17 @@ android {
 
 dependencies {
     api(project(":dd-sdk-android"))
-    implementation(Dependencies.Libraries.Kotlin)
-    implementation(Dependencies.Libraries.OkHttp)
-    implementation(Dependencies.Libraries.Fresco)
+    implementation(libs.kotlin)
+    implementation(libs.okHttp)
+    implementation(libs.bundles.fresco)
 
     testImplementation(project(":tools:unit"))
-    testImplementation(Dependencies.Libraries.JUnit5)
-    testImplementation(Dependencies.Libraries.TestTools)
-    testImplementation(Dependencies.Libraries.OkHttpMock)
+    testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.testTools)
+    testImplementation(libs.okHttpMock)
 
     detekt(project(":tools:detekt"))
-    detekt(Dependencies.Libraries.DetektCli)
+    detekt(libs.detektCli)
 }
 
 kotlinConfig()

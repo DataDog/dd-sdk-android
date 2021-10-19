@@ -4,7 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektConfig
@@ -12,8 +11,6 @@ import com.datadog.gradle.config.jacocoConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
-import com.datadog.gradle.implementation
-import com.datadog.gradle.testImplementation
 
 plugins {
     id("com.android.library")
@@ -48,14 +45,14 @@ android {
 }
 
 dependencies {
-    implementation(Dependencies.Libraries.Kotlin)
-    implementation(Dependencies.Libraries.KotlinReflect)
-    implementation(Dependencies.Libraries.JUnit5)
-    implementation(Dependencies.Libraries.TestTools)
-    implementation(Dependencies.Libraries.Gson)
+    implementation(libs.kotlin)
+    implementation(libs.kotlinReflect)
+    implementation(libs.bundles.jUnit5)
+    implementation(libs.bundles.testTools)
+    implementation(libs.gson)
 
-    testImplementation(Dependencies.Libraries.JUnit5)
-    testImplementation(Dependencies.Libraries.TestTools)
+    testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.testTools)
 }
 
 kotlinConfig()

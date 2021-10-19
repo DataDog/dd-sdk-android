@@ -1,10 +1,8 @@
 import com.datadog.gradle.Dependencies
-import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
-import com.datadog.gradle.implementation
 import org.gradle.api.JavaVersion
 
 plugins {
@@ -102,16 +100,16 @@ dependencies {
     implementation(project(":dd-sdk-android"))
     implementation(project(":dd-sdk-android-ndk"))
 
-    implementation(Dependencies.Libraries.AndroidXNavigation)
-    implementation(Dependencies.Libraries.Gson)
-    implementation(Dependencies.Libraries.Kotlin)
-    implementation(Dependencies.Libraries.AndroidxSupportBase)
-    implementation(Dependencies.Libraries.AndroidXMultidex)
-    implementation(Dependencies.Libraries.Elmyr)
-    implementation(Dependencies.Libraries.OkHttp)
+    implementation(libs.bundles.androidXNavigation)
+    implementation(libs.gson)
+    implementation(libs.kotlin)
+    implementation(libs.bundles.androidXSupportBase)
+    implementation(libs.androidXMultidex)
+    implementation(libs.elmyr)
+    implementation(libs.okHttp)
 
     // Ktor (local server)
-    implementation(Dependencies.Libraries.Ktor)
+    implementation(libs.bundles.ktor)
 
     androidTestImplementation(project(":tools:unit")) {
         // We need to exclude this otherwise R8 will fail while trying to desugar a function
@@ -119,10 +117,10 @@ dependencies {
         exclude(group = "org.junit.jupiter")
         exclude(group = "org.mockito")
     }
-    androidTestImplementation(Dependencies.Libraries.IntegrationTests)
+    androidTestImplementation(libs.bundles.integrationTests)
 
     detekt(project(":tools:detekt"))
-    detekt(Dependencies.Libraries.DetektCli)
+    detekt(libs.detektCli)
 }
 
 kotlinConfig()
