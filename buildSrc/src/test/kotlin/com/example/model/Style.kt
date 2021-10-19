@@ -11,19 +11,19 @@ import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Style(
-    val color: Color
+public data class Style(
+    public val color: Color
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         json.add("color", color.toJson())
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Style {
+        public fun fromJson(serializedObject: String): Style {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val color = jsonObject.get("color").asString.let {
@@ -38,26 +38,22 @@ data class Style(
         }
     }
 
-    enum class Color(
+    public enum class Color(
         private val jsonValue: String
     ) {
         RED("red"),
-
         AMBER("amber"),
-
         GREEN("green"),
-
         DARK_BLUE("dark_blue"),
-
         LIME_GREEN("lime green"),
+        SUNBURST_YELLOW("sunburst-yellow"),
+        ;
 
-        SUNBURST_YELLOW("sunburst-yellow");
+        public fun toJson(): JsonElement = JsonPrimitive(jsonValue)
 
-        fun toJson(): JsonElement = JsonPrimitive(jsonValue)
-
-        companion object {
+        public companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): Color = values().first {
+            public fun fromJson(serializedObject: String): Color = values().first {
                 it.jsonValue == serializedObject
             }
         }

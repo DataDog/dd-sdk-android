@@ -13,12 +13,12 @@ import kotlin.collections.List
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Article(
-    val title: String,
-    val tags: List<String>? = null,
-    val authors: List<String>
+public data class Article(
+    public val title: String,
+    public val tags: List<String>? = null,
+    public val authors: List<String>
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("title", title)
         tags?.let { temp ->
@@ -32,10 +32,10 @@ data class Article(
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Article {
+        public fun fromJson(serializedObject: String): Article {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val title = jsonObject.get("title").asString

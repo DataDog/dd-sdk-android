@@ -10,14 +10,14 @@ import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class UserMerged(
-    val email: String? = null,
-    val phone: String? = null,
-    val info: Info? = null,
-    val firstname: String? = null,
-    val lastname: String
+public data class UserMerged(
+    public val email: String? = null,
+    public val phone: String? = null,
+    public val info: Info? = null,
+    public val firstname: String? = null,
+    public val lastname: String
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         email?.let { json.addProperty("email", it) }
         phone?.let { json.addProperty("phone", it) }
@@ -27,10 +27,10 @@ data class UserMerged(
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): UserMerged {
+        public fun fromJson(serializedObject: String): UserMerged {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val email = jsonObject.get("email")?.asString
@@ -49,21 +49,21 @@ data class UserMerged(
         }
     }
 
-    data class Info(
-        val notes: String? = null,
-        val source: String? = null
+    public data class Info(
+        public val notes: String? = null,
+        public val source: String? = null
     ) {
-        fun toJson(): JsonElement {
+        public fun toJson(): JsonElement {
             val json = JsonObject()
             notes?.let { json.addProperty("notes", it) }
             source?.let { json.addProperty("source", it) }
             return json
         }
 
-        companion object {
+        public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            fun fromJson(serializedObject: String): Info {
+            public fun fromJson(serializedObject: String): Info {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                     val notes = jsonObject.get("notes")?.asString

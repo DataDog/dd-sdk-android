@@ -14,13 +14,13 @@ import kotlin.collections.Map
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Comment(
-    val message: String? = null,
-    val ratings: Ratings? = null,
-    val flags: Flags? = null,
-    val tags: Tags? = null
+public data class Comment(
+    public val message: String? = null,
+    public val ratings: Ratings? = null,
+    public val flags: Flags? = null,
+    public val tags: Tags? = null
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         message?.let { json.addProperty("message", it) }
         ratings?.let { json.add("ratings", it.toJson()) }
@@ -29,10 +29,10 @@ data class Comment(
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Comment {
+        public fun fromJson(serializedObject: String): Comment {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val message = jsonObject.get("message")?.asString
@@ -54,11 +54,11 @@ data class Comment(
         }
     }
 
-    data class Ratings(
-        val global: Long,
-        val additionalProperties: Map<String, Long> = emptyMap()
+    public data class Ratings(
+        public val global: Long,
+        public val additionalProperties: Map<String, Long> = emptyMap()
     ) {
-        fun toJson(): JsonElement {
+        public fun toJson(): JsonElement {
             val json = JsonObject()
             json.addProperty("global", global)
             additionalProperties.forEach { (k, v) ->
@@ -69,12 +69,12 @@ data class Comment(
             return json
         }
 
-        companion object {
+        public companion object {
             internal val RESERVED_PROPERTIES: Array<String> = arrayOf("global")
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            fun fromJson(serializedObject: String): Ratings {
+            public fun fromJson(serializedObject: String): Ratings {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                     val global = jsonObject.get("global").asLong
@@ -94,10 +94,10 @@ data class Comment(
         }
     }
 
-    data class Flags(
-        val additionalProperties: Map<String, Boolean> = emptyMap()
+    public data class Flags(
+        public val additionalProperties: Map<String, Boolean> = emptyMap()
     ) {
-        fun toJson(): JsonElement {
+        public fun toJson(): JsonElement {
             val json = JsonObject()
             additionalProperties.forEach { (k, v) ->
                 json.addProperty(k, v)
@@ -105,10 +105,10 @@ data class Comment(
             return json
         }
 
-        companion object {
+        public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            fun fromJson(serializedObject: String): Flags {
+            public fun fromJson(serializedObject: String): Flags {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                     val additionalProperties = mutableMapOf<String, Boolean>()
@@ -125,10 +125,10 @@ data class Comment(
         }
     }
 
-    data class Tags(
-        val additionalProperties: Map<String, String> = emptyMap()
+    public data class Tags(
+        public val additionalProperties: Map<String, String> = emptyMap()
     ) {
-        fun toJson(): JsonElement {
+        public fun toJson(): JsonElement {
             val json = JsonObject()
             additionalProperties.forEach { (k, v) ->
                 json.addProperty(k, v)
@@ -136,10 +136,10 @@ data class Comment(
             return json
         }
 
-        companion object {
+        public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            fun fromJson(serializedObject: String): Tags {
+            public fun fromJson(serializedObject: String): Tags {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                     val additionalProperties = mutableMapOf<String, String>()

@@ -11,21 +11,21 @@ import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Foo(
-    val bar: String? = null,
-    val baz: Long? = null
+public data class Foo(
+    public val bar: String? = null,
+    public val baz: Long? = null
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         bar?.let { json.addProperty("bar", it) }
         baz?.let { json.addProperty("baz", it) }
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Foo {
+        public fun fromJson(serializedObject: String): Foo {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val bar = jsonObject.get("bar")?.asString

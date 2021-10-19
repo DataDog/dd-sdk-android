@@ -12,12 +12,12 @@ import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Product(
-    val productId: Long,
-    val productName: String,
-    val price: Number
+public data class Product(
+    public val productId: Long,
+    public val productName: String,
+    public val price: Number
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("productId", productId)
         json.addProperty("productName", productName)
@@ -25,10 +25,10 @@ data class Product(
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Product {
+        public fun fromJson(serializedObject: String): Product {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val productId = jsonObject.get("productId").asLong

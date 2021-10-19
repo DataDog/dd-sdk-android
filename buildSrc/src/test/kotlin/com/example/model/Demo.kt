@@ -14,19 +14,19 @@ import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Demo(
-    val s: String,
-    val i: Long,
-    val n: Number,
-    val b: Boolean,
-    val l: Nothing? = null,
-    val ns: String? = null,
-    val ni: Long? = null,
-    val nn: Number? = null,
-    val nb: Boolean? = null,
-    val nl: Nothing? = null
+public data class Demo(
+    public val s: String,
+    public val i: Long,
+    public val n: Number,
+    public val b: Boolean,
+    public val l: Nothing? = null,
+    public val ns: String? = null,
+    public val ni: Long? = null,
+    public val nn: Number? = null,
+    public val nb: Boolean? = null,
+    public val nl: Nothing? = null
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("s", s)
         json.addProperty("i", i)
@@ -40,10 +40,10 @@ data class Demo(
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Demo {
+        public fun fromJson(serializedObject: String): Demo {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val s = jsonObject.get("s").asString
