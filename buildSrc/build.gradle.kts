@@ -87,17 +87,21 @@ tasks.withType<KotlinCompile> {
 }
 
 tasks {
-    register<Copy>("copyTestRes") {
+    val copyTestRes = register<Copy>("copyTestRes") {
         from("$projectDir/src/test/kotlin/com/example/model")
         into("$projectDir/src/test/resources/output")
     }
 
-    register<Delete>("deleteTestRes") {
+    val deleteTestRes = register<Delete>("deleteTestRes") {
         delete("$projectDir/src/test/resources/output/")
     }
-}
 
-tasks.named("test") {
-    dependsOn("copyTestRes")
-    finalizedBy("deleteTestRes")
+    named("processTestResources") {
+        dependsOn(copyTestRes)
+    }
+
+    named("test") {
+        dependsOn(copyTestRes)
+        finalizedBy(deleteTestRes)
+    }
 }
