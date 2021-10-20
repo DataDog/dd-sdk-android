@@ -158,7 +158,7 @@ dependencies {
 
     // Misc
     implementation(libs.timber)
-    api("com.facebook.stetho:stetho:1.5.1")
+    api("com.facebook.stetho:stetho:1.6.0")
 }
 
 kotlinConfig(evaluateWarningsAsErrors = false)
