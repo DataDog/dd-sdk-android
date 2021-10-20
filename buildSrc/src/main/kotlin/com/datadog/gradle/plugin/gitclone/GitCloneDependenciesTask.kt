@@ -11,6 +11,7 @@ import java.io.File
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
+import java.nio.file.Files.createTempDirectory
 
 open class GitCloneDependenciesTask : DefaultTask() {
 
@@ -40,7 +41,7 @@ open class GitCloneDependenciesTask : DefaultTask() {
     private fun cloneDependency(
         dependency: GitCloneDependenciesExtension.Dependency
     ) {
-        val target = createTempDir()
+        val target = createTempDirectory(null).toFile()
         cloneRepository(dependency, target)
 
         val copyFrom = if (dependency.originSubFolder.isEmpty()) {

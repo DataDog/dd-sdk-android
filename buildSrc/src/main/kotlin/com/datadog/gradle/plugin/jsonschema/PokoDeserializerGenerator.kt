@@ -220,7 +220,6 @@ class PokoDeserializerGenerator(
      * @param assignee the assignee prefix
      * @param getter the code snippet to get the json value
      * @param nullable whether the value is nullable
-     * @param isConstantParentClass whether this property parent class is a constant Class or not
      * @param funBuilder the `toJson()` [FunSpec] builder.
      */
     private fun assignDeserializedProperty(
