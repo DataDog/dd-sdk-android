@@ -18,6 +18,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 
+import java.util.Locale
+
 @ExtendWith(ForgeExtension::class)
 internal class LogcatLogHandlerTest {
 
@@ -103,7 +105,11 @@ internal class LogcatLogHandlerTest {
             } else {
                 // generate from ignored packages prefixes pattern
                 val packagePrefix = LogcatLogHandler.IGNORED_PACKAGE_PREFIXES.random()
-                packagePrefix + ".${anAlphabeticalString(Case.ANY).capitalize()}"
+                packagePrefix + ".${anAlphabeticalString(Case.ANY).replaceFirstChar {
+                    if (it.isLowerCase()) it.titlecase(
+                        Locale.US
+                    ) else it.toString()
+                }}"
             }
 
             StackTraceElement(

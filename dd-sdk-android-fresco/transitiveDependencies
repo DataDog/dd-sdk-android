@@ -14,10 +14,8 @@ com.facebook.fresco:nativeimagefilters:2.3.0                    :   52 Kb
 com.facebook.fresco:nativeimagetranscoder:2.3.0                 :  764 Kb
 com.squareup.okhttp3:okhttp:3.12.13                             :  417 Kb
 com.squareup.okio:okio:1.15.0                                   :   86 Kb
-org.jetbrains.kotlin:kotlin-stdlib-common:1.4.20                :  186 Kb
-org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.4.20                  :   21 Kb
-org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.4.20                  :   15 Kb
-org.jetbrains.kotlin:kotlin-stdlib:1.4.20                       : 1453 Kb
+org.jetbrains.kotlin:kotlin-stdlib-common:1.5.21                :  193 Kb
+org.jetbrains.kotlin:kotlin-stdlib:1.5.21                       : 1462 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb
 
 Total transitive dependencies size                              :    3 Mb

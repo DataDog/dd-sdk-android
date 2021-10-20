@@ -1,9 +1,9 @@
 Dependencies List
 
 com.jakewharton.timber:timber:4.7.1                             :   21 Kb
-org.jetbrains.kotlin:kotlin-stdlib-common:1.4.20                :  186 Kb
-org.jetbrains.kotlin:kotlin-stdlib:1.4.20                       : 1453 Kb
+org.jetbrains.kotlin:kotlin-stdlib-common:1.5.21                :  193 Kb
+org.jetbrains.kotlin:kotlin-stdlib:1.5.21                       : 1462 Kb
 org.jetbrains:annotations:16.0.1                                :   18 Kb
 
-Total transitive dependencies size                              : 1679 Kb
+Total transitive dependencies size                              : 1694 Kb
 

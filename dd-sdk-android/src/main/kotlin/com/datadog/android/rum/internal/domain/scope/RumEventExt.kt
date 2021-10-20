@@ -21,7 +21,7 @@ import java.util.Locale
 
 internal fun String.toMethod(): ResourceEvent.Method {
     return try {
-        ResourceEvent.Method.valueOf(this.toUpperCase(Locale.US))
+        ResourceEvent.Method.valueOf(this.uppercase(Locale.US))
     } catch (e: IllegalArgumentException) {
         sdkLogger.i("Unable to convert [$this] to a valid http method", e)
         ResourceEvent.Method.GET
@@ -30,7 +30,7 @@ internal fun String.toMethod(): ResourceEvent.Method {
 
 internal fun String.toErrorMethod(): ErrorEvent.Method {
     return try {
-        ErrorEvent.Method.valueOf(this.toUpperCase(Locale.US))
+        ErrorEvent.Method.valueOf(this.uppercase(Locale.US))
     } catch (e: IllegalArgumentException) {
         sdkLogger.i("Unable to convert [$this] to a valid http method", e)
         ErrorEvent.Method.GET

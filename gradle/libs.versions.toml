@@ -42,7 +42,7 @@ mockitoKotlin = "2.2.0"
 # Tools
 detekt = "1.17.0"
 ktLint = "9.4.0"
-dokka = "1.4.32"
+dokka = "1.5.30"
 unmock = "0.7.9"
 robolectric = "4.4_r1-robolectric-r2"
 
@@ -58,7 +58,7 @@ jsonSchemaValidator = "1.12.1"
 
 # Integrations
 realm = "10.4.0"
-sqlDelight = "1.4.3"
+sqlDelight = "1.5.1"
 coil = "1.0.0"
 fresco = "2.3.0"
 glide = "4.11.0"
@@ -69,7 +69,7 @@ timber = "4.7.1"
 coroutines = "1.4.2"
 
 # Local Server
-ktor = "1.4.3"
+ktor = "1.6.0"
 
 [libraries]
 

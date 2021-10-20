@@ -33,8 +33,8 @@ enum class RumResourceKind(internal val value: String) {
 
         @JvmStatic
         internal fun fromMimeType(mimeType: String): RumResourceKind {
-            val baseType = mimeType.substringBefore('/').toLowerCase(Locale.US)
-            val subtype = mimeType.substringAfter('/').substringBefore(';').toLowerCase(Locale.US)
+            val baseType = mimeType.substringBefore('/').lowercase(Locale.US)
+            val subtype = mimeType.substringAfter('/').substringBefore(';').lowercase(Locale.US)
 
             return when {
                 baseType == "image" -> IMAGE
