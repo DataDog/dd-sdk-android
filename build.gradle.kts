@@ -164,6 +164,34 @@ tasks.register("lintCheckAll") {
     )
 }
 
+tasks.register("checkThirdPartyLicensesAll") {
+    dependsOn(
+        ":dd-sdk-android:checkThirdPartyLicences",
+        ":dd-sdk-android-coil:checkThirdPartyLicences",
+        ":dd-sdk-android-fresco:checkThirdPartyLicences",
+        ":dd-sdk-android-glide:checkThirdPartyLicences",
+        ":dd-sdk-android-ktx:checkThirdPartyLicences",
+        ":dd-sdk-android-ndk:checkThirdPartyLicences",
+        ":dd-sdk-android-rx:checkThirdPartyLicences",
+        ":dd-sdk-android-sqldelight:checkThirdPartyLicences",
+        ":dd-sdk-android-timber:checkThirdPartyLicences"
+    )
+}
+
+tasks.register("checkApiSurfaceChangesAll") {
+    dependsOn(
+        ":dd-sdk-android:checkApiSurfaceChanges",
+        ":dd-sdk-android-coil:checkApiSurfaceChanges",
+        ":dd-sdk-android-fresco:checkApiSurfaceChanges",
+        ":dd-sdk-android-glide:checkApiSurfaceChanges",
+        ":dd-sdk-android-ktx:checkApiSurfaceChanges",
+        ":dd-sdk-android-ndk:checkApiSurfaceChanges",
+        ":dd-sdk-android-rx:checkApiSurfaceChanges",
+        ":dd-sdk-android-sqldelight:checkApiSurfaceChanges",
+        ":dd-sdk-android-timber:checkApiSurfaceChanges"
+    )
+}
+
 tasks.register("detektAll") {
     dependsOn(
         ":dd-sdk-android:detekt",
