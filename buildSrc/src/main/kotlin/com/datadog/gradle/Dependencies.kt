@@ -10,7 +10,7 @@ object Dependencies {
 
     object Versions {
         // Commons
-        const val Kotlin = "1.4.20"
+        const val Kotlin = "1.5.21"
         const val Gson = "2.8.8"
         const val OkHttp = "3.12.13"
         const val KronosNTP = "0.0.1-alpha11"
@@ -41,7 +41,7 @@ object Dependencies {
         const val MockitoKotlin = "2.2.0"
 
         // Tools
-        const val Detekt = "1.17.0"
+        const val Detekt = "1.18.0"
         const val KtLint = "9.4.0"
         const val Dokka = "1.4.32"
         const val Unmock = "0.7.5"
