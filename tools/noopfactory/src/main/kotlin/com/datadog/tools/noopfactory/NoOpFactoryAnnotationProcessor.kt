@@ -31,12 +31,12 @@ import javax.lang.model.SourceVersion
 import javax.lang.model.element.ElementKind
 import javax.lang.model.element.ExecutableElement
 import javax.lang.model.element.TypeElement
+import javax.lang.model.element.VariableElement
 import javax.lang.model.type.NoType
 import javax.lang.model.type.TypeMirror
 import javax.tools.Diagnostic
 import javax.tools.StandardLocation
 import org.jetbrains.annotations.Nullable
-import javax.lang.model.element.VariableElement
 
 @SupportedOptions("org.gradle.annotation.processing.aggregating")
 @SupportedSourceVersion(SourceVersion.RELEASE_8)

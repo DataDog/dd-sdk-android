@@ -15,9 +15,9 @@ import com.squareup.kotlinpoet.BYTE_ARRAY
 import com.squareup.kotlinpoet.CHAR
 import com.squareup.kotlinpoet.CHAR_ARRAY
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.DelicateKotlinPoetApi
 import com.squareup.kotlinpoet.DOUBLE
 import com.squareup.kotlinpoet.DOUBLE_ARRAY
+import com.squareup.kotlinpoet.DelicateKotlinPoetApi
 import com.squareup.kotlinpoet.FLOAT
 import com.squareup.kotlinpoet.FLOAT_ARRAY
 import com.squareup.kotlinpoet.INT
