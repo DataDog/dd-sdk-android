@@ -6,7 +6,7 @@
 
 package com.datadog.gradle.plugin.jsonschema
 
-import android.databinding.tool.ext.toCamelCase
+import com.datadog.gradle.utils.toCamelCase
 import com.google.gson.Gson
 import java.io.File
 

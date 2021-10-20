@@ -115,7 +115,7 @@ internal abstract class AbstractProfilingRule(
     }
 
     private fun List<Double>.average(): Double {
-        val sum = sumByDouble { it }
+        val sum = sumOf { it }
         return sum / size.toDouble()
     }
 

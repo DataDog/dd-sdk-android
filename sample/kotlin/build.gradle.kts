@@ -37,12 +37,12 @@ sqldelight {
 }
 
 android {
-    compileSdkVersion(AndroidConfig.TARGET_SDK)
-    buildToolsVersion(AndroidConfig.BUILD_TOOLS_VERSION)
+    compileSdk = AndroidConfig.TARGET_SDK
+    buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
 
     defaultConfig {
-        minSdkVersion(AndroidConfig.MIN_SDK)
-        targetSdkVersion(AndroidConfig.TARGET_SDK)
+        minSdk = AndroidConfig.MIN_SDK
+        targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
         multiDexEnabled = true
@@ -85,10 +85,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
-    }
-
-    dexOptions {
-        javaMaxHeapSize = "4g"
     }
 
     packagingOptions {

@@ -219,6 +219,7 @@ class DependenciesLicenseProvider {
             "_internal_aapt2_binary",
             "detekt",
             "ktlint",
+            "ktlintBaselineReporter",
             "kotlinCompilerClasspath",
             "kotlinCompilerPluginClasspath",
             "lintClassPath"

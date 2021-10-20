@@ -20,12 +20,12 @@ plugins {
 
 android {
 
-    compileSdkVersion(AndroidConfig.TARGET_SDK)
-    buildToolsVersion(AndroidConfig.BUILD_TOOLS_VERSION)
+    compileSdk = AndroidConfig.TARGET_SDK
+    buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
 
     defaultConfig {
-        minSdkVersion(AndroidConfig.MIN_SDK)
-        targetSdkVersion(AndroidConfig.TARGET_SDK)
+        minSdk = AndroidConfig.MIN_SDK
+        targetSdk = AndroidConfig.TARGET_SDK
         versionCode = 42
         versionName = "4.2.13"
 

@@ -6,7 +6,7 @@ okHttp = "3.12.13"
 kronosNTP = "0.0.1-alpha11"
 
 # Android
-androidToolsPlugin = "4.2.1"
+androidToolsPlugin = "7.0.3"
 androidXAnnotations = "1.1.0"
 androidXAppCompat = "1.3.0"
 androidXCore = "1.3.1"
@@ -40,7 +40,7 @@ elmyr = "1.3.1"
 mockitoKotlin = "2.2.0"
 
 # Tools
-detekt = "1.17.0"
+detekt = "1.18.0"
 ktLint = "10.2.0"
 dokka = "1.5.30"
 unmock = "0.7.9"
