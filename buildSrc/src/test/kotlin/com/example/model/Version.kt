@@ -48,7 +48,7 @@ public data class Version(
         }
     }
 
-    public class Id {
+    public class Id() {
         public val serialNumber: Number = 12112.0
 
         public fun toJson(): JsonElement {
@@ -58,7 +58,7 @@ public data class Version(
         }
     }
 
-    public class Date {
+    public class Date() {
         public val year: Long = 2021L
 
         public val month: Long = 3L

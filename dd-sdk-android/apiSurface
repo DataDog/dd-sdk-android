@@ -1259,6 +1259,7 @@ data class com.datadog.android.tracing.model.SpanEvent
     companion object 
       fun fromJson(kotlin.String): Dd
   class Span
+    constructor()
     val kind: kotlin.String
     fun toJson(): com.google.gson.JsonElement
   data class Tracer

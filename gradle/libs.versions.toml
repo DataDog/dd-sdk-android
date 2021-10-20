@@ -52,7 +52,7 @@ mavenModel = "3.6.3"
 versionsPluginGradle = "0.27.0"
 nexusPublishPluginGradle = "1.1.0"
 
-kotlinPoet = "1.7.2"
+kotlinPoet = "1.9.0"
 kotlinGrammarParser = "c35b50fa44"
 jsonSchemaValidator = "1.12.1"
 
