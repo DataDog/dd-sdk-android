@@ -11,7 +11,7 @@ object Dependencies {
     object Versions {
 
         // Tests Tools
-        const val Jacoco = "0.8.4"
+        const val Jacoco = "0.8.7"
 
         // NDK
         const val Ndk = "22.1.7171670"

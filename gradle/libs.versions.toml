@@ -22,9 +22,9 @@ openTracing = "0.32.0"
 
 # JUnit
 jUnit4 = "4.13.2"
-jUnitJupiter = "5.6.2"
-jUnitPlatform = "1.6.2"
-jUnitVintage = "5.6.2"
+jUnitJupiter = "5.7.1"
+jUnitPlatform = "1.7.1"
+jUnitVintage = "5.7.1"
 jUnitMockitoExt = "3.4.6"
 
 # Android JUnit
