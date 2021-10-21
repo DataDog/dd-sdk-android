@@ -69,6 +69,7 @@ tasks.register("assembleAll") {
     dependsOn(
         ":dd-sdk-android:assemble",
         ":dd-sdk-android-coil:assemble",
+        ":dd-sdk-android-compose:assemble",
         ":dd-sdk-android-fresco:assemble",
         ":dd-sdk-android-glide:assemble",
         ":dd-sdk-android-ktx:assemble",
@@ -83,6 +84,7 @@ tasks.register("unitTestRelease") {
     dependsOn(
         ":dd-sdk-android:testReleaseUnitTest",
         ":dd-sdk-android-coil:testReleaseUnitTest",
+        ":dd-sdk-android-compose:testReleaseUnitTest",
         ":dd-sdk-android-fresco:testReleaseUnitTest",
         ":dd-sdk-android-glide:testReleaseUnitTest",
         ":dd-sdk-android-ktx:testReleaseUnitTest",
@@ -99,6 +101,8 @@ tasks.register("unitTestDebug") {
         ":dd-sdk-android:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-coil:testDebugUnitTest",
         ":dd-sdk-android-coil:jacocoTestDebugUnitTestReport",
+        ":dd-sdk-android-compose:testDebugUnitTest",
+        ":dd-sdk-android-compose:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-fresco:testDebugUnitTest",
         ":dd-sdk-android-fresco:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-glide:testDebugUnitTest",
@@ -136,6 +140,7 @@ tasks.register("ktlintCheckAll") {
     dependsOn(
         ":dd-sdk-android:ktlintCheck",
         ":dd-sdk-android-coil:ktlintCheck",
+        ":dd-sdk-android-compose:ktlintCheck",
         ":dd-sdk-android-fresco:ktlintCheck",
         ":dd-sdk-android-glide:ktlintCheck",
         ":dd-sdk-android-ktx:ktlintCheck",
@@ -154,6 +159,7 @@ tasks.register("lintCheckAll") {
     dependsOn(
         ":dd-sdk-android:lintRelease",
         ":dd-sdk-android-coil:lintRelease",
+        ":dd-sdk-android-compose:lintRelease",
         ":dd-sdk-android-fresco:lintRelease",
         ":dd-sdk-android-glide:lintRelease",
         ":dd-sdk-android-ktx:lintRelease",
@@ -168,6 +174,7 @@ tasks.register("checkThirdPartyLicensesAll") {
     dependsOn(
         ":dd-sdk-android:checkThirdPartyLicences",
         ":dd-sdk-android-coil:checkThirdPartyLicences",
+        ":dd-sdk-android-compose:checkThirdPartyLicences",
         ":dd-sdk-android-fresco:checkThirdPartyLicences",
         ":dd-sdk-android-glide:checkThirdPartyLicences",
         ":dd-sdk-android-ktx:checkThirdPartyLicences",
@@ -182,6 +189,7 @@ tasks.register("checkApiSurfaceChangesAll") {
     dependsOn(
         ":dd-sdk-android:checkApiSurfaceChanges",
         ":dd-sdk-android-coil:checkApiSurfaceChanges",
+        ":dd-sdk-android-compose:checkApiSurfaceChanges",
         ":dd-sdk-android-fresco:checkApiSurfaceChanges",
         ":dd-sdk-android-glide:checkApiSurfaceChanges",
         ":dd-sdk-android-ktx:checkApiSurfaceChanges",
@@ -196,6 +204,7 @@ tasks.register("detektAll") {
     dependsOn(
         ":dd-sdk-android:detekt",
         ":dd-sdk-android-coil:detekt",
+        ":dd-sdk-android-compose:detekt",
         ":dd-sdk-android-fresco:detekt",
         ":dd-sdk-android-glide:detekt",
         ":dd-sdk-android-ktx:detekt",
@@ -215,6 +224,8 @@ tasks.register("jacocoReportAll") {
         ":dd-sdk-android:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-coil:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-coil:jacocoTestReleaseUnitTestReport",
+        ":dd-sdk-android-compose:jacocoTestDebugUnitTestReport",
+        ":dd-sdk-android-compose:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-fresco:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-fresco:jacocoTestReleaseUnitTestReport",
         ":dd-sdk-android-glide:jacocoTestDebugUnitTestReport",

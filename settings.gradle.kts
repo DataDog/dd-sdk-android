@@ -8,6 +8,7 @@ enableFeaturePreview("VERSION_CATALOGS")
 
 include(":dd-sdk-android")
 include(":dd-sdk-android-coil")
+include(":dd-sdk-android-compose")
 include(":dd-sdk-android-fresco")
 include(":dd-sdk-android-glide")
 include(":dd-sdk-android-ktx")
