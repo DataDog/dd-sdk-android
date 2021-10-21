@@ -11,21 +11,21 @@ import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Conflict(
-    val type: ConflictType? = null,
-    val user: User? = null
+public data class Conflict(
+    public val type: ConflictType? = null,
+    public val user: User? = null
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         type?.let { json.add("type", it.toJson()) }
         user?.let { json.add("user", it.toJson()) }
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Conflict {
+        public fun fromJson(serializedObject: String): Conflict {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val type = jsonObject.get("type")?.toString()?.let {
@@ -43,19 +43,19 @@ data class Conflict(
         }
     }
 
-    data class ConflictType(
-        val id: String? = null
+    public data class ConflictType(
+        public val id: String? = null
     ) {
-        fun toJson(): JsonElement {
+        public fun toJson(): JsonElement {
             val json = JsonObject()
             id?.let { json.addProperty("id", it) }
             return json
         }
 
-        companion object {
+        public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            fun fromJson(serializedObject: String): ConflictType {
+            public fun fromJson(serializedObject: String): ConflictType {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                     val id = jsonObject.get("id")?.asString
@@ -69,21 +69,21 @@ data class Conflict(
         }
     }
 
-    data class User(
-        val name: String? = null,
-        val type: UserType? = null
+    public data class User(
+        public val name: String? = null,
+        public val type: UserType? = null
     ) {
-        fun toJson(): JsonElement {
+        public fun toJson(): JsonElement {
             val json = JsonObject()
             name?.let { json.addProperty("name", it) }
             type?.let { json.add("type", it.toJson()) }
             return json
         }
 
-        companion object {
+        public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            fun fromJson(serializedObject: String): User {
+            public fun fromJson(serializedObject: String): User {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                     val name = jsonObject.get("name")?.asString
@@ -100,20 +100,19 @@ data class Conflict(
         }
     }
 
-    enum class UserType(
+    public enum class UserType(
         private val jsonValue: String
     ) {
         UNKNOWN("unknown"),
-
         CUSTOMER("customer"),
+        PARTNER("partner"),
+        ;
 
-        PARTNER("partner");
+        public fun toJson(): JsonElement = JsonPrimitive(jsonValue)
 
-        fun toJson(): JsonElement = JsonPrimitive(jsonValue)
-
-        companion object {
+        public companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): UserType = values().first {
+            public fun fromJson(serializedObject: String): UserType = values().first {
                 it.jsonValue == serializedObject
             }
         }

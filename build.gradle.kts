@@ -19,13 +19,13 @@ buildscript {
     }
 
     dependencies {
-        classpath(com.datadog.gradle.Dependencies.ClassPaths.AndroidTools)
-        classpath(com.datadog.gradle.Dependencies.ClassPaths.Kotlin)
-        classpath(com.datadog.gradle.Dependencies.ClassPaths.KtLint)
-        classpath(com.datadog.gradle.Dependencies.ClassPaths.Dokka)
-        classpath(com.datadog.gradle.Dependencies.ClassPaths.Unmock)
-        classpath(com.datadog.gradle.Dependencies.ClassPaths.Realm)
-        classpath(com.datadog.gradle.Dependencies.ClassPaths.SQLDelight)
+        classpath(libs.androidToolsPluginGradle)
+        classpath(libs.kotlinPluginGradle)
+        classpath(libs.ktLintPluginGradle)
+        classpath(libs.dokkaPluginGradle)
+        classpath(libs.unmockPluginGradle)
+        classpath(libs.realmPluginGradle)
+        classpath(libs.sqlDelightPluginGradle)
     }
 }
 
@@ -161,6 +161,34 @@ tasks.register("lintCheckAll") {
         ":dd-sdk-android-rx:lintRelease",
         ":dd-sdk-android-sqldelight:lintRelease",
         ":dd-sdk-android-timber:lintRelease"
+    )
+}
+
+tasks.register("checkThirdPartyLicensesAll") {
+    dependsOn(
+        ":dd-sdk-android:checkThirdPartyLicences",
+        ":dd-sdk-android-coil:checkThirdPartyLicences",
+        ":dd-sdk-android-fresco:checkThirdPartyLicences",
+        ":dd-sdk-android-glide:checkThirdPartyLicences",
+        ":dd-sdk-android-ktx:checkThirdPartyLicences",
+        ":dd-sdk-android-ndk:checkThirdPartyLicences",
+        ":dd-sdk-android-rx:checkThirdPartyLicences",
+        ":dd-sdk-android-sqldelight:checkThirdPartyLicences",
+        ":dd-sdk-android-timber:checkThirdPartyLicences"
+    )
+}
+
+tasks.register("checkApiSurfaceChangesAll") {
+    dependsOn(
+        ":dd-sdk-android:checkApiSurfaceChanges",
+        ":dd-sdk-android-coil:checkApiSurfaceChanges",
+        ":dd-sdk-android-fresco:checkApiSurfaceChanges",
+        ":dd-sdk-android-glide:checkApiSurfaceChanges",
+        ":dd-sdk-android-ktx:checkApiSurfaceChanges",
+        ":dd-sdk-android-ndk:checkApiSurfaceChanges",
+        ":dd-sdk-android-rx:checkApiSurfaceChanges",
+        ":dd-sdk-android-sqldelight:checkApiSurfaceChanges",
+        ":dd-sdk-android-timber:checkApiSurfaceChanges"
     )
 }
 

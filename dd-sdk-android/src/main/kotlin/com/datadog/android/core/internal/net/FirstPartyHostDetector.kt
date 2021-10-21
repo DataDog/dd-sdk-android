@@ -13,7 +13,7 @@ internal class FirstPartyHostDetector(
     hosts: List<String>
 ) {
 
-    internal var knownHosts = hosts.map { it.toLowerCase(Locale.US) }
+    internal var knownHosts = hosts.map { it.lowercase(Locale.US) }
         private set
 
     fun isFirstPartyUrl(url: HttpUrl): Boolean {
@@ -33,6 +33,6 @@ internal class FirstPartyHostDetector(
     }
 
     fun addKnownHosts(hosts: List<String>) {
-        knownHosts = knownHosts + hosts.map { it.toLowerCase(Locale.US) }
+        knownHosts = knownHosts + hosts.map { it.lowercase(Locale.US) }
     }
 }

@@ -6,6 +6,7 @@
 
 package com.datadog.gradle.config
 
+import com.android.build.api.dsl.LibraryDefaultConfig
 import com.datadog.gradle.utils.Version
 
 object AndroidConfig {
@@ -15,4 +16,13 @@ object AndroidConfig {
     const val BUILD_TOOLS_VERSION = "30.0.2"
 
     val VERSION = Version(1, 12, 0, Version.Type.Dev)
+}
+
+@Suppress("UnstableApiUsage")
+fun LibraryDefaultConfig.setLibraryVersion(
+    versionCode: Int = AndroidConfig.VERSION.code,
+    versionName: String = AndroidConfig.VERSION.name
+) {
+    buildConfigField("int", "SDK_VERSION_CODE", "$versionCode")
+    buildConfigField("String", "SDK_VERSION_NAME", "\"$versionName\"")
 }

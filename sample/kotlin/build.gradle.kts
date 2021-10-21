@@ -13,7 +13,6 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
-import com.datadog.gradle.implementation
 
 plugins {
     id("com.android.application")
@@ -38,12 +37,12 @@ sqldelight {
 }
 
 android {
-    compileSdkVersion(AndroidConfig.TARGET_SDK)
-    buildToolsVersion(AndroidConfig.BUILD_TOOLS_VERSION)
+    compileSdk = AndroidConfig.TARGET_SDK
+    buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
 
     defaultConfig {
-        minSdkVersion(AndroidConfig.MIN_SDK)
-        targetSdkVersion(AndroidConfig.TARGET_SDK)
+        minSdk = AndroidConfig.MIN_SDK
+        targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
         multiDexEnabled = true
@@ -60,7 +59,7 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
-    flavorDimensions("version")
+    flavorDimensions += listOf("version")
     productFlavors {
         val regions = arrayOf("us1", "us3", "us5", "us1_fed", "eu1", "staging")
 
@@ -68,7 +67,7 @@ android {
             register(region) {
                 isDefault = index == 0
                 dimension = "version"
-                configureFlavorForSampleApp(this, projectDir)
+                configureFlavorForSampleApp(this, project.rootDir)
             }
         }
     }
@@ -88,12 +87,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 
-    dexOptions {
-        javaMaxHeapSize = "4g"
-    }
-
     packagingOptions {
-        exclude("META-INF/*")
+        resources {
+            excludes += "META-INF/*"
+        }
     }
 
     externalNativeBuild {
@@ -117,14 +114,14 @@ dependencies {
     api(project(":dd-sdk-android-fresco"))
     api(project(":dd-sdk-android-sqldelight"))
 
-    implementation(Dependencies.Libraries.Kotlin)
+    implementation(libs.kotlin)
 
     // Android dependencies
-    implementation(Dependencies.Libraries.AndroidXMultidex)
-    implementation(Dependencies.Libraries.AndroidXNavigation)
-    implementation("androidx.appcompat:appcompat:1.3.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.0.4")
-    implementation("com.google.android.material:material:1.3.0")
+    implementation(libs.androidXMultidex)
+    implementation(libs.bundles.androidXNavigation)
+    implementation(libs.androidXAppCompat)
+    implementation(libs.androidXConstraintLayout)
+    implementation(libs.googleMaterial)
     implementation("androidx.media:media:1.3.1")
     implementation("androidx.vectordrawable:vectordrawable:1.1.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
@@ -135,35 +132,35 @@ dependencies {
     }
 
     // Ktor (local web server)
-    implementation(Dependencies.Libraries.Ktor)
+    implementation(libs.bundles.ktor)
 
     // Image Loading Library
-    implementation(Dependencies.Libraries.Coil)
-    implementation(Dependencies.Libraries.Fresco)
-    implementation(Dependencies.Libraries.Glide)
-    implementation(Dependencies.Libraries.Picasso)
-    kapt(Dependencies.AnnotationProcessors.Glide)
+    implementation(libs.coil)
+    implementation(libs.bundles.fresco)
+    implementation(libs.bundles.glide)
+    implementation(libs.picasso)
+    kapt(libs.glideCompiler)
 
     // Local Storage
-    implementation(Dependencies.Libraries.SQLDelight)
-    implementation(Dependencies.Libraries.Room)
-    kapt(Dependencies.AnnotationProcessors.Room)
+    implementation(libs.sqlDelight)
+    implementation(libs.room)
+    kapt(libs.roomCompiler)
 
     // Multithreading
-    implementation(Dependencies.Libraries.RxJava)
+    implementation(libs.rxJava3)
     implementation("com.squareup.retrofit2:adapter-rxjava3:2.9.0")
-    implementation("io.reactivex.rxjava3:rxandroid:${Dependencies.Versions.RxJava}")
-    implementation(Dependencies.Libraries.Coroutines)
+    implementation(libs.rxJava3Android)
+    implementation(libs.bundles.coroutines)
 
     // Network
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation(Dependencies.Libraries.OkHttp)
-    implementation(Dependencies.Libraries.Gson)
+    implementation(libs.okHttp)
+    implementation(libs.gson)
 
     // Misc
-    implementation(Dependencies.Libraries.Timber)
-    api("com.facebook.stetho:stetho:1.5.1")
+    implementation(libs.timber)
+    api("com.facebook.stetho:stetho:1.6.0")
 }
 
 kotlinConfig(evaluateWarningsAsErrors = false)

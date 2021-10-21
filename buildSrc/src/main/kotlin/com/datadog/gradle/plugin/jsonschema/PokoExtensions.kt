@@ -6,7 +6,7 @@
 
 package com.datadog.gradle.plugin.jsonschema
 
-import android.databinding.tool.ext.joinToCamelCaseAsVar
+import com.datadog.gradle.utils.joinToCamelCaseAsVar
 import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.BOOLEAN
 import com.squareup.kotlinpoet.ClassName

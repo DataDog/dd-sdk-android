@@ -14,10 +14,10 @@ import kotlin.collections.Set
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Order(
-    val sizes: Set<Size>
+public data class Order(
+    public val sizes: Set<Size>
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         val sizesArray = JsonArray(sizes.size)
         sizes.forEach { sizesArray.add(it.toJson()) }
@@ -25,10 +25,10 @@ data class Order(
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Order {
+        public fun fromJson(serializedObject: String): Order {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val sizes = jsonObject.get("sizes").asJsonArray.let { jsonArray ->
@@ -47,24 +47,21 @@ data class Order(
         }
     }
 
-    enum class Size(
+    public enum class Size(
         private val jsonValue: String
     ) {
         X_SMALL("x small"),
-
         SMALL("small"),
-
         MEDIUM("medium"),
-
         LARGE("large"),
+        X_LARGE("x large"),
+        ;
 
-        X_LARGE("x large");
+        public fun toJson(): JsonElement = JsonPrimitive(jsonValue)
 
-        fun toJson(): JsonElement = JsonPrimitive(jsonValue)
-
-        companion object {
+        public companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): Size = values().first {
+            public fun fromJson(serializedObject: String): Size = values().first {
                 it.jsonValue == serializedObject
             }
         }

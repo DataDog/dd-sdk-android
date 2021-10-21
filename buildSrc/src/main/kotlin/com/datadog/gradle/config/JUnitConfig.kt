@@ -16,8 +16,8 @@ fun Project.junitConfig() {
             includeEngines("spek", "junit-jupiter", "junit-vintage")
         }
         reports {
-            junitXml.isEnabled = true
-            html.isEnabled = true
+            junitXml.required.set(true)
+            html.required.set(true)
         }
     }
 }

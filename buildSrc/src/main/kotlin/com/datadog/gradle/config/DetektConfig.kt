@@ -14,7 +14,7 @@ import org.gradle.kotlin.dsl.withType
 fun Project.detektConfig(excludes: List<String> = emptyList()) {
 
     extensionConfig<DetektExtension> {
-        input = files("$projectDir/src/main/kotlin")
+        source = files("$projectDir/src/main/kotlin")
         config = files("${project.rootDir}/detekt.yml")
 
         reports {

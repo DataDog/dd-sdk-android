@@ -4,7 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
@@ -16,7 +15,7 @@ plugins {
 }
 
 dependencies {
-    implementation(Dependencies.Libraries.Kotlin)
+    implementation(libs.kotlin)
 }
 
 kotlinConfig()

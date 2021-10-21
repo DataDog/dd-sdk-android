@@ -12,19 +12,19 @@ import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Jacket(
-    val size: Size = Size.SIZE_1
+public data class Jacket(
+    public val size: Size = Size.SIZE_1
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         json.add("size", size.toJson())
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Jacket {
+        public fun fromJson(serializedObject: String): Jacket {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val size = jsonObject.get("size").asString.let {
@@ -39,22 +39,20 @@ data class Jacket(
         }
     }
 
-    enum class Size(
+    public enum class Size(
         private val jsonValue: Number
     ) {
         SIZE_1(1),
-
         SIZE_2(2),
-
         SIZE_3(3),
+        SIZE_4(4),
+        ;
 
-        SIZE_4(4);
+        public fun toJson(): JsonElement = JsonPrimitive(jsonValue)
 
-        fun toJson(): JsonElement = JsonPrimitive(jsonValue)
-
-        companion object {
+        public companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): Size = values().first {
+            public fun fromJson(serializedObject: String): Size = values().first {
                 it.jsonValue.toString() == serializedObject
             }
         }

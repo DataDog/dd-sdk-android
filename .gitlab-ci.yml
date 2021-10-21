@@ -87,7 +87,7 @@ analysis:licenses:
   timeout: 30m
   script:
     - git fetch --depth=1 origin master
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew :dd-sdk-android:checkThirdPartyLicences :dd-sdk-android-timber:checkThirdPartyLicences --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx2560m" ./gradlew checkThirdPartyLicensesAll --stacktrace --no-daemon
 
 analysis:api-surface:
   tags: [ "runner:main" ]
@@ -96,7 +96,7 @@ analysis:api-surface:
   timeout: 30m
   script:
     - git fetch --depth=1 origin master
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew :dd-sdk-android:checkApiSurfaceChanges :dd-sdk-android-timber:checkApiSurfaceChanges --stacktrace --no-daemon
+    - GRADLE_OPTS="-Xmx2560m" ./gradlew checkApiSurfaceChangesAll --stacktrace --no-daemon
 
 analysis:nightly-tests-coverage:
   tags: [ "runner:main" ]

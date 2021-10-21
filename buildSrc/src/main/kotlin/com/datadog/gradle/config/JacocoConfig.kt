@@ -20,11 +20,11 @@ fun Project.jacocoConfig() {
         JacocoReport::class.java
     )
     jacocoTestDebugUnitTestReport.reports {
-        csv.isEnabled = false
-        xml.isEnabled = true
-        html.isEnabled = true
-        html.destination = file(
-            "${buildDir.path}/reports/jacoco/jacocoTestDebugUnitTestReport/html"
+        csv.required.set(false)
+        xml.required.set(true)
+        html.required.set(true)
+        html.outputLocation.set(
+            layout.buildDirectory.dir("reports/jacoco/jacocoTestDebugUnitTestReport/html")
         )
     }
 
@@ -33,11 +33,11 @@ fun Project.jacocoConfig() {
         JacocoReport::class.java
     )
     jacocoTestReleaseUnitTestReport.reports {
-        csv.isEnabled = false
-        xml.isEnabled = true
-        html.isEnabled = true
-        html.destination = file(
-            "${buildDir.path}/reports/jacoco/jacocoTestReleaseUnitTestReport/html"
+        csv.required.set(false)
+        xml.required.set(true)
+        html.required.set(true)
+        html.outputLocation.set(
+            layout.buildDirectory.dir("reports/jacoco/jacocoTestReleaseUnitTestReport/html")
         )
     }
 
@@ -84,7 +84,7 @@ fun Project.jacocoConfig() {
 
     extensionConfig<JacocoPluginExtension> {
         toolVersion = Dependencies.Versions.Jacoco
-        reportsDir = file("$buildDir/jacoco") // Jacoco's output root.
+        reportsDirectory.set(layout.buildDirectory.dir("jacoco")) // Jacoco's output root.
     }
 
     tasks.named("check") {

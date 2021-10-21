@@ -184,7 +184,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
     }
 
     @AfterEach
-    fun `tear down`() {
+    open fun `tear down`() {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
         TracingFeature.stop()
     }

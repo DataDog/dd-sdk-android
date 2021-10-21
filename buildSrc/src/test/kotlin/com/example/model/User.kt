@@ -11,14 +11,14 @@ import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class User(
-    val username: String,
-    val host: String,
-    val firstname: String? = null,
-    val lastname: String,
-    val contactType: ContactType
+public data class User(
+    public val username: String,
+    public val host: String,
+    public val firstname: String? = null,
+    public val lastname: String,
+    public val contactType: ContactType
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("username", username)
         json.addProperty("host", host)
@@ -28,10 +28,10 @@ data class User(
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): User {
+        public fun fromJson(serializedObject: String): User {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val username = jsonObject.get("username").asString
@@ -50,18 +50,18 @@ data class User(
         }
     }
 
-    enum class ContactType(
+    public enum class ContactType(
         private val jsonValue: String
     ) {
         PERSONAL("personal"),
+        PROFESSIONAL("professional"),
+        ;
 
-        PROFESSIONAL("professional");
+        public fun toJson(): JsonElement = JsonPrimitive(jsonValue)
 
-        fun toJson(): JsonElement = JsonPrimitive(jsonValue)
-
-        companion object {
+        public companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): ContactType = values().first {
+            public fun fromJson(serializedObject: String): ContactType = values().first {
                 it.jsonValue == serializedObject
             }
         }

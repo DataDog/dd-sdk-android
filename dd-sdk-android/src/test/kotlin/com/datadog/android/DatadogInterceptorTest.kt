@@ -33,6 +33,7 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.Tracer
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -92,6 +93,12 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 anyOrNull()
             )
         ) doReturn fakeAttributes
+    }
+
+    @AfterEach
+    override fun `tear down`() {
+        super.`tear down`()
+        RumFeature.stop()
     }
 
     @Test

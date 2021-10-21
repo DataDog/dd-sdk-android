@@ -4,6 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
 package com.datadog.android.sdk.integration.rum
 
 import android.os.Bundle

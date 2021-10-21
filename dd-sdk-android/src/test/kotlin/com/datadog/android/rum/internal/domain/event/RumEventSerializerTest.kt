@@ -58,7 +58,7 @@ internal class RumEventSerializerTest {
             .hasField("type", "resource")
             .hasField("date", event.date)
             .hasField("resource") {
-                hasField("type", event.resource.type.name.toLowerCase())
+                hasField("type", event.resource.type.name.lowercase())
                 hasField("url", event.resource.url)
                 hasField("duration", event.resource.duration)
                 hasNullableField("method", event.resource.method?.name)
@@ -71,7 +71,7 @@ internal class RumEventSerializerTest {
             }
             .hasField("session") {
                 hasField("id", event.session.id)
-                hasField("type", event.session.type.name.toLowerCase())
+                hasField("type", event.session.type.name.lowercase())
             }
             .hasField("view") {
                 hasField("id", event.view.id)
@@ -106,7 +106,7 @@ internal class RumEventSerializerTest {
             .hasField("type", "action")
             .hasField("date", event.date)
             .hasField("action") {
-                hasField("type", event.action.type.name.toLowerCase())
+                hasField("type", event.action.type.name.lowercase())
                 hasNullableField("id", event.action.id)
                 event.action.target?.let {
                     hasField("target") {
@@ -135,7 +135,7 @@ internal class RumEventSerializerTest {
             }
             .hasField("session") {
                 hasField("id", event.session.id)
-                hasField("type", event.session.type.name.toLowerCase())
+                hasField("type", event.session.type.name.lowercase())
             }
             .hasField("view") {
                 hasField("id", event.view.id)
@@ -172,7 +172,7 @@ internal class RumEventSerializerTest {
             }
             .hasField("session") {
                 hasField("id", event.session.id)
-                hasField("type", event.session.type.name.toLowerCase())
+                hasField("type", event.session.type.name.lowercase())
             }
             .hasField("view") {
                 hasField("id", event.view.id)
@@ -220,11 +220,11 @@ internal class RumEventSerializerTest {
             .hasField("date", event.date)
             .hasField("error") {
                 hasField("message", event.error.message)
-                hasField("source", event.error.source.name.toLowerCase())
+                hasField("source", event.error.source.name.lowercase())
                 hasNullableField("stack", event.error.stack)
                 event.error.resource?.let {
                     hasField("resource") {
-                        hasField("method", it.method.name.toUpperCase())
+                        hasField("method", it.method.name.uppercase())
                         hasField("status_code", it.statusCode)
                         hasField("url", it.url)
                     }
@@ -235,7 +235,7 @@ internal class RumEventSerializerTest {
             }
             .hasField("session") {
                 hasField("id", event.session.id)
-                hasField("type", event.session.type.name.toLowerCase())
+                hasField("type", event.session.type.name.lowercase())
             }
             .hasField("view") {
                 hasField("id", event.view.id)
@@ -281,7 +281,7 @@ internal class RumEventSerializerTest {
             }
             .hasField("session") {
                 hasField("id", event.session.id)
-                hasField("type", event.session.type.name.toLowerCase())
+                hasField("type", event.session.type.name.lowercase())
             }
             .hasField("view") {
                 hasField("id", event.view.id)
@@ -297,7 +297,7 @@ internal class RumEventSerializerTest {
             }
             .hasNullableField("service", event.service)
             .hasField("connectivity") {
-                hasField("status", event.connectivity!!.status.name.toLowerCase())
+                hasField("status", event.connectivity!!.status.name.lowercase())
                 hasField(
                     "interfaces",
                     event.connectivity!!.interfaces.fold(JsonArray()) { acc, element ->

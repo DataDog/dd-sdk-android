@@ -4,7 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektConfig
@@ -14,7 +13,7 @@ import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.config.publishingConfig
-import com.datadog.gradle.testImplementation
+import com.datadog.gradle.config.setLibraryVersion
 
 plugins {
     // Build
@@ -41,14 +40,13 @@ plugins {
 }
 
 android {
-    compileSdkVersion(AndroidConfig.TARGET_SDK)
-    buildToolsVersion(AndroidConfig.BUILD_TOOLS_VERSION)
+    compileSdk = AndroidConfig.TARGET_SDK
+    buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
 
     defaultConfig {
-        minSdkVersion(AndroidConfig.MIN_SDK)
-        targetSdkVersion(AndroidConfig.TARGET_SDK)
-        versionCode = AndroidConfig.VERSION.code
-        versionName = AndroidConfig.VERSION.name
+        minSdk = AndroidConfig.MIN_SDK
+        targetSdk = AndroidConfig.TARGET_SDK
+        setLibraryVersion()
     }
 
     sourceSets.named("main") {
@@ -65,7 +63,7 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
-    lintOptions {
+    lint {
         isWarningsAsErrors = true
         isAbortOnError = true
         isCheckReleaseBuilds = false
@@ -76,16 +74,16 @@ android {
 
 dependencies {
     api(project(":dd-sdk-android"))
-    implementation(Dependencies.Libraries.Kotlin)
-    implementation(Dependencies.Libraries.Timber)
+    implementation(libs.kotlin)
+    implementation(libs.timber)
 
     testImplementation(project(":tools:unit"))
-    testImplementation(Dependencies.Libraries.JUnit5)
-    testImplementation(Dependencies.Libraries.TestTools)
-    testImplementation(Dependencies.Libraries.OkHttpMock)
+    testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.testTools)
+    testImplementation(libs.okHttpMock)
 
     detekt(project(":tools:detekt"))
-    detekt(Dependencies.Libraries.DetektCli)
+    detekt(libs.detektCli)
 }
 
 kotlinConfig()
