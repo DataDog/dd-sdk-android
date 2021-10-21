@@ -61,7 +61,9 @@ android {
     }
 
     packagingOptions {
-        exclude("META-INF/*")
+        resources {
+            excludes += "META-INF/*"
+        }
     }
 
     buildTypes {

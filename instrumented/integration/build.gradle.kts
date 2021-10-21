@@ -55,9 +55,13 @@ android {
     }
 
     packagingOptions {
-        exclude("META-INF/jvm.kotlin_module")
-        exclude("META-INF/LICENSE.md")
-        exclude("META-INF/LICENSE-notice.md")
+        resources {
+            excludes += listOf(
+                "META-INF/jvm.kotlin_module",
+                "META-INF/LICENSE.md",
+                "META-INF/LICENSE-notice.md"
+            )
+        }
     }
 
     buildTypes {
