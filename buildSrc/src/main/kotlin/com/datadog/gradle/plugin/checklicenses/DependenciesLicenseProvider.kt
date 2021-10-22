@@ -220,6 +220,7 @@ class DependenciesLicenseProvider {
             "detekt",
             "ktlint",
             "ktlintBaselineReporter",
+            "kotlin-extension",
             "kotlinCompilerClasspath",
             "kotlinCompilerPluginClasspath",
             "lintClassPath"
