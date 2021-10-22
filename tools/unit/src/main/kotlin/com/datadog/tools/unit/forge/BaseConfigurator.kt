@@ -18,6 +18,8 @@ open class BaseConfigurator :
     ForgeConfigurator {
     /** @inheritDoc */
     override fun configure(forge: Forge) {
+        forge.addFactory(ExceptionForgeryFactory())
+        forge.addFactory(ErrorForgeryFactory())
         forge.addFactory(ThrowableForgeryFactory())
         forge.useJvmFactories()
     }
