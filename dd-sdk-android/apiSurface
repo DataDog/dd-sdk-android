@@ -78,6 +78,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun build(): Configuration
     fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
     fun setFirstPartyHosts(List<String>): Builder
+    fun setWebViewTrackingHosts(List<String>): Builder
     fun useSite(com.datadog.android.DatadogSite): Builder
     DEPRECATED fun useEUEndpoints(): Builder
     DEPRECATED fun useUSEndpoints(): Builder
@@ -109,6 +110,8 @@ data class com.datadog.android.core.configuration.Credentials
   constructor(String, String, String, String?, String? = null)
   companion object 
     const val NO_VARIANT: String
+object com.datadog.android.core.configuration.private
+const val VALID_IP_REGEX: String
 enum com.datadog.android.core.configuration.UploadFrequency
   constructor(Long)
   - FREQUENT
