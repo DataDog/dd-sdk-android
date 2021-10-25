@@ -69,7 +69,8 @@ internal constructor(
         val batchSize: BatchSize,
         val uploadFrequency: UploadFrequency,
         val proxy: Proxy?,
-        val proxyAuth: Authenticator
+        val proxyAuth: Authenticator,
+        val webViewTrackingHosts: List<String>
     )
 
     internal sealed class Feature {
@@ -136,6 +137,8 @@ internal constructor(
 
         private var coreConfig = DEFAULT_CORE_CONFIG
 
+        internal var hostsSanitizer = HostsSanitizer()
+
         /**
          * Builds a [Configuration] based on the current state of this Builder.
          */
@@ -160,7 +163,33 @@ internal constructor(
          * See [DatadogInterceptor]
          */
         fun setFirstPartyHosts(hosts: List<String>): Builder {
-            coreConfig = coreConfig.copy(firstPartyHosts = sanitizeHosts(hosts))
+            coreConfig = coreConfig.copy(
+                firstPartyHosts = hostsSanitizer.sanitizeHosts(
+                    hosts,
+                    WARNING_USING_URL_FOR_HOST,
+                    ERROR_MALFORMED_URL,
+                    ERROR_MALFORMED_HOST_IP_ADDRESS
+                )
+            )
+            return this
+        }
+
+        /**
+         * Sets the list of web view tracking hosts.
+         * WebViews that will load content from any of these hosts (or any subdomain) will
+         * will be automatically tracked.
+         * @param hosts a list of all the hosts that you want to be tracked when loaded in the
+         * WebView.
+         */
+        fun setWebViewTrackingHosts(hosts: List<String>): Builder {
+            coreConfig = coreConfig.copy(
+                webViewTrackingHosts = hostsSanitizer.sanitizeHosts(
+                    hosts,
+                    WARNING_USING_URL_FOR_WEBVIEW_HOST,
+                    ERROR_MALFORMED_URL_FOR_WEBVIEW_HOST,
+                    ERROR_MALFORMED_HOST_IP_ADDRESS_FOR_WEBVIEW_HOST
+                )
+            )
             return this
         }
 
@@ -635,7 +664,8 @@ internal constructor(
             batchSize = BatchSize.MEDIUM,
             uploadFrequency = UploadFrequency.AVERAGE,
             proxy = null,
-            proxyAuth = Authenticator.NONE
+            proxyAuth = Authenticator.NONE,
+            webViewTrackingHosts = emptyList()
         )
         internal val DEFAULT_LOGS_CONFIG = Feature.Logs(
             endpointUrl = DatadogEndpoint.LOGS_US1,
@@ -691,7 +721,24 @@ internal constructor(
             "The host name or ip address used for first party " +
                 "hosts: %s was malformed. It will be dropped."
 
-        internal fun sanitizeHosts(hosts: List<String>): List<String> {
+        internal const val WARNING_USING_URL_FOR_WEBVIEW_HOST =
+            "You are using an url: %s for declaring a web view tracking " +
+                "host. You should use instead a valid" +
+                " host name: %s."
+
+        internal const val ERROR_MALFORMED_URL_FOR_WEBVIEW_HOST =
+            "The url: %s used in the WebView tracking urls list is malformed. It will be dropped"
+
+        internal const val ERROR_MALFORMED_HOST_IP_ADDRESS_FOR_WEBVIEW_HOST =
+            "The host name or ip address used in the WebView tracking lists: %s " +
+                "was malformed. It will be dropped."
+
+        internal fun sanitizeHosts(
+            hosts: List<String>,
+            warningMessageFormat: String,
+            errorMessageFormat: String,
+            errorMessageMalformedIpAddress: String
+        ): List<String> {
             val validHostNameRegEx = Regex(VALID_HOSTNAME_REGEX)
             val validUrlRegex = Regex(URL_REGEX)
             return hosts.mapNotNull {
@@ -699,7 +746,7 @@ internal constructor(
                     try {
                         val parsedUrl = URL(it)
                         devLogger.w(
-                            WARNING_USING_URL_FOR_HOST.format(
+                            warningMessageFormat.format(
                                 Locale.US,
                                 it,
                                 parsedUrl.host
@@ -707,7 +754,7 @@ internal constructor(
                         )
                         parsedUrl.host
                     } catch (e: MalformedURLException) {
-                        devLogger.e(ERROR_MALFORMED_URL.format(Locale.US, it), e)
+                        devLogger.e(errorMessageFormat.format(Locale.US, it), e)
                         null
                     }
                 } else if (it.matches(validHostNameRegEx)) {
@@ -716,7 +763,7 @@ internal constructor(
                     // special rule exception to accept `localhost` as a valid domain name
                     it
                 } else {
-                    devLogger.e(ERROR_MALFORMED_HOST_IP_ADDRESS.format(Locale.US, it))
+                    devLogger.e(errorMessageMalformedIpAddress.format(Locale.US, it))
                     null
                 }
             }
