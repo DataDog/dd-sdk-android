@@ -10,9 +10,9 @@ import com.datadog.gradle.utils.Version
 
 object AndroidConfig {
 
-    const val TARGET_SDK = 30
+    const val TARGET_SDK = 31
     const val MIN_SDK = 19
-    const val BUILD_TOOLS_VERSION = "30.0.2"
+    const val BUILD_TOOLS_VERSION = "31.0.0"
 
     val VERSION = Version(1, 11, 0, Version.Type.Release)
 }

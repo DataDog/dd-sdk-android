@@ -34,7 +34,7 @@ dependencies {
     implementation(embeddedKotlin("gradle-plugin"))
     implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:1.17.0")
     implementation("org.jlleitschuh.gradle:ktlint-gradle:9.4.0")
-    implementation("com.android.tools.build:gradle:4.2.1")
+    implementation("com.android.tools.build:gradle:7.0.3")
     implementation("com.github.ben-manes:gradle-versions-plugin:0.27.0")
     implementation("me.xdrop:fuzzywuzzy:1.2.0")
     implementation("org.jetbrains.dokka:dokka-gradle-plugin:1.4.32")
