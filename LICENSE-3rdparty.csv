@@ -27,6 +27,7 @@ import,androidx.room,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.savedstate,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.slidingpanelayout,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.sqlite,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.startup,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.swiperefreshlayout,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.transition,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.vectordrawable,Apache-2.0,Copyright 2018 The Android Open Source Project
@@ -59,6 +60,7 @@ import(test),androidx.exifinterface,Apache-2.0,Copyright 2018 The Android Open S
 import(test),androidx.test,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.test.espresso,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.test.ext,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.tracing,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),com.android.support,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),com.facebook.soloader,Apache-2.0,Copyright (c) Facebook, Inc. and its affiliates
 import(test),com.github.xgouchet.Elmyr,MIT,Copyright 2017-2019 Xavier F. Gouchet
