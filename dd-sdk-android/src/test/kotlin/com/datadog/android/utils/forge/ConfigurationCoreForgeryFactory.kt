@@ -30,7 +30,8 @@ internal class ConfigurationCoreForgeryFactory :
             batchSize = forge.getForgery(),
             uploadFrequency = forge.getForgery(),
             proxy = proxy,
-            proxyAuth = auth
+            proxyAuth = auth,
+            webViewTrackingHosts = forge.aList { getForgery<URL>().host }
         )
     }
 }
