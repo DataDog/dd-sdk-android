@@ -43,33 +43,33 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
     ViewTrackingStrategy {
 
     private val androidXLifecycleCallbacks: FragmentLifecycleCallbacks<FragmentActivity>
-        by lazy {
-            AndroidXFragmentLifecycleCallbacks(
+    by lazy {
+        AndroidXFragmentLifecycleCallbacks(
+            argumentsProvider = {
+                if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
+            },
+            componentPredicate = supportFragmentComponentPredicate,
+            rumMonitor = GlobalRum.get(),
+            advancedRumMonitor = GlobalRum.get() as? AdvancedRumMonitor
+                ?: NoOpAdvancedRumMonitor()
+        )
+    }
+    private val oreoLifecycleCallbacks: FragmentLifecycleCallbacks<Activity>
+    by lazy {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            OreoFragmentLifecycleCallbacks(
                 argumentsProvider = {
                     if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
                 },
-                componentPredicate = supportFragmentComponentPredicate,
+                componentPredicate = defaultFragmentComponentPredicate,
                 rumMonitor = GlobalRum.get(),
                 advancedRumMonitor = GlobalRum.get() as? AdvancedRumMonitor
                     ?: NoOpAdvancedRumMonitor()
             )
+        } else {
+            NoOpFragmentLifecycleCallbacks<Activity>()
         }
-    private val oreoLifecycleCallbacks: FragmentLifecycleCallbacks<Activity>
-        by lazy {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                OreoFragmentLifecycleCallbacks(
-                    argumentsProvider = {
-                        if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
-                    },
-                    componentPredicate = defaultFragmentComponentPredicate,
-                    rumMonitor = GlobalRum.get(),
-                    advancedRumMonitor = GlobalRum.get() as? AdvancedRumMonitor
-                        ?: NoOpAdvancedRumMonitor()
-                )
-            } else {
-                NoOpFragmentLifecycleCallbacks<Activity>()
-            }
-        }
+    }
 
     // region ActivityLifecycleTrackingStrategy
 
