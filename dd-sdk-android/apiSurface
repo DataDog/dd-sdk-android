@@ -1217,6 +1217,8 @@ open class com.datadog.android.rum.webview.RumWebViewClient : android.webkit.Web
   override fun onReceivedSslError(android.webkit.WebView?, android.webkit.SslErrorHandler?, android.net.http.SslError?)
   open fun onProvideRumResourceAttributes(android.webkit.WebView?, String?): Map<String, Any?>
   companion object 
+class com.datadog.android.rum.webview.RumWebViewTrackingClient : android.webkit.WebViewClient
+  override fun onPageStarted(android.webkit.WebView?, String?, android.graphics.Bitmap?)
 class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
   constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
   override fun onCorruption(android.database.sqlite.SQLiteDatabase)

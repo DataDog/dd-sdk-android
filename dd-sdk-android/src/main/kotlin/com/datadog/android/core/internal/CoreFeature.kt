@@ -105,12 +105,13 @@ internal object CoreFeature {
 
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: ExecutorService
+    internal var webViewTrackingHosts: List<String> = emptyList()
 
     fun initialize(
-        appContext: Context,
-        credentials: Credentials,
-        configuration: Configuration.Core,
-        consent: TrackingConsent
+            appContext: Context,
+            credentials: Credentials,
+            configuration: Configuration.Core,
+            consent: TrackingConsent
     ) {
 
         if (initialized.get()) {
@@ -122,6 +123,7 @@ internal object CoreFeature {
         initializeClockSync(appContext)
         setupOkHttpClient(configuration)
         firstPartyHostDetector.addKnownHosts(configuration.firstPartyHosts)
+        webViewTrackingHosts = configuration.webViewTrackingHosts
         setupExecutors()
         // Time Provider
         timeProvider = KronosTimeProvider(kronosClock)
@@ -157,19 +159,19 @@ internal object CoreFeature {
 
     fun buildFilePersistenceConfig(): FilePersistenceConfig {
         return FilePersistenceConfig(
-            recentDelayMs = batchSize.windowDurationMs
+                recentDelayMs = batchSize.windowDurationMs
         )
     }
 
     fun drainAndShutdownExecutors() {
         val tasks = arrayListOf<Runnable>()
         (persistenceExecutorService as? ThreadPoolExecutor)
-            ?.queue
-            ?.drainTo(tasks)
+                ?.queue
+                ?.drainTo(tasks)
         // we make sure we upload the currently locked files
         uploadExecutorService
-            .queue
-            .drainTo(tasks)
+                .queue
+                .drainTo(tasks)
         // we need to make sure we drain the runnables in both executors first
         // then we shut them down by using the await termination method to make sure we block
         // the thread until the active task is finished.
@@ -187,23 +189,23 @@ internal object CoreFeature {
     private fun prepareNdkCrashData(appContext: Context) {
         if (isMainProcess) {
             ndkCrashHandler = DatadogNdkCrashHandler(
-                appContext,
-                persistenceExecutorService,
-                LogGenerator(
-                    serviceName,
-                    DatadogNdkCrashHandler.LOGGER_NAME,
-                    networkInfoProvider,
-                    userInfoProvider,
-                    timeProvider,
-                    envName,
-                    packageVersion
-                ),
-                NdkCrashLogDeserializer(sdkLogger),
-                RumEventDeserializer(),
-                NetworkInfoDeserializer(sdkLogger),
-                UserInfoDeserializer(sdkLogger),
-                sdkLogger,
-                timeProvider
+                    appContext,
+                    persistenceExecutorService,
+                    LogGenerator(
+                            serviceName,
+                            DatadogNdkCrashHandler.LOGGER_NAME,
+                            networkInfoProvider,
+                            userInfoProvider,
+                            timeProvider,
+                            envName,
+                            packageVersion
+                    ),
+                    NdkCrashLogDeserializer(sdkLogger),
+                    RumEventDeserializer(),
+                    NetworkInfoDeserializer(sdkLogger),
+                    UserInfoDeserializer(sdkLogger),
+                    sdkLogger,
+                    timeProvider
             )
             ndkCrashHandler.prepareData()
         }
@@ -211,16 +213,16 @@ internal object CoreFeature {
 
     private fun initializeClockSync(appContext: Context) {
         kronosClock = AndroidClockFactory.createKronosClock(
-            appContext,
-            ntpHosts = listOf(
-                DatadogEndpoint.NTP_0,
-                DatadogEndpoint.NTP_1,
-                DatadogEndpoint.NTP_2,
-                DatadogEndpoint.NTP_3
-            ),
-            cacheExpirationMs = TimeUnit.MINUTES.toMillis(30),
-            minWaitTimeBetweenSyncMs = TimeUnit.MINUTES.toMillis(5),
-            syncListener = LoggingSyncListener()
+                appContext,
+                ntpHosts = listOf(
+                        DatadogEndpoint.NTP_0,
+                        DatadogEndpoint.NTP_1,
+                        DatadogEndpoint.NTP_2,
+                        DatadogEndpoint.NTP_3
+                ),
+                cacheExpirationMs = TimeUnit.MINUTES.toMillis(30),
+                minWaitTimeBetweenSyncMs = TimeUnit.MINUTES.toMillis(5),
+                syncListener = LoggingSyncListener()
         ).apply { syncInBackground() }
     }
 
@@ -246,8 +248,8 @@ internal object CoreFeature {
     }
 
     private fun setupInfoProviders(
-        appContext: Context,
-        consent: TrackingConsent
+            appContext: Context,
+            consent: TrackingConsent
     ) {
         // Tracking Consent Provider
         trackingConsentProvider = TrackingConsentProvider(consent)
@@ -264,35 +266,35 @@ internal object CoreFeature {
     }
 
     private fun setupUserInfoProvider(
-        appContext: Context
+            appContext: Context
     ) {
         val userInfoWriter = ScheduledWriter(
-            NdkUserInfoDataWriter(
-                appContext,
-                trackingConsentProvider,
+                NdkUserInfoDataWriter(
+                        appContext,
+                        trackingConsentProvider,
+                        persistenceExecutorService,
+                        BatchFileHandler(sdkLogger),
+                        sdkLogger
+                ),
                 persistenceExecutorService,
-                BatchFileHandler(sdkLogger),
                 sdkLogger
-            ),
-            persistenceExecutorService,
-            sdkLogger
         )
         userInfoProvider = DatadogUserInfoProvider(userInfoWriter)
     }
 
     private fun setupNetworkInfoProviders(
-        appContext: Context
+            appContext: Context
     ) {
         val networkInfoWriter = ScheduledWriter(
-            NdkNetworkInfoDataWriter(
-                appContext,
-                trackingConsentProvider,
+                NdkNetworkInfoDataWriter(
+                        appContext,
+                        trackingConsentProvider,
+                        persistenceExecutorService,
+                        BatchFileHandler(sdkLogger),
+                        sdkLogger
+                ),
                 persistenceExecutorService,
-                BatchFileHandler(sdkLogger),
                 sdkLogger
-            ),
-            persistenceExecutorService,
-            sdkLogger
         )
         networkInfoProvider = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             CallbackNetworkInfoProvider(networkInfoWriter)
@@ -311,10 +313,10 @@ internal object CoreFeature {
 
         val builder = OkHttpClient.Builder()
         builder.addInterceptor(GzipRequestInterceptor())
-            .callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-            .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-            .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
-            .connectionSpecs(listOf(connectionSpec))
+                .callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
+                .connectionSpecs(listOf(connectionSpec))
 
         if (configuration.proxy != null) {
             builder.proxy(configuration.proxy)
@@ -326,11 +328,11 @@ internal object CoreFeature {
     private fun setupExecutors() {
         uploadExecutorService = ScheduledThreadPoolExecutor(CORE_DEFAULT_POOL_SIZE)
         persistenceExecutorService = ThreadPoolExecutor(
-            CORE_DEFAULT_POOL_SIZE,
-            Runtime.getRuntime().availableProcessors(),
-            THREAD_POOL_MAX_KEEP_ALIVE_MS,
-            TimeUnit.MILLISECONDS,
-            LinkedBlockingDeque()
+                CORE_DEFAULT_POOL_SIZE,
+                Runtime.getRuntime().availableProcessors(),
+                THREAD_POOL_MAX_KEEP_ALIVE_MS,
+                TimeUnit.MILLISECONDS,
+                LinkedBlockingDeque()
         )
     }
 

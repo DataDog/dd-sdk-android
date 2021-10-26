@@ -14,6 +14,8 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.rum.webview.RumWebChromeClient
 import com.datadog.android.rum.webview.RumWebViewClient
+import com.datadog.android.rum.webview.RumWebViewTrackingClient
+import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.R
 
 class WebFragment : Fragment() {
@@ -30,7 +32,7 @@ class WebFragment : Fragment() {
     ): View? {
         val rootView = inflater.inflate(R.layout.fragment_web, container, false)
         webView = rootView.findViewById(R.id.webview)
-        webView.webViewClient = RumWebViewClient()
+        webView.webViewClient = RumWebViewTrackingClient()
         webView.webChromeClient = RumWebChromeClient()
         return rootView
     }
@@ -43,7 +45,13 @@ class WebFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         viewModel.onResume()
-        webView.loadUrl(viewModel.url)
+        webView.settings.javaScriptEnabled = true
+        webView.loadUrl(
+            "https://datadoghq.dev/browser-sdk-test-playground/webview.html" +
+                "?client_token=${BuildConfig.DD_CLIENT_TOKEN}" +
+                "&application_id=${BuildConfig.APPLICATION_ID}" +
+                "&site=datadoghq.com"
+        )
     }
 
     override fun onPause() {
