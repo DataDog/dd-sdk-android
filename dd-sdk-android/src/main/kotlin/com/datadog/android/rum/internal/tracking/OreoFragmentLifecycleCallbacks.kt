@@ -52,6 +52,7 @@ internal class OreoFragmentLifecycleCallbacks(
         savedInstanceState: Bundle?
     ) {
         super.onFragmentActivityCreated(fm, f, savedInstanceState)
+        if (isNotAViewFragment(f)) return
 
         val context = f.context
 
@@ -64,6 +65,8 @@ internal class OreoFragmentLifecycleCallbacks(
 
     override fun onFragmentAttached(fm: FragmentManager?, f: Fragment, context: Context?) {
         super.onFragmentAttached(fm, f, context)
+        if (isNotAViewFragment(f)) return
+
         componentPredicate.runIfValid(f) {
             viewLoadingTimer.onCreated(it)
         }
@@ -71,6 +74,8 @@ internal class OreoFragmentLifecycleCallbacks(
 
     override fun onFragmentStarted(fm: FragmentManager?, f: Fragment) {
         super.onFragmentStarted(fm, f)
+        if (isNotAViewFragment(f)) return
+
         componentPredicate.runIfValid(f) {
             viewLoadingTimer.onStartLoading(it)
         }
@@ -78,6 +83,8 @@ internal class OreoFragmentLifecycleCallbacks(
 
     override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
         super.onFragmentResumed(fm, f)
+        if (isNotAViewFragment(f)) return
+
         componentPredicate.runIfValid(f) {
             val viewName = componentPredicate.resolveViewName(f)
             viewLoadingTimer.onFinishedLoading(f)
@@ -95,6 +102,8 @@ internal class OreoFragmentLifecycleCallbacks(
 
     override fun onFragmentPaused(fm: FragmentManager, f: Fragment) {
         super.onFragmentPaused(fm, f)
+        if (isNotAViewFragment(f)) return
+
         componentPredicate.runIfValid(f) {
             rumMonitor.stopView(it)
             viewLoadingTimer.onPaused(it)
@@ -103,6 +112,8 @@ internal class OreoFragmentLifecycleCallbacks(
 
     override fun onFragmentDestroyed(fm: FragmentManager?, f: Fragment) {
         super.onFragmentDestroyed(fm, f)
+        if (isNotAViewFragment(f)) return
+
         componentPredicate.runIfValid(f) {
             viewLoadingTimer.onDestroyed(it)
         }
@@ -118,6 +129,14 @@ internal class OreoFragmentLifecycleCallbacks(
         } else {
             ViewEvent.LoadingType.FRAGMENT_REDISPLAY
         }
+    }
+
+    private fun isNotAViewFragment(fragment: Fragment): Boolean {
+        return fragment::class.java.name == REPORT_FRAGMENT_NAME
+    }
+
+    private companion object {
+        private const val REPORT_FRAGMENT_NAME = "androidx.lifecycle.ReportFragment"
     }
 
     // endregion

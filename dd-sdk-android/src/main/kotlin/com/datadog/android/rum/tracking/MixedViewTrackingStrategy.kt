@@ -20,13 +20,8 @@ import androidx.fragment.app.Fragment
  * @see FragmentViewTrackingStrategy
  * **Note**: This version of the [MixedViewTrackingStrategy] is compatible with
  * the AndroidX Compat Library.
- * @param trackExtras whether to track Activity Intent extras or the Fragment arguments.
- * @param componentPredicate to accept the Activities that will be taken into account as
- * valid RUM View events.
- * @param supportFragmentComponentPredicate to accept the Androidx Fragments
- * that will be taken into account as valid RUM View events.
- * @param defaultFragmentComponentPredicate to accept the default Android Fragments
- * that will be taken into account as valid RUM View events.
+ * @param activityViewTrackingStrategy Strategy to track Activities.
+ * @param fragmentViewTrackingStrategy Strategy to track Fragments.
  */
 @Suppress("DEPRECATION")
 class MixedViewTrackingStrategy internal constructor(
