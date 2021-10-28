@@ -19,19 +19,27 @@ from git import Repo
 TARGET_APP = "app"
 TARGET_DEMO = "demo"
 TARGET_BRIDGE = "bridge"
+TARGET_GRADLE_PLUGIN = "gradle-plugin"
 
-REPOSITORIES = {TARGET_APP: "datadog-android", TARGET_DEMO: "shopist-android", TARGET_BRIDGE: "dd-bridge-android"}
+REPOSITORIES = {
+    TARGET_APP: "datadog-android",
+    TARGET_DEMO: "shopist-android",
+    TARGET_BRIDGE: "dd-bridge-android",
+    TARGET_GRADLE_PLUGIN: "dd-sdk-android-gradle-plugin"
+}
 
 FILE_PATH = {
     TARGET_APP: os.path.join("dd-build", "dependencies", "src", "main", "java", "com", "datadog", "build", "dependency", "android", "Datadog.kt"),
-    TARGET_DEMO: os.path.join("buildSrc", "src", "main", "kotlin", "com", "datadog", "gradle", "Dependencies.kt"),
-    TARGET_BRIDGE: os.path.join("buildSrc", "src", "main", "kotlin", "com", "datadog", "gradle", "Dependencies.kt")
+    TARGET_DEMO: os.path.join("gradle", "libs.versions.toml"),
+    TARGET_BRIDGE: os.path.join("gradle", "libs.versions.toml"),
+    TARGET_GRADLE_PLUGIN: os.path.join("gradle", "libs.versions.toml")
 }
 
 PREFIX = {
     TARGET_APP: "val version",
-    TARGET_DEMO: "val Datadog",
-    TARGET_BRIDGE: "val DatadogSdkVersion"
+    TARGET_DEMO: "datadogSdk",
+    TARGET_BRIDGE: "datadogSdk",
+    TARGET_GRADLE_PLUGIN: "datadogSdk"
 }
 
 
