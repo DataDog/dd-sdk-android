@@ -45,17 +45,17 @@ open class CheckThirdPartyLicensesTask : DefaultTask() {
 
         listedDependencies.filter { it.license is License.Empty }
             .forEach {
-                System.err.println("License for ${it.origin} is empty")
+                logger.warn("License for ${it.origin} is empty")
             }
 
         listedDependencies.filter { it.license is License.Raw }
             .forEach {
-                System.err.println("License for ${it.origin} is not valid : ${it.license}")
+                logger.warn("License for ${it.origin} is not valid : ${it.license}")
             }
 
         listedDependencies.filter { it.copyright == "__" }
             .forEach {
-                System.err.println("Copyright for ${it.origin} is missing")
+                logger.warn("Copyright for ${it.origin} is missing")
             }
     }
 
@@ -76,9 +76,9 @@ open class CheckThirdPartyLicensesTask : DefaultTask() {
 
             if (known == null && knownInOtherComponent == null) {
                 error = true
-                System.err.println("✗ $check dependency in ${extension.csvFile.name} : $dep")
+                logger.error("✗ $check dependency in ${extension.csvFile.name} : $dep")
             } else if (knownInOtherComponent != null) {
-                System.err.println(
+                logger.info(
                     "✗ $dep $check but exist in component ${knownInOtherComponent.component}"
                 )
             }

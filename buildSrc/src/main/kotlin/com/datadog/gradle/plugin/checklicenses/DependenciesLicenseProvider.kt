@@ -10,14 +10,18 @@ import com.datadog.gradle.utils.asSequence
 import javax.xml.parsers.DocumentBuilderFactory
 import org.gradle.api.Project
 import org.gradle.api.artifacts.component.ComponentIdentifier
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier
 import org.gradle.api.artifacts.result.ComponentSelectionCause
 import org.gradle.api.artifacts.result.ResolvedArtifactResult
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
 import org.gradle.maven.MavenModule
 import org.gradle.maven.MavenPomArtifact
+import org.slf4j.LoggerFactory
 import org.w3c.dom.Document
 
 class DependenciesLicenseProvider {
+
+    private val logger = LoggerFactory.getLogger(DependenciesLicenseProvider::class.java)
 
     fun getThirdPartyDependencies(
         project: Project,
@@ -42,7 +46,9 @@ class DependenciesLicenseProvider {
             .map { configuration ->
                 configuration.name to configuration.incoming.resolutionResult.allDependencies
                     .filterIsInstance<ResolvedDependencyResult>()
-                    .filter { transitive || it.isRoot() }
+                    .filter {
+                        transitive || (it.isRoot() && it.selected.id !is ProjectComponentIdentifier)
+                    }
                     .map { it.selected.id }
             }
             .filter { it.second.isNotEmpty() }
@@ -72,7 +78,7 @@ class DependenciesLicenseProvider {
         listDependencyOnce: Boolean
     ): List<ThirdPartyDependency> {
         val sorted = dependencies.map {
-            listThridPartyLicensesInConfiguration(
+            listThirdPartyLicensesInConfiguration(
                 it.key,
                 it.value,
                 pomFilesList
@@ -90,7 +96,7 @@ class DependenciesLicenseProvider {
                     result.add(it)
                     knownOrigins.add(it.origin)
                 } else {
-                    println("Ignoring ${it.component.csvName}/${it.origin}, already added.")
+                    logger.info("Ignoring ${it.component.csvName}/${it.origin}, already added.")
                 }
             }
             result
@@ -99,7 +105,7 @@ class DependenciesLicenseProvider {
         }
     }
 
-    private fun listThridPartyLicensesInConfiguration(
+    private fun listThirdPartyLicensesInConfiguration(
         configuration: String,
         dependencies: List<ComponentIdentifier>,
         pomFilesList: Map<ComponentIdentifier, String>
@@ -107,7 +113,7 @@ class DependenciesLicenseProvider {
         return dependencies.mapNotNull {
             val pomFilePath = pomFilesList[it]
             if (pomFilePath.isNullOrBlank()) {
-                System.err.println("Missing pom.xml file for dependency $it")
+                logger.warn("Missing pom.xml file for dependency $it")
                 null
             } else {
                 readLicenseFromPomFile(configuration, pomFilePath)
@@ -133,7 +139,7 @@ class DependenciesLicenseProvider {
                 copyright = "__"
             )
         } else {
-            System.err.println("Missing groupId in $path")
+            logger.warn("Missing groupId in $path")
             null
         }
     }
@@ -146,7 +152,7 @@ class DependenciesLicenseProvider {
         } else if (configuration in knownBuildConfiguration) {
             return ThirdPartyDependency.Component.BUILD
         } else {
-            System.err.println("Unknown configuration $configuration")
+            logger.info("Unknown configuration $configuration")
             return ThirdPartyDependency.Component.UNKNOWN
         }
     }
