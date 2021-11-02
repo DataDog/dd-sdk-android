@@ -411,6 +411,20 @@ internal class OreoFragmentLifecycleCallbacksTest {
     }
 
     @Test
+    fun `Lifecycle ReportFragment host is ignored`() {
+        mockFragment = Class.forName("androidx.lifecycle.ReportFragment").newInstance() as Fragment
+
+        testedLifecycleCallbacks.onFragmentActivityCreated(mock(), mockFragment, null)
+        testedLifecycleCallbacks.onFragmentAttached(mock(), mockFragment, null)
+        testedLifecycleCallbacks.onFragmentStarted(mock(), mockFragment)
+        testedLifecycleCallbacks.onFragmentResumed(mock(), mockFragment)
+        testedLifecycleCallbacks.onFragmentPaused(mock(), mockFragment)
+        testedLifecycleCallbacks.onFragmentDestroyed(mock(), mockFragment)
+
+        verifyZeroInteractions(mockGesturesTracker, mockRumMonitor, mockViewLoadingTimer)
+    }
+
+    @Test
     @TestTargetApi(Build.VERSION_CODES.O)
     fun `it will register the callback to fragment manager on O`() {
         // When

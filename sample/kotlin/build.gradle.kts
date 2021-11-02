@@ -41,7 +41,7 @@ android {
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
 
     defaultConfig {
-        minSdk = AndroidConfig.MIN_SDK
+        minSdk = AndroidConfig.MIN_SDK_FOR_COMPOSE
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
@@ -53,6 +53,14 @@ android {
                 cppFlags.add("-std=c++14")
             }
         }
+    }
+
+    buildFeatures {
+        compose = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.0.2"
     }
 
     testOptions {
@@ -113,6 +121,7 @@ dependencies {
     api(project(":dd-sdk-android-glide"))
     api(project(":dd-sdk-android-fresco"))
     api(project(":dd-sdk-android-sqldelight"))
+    api(project(":dd-sdk-android-compose"))
 
     implementation(libs.kotlin)
 
@@ -121,7 +130,12 @@ dependencies {
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
     implementation(libs.androidXConstraintLayout)
+    implementation(libs.androidXComposeNavigation)
+    implementation(libs.androidXComposeUi)
+    implementation(libs.androidXComposeUiTooling)
     implementation(libs.googleMaterial)
+    implementation("com.google.accompanist:accompanist-appcompat-theme:0.16.0")
+    implementation("androidx.compose.material:material:1.0.2")
     implementation("androidx.media:media:1.3.1")
     implementation("androidx.vectordrawable:vectordrawable:1.1.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")

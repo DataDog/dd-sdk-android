@@ -6,7 +6,10 @@ import,androidx.arch.core,Apache-2.0,Copyright 2018 The Android Open Source Proj
 import,androidx.asynclayoutinflater,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.cardview,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.collection,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.compose.animation,Apache-2.0,Copyright 2019 The Android Open Source Project
+import,androidx.compose.foundation,Apache-2.0,Copyright 2019 The Android Open Source Project
 import,androidx.compose.runtime,Apache-2.0,Copyright 2019 The Android Open Source Project
+import,androidx.compose.ui,Apache-2.0,Copyright 2019 The Android Open Source Project
 import,androidx.coordinatorlayout,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.core,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.cursoradapter,Apache-2.0,Copyright 2018 The Android Open Source Project
@@ -56,7 +59,9 @@ import,org.jetbrains,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin 
 import,org.jetbrains.kotlin,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
 import,org.jetbrains.kotlinx,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
 import,org.reactivestreams,"CC0",Copyright 2014 Reactive Streams
+import(test),androidx.autofill,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.exifinterface,Apache-2.0,Copyright 2018 The Android Open Source Project
+import(test),androidx.profileinstaller,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.test,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.test.espresso,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.test.ext,Apache-2.0,Copyright 2018 The Android Open Source Project

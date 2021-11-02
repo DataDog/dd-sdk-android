@@ -12,6 +12,7 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
+import com.datadog.gradle.config.publishingConfig
 import com.datadog.gradle.config.setLibraryVersion
 
 plugins {
@@ -20,10 +21,9 @@ plugins {
     kotlin("android")
 
     // Publish
-    // TODO RUMM-1612 enable these back once we have meaningful content to publish
-    // `maven-publish`
-    // signing
-    // id("org.jetbrains.dokka")
+    `maven-publish`
+    signing
+    id("org.jetbrains.dokka")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
@@ -32,6 +32,7 @@ plugins {
 
     // Tests
     jacoco
+    id("de.mobilej.unmock")
 
     // Internal Generation
     id("thirdPartyLicences")
@@ -83,6 +84,7 @@ dependencies {
     api(project(":dd-sdk-android"))
     implementation(libs.kotlin)
     implementation(libs.androidXComposeRuntime)
+    implementation(libs.androidXComposeNavigation)
 
     testImplementation(project(":tools:unit"))
     testImplementation(libs.bundles.jUnit5)
@@ -92,6 +94,11 @@ dependencies {
     detekt(libs.detektCli)
 }
 
+unMock {
+    keep("android.os.BaseBundle")
+    keep("android.os.Bundle")
+}
+
 kotlinConfig()
 detektConfig()
 ktLintConfig()
@@ -99,7 +106,7 @@ junitConfig()
 jacocoConfig()
 javadocConfig()
 dependencyUpdateConfig()
-// TODO RUMM-1612 uncomment once we have meaningful content in the module
-// publishingConfig(
-//    "A Jetpack Compose integration to use with the Datadog monitoring library for Android applications."
-// )
+publishingConfig(
+    "A Jetpack Compose integration to use with the Datadog monitoring library" +
+        " for Android applications."
+)

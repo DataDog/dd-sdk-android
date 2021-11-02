@@ -11,12 +11,9 @@ import android.os.Bundle
 import androidx.annotation.IdRes
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
-import androidx.navigation.ActivityNavigator
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.findNavController
-import androidx.navigation.fragment.DialogFragmentNavigator
-import androidx.navigation.fragment.FragmentNavigator
 import androidx.navigation.fragment.NavHostFragment
 import com.datadog.android.core.internal.utils.resolveViewName
 import com.datadog.android.core.internal.utils.runIfValid
@@ -124,17 +121,6 @@ class NavigationViewTrackingStrategy(
         }
     }
 
-    private fun NavDestination.getRumViewName(): String {
-        return when (this) {
-            is FragmentNavigator.Destination -> className
-            is DialogFragmentNavigator.Destination -> className
-            is ActivityNavigator.Destination -> {
-                component?.className ?: UNKNOWN_DESTINATION_NAME
-            }
-            else -> UNKNOWN_DESTINATION_NAME
-        }
-    }
-
     // endregion
 
     // region Internal
@@ -173,9 +159,5 @@ class NavigationViewTrackingStrategy(
                 advancedRumMonitor.updateViewLoadingTime(key, loadingTimeInNs, type)
             }
         }
-    }
-
-    companion object {
-        internal const val UNKNOWN_DESTINATION_NAME = "Unknown"
     }
 }

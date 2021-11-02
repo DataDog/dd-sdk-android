@@ -23,6 +23,7 @@
     <string name="title_vitals">Mobile Vitals</string>
     <string name="title_about">About…</string>
     <string name="title_gdpr">GDPR</string>
+    <string name="title_compose">Jetpack Compose</string>
 
     <string name="msg_native_crash">Native Crash</string>
     <string name="msg_java_crash">Java Crash</string>
