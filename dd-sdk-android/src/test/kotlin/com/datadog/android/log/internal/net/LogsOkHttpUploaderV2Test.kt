@@ -33,6 +33,7 @@ internal class LogsOkHttpUploaderV2Test : DataOkHttpUploaderV2Test<LogsOkHttpUpl
             fakeEndpoint,
             fakeClientToken,
             fakeSource,
+            fakeSdkVersion,
             callFactory,
             Logger(mock())
         )

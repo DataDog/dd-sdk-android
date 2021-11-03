@@ -6,7 +6,6 @@
 
 package com.datadog.android.log.internal.domain
 
-import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
@@ -27,6 +26,7 @@ internal class LogGenerator(
     internal val networkInfoProvider: NetworkInfoProvider?,
     internal val userInfoProvider: UserInfoProvider,
     internal val timeProvider: TimeProvider,
+    internal val sdkVersion: String,
     envName: String,
     appVersion: String
 ) {
@@ -75,7 +75,7 @@ internal class LogGenerator(
         val loggerInfo = LogEvent.Logger(
             name = loggerName,
             threadName = threadName ?: Thread.currentThread().name,
-            version = BuildConfig.SDK_VERSION_NAME
+            version = sdkVersion
         )
         return LogEvent(
             service = serviceName,

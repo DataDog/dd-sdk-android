@@ -45,6 +45,7 @@ internal object TracingFeature : SdkFeature<DDSpan, Configuration.Feature.Tracin
             configuration.endpointUrl,
             CoreFeature.clientToken,
             CoreFeature.sourceName,
+            CoreFeature.sdkVersion,
             CoreFeature.okHttpClient
         )
     }

@@ -14,17 +14,14 @@ internal open class TracesOkHttpUploaderV2(
     endpoint: String,
     clientToken: String,
     source: String,
+    sdkVersion: String,
     callFactory: Call.Factory
 ) : DataOkHttpUploaderV2(
     buildUrl(endpoint, TrackType.SPANS),
     clientToken,
     source,
+    sdkVersion,
     callFactory,
     CONTENT_TYPE_TEXT_UTF8,
     sdkLogger
-) {
-
-    companion object {
-        private const val TRACK_TYPE = "spans"
-    }
-}
+)

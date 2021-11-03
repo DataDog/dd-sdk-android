@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.net
 
 import android.os.Build
-import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.Logger
 import java.util.Locale
@@ -18,8 +17,9 @@ import okhttp3.RequestBody
 
 internal abstract class DataOkHttpUploaderV2(
     internal var intakeUrl: String,
-    internal var clientToken: String,
-    internal var source: String,
+    internal val clientToken: String,
+    internal val source: String,
+    internal val sdkVersion: String,
     internal val callFactory: Call.Factory,
     internal val contentType: String,
     internal val internalLogger: Logger
@@ -36,7 +36,7 @@ internal abstract class DataOkHttpUploaderV2(
     private val userAgent by lazy {
         System.getProperty(DataOkHttpUploader.SYSTEM_UA).let {
             if (it.isNullOrBlank()) {
-                "Datadog/${BuildConfig.SDK_VERSION_NAME} " +
+                "Datadog/$sdkVersion " +
                     "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
                     "${Build.MODEL} Build/${Build.ID})"
             } else {
@@ -100,7 +100,7 @@ internal abstract class DataOkHttpUploaderV2(
     private fun buildHeaders(builder: Request.Builder, requestId: String) {
         builder.addHeader(HEADER_API_KEY, clientToken)
         builder.addHeader(HEADER_EVP_ORIGIN, source)
-        builder.addHeader(HEADER_EVP_ORIGIN_VERSION, BuildConfig.SDK_VERSION_NAME)
+        builder.addHeader(HEADER_EVP_ORIGIN_VERSION, sdkVersion)
         builder.addHeader(HEADER_USER_AGENT, userAgent)
         builder.addHeader(HEADER_CONTENT_TYPE, contentType)
         builder.addHeader(HEADER_REQUEST_ID, requestId)

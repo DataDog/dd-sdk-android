@@ -6,7 +6,6 @@
 
 package com.datadog.android.log.internal.domain
 
-import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
@@ -86,6 +85,9 @@ internal class LogGeneratorTest {
     lateinit var fakeLogMessage: String
     lateinit var fakeThrowable: Throwable
 
+    @StringForgery
+    lateinit var fakeSdkVersion: String
+
     @StringForgery(StringForgeryType.HEXADECIMAL)
     lateinit var fakeSpanId: String
 
@@ -134,6 +136,7 @@ internal class LogGeneratorTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockTimeProvider,
+            fakeSdkVersion,
             fakeEnvName,
             fakeAppVersion
         )
@@ -221,7 +224,7 @@ internal class LogGeneratorTest {
         )
 
         // THEN
-        assertThat(log).hasLoggerVersion(BuildConfig.SDK_VERSION_NAME)
+        assertThat(log).hasLoggerVersion(fakeSdkVersion)
     }
 
     @Test
@@ -379,6 +382,7 @@ internal class LogGeneratorTest {
             null,
             mockUserInfoProvider,
             mockTimeProvider,
+            fakeSdkVersion,
             fakeEnvName,
             fakeAppVersion
         )
@@ -407,6 +411,7 @@ internal class LogGeneratorTest {
             null,
             mockUserInfoProvider,
             mockTimeProvider,
+            fakeSdkVersion,
             fakeEnvName,
             fakeAppVersion
         )
@@ -451,6 +456,7 @@ internal class LogGeneratorTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockTimeProvider,
+            fakeSdkVersion,
             "",
             fakeAppVersion
         )
@@ -497,6 +503,7 @@ internal class LogGeneratorTest {
             mockNetworkInfoProvider,
             mockUserInfoProvider,
             mockTimeProvider,
+            fakeSdkVersion,
             fakeEnvName,
             ""
         )

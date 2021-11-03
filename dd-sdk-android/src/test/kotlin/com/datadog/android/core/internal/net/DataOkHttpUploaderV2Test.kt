@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.net
 
 import android.os.Build
-import com.datadog.android.BuildConfig
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
@@ -71,6 +70,9 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
 
     @StringForgery
     lateinit var fakeSource: String
+
+    @StringForgery
+    lateinit var fakeSdkVersion: String
 
     lateinit var fakeUserAgent: String
 
@@ -359,7 +361,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
     private fun verifyRequestHeaders(headers: Headers) {
         assertThat(headers.get("DD-API-KEY")).isEqualTo(fakeClientToken)
         assertThat(headers.get("DD-EVP-ORIGIN")).isEqualTo(fakeSource)
-        assertThat(headers.get("DD-EVP-ORIGIN-VERSION")).isEqualTo(BuildConfig.SDK_VERSION_NAME)
+        assertThat(headers.get("DD-EVP-ORIGIN-VERSION")).isEqualTo(fakeSdkVersion)
         assertThat(headers.get("DD-REQUEST-ID")).matches {
             UUID.fromString(it) != UUID(0, 0)
         }
@@ -367,7 +369,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
         assertThat(headers.get("Content-Type")).isEqualTo(testedUploader.contentType)
 
         val expectedUserAgent = if (fakeUserAgent.isBlank()) {
-            "Datadog/${BuildConfig.SDK_VERSION_NAME} " +
+            "Datadog/$fakeSdkVersion " +
                 "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
                 "${Build.MODEL} Build/${Build.ID})"
         } else {

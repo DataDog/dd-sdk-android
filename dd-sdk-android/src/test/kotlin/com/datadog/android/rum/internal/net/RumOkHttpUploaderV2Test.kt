@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.net
 
 import android.app.Application
-import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.net.DataOkHttpUploaderV2
 import com.datadog.android.core.internal.net.DataOkHttpUploaderV2Test
 import com.datadog.android.rum.RumAttributes
@@ -40,6 +39,7 @@ internal class RumOkHttpUploaderV2Test : DataOkHttpUploaderV2Test<RumOkHttpUploa
             fakeEndpoint,
             fakeClientToken,
             fakeSource,
+            fakeSdkVersion,
             callFactory
         )
     }
@@ -52,7 +52,7 @@ internal class RumOkHttpUploaderV2Test : DataOkHttpUploaderV2Test<RumOkHttpUploa
         val tags = mutableListOf(
             "${RumAttributes.SERVICE_NAME}:${coreFeature.fakeServiceName}",
             "${RumAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}",
-            "${RumAttributes.SDK_VERSION}:${BuildConfig.SDK_VERSION_NAME}",
+            "${RumAttributes.SDK_VERSION}:$fakeSdkVersion",
             "${RumAttributes.ENV}:${coreFeature.fakeEnvName}"
         )
 

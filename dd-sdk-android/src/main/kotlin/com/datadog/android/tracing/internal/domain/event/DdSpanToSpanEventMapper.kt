@@ -6,7 +6,6 @@
 
 package com.datadog.android.tracing.internal.domain.event
 
-import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.Mapper
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -76,7 +75,7 @@ internal class DdSpanToSpanEventMapper(
             dd = SpanEvent.Dd(),
             span = SpanEvent.Span(),
             tracer = SpanEvent.Tracer(
-                version = BuildConfig.SDK_VERSION_NAME
+                version = CoreFeature.sdkVersion
             ),
             usr = usrMeta,
             network = networkInfoMeta,
