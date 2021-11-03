@@ -9,7 +9,7 @@ package com.datadog.android.error.internal
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
-import com.datadog.android.log.internal.net.LogsOkHttpUploader
+import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -75,11 +75,11 @@ internal class CrashReportsFeatureTest :
         val uploader = testedFeature.createUploader(fakeConfigurationFeature)
 
         // Then
-        assertThat(uploader).isInstanceOf(LogsOkHttpUploader::class.java)
-        val crashUploader = uploader as LogsOkHttpUploader
-        assertThat(crashUploader.url).startsWith(fakeConfigurationFeature.endpointUrl)
-        assertThat(crashUploader.url).endsWith(CoreFeature.clientToken)
-        assertThat(crashUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
+        assertThat(uploader).isInstanceOf(LogsOkHttpUploaderV2::class.java)
+        val crashReportsUploader = uploader as LogsOkHttpUploaderV2
+        assertThat(crashReportsUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
+        assertThat(crashReportsUploader.intakeUrl).endsWith("/api/v2/logs")
+        assertThat(crashReportsUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
     }
 
     @Test

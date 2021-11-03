@@ -14,7 +14,7 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.domain.LogGenerator
-import com.datadog.android.log.internal.net.LogsOkHttpUploader
+import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
 import com.datadog.android.log.model.LogEvent
 
 internal object CrashReportsFeature : SdkFeature<LogEvent, Configuration.Feature.CrashReport>() {
@@ -44,10 +44,12 @@ internal object CrashReportsFeature : SdkFeature<LogEvent, Configuration.Feature
     }
 
     override fun createUploader(configuration: Configuration.Feature.CrashReport): DataUploader {
-        return LogsOkHttpUploader(
+        return LogsOkHttpUploaderV2(
             configuration.endpointUrl,
             CoreFeature.clientToken,
-            CoreFeature.okHttpClient
+            CoreFeature.sourceName,
+            CoreFeature.okHttpClient,
+            sdkLogger
         )
     }
 
