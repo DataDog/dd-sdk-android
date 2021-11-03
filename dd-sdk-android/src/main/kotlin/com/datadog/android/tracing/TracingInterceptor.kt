@@ -337,7 +337,7 @@ internal constructor(
                 "Configuration.Builder::setFirstPartyHosts() method."
         internal const val WARNING_TRACING_DISABLED =
             "You added a TracingInterceptor to your OkHttpClient, " +
-                "but you did not enable the TracesFeature. " +
+                "but you did not enable the TracingFeature. " +
                 "Your requests won't be traced."
         internal const val WARNING_DEFAULT_TRACER =
             "You added a TracingInterceptor to your OkHttpClient, " +
