@@ -104,6 +104,9 @@ internal class DatadogTest {
 
         // Prevent crash when initializing RumFeature
         mockChoreographerInstance()
+
+        CoreFeature.sdkVersion = CoreFeature.DEFAULT_SDK_VERSION
+        CoreFeature.sourceName = CoreFeature.DEFAULT_SOURCE_NAME
     }
 
     @AfterEach
@@ -488,6 +491,38 @@ internal class DatadogTest {
     }
 
     @Test
+    fun `𝕄 use default source name 𝕎 applyAdditionalConfig(config) { with source name !string }`(
+        forge: Forge
+    ) {
+        // Given
+        val config = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .setAdditionalConfiguration(mapOf(Datadog.DD_SOURCE_TAG to forge.anInt()))
+            .build()
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+
+        // When
+        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
+
+        // Then
+        assertThat(CoreFeature.sourceName).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
+        assertThat(
+            arrayOf(
+                LogsFeature.uploader,
+                RumFeature.uploader,
+                TracingFeature.uploader,
+                CrashReportsFeature.uploader
+            )
+                .map { (it as DataOkHttpUploaderV2).source }
+        )
+            .containsOnly(CoreFeature.DEFAULT_SOURCE_NAME)
+    }
+
+    @Test
     fun `𝕄 use default source name 𝕎 applyAdditionalConfig(config) { without source name }`(
         forge: Forge
     ) {
@@ -517,6 +552,136 @@ internal class DatadogTest {
                 .map { (it as DataOkHttpUploaderV2).source }
         )
             .containsOnly(CoreFeature.DEFAULT_SOURCE_NAME)
+    }
+
+    @Test
+    fun `𝕄 apply sdk version 𝕎 applyAdditionalConfig(config) { with sdk version }`(
+        @StringForgery sdkVersion: String
+    ) {
+        // Given
+        val config = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .setAdditionalConfiguration(mapOf(Datadog.DD_SDK_VERSION_TAG to sdkVersion))
+            .build()
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+
+        // When
+        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
+
+        // Then
+        assertThat(CoreFeature.sdkVersion).isEqualTo(sdkVersion)
+        assertThat(
+            arrayOf(
+                LogsFeature.uploader,
+                RumFeature.uploader,
+                TracingFeature.uploader,
+                CrashReportsFeature.uploader
+            )
+                .map { (it as DataOkHttpUploaderV2).sdkVersion }
+        )
+            .containsOnly(sdkVersion)
+    }
+
+    @Test
+    fun `𝕄 use default sdk version 𝕎 applyAdditionalConfig(config) { with empty sdk version }`(
+        forge: Forge
+    ) {
+        // Given
+        val config = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .setAdditionalConfiguration(
+                mapOf(Datadog.DD_SDK_VERSION_TAG to forge.aWhitespaceString())
+            )
+            .build()
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+
+        // When
+        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
+
+        // Then
+        assertThat(CoreFeature.sdkVersion).isEqualTo(CoreFeature.DEFAULT_SDK_VERSION)
+        assertThat(
+            arrayOf(
+                LogsFeature.uploader,
+                RumFeature.uploader,
+                TracingFeature.uploader,
+                CrashReportsFeature.uploader
+            )
+                .map { (it as DataOkHttpUploaderV2).sdkVersion }
+        )
+            .containsOnly(CoreFeature.DEFAULT_SDK_VERSION)
+    }
+
+    @Test
+    fun `𝕄 use default sdk version 𝕎 applyAdditionalConfig(config) { with sdk version !string }`(
+        forge: Forge
+    ) {
+        // Given
+        val config = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .setAdditionalConfiguration(mapOf(Datadog.DD_SDK_VERSION_TAG to forge.anInt()))
+            .build()
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+
+        // When
+        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
+
+        // Then
+        assertThat(CoreFeature.sdkVersion).isEqualTo(CoreFeature.DEFAULT_SDK_VERSION)
+        assertThat(
+            arrayOf(
+                LogsFeature.uploader,
+                RumFeature.uploader,
+                TracingFeature.uploader,
+                CrashReportsFeature.uploader
+            )
+                .map { (it as DataOkHttpUploaderV2).sdkVersion }
+        )
+            .containsOnly(CoreFeature.DEFAULT_SDK_VERSION)
+    }
+
+    @Test
+    fun `𝕄 use default sdk version 𝕎 applyAdditionalConfig(config) { without sdk version }`(
+        forge: Forge
+    ) {
+        // Given
+        val config = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .setAdditionalConfiguration(forge.aMap { anAsciiString() to aString() })
+            .build()
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+
+        // When
+        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
+
+        // Then
+        assertThat(CoreFeature.sdkVersion).isEqualTo(CoreFeature.DEFAULT_SDK_VERSION)
+        assertThat(
+            arrayOf(
+                LogsFeature.uploader,
+                RumFeature.uploader,
+                TracingFeature.uploader,
+                CrashReportsFeature.uploader
+            )
+                .map { (it as DataOkHttpUploaderV2).sdkVersion }
+        )
+            .containsOnly(CoreFeature.DEFAULT_SDK_VERSION)
     }
 
     // region Internal
