@@ -118,6 +118,7 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
             configuration.endpointUrl,
             CoreFeature.clientToken,
             CoreFeature.sourceName,
+            CoreFeature.sdkVersion,
             CoreFeature.okHttpClient
         )
     }

@@ -39,6 +39,7 @@ internal object LogsFeature : SdkFeature<LogEvent, Configuration.Feature.Logs>()
             configuration.endpointUrl,
             CoreFeature.clientToken,
             CoreFeature.sourceName,
+            CoreFeature.sdkVersion,
             CoreFeature.okHttpClient,
             sdkLogger
         )

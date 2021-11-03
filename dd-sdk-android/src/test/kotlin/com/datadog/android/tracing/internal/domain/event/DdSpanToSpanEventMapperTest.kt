@@ -6,7 +6,6 @@
 
 package com.datadog.android.tracing.internal.domain.event
 
-import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
@@ -65,12 +64,16 @@ internal class DdSpanToSpanEventMapperTest {
     @StringForgery(regex = "[0-9]\\.[0-9]\\.[0-9]")
     lateinit var fakeClientPackageVersion: String
 
+    @StringForgery
+    lateinit var fakeSdkVersion: String
+
     @LongForgery
     var fakeServerOffsetNanos: Long = 0L
 
     @BeforeEach
     fun `set up`() {
         CoreFeature.packageVersion = fakeClientPackageVersion
+        CoreFeature.sdkVersion = fakeSdkVersion
         whenever(mockTimeProvider.getServerOffsetNanos()).thenReturn(fakeServerOffsetNanos)
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
@@ -101,7 +104,7 @@ internal class DdSpanToSpanEventMapperTest {
             .hasErrorFlag(fakeSpan.error.toLong())
             .hasSpanStartTime(fakeSpan.startTime + fakeServerOffsetNanos)
             .hasSpanDuration(fakeSpan.durationNano)
-            .hasTracerVersion(BuildConfig.SDK_VERSION_NAME)
+            .hasTracerVersion(fakeSdkVersion)
             .hasClientPackageVersion(fakeClientPackageVersion)
             .hasNetworkInfo(fakeNetworkInfo)
             .hasUserInfo(fakeUserInfo)

@@ -30,6 +30,7 @@ internal class TracesOkHttpUploaderV2Test : DataOkHttpUploaderV2Test<TracesOkHtt
             fakeEndpoint,
             fakeClientToken,
             fakeSource,
+            fakeSdkVersion,
             callFactory
         )
     }
