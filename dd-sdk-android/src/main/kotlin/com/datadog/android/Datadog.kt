@@ -78,13 +78,13 @@ object Datadog {
         // always initialize Core Features first
         CoreFeature.initialize(appContext, credentials, configuration.coreConfig, trackingConsent)
 
+        applyAdditionalConfiguration(configuration.additionalConfig)
+
         initializeLogsFeature(configuration.logsConfig, appContext)
         initializeTracingFeature(configuration.tracesConfig, appContext)
         initializeRumFeature(configuration.rumConfig, appContext)
         initializeCrashReportFeature(configuration.crashReportConfig, appContext)
         initializeInternalLogsFeature(configuration.internalLogsConfig, appContext)
-
-        applyAdditionalConfiguration(configuration.additionalConfig)
 
         CoreFeature.ndkCrashHandler.handleNdkCrash(
             LogsFeature.persistenceStrategy.getWriter(),
@@ -272,8 +272,11 @@ object Datadog {
     }
 
     private fun applyAdditionalConfiguration(
-        @Suppress("UNUSED_PARAMETER") additionalConfiguration: Map<String, Any>
+        additionalConfiguration: Map<String, Any>
     ) {
+        // NOTE: be careful with the logic in this method - it is a part of initialization sequence,
+        // so some things may yet not be initialized -> not accessible, some things may already be
+        // initialized and be not mutable anymore
         additionalConfiguration[DD_SOURCE_TAG]?.let {
             if (it.toString().isNotBlank()) {
                 CoreFeature.sourceName = it.toString()
