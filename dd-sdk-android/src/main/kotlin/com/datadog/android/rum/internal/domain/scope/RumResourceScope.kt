@@ -221,7 +221,8 @@ internal class RumResourceScope(
                     statusCode = statusCode ?: 0,
                     provider = resolveErrorProvider()
                 ),
-                type = resolveErrorType(statusCode, throwable)
+                type = resolveErrorType(statusCode, throwable),
+                sourceType = ErrorEvent.SourceType.ANDROID
             ),
             action = context.actionId?.let { ErrorEvent.Action(it) },
             view = ErrorEvent.View(

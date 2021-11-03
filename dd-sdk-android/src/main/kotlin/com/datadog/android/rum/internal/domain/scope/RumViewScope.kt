@@ -112,7 +112,7 @@ internal open class RumViewScope(
 
     private var refreshRateScale: Double = 1.0
     private var lastFrameRateInfo: VitalInfo? = null
-    private var frameRateVitalListenr: VitalListener = object : VitalListener {
+    private var frameRateVitalListener: VitalListener = object : VitalListener {
         override fun onVitalUpdate(info: VitalInfo) {
             lastFrameRateInfo = info
         }
@@ -125,7 +125,7 @@ internal open class RumViewScope(
         attributes.putAll(GlobalRum.globalAttributes)
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
-        frameRateVitalMonitor.register(frameRateVitalListenr)
+        frameRateVitalMonitor.register(frameRateVitalListener)
 
         detectRefreshRateScale(key)
     }
@@ -284,7 +284,8 @@ internal open class RumViewScope(
                 source = event.source.toSchemaSource(),
                 stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
                 isCrash = event.isFatal,
-                type = errorType
+                type = errorType,
+                sourceType = event.sourceType.toSchemaSourceType()
             ),
             action = context.actionId?.let { ErrorEvent.Action(it) },
             view = ErrorEvent.View(

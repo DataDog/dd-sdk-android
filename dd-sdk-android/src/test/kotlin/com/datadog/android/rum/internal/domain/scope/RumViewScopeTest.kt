@@ -28,6 +28,7 @@ import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
+import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.vitals.VitalInfo
@@ -2629,6 +2630,7 @@ internal class RumViewScopeTest {
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
+        @Forgery sourceType: RumErrorSourceType,
         forge: Forge
     ) {
         testedScope.activeActionScope = mockActionScope
@@ -2639,7 +2641,8 @@ internal class RumViewScopeTest {
             throwable,
             null,
             false,
-            attributes
+            attributes,
+            sourceType = sourceType
         )
 
         // When
@@ -2664,6 +2667,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                 }
@@ -2676,12 +2680,15 @@ internal class RumViewScopeTest {
     fun `𝕄 send event 𝕎 handleEvent(AddError) {throwable=null, stacktrace=null, fatal=false}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
+        @Forgery sourceType: RumErrorSourceType,
         forge: Forge
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        fakeEvent = RumRawEvent.AddError(message, source, null, null, false, attributes)
+        fakeEvent = RumRawEvent.AddError(
+            message, source, null, null, false, attributes, sourceType = sourceType
+        )
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -2704,6 +2711,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(null)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                 }
@@ -2716,12 +2724,16 @@ internal class RumViewScopeTest {
     fun `𝕄 send event 𝕎 handleEvent(AddError) {throwable=null, stacktrace=null, fatal=true}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
+        @Forgery sourceType: RumErrorSourceType,
         forge: Forge
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        fakeEvent = RumRawEvent.AddError(message, source, null, null, true, attributes)
+        fakeEvent = RumRawEvent.AddError(
+            message, source, null, null, true, attributes,
+            sourceType = sourceType
+        )
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -2743,6 +2755,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(null)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                 }
@@ -2784,6 +2797,7 @@ internal class RumViewScopeTest {
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
+        @Forgery sourceType: RumErrorSourceType,
         forge: Forge
     ) {
         // Given
@@ -2794,7 +2808,8 @@ internal class RumViewScopeTest {
             throwable,
             null,
             false,
-            emptyMap()
+            emptyMap(),
+            sourceType = sourceType
         )
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
         GlobalRum.globalAttributes.putAll(attributes)
@@ -2821,6 +2836,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                 }
@@ -2834,6 +2850,7 @@ internal class RumViewScopeTest {
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
+        @Forgery sourceType: RumErrorSourceType,
         forge: Forge
     ) {
         // Given
@@ -2845,7 +2862,8 @@ internal class RumViewScopeTest {
             throwable,
             null,
             true,
-            attributes
+            attributes,
+            sourceType = sourceType
         )
 
         // When
@@ -2869,6 +2887,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                 }
@@ -2911,6 +2930,7 @@ internal class RumViewScopeTest {
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         @StringForgery errorType: String,
+        @Forgery sourceType: RumErrorSourceType,
         forge: Forge
     ) {
         // Given
@@ -2923,7 +2943,8 @@ internal class RumViewScopeTest {
             null,
             false,
             attributes,
-            type = errorType
+            type = errorType,
+            sourceType = sourceType
         )
 
         // When
@@ -2948,6 +2969,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(errorType)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                 }
@@ -2961,6 +2983,7 @@ internal class RumViewScopeTest {
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
+        @Forgery sourceType: RumErrorSourceType,
         forge: Forge
     ) {
         // Given
@@ -2971,7 +2994,8 @@ internal class RumViewScopeTest {
             throwable,
             null,
             true,
-            emptyMap()
+            emptyMap(),
+            sourceType = sourceType
         )
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
         GlobalRum.globalAttributes.putAll(attributes)
@@ -2997,6 +3021,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                 }

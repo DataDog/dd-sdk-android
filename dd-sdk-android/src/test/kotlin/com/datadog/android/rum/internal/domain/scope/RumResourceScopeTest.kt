@@ -773,6 +773,7 @@ internal class RumResourceScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                 }
@@ -839,6 +840,7 @@ internal class RumResourceScopeTest {
                     hasProviderDomain(brokenUrl)
                     hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                 }
@@ -895,6 +897,7 @@ internal class RumResourceScopeTest {
                     hasProviderDomain(URL(fakeUrl).host)
                     hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                 }
@@ -949,6 +952,7 @@ internal class RumResourceScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
@@ -1010,6 +1014,7 @@ internal class RumResourceScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)

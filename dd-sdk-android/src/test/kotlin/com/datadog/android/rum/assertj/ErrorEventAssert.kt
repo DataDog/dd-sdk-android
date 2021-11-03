@@ -332,6 +332,15 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasErrorSourceType(expected: ErrorEvent.SourceType?): ErrorEventAssert {
+        assertThat(actual.error.sourceType)
+            .overridingErrorMessage(
+                "Expected event data to have error source type $expected" +
+                    " but was ${actual.error.sourceType}"
+            ).isEqualTo(expected)
+        return this
+    }
+
     fun hasLiteSessionPlan(): ErrorEventAssert {
         assertThat(actual.dd.session?.plan)
             .overridingErrorMessage(
