@@ -16,6 +16,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.asTime
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -24,6 +25,7 @@ import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
+import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadPoolExecutor
@@ -186,6 +188,7 @@ internal class DatadogRumMonitor(
     ) {
         val eventTime = getEventTime(attributes)
         val errorType = getErrorType(attributes)
+        val errorSourceType = getErrorSourceType(attributes) ?: RumErrorSourceType.ANDROID
         handleEvent(
             RumRawEvent.AddError(
                 message,
@@ -195,7 +198,8 @@ internal class DatadogRumMonitor(
                 false,
                 attributes,
                 eventTime,
-                errorType
+                errorType,
+                errorSourceType
             )
         )
     }
@@ -325,6 +329,21 @@ internal class DatadogRumMonitor(
 
     private fun getErrorType(attributes: Map<String, Any?>): String? {
         return attributes[RumAttributes.INTERNAL_ERROR_TYPE] as? String
+    }
+
+    private fun getErrorSourceType(attributes: Map<String, Any?>): RumErrorSourceType? {
+        val sourceType = attributes[RumAttributes.INTERNAL_ERROR_SOURCE_TYPE] as? String
+
+        return if (sourceType == null) {
+            return null
+        } else {
+            when (sourceType.lowercase(Locale.US)) {
+                "android" -> RumErrorSourceType.ANDROID
+                "react-native" -> RumErrorSourceType.REACT_NATIVE
+                "browser" -> RumErrorSourceType.BROWSER
+                else -> RumErrorSourceType.ANDROID
+            }
+        }
     }
 
     // endregion

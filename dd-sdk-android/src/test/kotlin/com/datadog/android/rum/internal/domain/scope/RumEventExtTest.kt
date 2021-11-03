@@ -10,6 +10,7 @@ import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.utils.forge.Configurator
@@ -107,6 +108,17 @@ internal class RumEventExtTest {
     ) {
         // When
         val result = kind.toSchemaSource()
+
+        // Then
+        assertThat(kind.name).isEqualTo(result.name)
+    }
+
+    @RepeatedTest(6)
+    fun `𝕄 return error source type 𝕎 toSchemaSourceType()`(
+        @Forgery kind: RumErrorSourceType
+    ) {
+        // When
+        val result = kind.toSchemaSourceType()
 
         // Then
         assertThat(kind.name).isEqualTo(result.name)

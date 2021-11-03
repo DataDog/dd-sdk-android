@@ -12,6 +12,7 @@ import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -62,6 +63,14 @@ internal fun RumErrorSource.toSchemaSource(): ErrorEvent.Source {
         RumErrorSource.LOGGER -> ErrorEvent.Source.LOGGER
         RumErrorSource.AGENT -> ErrorEvent.Source.AGENT
         RumErrorSource.WEBVIEW -> ErrorEvent.Source.WEBVIEW
+    }
+}
+
+internal fun RumErrorSourceType.toSchemaSourceType(): ErrorEvent.SourceType {
+    return when (this) {
+        RumErrorSourceType.ANDROID -> ErrorEvent.SourceType.ANDROID
+        RumErrorSourceType.BROWSER -> ErrorEvent.SourceType.BROWSER
+        RumErrorSourceType.REACT_NATIVE -> ErrorEvent.SourceType.REACT_NATIVE
     }
 }
 
