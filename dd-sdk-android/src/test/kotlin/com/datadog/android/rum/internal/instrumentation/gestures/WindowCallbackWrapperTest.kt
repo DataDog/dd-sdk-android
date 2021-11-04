@@ -21,18 +21,17 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
-import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.lang.ref.WeakReference
@@ -70,11 +69,18 @@ internal class WindowCallbackWrapperTest {
     @Mock
     lateinit var mockResources: Resources
 
+    @Mock
+    lateinit var mockMotionEvent: MotionEvent
+
+    @Mock
+    lateinit var mockCopiedMotionEvent: MotionEvent
+
     @BeforeEach
     fun `set up`() {
         testedWrapper = WindowCallbackWrapper(
             mockCallback,
-            mockGestureDetector
+            mockGestureDetector,
+            copyEvent = { mockCopiedMotionEvent }
         )
         whenever(mockAppContext.resources).thenReturn(mockResources)
         CoreFeature.contextRef = WeakReference(mockAppContext)
@@ -85,121 +91,93 @@ internal class WindowCallbackWrapperTest {
         CoreFeature.contextRef = WeakReference(null)
     }
 
+    // region dispatchTouchEvent
+
     @Test
-    fun `dispatchTouchEvent will delegate to wrapper`(forge: Forge) {
+    fun `𝕄 delegate event to wrapped callback 𝕎 dispatchTouchEvent()`(
+        @BoolForgery wrappedResult: Boolean
+    ) {
         // Given
-        val motionEvent: MotionEvent = mock()
-        val spyTest = spy(testedWrapper)
-        val aBoolean = forge.aBool()
-        whenever(mockCallback.dispatchTouchEvent(motionEvent)).thenReturn(aBoolean)
-        doReturn(motionEvent).`when`(spyTest).copyEvent(motionEvent)
+        whenever(mockCallback.dispatchTouchEvent(mockMotionEvent)).thenReturn(wrappedResult)
 
         // When
-        val returnedValue = spyTest.dispatchTouchEvent(motionEvent)
+        val returnedValue = testedWrapper.dispatchTouchEvent(mockMotionEvent)
 
         // Then
-        assertThat(returnedValue).isEqualTo(aBoolean)
-        verify(mockCallback).dispatchTouchEvent(motionEvent)
+        assertThat(returnedValue).isEqualTo(wrappedResult)
+        verify(mockCallback).dispatchTouchEvent(mockMotionEvent)
     }
 
     @Test
-    fun `dispatchTouchEvent will pass a copy of the event to the gesture detector`() {
-        // Given
-        val motionEvent: MotionEvent = mock()
-        val copyMotionEvent: MotionEvent = mock()
-        val spyTest = spy(testedWrapper)
-        doReturn(copyMotionEvent).`when`(spyTest).copyEvent(motionEvent)
-
+    fun `𝕄 send copy of event to gesture detector 𝕎 dispatchTouchEvent()`() {
         // When
-        spyTest.dispatchTouchEvent(motionEvent)
+        testedWrapper.dispatchTouchEvent(mockMotionEvent)
 
         // Then
-        verify(mockGestureDetector).onTouchEvent(copyMotionEvent)
-        verify(copyMotionEvent).recycle()
+        verify(mockGestureDetector).onTouchEvent(mockCopiedMotionEvent)
+        verify(mockCopiedMotionEvent).recycle()
     }
 
     @Test
-    fun `dispatchTouchEvent won't call gesture detector when null is received`() {
-        // Given
-        val spyTest = spy(testedWrapper)
-
+    fun `𝕄 not call gesture detector 𝕎 dispatchTouchEvent() {null event}`() {
         // When
-        spyTest.dispatchTouchEvent(null)
+        testedWrapper.dispatchTouchEvent(null)
 
         // Then
         verifyZeroInteractions(mockGestureDetector)
-        verify(spyTest, never()).copyEvent(any())
         verify(mockCallback).dispatchTouchEvent(null)
     }
 
     @Test
-    fun `menu item selection will trigger a Rum UserActionEvent`(forge: Forge) {
-        // Given
-        val returnValue = forge.aBool()
-        val itemTitle = forge.aString()
-        val featureId = forge.anInt()
-        val itemId = forge.anInt()
-        val itemResourceName = forge.aString()
-        whenever(mockResources.getResourceEntryName(itemId)).thenReturn(itemResourceName)
-        val menuItem: MenuItem = mock {
-            whenever(it.itemId).thenReturn(itemId)
-            whenever(it.title).thenReturn(itemTitle)
-        }
-        whenever(mockCallback.onMenuItemSelected(featureId, menuItem)).thenReturn(returnValue)
-
-        // When
-        assertThat(testedWrapper.onMenuItemSelected(featureId, menuItem)).isEqualTo(returnValue)
-
-        // Then
-        inOrder(mockCallback, rumMonitor.mockInstance) {
-            verify(rumMonitor.mockInstance).addUserAction(
-                eq(RumActionType.TAP),
-                eq(""),
-                argThat {
-                    val targetClassName = menuItem.javaClass.canonicalName
-                    this[RumAttributes.ACTION_TARGET_CLASS_NAME] == targetClassName &&
-                        this[RumAttributes.ACTION_TARGET_RESOURCE_ID] == itemResourceName &&
-                        this[RumAttributes.ACTION_TARGET_TITLE] == itemTitle
-                }
-            )
-            verify(mockCallback).onMenuItemSelected(featureId, menuItem)
-        }
-    }
-
-    @Test
-    fun `M use the custom target name W onMenuItemSelected { custom target not empty }`(
-        forge: Forge
+    fun `𝕄 prevent crash 𝕎 dispatchTouchEvent() {wrapped callback throws exception}`(
+        @Forgery exception: Exception
     ) {
         // Given
-        val returnValue = forge.aBool()
-        val itemTitle = forge.aString()
-        val featureId = forge.anInt()
-        val itemId = forge.anInt()
-        val itemResourceName = forge.aString()
-        val fakeCustomTargetName = forge.anAlphabeticalString()
+        whenever(mockCallback.dispatchTouchEvent(mockMotionEvent)).thenThrow(exception)
+
+        // When
+        val returnedValue = testedWrapper.dispatchTouchEvent(mockMotionEvent)
+
+        // Then
+        assertThat(returnedValue).isTrue()
+        verify(mockCallback).dispatchTouchEvent(mockMotionEvent)
+    }
+
+    // endregion
+
+    // region onMenuItemSelected
+
+    @Test
+    fun `M trigger RUM Action with custom name W onMenuItemSelected() {custom target not empty}`(
+        @StringForgery itemTitle: String,
+        @StringForgery itemResourceName: String,
+        @StringForgery customTargetName: String,
+        @IntForgery itemId: Int,
+        @IntForgery featureId: Int
+    ) {
+        // Given
         whenever(mockResources.getResourceEntryName(itemId)).thenReturn(itemResourceName)
         val menuItem: MenuItem = mock {
             whenever(it.itemId).thenReturn(itemId)
             whenever(it.title).thenReturn(itemTitle)
         }
         val mockInteractionPredicate: InteractionPredicate = mock {
-            whenever(it.getTargetName(menuItem)).thenReturn(fakeCustomTargetName)
+            whenever(it.getTargetName(menuItem)).thenReturn(customTargetName)
         }
         testedWrapper = WindowCallbackWrapper(
             mockCallback,
             mockGestureDetector,
             mockInteractionPredicate
         )
-        whenever(mockCallback.onMenuItemSelected(featureId, menuItem)).thenReturn(returnValue)
 
         // When
-        assertThat(testedWrapper.onMenuItemSelected(featureId, menuItem)).isEqualTo(returnValue)
+        testedWrapper.onMenuItemSelected(featureId, menuItem)
 
         // Then
         inOrder(mockCallback, rumMonitor.mockInstance) {
             verify(rumMonitor.mockInstance).addUserAction(
                 eq(RumActionType.TAP),
-                eq(fakeCustomTargetName),
+                eq(customTargetName),
                 argThat {
                     val targetClassName = menuItem.javaClass.canonicalName
                     this[RumAttributes.ACTION_TARGET_CLASS_NAME] == targetClassName &&
@@ -212,15 +190,13 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `M use an empty target name W onMenuItemSelected { custom target empty }`(
-        forge: Forge
+    fun `M trigger RUM Action with empty name W onMenuItemSelected() { custom target empty }`(
+        @StringForgery itemTitle: String,
+        @StringForgery itemResourceName: String,
+        @IntForgery itemId: Int,
+        @IntForgery featureId: Int
     ) {
         // Given
-        val returnValue = forge.aBool()
-        val itemTitle = forge.aString()
-        val featureId = forge.anInt()
-        val itemId = forge.anInt()
-        val itemResourceName = forge.aString()
         whenever(mockResources.getResourceEntryName(itemId)).thenReturn(itemResourceName)
         val menuItem: MenuItem = mock {
             whenever(it.itemId).thenReturn(itemId)
@@ -234,10 +210,9 @@ internal class WindowCallbackWrapperTest {
             mockGestureDetector,
             mockInteractionPredicate
         )
-        whenever(mockCallback.onMenuItemSelected(featureId, menuItem)).thenReturn(returnValue)
 
         // When
-        assertThat(testedWrapper.onMenuItemSelected(featureId, menuItem)).isEqualTo(returnValue)
+        testedWrapper.onMenuItemSelected(featureId, menuItem)
 
         // Then
         inOrder(mockCallback, rumMonitor.mockInstance) {
@@ -256,35 +231,20 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `pressing back button will trigger specific user action event`(forge: Forge) {
+    fun `M trigger RUM Action with empty name W onMenuItemSelected() { custom target null }`(
+        @StringForgery itemTitle: String,
+        @StringForgery itemResourceName: String,
+        @IntForgery itemId: Int,
+        @IntForgery featureId: Int
+    ) {
         // Given
-        val returnedValue = forge.aBool()
-        whenever(mockCallback.dispatchKeyEvent(any())).thenReturn(returnedValue)
-        val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)
-
-        // When
-        assertThat(testedWrapper.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
-
-        // Then
-        inOrder(rumMonitor.mockInstance, mockCallback) {
-            verify(rumMonitor.mockInstance).addUserAction(
-                RumActionType.CUSTOM,
-                WindowCallbackWrapper.BACK_DEFAULT_TARGET_NAME,
-                emptyMap()
-            )
-            verify(mockCallback).dispatchKeyEvent(keyEvent)
+        whenever(mockResources.getResourceEntryName(itemId)).thenReturn(itemResourceName)
+        val menuItem: MenuItem = mock {
+            whenever(it.itemId).thenReturn(itemId)
+            whenever(it.title).thenReturn(itemTitle)
         }
-    }
-
-    @Test
-    fun `M use the custom target name W pressingBack { custom target not empty }`(forge: Forge) {
-        // Given
-        val returnedValue = forge.aBool()
-        val fakeCustomTargetName = forge.anAlphabeticalString()
-        whenever(mockCallback.dispatchKeyEvent(any())).thenReturn(returnedValue)
-        val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)
         val mockInteractionPredicate: InteractionPredicate = mock {
-            whenever(it.getTargetName(keyEvent)).thenReturn(fakeCustomTargetName)
+            whenever(it.getTargetName(menuItem)).thenReturn(null)
         }
         testedWrapper = WindowCallbackWrapper(
             mockCallback,
@@ -293,82 +253,231 @@ internal class WindowCallbackWrapperTest {
         )
 
         // When
-        assertThat(testedWrapper.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
+        testedWrapper.onMenuItemSelected(featureId, menuItem)
 
         // Then
-        inOrder(rumMonitor.mockInstance, mockCallback) {
+        inOrder(mockCallback, rumMonitor.mockInstance) {
             verify(rumMonitor.mockInstance).addUserAction(
-                RumActionType.CUSTOM,
-                fakeCustomTargetName,
-                emptyMap()
+                eq(RumActionType.TAP),
+                eq(""),
+                argThat {
+                    val targetClassName = menuItem.javaClass.canonicalName
+                    this[RumAttributes.ACTION_TARGET_CLASS_NAME] == targetClassName &&
+                        this[RumAttributes.ACTION_TARGET_RESOURCE_ID] == itemResourceName &&
+                        this[RumAttributes.ACTION_TARGET_TITLE] == itemTitle
+                }
             )
-            verify(mockCallback).dispatchKeyEvent(keyEvent)
+            verify(mockCallback).onMenuItemSelected(featureId, menuItem)
         }
     }
 
     @Test
-    fun `M use the default target name W pressingBack { custom target empty }`(forge: Forge) {
+    fun `𝕄 delegate event to wrapped callback 𝕎 onMenuItemSelected()`(
+        @StringForgery itemTitle: String,
+        @IntForgery itemId: Int,
+        @IntForgery featureId: Int,
+        @BoolForgery wrappedResult: Boolean
+    ) {
         // Given
-        val returnedValue = forge.aBool()
-        whenever(mockCallback.dispatchKeyEvent(any())).thenReturn(returnedValue)
-        val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)
-        val mockInteractionPredicate: InteractionPredicate = mock {
-            whenever(it.getTargetName(keyEvent)).thenReturn("")
+        val menuItem: MenuItem = mock {
+            whenever(it.itemId).thenReturn(itemId)
+            whenever(it.title).thenReturn(itemTitle)
         }
-        testedWrapper = WindowCallbackWrapper(
-            mockCallback,
-            mockGestureDetector,
-            mockInteractionPredicate
-        )
+        whenever(mockCallback.onMenuItemSelected(featureId, menuItem)).thenReturn(wrappedResult)
 
         // When
-        assertThat(testedWrapper.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
+        val returnedValue = testedWrapper.onMenuItemSelected(featureId, menuItem)
 
         // Then
-        inOrder(rumMonitor.mockInstance, mockCallback) {
-            verify(rumMonitor.mockInstance).addUserAction(
-                RumActionType.CUSTOM,
-                WindowCallbackWrapper.BACK_DEFAULT_TARGET_NAME,
-                emptyMap()
-            )
-            verify(mockCallback).dispatchKeyEvent(keyEvent)
-        }
+        assertThat(returnedValue).isEqualTo(wrappedResult)
+        verify(mockCallback).onMenuItemSelected(featureId, menuItem)
     }
 
     @Test
-    fun `pressing back button will trigger user action event only on ACTION_UP`(forge: Forge) {
+    fun `𝕄 prevent crash 𝕎 dispatchTouchEvent() {wrapped callback throws exception}`(
+        @StringForgery itemTitle: String,
+        @IntForgery itemId: Int,
+        @IntForgery featureId: Int,
+        @Forgery exception: Exception
+    ) {
         // Given
-        val returnedValue = forge.aBool()
-        whenever(mockCallback.dispatchKeyEvent(any())).thenReturn(returnedValue)
+        val menuItem: MenuItem = mock {
+            whenever(it.itemId).thenReturn(itemId)
+            whenever(it.title).thenReturn(itemTitle)
+        }
+        whenever(mockCallback.onMenuItemSelected(featureId, menuItem)).thenThrow(exception)
+
+        // When
+        val returnedValue = testedWrapper.onMenuItemSelected(featureId, menuItem)
+
+        // Then
+        assertThat(returnedValue).isTrue()
+        verify(mockCallback).onMenuItemSelected(featureId, menuItem)
+    }
+
+    // endregion
+
+    // region dispatchKeyEvent
+
+    @Test
+    fun `𝕄 not trigger RUM action 𝕎 dispatchKeyEvent() { DOWN-BACK}`() {
+        // Given
         val keyEvent = mockKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK)
 
         // When
-        assertThat(testedWrapper.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
+        testedWrapper.dispatchKeyEvent(keyEvent)
 
         // Then
-        inOrder(rumMonitor.mockInstance, mockCallback) {
-            verifyZeroInteractions(rumMonitor.mockInstance)
-            verify(mockCallback).dispatchKeyEvent(keyEvent)
-        }
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     @Test
-    fun `pressing any other key except back button will do nothing`(forge: Forge) {
+    fun `𝕄 not trigger RUM action 𝕎 dispatchKeyEvent() { DOWN-ANY}`(
+        @IntForgery(min = KeyEvent.KEYCODE_CALL) keyCode: Int
+    ) {
         // Given
-        val returnedValue = forge.aBool()
-        whenever(mockCallback.dispatchKeyEvent(any())).thenReturn(returnedValue)
-        val keyCode = forge.anInt(min = 5)
+        val keyEvent = mockKeyEvent(KeyEvent.ACTION_DOWN, keyCode)
+
+        // When
+        testedWrapper.dispatchKeyEvent(keyEvent)
+
+        // Then
+        verifyZeroInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
+    fun `𝕄 not trigger RUM action 𝕎 dispatchKeyEvent() { UP-ANY}`(
+        @IntForgery(min = KeyEvent.KEYCODE_CALL) keyCode: Int
+    ) {
+        // Given
         val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, keyCode)
 
         // When
-        assertThat(testedWrapper.dispatchKeyEvent(keyEvent)).isEqualTo(returnedValue)
+        testedWrapper.dispatchKeyEvent(keyEvent)
 
         // Then
-        inOrder(rumMonitor.mockInstance, mockCallback) {
-            verifyZeroInteractions(rumMonitor.mockInstance)
-            verify(mockCallback).dispatchKeyEvent(keyEvent)
-        }
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
+
+    @Test
+    fun `𝕄 not trigger RUM action 𝕎 dispatchKeyEvent() {keyEvent=null}`() {
+        // When
+        testedWrapper.dispatchKeyEvent(null)
+
+        // Then
+        verifyZeroInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
+    fun `𝕄 trigger RUM action 𝕎 dispatchKeyEvent() { UP-BACK, custom name null}`() {
+        // Given
+        val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)
+
+        // When
+        testedWrapper.dispatchKeyEvent(keyEvent)
+
+        // Then
+        verify(rumMonitor.mockInstance).addUserAction(
+            RumActionType.CUSTOM,
+            WindowCallbackWrapper.BACK_DEFAULT_TARGET_NAME,
+            emptyMap()
+        )
+    }
+
+    @Test
+    fun `𝕄 trigger RUM action 𝕎 dispatchKeyEvent() { UP-BACK, custom name empty}`() {
+        // Given
+        val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)
+
+        // When
+        testedWrapper.dispatchKeyEvent(keyEvent)
+
+        // Then
+        verify(rumMonitor.mockInstance).addUserAction(
+            RumActionType.CUSTOM,
+            WindowCallbackWrapper.BACK_DEFAULT_TARGET_NAME,
+            emptyMap()
+        )
+    }
+
+    @Test
+    fun `𝕄 trigger RUM action with custom name 𝕎 dispatchKeyEvent() { UP-BACK, custom name}`(
+        @StringForgery customTargetName: String
+    ) {
+        // Given
+        val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(keyEvent)).thenReturn(customTargetName)
+        }
+        testedWrapper = WindowCallbackWrapper(
+            mockCallback,
+            mockGestureDetector,
+            mockInteractionPredicate
+        )
+
+        // When
+        testedWrapper.dispatchKeyEvent(keyEvent)
+
+        // Then
+        verify(rumMonitor.mockInstance).addUserAction(
+            RumActionType.CUSTOM,
+            customTargetName,
+            emptyMap()
+        )
+    }
+
+    @Test
+    fun `𝕄 delegate event to wrapped callback 𝕎 dispatchKeyEvent()`(
+        @IntForgery action: Int,
+        @IntForgery keyCode: Int,
+        @BoolForgery wrappedResult: Boolean
+    ) {
+        // Given
+        val keyEvent = mockKeyEvent(action, keyCode)
+        whenever(mockCallback.dispatchKeyEvent(keyEvent)).thenReturn(wrappedResult)
+
+        // When
+        val returnedValue = testedWrapper.dispatchKeyEvent(keyEvent)
+
+        // Then
+        assertThat(returnedValue).isEqualTo(wrappedResult)
+        verify(mockCallback).dispatchKeyEvent(keyEvent)
+    }
+
+    @Test
+    fun `𝕄 delegate event to wrapped callback 𝕎 dispatchKeyEvent() {keyEvent=null}`(
+        @BoolForgery wrappedResult: Boolean
+    ) {
+        // Given
+        whenever(mockCallback.dispatchKeyEvent(null)).thenReturn(wrappedResult)
+
+        // When
+        val returnedValue = testedWrapper.dispatchKeyEvent(null)
+
+        // Then
+        assertThat(returnedValue).isEqualTo(wrappedResult)
+        verify(mockCallback).dispatchKeyEvent(null)
+    }
+
+    @Test
+    fun `𝕄 prevent crash 𝕎 dispatchKeyEvent() {wrapped callback throws exception}`(
+        @IntForgery action: Int,
+        @IntForgery keyCode: Int,
+        @Forgery exception: Exception
+    ) {
+        // Given
+        val keyEvent = mockKeyEvent(action, keyCode)
+        whenever(mockCallback.dispatchKeyEvent(keyEvent)).thenThrow(exception)
+
+        // When
+        val returnedValue = testedWrapper.dispatchKeyEvent(keyEvent)
+
+        // Then
+        assertThat(returnedValue).isTrue()
+        verify(mockCallback).dispatchKeyEvent(keyEvent)
+    }
+
+    // endregion
 
     // region Internal
 

@@ -10,6 +10,8 @@ import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.internal.monitor.EventType
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -60,6 +62,9 @@ internal class RumDataWriterTest {
     @Mock
     lateinit var mockFileHandler: FileHandler
 
+    @Mock
+    lateinit var mockLogHandler: LogHandler
+
     @Forgery
     lateinit var fakeDecoration: PayloadDecoration
 
@@ -79,6 +84,7 @@ internal class RumDataWriterTest {
             mockSerializer,
             fakeDecoration,
             mockFileHandler,
+            Logger(mockLogHandler),
             fakeLastViewEventFile
         )
     }

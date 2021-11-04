@@ -14,6 +14,7 @@ import android.util.Log as AndroidLog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.net.DataOkHttpUploaderV2
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
@@ -436,6 +437,16 @@ internal class DatadogTest {
 
         // Then
         assertThat(CoreFeature.sourceName).isEqualTo(source)
+        assertThat(
+            arrayOf(
+                LogsFeature.uploader,
+                RumFeature.uploader,
+                TracingFeature.uploader,
+                CrashReportsFeature.uploader
+            )
+                .map { (it as DataOkHttpUploaderV2).source }
+        )
+            .containsOnly(source)
     }
 
     @Test
@@ -458,6 +469,16 @@ internal class DatadogTest {
 
         // Then
         assertThat(CoreFeature.sourceName).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
+        assertThat(
+            arrayOf(
+                LogsFeature.uploader,
+                RumFeature.uploader,
+                TracingFeature.uploader,
+                CrashReportsFeature.uploader
+            )
+                .map { (it as DataOkHttpUploaderV2).source }
+        )
+            .containsOnly(CoreFeature.DEFAULT_SOURCE_NAME)
     }
 
     @Test
@@ -480,6 +501,16 @@ internal class DatadogTest {
 
         // Then
         assertThat(CoreFeature.sourceName).isEqualTo(CoreFeature.DEFAULT_SOURCE_NAME)
+        assertThat(
+            arrayOf(
+                LogsFeature.uploader,
+                RumFeature.uploader,
+                TracingFeature.uploader,
+                CrashReportsFeature.uploader
+            )
+                .map { (it as DataOkHttpUploaderV2).source }
+        )
+            .containsOnly(CoreFeature.DEFAULT_SOURCE_NAME)
     }
 
     // region Internal
