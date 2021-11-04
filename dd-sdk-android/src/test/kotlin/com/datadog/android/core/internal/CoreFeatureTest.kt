@@ -855,6 +855,21 @@ internal class CoreFeatureTest {
         }
     }
 
+    @Test
+    fun `M initialize webViewTrackingHosts W initialize()`() {
+
+        // When
+        CoreFeature.initialize(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(CoreFeature.webViewTrackingHosts).isEqualTo(fakeConfig.webViewTrackingHosts)
+    }
+
     // region Internal
 
     private fun forgeAppProcessInfo(
