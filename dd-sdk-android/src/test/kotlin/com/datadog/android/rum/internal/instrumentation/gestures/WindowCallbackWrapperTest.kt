@@ -372,6 +372,15 @@ internal class WindowCallbackWrapperTest {
     fun `𝕄 trigger RUM action 𝕎 dispatchKeyEvent() { UP-BACK, custom name null}`() {
         // Given
         val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(keyEvent)).thenReturn(null)
+        }
+
+        testedWrapper = WindowCallbackWrapper(
+            mockCallback,
+            mockGestureDetector,
+            mockInteractionPredicate
+        )
 
         // When
         testedWrapper.dispatchKeyEvent(keyEvent)
@@ -388,6 +397,15 @@ internal class WindowCallbackWrapperTest {
     fun `𝕄 trigger RUM action 𝕎 dispatchKeyEvent() { UP-BACK, custom name empty}`() {
         // Given
         val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(keyEvent)).thenReturn("")
+        }
+
+        testedWrapper = WindowCallbackWrapper(
+            mockCallback,
+            mockGestureDetector,
+            mockInteractionPredicate
+        )
 
         // When
         testedWrapper.dispatchKeyEvent(keyEvent)
