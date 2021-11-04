@@ -112,6 +112,7 @@ internal object CoreFeature {
 
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: ExecutorService
+    internal lateinit var webViewTrackingHosts: List<String>
 
     fun initialize(
         appContext: Context,
@@ -129,6 +130,7 @@ internal object CoreFeature {
         initializeClockSync(appContext)
         setupOkHttpClient(configuration)
         firstPartyHostDetector.addKnownHosts(configuration.firstPartyHosts)
+        webViewTrackingHosts = configuration.webViewTrackingHosts
         setupExecutors()
         // Time Provider
         timeProvider = KronosTimeProvider(kronosClock)
