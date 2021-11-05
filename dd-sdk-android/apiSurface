@@ -1222,6 +1222,9 @@ interface com.datadog.android.rum.tracking.TrackingStrategy
 interface com.datadog.android.rum.tracking.ViewAttributesProvider
   fun extractAttributes(android.view.View, MutableMap<String, Any?>)
 interface com.datadog.android.rum.tracking.ViewTrackingStrategy : TrackingStrategy
+class com.datadog.android.rum.webview.DatadogEventBridge
+  fun send(String)
+  fun getAllowedWebViewHosts(): String
 open class com.datadog.android.rum.webview.RumWebChromeClient : android.webkit.WebChromeClient
   constructor()
   override fun onConsoleMessage(android.webkit.ConsoleMessage?): Boolean
