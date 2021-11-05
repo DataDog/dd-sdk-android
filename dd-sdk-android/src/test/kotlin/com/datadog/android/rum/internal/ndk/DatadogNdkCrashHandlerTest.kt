@@ -380,6 +380,7 @@ internal class DatadogNdkCrashHandlerTest {
                 .hasStackTrace(ndkCrashLog.stacktrace)
                 .isCrash(true)
                 .hasSource(RumErrorSource.SOURCE)
+                .hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                 .hasTimestamp(ndkCrashLog.timestamp + fakeServerOffset)
                 .hasUserInfo(
                     UserInfo(

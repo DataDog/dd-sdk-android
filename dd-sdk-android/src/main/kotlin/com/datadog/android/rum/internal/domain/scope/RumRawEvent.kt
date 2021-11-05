@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.model.ViewEvent
@@ -91,7 +92,8 @@ internal sealed class RumRawEvent {
         val isFatal: Boolean,
         val attributes: Map<String, Any?>,
         override val eventTime: Time = Time(),
-        val type: String? = null
+        val type: String? = null,
+        val sourceType: RumErrorSourceType = RumErrorSourceType.ANDROID
     ) : RumRawEvent()
 
     internal data class UpdateViewLoadingTime(

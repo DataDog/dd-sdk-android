@@ -176,7 +176,8 @@ internal class RumEventSerializer(
 
         internal val ignoredAttributes = setOf(
             RumAttributes.INTERNAL_TIMESTAMP,
-            RumAttributes.INTERNAL_ERROR_TYPE
+            RumAttributes.INTERNAL_ERROR_TYPE,
+            RumAttributes.INTERNAL_ERROR_SOURCE_TYPE
         )
 
         internal const val GLOBAL_ATTRIBUTE_PREFIX: String = "context"

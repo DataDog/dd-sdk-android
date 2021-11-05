@@ -526,10 +526,12 @@ internal class RumEventSerializerTest {
         // GIVEN
         val fakeInternalTimestamp = forge.aLong()
         val fakeErrorType = forge.aString()
+        val fakeErrorSourceType = forge.aString()
         val fakeEventWithInternalGlobalAttributes = forge.forgeRumEvent(
             attributes = mapOf(
                 RumAttributes.INTERNAL_ERROR_TYPE to fakeErrorType,
-                RumAttributes.INTERNAL_TIMESTAMP to fakeInternalTimestamp
+                RumAttributes.INTERNAL_TIMESTAMP to fakeInternalTimestamp,
+                RumAttributes.INTERNAL_ERROR_SOURCE_TYPE to fakeErrorSourceType
             )
         )
         // WHEN
@@ -545,6 +547,11 @@ internal class RumEventSerializerTest {
             .doesNotHaveField(
                 RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX + "." + RumAttributes.INTERNAL_ERROR_TYPE
             )
+        assertThat(jsonObject)
+            .doesNotHaveField(
+                RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX +
+                    "." + RumAttributes.INTERNAL_ERROR_SOURCE_TYPE
+            )
     }
 
     @Test
@@ -554,10 +561,12 @@ internal class RumEventSerializerTest {
         // GIVEN
         val fakeInternalTimestamp = forge.aLong()
         val fakeErrorType = forge.aString()
+        val fakeErrorSourceType = forge.aString()
         val fakeEventWithInternalUserAttributes = forge.forgeRumEvent(
             userAttributes = mapOf(
                 RumAttributes.INTERNAL_ERROR_TYPE to fakeErrorType,
-                RumAttributes.INTERNAL_TIMESTAMP to fakeInternalTimestamp
+                RumAttributes.INTERNAL_TIMESTAMP to fakeInternalTimestamp,
+                RumAttributes.INTERNAL_ERROR_SOURCE_TYPE to fakeErrorSourceType
             )
         )
 
@@ -573,6 +582,11 @@ internal class RumEventSerializerTest {
         assertThat(jsonObject)
             .doesNotHaveField(
                 RumEventSerializer.USER_ATTRIBUTE_PREFIX + "." + RumAttributes.INTERNAL_ERROR_TYPE
+            )
+        assertThat(jsonObject)
+            .doesNotHaveField(
+                RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX +
+                    "." + RumAttributes.INTERNAL_ERROR_SOURCE_TYPE
             )
     }
 

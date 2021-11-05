@@ -268,7 +268,8 @@ internal class DatadogNdkCrashHandler(
                 source = ErrorEvent.Source.SOURCE,
                 stack = ndkCrashLog.stacktrace,
                 isCrash = true,
-                type = ndkCrashLog.signalName
+                type = ndkCrashLog.signalName,
+                sourceType = ErrorEvent.SourceType.ANDROID
             )
         )
     }

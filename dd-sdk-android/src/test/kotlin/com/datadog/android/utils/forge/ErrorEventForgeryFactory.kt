@@ -29,7 +29,8 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
                         method = getForgery(),
                         statusCode = aLong(200, 600)
                     )
-                }
+                },
+                sourceType = forge.getForgery()
             ),
             view = ErrorEvent.View(
                 id = forge.getForgery<UUID>().toString(),
