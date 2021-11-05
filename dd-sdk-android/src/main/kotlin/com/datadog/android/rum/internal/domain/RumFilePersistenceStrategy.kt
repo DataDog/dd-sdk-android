@@ -60,6 +60,7 @@ internal class RumFilePersistenceStrategy(
                 serializer,
                 payloadDecoration,
                 fileHandler,
+                internalLogger,
                 lastViewEventFile
             ),
             executorService,

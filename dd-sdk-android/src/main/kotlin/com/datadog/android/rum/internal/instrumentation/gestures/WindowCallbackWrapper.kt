@@ -16,12 +16,14 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
-import java.lang.Exception
+import kotlin.Exception
 
+@Suppress("TooGenericExceptionCaught")
 internal class WindowCallbackWrapper(
     val wrappedCallback: Window.Callback,
     val gesturesDetector: GesturesDetectorWrapper,
-    val interactionPredicate: InteractionPredicate = NoOpInteractionPredicate()
+    val interactionPredicate: InteractionPredicate = NoOpInteractionPredicate(),
+    val copyEvent: (MotionEvent) -> MotionEvent = { MotionEvent.obtain(it) }
 ) : Window.Callback by wrappedCallback {
 
     // region Window.Callback
@@ -30,7 +32,6 @@ internal class WindowCallbackWrapper(
         if (event != null) {
             // we copy it and delegate it to the gesture detector for analysis
             val copy = copyEvent(event)
-            @Suppress("TooGenericExceptionCaught")
             try {
                 gesturesDetector.onTouchEvent(copy)
             } catch (e: Exception) {
@@ -41,7 +42,13 @@ internal class WindowCallbackWrapper(
         } else {
             sdkLogger.e("Received MotionEvent=null")
         }
-        return wrappedCallback.dispatchTouchEvent(event)
+
+        return try {
+            wrappedCallback.dispatchTouchEvent(event)
+        } catch (e: Exception) {
+            sdkLogger.e("Wrapped callback failed processing MotionEvent", e)
+            EVENT_CONSUMED
+        }
     }
 
     override fun onMenuItemSelected(featureId: Int, item: MenuItem): Boolean {
@@ -56,11 +63,18 @@ internal class WindowCallbackWrapper(
             resolveTargetName(interactionPredicate, item),
             attributes
         )
-        return wrappedCallback.onMenuItemSelected(featureId, item)
+        return try {
+            wrappedCallback.onMenuItemSelected(featureId, item)
+        } catch (e: Exception) {
+            sdkLogger.e("Wrapped callback failed processing MenuItem selection", e)
+            EVENT_CONSUMED
+        }
     }
 
     override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
-        if (event?.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
+        if (event == null) {
+            sdkLogger.e("Received KeyEvent=null")
+        } else if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
             // TODO RUMM-495 add a BACK action to the json schema
             val customTargetName = interactionPredicate.getTargetName(event)
             val targetName = if (customTargetName.isNullOrEmpty()) {
@@ -73,18 +87,20 @@ internal class WindowCallbackWrapper(
             }
             GlobalRum.get().addUserAction(RumActionType.CUSTOM, targetName, emptyMap())
         }
-        return wrappedCallback.dispatchKeyEvent(event)
+
+        return try {
+            wrappedCallback.dispatchKeyEvent(event)
+        } catch (e: Exception) {
+            sdkLogger.e("Wrapped callback failed processing KeyEvent", e)
+            EVENT_CONSUMED
+        }
     }
 
     // endregion
 
-    // region Internal
-
-    internal fun copyEvent(event: MotionEvent) = MotionEvent.obtain(event)
-
-    // endregion
-
     companion object {
-        const val BACK_DEFAULT_TARGET_NAME = "back"
+        const val BACK_DEFAULT_TARGET_NAME: String = "back"
+
+        const val EVENT_CONSUMED: Boolean = true
     }
 }

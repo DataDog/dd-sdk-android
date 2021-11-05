@@ -11,6 +11,8 @@ import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.serializeToByteArray
+import com.datadog.android.log.Logger
 
 /**
  * A [DataWriter] storing data in batch files.
@@ -19,7 +21,8 @@ internal open class BatchFileDataWriter<T : Any>(
     internal val fileOrchestrator: FileOrchestrator,
     internal val serializer: Serializer<T>,
     internal val decoration: PayloadDecoration,
-    internal val handler: FileHandler
+    internal val handler: FileHandler,
+    internal val internalLogger: Logger
 ) : DataWriter<T> {
 
     // region DataWriter
@@ -53,8 +56,7 @@ internal open class BatchFileDataWriter<T : Any>(
     // region Internal
 
     private fun consume(data: T) {
-        val serialized = serializer.serialize(data) ?: return
-        val byteArray = serialized.toByteArray(Charsets.UTF_8)
+        val byteArray = serializer.serializeToByteArray(data, internalLogger) ?: return
 
         synchronized(this) {
             val success = writeData(byteArray)

@@ -10,11 +10,14 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.serializeToByteArray
+import com.datadog.android.log.Logger
 
 internal open class SingleItemDataWriter<T : Any>(
     internal val fileOrchestrator: FileOrchestrator,
     internal val serializer: Serializer<T>,
-    internal val handler: FileHandler
+    internal val handler: FileHandler,
+    internal val internalLogger: Logger
 ) : DataWriter<T> {
 
     // region DataWriter
@@ -32,8 +35,7 @@ internal open class SingleItemDataWriter<T : Any>(
     // region Internal
 
     private fun consume(data: T) {
-        val serialized = serializer.serialize(data) ?: return
-        val byteArray = serialized.toByteArray(Charsets.UTF_8)
+        val byteArray = serializer.serializeToByteArray(data, internalLogger) ?: return
 
         synchronized(this) {
             writeData(byteArray)

@@ -75,7 +75,8 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
                 fileOrchestrator,
                 serializer,
                 payloadDecoration,
-                fileHandler
+                fileHandler,
+                internalLogger
             ),
             executorService,
             internalLogger

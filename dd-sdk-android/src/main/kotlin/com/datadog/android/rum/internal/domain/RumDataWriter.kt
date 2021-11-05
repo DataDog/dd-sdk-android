@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileDataWriter
+import com.datadog.android.log.Logger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.EventType
@@ -26,12 +27,14 @@ internal class RumDataWriter(
     serializer: Serializer<Any>,
     decoration: PayloadDecoration,
     handler: FileHandler,
+    internalLogger: Logger,
     private val lastViewEventFile: File
 ) : BatchFileDataWriter<Any>(
     fileOrchestrator,
     serializer,
     decoration,
-    handler
+    handler,
+    internalLogger
 ) {
 
     override fun onDataWritten(data: Any, rawData: ByteArray) {

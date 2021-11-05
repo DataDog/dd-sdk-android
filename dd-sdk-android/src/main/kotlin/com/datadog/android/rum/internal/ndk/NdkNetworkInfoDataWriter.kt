@@ -40,5 +40,6 @@ internal class NdkNetworkInfoDataWriter(
         )
     ),
     NetworkInfoSerializer(),
-    fileHandler
+    fileHandler,
+    internalLogger
 )
