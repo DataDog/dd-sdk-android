@@ -12,8 +12,8 @@ import com.google.gson.JsonParser
 import java.util.Locale.US
 
 internal class WebEventConsumer(
-    private val rumEventConsumer: RumEventConsumer,
-    private val logsEventConsumer: LogsEventConsumer
+    private val rumEventConsumer: WebRumEventConsumer,
+    private val logsEventConsumer: WebLogEventConsumer
 ) {
     fun consume(event: String) {
         try {
@@ -26,10 +26,8 @@ internal class WebEventConsumer(
                 sdkLogger.e(WEB_EVENT_MISSING_WRAPPED_EVENT.format(US, event))
                 return
             }
-
             val eventType = webEvent.get(EVENT_TYPE_KEY).asString
             val wrappedEvent = webEvent.get(EVENT_KEY).asJsonObject
-
             if (eventType == LOG_EVENT_TYPE) {
                 logsEventConsumer.consume(wrappedEvent)
             } else {
@@ -43,8 +41,6 @@ internal class WebEventConsumer(
     companion object {
         const val EVENT_TYPE_KEY = "eventType"
         const val EVENT_KEY = "event"
-        const val EVENT_TAGS = "tags"
-
         const val LOG_EVENT_TYPE = "log"
         const val WEB_EVENT_PARSING_ERROR_MESSAGE = "We could not deserialize the" +
             " delegated browser event: %s."
