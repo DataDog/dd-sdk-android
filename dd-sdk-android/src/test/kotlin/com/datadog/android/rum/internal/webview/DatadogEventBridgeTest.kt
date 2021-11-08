@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.rum.webview.DatadogEventBridge
 import com.datadog.android.rum.webview.WebEventConsumer
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.setFieldValue
 import com.google.gson.JsonArray
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
@@ -43,7 +44,7 @@ internal class DatadogEventBridgeTest {
     @BeforeEach
     fun `set up`() {
         testedDatadogEventBridge = DatadogEventBridge()
-        testedDatadogEventBridge.webEventConsumer = mockWebEventConsumer
+        testedDatadogEventBridge.setFieldValue("webEventConsumer", mockWebEventConsumer)
     }
 
     @Test

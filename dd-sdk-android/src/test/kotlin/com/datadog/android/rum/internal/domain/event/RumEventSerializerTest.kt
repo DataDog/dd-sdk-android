@@ -16,6 +16,7 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
+import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -24,6 +25,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Locale
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
@@ -404,6 +406,14 @@ internal class RumEventSerializerTest {
             .doesNotHaveField("view")
             .doesNotHaveField("usr")
             .doesNotHaveField("_dd")
+    }
+
+    @Test
+    fun `𝕄 do nothing and return the same object 𝕎 serialize() { already serialized event }`(
+        @Forgery fakeJsonObject: JsonObject
+    ) {
+        val serialized = testedSerializer.serialize(fakeJsonObject)
+        assertThat(serialized).isEqualTo(fakeJsonObject.toString())
     }
 
     @Test
