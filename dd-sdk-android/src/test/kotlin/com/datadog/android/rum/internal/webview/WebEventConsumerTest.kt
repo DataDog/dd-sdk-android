@@ -8,13 +8,12 @@ package com.datadog.android.rum.internal.webview
 
 import android.util.Log
 import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.rum.webview.LogsEventConsumer
-import com.datadog.android.rum.webview.RumEventConsumer
 import com.datadog.android.rum.webview.WebEventConsumer
+import com.datadog.android.rum.webview.WebLogEventConsumer
+import com.datadog.android.rum.webview.WebRumEventConsumer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockSdkLogHandler
 import com.datadog.android.utils.restoreSdkLogHandler
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.nhaarman.mockitokotlin2.any
@@ -45,13 +44,13 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class WebEventConsumerTest {
 
-    lateinit var testedWevEventConsumer: WebEventConsumer
+    lateinit var testedWebEventConsumer: WebEventConsumer
 
     @Mock
-    lateinit var mockRumEventConsumer: RumEventConsumer
+    lateinit var mockRumEventConsumer: WebRumEventConsumer
 
     @Mock
-    lateinit var mockLogsEventConsumer: LogsEventConsumer
+    lateinit var mockLogsEventConsumer: WebLogEventConsumer
 
     @Mock
     lateinit var mockSdkLogHandler: LogHandler
@@ -61,7 +60,7 @@ internal class WebEventConsumerTest {
     @BeforeEach
     fun `set up`() {
         originalSdkLogHandler = mockSdkLogHandler(mockSdkLogHandler)
-        testedWevEventConsumer = WebEventConsumer(mockRumEventConsumer, mockLogsEventConsumer)
+        testedWebEventConsumer = WebEventConsumer(mockRumEventConsumer, mockLogsEventConsumer)
     }
 
     @AfterEach
@@ -82,7 +81,7 @@ internal class WebEventConsumerTest {
         val fakeWebEvent = bundleWebEvent(fakeBundledEvent, fakeEventType)
 
         // When
-        testedWevEventConsumer.consume(fakeWebEvent.toString())
+        testedWebEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
         verify(mockRumEventConsumer).consume(
@@ -98,7 +97,7 @@ internal class WebEventConsumerTest {
         val fakeWebEvent = bundleWebEvent(fakeBundledEvent, WebEventConsumer.LOG_EVENT_TYPE)
 
         // When
-        testedWevEventConsumer.consume(fakeWebEvent.toString())
+        testedWebEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
         verify(mockLogsEventConsumer).consume(fakeBundledEvent)
@@ -111,7 +110,7 @@ internal class WebEventConsumerTest {
         val fakeWebEvent = bundleWebEvent(fakeBundledEvent, null)
 
         // When
-        testedWevEventConsumer.consume(fakeWebEvent.toString())
+        testedWebEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
         verifyZeroInteractions(mockLogsEventConsumer)
@@ -125,7 +124,7 @@ internal class WebEventConsumerTest {
         val fakeWebEvent = bundleWebEvent(fakeBundledEvent, null)
 
         // When
-        testedWevEventConsumer.consume(fakeWebEvent.toString())
+        testedWebEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
         verify(mockSdkLogHandler).handleLog(
@@ -144,7 +143,7 @@ internal class WebEventConsumerTest {
         val fakeWebEvent = bundleWebEvent(null, fakeEventType)
 
         // When
-        testedWevEventConsumer.consume(fakeWebEvent.toString())
+        testedWebEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
         verifyZeroInteractions(mockLogsEventConsumer)
@@ -158,7 +157,7 @@ internal class WebEventConsumerTest {
         val fakeWebEvent = bundleWebEvent(null, fakeEventType)
 
         // When
-        testedWevEventConsumer.consume(fakeWebEvent.toString())
+        testedWebEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
         verify(mockSdkLogHandler).handleLog(
@@ -179,7 +178,7 @@ internal class WebEventConsumerTest {
         val fakeBadJsonFormatEvent = fakeWebEvent.toString() + forge.anAlphabeticalString()
 
         // When
-        testedWevEventConsumer.consume(fakeBadJsonFormatEvent)
+        testedWebEventConsumer.consume(fakeBadJsonFormatEvent)
 
         // Then
         verifyZeroInteractions(mockLogsEventConsumer)
@@ -198,7 +197,7 @@ internal class WebEventConsumerTest {
         val fakeBadJsonFormatEvent = fakeWebEvent.toString() + forge.anAlphabeticalString()
 
         // When
-        testedWevEventConsumer.consume(fakeBadJsonFormatEvent)
+        testedWebEventConsumer.consume(fakeBadJsonFormatEvent)
 
         // Then
         verify(mockSdkLogHandler).handleLog(
@@ -222,21 +221,15 @@ internal class WebEventConsumerTest {
 
     private fun bundleWebEvent(
         fakeBundledEvent: JsonObject?,
-        eventType: String?,
-        tags: List<String> = emptyList()
+        eventType: String?
     ): JsonObject {
         val fakeWebEvent = JsonObject()
-        val tagsAsJsonArray = JsonArray()
-        tags.forEach {
-            tagsAsJsonArray.add(it)
-        }
         fakeBundledEvent?.let {
             fakeWebEvent.add(WebEventConsumer.EVENT_KEY, it)
         }
         eventType?.let {
             fakeWebEvent.addProperty(WebEventConsumer.EVENT_TYPE_KEY, it)
         }
-        fakeWebEvent.add(WebEventConsumer.EVENT_TAGS, tagsAsJsonArray)
         return fakeWebEvent
     }
 
