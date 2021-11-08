@@ -202,16 +202,16 @@ tasks.register("checkApiSurfaceChangesAll") {
 
 tasks.register("detektAll") {
     dependsOn(
-        ":dd-sdk-android:detekt",
-        ":dd-sdk-android-coil:detekt",
-        ":dd-sdk-android-compose:detekt",
-        ":dd-sdk-android-fresco:detekt",
-        ":dd-sdk-android-glide:detekt",
-        ":dd-sdk-android-ktx:detekt",
-        ":dd-sdk-android-ndk:detekt",
-        ":dd-sdk-android-rx:detekt",
-        ":dd-sdk-android-sqldelight:detekt",
-        ":dd-sdk-android-timber:detekt",
+        ":dd-sdk-android:detektMain",
+        ":dd-sdk-android-coil:detektMain",
+        ":dd-sdk-android-compose:detektMain",
+        ":dd-sdk-android-fresco:detektMain",
+        ":dd-sdk-android-glide:detektMain",
+        ":dd-sdk-android-ktx:detektMain",
+        ":dd-sdk-android-ndk:detektMain",
+        ":dd-sdk-android-rx:detektMain",
+        ":dd-sdk-android-sqldelight:detektMain",
+        ":dd-sdk-android-timber:detektMain",
         ":instrumented:integration:detekt",
         ":instrumented:nightly-tests:detekt",
         ":tools:unit:detekt"
