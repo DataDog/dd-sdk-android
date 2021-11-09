@@ -15,12 +15,17 @@ internal fun ThreadPoolExecutor.waitToIdle(timeoutInMs: Long): Boolean {
     val startTime = System.nanoTime()
     val timeoutInNs = TimeUnit.MILLISECONDS.toNanos(timeoutInMs)
     val sleepDurationInMs = timeoutInMs.coerceIn(0, MAX_SLEEP_DURATION_IN_MS)
+    var interrupted: Boolean
     do {
-        if (this.taskCount - this.completedTaskCount <= 0) {
+        if (isIdle()) {
             return true
         }
-        Thread.sleep(sleepDurationInMs)
-    } while ((System.nanoTime() - startTime) < timeoutInNs)
+        interrupted = sleepSafe(sleepDurationInMs)
+    } while (((System.nanoTime() - startTime) < timeoutInNs) && !interrupted)
 
-    return false
+    return isIdle()
+}
+
+internal fun ThreadPoolExecutor.isIdle(): Boolean {
+    return (this.taskCount - this.completedTaskCount <= 0)
 }

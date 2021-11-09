@@ -1,3 +1,24 @@
+# 1.11.0 / 2021-11-??
+
+Bug
+
+* [BUGFIX] RUM: Fix Memory Vital downscaled on Android
+* [BUGFIX] RUM: Prevent potential crash in DatadogExceptionHandler [#749](https://github.com/DataDog/dd-sdk-android/issues/749) (Thanks [@ribafish](https://github.com/ribafish))
+* [BUGFIX] RUM: Prevent potential crash in WindowCallbackWrapper
+* [BUGFIX] RUM: Prevent potential crash NdkCrashReportsPlugin
+* [BUGFIX] RUM: Ensure all crash information are saved
+* [BUGFIX] Global: Prevent crash on init on KitKat devices [#678](https://github.com/DataDog/dd-sdk-android/issues/678) (Thanks [@eduardb](https://github.com/eduardb))
+* [FEATURE] RUM: Add new Mobile Vitals attributes
+* [FEATURE] RUM: Adds an optional `RumSessionListener` in the `RumMonitor.Builder` to know when a session starts, and what its UUID is
+* [FEATURE] Global: Allow user to set a custom proxy for data intake [#592](https://github.com/DataDog/dd-sdk-android/issues/592) (Thanks [@ruXlab](https://github.com/ruXlab))
+* [IMPROVEMENT] RUM: Associate Logs and Traces with RUM Action
+* [IMPROVEMENT] RUM: Tag RUM Resources as `native` by default (instead of `xhr`)
+* [IMPROVEMENT] RUM: Sanitize NDK crash stacktraces
+* [IMPROVEMENT] Global: Update the intake request for Datadog's API v2
+* [IMPROVEMENT] Global: Add support to US5 endpoint
+* [IMPROVEMENT] RUM: Prevent Get leaking memory with OkHttp ResponseBody objects
+* [IMPROVEMENT] RUM: Add an action predicate to rename the action target
+
 # 1.10.0 / 2021-09-02
 
 * [BUGFIX] Global: Fix crash when using old OkHttp dependency [#658](https://github.com/DataDog/dd-sdk-android/issues/658) (Thanks [@JessicaYeh](https://github.com/VladBytsyuk))
