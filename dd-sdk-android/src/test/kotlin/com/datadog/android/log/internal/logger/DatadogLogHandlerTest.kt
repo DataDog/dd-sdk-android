@@ -111,6 +111,8 @@ internal class DatadogLogHandlerTest {
 
     lateinit var fakeEnvName: String
 
+    lateinit var fakeSdkVersion: String
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         // To avoid java.lang.NoClassDefFoundError: android/hardware/display/DisplayManagerGlobal.
@@ -131,6 +133,8 @@ internal class DatadogLogHandlerTest {
         fakeLevel = forge.anInt(2, 8)
         fakeAttributes = forge.aMap { anAlphabeticalString() to anInt() }
         fakeTags = forge.aList { anAlphabeticalString() }.toSet()
+        fakeSdkVersion = forge.anAlphabeticalString()
+        CoreFeature.sdkVersion = fakeSdkVersion
         CoreFeature.envName = fakeEnvName
         CoreFeature.packageVersion = fakeAppVersion
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
@@ -143,6 +147,7 @@ internal class DatadogLogHandlerTest {
                 mockNetworkInfoProvider,
                 mockUserInfoProvider,
                 mockTimeProvider,
+                fakeSdkVersion,
                 fakeEnvName,
                 fakeAppVersion
             ),
@@ -404,6 +409,7 @@ internal class DatadogLogHandlerTest {
                 null,
                 mockUserInfoProvider,
                 mockTimeProvider,
+                fakeSdkVersion,
                 fakeEnvName,
                 fakeAppVersion
             ),
@@ -457,6 +463,7 @@ internal class DatadogLogHandlerTest {
                 null,
                 mockUserInfoProvider,
                 mockTimeProvider,
+                fakeSdkVersion,
                 fakeEnvName,
                 fakeAppVersion
             ),
@@ -613,6 +620,7 @@ internal class DatadogLogHandlerTest {
                 mockNetworkInfoProvider,
                 mockUserInfoProvider,
                 mockTimeProvider,
+                fakeSdkVersion,
                 fakeEnvName,
                 fakeAppVersion
             ),
@@ -649,6 +657,7 @@ internal class DatadogLogHandlerTest {
                 mockNetworkInfoProvider,
                 mockUserInfoProvider,
                 mockTimeProvider,
+                fakeSdkVersion,
                 fakeEnvName,
                 fakeAppVersion
             ),
@@ -682,6 +691,7 @@ internal class DatadogLogHandlerTest {
                 mockNetworkInfoProvider,
                 mockUserInfoProvider,
                 mockTimeProvider,
+                fakeSdkVersion,
                 fakeEnvName,
                 fakeAppVersion
             ),

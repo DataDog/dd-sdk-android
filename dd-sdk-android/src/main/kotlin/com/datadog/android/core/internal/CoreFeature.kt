@@ -10,6 +10,7 @@ import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
 import android.os.Process
+import com.datadog.android.BuildConfig
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
@@ -74,6 +75,7 @@ internal object CoreFeature {
     // possibility to override it which is useful when SDK is used via bridge, say
     // from React Native integration
     internal const val DEFAULT_SOURCE_NAME = "android"
+    internal const val DEFAULT_SDK_VERSION = BuildConfig.SDK_VERSION_NAME
 
     // endregion
 
@@ -95,6 +97,7 @@ internal object CoreFeature {
     internal var packageVersion: String = ""
     internal var serviceName: String = ""
     internal var sourceName: String = DEFAULT_SOURCE_NAME
+    internal var sdkVersion: String = DEFAULT_SDK_VERSION
     internal var rumApplicationId: String? = null
     internal var isMainProcess: Boolean = true
     internal var envName: String = ""
@@ -195,6 +198,7 @@ internal object CoreFeature {
                     networkInfoProvider,
                     userInfoProvider,
                     timeProvider,
+                    sdkVersion,
                     envName,
                     packageVersion
                 ),

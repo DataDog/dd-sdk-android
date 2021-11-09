@@ -50,6 +50,7 @@ internal object CrashReportsFeature : SdkFeature<LogEvent, Configuration.Feature
             configuration.endpointUrl,
             CoreFeature.clientToken,
             CoreFeature.sourceName,
+            CoreFeature.sdkVersion,
             CoreFeature.okHttpClient,
             sdkLogger
         )
@@ -74,6 +75,7 @@ internal object CrashReportsFeature : SdkFeature<LogEvent, Configuration.Feature
                 CoreFeature.networkInfoProvider,
                 CoreFeature.userInfoProvider,
                 CoreFeature.timeProvider,
+                CoreFeature.sdkVersion,
                 CoreFeature.envName,
                 CoreFeature.packageVersion
             ),

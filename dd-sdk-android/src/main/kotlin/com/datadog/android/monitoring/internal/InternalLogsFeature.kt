@@ -58,6 +58,7 @@ internal object InternalLogsFeature : SdkFeature<LogEvent, Configuration.Feature
             configuration.endpointUrl,
             configuration.internalClientToken,
             CoreFeature.sourceName,
+            CoreFeature.sdkVersion,
             CoreFeature.okHttpClient,
             Logger(NoOpLogHandler())
         )
