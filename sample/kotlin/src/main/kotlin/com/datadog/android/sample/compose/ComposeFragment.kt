@@ -35,6 +35,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.datadog.android.compose.DatadogViewTrackingEffect
+import com.datadog.android.compose.ExperimentalTrackingApi
 import com.datadog.android.compose.trackClicks
 import com.datadog.android.rum.tracking.AcceptAllNavDestinations
 import com.google.accompanist.appcompattheme.AppCompatTheme
@@ -59,6 +60,7 @@ class ComposeFragment : Fragment() {
     }
 }
 
+@OptIn(ExperimentalTrackingApi::class)
 @Composable
 fun ComposeNavigationExample() {
     val navController = rememberNavController().apply {
@@ -76,6 +78,7 @@ class SimpleViewIdPreviewProvider : PreviewParameterProvider<String> {
         get() = sequenceOf("one", "two", "three")
 }
 
+@OptIn(ExperimentalTrackingApi::class)
 @Preview
 @Composable
 fun SimpleView(

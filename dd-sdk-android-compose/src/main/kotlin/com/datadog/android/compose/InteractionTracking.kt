@@ -23,6 +23,7 @@ import com.datadog.android.rum.RumMonitor
  * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
  * @param onClick Click listener.
  */
+@ExperimentalTrackingApi
 @Composable
 fun trackClicks(
     targetName: String,

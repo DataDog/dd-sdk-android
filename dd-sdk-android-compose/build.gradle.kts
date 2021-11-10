@@ -14,6 +14,7 @@ import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.config.publishingConfig
 import com.datadog.gradle.config.setLibraryVersion
+import com.datadog.gradle.config.taskConfig
 
 plugins {
     // Build
@@ -100,6 +101,11 @@ unMock {
 }
 
 kotlinConfig()
+taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions {
+        freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
+    }
+}
 detektConfig()
 ktLintConfig()
 junitConfig()
