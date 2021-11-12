@@ -18,6 +18,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -361,34 +362,45 @@ internal class BatchFileOrchestratorTest {
 
     @Test
     fun `𝕄 return new File 𝕎 getWritableFile() {previous file has too many items}`(
-        @StringForgery(size = MAX_ITEM_PER_BATCH) previousData: String,
-        @IntForgery(min = 1, max = MAX_ITEM_SIZE) dataSize: Int
+        @IntForgery(min = 1, max = MAX_ITEM_SIZE) dataSize: Int,
+        forge: Forge
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val previousFile = testedOrchestrator.getWritableFile(1)
-        checkNotNull(previousFile)
-        previousFile.writeText(previousData[0].toString())
-        for (i in 1 until MAX_ITEM_PER_BATCH) {
-            val file = testedOrchestrator.getWritableFile(1)
-            assumeTrue(file == previousFile)
-            file?.appendText(previousData[i].toString())
+        var previousFile = testedOrchestrator.getWritableFile(dataSize)
+
+        for (round in 1 until 5) {
+            checkNotNull(previousFile)
+
+            val previousData = forge.aList(MAX_ITEM_PER_BATCH) {
+                forge.anAlphabeticalString(size = dataSize)
+            }
+
+            previousFile.writeText(previousData[0])
+
+            for (i in 1 until MAX_ITEM_PER_BATCH) {
+                val file = testedOrchestrator.getWritableFile(dataSize)
+                assumeTrue(file == previousFile)
+                file?.appendText(previousData[i])
+            }
+
+            // When
+            val start = System.currentTimeMillis()
+            val nextFile = testedOrchestrator.getWritableFile(dataSize)
+            val end = System.currentTimeMillis()
+
+            // Then
+            checkNotNull(nextFile)
+            assertThat(nextFile)
+                .doesNotExist()
+                .hasParent(fakeRootDir)
+            assertThat(nextFile.name.toLong())
+                .isBetween(start, end)
+            assertThat(previousFile.readText())
+                .isEqualTo(previousData.joinToString(separator = ""))
+
+            previousFile = nextFile
         }
-
-        // When
-        val start = System.currentTimeMillis()
-        val result = testedOrchestrator.getWritableFile(dataSize)
-        val end = System.currentTimeMillis()
-
-        // Then
-        checkNotNull(result)
-        assertThat(result)
-            .doesNotExist()
-            .hasParent(fakeRootDir)
-        assertThat(result.name.toLong())
-            .isBetween(start, end)
-        assertThat(previousFile.readText())
-            .isEqualTo(previousData)
     }
 
     @Test
@@ -879,7 +891,7 @@ internal class BatchFileOrchestratorTest {
 
     companion object {
 
-        private const val RECENT_DELAY_MS = 150L
+        private const val RECENT_DELAY_MS = 250L
 
         private const val MAX_ITEM_PER_BATCH: Int = 32
         private const val MAX_ITEM_SIZE: Int = 256
