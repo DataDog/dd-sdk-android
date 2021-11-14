@@ -33,6 +33,7 @@ inline fun <T> SQLiteDatabase.transactionTraced(
             beginTransactionNonExclusive()
         }
         try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller
             val result = this.body(this@transactionTraced)
             setTransactionSuccessful()
             return result

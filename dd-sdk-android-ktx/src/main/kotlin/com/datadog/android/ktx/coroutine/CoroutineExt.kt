@@ -107,6 +107,7 @@ fun <T : Any?> CoroutineScope.asyncTraced(
 suspend fun <T : Any?> Deferred<T>.awaitTraced(operationName: String): T {
     val parentSpan = GlobalTracer.get().activeSpan()
     return withinSpan(operationName, parentSpan, false) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller
         this@awaitTraced.await()
     }
 }
@@ -143,6 +144,7 @@ private suspend fun <T : Any?> CoroutineScope.withinCoroutineSpan(
         if (context is CoroutineDispatcher) {
             setTag(TAG_DISPATCHER, context.toString())
         }
+        @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller
         block(CoroutineScopeSpanImpl(this@withinCoroutineSpan, this))
     }
 }

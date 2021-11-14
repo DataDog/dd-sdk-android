@@ -33,6 +33,7 @@ fun <T : Transacter> T.transactionTraced(
 ) {
     withinSpan(operationName, GlobalTracer.get().activeSpan()) {
         transaction(noEnclosing = noEnclosing) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller
             body.invoke(TransactionWithSpanAndWithoutReturnImpl(this@withinSpan, this))
         }
     }
@@ -55,6 +56,7 @@ fun <T : Transacter, R> T.transactionTracedWithResult(
 ): R {
     withinSpan(operationName, GlobalTracer.get().activeSpan()) {
         return transactionWithResult(noEnclosing = noEnclosing) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller
             body.invoke(TransactionWithSpanAndWithReturnImpl(this@withinSpan, this))
         }
     }

@@ -61,5 +61,6 @@ fun Context.getRawResAsRumResource(
         "res/0x${id.toString(16)}"
     }
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller
     return RumResourceInputStream(resources.openRawResource(id), resName)
 }
