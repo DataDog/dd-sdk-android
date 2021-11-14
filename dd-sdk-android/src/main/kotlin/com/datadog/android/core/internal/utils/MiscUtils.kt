@@ -21,6 +21,7 @@ internal fun retryWithDelay(
     return retryWithDelay(block, times, retryDelayNs)
 }
 
+@Suppress("TooGenericExceptionCaught")
 internal inline fun retryWithDelay(
     block: () -> Boolean,
     times: Int,
@@ -31,7 +32,12 @@ internal inline fun retryWithDelay(
     var loopTimeOrigin = System.nanoTime() - loopsDelayInNanos
     while (retryCounter <= times && !wasSuccessful) {
         if ((System.nanoTime() - loopTimeOrigin) >= loopsDelayInNanos) {
-            wasSuccessful = block()
+            wasSuccessful = try {
+                block()
+            } catch (e: Exception) {
+                sdkLogger.e("Internal operation failed", e)
+                return false
+            }
             loopTimeOrigin = System.nanoTime()
             retryCounter++
         }

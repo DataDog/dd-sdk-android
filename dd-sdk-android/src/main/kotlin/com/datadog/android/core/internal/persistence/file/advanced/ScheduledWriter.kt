@@ -21,6 +21,7 @@ internal class ScheduledWriter<T : Any>(
 
     override fun write(element: T) {
         try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             executorService.submit {
                 delegateWriter.write(element)
             }
@@ -31,6 +32,7 @@ internal class ScheduledWriter<T : Any>(
 
     override fun write(data: List<T>) {
         try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             executorService.submit {
                 delegateWriter.write(data)
             }

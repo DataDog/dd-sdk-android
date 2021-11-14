@@ -70,13 +70,10 @@ internal class ConsentAwareFileMigrator(
             }
         }
         try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             executorService.submit(operation)
         } catch (e: RejectedExecutionException) {
-            internalLogger.e(ERROR_REJECTED, e)
+            internalLogger.e(DataMigrator.ERROR_REJECTED, e)
         }
-    }
-
-    companion object {
-        internal const val ERROR_REJECTED = "Unable to schedule migration on the executor"
     }
 }

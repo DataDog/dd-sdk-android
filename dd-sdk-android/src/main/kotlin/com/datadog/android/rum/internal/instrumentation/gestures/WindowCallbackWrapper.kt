@@ -23,7 +23,10 @@ internal class WindowCallbackWrapper(
     val wrappedCallback: Window.Callback,
     val gesturesDetector: GesturesDetectorWrapper,
     val interactionPredicate: InteractionPredicate = NoOpInteractionPredicate(),
-    val copyEvent: (MotionEvent) -> MotionEvent = { MotionEvent.obtain(it) }
+    val copyEvent: (MotionEvent) -> MotionEvent = {
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+        MotionEvent.obtain(it)
+    }
 ) : Window.Callback by wrappedCallback {
 
     // region Window.Callback
@@ -31,6 +34,7 @@ internal class WindowCallbackWrapper(
     override fun dispatchTouchEvent(event: MotionEvent?): Boolean {
         if (event != null) {
             // we copy it and delegate it to the gesture detector for analysis
+            @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
             val copy = copyEvent(event)
             try {
                 gesturesDetector.onTouchEvent(copy)

@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumAttributes
@@ -27,6 +28,7 @@ import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.TracingInterceptor
 import io.opentracing.Span
 import io.opentracing.Tracer
+import java.io.IOException
 import java.util.Locale
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -234,9 +236,14 @@ internal constructor(
     }
 
     private fun getBodyLength(response: Response?): Long? {
-        val body = response?.peekBody(MAX_BODY_PEEK)
-        val contentLength = body?.contentLength()
-        return if (contentLength == 0L) null else contentLength
+        return try {
+            val body = response?.peekBody(MAX_BODY_PEEK)
+            val contentLength = body?.contentLength()
+            if (contentLength == 0L) null else contentLength
+        } catch (e: IOException) {
+            sdkLogger.e("Unable to peek response body", e)
+            null
+        }
     }
 
     // endregion

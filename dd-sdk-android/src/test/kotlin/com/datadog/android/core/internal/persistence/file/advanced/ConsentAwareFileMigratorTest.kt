@@ -287,7 +287,7 @@ internal class ConsentAwareFileMigratorTest {
         // Then
         verify(mockLogHander).handleLog(
             Log.ERROR,
-            ConsentAwareFileMigrator.ERROR_REJECTED,
+            DataMigrator.ERROR_REJECTED,
             throwable = exception
         )
     }

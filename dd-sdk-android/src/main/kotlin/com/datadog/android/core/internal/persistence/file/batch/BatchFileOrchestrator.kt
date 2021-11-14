@@ -156,7 +156,7 @@ internal class BatchFileOrchestrator(
 
     private fun isFileRecent(file: File, delayMs: Long): Boolean {
         val now = System.currentTimeMillis()
-        val fileTimestamp = file.name.toLong()
+        val fileTimestamp = file.name.toLongOrNull() ?: 0L
         return fileTimestamp >= (now - delayMs)
     }
 
@@ -165,8 +165,8 @@ internal class BatchFileOrchestrator(
         val threshold = System.currentTimeMillis() - config.oldFileThreshold
         files
             .asSequence()
-            .filter { it.name.toLong() < threshold }
-            .forEach { it.delete() }
+            .filter { (it.name.toLongOrNull() ?: 0) < threshold }
+            .forEach { it.deleteSafe() }
     }
 
     private fun freeSpaceIfNeeded() {

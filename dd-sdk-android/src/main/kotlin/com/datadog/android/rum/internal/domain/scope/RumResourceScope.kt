@@ -61,6 +61,9 @@ internal class RumResourceScope(
             is RumRawEvent.AddResourceTiming -> onAddResourceTiming(event, writer)
             is RumRawEvent.StopResource -> onStopResource(event, writer)
             is RumRawEvent.StopResourceWithError -> onStopResourceWithError(event, writer)
+            else -> {
+                // Other events are not relevant for RumResourceScope
+            }
         }
 
         return if (sent) null else this

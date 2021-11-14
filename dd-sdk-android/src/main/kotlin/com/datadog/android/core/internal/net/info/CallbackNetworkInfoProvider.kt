@@ -72,7 +72,7 @@ internal class CallbackNetworkInfoProvider(
             // "package does not belong to xxxx"
             devLogger.e(ERROR_REGISTER, e)
             lastNetworkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_OTHER)
-        } catch (e: RuntimeException) {
+        } catch (e: Exception) {
             // RUMM-918 in some cases the device throws a IllegalArgumentException on register
             // "Too many NetworkRequests filed" This happens when registerDefaultNetworkCallback is
             // called too many times without matching unregisterNetworkCallback

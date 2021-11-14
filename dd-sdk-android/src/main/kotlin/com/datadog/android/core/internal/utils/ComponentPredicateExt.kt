@@ -13,12 +13,17 @@ import com.datadog.android.rum.tracking.ComponentPredicate
  * @param component to be verified
  * @param operation to be executed
  */
+@Suppress("TooGenericExceptionCaught")
 internal inline fun <reified T : Any> ComponentPredicate<T>.runIfValid(
     component: T,
     operation: (T) -> Unit
 ) {
     if (accept(component)) {
-        operation(component)
+        try {
+            operation(component)
+        } catch (e: Exception) {
+            sdkLogger.e("Internal operation failed", e)
+        }
     }
 }
 

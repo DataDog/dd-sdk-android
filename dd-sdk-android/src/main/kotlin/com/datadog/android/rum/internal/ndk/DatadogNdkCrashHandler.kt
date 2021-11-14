@@ -9,6 +9,9 @@ package com.datadog.android.rum.internal.ndk
 import android.content.Context
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.core.internal.persistence.file.existsSafe
+import com.datadog.android.core.internal.persistence.file.listFilesSafe
+import com.datadog.android.core.internal.persistence.file.readTextSafe
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
@@ -21,6 +24,7 @@ import com.datadog.android.rum.model.ViewEvent
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.TimeUnit
 
 internal class DatadogNdkCrashHandler(
@@ -45,8 +49,13 @@ internal class DatadogNdkCrashHandler(
     // region NdkCrashHandler
 
     override fun prepareData() {
-        dataPersistenceExecutorService.submit {
-            readCrashData()
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            dataPersistenceExecutorService.submit {
+                readCrashData()
+            }
+        } catch (e: RejectedExecutionException) {
+            internalLogger.e(ERROR_TASK_REJECTED, e)
         }
     }
 
@@ -54,8 +63,13 @@ internal class DatadogNdkCrashHandler(
         logWriter: DataWriter<LogEvent>,
         rumWriter: DataWriter<Any>
     ) {
-        dataPersistenceExecutorService.submit {
-            checkAndHandleNdkCrashReport(logWriter, rumWriter)
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            dataPersistenceExecutorService.submit {
+                checkAndHandleNdkCrashReport(logWriter, rumWriter)
+            }
+        } catch (e: RejectedExecutionException) {
+            internalLogger.e(ERROR_TASK_REJECTED, e)
         }
     }
 
@@ -64,16 +78,16 @@ internal class DatadogNdkCrashHandler(
     // region Internal
 
     private fun readCrashData() {
-        if (!ndkCrashDataDirectory.exists()) {
+        if (!ndkCrashDataDirectory.existsSafe()) {
             return
         }
         try {
-            ndkCrashDataDirectory.listFiles()?.forEach {
+            ndkCrashDataDirectory.listFilesSafe()?.forEach {
                 when (it.name) {
-                    CRASH_DATA_FILE_NAME -> lastSerializedNdkCrashLog = it.readText()
-                    RUM_VIEW_EVENT_FILE_NAME -> lastSerializedRumViewEvent = it.readText()
-                    USER_INFO_FILE_NAME -> lastSerializedUserInformation = it.readText()
-                    NETWORK_INFO_FILE_NAME -> lastSerializedNetworkInformation = it.readText()
+                    CRASH_DATA_FILE_NAME -> lastSerializedNdkCrashLog = it.readTextSafe()
+                    RUM_VIEW_EVENT_FILE_NAME -> lastSerializedRumViewEvent = it.readTextSafe()
+                    USER_INFO_FILE_NAME -> lastSerializedUserInformation = it.readTextSafe()
+                    NETWORK_INFO_FILE_NAME -> lastSerializedNetworkInformation = it.readTextSafe()
                 }
             }
         } catch (e: SecurityException) {
@@ -276,9 +290,9 @@ internal class DatadogNdkCrashHandler(
 
     @SuppressWarnings("TooGenericExceptionCaught")
     private fun clearCrashLog() {
-        if (ndkCrashDataDirectory.exists()) {
+        if (ndkCrashDataDirectory.existsSafe()) {
             try {
-                ndkCrashDataDirectory.listFiles()?.forEach { it.deleteRecursively() }
+                ndkCrashDataDirectory.listFilesSafe()?.forEach { it.deleteRecursively() }
             } catch (e: Throwable) {
                 internalLogger.e(
                     "Unable to clear the NDK crash report file:" +
@@ -303,6 +317,8 @@ internal class DatadogNdkCrashHandler(
 
         internal const val LOG_CRASH_MSG = "NDK crash detected with signal: %s"
         internal const val ERROR_READ_NDK_DIR = "Error while trying to read the NDK crash directory"
+
+        internal const val ERROR_TASK_REJECTED = "Unable to schedule operation on the executor"
 
         internal const val NDK_CRASH_REPORTS_FOLDER_NAME = "ndk_crash_reports"
         private const val NDK_CRASH_REPORTS_PENDING_FOLDER_NAME = "ndk_crash_reports_intermediary"

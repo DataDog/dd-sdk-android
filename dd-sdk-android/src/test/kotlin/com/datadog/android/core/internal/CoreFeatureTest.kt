@@ -10,6 +10,7 @@ import android.app.ActivityManager
 import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.os.Build
 import android.os.Process
@@ -43,6 +44,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.atLeastOnce
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
@@ -335,6 +337,35 @@ internal class CoreFeatureTest {
         assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
         assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(CoreFeature.packageVersion).isEqualTo(appContext.fakeVersionCode.toString())
+        assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
+        assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
+        assertThat(CoreFeature.rumApplicationId).isNull()
+        assertThat(CoreFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
+        assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
+    }
+
+    @Test
+    fun `𝕄 initializes app info 𝕎 initialize() {unknown package name}`() {
+        // Given
+        whenever(appContext.mockPackageManager.getPackageInfo(appContext.fakePackageName, 0))
+            .doThrow(PackageManager.NameNotFoundException())
+        whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
+            .doReturn(mockConnectivityMgr)
+
+        // When
+        CoreFeature.initialize(
+            appContext.mockInstance,
+            fakeCredentials.copy(rumApplicationId = null),
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
+        assertThat(CoreFeature.packageVersion).isEqualTo(CoreFeature.DEFAULT_APP_VERSION)
         assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
         assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
         assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)

@@ -368,6 +368,7 @@ internal open class RumViewScope(
         writer: DataWriter<Any>
     ) {
         val iterator = activeResourceScopes.iterator()
+        @Suppress("UnsafeThirdPartyFunctionCall") // next/remove can't fail: we checked hasNext
         while (iterator.hasNext()) {
             val entry = iterator.next()
             val scope = entry.value.handleEvent(event, writer)

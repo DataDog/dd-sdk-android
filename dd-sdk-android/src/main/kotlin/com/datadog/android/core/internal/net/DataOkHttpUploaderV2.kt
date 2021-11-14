@@ -67,6 +67,7 @@ internal abstract class DataOkHttpUploaderV2(
 
     // region Internal
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
     private fun executeUploadRequest(
         data: ByteArray,
         requestId: String
@@ -78,6 +79,7 @@ internal abstract class DataOkHttpUploaderV2(
         return responseCodeToUploadStatus(response.code())
     }
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
     private fun buildRequest(data: ByteArray, requestId: String): Request {
         val builder = Request.Builder()
             .url(buildUrl())

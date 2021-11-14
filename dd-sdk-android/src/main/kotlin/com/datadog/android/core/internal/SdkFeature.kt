@@ -93,10 +93,6 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature> {
         return featurePlugins
     }
 
-    fun flushStoredData() {
-        persistenceStrategy.getFlusher().flush(uploader)
-    }
-
     // endregion
 
     // region Abstract
@@ -185,6 +181,11 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature> {
         val newOrchestrator = BatchFileOrchestrator(cacheDir, config, internalLogger)
 
         migrator.migrateData(null, previousOrchestrator, true, newOrchestrator)
+    }
+
+    // Used for nightly tests only
+    internal fun flushStoredData() {
+        persistenceStrategy.getFlusher().flush(uploader)
     }
 
     // endregion

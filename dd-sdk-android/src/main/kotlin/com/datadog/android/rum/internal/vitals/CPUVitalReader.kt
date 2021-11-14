@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.vitals
 
 import com.datadog.android.core.internal.persistence.file.canReadSafe
 import com.datadog.android.core.internal.persistence.file.existsSafe
+import com.datadog.android.core.internal.persistence.file.readTextSafe
 import java.io.File
 
 /**
@@ -23,7 +24,7 @@ internal class CPUVitalReader(
             return null
         }
 
-        val stat = statFile.readText()
+        val stat = statFile.readTextSafe() ?: return null
         val tokens = stat.split(' ')
         return if (tokens.size > UTIME_IDX) {
             tokens[UTIME_IDX].toDoubleOrNull()

@@ -6,8 +6,11 @@
 
 package com.datadog.android.core.internal.utils
 
+import java.io.IOException
 import java.nio.channels.FileLock
 
+@Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
+@Throws(IOException::class)
 internal inline fun <reified R> FileLock.use(block: (FileLock) -> R): R {
     try {
         return block(this)

@@ -4,12 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 @file:Suppress("TooManyFunctions")
+
 package com.datadog.android.core.internal.persistence.file
 
 import com.datadog.android.core.internal.utils.sdkLogger
 import java.io.File
 import java.io.FileFilter
 import java.io.FilenameFilter
+import java.nio.charset.Charset
 
 /*
  * The java.lang.File class throws a SecurityException for the following calls:
@@ -25,6 +27,7 @@ import java.io.FilenameFilter
  * is safeguarded to avoid crashing the customer's app.
  */
 
+@Suppress("TooGenericExceptionCaught")
 private fun <T> File.safeCall(
     default: T,
     lambda: File.() -> T
@@ -32,6 +35,9 @@ private fun <T> File.safeCall(
     return try {
         lambda()
     } catch (e: SecurityException) {
+        sdkLogger.e("Security exception was thrown for file ${this.path}", e)
+        default
+    } catch (e: Exception) {
         sdkLogger.e("Security exception was thrown for file ${this.path}", e)
         default
     }
@@ -103,4 +109,20 @@ internal fun File.mkdirsSafe(): Boolean {
 
 internal fun File.renameToSafe(dest: File): Boolean {
     return safeCall(default = false) { renameTo(dest) }
+}
+
+internal fun File.readTextSafe(charset: Charset = Charsets.UTF_8): String? {
+    return if (existsSafe() && canReadSafe()) {
+        safeCall(default = null) { readText(charset) }
+    } else {
+        null
+    }
+}
+
+internal fun File.readLinesSafe(charset: Charset = Charsets.UTF_8): List<String>? {
+    return if (existsSafe() && canReadSafe()) {
+        safeCall(default = null) { readLines(charset) }
+    } else {
+        null
+    }
 }

@@ -31,6 +31,7 @@ internal class LogGenerator(
     appVersion: String
 ) {
     private val simpleDateFormat = SimpleDateFormat(ISO_8601, Locale.US).apply {
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         timeZone = TimeZone.getTimeZone("UTC")
     }
 
@@ -63,6 +64,7 @@ internal class LogGenerator(
         val resolvedTimestamp = timestamp + timeProvider.getServerOffsetMillis()
         val combinedAttributes = resolveAttributes(attributes, bundleWithTraces, bundleWithRum)
         val formattedDate = synchronized(simpleDateFormat) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             simpleDateFormat.format(Date(resolvedTimestamp))
         }
         val combinedTags = resolveTags(tags)

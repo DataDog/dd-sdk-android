@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
@@ -97,10 +98,20 @@ object Datadog {
 
         // Issue #154 (“Thread starting during runtime shutdown”)
         // Make sure we stop Datadog when the Runtime shuts down
-        Runtime.getRuntime()
-            .addShutdownHook(
-                Thread(Runnable { stop() }, SHUTDOWN_THREAD)
-            )
+        try {
+            val hook = Thread({ stop() }, SHUTDOWN_THREAD)
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            Runtime.getRuntime().addShutdownHook(hook)
+        } catch (e: IllegalStateException) {
+            // Most probably Runtime is already shutting down
+            sdkLogger.e("Unable to add shutdown hook, Runtime is already shutting down", e)
+            stop()
+        } catch (e: IllegalArgumentException) {
+            // can only happen if hook is already added, or already running
+            sdkLogger.e("Shutdown hook was rejected", e)
+        } catch (e: SecurityException) {
+            sdkLogger.e("Security Manager denied adding shutdown hook ", e)
+        }
     }
 
     /**
@@ -151,6 +162,9 @@ object Datadog {
     // method is mainly for test purposes.
     @Suppress("unused")
     private fun flushAndShutdownExecutors() {
+        // Note for the future: if we decide to make this a public feature,
+        // we need to drain, execute and flush from a background thread or ensure we're
+        // not in the main thread!
         if (initialized.get()) {
             (GlobalRum.get() as? DatadogRumMonitor)?.let {
                 it.stopKeepAliveCallback()

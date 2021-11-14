@@ -72,6 +72,7 @@ internal class MainLooperLongTaskStrategy(
     private fun detectLongTask(message: String) {
         val now = System.nanoTime()
         if (message.startsWith(PREFIX_START)) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // substring can't throw IndexOutOfBounds
             target = message.substring(PREFIX_START_LENGTH)
             startUptimeNs = now
         } else if (message.startsWith(PREFIX_END)) {

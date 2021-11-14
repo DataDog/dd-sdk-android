@@ -78,6 +78,7 @@ internal open class AndroidXFragmentLifecycleCallbacks(
             val key = resolveKey(it)
             viewLoadingTimer.onFinishedLoading(key)
             val viewName = componentPredicate.resolveViewName(f)
+            @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
             rumMonitor.startView(key, viewName, argumentsProvider(it))
             val loadingTime = viewLoadingTimer.getLoadingTime(key)
             if (loadingTime != null) {

@@ -33,6 +33,7 @@ internal fun cancelUploadWorker(context: Context) {
     }
 }
 
+@Suppress("TooGenericExceptionCaught")
 internal fun triggerUploadWorker(context: Context) {
     try {
         val workManager = WorkManager.getInstance(context)
@@ -44,14 +45,13 @@ internal fun triggerUploadWorker(context: Context) {
             .addTag(TAG_DATADOG_UPLOAD)
             .setInitialDelay(DELAY_MS, TimeUnit.MILLISECONDS)
             .build()
-        workManager
-            .enqueueUniqueWork(
+        workManager.enqueueUniqueWork(
                 UPLOAD_WORKER_NAME,
                 ExistingWorkPolicy.REPLACE,
                 uploadWorkRequest
             )
         sdkLogger.i(UPLOAD_WORKER_WAS_SCHEDULED)
-    } catch (e: IllegalStateException) {
+    } catch (e: Exception) {
         sdkLogger.e(SETUP_ERROR_MESSAGE, e)
     }
 }

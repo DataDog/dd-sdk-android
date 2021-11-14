@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.log.Logger
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.RejectedExecutionException
 
 internal class CacheFileMigrator(
     private val fileHandler: FileHandler,
@@ -38,8 +39,18 @@ internal class CacheFileMigrator(
         )
         val deleteOperation = WipeDataMigrationOperation(sourceDir, fileHandler, internalLogger)
 
-        executorService.submit(moveOperation)
-        executorService.submit(deleteOperation)
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            executorService.submit(moveOperation)
+        } catch (e: RejectedExecutionException) {
+            internalLogger.e(DataMigrator.ERROR_REJECTED, e)
+        }
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            executorService.submit(deleteOperation)
+        } catch (e: RejectedExecutionException) {
+            internalLogger.e(DataMigrator.ERROR_REJECTED, e)
+        }
     }
 
     // endregion

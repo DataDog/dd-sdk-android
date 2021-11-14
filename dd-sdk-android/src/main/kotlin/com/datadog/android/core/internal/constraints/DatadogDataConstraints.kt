@@ -107,11 +107,12 @@ internal class DatadogDataConstraints : DataConstraints {
 
     // region Internal/Tag
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // substring IndexOutOfBounds is impossible here
     private val tagTransforms = listOf<StringTransform>(
         // Tags must be lowercase
         { it.lowercase(Locale.US) },
         // Tags must start with a letter
-        { if (it.get(0) !in 'a'..'z') null else it },
+        { if (it.getOrNull(0) !in 'a'..'z') null else it },
         // Tags convert illegal characters to underscode
         { it.replace(Regex("[^a-z0-9_:./-]"), "_") },
         // Tags cannot end with a colon
@@ -124,10 +125,12 @@ internal class DatadogDataConstraints : DataConstraints {
 
     private fun convertTag(rawTag: String?): String? {
         return tagTransforms.fold(rawTag) { tag, transform ->
+            @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
             if (tag == null) null else transform.invoke(tag)
         }
     }
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // substring IndexOutOfBounds is impossible here
     private fun isKeyReserved(tag: String): Boolean {
         val firstColon = tag.indexOf(':')
         return if (firstColon > 0) {

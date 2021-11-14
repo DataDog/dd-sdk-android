@@ -88,6 +88,7 @@ internal class OreoFragmentLifecycleCallbacks(
         componentPredicate.runIfValid(f) {
             val viewName = componentPredicate.resolveViewName(f)
             viewLoadingTimer.onFinishedLoading(f)
+            @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
             rumMonitor.startView(it, viewName, argumentsProvider(it))
             val loadingTime = viewLoadingTimer.getLoadingTime(it)
             if (loadingTime != null) {
