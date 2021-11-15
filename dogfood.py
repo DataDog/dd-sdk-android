@@ -48,7 +48,7 @@ def parse_arguments(args: list) -> Namespace:
 
     parser.add_argument("-v", "--version", required=True, help="the version of the SDK")
     parser.add_argument("-t", "--target", required=True,
-                        choices=[TARGET_APP, TARGET_DEMO, TARGET_BRIDGE],
+                        choices=[TARGET_APP, TARGET_DEMO, TARGET_BRIDGE, TARGET_GRADLE_PLUGIN],
                         help="the target repository")
 
     return parser.parse_args(args)
