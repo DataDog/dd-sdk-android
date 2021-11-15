@@ -182,11 +182,20 @@ internal class GesturesListener(
         val queue = LinkedList<View>()
         queue.addFirst(decorView)
         var target: View? = null
+        var notifyMissingTarget = true
 
         while (queue.isNotEmpty()) {
             // removeFirst can't fail because we checked isNotEmpty
             @Suppress("UnsafeThirdPartyFunctionCall")
             val view = queue.removeFirst()
+            if (queue.isEmpty() &&
+                view::class.java.name.startsWith("androidx.compose.ui.platform.ComposeView")
+            ) {
+                // startsWith here is to make testing easier: mocks don't have name exactly
+                // like this, and writing manual stub is not possible, because some necessary
+                // methods are final.
+                notifyMissingTarget = false
+            }
 
             if (isValidTapTarget(view)) {
                 target = view
@@ -197,7 +206,7 @@ internal class GesturesListener(
             }
         }
 
-        if (target == null) {
+        if (target == null && notifyMissingTarget) {
             devLogger.i(MSG_NO_TARGET_TAP)
         }
         return target
