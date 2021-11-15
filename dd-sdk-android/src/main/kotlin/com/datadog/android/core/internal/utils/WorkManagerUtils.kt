@@ -46,10 +46,10 @@ internal fun triggerUploadWorker(context: Context) {
             .setInitialDelay(DELAY_MS, TimeUnit.MILLISECONDS)
             .build()
         workManager.enqueueUniqueWork(
-                UPLOAD_WORKER_NAME,
-                ExistingWorkPolicy.REPLACE,
-                uploadWorkRequest
-            )
+            UPLOAD_WORKER_NAME,
+            ExistingWorkPolicy.REPLACE,
+            uploadWorkRequest
+        )
         sdkLogger.i(UPLOAD_WORKER_WAS_SCHEDULED)
     } catch (e: Exception) {
         sdkLogger.e(SETUP_ERROR_MESSAGE, e)

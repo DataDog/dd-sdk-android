@@ -48,7 +48,7 @@ internal class ComposeNavigationObserver(
     override fun onDestinationChanged(
         controller: NavController,
         destination: NavDestination,
-        arguments: Bundle?,
+        arguments: Bundle?
     ) {
         if (destinationPredicate.accept(destination)) {
             destination.route?.let {
@@ -65,7 +65,7 @@ internal class ComposeNavigationObserver(
     private fun startView(
         navDestination: NavDestination,
         route: String,
-        arguments: Bundle?,
+        arguments: Bundle?
     ) {
         val viewName = destinationPredicate.getViewName(navDestination) ?: route
         rumMonitor.startView(
@@ -110,7 +110,7 @@ internal class ComposeNavigationObserver(
 fun DatadogViewTrackingEffect(
     navController: NavController,
     trackArguments: Boolean = true,
-    destinationPredicate: ComponentPredicate<NavDestination> = AcceptAllNavDestinations(),
+    destinationPredicate: ComponentPredicate<NavDestination> = AcceptAllNavDestinations()
 ) {
 
     val currentTrackArguments by rememberUpdatedState(newValue = trackArguments)
