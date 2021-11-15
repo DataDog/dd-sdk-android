@@ -41,6 +41,7 @@ import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -180,22 +181,35 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
             vitalExecutorService,
             VITAL_UPDATE_PERIOD_MS
         )
-        vitalExecutorService.schedule(
-            readerRunnable,
-            VITAL_UPDATE_PERIOD_MS,
-            TimeUnit.MILLISECONDS
-        )
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            vitalExecutorService.schedule(
+                readerRunnable,
+                VITAL_UPDATE_PERIOD_MS,
+                TimeUnit.MILLISECONDS
+            )
+        } catch (e: RejectedExecutionException) {
+            sdkLogger.e(ERROR_VITAL_TASK_REJECTED, e)
+        }
     }
 
     private fun initializeANRDetector() {
         anrDetectorHandler = Handler(Looper.getMainLooper())
         anrDetectorRunnable = ANRDetectorRunnable(anrDetectorHandler)
         anrDetectorExecutorService = Executors.newSingleThreadExecutor()
-        anrDetectorExecutorService.execute(anrDetectorRunnable)
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            anrDetectorExecutorService.execute(anrDetectorRunnable)
+        } catch (e: RejectedExecutionException) {
+            sdkLogger.e(ERROR_ANR_TASK_REJECTED, e)
+        }
     }
 
     // Update Vitals every second
     private const val VITAL_UPDATE_PERIOD_MS = 100L
 
+    const val ERROR_ANR_TASK_REJECTED = "Unable to schedule ANR detection task on the executor"
+    const val ERROR_VITAL_TASK_REJECTED =
+        "Unable to schedule Vitals monitoring task on the executor"
     // endregion
 }

@@ -184,6 +184,8 @@ internal class GesturesListener(
         var target: View? = null
 
         while (queue.isNotEmpty()) {
+            // removeFirst can't fail because we checked isNotEmpty
+            @Suppress("UnsafeThirdPartyFunctionCall")
             val view = queue.removeFirst()
 
             if (isValidTapTarget(view)) {
@@ -206,6 +208,8 @@ internal class GesturesListener(
         queue.add(decorView)
 
         while (queue.isNotEmpty()) {
+            // removeFirst can't fail because we checked isNotEmpty
+            @Suppress("UnsafeThirdPartyFunctionCall")
             val view = queue.removeFirst()
 
             if (isValidScrollableTarget(view)) {
@@ -254,6 +258,7 @@ internal class GesturesListener(
         y: Float,
         container: IntArray
     ): Boolean {
+        @Suppress("UnsafeThirdPartyFunctionCall") // container always have the correct size
         view.getLocationOnScreen(container)
         val vx = container[0]
         val vy = container[1]

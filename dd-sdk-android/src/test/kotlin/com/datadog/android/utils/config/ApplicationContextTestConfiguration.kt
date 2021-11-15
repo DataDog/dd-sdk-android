@@ -35,7 +35,7 @@ internal open class ApplicationContextTestConfiguration<T : Context>(klass: Clas
     lateinit var fakeCacheDir: File
     lateinit var fakeFilesDir: File
 
-    // region Internal
+    // region ApplicationContextTestConfiguration
 
     override fun setUp(forge: Forge) {
         super.setUp(forge)

@@ -37,6 +37,7 @@ internal data class NdkCrashLog(
         internal const val SIGNAL_NAME_KEY_NAME = "signal_name"
         internal const val STACKTRACE_KEY_NAME = "stacktrace"
 
+        @Suppress("UnsafeThirdPartyFunctionCall")
         @Throws(JsonParseException::class, IllegalStateException::class)
         internal fun fromJson(jsonString: String): NdkCrashLog {
             val jsonObject = JsonParser.parseString(jsonString).asJsonObject

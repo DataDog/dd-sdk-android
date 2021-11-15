@@ -44,12 +44,16 @@ class NdkCrashReportsPlugin : DatadogPlugin {
         if (!nativeLibraryLoaded) {
             return
         }
-        val ndkCrashesDirs =
-            File(
-                config.context.cacheDir,
-                NDK_CRASH_REPORTS_FOLDER
-            )
-        ndkCrashesDirs.mkdirs()
+        val ndkCrashesDirs = File(
+            config.context.cacheDir,
+            NDK_CRASH_REPORTS_FOLDER
+        )
+        try {
+            ndkCrashesDirs.mkdirs()
+        } catch (e: SecurityException) {
+            Log.e("Datadog", "Unable to create NDK Crash Report folder $ndkCrashesDirs")
+            return
+        }
         registerSignalHandler(
             ndkCrashesDirs.absolutePath,
             consentToInt(config.trackingConsent)

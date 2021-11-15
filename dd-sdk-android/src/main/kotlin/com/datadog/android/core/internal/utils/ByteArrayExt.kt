@@ -10,7 +10,7 @@ package com.datadog.android.core.internal.utils
  * Splits this [ByteArray] to a list of [ByteArray] around occurrences of the specified [delimiter].
  *
  * @param delimiter a byte to be used as delimiter.
-*/
+ */
 internal fun ByteArray.split(delimiter: Byte): List<ByteArray> {
     val result = mutableListOf<ByteArray>()
 
@@ -22,7 +22,7 @@ internal fun ByteArray.split(delimiter: Byte): List<ByteArray> {
         val length = if (nextIndex >= 0) nextIndex - offset else size - offset
         if (length > 0) {
             val subArray = ByteArray(length)
-            System.arraycopy(this, offset, subArray, 0, length)
+            this.copyTo(offset, subArray, 0, length)
             result.add(subArray)
         }
         offset = nextIndex + 1
@@ -44,4 +44,27 @@ internal fun ByteArray.indexOf(b: Byte, startIndex: Int = 0): Int {
         }
     }
     return -1
+}
+
+/**
+ * Performs a safe version of [System.arrayCopy] by performing the necessary checks and try-catch.
+ *
+ * @return true if the copy was successful.
+ */
+internal fun ByteArray.copyTo(srcPos: Int, dest: ByteArray, destPos: Int, length: Int): Boolean {
+
+    if (destPos + length > dest.size) {
+        sdkLogger.w("Cannot copy ByteArray, dest doesn't have enough space")
+        return false
+    }
+    if (srcPos + length > size) {
+        sdkLogger.w("Cannot copy ByteArray, src doesn't have enough data")
+        return false
+    }
+
+    // this and dest can't be null, NPE cannot happen here
+    // both are ByteArrays, ArrayStoreException cannot happen here
+    @Suppress("UnsafeThirdPartyFunctionCall")
+    System.arraycopy(this, srcPos, dest, destPos, length)
+    return true
 }

@@ -1,5 +1,1 @@
-override fun onStateChanged(androidx.lifecycle.LifecycleOwner, androidx.lifecycle.Lifecycle.Event)
-override fun onDestinationChanged(androidx.navigation.NavController, androidx.navigation.NavDestination, android.os.Bundle?)
-object com.datadog.android.compose.private
-const val ARGUMENT_TAG: String
 fun DatadogViewTrackingEffect(androidx.navigation.NavController, Boolean = true, com.datadog.android.rum.tracking.ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations())

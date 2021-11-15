@@ -8,10 +8,10 @@ package com.datadog.gradle.plugin.gitclone
 
 import com.datadog.gradle.utils.execShell
 import java.io.File
+import java.nio.file.Files.createTempDirectory
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
-import java.nio.file.Files.createTempDirectory
 
 open class GitCloneDependenciesTask : DefaultTask() {
 

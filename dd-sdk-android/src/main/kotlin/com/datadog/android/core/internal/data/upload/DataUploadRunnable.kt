@@ -14,7 +14,9 @@ import com.datadog.android.core.internal.persistence.Batch
 import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.system.SystemInfo
 import com.datadog.android.core.internal.system.SystemInfoProvider
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.model.NetworkInfo
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
@@ -68,7 +70,12 @@ internal class DataUploadRunnable(
 
     private fun scheduleNextUpload() {
         threadPoolExecutor.remove(this)
-        threadPoolExecutor.schedule(this, currentDelayIntervalMs, TimeUnit.MILLISECONDS)
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            threadPoolExecutor.schedule(this, currentDelayIntervalMs, TimeUnit.MILLISECONDS)
+        } catch (e: RejectedExecutionException) {
+            devLogger.e(ERROR_REJECTED, e)
+        }
     }
 
     private fun consumeBatch(batch: Batch) {
@@ -116,5 +123,7 @@ internal class DataUploadRunnable(
 
         const val DECREASE_PERCENT = 90
         const val INCREASE_PERCENT = 110
+
+        internal const val ERROR_REJECTED = "Unable to schedule data upload task on the executor"
     }
 }

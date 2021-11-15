@@ -8,6 +8,7 @@ package com.datadog.android.core.internal
 
 import android.app.ActivityManager
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Process
 import com.datadog.android.BuildConfig
@@ -36,6 +37,7 @@ import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.LoggingSyncListener
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.user.DatadogUserInfoProvider
@@ -76,6 +78,7 @@ internal object CoreFeature {
     // from React Native integration
     internal const val DEFAULT_SOURCE_NAME = "android"
     internal const val DEFAULT_SDK_VERSION = BuildConfig.SDK_VERSION_NAME
+    internal const val DEFAULT_APP_VERSION = "?"
 
     // endregion
 
@@ -164,6 +167,8 @@ internal object CoreFeature {
         )
     }
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // Used in Nightly tests only
+    @Throws(UnsupportedOperationException::class, InterruptedException::class)
     fun drainAndShutdownExecutors() {
         val tasks = arrayListOf<Runnable>()
         (persistenceExecutorService as? ThreadPoolExecutor)
@@ -230,12 +235,18 @@ internal object CoreFeature {
 
     private fun readApplicationInformation(appContext: Context, credentials: Credentials) {
         packageName = appContext.packageName
-        packageVersion = appContext.packageManager.getPackageInfo(packageName, 0).let {
+        val packageInfo = try {
+            appContext.packageManager.getPackageInfo(packageName, 0)
+        } catch (e: PackageManager.NameNotFoundException) {
+            devLogger.e("Unable to read your application's version name", e)
+            null
+        }
+        packageVersion = packageInfo?.let {
             // we need to use the deprecated method because getLongVersionCode method is only
             // available from API 28 and above
             @Suppress("DEPRECATION")
             it.versionName ?: it.versionCode.toString()
-        }
+        } ?: DEFAULT_APP_VERSION
         clientToken = credentials.clientToken
         serviceName = credentials.serviceName ?: appContext.packageName
         rumApplicationId = credentials.rumApplicationId
@@ -355,8 +366,18 @@ internal object CoreFeature {
         uploadExecutorService.shutdownNow()
         persistenceExecutorService.shutdownNow()
 
-        uploadExecutorService.awaitTermination(1, TimeUnit.SECONDS)
-        persistenceExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+        try {
+            uploadExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+            persistenceExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+        } catch (e: InterruptedException) {
+            try {
+                // Restore the interrupted status
+                Thread.currentThread().interrupt()
+            } catch (se: SecurityException) {
+                // this should not happen
+                sdkLogger.e("Thread was unable to set its own interrupted state", se)
+            }
+        }
     }
 
     private fun cleanupApplicationInfo() {

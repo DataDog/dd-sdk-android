@@ -10,6 +10,7 @@ import android.os.Handler
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -28,6 +29,7 @@ import com.datadog.android.rum.model.ViewEvent
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -290,6 +292,8 @@ internal class DatadogRumMonitor(
 
     // region Internal
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // Used in Nightly tests only
+    @Throws(UnsupportedOperationException::class, InterruptedException::class)
     internal fun drainExecutorService() {
         val tasks = arrayListOf<Runnable>()
         (executorService as? ThreadPoolExecutor)
@@ -309,11 +313,16 @@ internal class DatadogRumMonitor(
             handler.removeCallbacks(keepAliveRunnable)
             // avoid trowing a RejectedExecutionException
             if (!executorService.isShutdown) {
-                executorService.submit {
-                    synchronized(rootScope) {
-                        rootScope.handleEvent(event, writer)
+                try {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+                    executorService.submit {
+                        synchronized(rootScope) {
+                            rootScope.handleEvent(event, writer)
+                        }
+                        handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
                     }
-                    handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
+                } catch (e: RejectedExecutionException) {
+                    devLogger.e("Unable to handle a RUM event, the ", e)
                 }
             }
         }

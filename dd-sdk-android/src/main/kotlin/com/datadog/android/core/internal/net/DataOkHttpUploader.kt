@@ -73,6 +73,7 @@ internal abstract class DataOkHttpUploader(
         }
     }
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
     private fun buildRequest(data: ByteArray): Request {
         val urlWithQueryParams = urlWithQueryParams()
         val builder = Request.Builder()

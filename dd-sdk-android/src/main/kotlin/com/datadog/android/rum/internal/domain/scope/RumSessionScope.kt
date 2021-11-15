@@ -73,6 +73,7 @@ internal class RumSessionScope(
         val actualWriter = if (keepSession) writer else noOpWriter
 
         val iterator = activeChildrenScopes.iterator()
+        @Suppress("UnsafeThirdPartyFunctionCall") // next/remove can't fail: we checked hasNext
         while (iterator.hasNext()) {
             val scope = iterator.next().handleEvent(event, actualWriter)
             if (scope == null) {

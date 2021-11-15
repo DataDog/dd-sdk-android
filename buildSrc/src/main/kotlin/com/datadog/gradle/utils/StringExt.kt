@@ -8,13 +8,13 @@ package com.datadog.gradle.utils
 
 import java.util.Locale
 
-fun List<String>.joinToCamelCase(): String = when(size) {
+fun List<String>.joinToCamelCase(): String = when (size) {
     0 -> throw IllegalArgumentException("invalid section size, cannot be zero")
     1 -> this[0].toCamelCase()
     else -> this.joinToString("", transform = String::toCamelCase)
 }
 
-fun List<String>.joinToCamelCaseAsVar(): String = when(size) {
+fun List<String>.joinToCamelCaseAsVar(): String = when (size) {
     0 -> throw IllegalArgumentException("invalid section size, cannot be zero")
     1 -> this[0].toCamelCaseAsVar()
     else -> get(0).toCamelCaseAsVar() + drop(1).joinToCamelCase()

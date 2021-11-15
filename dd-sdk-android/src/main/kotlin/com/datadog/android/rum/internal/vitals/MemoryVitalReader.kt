@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.vitals
 
 import com.datadog.android.core.internal.persistence.file.canReadSafe
 import com.datadog.android.core.internal.persistence.file.existsSafe
+import com.datadog.android.core.internal.persistence.file.readLinesSafe
 import java.io.File
 
 /**
@@ -23,17 +24,17 @@ internal class MemoryVitalReader(
             return null
         }
 
-        val memorySizeKb = statusFile.readLines()
-            .mapNotNull { line ->
-                VM_RSS_REGEX.matchEntire(line)?.groupValues?.get(1)
+        val memorySizeKb = statusFile.readLinesSafe()
+            ?.mapNotNull { line ->
+                VM_RSS_REGEX.matchEntire(line)?.groupValues?.getOrNull(1)
             }
-            .firstOrNull()
+            ?.firstOrNull()
             ?.toDoubleOrNull()
 
-        if (memorySizeKb == null) {
-            return null
+        return if (memorySizeKb == null) {
+            null
         } else {
-            return memorySizeKb * 1000
+            memorySizeKb * 1000
         }
     }
 

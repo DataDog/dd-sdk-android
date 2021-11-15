@@ -27,7 +27,8 @@ internal open class SingleItemDataWriter<T : Any>(
     }
 
     override fun write(data: List<T>) {
-        consume(data.last())
+        val element = data.lastOrNull() ?: return
+        consume(element)
     }
 
     // endregion

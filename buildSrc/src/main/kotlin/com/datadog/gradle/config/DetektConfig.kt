@@ -26,6 +26,8 @@ fun Project.detektConfig(excludes: List<String> = emptyList()) {
     }
 
     tasks.withType<Detekt> {
+        jvmTarget = "1.8"
+
         dependsOn(":tools:detekt:assemble")
 
         setExcludes(excludes)

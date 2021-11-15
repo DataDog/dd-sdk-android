@@ -7,11 +7,17 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.persistence.file.existsSafe
+import com.datadog.android.core.internal.persistence.file.isDirectorySafe
+import com.datadog.android.core.internal.persistence.file.lengthSafe
+import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.mkdirsSafe
 import com.datadog.android.core.internal.persistence.file.renameToSafe
+import com.datadog.android.core.internal.utils.copyTo
 import com.datadog.android.core.internal.utils.use
 import com.datadog.android.log.Logger
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.Locale
@@ -60,7 +66,7 @@ internal class BatchFileHandler(
     override fun delete(target: File): Boolean {
         return try {
             target.deleteRecursively()
-        } catch (e: IOException) {
+        } catch (e: FileNotFoundException) {
             internalLogger.e(ERROR_DELETE.format(Locale.US, target.path), e)
             false
         } catch (e: SecurityException) {
@@ -70,25 +76,25 @@ internal class BatchFileHandler(
     }
 
     override fun moveFiles(srcDir: File, destDir: File): Boolean {
-        if (!srcDir.exists()) {
+        if (!srcDir.existsSafe()) {
             internalLogger.i(INFO_MOVE_NO_SRC.format(Locale.US, srcDir.path))
             return true
         }
-        if (!srcDir.isDirectory) {
+        if (!srcDir.isDirectorySafe()) {
             internalLogger.e(ERROR_MOVE_NOT_DIR.format(Locale.US, srcDir.path))
             return false
         }
-        if (!destDir.exists()) {
+        if (!destDir.existsSafe()) {
             if (!destDir.mkdirsSafe()) {
                 internalLogger.e(ERROR_MOVE_NO_DST.format(Locale.US, srcDir.path))
                 return false
             }
-        } else if (!destDir.isDirectory) {
+        } else if (!destDir.isDirectorySafe()) {
             internalLogger.e(ERROR_MOVE_NOT_DIR.format(Locale.US, destDir.path))
             return false
         }
 
-        val srcFiles = srcDir.listFiles().orEmpty()
+        val srcFiles = srcDir.listFilesSafe().orEmpty()
         return srcFiles.all { file -> moveFile(file, destDir) }
     }
 
@@ -96,6 +102,8 @@ internal class BatchFileHandler(
 
     // region Internal
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
+    @Throws(IOException::class)
     private fun lockFileAndWriteData(
         file: File,
         append: Boolean,
@@ -112,17 +120,19 @@ internal class BatchFileHandler(
         }
     }
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
+    @Throws(IOException::class)
     private fun readFileData(
         file: File,
         prefix: ByteArray,
         suffix: ByteArray
     ): ByteArray {
-        val inputLength = file.length().toInt()
+        val inputLength = file.lengthSafe().toInt()
         val outputLength = inputLength + prefix.size + suffix.size
         val result = ByteArray(outputLength)
 
         // Copy prefix
-        System.arraycopy(prefix, 0, result, 0, prefix.size)
+        prefix.copyTo(0, result, 0, prefix.size)
 
         // Read file iteratively
         var offset = prefix.size
@@ -137,7 +147,7 @@ internal class BatchFileHandler(
         }
 
         // Copy suffix
-        System.arraycopy(suffix, 0, result, offset, suffix.size)
+        suffix.copyTo(0, result, offset, suffix.size)
         offset += suffix.size
 
         return if (result.size == offset) {

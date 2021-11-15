@@ -616,6 +616,7 @@ internal constructor(
                 PluginFeature.RUM -> rumEnabled
             }
             if (featureEnabled) {
+                @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
                 block()
             } else {
                 devLogger.e(ERROR_FEATURE_DISABLED.format(Locale.US, feature.featureName, method))

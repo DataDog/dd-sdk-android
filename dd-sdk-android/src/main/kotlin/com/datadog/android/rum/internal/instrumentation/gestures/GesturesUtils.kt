@@ -6,7 +6,7 @@ import com.datadog.android.rum.tracking.InteractionPredicate
 
 internal fun resolveTargetName(
     interactionPredicate: InteractionPredicate,
-    target: Any,
+    target: Any
 ): String {
     val customTargetName = interactionPredicate.getTargetName(target)
     return if (!customTargetName.isNullOrEmpty()) {

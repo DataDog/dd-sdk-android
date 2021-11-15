@@ -504,6 +504,7 @@ internal constructor(internal val handler: LogHandler) {
      * @param key the key of the attribute to remove
      */
     fun removeAttribute(key: String) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         attributes.remove(key)
     }
 
@@ -594,7 +595,10 @@ internal constructor(internal val handler: LogHandler) {
 
     private fun safelyRemoveTagsWithKey(keyFilter: (String) -> Boolean) {
         // we first gather all the objects we want to remove based on a copy
-        val toRemove = tags.toTypedArray().filter(keyFilter)
+        val toRemove: List<String> = tags.toTypedArray().filter(keyFilter)
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        // NPE cannot happen here (toRemove is explicitly non null)
+        // ClassCastException cannot happen, we're removing objects that come from the set
         tags.removeAll(toRemove)
     }
 

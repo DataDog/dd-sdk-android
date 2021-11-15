@@ -6,6 +6,9 @@
 
 package com.datadog.android.core.internal.net
 
+import com.datadog.android.core.internal.utils.sdkLogger
+import java.io.IOException
+import kotlin.jvm.Throws
 import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.Request
@@ -27,6 +30,9 @@ internal class GzipRequestInterceptor : Interceptor {
     /**
      * Observes, modifies, or short-circuits requests going out and the responses coming back in.
      */
+    // let the proceed exception be handled by the caller
+    @Suppress("UnsafeThirdPartyFunctionCall", "TooGenericExceptionCaught")
+    @Throws(IOException::class)
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest: Request = chain.request()
         val body = originalRequest.body()
@@ -34,10 +40,15 @@ internal class GzipRequestInterceptor : Interceptor {
         return if (body == null || originalRequest.header(HEADER_ENCODING) != null) {
             chain.proceed(originalRequest)
         } else {
-            val compressedRequest = originalRequest.newBuilder()
-                .header(HEADER_ENCODING, ENCODING_GZIP)
-                .method(originalRequest.method(), gzip(body))
-                .build()
+            val compressedRequest = try {
+                originalRequest.newBuilder()
+                    .header(HEADER_ENCODING, ENCODING_GZIP)
+                    .method(originalRequest.method(), gzip(body))
+                    .build()
+            } catch (e: Exception) {
+                sdkLogger.w("Unable to gzip request body", e)
+                originalRequest
+            }
             chain.proceed(compressedRequest)
         }
     }
@@ -56,6 +67,7 @@ internal class GzipRequestInterceptor : Interceptor {
                 return -1 // We don't know the compressed length in advance!
             }
 
+            @Suppress("UnsafeThirdPartyFunctionCall") // write to is expected to throw IOExceptions
             override fun writeTo(sink: BufferedSink) {
                 val gzipSink: BufferedSink = Okio.buffer(GzipSink(sink))
                 body.writeTo(gzipSink)

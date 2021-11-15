@@ -11,6 +11,7 @@ import com.datadog.tools.detekt.rules.RequireInternal
 import com.datadog.tools.detekt.rules.ThrowingInternalException
 import com.datadog.tools.detekt.rules.TodoWithoutTask
 import com.datadog.tools.detekt.rules.UnsafeCallOnNullableType
+import com.datadog.tools.detekt.rules.UnsafeThirdPartyFunctionCall
 import io.gitlab.arturbosch.detekt.api.Config
 import io.gitlab.arturbosch.detekt.api.RuleSet
 import io.gitlab.arturbosch.detekt.api.RuleSetProvider
@@ -30,6 +31,7 @@ class DatadogProvider : RuleSetProvider {
                 CheckInternal(),
                 RequireInternal(),
                 TodoWithoutTask(),
+                UnsafeThirdPartyFunctionCall(config),
                 UnsafeCallOnNullableType()
             )
         )

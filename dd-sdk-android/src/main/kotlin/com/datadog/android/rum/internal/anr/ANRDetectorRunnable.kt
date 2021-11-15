@@ -52,7 +52,10 @@ internal class ANRDetectorRunnable(
                     }
                 }
 
-                Thread.sleep(anrTestDelayMs)
+                if (anrTestDelayMs> 0) {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // Delay can't be negative
+                    Thread.sleep(anrTestDelayMs)
+                }
             } catch (e: InterruptedException) {
                 break
             }

@@ -454,7 +454,7 @@ class PokoDeserializerGenerator(
             funBuilder.endControlFlow()
         } else {
             funBuilder.addStatement(
-                "%L=%T()",
+                "%L = %T()",
                 assignee,
                 propertyType.asKotlinTypeName(
                     nestedEnums,

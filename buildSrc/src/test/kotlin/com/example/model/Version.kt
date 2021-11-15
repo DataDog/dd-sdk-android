@@ -35,7 +35,7 @@ public data class Version(
         public fun fromJson(serializedObject: String): Version {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val id=Id()
+                val id = Id()
                 val date = jsonObject.get("date")?.toString()?.let {
                     Date()
                 }

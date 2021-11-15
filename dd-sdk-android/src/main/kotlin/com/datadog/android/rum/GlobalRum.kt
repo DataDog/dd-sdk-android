@@ -96,6 +96,7 @@ object GlobalRum {
             return false
         } else {
             if (isRegistered.compareAndSet(false, true)) {
+                @Suppress("UnsafeThirdPartyFunctionCall") // User provided callable, let it throw
                 monitor = provider.call()
                 return true
             } else {

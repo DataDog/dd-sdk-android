@@ -18,6 +18,7 @@ internal class ConditionalLogHandler(
         tags: Set<String>,
         timestamp: Long?
     ) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
         if (condition(level, throwable)) {
             delegateHandler.handleLog(level, message, throwable, attributes, tags, timestamp)
         }

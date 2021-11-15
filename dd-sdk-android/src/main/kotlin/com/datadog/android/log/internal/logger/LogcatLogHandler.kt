@@ -43,7 +43,7 @@ internal class LogcatLogHandler(
 
     // region Internal
 
-    internal fun resolveTag(stackTraceElement: StackTraceElement?): String {
+    private fun resolveTag(stackTraceElement: StackTraceElement?): String {
         val tag = if (stackTraceElement == null) {
             serviceName
         } else {
@@ -52,6 +52,8 @@ internal class LogcatLogHandler(
                 .substringAfterLast('.')
         }
         return if (tag.length >= MAX_TAG_LENGTH && Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            // substring can't throw IndexOutOfBounds, we checked the length
             tag.substring(0, MAX_TAG_LENGTH)
         } else {
             tag

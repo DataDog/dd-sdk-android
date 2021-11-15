@@ -6,6 +6,9 @@
 
 package com.datadog.android.rum.internal.vitals
 
+import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.rum.internal.RumFeature
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
@@ -21,6 +24,12 @@ internal class VitalReaderRunnable(
         if (data != null) {
             observer.onNewSample(data)
         }
-        executor.schedule(this, periodMs, TimeUnit.MILLISECONDS)
+
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            executor.schedule(this, periodMs, TimeUnit.MILLISECONDS)
+        } catch (e: RejectedExecutionException) {
+            sdkLogger.e(RumFeature.ERROR_VITAL_TASK_REJECTED, e)
+        }
     }
 }
