@@ -50,6 +50,8 @@ internal class TapActionTracker(
                 RumAttributes.ACTION_TARGET_TITLE to targetName
             )
         )
+        // that is user code, not ours
+        @Suppress("UnsafeThirdPartyFunctionCall")
         onTap.value.invoke()
     }
 }
