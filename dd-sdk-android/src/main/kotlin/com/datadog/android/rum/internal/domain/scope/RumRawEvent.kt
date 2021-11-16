@@ -172,4 +172,6 @@ internal sealed class RumRawEvent {
     internal data class SendCustomActionNow(
         override val eventTime: Time = Time()
     ) : RumRawEvent()
+
+    internal data class WebViewEvent(override val eventTime: Time = Time()) : RumRawEvent()
 }
