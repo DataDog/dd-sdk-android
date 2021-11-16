@@ -1133,6 +1133,20 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M delegate event to rootScope W sendWebViewEvent()`() {
+        // When
+        testedMonitor.sendWebViewEvent()
+        Thread.sleep(PROCESSING_DELAY)
+
+        // Then
+        verify(mockScope).handleEvent(
+            argThat { this is RumRawEvent.WebViewEvent },
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
     fun `M shutdown with wait the persistence executor W drainAndShutdownExecutors()`() {
         // Given
         val mockExecutorService: ExecutorService = mock()

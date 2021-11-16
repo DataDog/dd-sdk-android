@@ -21,7 +21,6 @@ import com.datadog.android.tracing.internal.TracingFeature
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -37,8 +36,6 @@ import java.util.concurrent.atomic.AtomicReference
 object GlobalRum {
 
     internal val globalAttributes: MutableMap<String, Any?> = ConcurrentHashMap()
-
-    internal val sessionStartNs = AtomicLong(0L)
 
     internal val isRegistered = AtomicBoolean(false)
     internal var monitor: RumMonitor = NoOpRumMonitor()
@@ -143,6 +140,10 @@ object GlobalRum {
     }
 
     // region Internal
+
+    internal fun notifyIngestedWebViewEvent() {
+        (monitor as? AdvancedRumMonitor)?.sendWebViewEvent()
+    }
 
     internal fun getRumContext(): RumContext {
         return activeContext.get()

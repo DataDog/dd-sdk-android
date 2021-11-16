@@ -210,6 +210,10 @@ internal class DatadogRumMonitor(
 
     // region AdvancedRumMonitor
 
+    override fun sendWebViewEvent() {
+        handleEvent(RumRawEvent.WebViewEvent())
+    }
+
     override fun resetSession() {
         handleEvent(
             RumRawEvent.ResetSession()
