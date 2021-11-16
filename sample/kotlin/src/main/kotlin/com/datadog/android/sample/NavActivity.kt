@@ -12,9 +12,12 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
+import com.datadog.android.Datadog
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sample.service.LogsForegroundService
 import com.google.android.material.snackbar.Snackbar
@@ -96,9 +99,26 @@ class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
             R.id.gdpr -> {
                 navController.navigate(R.id.fragment_gdpr)
             }
+            R.id.clear_all_data -> {
+                promptClearAllData()
+            }
             else -> result = super.onOptionsItemSelected(item)
         }
         return result
+    }
+
+    private fun promptClearAllData() {
+        AlertDialog.Builder(this)
+            .setMessage(R.string.msg_clear_all_data)
+            .setNeutralButton(android.R.string.cancel) { _, _ ->
+                // No Op
+            }
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                Datadog.clearAllData()
+                Toast.makeText(this, R.string.msg_all_data_cleared, Toast.LENGTH_SHORT).show()
+            }
+            .create()
+            .show()
     }
 
     override fun onTrackingConsentChanged(trackingConsent: TrackingConsent) =
