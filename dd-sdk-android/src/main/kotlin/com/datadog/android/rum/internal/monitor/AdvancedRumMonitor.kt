@@ -13,10 +13,13 @@ import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.tools.annotation.NoOpImplementation
 
+@SuppressWarnings("ComplexInterface")
 @NoOpImplementation
 internal interface AdvancedRumMonitor : RumMonitor {
 
     fun resetSession()
+
+    fun sendWebViewEvent()
 
     fun viewTreeChanged(eventTime: Time)
 
