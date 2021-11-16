@@ -23,6 +23,7 @@
     <string name="title_vitals">Mobile Vitals</string>
     <string name="title_about">About…</string>
     <string name="title_gdpr">GDPR</string>
+    <string name="title_clear_all_data">Clear All Data</string>
     <string name="title_compose">Jetpack Compose</string>
 
     <string name="msg_native_crash">Native Crash</string>
@@ -33,6 +34,8 @@
     <string name="msg_network_request">Network Request (~1s)</string>
     <string name="msg_coroutine_operation">Coroutine operations (~5s)</string>
     <string name="msg_rum_use_cases">RUM use cases</string>
+    <string name="msg_clear_all_data">Are you sure you want to clear all unsent data. You’ll lose any data still on disk. Note that this won’t delete data already sent to Datadog servers.</string>
+    <string name="msg_all_data_cleared">All unsent data has been cleared.</string>
 
     <string name="button_warning">⚠️</string>
     <string name="button_error">🚨</string>
