@@ -71,14 +71,11 @@ internal class WebEventConsumerTest {
     // region Unit Tests
 
     @Test
-    fun `M delegate to RumEventConsumer W consume() { any event type except LOG }`(forge: Forge) {
+    fun `M delegate to RumEventConsumer W consume() { when RUM eventType }`(forge: Forge) {
         // Given
         val fakeBundledEvent = forge.getForgery<JsonObject>()
-        var fakeEventType = forge.anAlphabeticalString()
-        while (fakeEventType == WebEventConsumer.LOG_EVENT_TYPE) {
-            fakeEventType = forge.anAlphabeticalString()
-        }
-        val fakeWebEvent = bundleWebEvent(fakeBundledEvent, fakeEventType)
+        val fakeRumEventType = forge.anElementFrom(WebRumEventConsumer.RUM_EVENT_TYPES)
+        val fakeWebEvent = bundleWebEvent(fakeBundledEvent, fakeRumEventType)
 
         // When
         testedWebEventConsumer.consume(fakeWebEvent.toString())
@@ -86,7 +83,7 @@ internal class WebEventConsumerTest {
         // Then
         verify(mockRumEventConsumer).consume(
             fakeBundledEvent,
-            fakeEventType
+            fakeRumEventType
         )
     }
 
@@ -94,13 +91,59 @@ internal class WebEventConsumerTest {
     fun `M delegate to LogsEventConsumer W consume() { LOG eventType }`(forge: Forge) {
         // Given
         val fakeBundledEvent = forge.getForgery<JsonObject>()
-        val fakeWebEvent = bundleWebEvent(fakeBundledEvent, WebEventConsumer.LOG_EVENT_TYPE)
+        val fakeLogEventType = forge.anElementFrom(WebLogEventConsumer.LOG_EVENT_TYPES)
+        val fakeWebEvent = bundleWebEvent(fakeBundledEvent, fakeLogEventType)
 
         // When
         testedWebEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
-        verify(mockLogsEventConsumer).consume(fakeBundledEvent)
+        verify(mockLogsEventConsumer).consume(fakeBundledEvent, fakeLogEventType)
+    }
+
+    @Test
+    fun `M do nothing W consume() { unknown event type }`(forge: Forge) {
+        // Given
+        val fakeBundledEvent = forge.getForgery<JsonObject>()
+        var fakeUnknownEventType = forge.anAlphabeticalString()
+        while (fakeUnknownEventType in WebRumEventConsumer.RUM_EVENT_TYPES ||
+            fakeUnknownEventType in WebLogEventConsumer.LOG_EVENT_TYPES
+        ) {
+            fakeUnknownEventType = forge.anAlphabeticalString()
+        }
+        val fakeWebEvent = bundleWebEvent(fakeBundledEvent, fakeUnknownEventType)
+
+        // When
+        testedWebEventConsumer.consume(fakeWebEvent.toString())
+
+        // Then
+        verifyZeroInteractions(mockLogsEventConsumer)
+        verifyZeroInteractions(mockRumEventConsumer)
+    }
+
+    @Test
+    fun `M log internal error event W consume() { unknown event type }`(forge: Forge) {
+        // Given
+        val fakeBundledEvent = forge.getForgery<JsonObject>()
+        var fakeUnknownEventType = forge.anAlphabeticalString()
+        while (fakeUnknownEventType in WebRumEventConsumer.RUM_EVENT_TYPES ||
+            fakeUnknownEventType in WebLogEventConsumer.LOG_EVENT_TYPES
+        ) {
+            fakeUnknownEventType = forge.anAlphabeticalString()
+        }
+        val fakeWebEvent = bundleWebEvent(fakeBundledEvent, fakeUnknownEventType)
+
+        // When
+        testedWebEventConsumer.consume(fakeWebEvent.toString())
+
+        // Then
+        verify(mockSdkLogHandler).handleLog(
+            Log.ERROR,
+            WebEventConsumer.WRONG_EVENT_TYPE_ERROR_MESSAGE.format(
+                US,
+                fakeUnknownEventType
+            )
+        )
     }
 
     @Test

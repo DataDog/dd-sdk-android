@@ -93,27 +93,27 @@ internal class LogEventAssert(actual: LogEvent) :
     }
 
     fun hasLoggerName(expected: String): LogEventAssert {
-        assertThat(actual.logger.name)
+        assertThat(actual.logger?.name)
             .overridingErrorMessage(
-                "Expected log to have loggerName $expected but was ${actual.logger.name}"
+                "Expected log to have loggerName $expected but was ${actual.logger?.name}"
             )
             .isEqualTo(expected)
         return this
     }
 
     fun hasThreadName(expected: String): LogEventAssert {
-        assertThat(actual.logger.threadName)
+        assertThat(actual.logger?.threadName)
             .overridingErrorMessage(
-                "Expected log to have threadName $expected but was ${actual.logger.threadName}"
+                "Expected log to have threadName $expected but was ${actual.logger?.threadName}"
             )
             .isEqualTo(expected)
         return this
     }
 
     fun hasLoggerVersion(expected: String): LogEventAssert {
-        assertThat(actual.logger.version)
+        assertThat(actual.logger?.version)
             .overridingErrorMessage(
-                "Expected log to have version $expected but was ${actual.logger.version}"
+                "Expected log to have version $expected but was ${actual.logger?.version}"
             )
             .isEqualTo(expected)
 

@@ -122,12 +122,16 @@ internal class LogEventSerializerTest {
         assertThat(jsonObject)
             .hasField(KEY_MESSAGE, log.message)
             .hasField(KEY_SERVICE_NAME, log.service)
-            .hasField(KEY_STATUS, log.status.toJson())
             .hasField(KEY_DATE, log.date)
             .hasField(KEY_TAGS, log.ddtags)
-            .hasField(KEY_LOGGER) {
-                hasLoggerInfo(log.logger)
+        log.status?.let {
+            assertThat(jsonObject).hasField(KEY_STATUS, it.toJson())
+        }
+        log.logger?.let {
+            assertThat(jsonObject).hasField(KEY_LOGGER) {
+                hasLoggerInfo(it)
             }
+        }
         log.network?.let {
             assertThat(jsonObject).hasField(KEY_NETWORK) {
                 hasField(KEY_CLIENT) {
@@ -239,7 +243,7 @@ internal class LogEventSerializerTest {
         } else {
             doesNotHaveField(KEY_THREAD_NAME)
         }
-        hasField(KEY_VERSION, sdkVersion)
+        hasNullableField(KEY_VERSION, sdkVersion)
     }
 
     private fun JsonObjectAssert.hasErrorInfo(errorInfo: LogEvent.Error) {

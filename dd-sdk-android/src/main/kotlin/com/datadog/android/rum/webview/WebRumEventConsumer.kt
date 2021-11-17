@@ -131,5 +131,12 @@ internal class WebRumEventConsumer(
         const val JSON_PARSING_ERROR_MESSAGE = "The bundled web RUM event could not be deserialized"
         const val WRONG_EVENT_TYPE_ERROR_MESSAGE = "The event type %s for the bundled" +
             " web RUM event is unknown."
+        val RUM_EVENT_TYPES = setOf(
+            VIEW_EVENT_TYPE,
+            ACTION_EVENT_TYPE,
+            RESOURCE_EVENT_TYPE,
+            LONG_TASK_EVENT_TYPE,
+            ERROR_EVENT_TYPE
+        )
     }
 }
