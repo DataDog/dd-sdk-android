@@ -8,6 +8,8 @@ package com.datadog.android.rum.webview
 
 import android.webkit.JavascriptInterface
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.rum.internal.RumFeature
 import com.google.gson.JsonArray
 
@@ -21,12 +23,18 @@ import com.google.gson.JsonArray
  */
 class DatadogEventBridge {
 
+    private val contextProvider = WebRumEventContextProvider()
     private val webEventConsumer: WebEventConsumer = WebEventConsumer(
         WebRumEventConsumer(
             RumFeature.persistenceStrategy.getWriter(),
-            CoreFeature.timeProvider
+            CoreFeature.timeProvider,
+            contextProvider = contextProvider
         ),
-        WebLogEventConsumer()
+        WebLogEventConsumer(
+            LogsFeature.persistenceStrategy.getWriter(),
+            InternalLogsFeature.persistenceStrategy.getWriter(),
+            contextProvider
+        )
     )
 
     // region Bridge

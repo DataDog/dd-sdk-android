@@ -55,8 +55,7 @@
         }
       },
       "required": [
-        "name",
-        "version"
+        "name"
       ],
       "readOnly": true
     },
@@ -162,11 +161,9 @@
     }
   },
   "required": [
-    "message",
-    "status",
     "date",
+    "message",
     "service",
-    "logger",
     "ddtags"
   ],
   "additionalProperties": {
