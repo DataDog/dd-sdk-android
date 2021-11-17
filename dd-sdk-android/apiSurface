@@ -315,6 +315,7 @@ object com.datadog.android.rum.RumAttributes
   const val INTERNAL_ERROR_TYPE: String
   const val INTERNAL_TIMESTAMP: String
   const val INTERNAL_ERROR_SOURCE_TYPE: String
+  const val INTERNAL_ERROR_IS_CRASH: String
   const val TRACE_ID: String
   const val SPAN_ID: String
   const val RESOURCE_TIMINGS: String
