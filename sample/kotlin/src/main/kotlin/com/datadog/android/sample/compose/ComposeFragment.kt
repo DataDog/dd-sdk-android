@@ -6,6 +6,7 @@
 
 package com.datadog.android.sample.compose
 
+import android.app.Activity
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -20,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -33,6 +35,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.datadog.android.compose.DatadogViewTrackingEffect
+import com.datadog.android.compose.ExperimentalTrackingApi
+import com.datadog.android.compose.trackClick
 import com.datadog.android.rum.tracking.AcceptAllNavDestinations
 import com.google.accompanist.appcompattheme.AppCompatTheme
 import java.lang.IllegalArgumentException
@@ -56,6 +60,7 @@ class ComposeFragment : Fragment() {
     }
 }
 
+@OptIn(ExperimentalTrackingApi::class)
 @Composable
 fun ComposeNavigationExample() {
     val navController = rememberNavController().apply {
@@ -73,6 +78,7 @@ class SimpleViewIdPreviewProvider : PreviewParameterProvider<String> {
         get() = sequenceOf("one", "two", "three")
 }
 
+@OptIn(ExperimentalTrackingApi::class)
 @Preview
 @Composable
 fun SimpleView(
@@ -85,7 +91,16 @@ fun SimpleView(
         modifier = Modifier.fillMaxSize()
     ) {
         Text("View $viewId")
-        Button(onClick = onNavigate, modifier = Modifier.padding(top = 32.dp)) {
+        val viewTreeObserver = (LocalContext.current as Activity).window.decorView.viewTreeObserver
+        Button(
+            onClick = trackClick(targetName = "Open View", onClick = {
+                // TODO RUMM-1764 this is temporary, just for side-effect
+                viewTreeObserver.dispatchOnGlobalLayout()
+                onNavigate.invoke()
+            }),
+            modifier = Modifier
+                .padding(top = 32.dp)
+        ) {
             Text("Open Next Random View")
         }
     }

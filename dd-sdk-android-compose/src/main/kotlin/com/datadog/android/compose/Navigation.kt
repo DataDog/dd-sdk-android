@@ -105,6 +105,7 @@ internal class ComposeNavigationObserver(
  * @param destinationPredicate to accept the [NavDestination] that will be taken into account as
  * valid RUM View events.
  */
+@ExperimentalTrackingApi
 @Composable
 @NonRestartableComposable
 fun DatadogViewTrackingEffect(

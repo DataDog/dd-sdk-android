@@ -703,6 +703,7 @@ datadog:
       - "java.util.LinkedList.add(com.datadog.android.privacy.TrackingConsentProviderCallback)"
       - "java.util.LinkedList.clear()"
       - "java.util.LinkedList.forEach(kotlin.Function1)"
+      - "java.util.LinkedList.isEmpty()"
       - "java.util.LinkedList.isNotEmpty()"
       - "java.util.LinkedList.add(android.view.View)"
       - "java.util.WeakHashMap.containsKey(kotlin.Any)"

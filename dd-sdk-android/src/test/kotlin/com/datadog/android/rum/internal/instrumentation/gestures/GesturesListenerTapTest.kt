@@ -13,6 +13,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
+import androidx.compose.ui.platform.ComposeView
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -271,6 +272,39 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
                 Log.INFO,
                 GesturesListener.MSG_NO_TARGET_TAP
             )
+        verifyZeroInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
+    fun `onTap does nothing and no log triggered if no target found { target inside ComposeView } `(
+        forge: Forge
+    ) {
+        // Given
+        val mockEvent: MotionEvent = forge.getForgery()
+        val composeView: ComposeView = mockView(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge
+        )
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(composeView)
+        }
+        testedListener = GesturesListener(
+            WeakReference(mockWindow)
+        )
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        verifyZeroInteractions(mockDevLogHandler)
         verifyZeroInteractions(rumMonitor.mockInstance)
     }
 

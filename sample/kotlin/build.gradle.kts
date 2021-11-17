@@ -13,6 +13,7 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
+import com.datadog.gradle.config.taskConfig
 
 plugins {
     id("com.android.application")
@@ -178,6 +179,11 @@ dependencies {
 }
 
 kotlinConfig(evaluateWarningsAsErrors = false)
+taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions {
+        freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
+    }
+}
 detektConfig()
 ktLintConfig()
 junitConfig()
