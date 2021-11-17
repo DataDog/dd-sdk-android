@@ -487,6 +487,114 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `𝕄 send event 𝕎 handleEvent(StopView) on active view { pending attributes are positive }`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.pendingActionCount = forge.aLong(min = 0, max = 100)
+        testedScope.pendingResourceCount = forge.aLong(min = 0, max = 100)
+        testedScope.pendingErrorCount = forge.aLong(min = 0, max = 100)
+        testedScope.pendingLongTaskCount = forge.aLong(min = 0, max = 100)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+
+        // When
+        val result = testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, attributes),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    isSlowRendered(null)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent(StopView) on active view { still has ongoing resources }`(
+        forge: Forge,
+        @StringForgery key: String
+    ) {
+        // Given
+        val mockResourceScope: RumScope = mock()
+        whenever(mockResourceScope.handleEvent(any(), any())) doReturn mockResourceScope
+        testedScope.activeResourceScopes[key] = mockResourceScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+
+        // When
+        val result = testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, attributes),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                    hasName(fakeName)
+                    hasUrl(fakeUrl)
+                    hasDurationGreaterThan(1)
+                    hasVersion(2)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasResourceCount(0)
+                    hasActionCount(0)
+                    hasLongTaskCount(0)
+                    hasFrozenFrameCount(0)
+                    hasCpuMetric(null)
+                    hasMemoryMetric(null, null)
+                    hasRefreshRateMetric(null, null)
+                    isActive(true)
+                    isSlowRendered(null)
+                    hasNoCustomTimings()
+                    hasUserInfo(fakeUserInfo)
+                    hasViewId(testedScope.viewId)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
     fun `𝕄 send event with user extra attributes 𝕎 handleEvent(StopView) on active view`() {
         // When
         val result = testedScope.handleEvent(
@@ -883,7 +991,7 @@ internal class RumViewScopeTest {
                     hasCpuMetric(null)
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
-                    isActive(false)
+                    isActive(true)
                     isSlowRendered(null)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)

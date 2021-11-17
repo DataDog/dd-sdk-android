@@ -489,7 +489,7 @@ internal open class RumViewScope(
                 longTask = ViewEvent.LongTask(longTaskCount),
                 frozenFrame = ViewEvent.FrozenFrame(frozenFrameCount),
                 customTimings = timings,
-                isActive = !stopped,
+                isActive = !isViewComplete(),
                 cpuTicksCount = cpuTicks,
                 cpuTicksPerSecond = cpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs },
                 memoryAverage = memoryInfo?.meanValue,
