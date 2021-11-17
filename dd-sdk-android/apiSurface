@@ -227,12 +227,12 @@ class com.datadog.android.log.Logger
   fun removeTag(String)
   fun removeTagsWithKey(String)
 data class com.datadog.android.log.model.LogEvent
-  constructor(Status, kotlin.String, kotlin.String, kotlin.String, Logger, Usr? = null, Network? = null, Error? = null, kotlin.String, kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+  constructor(Status? = null, kotlin.String, kotlin.String, kotlin.String, Logger? = null, Usr? = null, Network? = null, Error? = null, kotlin.String, kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
   fun toJson(): com.google.gson.JsonElement
   companion object 
     fun fromJson(kotlin.String): LogEvent
   data class Logger
-    constructor(kotlin.String, kotlin.String? = null, kotlin.String)
+    constructor(kotlin.String, kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Logger
