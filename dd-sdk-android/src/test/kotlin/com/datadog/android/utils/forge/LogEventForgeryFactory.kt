@@ -17,6 +17,11 @@ internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
     override fun getForgery(forge: Forge): LogEvent {
         val networkInfo: NetworkInfo? = forge.aNullable()
         val userInfo: UserInfo? = forge.aNullable()
+        val reservedKeysAsSet = mutableSetOf<String>().apply {
+            LogEvent.RESERVED_PROPERTIES.forEach {
+                this.add(it)
+            }
+        }
 
         return LogEvent(
             service = forge.anAlphabeticalString(),
@@ -31,7 +36,10 @@ internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
                     kind = throwable?.javaClass?.canonicalName ?: throwable?.javaClass?.simpleName
                 )
             },
-            additionalProperties = forge.exhaustiveAttributes(),
+            additionalProperties = forge.exhaustiveAttributes(
+                excludedKeys = reservedKeysAsSet,
+                filterThreshold = 0f
+            ),
             ddtags = forge.exhaustiveTags().joinToString(separator = ","),
             usr = forge.aNullable {
                 LogEvent.Usr(
