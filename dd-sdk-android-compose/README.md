@@ -81,11 +81,11 @@ val configuration = Configuration.Builder(
 
 #### Action tracking
 
-There is no automated instrumentation support for the action tracking in Jetpack Compose. However, report clicks using `trackClicks` method using this example:
+There is no automated instrumentation support for the action tracking in Jetpack Compose. However, report clicks using `trackClick` method using this example:
 
 ```kotlin
 Button(
-    onClick = trackClicks(targetName = "Open View") { ...click logic... }
+    onClick = trackClick(targetName = "Open View") { ...click logic... }
     ...
 ) {
     ...layout...

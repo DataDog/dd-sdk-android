@@ -25,7 +25,7 @@ import com.datadog.android.rum.RumMonitor
  */
 @ExperimentalTrackingApi
 @Composable
-fun trackClicks(
+fun trackClick(
     targetName: String,
     attributes: Map<String, Any?> = remember { emptyMap() },
     onClick: () -> Unit
