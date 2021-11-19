@@ -9,10 +9,10 @@ package com.datadog.android.rum.webview
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.google.gson.JsonObject
 
-internal class RumEventConsumer {
+internal class WebLogEventConsumer {
 
-    fun consume(event: JsonObject, eventType: String) {
+    fun consume(event: JsonObject) {
         // just to make the code compile without warning. This will be removed in the next PR.
-        sdkLogger.i(event.toString() + eventType)
+        sdkLogger.i(event.toString())
     }
 }
