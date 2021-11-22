@@ -43,6 +43,14 @@ class ViewPagerActivity : AppCompatActivity() {
             }
         }
 
+        override fun getPageTitle(position: Int): CharSequence {
+            return when (position) {
+                0 -> FragmentA.NAME
+                1 -> FragmentB.NAME
+                else -> FragmentC.NAME
+            }
+        }
+
         override fun getCount(): Int {
             return 3
         }
