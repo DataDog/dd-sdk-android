@@ -651,6 +651,7 @@ datadog:
       - "kotlin.String.substring(kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "kotlin.String.toLong():java.lang.NumberFormatException"
       - "kotlin.ByteArray.copyOf(kotlin.Int):java.lang.NegativeArraySizeException"
+      - "kotlin.collections.MutableSet.first():java.util.NoSuchElementException"
       # endregion
       # region Kotlin Collections
       - "kotlin.collections.List.last():java.util.NoSuchElementException"
@@ -709,6 +710,7 @@ datadog:
       - "java.util.WeakHashMap.containsKey(kotlin.Any)"
       - "java.util.WeakHashMap.remove(kotlin.Any)"
       - "java.util.WeakHashMap.remove(android.app.Activity)"
+      - "java.util.LinkedHashMap.remove(kotlin.String)"
       # endregion
       # region Java concurrency
       - "java.util.concurrent.TimeUnit.HOURS.toMillis(kotlin.Long)"
@@ -900,6 +902,7 @@ datadog:
       - "com.google.gson.JsonObject.has(kotlin.String)"
       - "com.google.gson.JsonObject.toString()"
       - "com.google.gson.JsonArray.add(com.google.gson.JsonElement)"
+      - "com.google.gson.JsonArray.add(kotlin.String)"
       # endregion
       # region Kronos
       - "com.lyft.kronos.AndroidClockFactory.createKronosClock(android.content.Context, kotlin.collections.List, kotlin.Long, kotlin.Long, com.lyft.kronos.SyncListener?, kotlin.Long, kotlin.Long)"
