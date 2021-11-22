@@ -656,6 +656,7 @@ datadog:
       - "kotlin.String.substring(kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "kotlin.String.toLong():java.lang.NumberFormatException"
       - "kotlin.ByteArray.copyOf(kotlin.Int):java.lang.NegativeArraySizeException"
+      - "kotlin.collections.MutableSet.first():java.util.NoSuchElementException"
       # endregion
       # region Kotlin Collections
       - "kotlin.collections.List.last():java.util.NoSuchElementException"
@@ -835,6 +836,7 @@ datadog:
       - "java.util.LinkedList.forEach(kotlin.Function1)"
       - "java.util.LinkedList.isEmpty()"
       - "java.util.LinkedList.isNotEmpty()"
+      - "java.util.LinkedHashMap.remove(kotlin.String)"
       # endregion
       # region Java Concurrency
       - "java.lang.Thread.UncaughtExceptionHandler.uncaughtException(java.lang.Thread, kotlin.Throwable)"
@@ -1061,6 +1063,8 @@ datadog:
       - "kotlin.Throwable.stackTraceToString()"
       - "kotlin.text.Regex.constructor(kotlin.String)"
       - "kotlin.text.Regex.matchEntire(kotlin.CharSequence)"
+      # region Gson
+      - "com.google.gson.JsonArray.add(kotlin.String)"
       # endregion
       # region Kronos
       - "com.lyft.kronos.AndroidClockFactory.createKronosClock(android.content.Context, kotlin.collections.List, kotlin.Long, kotlin.Long, com.lyft.kronos.SyncListener?, kotlin.Long, kotlin.Long)"
