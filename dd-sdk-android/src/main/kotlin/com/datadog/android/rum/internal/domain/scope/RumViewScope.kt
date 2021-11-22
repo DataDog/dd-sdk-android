@@ -259,6 +259,7 @@ internal open class RumViewScope(
         pendingResourceCount++
     }
 
+    @Suppress("ComplexMethod")
     private fun onAddError(
         event: RumRawEvent.AddError,
         writer: DataWriter<Any>
@@ -269,6 +270,7 @@ internal open class RumViewScope(
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
         val updatedAttributes = addExtraAttributes(event.attributes)
+        val isFatal = updatedAttributes.remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean
         val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
         val errorType = event.type ?: event.throwable?.javaClass?.canonicalName
         val throwableMessage = event.throwable?.message ?: ""
@@ -283,7 +285,7 @@ internal open class RumViewScope(
                 message = message,
                 source = event.source.toSchemaSource(),
                 stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
-                isCrash = event.isFatal,
+                isCrash = event.isFatal || (isFatal ?: false),
                 type = errorType,
                 sourceType = event.sourceType.toSchemaSourceType()
             ),
@@ -309,6 +311,7 @@ internal open class RumViewScope(
             dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
         )
         writer.write(errorEvent)
+
         if (event.isFatal) {
             errorCount++
             crashCount++

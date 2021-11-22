@@ -3033,6 +3033,112 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `𝕄 send event 𝕎 handleEvent(AddError) {internal is_crash=true}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @Forgery sourceType: RumErrorSourceType,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributesWithCrash = attributes.toMutableMap()
+        attributesWithCrash["_dd.error.is_crash"] = true
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            null,
+            false,
+            attributesWithCrash,
+            sourceType = sourceType
+        )
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        val expectedMessage = "$message: ${throwable.message}"
+        argumentCaptor<Any> {
+            verify(mockWriter).write(capture())
+            assertThat(firstValue as ErrorEvent)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
+                    hasMessage(expectedMessage)
+                    hasSource(source)
+                    hasStackTrace(throwable.loggableStackTrace())
+                    isCrash(true)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                    hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(attributes)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent(AddError) {internal is_crash=false}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @Forgery sourceType: RumErrorSourceType,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributesWithCrash = attributes.toMutableMap()
+        attributesWithCrash["_dd.error.is_crash"] = false
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            null,
+            false,
+            attributesWithCrash,
+            sourceType = sourceType
+        )
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        val expectedMessage = "$message: ${throwable.message}"
+        argumentCaptor<Any> {
+            verify(mockWriter).write(capture())
+            assertThat(firstValue as ErrorEvent)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
+                    hasMessage(expectedMessage)
+                    hasSource(source)
+                    hasStackTrace(throwable.loggableStackTrace())
+                    isCrash(false)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                    hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(attributes)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
     fun `𝕄 send event 𝕎 handleEvent(AddError) {custom error type}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
