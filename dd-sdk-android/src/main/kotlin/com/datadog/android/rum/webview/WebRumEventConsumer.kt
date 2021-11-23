@@ -110,8 +110,14 @@ internal class WebRumEventConsumer(
 
     private fun purgeOffsets() {
         while (offsets.entries.size > MAX_VIEW_TIME_OFFSETS_RETAIN) {
-            val viewId = offsets.entries.first()
-            offsets.remove(viewId.key)
+            try {
+                val viewId = offsets.entries.first()
+                offsets.remove(viewId.key)
+            } catch (e: NoSuchElementException) {
+                // it should not happen but just in case.
+                sdkLogger.e("Trying to remove from an empty map.", e)
+                break
+            }
         }
     }
 

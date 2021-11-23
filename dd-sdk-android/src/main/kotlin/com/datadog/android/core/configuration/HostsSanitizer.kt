@@ -38,7 +38,7 @@ internal class HostsSanitizer {
                 }
             } else if (it.matches(validHostNameRegEx)) {
                 it
-            } else if (it.lowercase() == "localhost") {
+            } else if (it.lowercase(Locale.US) == "localhost") {
                 // special rule exception to accept `localhost` as a valid domain name
                 it
             } else {
