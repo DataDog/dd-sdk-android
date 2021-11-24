@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.domain.RumContext
@@ -172,60 +171,45 @@ internal class RumActionScope(
         if (sent) return
 
         val actualType = type
-        if (actionCanBeSent(actualType)) {
-            attributes.putAll(GlobalRum.globalAttributes)
+        attributes.putAll(GlobalRum.globalAttributes)
 
-            val context = getRumContext()
-            val user = CoreFeature.userInfoProvider.getUserInfo()
+        val context = getRumContext()
+        val user = CoreFeature.userInfoProvider.getUserInfo()
 
-            val actionEvent = ActionEvent(
-                date = eventTimestamp,
-                action = ActionEvent.Action(
-                    type = actualType.toSchemaType(),
-                    id = actionId,
-                    target = ActionEvent.Target(name),
-                    error = ActionEvent.Error(errorCount),
-                    crash = ActionEvent.Crash(crashCount),
-                    longTask = ActionEvent.LongTask(longTaskCount),
-                    resource = ActionEvent.Resource(resourceCount),
-                    loadingTime = max(endNanos - startedNanos, 1L)
-                ),
-                view = ActionEvent.View(
-                    id = context.viewId.orEmpty(),
-                    name = context.viewName,
-                    url = context.viewUrl.orEmpty()
-                ),
-                application = ActionEvent.Application(context.applicationId),
-                session = ActionEvent.ActionEventSession(
-                    id = context.sessionId,
-                    type = ActionEvent.ActionEventSessionType.USER
-                ),
-                usr = ActionEvent.Usr(
-                    id = user.id,
-                    name = user.name,
-                    email = user.email,
-                    additionalProperties = user.additionalProperties
-                ),
-                context = ActionEvent.Context(additionalProperties = attributes),
-                dd = ActionEvent.Dd(session = ActionEvent.DdSession(plan = ActionEvent.Plan.PLAN_1))
-            )
-            writer.write(actionEvent)
-        } else {
-            parentScope.handleEvent(
-                RumRawEvent.ActionDropped(getRumContext().viewId.orEmpty()),
-                writer
-            )
-            devLogger.i(
-                "RUM Action $actionId ($actualType on $name) was dropped " +
-                    "(no side effect was registered during its scope)"
-            )
-        }
+        val actionEvent = ActionEvent(
+            date = eventTimestamp,
+            action = ActionEvent.Action(
+                type = actualType.toSchemaType(),
+                id = actionId,
+                target = ActionEvent.Target(name),
+                error = ActionEvent.Error(errorCount),
+                crash = ActionEvent.Crash(crashCount),
+                longTask = ActionEvent.LongTask(longTaskCount),
+                resource = ActionEvent.Resource(resourceCount),
+                loadingTime = max(endNanos - startedNanos, 1L)
+            ),
+            view = ActionEvent.View(
+                id = context.viewId.orEmpty(),
+                name = context.viewName,
+                url = context.viewUrl.orEmpty()
+            ),
+            application = ActionEvent.Application(context.applicationId),
+            session = ActionEvent.ActionEventSession(
+                id = context.sessionId,
+                type = ActionEvent.ActionEventSessionType.USER
+            ),
+            usr = ActionEvent.Usr(
+                id = user.id,
+                name = user.name,
+                email = user.email,
+                additionalProperties = user.additionalProperties
+            ),
+            context = ActionEvent.Context(additionalProperties = attributes),
+            dd = ActionEvent.Dd(session = ActionEvent.DdSession(plan = ActionEvent.Plan.PLAN_1))
+        )
+        writer.write(actionEvent)
+
         sent = true
-    }
-
-    private fun actionCanBeSent(actualType: RumActionType): Boolean {
-        val sideEffectsCount = resourceCount + errorCount + viewTreeChangeCount + longTaskCount
-        return sideEffectsCount > 0 || actualType == RumActionType.CUSTOM
     }
 
     // endregion

@@ -1070,7 +1070,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(StopView) {no side effect}`(
+    fun `𝕄 send Action 𝕎 handleEvent(StopView) {no side effect}`(
         forge: Forge
     ) {
         testedScope.type = forge.aValueFrom(RumActionType::class.java, listOf(RumActionType.CUSTOM))
@@ -1086,30 +1086,28 @@ internal class RumContinuousActionScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
-        assertThat(result).isNull()
-    }
-
-    @Test
-    fun `𝕄 send ActionDropped event 𝕎 handleEvent(StopView) {no side effect}`(
-        forge: Forge
-    ) {
-        testedScope.type = forge.aValueFrom(RumActionType::class.java, listOf(RumActionType.CUSTOM))
-
-        // Given
-        testedScope.resourceCount = 0
-        testedScope.viewTreeChangeCount = 0
-        testedScope.errorCount = 0
-        testedScope.crashCount = 0
-        fakeEvent = RumRawEvent.StopView(Object(), emptyMap())
-
-        // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // Then
-        val argumentCaptor = argumentCaptor<RumRawEvent.ActionDropped>()
-        verify(mockParentScope).handleEvent(argumentCaptor.capture(), eq(mockWriter))
-        assertThat(argumentCaptor.firstValue.viewId).isEqualTo(fakeParentContext.viewId ?: "")
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(testedScope.type)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
     }
 
