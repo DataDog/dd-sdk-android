@@ -17,6 +17,7 @@ import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.core.internal.net.CurlInterceptor
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
@@ -325,11 +326,16 @@ internal object CoreFeature {
         }
 
         val builder = OkHttpClient.Builder()
-        builder.addInterceptor(GzipRequestInterceptor())
-            .callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        builder.callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
             .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
             .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
             .connectionSpecs(listOf(connectionSpec))
+
+        if (BuildConfig.DEBUG) {
+            builder.addNetworkInterceptor(CurlInterceptor())
+        } else {
+            builder.addInterceptor(GzipRequestInterceptor())
+        }
 
         if (configuration.proxy != null) {
             builder.proxy(configuration.proxy)
