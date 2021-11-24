@@ -16,7 +16,6 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
-import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
@@ -433,21 +432,6 @@ internal class DatadogRumMonitorTest {
             assertThat(event.isFatal).isFalse()
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
-        }
-        verifyNoMoreInteractions(mockScope, mockWriter)
-    }
-
-    @Test
-    fun `M delegate event to rootScope W viewTreeChanged()`() {
-        val eventTime = Time()
-        testedMonitor.viewTreeChanged(eventTime)
-        Thread.sleep(PROCESSING_DELAY)
-
-        argumentCaptor<RumRawEvent> {
-            verify(mockScope).handleEvent(capture(), same(mockWriter))
-
-            check(firstValue is RumRawEvent.ViewTreeChanged)
-            assertThat(firstValue.eventTime).isEqualTo(eventTime)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }

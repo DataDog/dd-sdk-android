@@ -145,10 +145,6 @@ internal sealed class RumRawEvent {
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
-    internal class ViewTreeChanged(
-        override val eventTime: Time
-    ) : RumRawEvent()
-
     internal data class ResetSession(
         override val eventTime: Time = Time()
     ) : RumRawEvent()

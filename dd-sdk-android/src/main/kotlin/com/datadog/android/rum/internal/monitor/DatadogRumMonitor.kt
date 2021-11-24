@@ -216,12 +216,6 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun viewTreeChanged(eventTime: Time) {
-        handleEvent(
-            RumRawEvent.ViewTreeChanged(eventTime)
-        )
-    }
-
     override fun waitForResourceTiming(key: String) {
         handleEvent(
             RumRawEvent.WaitForResourceTiming(key)

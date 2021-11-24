@@ -50,7 +50,6 @@ internal class RumActionScope(
     internal var errorCount: Long = 0
     internal var crashCount: Long = 0
     internal var longTaskCount: Long = 0
-    internal var viewTreeChangeCount: Int = 0
 
     private var sent = false
     private var stopped = false
@@ -69,7 +68,6 @@ internal class RumActionScope(
             shouldStop -> sendAction(lastInteractionNanos, writer)
             isLongDuration -> sendAction(now, writer)
             event is RumRawEvent.SendCustomActionNow -> sendAction(lastInteractionNanos, writer)
-            event is RumRawEvent.ViewTreeChanged -> onViewTreeChanged(now)
             event is RumRawEvent.StopView -> onStopView(now, writer)
             event is RumRawEvent.StopAction -> onStopAction(event, now)
             event is RumRawEvent.StartResource -> onStartResource(event, now)
@@ -89,11 +87,6 @@ internal class RumActionScope(
     // endregion
 
     // region Internal
-
-    private fun onViewTreeChanged(now: Long) {
-        lastInteractionNanos = now
-        viewTreeChangeCount++
-    }
 
     private fun onStopView(
         now: Long,

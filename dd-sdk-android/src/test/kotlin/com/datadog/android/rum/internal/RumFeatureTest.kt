@@ -177,17 +177,6 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
     }
 
     @Test
-    fun `𝕄 register viewTreeStrategy 𝕎 initialize()`() {
-        // When
-        val mockViewTreeStrategy: TrackingStrategy = mock()
-        testedFeature.viewTreeTrackingStrategy = mockViewTreeStrategy
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
-
-        // Then
-        verify(mockViewTreeStrategy).register(appContext.mockInstance)
-    }
-
-    @Test
     fun `𝕄 store eventMapper 𝕎 initialize()`() {
         // When
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
@@ -243,11 +232,9 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
         CoreFeature.contextRef = WeakReference(appContext.mockInstance)
         val mockActionTrackingStrategy: UserActionTrackingStrategy = mock()
         val mockViewTrackingStrategy: ViewTrackingStrategy = mock()
-        val mockViewTreeTrackingStrategy: TrackingStrategy = mock()
         val mockLongTaskTrackingStrategy: TrackingStrategy = mock()
         testedFeature.actionTrackingStrategy = mockActionTrackingStrategy
         testedFeature.viewTrackingStrategy = mockViewTrackingStrategy
-        testedFeature.viewTreeTrackingStrategy = mockViewTreeTrackingStrategy
         testedFeature.longTaskTrackingStrategy = mockLongTaskTrackingStrategy
 
         // When
@@ -256,7 +243,6 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
         // Then
         verify(mockActionTrackingStrategy).unregister(appContext.mockInstance)
         verify(mockViewTrackingStrategy).unregister(appContext.mockInstance)
-        verify(mockViewTreeTrackingStrategy).unregister(appContext.mockInstance)
         verify(mockLongTaskTrackingStrategy).unregister(appContext.mockInstance)
     }
 
