@@ -56,7 +56,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.0.2"
+        kotlinCompilerExtensionVersion = libs.versions.androidXComposeRuntime.get()
     }
 
     sourceSets.named("main") {
@@ -85,6 +85,7 @@ dependencies {
     api(project(":dd-sdk-android"))
     implementation(libs.kotlin)
     implementation(libs.androidXComposeRuntime)
+    implementation(libs.androidXComposeMaterial)
     implementation(libs.androidXComposeNavigation)
 
     testImplementation(project(":tools:unit"))

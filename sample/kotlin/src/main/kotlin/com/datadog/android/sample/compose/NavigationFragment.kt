@@ -6,7 +6,6 @@
 
 package com.datadog.android.sample.compose
 
-import android.app.Activity
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -91,11 +90,8 @@ fun SimpleView(
         modifier = Modifier.fillMaxSize()
     ) {
         Text("View $viewId")
-        val viewTreeObserver = (LocalContext.current as Activity).window.decorView.viewTreeObserver
         Button(
             onClick = trackClick(targetName = "Open View", onClick = {
-                // TODO RUMM-1764 this is temporary, just for side-effect
-                viewTreeObserver.dispatchOnGlobalLayout()
                 onNavigate.invoke()
             }),
             modifier = Modifier

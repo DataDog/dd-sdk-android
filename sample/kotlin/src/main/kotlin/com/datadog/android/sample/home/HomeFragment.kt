@@ -62,7 +62,7 @@ class HomeFragment :
             R.id.navigation_data_list -> R.id.fragment_data_list
             R.id.navigation_view_pager -> R.id.activity_view_pager
             R.id.navigation_picture -> R.id.fragment_picture
-            R.id.navigation_compose -> R.id.fragment_compose
+            R.id.navigation_compose -> R.id.activity_jetpack_compose
             R.id.navigation_about -> R.id.fragment_about
             else -> null
         }

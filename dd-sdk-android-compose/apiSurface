@@ -1,3 +1,9 @@
 class com.datadog.android.compose.ExperimentalTrackingApi
 fun trackClick(String, Map<String, Any?> = remember { emptyMap() }, () -> Unit): () -> Unit
+fun TrackInteractionEffect(String, androidx.compose.foundation.interaction.InteractionSource, InteractionType, Map<String, Any?> = emptyMap())
+sealed class com.datadog.android.compose.InteractionType
+  class Swipe<T: Any> : InteractionType
+    constructor(androidx.compose.material.SwipeableState<T>, androidx.compose.foundation.gestures.Orientation, Boolean = false)
+  class Scroll : InteractionType
+    constructor(androidx.compose.foundation.gestures.ScrollableState, androidx.compose.foundation.gestures.Orientation, Boolean = false)
 fun DatadogViewTrackingEffect(androidx.navigation.NavController, Boolean = true, com.datadog.android.rum.tracking.ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations())

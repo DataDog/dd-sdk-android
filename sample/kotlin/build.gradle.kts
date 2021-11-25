@@ -61,7 +61,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.0.2"
+        kotlinCompilerExtensionVersion = libs.versions.androidXComposeRuntime.get()
     }
 
     testOptions {
@@ -134,9 +134,9 @@ dependencies {
     implementation(libs.androidXComposeNavigation)
     implementation(libs.androidXComposeUi)
     implementation(libs.androidXComposeUiTooling)
+    implementation(libs.androidXComposeMaterial)
     implementation(libs.googleMaterial)
     implementation("com.google.accompanist:accompanist-appcompat-theme:0.16.0")
-    implementation("androidx.compose.material:material:1.0.2")
     implementation("androidx.media:media:1.3.1")
     implementation("androidx.vectordrawable:vectordrawable:1.1.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")

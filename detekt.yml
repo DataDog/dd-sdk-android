@@ -660,6 +660,7 @@ datadog:
       # endregion
       # region Kotlin Coroutines
       - "kotlinx.coroutines.Deferred.await():java.util.concurrent.CancellationException"
+      - "kotlinx.coroutines.flow.Flow.collect(kotlin.coroutines.SuspendFunction1):java.lang.Exception"
       # endregion
       # region OkHttp
       - "okhttp3.Call.execute():java.io.IOException"
@@ -839,6 +840,7 @@ datadog:
       - "kotlin.collections.MutableMap.putAll(kotlin.collections.Map)"
       - "kotlin.collections.MutableMap.remove(kotlin.String)"
       - "kotlin.collections.MutableMap.remove(com.datadog.android.rum.internal.vitals.VitalListener)"
+      - "kotlin.collections.MutableMap.remove(androidx.compose.foundation.interaction.DragInteraction.Start)"
       - "kotlin.collections.MutableSet.add(kotlin.String)"
       - "kotlin.collections.MutableSet.filter(kotlin.Function1)"
       - "kotlin.collections.MutableSet.forEach(kotlin.Function1)"
@@ -928,6 +930,7 @@ datadog:
       - "io.opentracing.util.GlobalTracer.get()"
       # endregion
       # region Androidx APIs
+      - "androidx.compose.foundation.interaction.DragInteraction.Start()"
       - "androidx.core.view.GestureDetectorCompat.onTouchEvent(android.view.MotionEvent)"
       - "androidx.fragment.app.FragmentManager.registerFragmentLifecycleCallbacks(androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks, kotlin.Boolean)"
       - "androidx.fragment.app.FragmentManager.unregisterFragmentLifecycleCallbacks(androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks)"
