@@ -29,7 +29,6 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
@@ -38,13 +37,11 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.TimeUnit
-import kotlin.system.measureNanoTime
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -120,22 +117,6 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(any) {viewTreeChangeCount != 0}`(
-        @IntForgery(1) count: Int
-    ) {
-        // Given
-        Thread.sleep(RumActionScope.ACTION_INACTIVITY_MS)
-        testedScope.viewTreeChangeCount = count
-
-        // When
-        val result = testedScope.handleEvent(mockEvent(), mockWriter)
-
-        // Then
-        verifyZeroInteractions(mockWriter, mockParentScope)
-        assertThat(result).isSameAs(testedScope)
-    }
-
-    @Test
     fun `𝕄 do nothing 𝕎 handleEvent(any) {resourceCount != 0}`(
         @LongForgery(1) count: Long
     ) {
@@ -188,7 +169,6 @@ internal class RumContinuousActionScopeTest {
     @Test
     fun `𝕄 send Action after timeout 𝕎 handleEvent(any)`() {
         // Given
-        testedScope.viewTreeChangeCount = 1
         Thread.sleep(TEST_MAX_DURATION_MS)
 
         // When
@@ -207,6 +187,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -231,7 +212,6 @@ internal class RumContinuousActionScopeTest {
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
-        testedScope.viewTreeChangeCount = 1
 
         // When
         Thread.sleep(TEST_INACTIVITY_MS * 2)
@@ -253,6 +233,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -276,7 +257,6 @@ internal class RumContinuousActionScopeTest {
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(attributes)
-        testedScope.viewTreeChangeCount = 1
 
         // When
         Thread.sleep(TEST_INACTIVITY_MS * 2)
@@ -298,6 +278,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -346,6 +327,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(1)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -403,6 +385,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(1)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -450,6 +433,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(1)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -501,6 +485,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(1)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -545,6 +530,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(1)
                     hasCrashCount(1)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -596,6 +582,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(2)
                     hasCrashCount(1)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -610,12 +597,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action immediately 𝕎 handleEvent(StopView) {viewTreeChangeCount != 0}`(
-        @IntForgery(1) count: Int
-    ) {
-        // Given
-        testedScope.viewTreeChangeCount = count
-
+    fun `𝕄 send Action immediately 𝕎 handleEvent(StopView) {viewTreeChangeCount != 0}`() {
         // When
         fakeEvent = RumRawEvent.StopView(Object(), emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -633,6 +615,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -669,6 +652,44 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(count)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action immediately 𝕎 handleEvent(StopView) {longTaskCount != 0}`(
+        @LongForgery(1, 1024) count: Long
+    ) {
+        // Given
+        testedScope.longTaskCount = count
+
+        // When
+        fakeEvent = RumRawEvent.StopView(Object(), emptyMap())
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasLongTaskCount(count)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -705,6 +726,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(count)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -744,6 +766,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(nonFatalCount + fatalCount)
                     hasCrashCount(fatalCount)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -758,12 +781,7 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(StopAction+any) {viewTreeChangeCount != 0}`(
-        @IntForgery(1) count: Int
-    ) {
-        // Given
-        testedScope.viewTreeChangeCount = count
-
+    fun `𝕄 send Action after threshold 𝕎 handleEvent(StopAction+any) {viewTreeChangeCount!=0}`() {
         // When
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -783,6 +801,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -799,7 +818,6 @@ internal class RumContinuousActionScopeTest {
 
     @Test
     fun `𝕄 send Action with initial global attributes 𝕎 handleEvent(StopAction+any)`(
-        @IntForgery(1) count: Int,
         forge: Forge
     ) {
         // Given
@@ -809,7 +827,6 @@ internal class RumContinuousActionScopeTest {
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(fakeGlobalAttributes)
-        testedScope.viewTreeChangeCount = count
         GlobalRum.globalAttributes.putAll(fakeGlobalAttributes)
         testedScope = RumActionScope(
             mockParentScope,
@@ -822,7 +839,6 @@ internal class RumContinuousActionScopeTest {
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS
         )
-        testedScope.viewTreeChangeCount = count
         fakeGlobalAttributes.keys.forEach { GlobalRum.globalAttributes.remove(it) }
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
 
@@ -844,6 +860,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -860,7 +877,6 @@ internal class RumContinuousActionScopeTest {
 
     @Test
     fun `𝕄 send Action with global attributes after threshold 𝕎 handleEvent(StopAction+any)`(
-        @IntForgery(1) count: Int,
         forge: Forge
     ) {
         // Given
@@ -870,7 +886,6 @@ internal class RumContinuousActionScopeTest {
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(fakeGlobalAttributes)
-        testedScope.viewTreeChangeCount = count
         GlobalRum.globalAttributes.putAll(fakeGlobalAttributes)
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
 
@@ -892,6 +907,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -932,6 +948,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(count)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -972,6 +989,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(count)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1013,6 +1031,7 @@ internal class RumContinuousActionScopeTest {
                     hasDurationGreaterThan(1)
                     hasErrorCount(nonFatalCount + fatalCount)
                     hasCrashCount(fatalCount)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1028,11 +1047,8 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 send Action only once 𝕎 handleEvent(StopAction) + handleEvent(any) twice`(
-        @IntForgery(1, 1024) count: Int
-    ) {
+    fun `𝕄 send Action only once 𝕎 handleEvent(StopAction) + handleEvent(any) twice`() {
         // Given
-        testedScope.viewTreeChangeCount = count
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
 
         // When
@@ -1054,6 +1070,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1070,46 +1087,44 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(StopView) {no side effect}`(
+    fun `𝕄 send Action 𝕎 handleEvent(StopView) {no side effect}`(
         forge: Forge
     ) {
         testedScope.type = forge.aValueFrom(RumActionType::class.java, listOf(RumActionType.CUSTOM))
 
         // Given
         testedScope.resourceCount = 0
-        testedScope.viewTreeChangeCount = 0
         testedScope.errorCount = 0
         testedScope.crashCount = 0
+        testedScope.longTaskCount = 0
         fakeEvent = RumRawEvent.StopView(Object(), emptyMap())
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(mockWriter)
-        assertThat(result).isNull()
-    }
-
-    @Test
-    fun `𝕄 send ActionDropped event 𝕎 handleEvent(StopView) {no side effect}`(
-        forge: Forge
-    ) {
-        testedScope.type = forge.aValueFrom(RumActionType::class.java, listOf(RumActionType.CUSTOM))
-
-        // Given
-        testedScope.resourceCount = 0
-        testedScope.viewTreeChangeCount = 0
-        testedScope.errorCount = 0
-        testedScope.crashCount = 0
-        fakeEvent = RumRawEvent.StopView(Object(), emptyMap())
-
-        // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // Then
-        val argumentCaptor = argumentCaptor<RumRawEvent.ActionDropped>()
-        verify(mockParentScope).handleEvent(argumentCaptor.capture(), eq(mockWriter))
-        assertThat(argumentCaptor.firstValue.viewId).isEqualTo(fakeParentContext.viewId ?: "")
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(testedScope.type)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
     }
 
@@ -1118,9 +1133,9 @@ internal class RumContinuousActionScopeTest {
         // Given
         testedScope.type = RumActionType.CUSTOM
         testedScope.resourceCount = 0
-        testedScope.viewTreeChangeCount = 0
         testedScope.errorCount = 0
         testedScope.crashCount = 0
+        testedScope.longTaskCount = 0
         fakeEvent = RumRawEvent.StopView(Object(), emptyMap())
 
         // When
@@ -1139,6 +1154,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1155,9 +1171,9 @@ internal class RumContinuousActionScopeTest {
     fun `𝕄 do nothing after threshold 𝕎 handleEvent(any) {no side effect}`() {
         // Given
         testedScope.resourceCount = 0
-        testedScope.viewTreeChangeCount = 0
         testedScope.errorCount = 0
         testedScope.crashCount = 0
+        testedScope.longTaskCount = 0
         Thread.sleep(TEST_INACTIVITY_MS)
 
         // When
@@ -1170,9 +1186,6 @@ internal class RumContinuousActionScopeTest {
 
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(any) before threshold`() {
-        // Given
-        testedScope.viewTreeChangeCount = 1
-
         // When
         val result = testedScope.handleEvent(mockEvent(), mockWriter)
 
@@ -1246,6 +1259,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(1)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1288,6 +1302,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(1)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1301,48 +1316,6 @@ internal class RumContinuousActionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isSameAs(testedScope)
         assertThat(result3).isNull()
-    }
-
-    @Test
-    fun `𝕄 send Action after threshold 𝕎 handleEvent(StopAction+ViewTreeChanged+any)`() {
-        // When
-        fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
-        val duration = measureNanoTime {
-            repeat(4) {
-                Thread.sleep(TEST_INACTIVITY_MS / 3)
-                testedScope.handleEvent(RumRawEvent.ViewTreeChanged(Time()), mockWriter)
-            }
-        }
-        testedScope.handleEvent(RumRawEvent.ViewTreeChanged(Time()), mockWriter)
-        Thread.sleep(TEST_INACTIVITY_MS)
-        val result2 = testedScope.handleEvent(mockEvent(), mockWriter)
-
-        // Then
-        argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
-            assertThat(lastValue)
-                .apply {
-                    hasId(testedScope.actionId)
-                    hasTimestamp(resolveExpectedTimestamp())
-                    hasType(fakeType)
-                    hasTargetName(fakeName)
-                    hasDurationGreaterThan(duration)
-                    hasResourceCount(0)
-                    hasErrorCount(0)
-                    hasCrashCount(0)
-                    hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
-                    hasApplicationId(fakeParentContext.applicationId)
-                    hasSessionId(fakeParentContext.sessionId)
-                    hasLiteSessionPlan()
-                    containsExactlyContextAttributes(fakeAttributes)
-                }
-        }
-        verify(mockParentScope, never()).handleEvent(any(), any())
-        verifyNoMoreInteractions(mockWriter)
-        assertThat(result).isSameAs(testedScope)
-        assertThat(result2).isNull()
     }
 
     @Test
@@ -1365,6 +1338,7 @@ internal class RumContinuousActionScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasLongTaskCount(0)
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)

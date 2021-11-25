@@ -25,7 +25,6 @@ import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.rum.internal.net.RumOkHttpUploaderV2
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
-import com.datadog.android.rum.internal.tracking.ViewTreeChangeTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
 import com.datadog.android.rum.internal.vitals.CPUVitalReader
 import com.datadog.android.rum.internal.vitals.MemoryVitalReader
@@ -55,7 +54,6 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
     internal var viewTrackingStrategy: ViewTrackingStrategy = NoOpViewTrackingStrategy()
     internal var actionTrackingStrategy: UserActionTrackingStrategy =
         NoOpUserActionTrackingStrategy()
-    internal var viewTreeTrackingStrategy: TrackingStrategy = ViewTreeChangeTrackingStrategy()
     internal var rumEventMapper: EventMapper<Any> = NoOpEventMapper()
     internal var longTaskTrackingStrategy: TrackingStrategy = NoOpTrackingStrategy()
 
@@ -137,14 +135,12 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
     private fun registerTrackingStrategies(appContext: Context) {
         actionTrackingStrategy.register(appContext)
         viewTrackingStrategy.register(appContext)
-        viewTreeTrackingStrategy.register(appContext)
         longTaskTrackingStrategy.register(appContext)
     }
 
     private fun unregisterTrackingStrategies(appContext: Context?) {
         actionTrackingStrategy.unregister(appContext)
         viewTrackingStrategy.unregister(appContext)
-        viewTreeTrackingStrategy.unregister(appContext)
         longTaskTrackingStrategy.unregister(appContext)
     }
 
