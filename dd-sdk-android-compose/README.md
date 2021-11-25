@@ -92,6 +92,41 @@ Button(
 }
 ```
 
+Swipe and scroll events can be reported by using `TrackInteractionsEffect`. Here is an example of its usage with `Modifier.swipeable`:
+
+```kotlin
+
+val swipeableState = rememberSwipeableState(...)
+val swipeOrientation = Orientation.Horizontal
+
+val interactionSource = remember {
+    MutableInteractionSource()
+}.apply {
+    TrackInteractionEffect(
+        targetName = "Item row",
+        interactionSource = this,
+        interactionType = InteractionType.Swipe(
+            swipeableState,
+            orientation = swipeOrientation
+        ),
+        attributes = mapOf("foo" to "bar")
+    )
+}
+
+Box(
+    modifier = Modifier
+        .swipeable(
+            interactionSource = interactionSource,
+            state = swipeableState,
+            orientation = swipeOrientation,
+            ...
+        )
+        .offset { IntOffset(swipeableState.offset.value.roundToInt(), 0) }
+) {
+    ...
+}
+```
+
 ## Contributing
 
 For details on contributing, read the
