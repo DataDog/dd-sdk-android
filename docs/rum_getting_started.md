@@ -41,50 +41,93 @@ To ensure the safety of your data, you must use a client token. You cannot use o
 
 ### Initialize the library with application context
 
+#### US
+
 {{< tabs >}}
-{{% tab "US" %}}
-```kotlin
-class SampleApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
-
-        val configuration = Configuration.Builder(
-            rumEnabled = true,
-            crashReportsEnabled = true
-        )
-                        .trackInteractions()
-                        .trackLongTasks(durationThreshold)
-                        .useViewTrackingStrategy(strategy)
-                        .build()
-          val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
-          Datadog.initialize(this, credentials, configuration, trackingConsent)
-
-       }
-   }
-```
-
+{{% tab "Kotlin" %}}
+   ```kotlin
+      class SampleApplication : Application() {
+     
+         override fun onCreate() {
+            super.onCreate()
+             val configuration = Configuration.Builder(
+                     rumEnabled = true,
+                     crashReportsEnabled = true
+             )
+                     .trackInteractions()
+                     .trackLongTasks(durationThreshold)
+                     .useViewTrackingStrategy(strategy)
+                     .build()
+             val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
+             Datadog.initialize(this, credentials, configuration, trackingConsent)
+         }
+      }
+   ```
 {{% /tab %}}
-{{% tab "EU" %}}
-```kotlin
-class SampleApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
+{{% tab "Java" %}}
+   ```java
+      public class SampleApplication extends Application {
+      
+            @Override
+            public void onCreate() {
+               super.onCreate();
+               final Configuration configuration =
+                       new Configuration.Builder(true, true, true, true)
+                               .trackInteractions()
+                               .trackLongTasks(durationThreshold)
+                               .useViewTrackingStrategy(strategy)
+                               .build();
+               final Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
+               Datadog.initialize(this, credentials, configuration, trackingConsent);
+            }
+      }
+   ```
+{{% /tab %}}
+{{< /tabs >}}
 
-        val configuration = Configuration.Builder(
-            rumEnabled = true,
-            crashReportsEnabled = true
-        )
-                        .trackInteractions()
-                        .trackLongTasks(durationThreshold)
-                        .useViewTrackingStrategy(strategy)
-                        .useEUEndpoints()
-                        .build()
-        val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
-        Datadog.initialize(this, credentials, configuration, trackingConsent)
-          
-    }
-}
-```
+#### EU
+
+{{< tabs >}}
+{{% tab "Kotlin" %}}
+   ```kotlin
+      class SampleApplication : Application() {
+     
+         override fun onCreate() {
+            super.onCreate()
+             val configuration = Configuration.Builder(
+                     rumEnabled = true,
+                     crashReportsEnabled = true
+             )
+                     .trackInteractions()
+                     .trackLongTasks(durationThreshold)
+                     .useViewTrackingStrategy(strategy)
+                     .useSite(DatadogSite.EU1)
+                     .build()
+             val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
+             Datadog.initialize(this, credentials, configuration, trackingConsent)
+         }
+      }
+   ```
+{{% /tab %}}
+{{% tab "Java" %}}
+   ```java
+      public class SampleApplication extends Application {
+      
+            @Override
+            public void onCreate() {
+               super.onCreate();
+               final Configuration configuration =
+                       new Configuration.Builder(true, true, true, true)
+                               .trackInteractions()
+                               .trackLongTasks(durationThreshold)
+                               .useViewTrackingStrategy(strategy)
+                               .useSite(DatadogSite.EU1)
+                               .build();
+               Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
+               Datadog.initialize(this, credentials, configuration, trackingConsent);
+            }
+      }
+   ```
 {{% /tab %}}
 {{< /tabs >}}
 
@@ -96,20 +139,39 @@ Learn more about [`ViewTrackingStrategy`][5] to enable automatic tracking of all
 
 Configure and register the RUM Monitor. You only need to do it once, usually in your application's `onCreate()` method:
 
-```kotlin
-    val monitor = RumMonitor.Builder()
-            .build()
-    GlobalRum.registerIfAbsent(monitor)
-```
-
+{{< tabs >}}
+{{% tab "Kotlin" %}}
+   ```kotlin
+        val monitor = RumMonitor.Builder().build()
+        GlobalRum.registerIfAbsent(monitor)
+   ```
+{{% /tab %}}
+{{% tab "Java" %}}
+   ```java
+        final RumMonitor monitor = new RumMonitor.Builder().build();
+        GlobalRum.registerIfAbsent(monitor);
+   ```
+{{% /tab %}}
+{{< /tabs >}}
 
 To track your OkHttp requests as resources, add the provided [Interceptor][9]:
 
-```kotlin
-    val okHttpClient =  OkHttpClient.Builder()
-        .addInterceptor(DatadogInterceptor())
-        .build()
-```
+{{< tabs >}}
+{{% tab "Kotlin" %}}
+   ```kotlin
+        val okHttpClient =  OkHttpClient.Builder()
+            .addInterceptor(DatadogInterceptor())
+            .build()
+   ```
+{{% /tab %}}
+{{% tab "Java" %}}
+   ```java
+        final OkHttpClient okHttpClient =  new OkHttpClient.Builder()
+            .addInterceptor(new DatadogInterceptor())
+            .build();
+   ```
+{{% /tab %}}
+{{< /tabs >}}
 
 This records each request processed by the `OkHttpClient` as a resource in RUM, with all the relevant information automatically filled (URL, method, status code, error). Note that only network requests started when a view is active are tracked. If you want to track requests when your application is in the background, you can [create a view manually][10].
 

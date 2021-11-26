@@ -15,25 +15,50 @@ If you use Glide to load images in your application, take a look at Datadog's [d
 ### Picasso
  
 If you use Picasso, let it use your `OkHttpClient` for RUM and APM information about network requests made by Picasso.
- 
-```kotlin
-val picasso = Picasso.Builder(context)
-        .downloader(OkHttp3Downloader(okHttpClient))
-        // …
-        .build()
-Picasso.setSingletonInstance(picasso)
-```
+
+{{< tabs >}}
+{{% tab "Kotlin" %}}
+   ```kotlin
+       val picasso = Picasso.Builder(context)
+            .downloader(OkHttp3Downloader(okHttpClient)) 
+            // …
+            .build()
+       Picasso.setSingletonInstance(picasso)
+   ```
+{{% /tab %}}
+{{% tab "Java" %}}
+   ```java
+        final Picasso picasso = new Picasso.Builder(context)
+            .downloader(new OkHttp3Downloader(okHttpClient))
+            // …
+            .build();
+        Picasso.setSingletonInstance(picasso);
+   ```
+{{% /tab %}}
+{{< /tabs >}}
  
 ### Retrofit
  
 If you use Retrofit, let it use your `OkHttpClient` for RUM and APM information about network requests made with Retrofit.
- 
-```kotlin
-val retrofitClient = Retrofit.Builder()
-        .client(okHttpClient)
-        // …
-        .build()
-```
+
+{{< tabs >}}
+{{% tab "Kotlin" %}}
+   ```kotlin
+        val retrofitClient = Retrofit.Builder()
+            .client(okHttpClient)
+            // …
+            .build()
+   ```
+{{% /tab %}}
+{{% tab "Java" %}}
+   ```java
+        final Retrofit retrofitClient = new Retrofit.Builder()
+            .client(okHttpClient)
+            // …
+            .build();
+   ```
+{{% /tab %}}
+{{< /tabs >}}
  
 ### SQLDelight
  
@@ -46,28 +71,59 @@ Following SQLiteOpenHelper's [generated API documentation][5], you only have to 
  
 Doing this detects whenever a database is corrupted and sends a relevant
 RUM error event for it.
- 
-```kotlin
-class <YourOwnSqliteOpenHelper>: SqliteOpenHelper(<Context>, 
-                                                 <DATABASE_NAME>, 
-                                                 <CursorFactory>, 
-                                                 <DATABASE_VERSION>, 
-                                                 DatadogDatabaseErrorHandler()) {
-                            // …
 
-}
-```
+{{< tabs >}}
+{{% tab "Kotlin" %}}
+   ```kotlin
+        class <YourOwnSqliteOpenHelper>: SqliteOpenHelper(
+                                        <Context>, 
+                                        <DATABASE_NAME>, 
+                                        <CursorFactory>, 
+                                        <DATABASE_VERSION>,
+                                        DatadogDatabaseErrorHandler()) {
+            // …
+        
+        }
+   ```
+{{% /tab %}}
+{{% tab "Java" %}}
+   ```java
+       public class <YourOwnSqliteOpenHelper> extends SqliteOpenHelper {
+            
+            public <YourOwnSqliteOpenHelper>(){
+                super(<Context>,
+                      <DATABASE_NAME>,
+                      <CursorFactory>,
+                      <DATABASE_VERSION>,
+                      new DatadogDatabaseErrorHandler());
+            }
+       }
+   ```
+{{% /tab %}}
+{{< /tabs >}}
  
 ### Apollo (GraphQL)
  
 If you use Apollo, let it use your `OkHttpClient` for RUM and APM information about all the queries performed through Apollo client.
- 
-```kotlin
-val apolloClient =  ApolloClient.builder()
-         .okHttpClient(okHttpClient)
-         .serverUrl(<APOLLO_SERVER_URL>)
-         .build()
-```
+
+{{< tabs >}}
+{{% tab "Kotlin" %}}
+   ```kotlin
+        val apolloClient =  ApolloClient.builder()
+            .okHttpClient(okHttpClient)
+            .serverUrl(<APOLLO_SERVER_URL>)
+            .build()
+   ```
+{{% /tab %}}
+{{% tab "Java" %}}
+   ```java
+        final ApolloClient apolloClient = new ApolloClient.builder()
+            .okHttpClient(okHttpClient)
+            .serverUrl(<APOLLO_SERVER_URL>)
+            .build();
+   ```
+{{% /tab %}}
+{{< /tabs >}}
 
 ## Further reading
 
