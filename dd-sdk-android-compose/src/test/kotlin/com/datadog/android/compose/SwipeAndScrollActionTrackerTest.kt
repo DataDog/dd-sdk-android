@@ -454,12 +454,37 @@ class SwipeAndScrollActionTrackerTest {
                 // LazyList relies on the item index. Scroll DOWN - index decreases, UP - increases.
                 // Same logic for the RIGHT/LEFT. If we have reversed layout (first element at
                 // the bottom, not at the top, and we start from the bottom), logic is the opposite.
-                val (startIndex, endIndex) = scrollStartAndStopPoints(
-                    direction,
-                    reverseLayout,
-                    isRtl
-                )
-                whenever(firstVisibleItemIndex) doReturnConsecutively listOf(startIndex, endIndex)
+                val insideSameElement = aBool()
+
+                if (insideSameElement) {
+                    val index = anInt(min = 0, max = MAX_LAZY_LIST_STATE_ITEM_INDEX)
+                    whenever(firstVisibleItemIndex) doReturn index
+                    val (startOffset, endOffset) = scrollStartAndStopPoints(
+                        direction,
+                        reverseLayout,
+                        isRtl,
+                        max = MAX_LAZY_LIST_STATE_ITEM_OFFSET
+                    )
+                    whenever(firstVisibleItemScrollOffset) doReturnConsecutively listOf(
+                        startOffset,
+                        endOffset
+                    )
+                } else {
+                    val (startIndex, endIndex) = scrollStartAndStopPoints(
+                        direction,
+                        reverseLayout,
+                        isRtl,
+                        max = MAX_LAZY_LIST_STATE_ITEM_INDEX
+                    )
+                    whenever(firstVisibleItemIndex) doReturnConsecutively listOf(
+                        startIndex,
+                        endIndex
+                    )
+                    whenever(firstVisibleItemScrollOffset) doReturnConsecutively listOf(
+                        anInt(min = 0, max = MAX_LAZY_LIST_STATE_ITEM_OFFSET),
+                        anInt(min = 0, max = MAX_LAZY_LIST_STATE_ITEM_OFFSET)
+                    )
+                }
             },
             mock<ScrollState>().apply {
                 // for ScrollState it is overall scroll offset, unlike for LazyList,
@@ -517,9 +542,10 @@ class SwipeAndScrollActionTrackerTest {
     private fun Forge.scrollStartAndStopPoints(
         direction: Direction,
         reverseLayout: Boolean,
-        isRtl: Boolean
+        isRtl: Boolean,
+        max: Int = Int.MAX_VALUE
     ): Pair<Int, Int> {
-        return twoAscendingPoints().let {
+        return twoAscendingPoints(max = max).let {
             var points = if (direction == Direction.DOWN || direction == Direction.RIGHT) {
                 it.second to it.first
             } else {
@@ -539,9 +565,9 @@ class SwipeAndScrollActionTrackerTest {
     }
 
     // generates 2 points, second is larger than first
-    private fun Forge.twoAscendingPoints(): Pair<Int, Int> {
-        val first = anInt(min = 0, max = Int.MAX_VALUE / 2)
-        val second = anInt(min = first + 1)
+    private fun Forge.twoAscendingPoints(max: Int = Int.MAX_VALUE): Pair<Int, Int> {
+        val first = anInt(min = 0, max = max / 2)
+        val second = anInt(min = first + 1, max = max)
         return first to second
     }
 
@@ -551,6 +577,11 @@ class SwipeAndScrollActionTrackerTest {
         DOWN(orientation = Orientation.Vertical),
         RIGHT(orientation = Orientation.Horizontal),
         LEFT(orientation = Orientation.Horizontal)
+    }
+
+    companion object {
+        const val MAX_LAZY_LIST_STATE_ITEM_INDEX = 0xFFFF
+        const val MAX_LAZY_LIST_STATE_ITEM_OFFSET = 0x7FFF
     }
 
     // endregion

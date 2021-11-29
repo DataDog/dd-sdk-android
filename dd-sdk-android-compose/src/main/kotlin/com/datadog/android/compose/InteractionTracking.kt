@@ -282,7 +282,13 @@ private val ScrollableState.currentPosition: Int?
     get() {
         return when (this) {
             is LazyListState -> {
-                this.firstVisibleItemIndex
+                // We may do the scroll, but still be in the current item, so we need more precise
+                // tracking. We will pack item index in the first 16 bits, and item offset
+                // in another 15 bits (int in Java is using 2's complement) => we have space for
+                // 65,535 elements and 32,767 max offset in each. NB: firstVisibleItemScrollOffset
+                // is offset relative to the item start, not to the list start.
+                (this.firstVisibleItemIndex shl 15) or
+                    (this.firstVisibleItemScrollOffset and 0x7FFF)
             }
             is ScrollState -> {
                 this.value
