@@ -6,6 +6,8 @@
 
 package com.datadog.tools.detekt.rules
 
+import com.datadog.tools.detekt.ext.fullType
+import com.datadog.tools.detekt.ext.type
 import io.gitlab.arturbosch.detekt.api.CodeSmell
 import io.gitlab.arturbosch.detekt.api.Config
 import io.gitlab.arturbosch.detekt.api.Debt
@@ -16,7 +18,6 @@ import io.gitlab.arturbosch.detekt.api.Severity
 import io.gitlab.arturbosch.detekt.api.config
 import io.gitlab.arturbosch.detekt.api.internal.RequiresTypeResolution
 import java.util.Stack
-import org.jetbrains.kotlin.descriptors.buildPossiblyInnerType
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtImportDirective
@@ -24,16 +25,7 @@ import org.jetbrains.kotlin.psi.KtTryExpression
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.callUtil.getType
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
-import org.jetbrains.kotlin.resolve.scopes.receivers.ClassQualifier
-import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
-import org.jetbrains.kotlin.resolve.scopes.receivers.Receiver
-import org.jetbrains.kotlin.types.FlexibleType
-import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.isNullable
 import org.jetbrains.kotlin.types.lowerIfFlexible
-import org.jetbrains.kotlin.types.typeUtil.makeNotNullable
-import org.jetbrains.kotlin.types.typeUtil.supertypes
 
 /**
  * This rule will report any call to a "third party" function that is considered unsafe, that is,
@@ -111,7 +103,8 @@ class UnsafeThirdPartyFunctionCall(
         val call = resolvedCall.call
         val returnType = expression.getType(bindingContext) ?: return
 
-        val receiverType = call.explicitReceiver?.type() ?: call.dispatchReceiver?.type()
+        val explicitReceiverType = call.explicitReceiver?.type(bindingContext)
+        val receiverType = explicitReceiverType ?: call.dispatchReceiver?.type(bindingContext)
 
         if (receiverType == null) {
             val arguments = resolvedCall.valueArguments
@@ -204,44 +197,6 @@ class UnsafeThirdPartyFunctionCall(
         message: String
     ) {
         report(CodeSmell(issue, Entity.from(expression), message = message))
-    }
-
-    private fun Receiver?.type(): String? {
-        if (this == null) return null
-        if (this is ExpressionReceiver) {
-            val resolvedType = expression.getType(bindingContext)
-            if (resolvedType is FlexibleType) {
-                // types from java are flexible because the Kotlin Compiler doesn't know whether
-                // they're nullable or not.Using the lowerBound makes it nonNullable
-                return resolvedType.lowerIfFlexible().fullType()
-            } else {
-                // Convert all types to nonNullable
-                return resolvedType?.makeNotNullable()?.fullType()
-            }
-        } else if (this is ClassQualifier) {
-            return descriptor.fqNameOrNull()?.toString()
-        } else {
-            println("DD: Unknown receiver type ${this.javaClass}")
-            return null
-        }
-    }
-
-    private fun KotlinType.fullType(): String {
-        val descriptor = if (toString() == "T" || toString() == "C") {
-            // Treat generic types as their closest supertype (usually Any)
-            supertypes().firstOrNull()?.buildPossiblyInnerType()?.classifierDescriptor
-        } else {
-            buildPossiblyInnerType()?.classifierDescriptor
-        }
-        val fqName = descriptor?.fqNameOrNull()
-        return if (fqName != null) {
-            val nullableSuffix = if (isNullable()) "?" else ""
-            "$fqName$nullableSuffix"
-        } else {
-            val supertypes = this.supertypes().joinToString()
-            println("Unable to get fqName for ${this.javaClass} $this: $supertypes")
-            toString().fullType()
-        }
     }
 
     private fun String.fullType(): String {
