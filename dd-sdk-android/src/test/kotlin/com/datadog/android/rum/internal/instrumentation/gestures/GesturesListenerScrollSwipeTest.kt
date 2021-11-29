@@ -382,7 +382,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
     }
 
     @Test
-    fun `M use the class simple name as target name W scrollDetected { cannonicalName is null }`(
+    fun `M use the class simple name as target name W scrollDetected { canonicalName is null }`(
         forge: Forge
     ) {
         val listSize = forge.anInt(1, 20)
@@ -405,7 +405,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
         // we will use a LocalViewClass to reproduce the behaviour when getCanonicalName function
         // can return a null object.
-        class LocalScrollableView() : ScrollableListView()
+        class LocalScrollableView : ScrollableListView()
 
         val scrollingTarget: LocalScrollableView = mockView(
             id = targetId,
@@ -805,11 +805,11 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
                 whenever(stopEvent.x).thenReturn(initialStartX)
                 whenever(stopEvent.y).thenReturn((initialStartY + 2))
             }
-            GesturesListener.SCROLL_DIRECTION_LEFT -> {
+            GesturesListener.SCROLL_DIRECTION_RIGHT -> {
                 whenever(stopEvent.x).thenReturn((initialStartX + 2))
                 whenever(stopEvent.y).thenReturn(initialStartY)
             }
-            GesturesListener.SCROLL_DIRECTION_RIGHT -> {
+            GesturesListener.SCROLL_DIRECTION_LEFT -> {
                 whenever(stopEvent.x).thenReturn((initialStartX - 2))
                 whenever(stopEvent.y).thenReturn(initialStartY)
             }
