@@ -275,9 +275,6 @@ internal suspend fun <T> trackDragInteraction(
     }
 }
 
-internal const val FROM_SWIPE_STATE_ATTRIBUTE = "from_state"
-internal const val TO_SWIPE_STATE_ATTRIBUTE = "to_state"
-
 // endregion
 
 // region private
@@ -323,12 +320,12 @@ private fun resolveSwipeChangeAttributes(
     )
 
     return mapOf(
-        FROM_SWIPE_STATE_ATTRIBUTE to swipeStartProps.anchorState,
+        RumAttributes.ACTION_GESTURE_FROM_STATE to swipeStartProps.anchorState,
         // https://issuetracker.google.com/issues/149549482
         // There is a Compose bug: if drag stopped (pointer up) and threshold for the next value is
         // not yet reached, but there is enough velocity to continue the fling, this will
         // still report current value, this affects reporting direction as well
-        TO_SWIPE_STATE_ATTRIBUTE to swipeableState.targetValue,
+        RumAttributes.ACTION_GESTURE_TO_STATE to swipeableState.targetValue,
         RumAttributes.ACTION_GESTURE_DIRECTION to direction
     )
 }

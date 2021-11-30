@@ -331,6 +331,8 @@ object com.datadog.android.rum.RumAttributes
   const val ACTION_TARGET_PARENT_RESOURCE_ID: String
   const val ACTION_TARGET_RESOURCE_ID: String
   const val ACTION_GESTURE_DIRECTION: String
+  const val ACTION_GESTURE_FROM_STATE: String
+  const val ACTION_GESTURE_TO_STATE: String
   const val LONG_TASK_TARGET: String
   const val NETWORK_CARRIER_ID: String
   const val NETWORK_CARRIER_NAME: String

@@ -107,8 +107,8 @@ class SwipeAndScrollActionTrackerTest {
                 RumAttributes.ACTION_TARGET_TITLE to fakeTargetName,
                 RumAttributes.ACTION_GESTURE_DIRECTION
                     to swipeDirection.name.lowercase(Locale.US),
-                FROM_SWIPE_STATE_ATTRIBUTE to startState,
-                TO_SWIPE_STATE_ATTRIBUTE to endState
+                RumAttributes.ACTION_GESTURE_FROM_STATE to startState,
+                RumAttributes.ACTION_GESTURE_TO_STATE to endState
             )
 
         // When
@@ -161,8 +161,8 @@ class SwipeAndScrollActionTrackerTest {
                 RumAttributes.ACTION_TARGET_TITLE to fakeTargetName,
                 RumAttributes.ACTION_GESTURE_DIRECTION
                     to swipeDirection.name.lowercase(Locale.US),
-                FROM_SWIPE_STATE_ATTRIBUTE to startState,
-                TO_SWIPE_STATE_ATTRIBUTE to endState
+                RumAttributes.ACTION_GESTURE_FROM_STATE to startState,
+                RumAttributes.ACTION_GESTURE_TO_STATE to endState
             )
 
         // When

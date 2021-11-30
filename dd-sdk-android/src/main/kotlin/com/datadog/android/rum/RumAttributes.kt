@@ -191,6 +191,16 @@ object RumAttributes {
      */
     const val ACTION_GESTURE_DIRECTION: String = "action.gesture.direction"
 
+    /**
+     * The gesture event start state.
+     */
+    const val ACTION_GESTURE_FROM_STATE: String = "action.gesture.from_state"
+
+    /**
+     * The gesture event final state.
+     */
+    const val ACTION_GESTURE_TO_STATE: String = "action.gesture.to_state"
+
     // endregion
 
     // region Long Task
