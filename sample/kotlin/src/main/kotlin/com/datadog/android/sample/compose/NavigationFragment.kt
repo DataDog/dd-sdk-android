@@ -20,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -33,7 +32,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.datadog.android.compose.DatadogViewTrackingEffect
+import com.datadog.android.compose.NavigationViewTrackingEffect
 import com.datadog.android.compose.ExperimentalTrackingApi
 import com.datadog.android.compose.trackClick
 import com.datadog.android.rum.tracking.AcceptAllNavDestinations
@@ -63,7 +62,7 @@ class ComposeFragment : Fragment() {
 @Composable
 fun ComposeNavigationExample() {
     val navController = rememberNavController().apply {
-        DatadogViewTrackingEffect(
+        NavigationViewTrackingEffect(
             navController = this,
             trackArguments = true,
             destinationPredicate = AcceptAllNavDestinations()

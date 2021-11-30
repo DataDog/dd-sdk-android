@@ -6,4 +6,4 @@ sealed class com.datadog.android.compose.InteractionType
     constructor(androidx.compose.material.SwipeableState<T>, androidx.compose.foundation.gestures.Orientation, Boolean = false)
   class Scroll : InteractionType
     constructor(androidx.compose.foundation.gestures.ScrollableState, androidx.compose.foundation.gestures.Orientation, Boolean = false)
-fun DatadogViewTrackingEffect(androidx.navigation.NavController, Boolean = true, com.datadog.android.rum.tracking.ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations())
+fun NavigationViewTrackingEffect(androidx.navigation.NavController, Boolean = true, com.datadog.android.rum.tracking.ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations())

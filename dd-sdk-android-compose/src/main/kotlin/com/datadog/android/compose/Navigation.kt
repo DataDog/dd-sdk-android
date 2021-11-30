@@ -108,7 +108,7 @@ internal class ComposeNavigationObserver(
 @ExperimentalTrackingApi
 @Composable
 @NonRestartableComposable
-fun DatadogViewTrackingEffect(
+fun NavigationViewTrackingEffect(
     navController: NavController,
     trackArguments: Boolean = true,
     destinationPredicate: ComponentPredicate<NavDestination> = AcceptAllNavDestinations()
