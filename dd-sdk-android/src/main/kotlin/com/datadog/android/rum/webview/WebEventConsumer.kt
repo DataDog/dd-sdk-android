@@ -28,10 +28,16 @@ internal class WebEventConsumer(
             }
             val eventType = webEvent.get(EVENT_TYPE_KEY).asString
             val wrappedEvent = webEvent.get(EVENT_KEY).asJsonObject
-            if (eventType == LOG_EVENT_TYPE) {
-                logsEventConsumer.consume(wrappedEvent)
-            } else {
-                rumEventConsumer.consume(wrappedEvent, eventType)
+            when (eventType) {
+                in (WebLogEventConsumer.LOG_EVENT_TYPES) -> {
+                    logsEventConsumer.consume(wrappedEvent, eventType)
+                }
+                in (WebRumEventConsumer.RUM_EVENT_TYPES) -> {
+                    rumEventConsumer.consume(wrappedEvent, eventType)
+                }
+                else -> {
+                    sdkLogger.e(WRONG_EVENT_TYPE_ERROR_MESSAGE.format(US, eventType))
+                }
             }
         } catch (e: JsonParseException) {
             sdkLogger.e(WEB_EVENT_PARSING_ERROR_MESSAGE.format(US, event), e)
@@ -48,5 +54,7 @@ internal class WebEventConsumer(
             " the event type."
         const val WEB_EVENT_MISSING_WRAPPED_EVENT = "The web event: %s is missing" +
             " the wrapped event object."
+        const val WRONG_EVENT_TYPE_ERROR_MESSAGE = "The event type %s for the bundled" +
+            " web event is unknown."
     }
 }
