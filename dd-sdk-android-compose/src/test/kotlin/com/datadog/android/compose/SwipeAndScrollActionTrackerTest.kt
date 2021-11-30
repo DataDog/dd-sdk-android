@@ -19,6 +19,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
 import com.datadog.tools.unit.forge.BaseConfigurator
+import com.datadog.tools.unit.forge.anException
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doReturnConsecutively
 import com.nhaarman.mockitokotlin2.inOrder
@@ -33,10 +34,15 @@ import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Locale
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -440,6 +446,54 @@ class SwipeAndScrollActionTrackerTest {
         verify(mockRumMonitor)
             .startUserAction(RumActionType.SCROLL, fakeTargetName, emptyMap())
         verifyNoMoreInteractions(mockRumMonitor)
+    }
+
+    @Test
+    fun `M rethrow CancellationException W trackDragInteraction { collect is cancelled }`() {
+        // CancellationException is a normal way to communicate between the jobs/scopes, so let
+        // CancellationException to bubble up
+        // Given
+        val interactionsFlow = flow {
+            emit(DragInteraction.Start())
+            currentCoroutineContext().cancel()
+        }
+
+        whenever(mockInteractionSource.interactions) doReturn interactionsFlow
+
+        // When + Then
+        assertThrows<CancellationException> {
+            runBlocking {
+                trackDragInteraction(
+                    mockInteractionSource,
+                    onStart = { _: Any, _ -> },
+                    onStopOrCancel = { _: Any -> }
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `M not rethrow exception W trackDragInteraction { non-CancellationException }`(
+        forge: Forge
+    ) {
+        // Given
+        val interactionsFlow = flow {
+            emit(DragInteraction.Start())
+            throw forge.anException()
+        }
+
+        whenever(mockInteractionSource.interactions) doReturn interactionsFlow
+
+        // When + Then
+        assertDoesNotThrow {
+            runBlocking {
+                trackDragInteraction(
+                    mockInteractionSource,
+                    onStart = { _: Any, _ -> },
+                    onStopOrCancel = { _: Any -> }
+                )
+            }
+        }
     }
 
     // region private

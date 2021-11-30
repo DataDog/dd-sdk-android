@@ -29,6 +29,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
 import java.lang.Exception
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.collect
 
@@ -227,14 +228,7 @@ internal suspend fun trackScroll(
     )
 }
 
-internal const val FROM_SWIPE_STATE_ATTRIBUTE = "from_state"
-internal const val TO_SWIPE_STATE_ATTRIBUTE = "to_state"
-
-// endregion
-
-// region private
-
-private suspend fun <T> trackDragInteraction(
+internal suspend fun <T> trackDragInteraction(
     interactionSource: InteractionSource,
     onStart: (
         interactions: MutableMap<DragInteraction.Start, T>,
@@ -273,10 +267,20 @@ private suspend fun <T> trackDragInteraction(
                 }
             }
         }
+    } catch (ce: CancellationException) {
+        @Suppress("ThrowingInternalException")
+        throw ce
     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
         Log.e(LOG_TAG, "Exception during drag interactions tracking", e)
     }
 }
+
+internal const val FROM_SWIPE_STATE_ATTRIBUTE = "from_state"
+internal const val TO_SWIPE_STATE_ATTRIBUTE = "to_state"
+
+// endregion
+
+// region private
 
 private val ScrollableState.currentPosition: Int?
     get() {
