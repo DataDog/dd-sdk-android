@@ -154,7 +154,7 @@ class InvalidStringFormat : Rule() {
                 it.getArgumentExpression()?.getType(bindingContext)?.lowerIfFlexible()?.fullType()
             }
         return if (receiver is ClassQualifier && rawTypes.firstOrNull() == LOCALE_CLASS) {
-            rawTypes.subList(1, rawTypes.size)
+            rawTypes.drop(1)
         } else {
             rawTypes
         }
