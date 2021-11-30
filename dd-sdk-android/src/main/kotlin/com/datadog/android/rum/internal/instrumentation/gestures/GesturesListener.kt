@@ -79,10 +79,7 @@ internal class GesturesListener(
         distanceY: Float
     ): Boolean {
         val rumMonitor = GlobalRum.get()
-        val decorView = windowReference.get()?.decorView
-        if (decorView == null) {
-            return false
-        }
+        val decorView = windowReference.get()?.decorView ?: return false
 
         // we only start the user action once
         if (scrollEventType == null) {
@@ -282,9 +279,9 @@ internal class GesturesListener(
         val diffY = endEvent.y - onTouchDownYPos
         return if (abs(diffX) > abs(diffY)) {
             if (diffX > 0) {
-                SCROLL_DIRECTION_LEFT
-            } else {
                 SCROLL_DIRECTION_RIGHT
+            } else {
+                SCROLL_DIRECTION_LEFT
             }
         } else {
             if (diffY > 0) {
