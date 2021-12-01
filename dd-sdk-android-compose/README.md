@@ -52,7 +52,7 @@ If you have an app with only Compose elements, you can add support of view track
 
 ```kotlin
 val navController = rememberNavController().apply {
-    DatadogViewTrackingEffect(navController = this, trackArguments = ..., destinationPredicate = ...)
+    NavigationViewTrackingEffect(navController = this, trackArguments = ..., destinationPredicate = ...)
 }
 ```
 
