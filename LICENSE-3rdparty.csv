@@ -8,6 +8,7 @@ import,androidx.cardview,Apache-2.0,Copyright 2018 The Android Open Source Proje
 import,androidx.collection,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.compose.animation,Apache-2.0,Copyright 2019 The Android Open Source Project
 import,androidx.compose.foundation,Apache-2.0,Copyright 2019 The Android Open Source Project
+import,androidx.compose.material,Apache-2.0,Copyright 2019 The Android Open Source Project
 import,androidx.compose.runtime,Apache-2.0,Copyright 2019 The Android Open Source Project
 import,androidx.compose.ui,Apache-2.0,Copyright 2019 The Android Open Source Project
 import,androidx.coordinatorlayout,Apache-2.0,Copyright 2018 The Android Open Source Project

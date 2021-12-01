@@ -38,6 +38,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".ViewPagerActivity" />
+        <activity android:name=".compose.JetpackComposeActivity" />
 
         <service
             android:name=".service.LogsForegroundService" />

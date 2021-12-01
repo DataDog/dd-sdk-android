@@ -22,7 +22,11 @@ internal class FragmentA : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.view_pager_child_fragment_layout, container, false)
-        view.findViewById<TextView>(R.id.textView).text = "Fragment A"
+        view.findViewById<TextView>(R.id.textView).text = NAME
         return view
+    }
+
+    companion object {
+        const val NAME = "Fragment A"
     }
 }

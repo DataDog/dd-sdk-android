@@ -163,6 +163,8 @@ internal class RumEventSerializer(
     companion object {
         internal val knownAttributes = setOf(
             RumAttributes.ACTION_GESTURE_DIRECTION,
+            RumAttributes.ACTION_GESTURE_FROM_STATE,
+            RumAttributes.ACTION_GESTURE_TO_STATE,
             RumAttributes.ACTION_TARGET_PARENT_RESOURCE_ID,
             RumAttributes.ACTION_TARGET_PARENT_CLASSNAME,
             RumAttributes.ACTION_TARGET_PARENT_INDEX,

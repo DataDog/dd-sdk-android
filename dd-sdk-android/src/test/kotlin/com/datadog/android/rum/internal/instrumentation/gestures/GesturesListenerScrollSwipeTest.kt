@@ -6,22 +6,28 @@
 
 package com.datadog.android.rum.internal.instrumentation.gestures
 
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AbsListView
 import android.widget.ListAdapter
+import androidx.compose.ui.platform.ComposeView
 import androidx.core.view.ScrollingView
+import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -30,6 +36,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.lang.ref.WeakReference
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -45,6 +52,14 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() {
+
+    lateinit var mockDevLogHandler: LogHandler
+
+    @BeforeEach
+    override fun `set up`() {
+        super.`set up`()
+        mockDevLogHandler = mockDevLogHandler()
+    }
 
     // region Tests
 
@@ -310,6 +325,52 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(endUpEvent)
 
         // Then
+        verify(mockDevLogHandler, times(intermediaryEvents.size))
+            .handleLog(
+                Log.INFO,
+                GesturesListener.MSG_NO_TARGET_SCROLL_SWIPE
+            )
+        verifyZeroInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
+    fun `will do nothing and not log warning if target is in Jetpack Compose view `(forge: Forge) {
+        val startDownEvent: MotionEvent = forge.getForgery()
+        val listSize = forge.anInt(1, 20)
+        val intermediaryEvents =
+            forge.aList(size = listSize) { forge.getForgery(MotionEvent::class.java) }
+        val distancesX = forge.aList(listSize) { forge.aFloat() }
+        val distancesY = forge.aList(listSize) { forge.aFloat() }
+        val targetId = forge.anInt()
+        val endUpEvent = intermediaryEvents[intermediaryEvents.size - 1]
+        val composeView: ComposeView = mockView(
+            id = targetId,
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        )
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(composeView)
+        }
+        testedListener = GesturesListener(
+            WeakReference(mockWindow)
+        )
+
+        // When
+        testedListener.onDown(startDownEvent)
+        intermediaryEvents.forEachIndexed { index, event ->
+            testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
+        }
+        testedListener.onUp(endUpEvent)
+
+        // Then
+        verifyZeroInteractions(mockDevLogHandler)
         verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
