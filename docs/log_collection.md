@@ -20,35 +20,79 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
 
 2. Initialize the library with your application context, tracking consent, and the [Datadog client token][2] and Application ID generated when you create a new RUM application in the Datadog UI (see [Getting Started with Android RUM Collection][6] for more information). For security reasons, you must use a client token: you cannot use [Datadog API keys][3] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][2]:
 
-   {{< tabs >}}
-   {{% tab "US" %}}
+**US**
+
+{{< tabs >}}
+{{% tab "Kotlin" %}}
    ```kotlin
-    class SampleApplication : Application() {
-        override fun onCreate() {
+      class SampleApplication : Application() {
+     
+         override fun onCreate() {
             super.onCreate()
             val configuration = Configuration.Builder(logsEnabled = true, ...).build()
             val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
             Datadog.initialize(this, credentials, configuration, trackingConsent)
-        }
-    }
+         }
+      }
    ```
-   {{% /tab %}}
-   {{% tab "EU" %}}
+{{% /tab %}}
+{{% tab "Java" %}}
+   ```java
+      public class SampleApplication extends Application {
+      
+            @Override
+            public void onCreate() {
+               super.onCreate();
+               Configuration configuration =
+                       new Configuration.Builder(true, true, true, true)
+                               .build();
+               Credentials credentials = new Credentials( < CLIENT_TOKEN >, <ENV_NAME >, <APP_VARIANT_NAME >, <
+               APPLICATION_ID >);
+               Datadog.initialize(this, credentials, configuration, trackingConsent);
+            }
+      }
+   ```
+{{% /tab %}}
+{{< /tabs >}}
+
+**EU**
+
+{{< tabs >}}
+{{% tab "Kotlin" %}}
    ```kotlin
-   class SampleApplication : Application() {
-       override fun onCreate() {
-          super.onCreate()
-          val configuration = Configuration.Builder(logsEnabled = true, ...)
-             .useEUEndpoints()
-             .build()
-          val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
-          Datadog.initialize(this, credentials, configuration, trackingConsent)
-       }
-   }
+      class SampleApplication : Application() {
+     
+         override fun onCreate() {
+            super.onCreate()
+            val configuration = Configuration.Builder(logsEnabled = true, ...)
+                                .useSite(DatadogSite.EU1)
+                                .build()
+            val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
+            Datadog.initialize(this, credentials, configuration, trackingConsent)
+         }
+      }
    ```
-   {{% /tab %}}
-   {{< /tabs >}}
-   
+{{% /tab %}}
+{{% tab "Java" %}}
+   ```java
+      public class SampleApplication extends Application {
+      
+            @Override
+            public void onCreate() {
+               super.onCreate();
+               Configuration configuration =
+                       new Configuration.Builder(true, true, true, true)
+                               .useSite(DatadogSite.EU1)
+                               .build();
+               Credentials credentials = new Credentials( < CLIENT_TOKEN >, <ENV_NAME >, <APP_VARIANT_NAME >, <
+               APPLICATION_ID >);
+               Datadog.initialize(this, credentials, configuration, trackingConsent);
+            }
+      }
+   ```
+{{% /tab %}}
+{{< /tabs >}}
+
    To be compliant with the GDPR regulation, the SDK requires the tracking consent value at initialization.
    The tracking consent can be one of the following values:
    * `TrackingConsent.PENDING`: The SDK starts collecting and batching the data but does not send it to the data
@@ -77,16 +121,30 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
    ```
    
 3. Configure the Android Logger:
-
-    ```kotlin
-    val logger = Logger.Builder()
-        .setNetworkInfoEnabled(true)
-        .setLogcatLogsEnabled(true)
-        .setDatadogLogsEnabled(true)
-        .setBundleWithTraceEnabled(true)
-        .setLoggerName("<LOGGER_NAME>")
-        .build();
-    ```
+   {{< tabs >}}
+   {{% tab "Kotlin" %}}
+   ```kotlin
+         val logger = Logger.Builder()
+            .setNetworkInfoEnabled(true)
+            .setLogcatLogsEnabled(true)
+            .setDatadogLogsEnabled(true)
+            .setBundleWithTraceEnabled(true)
+            .setLoggerName("<LOGGER_NAME>")
+            .build()
+   ```
+   {{% /tab %}}
+   {{% tab "Java" %}}
+   ```java
+          final Logger logger = new Logger.Builder()
+            .setNetworkInfoEnabled(true)
+            .setLogcatLogsEnabled(true)
+            .setDatadogLogsEnabled(true)
+            .setBundleWithTraceEnabled(true)
+            .setLoggerName("<LOGGER_NAME>")
+            .build();
+   ```
+   {{% /tab %}}
+   {{< /tabs >}}
 
 4. Send a custom log entry directly to Datadog with one of the following functions:
 
@@ -97,40 +155,69 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
     logger.e("An error was met!")
     logger.wtf("What a Terrible Failure!")
     ```
-
-    Exceptions caught can be sent with a message:
-
-    ```kotlin
-    try {
-        doSomething()
-    } catch (e: IOException) {
-        logger.e("Error while doing something", e)
-    }
-    ```
+   
+5. Exceptions caught can be sent with a message:
+   {{< tabs >}}
+   {{% tab "Kotlin" %}}
+   ```kotlin
+        try { 
+            doSomething() 
+        } catch (e: IOException) {
+            logger.e("Error while doing something", e) 
+        }
+   ```
+   {{% /tab %}}
+   {{% tab "Java" %}}
+   ```java
+        try {
+            doSomething();
+        } catch (IOException e) {
+            logger.e("Error while doing something", e);
+        }
+   ```
+   {{% /tab %}}
+   {{< /tabs >}}
 
     **Note**: All logging methods can have a throwable attached to them.
 
-5. (Optional) - Provide a map alongside your log message to add attributes to the emitted log. Each entry of the map is added as an attribute.
+6. (Optional) - Provide a map alongside your log message to add attributes to the emitted log. Each entry of the map is added as an attribute.
 
-    ```kotlin
-    logger.i("onPageStarted", attributes = mapOf("http.url" to url))
-    ```
-
-    In Java you would have:
-
-    ```java
-    Map<String, Object> attributes = new HashMap<>();
-    attributes.put("http.url", url);
-    Logger.d("onPageStarted", null, attributes);
-    ```
-   
-6. If you need to modify some attributes in your Log events before batching you can do so by providing an implementation of `EventMapper<LogEvent>` when initializing the SDK:
+   {{< tabs >}}
+   {{% tab "Kotlin" %}}
    ```kotlin
-      val config = Configuration.Builder(logsEnabled = true, ...)
-                        // ...
-                        .setLogEventMapper(logEventMapper)
-                        .build()
+        logger.i("onPageStarted", attributes = mapOf("http.url" to url))
    ```
+   {{% /tab %}}
+   {{% tab "Java" %}}
+   ```java
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("http.url", url);
+        logger.i("onPageStarted", null, attributes);
+   ```
+   {{% /tab %}}
+   {{< /tabs >}}
+
+7. If you need to modify some attributes in your Log events before batching you can do so by providing an implementation of `EventMapper<LogEvent>` when initializing the SDK:
+
+   {{< tabs >}}
+   {{% tab "Kotlin" %}}
+   ```kotlin
+        val config = Configuration.Builder(logsEnabled = true, ...)
+                    // ...
+                    .setLogEventMapper(logEventMapper)
+                    .build()
+   ```
+   {{% /tab %}}
+   {{% tab "Java" %}}
+   ```java
+        Configuration config = new Configuration.Builder(true, true, true, true)
+                    // ...
+                    .setLogEventMapper(logEventMapper)
+                    .build();
+   ```
+   {{% /tab %}}
+   {{< /tabs >}}
+
    **Note**: If you return null or a different instance from the `EventMapper<LogEvent>` implementation the event will be dropped.
 
 ## Advanced logging

@@ -17,6 +17,8 @@ dependencies {
 
 Initialize the library with your application context, tracking consent, and the [Datadog client token][1] and Application ID generated when you create a new RUM application in the Datadog UI (see [Getting Started with Android RUM Collection][3] for more information). For security reasons, you must use a client token: you cannot use [Datadog API keys][2] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][1]:
 
+Kotlin
+
 ```kotlin
 class SampleApplication : Application() {
     override fun onCreate() {
@@ -27,6 +29,23 @@ class SampleApplication : Application() {
             .build()
         val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
         Datadog.initialize(this, credentials, configuration, trackingConsent)
+    }
+}
+```
+
+Java 
+
+```java
+public class SampleApplication extends Application {
+   
+    @Override
+    public void onCreate() {
+      super.onCreate();
+      Configuration configuration = new Configuration.Builder(true, true, true, true)
+                            .addPlugin(NDKCrashReporterPlugin(), Feature.CRASH)                          
+                            .build();
+      Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
+      Datadog.initialize(this, credentials, configuration, trackingConsent);
     }
 }
 ```
