@@ -4,13 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.webview
+package com.datadog.android.webview.internal
 
 import android.util.Log
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.webview.WebRumEventContextProvider
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockDevLogHandler

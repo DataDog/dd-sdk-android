@@ -4,13 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.webview
+package com.datadog.android.webview.internal
 
 import android.util.Log
 import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.rum.webview.WebEventConsumer
-import com.datadog.android.rum.webview.WebLogEventConsumer
-import com.datadog.android.rum.webview.WebRumEventConsumer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockSdkLogHandler
 import com.datadog.android.utils.restoreSdkLogHandler

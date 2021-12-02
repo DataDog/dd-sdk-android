@@ -4,13 +4,17 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.webview
+package com.datadog.android.webview
 
 import android.webkit.JavascriptInterface
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.webview.internal.WebEventConsumer
+import com.datadog.android.webview.internal.WebLogEventConsumer
+import com.datadog.android.webview.internal.WebRumEventConsumer
+import com.datadog.android.webview.internal.WebRumEventContextProvider
 import com.google.gson.JsonArray
 
 /**

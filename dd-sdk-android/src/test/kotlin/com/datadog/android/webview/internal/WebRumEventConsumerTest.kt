@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.webview
+package com.datadog.android.webview.internal
 
 import android.util.Log
 import com.datadog.android.core.internal.persistence.DataWriter
@@ -15,9 +15,6 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.webview.WebRumEventConsumer
-import com.datadog.android.rum.webview.WebRumEventContextProvider
-import com.datadog.android.rum.webview.WebRumEventMapper
 import com.datadog.android.utils.assertj.DeserializedActionEventAssert
 import com.datadog.android.utils.assertj.DeserializedErrorEventAssert
 import com.datadog.android.utils.assertj.DeserializedLongTaskEventAssert

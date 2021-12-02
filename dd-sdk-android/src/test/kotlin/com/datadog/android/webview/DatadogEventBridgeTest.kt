@@ -4,12 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.webview
+package com.datadog.android.webview
 
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.rum.webview.DatadogEventBridge
-import com.datadog.android.rum.webview.WebEventConsumer
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.webview.internal.WebEventConsumer
 import com.datadog.tools.unit.setFieldValue
 import com.google.gson.JsonArray
 import com.nhaarman.mockitokotlin2.verify
