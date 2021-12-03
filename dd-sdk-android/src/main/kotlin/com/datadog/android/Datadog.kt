@@ -9,8 +9,11 @@ package com.datadog.android
 import android.app.Application
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import android.util.Log
+import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
@@ -76,16 +79,30 @@ object Datadog {
             return
         }
 
+        var mutableConfig = configuration
+        if (isDebug and configuration.coreConfig.verboseDebugInfo) {
+            mutableConfig = configuration.copy(
+                coreConfig = configuration.coreConfig.copy(
+                    batchSize = BatchSize.SMALL,
+                    uploadFrequency = UploadFrequency.FREQUENT
+                ),
+                rumConfig = configuration.rumConfig?.copy(
+                    samplingRate = 100.0f
+                )
+            )
+            Datadog.setVerbosity(Log.VERBOSE)
+        }
+
         // always initialize Core Features first
-        CoreFeature.initialize(appContext, credentials, configuration.coreConfig, trackingConsent)
+        CoreFeature.initialize(appContext, credentials, mutableConfig.coreConfig, trackingConsent)
 
-        applyAdditionalConfiguration(configuration.additionalConfig)
+        applyAdditionalConfiguration(mutableConfig.additionalConfig)
 
-        initializeLogsFeature(configuration.logsConfig, appContext)
-        initializeTracingFeature(configuration.tracesConfig, appContext)
-        initializeRumFeature(configuration.rumConfig, appContext)
-        initializeCrashReportFeature(configuration.crashReportConfig, appContext)
-        initializeInternalLogsFeature(configuration.internalLogsConfig, appContext)
+        initializeLogsFeature(mutableConfig.logsConfig, appContext)
+        initializeTracingFeature(mutableConfig.tracesConfig, appContext)
+        initializeRumFeature(mutableConfig.rumConfig, appContext)
+        initializeCrashReportFeature(mutableConfig.crashReportConfig, appContext)
+        initializeInternalLogsFeature(mutableConfig.internalLogsConfig, appContext)
 
         CoreFeature.ndkCrashHandler.handleNdkCrash(
             LogsFeature.persistenceStrategy.getWriter(),

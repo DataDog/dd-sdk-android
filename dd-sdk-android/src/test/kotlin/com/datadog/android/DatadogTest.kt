@@ -11,8 +11,10 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.net.ConnectivityManager
 import android.util.Log as AndroidLog
+import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploaderV2
 import com.datadog.android.core.internal.privacy.ConsentProvider
@@ -106,6 +108,8 @@ internal class DatadogTest {
     @AfterEach
     fun `tear down`() {
         Datadog.isDebug = false
+        Datadog.setVerbosity(Int.MAX_VALUE)
+
         try {
             Datadog.invokeMethod("stop")
         } catch (e: IllegalStateException) {
@@ -225,6 +229,51 @@ internal class DatadogTest {
 
         // THEN
         verify(CoreFeature.trackingConsentProvider).setConsent(fakeConsent)
+    }
+
+    @Test
+    fun `M no changes W initialize() { verboseDebug } in non debug mode`() {
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
+        val configuration = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .setVerboseDebugInfo(true)
+            .sampleRumSessions(75.0f)
+            .build()
+
+        Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
+
+        assertThat(Datadog.libraryVerbosity).isEqualTo(Int.MAX_VALUE)
+        assertThat(RumFeature.samplingRate).isEqualTo(75.0f)
+        assertThat(CoreFeature.batchSize).isEqualTo(BatchSize.MEDIUM)
+        assertThat(CoreFeature.uploadFrequency).isEqualTo(UploadFrequency.AVERAGE)
+    }
+
+    @Test
+    fun `M overrides configuration W initialize() { verboseDebug } in debug mode`() {
+        appContext.fakeAppInfo.flags =
+            appContext.fakeAppInfo.flags or ApplicationInfo.FLAG_DEBUGGABLE
+
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
+        val configuration = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .setVerboseDebugInfo(true)
+            .sampleRumSessions(75.0f)
+            .build()
+
+        Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
+
+        assertThat(Datadog.libraryVerbosity).isEqualTo(AndroidLog.VERBOSE)
+        assertThat(RumFeature.samplingRate).isEqualTo(100.0f)
+        assertThat(CoreFeature.batchSize).isEqualTo(BatchSize.SMALL)
+        assertThat(CoreFeature.uploadFrequency).isEqualTo(UploadFrequency.FREQUENT)
     }
 
     @Test

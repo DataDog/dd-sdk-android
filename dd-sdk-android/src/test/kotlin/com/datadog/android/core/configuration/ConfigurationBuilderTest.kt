@@ -102,6 +102,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.Core(
                 needsClearTextHttp = false,
+                verboseDebugInfo = false,
                 firstPartyHosts = emptyList(),
                 batchSize = BatchSize.MEDIUM,
                 uploadFrequency = UploadFrequency.AVERAGE,
