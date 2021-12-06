@@ -65,7 +65,7 @@ internal constructor(
 
     internal data class Core(
         var needsClearTextHttp: Boolean,
-        val verboseDebugInfo: Boolean,
+        val enableDeveloperModeWhenDebuggable: Boolean,
         val firstPartyHosts: List<String>,
         val batchSize: BatchSize,
         val uploadFrequency: UploadFrequency,
@@ -160,10 +160,11 @@ internal constructor(
          *   setUploadFrequency(UploadFrequency.FREQUENT)
          *   Datadog.setVerbosity(Log.VERBOSE)
          * These settings will override your configuration, but only when the application is `debuggable`
-         * @param verboseDebugInfo Enable or disable verbose info when debugging
+         * @param developerModeEnabled Enable or disable extra debug info when an app is debuggable
          */
-        fun setVerboseDebugInfo(verboseDebugInfo: Boolean): Builder {
-            coreConfig = coreConfig.copy(verboseDebugInfo = verboseDebugInfo)
+        @Suppress("FunctionMaxLength")
+        fun setUseDeveloperModeWhenDebuggable(developerModeEnabled: Boolean): Builder {
+            coreConfig = coreConfig.copy(enableDeveloperModeWhenDebuggable = developerModeEnabled)
             return this
         }
 
@@ -648,7 +649,7 @@ internal constructor(
 
         internal val DEFAULT_CORE_CONFIG = Core(
             needsClearTextHttp = false,
-            verboseDebugInfo = false,
+            enableDeveloperModeWhenDebuggable = false,
             firstPartyHosts = emptyList(),
             batchSize = BatchSize.MEDIUM,
             uploadFrequency = UploadFrequency.AVERAGE,

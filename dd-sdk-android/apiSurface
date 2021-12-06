@@ -75,7 +75,7 @@ data class com.datadog.android.core.configuration.Configuration
   class Builder
     constructor(Boolean, Boolean, Boolean, Boolean)
     fun build(): Configuration
-    fun setVerboseDebugInfo(Boolean): Builder
+    fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
     fun setFirstPartyHosts(List<String>): Builder
     fun useSite(com.datadog.android.DatadogSite): Builder
     DEPRECATED fun useEUEndpoints(): Builder

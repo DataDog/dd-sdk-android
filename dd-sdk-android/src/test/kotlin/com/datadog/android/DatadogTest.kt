@@ -233,6 +233,9 @@ internal class DatadogTest {
 
     @Test
     fun `M no changes W initialize() { verboseDebug } in non debug mode`() {
+        // Given
+        appContext.fakeAppInfo.flags =
+            appContext.fakeAppInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE.inv()
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
         val configuration = Configuration.Builder(
             logsEnabled = true,
@@ -240,12 +243,14 @@ internal class DatadogTest {
             crashReportsEnabled = true,
             rumEnabled = true
         )
-            .setVerboseDebugInfo(true)
+            .setUseDeveloperModeWhenDebuggable(true)
             .sampleRumSessions(75.0f)
             .build()
 
+        // When
         Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
 
+        // Then
         assertThat(Datadog.libraryVerbosity).isEqualTo(Int.MAX_VALUE)
         assertThat(RumFeature.samplingRate).isEqualTo(75.0f)
         assertThat(CoreFeature.batchSize).isEqualTo(BatchSize.MEDIUM)
@@ -254,6 +259,7 @@ internal class DatadogTest {
 
     @Test
     fun `M overrides configuration W initialize() { verboseDebug } in debug mode`() {
+        // Given
         appContext.fakeAppInfo.flags =
             appContext.fakeAppInfo.flags or ApplicationInfo.FLAG_DEBUGGABLE
 
@@ -264,12 +270,14 @@ internal class DatadogTest {
             crashReportsEnabled = true,
             rumEnabled = true
         )
-            .setVerboseDebugInfo(true)
+            .setUseDeveloperModeWhenDebuggable(true)
             .sampleRumSessions(75.0f)
             .build()
 
+        // When
         Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
 
+        // Then
         assertThat(Datadog.libraryVerbosity).isEqualTo(AndroidLog.VERBOSE)
         assertThat(RumFeature.samplingRate).isEqualTo(100.0f)
         assertThat(CoreFeature.batchSize).isEqualTo(BatchSize.SMALL)

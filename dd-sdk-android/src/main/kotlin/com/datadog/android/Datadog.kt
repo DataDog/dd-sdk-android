@@ -80,16 +80,8 @@ object Datadog {
         }
 
         var mutableConfig = configuration
-        if (isDebug and configuration.coreConfig.verboseDebugInfo) {
-            mutableConfig = configuration.copy(
-                coreConfig = configuration.coreConfig.copy(
-                    batchSize = BatchSize.SMALL,
-                    uploadFrequency = UploadFrequency.FREQUENT
-                ),
-                rumConfig = configuration.rumConfig?.copy(
-                    samplingRate = 100.0f
-                )
-            )
+        if (isDebug and configuration.coreConfig.enableDeveloperModeWhenDebuggable) {
+            mutableConfig = modifyConfigurationForDeveloperDebug(configuration)
             Datadog.setVerbosity(Log.VERBOSE)
         }
 
@@ -300,6 +292,19 @@ object Datadog {
         if (configuration != null) {
             InternalLogsFeature.initialize(appContext, configuration)
         }
+    }
+
+    @Suppress("FunctionMaxLength")
+    private fun modifyConfigurationForDeveloperDebug(configuration: Configuration): Configuration {
+        return configuration.copy(
+            coreConfig = configuration.coreConfig.copy(
+                batchSize = BatchSize.SMALL,
+                uploadFrequency = UploadFrequency.FREQUENT
+            ),
+            rumConfig = configuration.rumConfig?.copy(
+                samplingRate = 100.0f
+            )
+        )
     }
 
     private fun applyAdditionalConfiguration(
