@@ -345,7 +345,9 @@ internal object CoreFeature {
     }
 
     private fun setupExecutors() {
+        @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
         uploadExecutorService = ScheduledThreadPoolExecutor(CORE_DEFAULT_POOL_SIZE)
+        @Suppress("UnsafeThirdPartyFunctionCall") // workQueue can't be null
         persistenceExecutorService = ThreadPoolExecutor(
             CORE_DEFAULT_POOL_SIZE,
             Runtime.getRuntime().availableProcessors(),

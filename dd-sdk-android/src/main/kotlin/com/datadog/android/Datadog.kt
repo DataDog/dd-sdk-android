@@ -99,7 +99,9 @@ object Datadog {
         // Issue #154 (“Thread starting during runtime shutdown”)
         // Make sure we stop Datadog when the Runtime shuts down
         try {
-            val hook = Thread({ stop() }, SHUTDOWN_THREAD)
+            val hookRunnable = Runnable { stop() }
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            val hook = Thread(hookRunnable, SHUTDOWN_THREAD)
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             Runtime.getRuntime().addShutdownHook(hook)
         } catch (e: IllegalStateException) {

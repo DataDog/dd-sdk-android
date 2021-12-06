@@ -149,6 +149,7 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
         memoryVitalMonitor = AggregatingVitalMonitor()
         frameRateVitalMonitor = AggregatingVitalMonitor()
 
+        @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
         vitalExecutorService = ScheduledThreadPoolExecutor(1)
 
         initializeVitalMonitor(CPUVitalReader(), cpuVitalMonitor)
