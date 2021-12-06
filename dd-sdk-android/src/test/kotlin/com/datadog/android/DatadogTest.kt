@@ -514,7 +514,7 @@ internal class DatadogTest {
             arrayOf(
                 LogsFeature.uploader,
                 RumFeature.uploader,
-                TracingFeature.uploader,
+                TracesFeature.uploader,
                 CrashReportsFeature.uploader
             )
                 .map { (it as DataOkHttpUploaderV2).source }
@@ -578,7 +578,7 @@ internal class DatadogTest {
             arrayOf(
                 LogsFeature.uploader,
                 RumFeature.uploader,
-                TracingFeature.uploader,
+                TracesFeature.uploader,
                 CrashReportsFeature.uploader
             )
                 .map { (it as DataOkHttpUploaderV2).sdkVersion }
@@ -612,7 +612,7 @@ internal class DatadogTest {
             arrayOf(
                 LogsFeature.uploader,
                 RumFeature.uploader,
-                TracingFeature.uploader,
+                TracesFeature.uploader,
                 CrashReportsFeature.uploader
             )
                 .map { (it as DataOkHttpUploaderV2).sdkVersion }
@@ -644,7 +644,7 @@ internal class DatadogTest {
             arrayOf(
                 LogsFeature.uploader,
                 RumFeature.uploader,
-                TracingFeature.uploader,
+                TracesFeature.uploader,
                 CrashReportsFeature.uploader
             )
                 .map { (it as DataOkHttpUploaderV2).sdkVersion }
@@ -676,7 +676,7 @@ internal class DatadogTest {
             arrayOf(
                 LogsFeature.uploader,
                 RumFeature.uploader,
-                TracingFeature.uploader,
+                TracesFeature.uploader,
                 CrashReportsFeature.uploader
             )
                 .map { (it as DataOkHttpUploaderV2).sdkVersion }

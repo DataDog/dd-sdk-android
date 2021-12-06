@@ -337,7 +337,7 @@ internal class DatadogRumMonitor(
         return if (sourceType == null) {
             return null
         } else {
-            when (sourceType.lowercase(Locale.US)) {
+            when (sourceType.toLowerCase(Locale.US)) {
                 "android" -> RumErrorSourceType.ANDROID
                 "react-native" -> RumErrorSourceType.REACT_NATIVE
                 "browser" -> RumErrorSourceType.BROWSER

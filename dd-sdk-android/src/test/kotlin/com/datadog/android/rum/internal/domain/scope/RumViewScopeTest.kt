@@ -2533,7 +2533,13 @@ internal class RumViewScopeTest {
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         fakeEvent = RumRawEvent.AddError(
-            message, source, null, null, false, attributes, sourceType = sourceType
+            message,
+            source,
+            null,
+            null,
+            false,
+            attributes,
+            sourceType = sourceType
         )
 
         // When
@@ -2577,7 +2583,12 @@ internal class RumViewScopeTest {
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         fakeEvent = RumRawEvent.AddError(
-            message, source, null, null, true, attributes,
+            message,
+            source,
+            null,
+            null,
+            true,
+            attributes,
             sourceType = sourceType
         )
 
