@@ -30,8 +30,8 @@ internal class LogGenerator(
     envName: String,
     appVersion: String
 ) {
+    @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here, ISO_8601 pattern is valid
     private val simpleDateFormat = SimpleDateFormat(ISO_8601, Locale.US).apply {
-        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         timeZone = TimeZone.getTimeZone("UTC")
     }
 

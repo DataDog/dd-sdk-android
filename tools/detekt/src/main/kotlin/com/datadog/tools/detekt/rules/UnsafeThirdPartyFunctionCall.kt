@@ -18,6 +18,7 @@ import io.gitlab.arturbosch.detekt.api.Severity
 import io.gitlab.arturbosch.detekt.api.config
 import io.gitlab.arturbosch.detekt.api.internal.RequiresTypeResolution
 import java.util.Stack
+import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtImportDirective
@@ -101,17 +102,17 @@ class UnsafeThirdPartyFunctionCall(
         }
         val resolvedCall = expression.getResolvedCall(bindingContext) ?: return
         val call = resolvedCall.call
-        val returnType = expression.getType(bindingContext) ?: return
+        val returnType = expression.getType(bindingContext)?.fullType() ?: return
 
         val explicitReceiverType = call.explicitReceiver?.type(bindingContext)
         val receiverType = explicitReceiverType ?: call.dispatchReceiver?.type(bindingContext)
+        val descriptor = resolvedCall.candidateDescriptor
 
-        if (receiverType == null) {
+        if (descriptor is ClassConstructorDescriptor) {
             val arguments = resolvedCall.valueArguments
                 .map { it.key.type.lowerIfFlexible().fullType() }
-            val fullType = imports[returnType.toString()] ?: returnType.toString()
-            checkConstructorCall(expression, "$fullType.constructor(${arguments.joinToString()})")
-        } else {
+            checkConstructorCall(expression, "$returnType.constructor(${arguments.joinToString()})")
+        } else if (receiverType != null) {
             val receiverFullType = receiverType.fullType()
             val arguments = resolvedCall.valueArguments
                 .map { it.key.type.lowerIfFlexible().fullType() }
@@ -136,7 +137,7 @@ class UnsafeThirdPartyFunctionCall(
         if (knownThrowingCallsMap.containsKey(call)) {
             val knownThrowables = knownThrowingCallsMap[call] ?: emptyList()
             checkCallThrowingExceptions(expression, call, knownThrowables)
-        } else if (treatUnknownConstructorAsThrowing) {
+        } else if (treatUnknownConstructorAsThrowing && !knownSafeCalls.contains(call)) {
             val message = "Calling $call could throw exceptions, but this constructor is unknown"
             reportUnsafeCall(expression, message)
         }
