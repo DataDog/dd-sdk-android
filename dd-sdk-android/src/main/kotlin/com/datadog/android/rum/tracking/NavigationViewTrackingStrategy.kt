@@ -42,6 +42,8 @@ class NavigationViewTrackingStrategy(
     ViewTrackingStrategy,
     NavController.OnDestinationChangedListener {
 
+    private var startedActivity: Activity? = null
+
     private var lifecycleCallbackRefs =
         WeakHashMap<Activity, NavControllerFragmentLifecycleCallbacks>()
 
@@ -59,28 +61,14 @@ class NavigationViewTrackingStrategy(
 
     override fun onActivityStarted(activity: Activity) {
         super.onActivityStarted(activity)
-        activity.findNavControllerOrNull(navigationViewId)?.let {
-            if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
-                val navControllerFragmentCallbacks = NavControllerFragmentLifecycleCallbacks(
-                    it,
-                    argumentsProvider = { emptyMap() },
-                    componentPredicate = predicate
-                )
-                navControllerFragmentCallbacks.register(activity as FragmentActivity)
-                lifecycleCallbackRefs[activity] = navControllerFragmentCallbacks
-            }
-            it.addOnDestinationChangedListener(this)
-        }
+        startedActivity = activity
+        startTracking()
     }
 
     override fun onActivityStopped(activity: Activity) {
         super.onActivityStopped(activity)
-        activity.findNavControllerOrNull(navigationViewId)?.let {
-            it.removeOnDestinationChangedListener(this)
-            if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
-                lifecycleCallbackRefs.remove(activity)?.unregister(activity as FragmentActivity)
-            }
-        }
+        stopTracking()
+        startedActivity = null
     }
 
     override fun onActivityPaused(activity: Activity) {
@@ -103,6 +91,50 @@ class NavigationViewTrackingStrategy(
             val attributes = if (trackArguments) convertToRumAttributes(arguments) else emptyMap()
             val viewName = componentPredicate.resolveViewName(destination)
             GlobalRum.get().startView(destination, viewName, attributes)
+        }
+    }
+
+    // endregion
+
+    // region Setup
+
+    /**
+     * Starts tracking on current activity.
+     *
+     * This is automatically called when activity starts. If using static navigation setup, with navigation container in XML layout, there's no need to call it manually. However if using dynamic navigation setup where navigation controller is created programmatically, then this function must be called after navigation controller is injected into view hierarchy. Regardless of the usage, the function always relies on view ID provided with the constructor.
+     *
+     * If activity is stopped, the function will return immediately without starting tracking.
+     */
+    fun startTracking() {
+        val activity = startedActivity ?: return
+        activity.findNavControllerOrNull(navigationViewId)?.let {
+            if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
+                val navControllerFragmentCallbacks = NavControllerFragmentLifecycleCallbacks(
+                    it,
+                    argumentsProvider = { emptyMap() },
+                    componentPredicate = predicate
+                )
+                navControllerFragmentCallbacks.register(startedActivity as FragmentActivity)
+                lifecycleCallbackRefs[startedActivity] = navControllerFragmentCallbacks
+            }
+            it.addOnDestinationChangedListener(this)
+        }
+    }
+
+    /**
+     * Stops tracking current activity.
+     *
+     * This is automatically called when activity stops. If using static navigation setup, with navigation container in XML layout, there's no need to call it manually. Even with dynamic navigation setup where navigation controller is created programmatically, default behavior should be enough. But the function is here in case tracking needs to be managed outside of the default activity lifecycle. In this case note that it's possible to call [startTracking] and [stopTracking] multiple times in succession.
+     *
+     * If activity is stopped, the function will return immediately.
+     */
+    fun stopTracking() {
+        val activity = startedActivity ?: return
+        activity.findNavControllerOrNull(navigationViewId)?.let {
+            it.removeOnDestinationChangedListener(this)
+            if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
+                lifecycleCallbackRefs.remove(activity)?.unregister(activity as FragmentActivity)
+            }
         }
     }
 

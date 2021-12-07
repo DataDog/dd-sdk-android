@@ -155,6 +155,17 @@ internal class NavigationViewTrackingStrategyTest {
     }
 
     @Test
+    fun `registers navigation listener when nav controller added after activity started`() {
+        whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn null
+        testedStrategy.onActivityStarted(mockActivity)
+        verifyZeroInteractions(mockNavController)
+
+        whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn mockNavController
+        testedStrategy.startTracking()
+        verify(mockNavController).addOnDestinationChangedListener(testedStrategy)
+    }
+
+    @Test
     fun `registers fragment lifecycle callback onActivityStarted`() {
         testedStrategy.onActivityStarted(mockActivity)
 
@@ -165,10 +176,18 @@ internal class NavigationViewTrackingStrategyTest {
     }
 
     @Test
-    fun `unregisters navigation listener onActivityStopped`() {
+    fun `unregisters navigation listener onActivityStopped if activity was started`() {
+        testedStrategy.onActivityStarted(mockActivity)
         testedStrategy.onActivityStopped(mockActivity)
 
         verify(mockNavController).removeOnDestinationChangedListener(testedStrategy)
+    }
+
+    @Test
+    fun `doesn't unregister navigation listener onActivityStopped if activity not started`() {
+        testedStrategy.onActivityStopped(mockActivity)
+
+        verifyZeroInteractions(mockNavController)
     }
 
     @Test
