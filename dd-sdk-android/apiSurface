@@ -314,6 +314,8 @@ object com.datadog.android.rum.RumAttributes
   const val SDK_VERSION: String
   const val INTERNAL_ERROR_TYPE: String
   const val INTERNAL_TIMESTAMP: String
+  const val INTERNAL_ERROR_SOURCE_TYPE: String
+  const val INTERNAL_ERROR_IS_CRASH: String
   const val TRACE_ID: String
   const val SPAN_ID: String
   const val RESOURCE_TIMINGS: String
@@ -566,7 +568,7 @@ data class com.datadog.android.rum.model.ErrorEvent
     companion object 
       fun fromJson(kotlin.String): Context
   data class Error
-    constructor(kotlin.String? = null, kotlin.String, Source, kotlin.String? = null, kotlin.Boolean? = null, kotlin.String? = null, Handling? = null, kotlin.String? = null, Resource? = null)
+    constructor(kotlin.String? = null, kotlin.String, Source, kotlin.String? = null, kotlin.Boolean? = null, kotlin.String? = null, Handling? = null, kotlin.String? = null, SourceType? = null, Resource? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Error
@@ -643,6 +645,15 @@ data class com.datadog.android.rum.model.ErrorEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Handling
+  enum SourceType
+    constructor(kotlin.String)
+    - ANDROID
+    - BROWSER
+    - IOS
+    - REACT_NATIVE
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): SourceType
   enum Plan
     constructor(kotlin.Number)
     - PLAN_1

@@ -28,6 +28,7 @@ import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
+import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.vitals.VitalInfo
@@ -66,8 +67,10 @@ import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.lang.RuntimeException
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -2401,8 +2404,59 @@ internal class RumViewScopeTest {
             attributes
         )
 
+        // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
+        // Then
+        val expectedMessage = "$message: ${throwable.message}"
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(capture())
+
+            assertThat(firstValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
+                    hasMessage(expectedMessage)
+                    hasSource(source)
+                    hasStackTrace(stacktrace)
+                    isCrash(false)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(attributes)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent(AddError) on active view {throwable_message == null}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = RuntimeException()
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            false,
+            attributes
+        )
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
         argumentCaptor<ErrorEvent> {
             verify(mockWriter).write(capture())
 
@@ -2410,6 +2464,106 @@ internal class RumViewScopeTest {
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
+                    hasSource(source)
+                    hasStackTrace(stacktrace)
+                    isCrash(false)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(attributes)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent(AddError) on active view {throwable_message == blank}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery(StringForgeryType.WHITESPACE) blankMessage: String,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val throwable = RuntimeException(blankMessage)
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            stacktrace,
+            false,
+            attributes
+        )
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(capture())
+
+            assertThat(firstValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
+                    hasMessage(message)
+                    hasSource(source)
+                    hasStackTrace(stacktrace)
+                    isCrash(false)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(attributes)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent(AddError) on active view {message = throwable_message}`(
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val throwableMessage = throwable.message
+        check(!throwableMessage.isNullOrBlank()) {
+            "Expected throwable to have a non null, non blank message"
+        }
+        fakeEvent = RumRawEvent.AddError(
+            throwableMessage,
+            source,
+            throwable,
+            stacktrace,
+            false,
+            attributes
+        )
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(capture())
+
+            assertThat(firstValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
+                    hasMessage(throwableMessage)
                     hasSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
@@ -2476,6 +2630,7 @@ internal class RumViewScopeTest {
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
+        @Forgery sourceType: RumErrorSourceType,
         forge: Forge
     ) {
         testedScope.activeActionScope = mockActionScope
@@ -2486,20 +2641,22 @@ internal class RumViewScopeTest {
             throwable,
             null,
             false,
-            attributes
+            attributes,
+            sourceType = sourceType
         )
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
+        val expectedMessage = "$message: ${throwable.message}"
         argumentCaptor<ErrorEvent> {
             verify(mockWriter).write(capture())
 
             assertThat(firstValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
-                    hasMessage(message)
+                    hasMessage(expectedMessage)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
@@ -2510,6 +2667,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                 }
@@ -2522,12 +2680,21 @@ internal class RumViewScopeTest {
     fun `𝕄 send event 𝕎 handleEvent(AddError) {throwable=null, stacktrace=null, fatal=false}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
+        @Forgery sourceType: RumErrorSourceType,
         forge: Forge
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        fakeEvent = RumRawEvent.AddError(message, source, null, null, false, attributes)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            null,
+            null,
+            false,
+            attributes,
+            sourceType = sourceType
+        )
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -2550,6 +2717,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(null)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                 }
@@ -2562,12 +2730,21 @@ internal class RumViewScopeTest {
     fun `𝕄 send event 𝕎 handleEvent(AddError) {throwable=null, stacktrace=null, fatal=true}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
+        @Forgery sourceType: RumErrorSourceType,
         forge: Forge
     ) {
         // Given
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        fakeEvent = RumRawEvent.AddError(message, source, null, null, true, attributes)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            null,
+            null,
+            true,
+            attributes,
+            sourceType = sourceType
+        )
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -2589,6 +2766,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(null)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                 }
@@ -2630,6 +2808,7 @@ internal class RumViewScopeTest {
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
+        @Forgery sourceType: RumErrorSourceType,
         forge: Forge
     ) {
         // Given
@@ -2640,7 +2819,8 @@ internal class RumViewScopeTest {
             throwable,
             null,
             false,
-            emptyMap()
+            emptyMap(),
+            sourceType = sourceType
         )
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
         GlobalRum.globalAttributes.putAll(attributes)
@@ -2649,13 +2829,14 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
+        val expectedMessage = "$message: ${throwable.message}"
         argumentCaptor<ErrorEvent> {
             verify(mockWriter).write(capture())
 
             assertThat(firstValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
-                    hasMessage(message)
+                    hasMessage(expectedMessage)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
@@ -2666,6 +2847,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                 }
@@ -2679,6 +2861,7 @@ internal class RumViewScopeTest {
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
+        @Forgery sourceType: RumErrorSourceType,
         forge: Forge
     ) {
         // Given
@@ -2690,19 +2873,21 @@ internal class RumViewScopeTest {
             throwable,
             null,
             true,
-            attributes
+            attributes,
+            sourceType = sourceType
         )
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
+        val expectedMessage = "$message: ${throwable.message}"
         argumentCaptor<Any> {
             verify(mockWriter, times(2)).write(capture())
             assertThat(firstValue as ErrorEvent)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
-                    hasMessage(message)
+                    hasMessage(expectedMessage)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(true)
@@ -2713,6 +2898,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                 }
@@ -2750,11 +2936,118 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `𝕄 send event 𝕎 handleEvent(AddError) {internal is_crash=true}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @Forgery sourceType: RumErrorSourceType,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributesWithCrash = attributes.toMutableMap()
+        attributesWithCrash["_dd.error.is_crash"] = true
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            null,
+            false,
+            attributesWithCrash,
+            sourceType = sourceType
+        )
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        val expectedMessage = "$message: ${throwable.message}"
+        argumentCaptor<Any> {
+            verify(mockWriter).write(capture())
+            assertThat(firstValue as ErrorEvent)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
+                    hasMessage(expectedMessage)
+                    hasSource(source)
+                    hasStackTrace(throwable.loggableStackTrace())
+                    isCrash(true)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                    hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(attributes)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent(AddError) {internal is_crash=false}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @Forgery sourceType: RumErrorSourceType,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributesWithCrash = attributes.toMutableMap()
+        attributesWithCrash["_dd.error.is_crash"] = false
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            null,
+            false,
+            attributesWithCrash,
+            sourceType = sourceType
+        )
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        val expectedMessage = "$message: ${throwable.message}"
+        argumentCaptor<Any> {
+            verify(mockWriter).write(capture())
+            assertThat(firstValue as ErrorEvent)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
+                    hasMessage(expectedMessage)
+                    hasSource(source)
+                    hasStackTrace(throwable.loggableStackTrace())
+                    isCrash(false)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                    hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(attributes)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
     fun `𝕄 send event 𝕎 handleEvent(AddError) {custom error type}`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         @StringForgery errorType: String,
+        @Forgery sourceType: RumErrorSourceType,
         forge: Forge
     ) {
         // Given
@@ -2767,20 +3060,22 @@ internal class RumViewScopeTest {
             null,
             false,
             attributes,
-            type = errorType
+            type = errorType,
+            sourceType = sourceType
         )
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
+        val expectedMessage = "$message: ${throwable.message}"
         argumentCaptor<ErrorEvent> {
             verify(mockWriter).write(capture())
 
             assertThat(firstValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
-                    hasMessage(message)
+                    hasMessage(expectedMessage)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
@@ -2791,6 +3086,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(errorType)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                 }
@@ -2804,6 +3100,7 @@ internal class RumViewScopeTest {
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
+        @Forgery sourceType: RumErrorSourceType,
         forge: Forge
     ) {
         // Given
@@ -2814,7 +3111,8 @@ internal class RumViewScopeTest {
             throwable,
             null,
             true,
-            emptyMap()
+            emptyMap(),
+            sourceType = sourceType
         )
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
         GlobalRum.globalAttributes.putAll(attributes)
@@ -2823,12 +3121,13 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
+        val expectedMessage = "$message: ${throwable.message}"
         argumentCaptor<Any> {
             verify(mockWriter, times(2)).write(capture())
             assertThat(firstValue as ErrorEvent)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
-                    hasMessage(message)
+                    hasMessage(expectedMessage)
                     hasSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(true)
@@ -2839,6 +3138,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeActionId)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                 }

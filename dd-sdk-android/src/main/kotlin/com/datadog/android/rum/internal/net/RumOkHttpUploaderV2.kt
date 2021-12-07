@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.net
 
-import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploaderV2
 import com.datadog.android.core.internal.utils.sdkLogger
@@ -17,11 +16,13 @@ internal open class RumOkHttpUploaderV2(
     endpoint: String,
     clientToken: String,
     source: String,
+    sdkVersion: String,
     callFactory: Call.Factory
 ) : DataOkHttpUploaderV2(
     buildUrl(endpoint, TrackType.RUM),
     clientToken,
     source,
+    sdkVersion,
     callFactory,
     CONTENT_TYPE_TEXT_UTF8,
     sdkLogger
@@ -31,7 +32,7 @@ internal open class RumOkHttpUploaderV2(
         val elements = mutableListOf(
             "${RumAttributes.SERVICE_NAME}:${CoreFeature.serviceName}",
             "${RumAttributes.APPLICATION_VERSION}:${CoreFeature.packageVersion}",
-            "${RumAttributes.SDK_VERSION}:${BuildConfig.SDK_VERSION_NAME}",
+            "${RumAttributes.SDK_VERSION}:$sdkVersion",
             "${RumAttributes.ENV}:${CoreFeature.envName}"
         )
 

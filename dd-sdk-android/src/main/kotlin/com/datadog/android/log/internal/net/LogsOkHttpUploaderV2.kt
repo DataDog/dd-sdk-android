@@ -14,12 +14,14 @@ internal open class LogsOkHttpUploaderV2(
     endpoint: String,
     clientToken: String,
     source: String,
+    sdkVersion: String,
     callFactory: Call.Factory,
     internalLogger: Logger
 ) : DataOkHttpUploaderV2(
     buildUrl(endpoint, TrackType.LOGS),
     clientToken,
     source,
+    sdkVersion,
     callFactory,
     CONTENT_TYPE_JSON,
     internalLogger

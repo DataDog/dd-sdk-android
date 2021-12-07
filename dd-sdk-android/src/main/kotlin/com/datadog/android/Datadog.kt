@@ -278,8 +278,14 @@ object Datadog {
         // so some things may yet not be initialized -> not accessible, some things may already be
         // initialized and be not mutable anymore
         additionalConfiguration[DD_SOURCE_TAG]?.let {
-            if (it.toString().isNotBlank()) {
-                CoreFeature.sourceName = it.toString()
+            if (it is String && it.isNotBlank()) {
+                CoreFeature.sourceName = it
+            }
+        }
+
+        additionalConfiguration[DD_SDK_VERSION_TAG]?.let {
+            if (it is String && it.isNotBlank()) {
+                CoreFeature.sdkVersion = it
             }
         }
     }
@@ -339,6 +345,7 @@ object Datadog {
             "In this case the Datadog SDK will not be initialised."
 
     internal const val DD_SOURCE_TAG = "_dd.source"
+    internal const val DD_SDK_VERSION_TAG = "_dd.sdk_version"
 
     // endregion
 }

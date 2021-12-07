@@ -158,6 +158,7 @@ internal class DatadogExceptionHandlerTest {
                 mockNetworkInfoProvider,
                 mockUserInfoProvider,
                 mockTimeProvider,
+                CoreFeature.sdkVersion,
                 CoreFeature.envName,
                 CoreFeature.packageVersion
             ),

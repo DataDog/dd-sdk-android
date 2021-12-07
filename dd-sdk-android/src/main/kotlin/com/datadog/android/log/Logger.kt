@@ -353,6 +353,7 @@ internal constructor(internal val handler: LogHandler) {
                 netInfoProvider,
                 CoreFeature.userInfoProvider,
                 CoreFeature.timeProvider,
+                CoreFeature.sdkVersion,
                 CoreFeature.envName,
                 CoreFeature.packageVersion
             )
@@ -370,6 +371,7 @@ internal constructor(internal val handler: LogHandler) {
                 netInfoProvider,
                 NoOpUserInfoProvider(), // we don't want to track our customer's users
                 CoreFeature.timeProvider,
+                CoreFeature.sdkVersion,
                 InternalLogsFeature.ENV_NAME,
                 CoreFeature.packageVersion
             )

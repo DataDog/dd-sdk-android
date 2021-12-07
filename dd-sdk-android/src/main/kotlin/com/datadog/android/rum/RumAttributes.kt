@@ -69,6 +69,16 @@ object RumAttributes {
      */
     const val INTERNAL_TIMESTAMP: String = "_dd.timestamp"
 
+    /**
+     * Overrides the default RUM error source type with a custom one.
+     */
+    const val INTERNAL_ERROR_SOURCE_TYPE: String = "_dd.error.source_type"
+
+    /**
+     * Overrides the default RUM error source `is_crash` with a custom one.
+     */
+    const val INTERNAL_ERROR_IS_CRASH: String = "_dd.error.is_crash"
+
     // endregion
 
     // region Resource

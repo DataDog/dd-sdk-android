@@ -112,7 +112,7 @@ internal open class RumViewScope(
 
     private var refreshRateScale: Double = 1.0
     private var lastFrameRateInfo: VitalInfo? = null
-    private var frameRateVitalListenr: VitalListener = object : VitalListener {
+    private var frameRateVitalListener: VitalListener = object : VitalListener {
         override fun onVitalUpdate(info: VitalInfo) {
             lastFrameRateInfo = info
         }
@@ -125,7 +125,7 @@ internal open class RumViewScope(
         attributes.putAll(GlobalRum.globalAttributes)
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
-        frameRateVitalMonitor.register(frameRateVitalListenr)
+        frameRateVitalMonitor.register(frameRateVitalListener)
 
         detectRefreshRateScale(key)
     }
@@ -259,6 +259,7 @@ internal open class RumViewScope(
         pendingResourceCount++
     }
 
+    @Suppress("ComplexMethod")
     private fun onAddError(
         event: RumRawEvent.AddError,
         writer: DataWriter<Any>
@@ -269,16 +270,24 @@ internal open class RumViewScope(
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
         val updatedAttributes = addExtraAttributes(event.attributes)
+        val isFatal = updatedAttributes.remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean
         val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
         val errorType = event.type ?: event.throwable?.javaClass?.canonicalName
+        val throwableMessage = event.throwable?.message ?: ""
+        val message = if (throwableMessage.isNotBlank() && event.message != throwableMessage) {
+            "${event.message}: $throwableMessage"
+        } else {
+            event.message
+        }
         val errorEvent = ErrorEvent(
             date = event.eventTime.timestamp + serverTimeOffsetInMs,
             error = ErrorEvent.Error(
-                message = event.message,
+                message = message,
                 source = event.source.toSchemaSource(),
                 stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
-                isCrash = event.isFatal,
-                type = errorType
+                isCrash = event.isFatal || (isFatal ?: false),
+                type = errorType,
+                sourceType = event.sourceType.toSchemaSourceType()
             ),
             action = context.actionId?.let { ErrorEvent.Action(it) },
             view = ErrorEvent.View(
@@ -302,6 +311,7 @@ internal open class RumViewScope(
             dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
         )
         writer.write(errorEvent)
+
         if (event.isFatal) {
             errorCount++
             crashCount++

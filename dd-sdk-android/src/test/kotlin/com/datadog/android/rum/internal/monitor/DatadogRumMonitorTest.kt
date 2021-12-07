@@ -15,6 +15,7 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
@@ -406,6 +407,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.stacktrace).isNull()
             assertThat(event.isFatal).isFalse()
+            assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -429,6 +431,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.throwable).isNull()
             assertThat(event.stacktrace).isEqualTo(stacktrace)
             assertThat(event.isFatal).isFalse()
+            assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -524,6 +527,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.isFatal).isTrue()
+            assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.attributes).isEmpty()
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -746,6 +750,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.stacktrace).isNull()
             assertThat(event.isFatal).isFalse()
+            assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -772,6 +777,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.throwable).isNull()
             assertThat(event.stacktrace).isEqualTo(stacktrace)
             assertThat(event.isFatal).isFalse()
+            assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -799,6 +805,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.stacktrace).isNull()
             assertThat(event.isFatal).isFalse()
             assertThat(event.type).isEqualTo(errorType)
+            assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorType)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -832,6 +839,50 @@ internal class DatadogRumMonitorTest {
             assertThat(event.isFatal).isFalse()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorType)
             assertThat(event.type).isEqualTo(errorType)
+            assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W error source type onAddErrorWithStacktrace`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stacktrace: String,
+        forge: Forge
+    ) {
+        val nonSupportedValue = forge.aString()
+        val sourceTypeExpectations = mapOf(
+            "android" to RumErrorSourceType.ANDROID,
+            "browser" to RumErrorSourceType.BROWSER,
+            "react-native" to RumErrorSourceType.REACT_NATIVE,
+            nonSupportedValue to RumErrorSourceType.ANDROID,
+            null to RumErrorSourceType.ANDROID
+        )
+
+        val sourceType = forge.anElementFrom(sourceTypeExpectations.keys)
+
+        val fakeAttributesWithErrorSourceType =
+            fakeAttributes + (RumAttributes.INTERNAL_ERROR_SOURCE_TYPE to sourceType)
+        testedMonitor.addErrorWithStacktrace(
+            message,
+            source,
+            stacktrace,
+            fakeAttributesWithErrorSourceType
+        )
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.AddError
+            assertThat(event.message).isEqualTo(message)
+            assertThat(event.source).isEqualTo(source)
+            assertThat(event.throwable).isNull()
+            assertThat(event.stacktrace).isEqualTo(stacktrace)
+            assertThat(event.isFatal).isFalse()
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorSourceType)
+            assertThat(event.sourceType).isEqualTo(sourceTypeExpectations[sourceType])
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
