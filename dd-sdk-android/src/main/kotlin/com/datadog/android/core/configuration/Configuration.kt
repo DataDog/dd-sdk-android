@@ -52,7 +52,7 @@ import okhttp3.Authenticator
  *
  * This is necessary to initialize the SDK with the [Datadog.initialize] method.
  */
-class Configuration
+data class Configuration
 internal constructor(
     internal var coreConfig: Core,
     internal val logsConfig: Feature.Logs?,
@@ -65,6 +65,7 @@ internal constructor(
 
     internal data class Core(
         var needsClearTextHttp: Boolean,
+        val enableDeveloperModeWhenDebuggable: Boolean,
         val firstPartyHosts: List<String>,
         val batchSize: BatchSize,
         val uploadFrequency: UploadFrequency,
@@ -149,6 +150,22 @@ internal constructor(
                 internalLogsConfig = internalLogsConfig,
                 additionalConfig = additionalConfig
             )
+        }
+
+        /**
+         * Sets the DataDog SDK to be more verbose when an application is set to `debuggable`.
+         * This is equivalent to setting:
+         *   sampleRumSessions(100)
+         *   setBatchSize(BatchSize.SMALL)
+         *   setUploadFrequency(UploadFrequency.FREQUENT)
+         *   Datadog.setVerbosity(Log.VERBOSE)
+         * These settings will override your configuration, but only when the application is `debuggable`
+         * @param developerModeEnabled Enable or disable extra debug info when an app is debuggable
+         */
+        @Suppress("FunctionMaxLength")
+        fun setUseDeveloperModeWhenDebuggable(developerModeEnabled: Boolean): Builder {
+            coreConfig = coreConfig.copy(enableDeveloperModeWhenDebuggable = developerModeEnabled)
+            return this
         }
 
         /**
@@ -632,6 +649,7 @@ internal constructor(
 
         internal val DEFAULT_CORE_CONFIG = Core(
             needsClearTextHttp = false,
+            enableDeveloperModeWhenDebuggable = false,
             firstPartyHosts = emptyList(),
             batchSize = BatchSize.MEDIUM,
             uploadFrequency = UploadFrequency.AVERAGE,

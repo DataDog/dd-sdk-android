@@ -102,6 +102,7 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.Core(
                 needsClearTextHttp = false,
+                enableDeveloperModeWhenDebuggable = false,
                 firstPartyHosts = emptyList(),
                 batchSize = BatchSize.MEDIUM,
                 uploadFrequency = UploadFrequency.AVERAGE,
@@ -1484,6 +1485,23 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
         assertThat(config.internalLogsConfig).isNull()
         assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `M developer flag set W setUseDeveloperModeWhenDebuggable()`(
+        @BoolForgery enableDeveloperDebugInfo: Boolean
+    ) {
+        // When
+        val config = testedBuilder
+            .setUseDeveloperModeWhenDebuggable(enableDeveloperDebugInfo)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(
+                enableDeveloperModeWhenDebuggable = enableDeveloperDebugInfo
+            )
+        )
     }
 
     @Test
