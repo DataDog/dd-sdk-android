@@ -26,6 +26,7 @@ class DatadogHttpCodec {
   private static final String TRACE_ID_KEY = "x-datadog-trace-id";
   private static final String SPAN_ID_KEY = "x-datadog-parent-id";
   private static final String SAMPLING_PRIORITY_KEY = "x-datadog-sampling-priority";
+  private static final String SELECTED_FOR_SAMPLE_KEY = "x-datadog-sampled";
   private static final String ORIGIN_KEY = "x-datadog-origin";
 
   private DatadogHttpCodec() {
@@ -38,9 +39,6 @@ class DatadogHttpCodec {
     public void inject(final DDSpanContext context, final TextMapInject carrier) {
       carrier.put(TRACE_ID_KEY, context.getTraceId().toString());
       carrier.put(SPAN_ID_KEY, context.getSpanId().toString());
-      if (context.lockSamplingPriority()) {
-        carrier.put(SAMPLING_PRIORITY_KEY, String.valueOf(context.getSamplingPriority()));
-      }
       final String origin = context.getOrigin();
       if (origin != null) {
         carrier.put(ORIGIN_KEY, origin);
@@ -49,6 +47,11 @@ class DatadogHttpCodec {
       for (final Map.Entry<String, String> entry : context.baggageItems()) {
         carrier.put(OT_BAGGAGE_PREFIX + entry.getKey(), HttpCodec.encode(entry.getValue()));
       }
+
+      // always use max sampling priority for Android traces
+      carrier.put(SAMPLING_PRIORITY_KEY, "1");
+      // makes this request trace selected for sampling
+      carrier.put(SELECTED_FOR_SAMPLE_KEY, "1");
     }
   }
 
