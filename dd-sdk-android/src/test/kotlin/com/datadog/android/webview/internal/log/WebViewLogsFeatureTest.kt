@@ -4,22 +4,16 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.log.internal
+package com.datadog.android.webview.internal.log
 
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
-import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
-import com.datadog.android.core.internal.persistence.file.batch.BatchFileDataWriter
-import com.datadog.android.event.EventMapper
-import com.datadog.android.event.MapperSerializer
-import com.datadog.android.log.internal.domain.LogFilePersistenceStrategy
-import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
-import com.datadog.android.log.model.LogEvent
+import com.datadog.android.log.model.WebViewLogEvent
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.getFieldValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -34,15 +28,16 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
+    ExtendWith(ApiLevelExtension::class),
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class LogsFeatureTest :
-    SdkFeatureTest<LogEvent, Configuration.Feature.Logs, LogsFeature>() {
+internal class WebViewLogsFeatureTest :
+    SdkFeatureTest<WebViewLogEvent, Configuration.Feature.Logs, WebViewLogsFeature>() {
 
-    override fun createTestedFeature(): LogsFeature {
-        return LogsFeature
+    override fun createTestedFeature(): WebViewLogsFeature {
+        return WebViewLogsFeature
     }
 
     override fun forgeConfiguration(forge: Forge): Configuration.Feature.Logs {
@@ -50,10 +45,10 @@ internal class LogsFeatureTest :
     }
 
     override fun featureDirName(): String {
-        return "logs"
+        return "web-logs"
     }
 
-    override fun doesFeatureNeedMigration(): Boolean = true
+    override fun doesFeatureNeedMigration(): Boolean = false
 
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
@@ -62,7 +57,7 @@ internal class LogsFeatureTest :
 
         // Then
         assertThat(testedFeature.persistenceStrategy)
-            .isInstanceOf(LogFilePersistenceStrategy::class.java)
+            .isInstanceOf(WebViewLogFilePersistenceStrategy::class.java)
     }
 
     @Test
@@ -76,30 +71,5 @@ internal class LogsFeatureTest :
         assertThat(logsUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
         assertThat(logsUploader.intakeUrl).endsWith("/api/v2/logs")
         assertThat(logsUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
-    }
-
-    @Test
-    fun `𝕄 use the eventMapper 𝕎 initialize()`() {
-        // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
-
-        // Then
-        val batchFileDataWriter =
-            (testedFeature.persistenceStrategy.getWriter() as? ScheduledWriter)
-                ?.delegateWriter as? BatchFileDataWriter
-        val logMapperSerializer = batchFileDataWriter?.serializer as? MapperSerializer<LogEvent>
-        val logEventMapperWrapper =
-            logMapperSerializer?.getFieldValue<LogEventMapperWrapper, MapperSerializer<LogEvent>>(
-                "eventMapper"
-            )
-        val logEventMapper =
-            logEventMapperWrapper?.getFieldValue<EventMapper<LogEvent>, LogEventMapperWrapper>(
-                "wrappedEventMapper"
-            )
-        assertThat(
-            logEventMapper
-        ).isSameAs(
-            fakeConfigurationFeature.logsEventMapper
-        )
     }
 }
