@@ -127,6 +127,7 @@ class SampleApplication : Application() {
         )
             .setFirstPartyHosts(tracedHosts)
             .addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
+                .setWebViewTrackingHosts(listOf("dd.datad0g.com"))
             .useViewTrackingStrategy(
                 NavigationViewTrackingStrategy(
                     R.id.nav_host_fragment,

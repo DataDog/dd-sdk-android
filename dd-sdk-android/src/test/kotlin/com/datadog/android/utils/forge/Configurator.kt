@@ -35,7 +35,7 @@ internal class Configurator :
 
         // LOG
         forge.addFactory(LogEventForgeryFactory())
-        forge.addFactory(WebLogEventForgeryFactory())
+        forge.addFactory(WebViewLogEventForgeryFactory())
 
         // APM
         forge.addFactory(SpanForgeryFactory())
