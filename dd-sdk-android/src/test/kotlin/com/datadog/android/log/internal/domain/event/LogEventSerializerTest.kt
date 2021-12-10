@@ -124,10 +124,10 @@ internal class LogEventSerializerTest {
             .hasField(KEY_SERVICE_NAME, log.service)
             .hasField(KEY_DATE, log.date)
             .hasField(KEY_TAGS, log.ddtags)
-        log.status?.let {
+        log.status.let {
             assertThat(jsonObject).hasField(KEY_STATUS, it.toJson())
         }
-        log.logger?.let {
+        log.logger.let {
             assertThat(jsonObject).hasField(KEY_LOGGER) {
                 hasLoggerInfo(it)
             }
