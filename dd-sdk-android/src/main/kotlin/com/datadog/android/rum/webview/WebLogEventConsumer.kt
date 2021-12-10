@@ -10,13 +10,13 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.model.LogEvent
+import com.datadog.android.log.model.WebLogEvent
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 
 internal class WebLogEventConsumer(
-    private val userLogsWriter: DataWriter<LogEvent>,
-    private val internalLogsWriter: DataWriter<LogEvent>,
+    private val userLogsWriter: DataWriter<WebLogEvent>,
+    private val internalLogsWriter: DataWriter<WebLogEvent>,
     private val rumContextProvider: WebRumEventContextProvider
 ) {
 
@@ -35,10 +35,10 @@ internal class WebLogEventConsumer(
         }
     }
 
-    private fun map(event: JsonObject): LogEvent? {
+    private fun map(event: JsonObject): WebLogEvent? {
         return try {
             addDdTags(event)
-            val logEvent = LogEvent.fromJson(event.toString())
+            val logEvent = WebLogEvent.fromJson(event.toString())
             val rumContext = rumContextProvider.getRumContext()
             if (rumContext != null) {
                 val resolvedProperties = logEvent.additionalProperties.toMutableMap()

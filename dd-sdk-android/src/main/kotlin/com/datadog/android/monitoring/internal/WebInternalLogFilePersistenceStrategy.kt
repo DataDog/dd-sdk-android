@@ -12,25 +12,25 @@ import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOr
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.domain.event.LogEventSerializer
-import com.datadog.android.log.model.LogEvent
+import com.datadog.android.log.internal.domain.event.WebLogEventSerializer
+import com.datadog.android.log.model.WebLogEvent
 import java.util.concurrent.ExecutorService
 
-internal class InternalLogFilePersistenceStrategy(
+internal class WebInternalLogFilePersistenceStrategy(
     consentProvider: ConsentProvider,
     context: Context,
     executorService: ExecutorService,
     internalLogger: Logger
-) : BatchFilePersistenceStrategy<LogEvent>(
+) : BatchFilePersistenceStrategy<WebLogEvent>(
     FeatureFileOrchestrator(
         consentProvider,
         context,
-        InternalLogsFeature.INTERNAL_LOGS_FEATURE_NAME,
+        WebInternalLogsFeature.WEB_INTERNAL_LOGS_FEATURE_NAME,
         executorService,
         internalLogger
     ),
     executorService,
-    LogEventSerializer(),
+    WebLogEventSerializer(),
     PayloadDecoration.JSON_ARRAY_DECORATION,
     internalLogger
 )

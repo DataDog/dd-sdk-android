@@ -277,7 +277,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     }
 
     @Test
-    fun `𝕄 migrate batch files 𝕎 initialize()`(
+    open fun `𝕄 migrate batch files 𝕎 initialize()`(
         @StringForgery message: String
     ) {
         // Given

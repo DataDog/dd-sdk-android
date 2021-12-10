@@ -11,11 +11,11 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.log.model.LogEvent
+import com.datadog.android.log.model.WebLogEvent
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.webview.WebLogEventConsumer
 import com.datadog.android.rum.webview.WebRumEventContextProvider
-import com.datadog.android.utils.assertj.DeserializedLogEventAssert
+import com.datadog.android.utils.assertj.DeserializedWebLogEventAssert
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockSdkLogHandler
 import com.datadog.android.utils.restoreSdkLogHandler
@@ -53,10 +53,10 @@ internal class WebLogEventConsumerTest {
     lateinit var testedLogEventConsumer: WebLogEventConsumer
 
     @Mock
-    lateinit var mockUserLogsWriter: DataWriter<LogEvent>
+    lateinit var mockUserLogsWriter: DataWriter<WebLogEvent>
 
     @Mock
-    lateinit var mockInternalLogsWriter: DataWriter<LogEvent>
+    lateinit var mockInternalLogsWriter: DataWriter<WebLogEvent>
 
     @Mock
     lateinit var mockRumContextProvider: WebRumEventContextProvider
@@ -93,7 +93,7 @@ internal class WebLogEventConsumerTest {
     }
 
     @Test
-    fun `M write the user event W consume { user event type }`(@Forgery fakeLogEvent: LogEvent) {
+    fun `M write the user event W consume { user event type }`(@Forgery fakeLogEvent: WebLogEvent) {
 
         // Given
         val fakeLogEventAsJson = fakeLogEvent.toJson().asJsonObject
@@ -105,9 +105,9 @@ internal class WebLogEventConsumerTest {
         )
 
         // Then
-        val argumentCaptor = argumentCaptor<LogEvent>()
+        val argumentCaptor = argumentCaptor<WebLogEvent>()
         verify(mockUserLogsWriter).write(argumentCaptor.capture())
-        DeserializedLogEventAssert.assertThat(argumentCaptor.firstValue).isEqualTo(
+        DeserializedWebLogEventAssert.assertThat(argumentCaptor.firstValue).isEqualTo(
             fakeLogEvent.copy(
                 ddtags = mobileSdkDdtags() +
                     WebLogEventConsumer.DDTAGS_SEPARATOR +
@@ -118,7 +118,7 @@ internal class WebLogEventConsumerTest {
 
     @Test
     fun `M write the user event W consume { internal log event type }`(
-        @Forgery fakeLogEvent: LogEvent
+        @Forgery fakeLogEvent: WebLogEvent
     ) {
 
         // Given
@@ -131,9 +131,9 @@ internal class WebLogEventConsumerTest {
         )
 
         // Then
-        val argumentCaptor = argumentCaptor<LogEvent>()
+        val argumentCaptor = argumentCaptor<WebLogEvent>()
         verify(mockInternalLogsWriter).write(argumentCaptor.capture())
-        DeserializedLogEventAssert.assertThat(argumentCaptor.firstValue).isEqualTo(
+        DeserializedWebLogEventAssert.assertThat(argumentCaptor.firstValue).isEqualTo(
             fakeLogEvent.copy(
                 ddtags = mobileSdkDdtags() +
                     WebLogEventConsumer.DDTAGS_SEPARATOR +
@@ -144,7 +144,7 @@ internal class WebLogEventConsumerTest {
 
     @Test
     fun `M write a mapped event W consume { user event type, rum context }`(
-        @Forgery fakeLogEvent: LogEvent,
+        @Forgery fakeLogEvent: WebLogEvent,
         @Forgery fakeRumContext: RumContext
     ) {
 
@@ -169,15 +169,15 @@ internal class WebLogEventConsumerTest {
                 fakeLogEvent.ddtags
 
         )
-        val argumentCaptor = argumentCaptor<LogEvent>()
+        val argumentCaptor = argumentCaptor<WebLogEvent>()
         verify(mockUserLogsWriter).write(argumentCaptor.capture())
-        DeserializedLogEventAssert.assertThat(argumentCaptor.firstValue)
+        DeserializedWebLogEventAssert.assertThat(argumentCaptor.firstValue)
             .isEqualTo(expectedMappedEvent)
     }
 
     @Test
     fun `M write a mapped event W consume { internal log event type, rum context }`(
-        @Forgery fakeLogEvent: LogEvent,
+        @Forgery fakeLogEvent: WebLogEvent,
         @Forgery fakeRumContext: RumContext
     ) {
 
@@ -201,15 +201,15 @@ internal class WebLogEventConsumerTest {
                 WebLogEventConsumer.DDTAGS_SEPARATOR +
                 fakeLogEvent.ddtags,
         )
-        val argumentCaptor = argumentCaptor<LogEvent>()
+        val argumentCaptor = argumentCaptor<WebLogEvent>()
         verify(mockInternalLogsWriter).write(argumentCaptor.capture())
-        DeserializedLogEventAssert.assertThat(argumentCaptor.firstValue)
+        DeserializedWebLogEventAssert.assertThat(argumentCaptor.firstValue)
             .isEqualTo(expectedMappedEvent)
     }
 
     @Test
     fun `M do nothing W consume { bad format json object }`(
-        @Forgery fakeLogEvent: LogEvent,
+        @Forgery fakeLogEvent: WebLogEvent,
         forge: Forge
     ) {
 
@@ -237,7 +237,7 @@ internal class WebLogEventConsumerTest {
 
     @Test
     fun `M log an sdk error W consume { bad format json object }`(
-        @Forgery fakeLogEvent: LogEvent,
+        @Forgery fakeLogEvent: WebLogEvent,
         forge: Forge
     ) {
 
@@ -273,7 +273,7 @@ internal class WebLogEventConsumerTest {
 
     @Test
     fun `M merge the attached ddtags into the local ones W consume { user log event type }`(
-        @Forgery fakeLogEvent: LogEvent
+        @Forgery fakeLogEvent: WebLogEvent
     ) {
         // When
         // Given
@@ -286,9 +286,9 @@ internal class WebLogEventConsumerTest {
         )
 
         // Then
-        val argumentCaptor = argumentCaptor<LogEvent>()
+        val argumentCaptor = argumentCaptor<WebLogEvent>()
         verify(mockUserLogsWriter).write(argumentCaptor.capture())
-        DeserializedLogEventAssert.assertThat(argumentCaptor.firstValue)
+        DeserializedWebLogEventAssert.assertThat(argumentCaptor.firstValue)
             .isEqualTo(
                 fakeLogEvent.copy(
                     ddtags = mobileSdkDdtags() +
@@ -300,7 +300,7 @@ internal class WebLogEventConsumerTest {
 
     @Test
     fun `M merge the attached ddtags into the local ones W consume { internal log event type }`(
-        @Forgery fakeLogEvent: LogEvent
+        @Forgery fakeLogEvent: WebLogEvent
     ) {
         // When
         // Given
@@ -313,9 +313,9 @@ internal class WebLogEventConsumerTest {
         )
 
         // Then
-        val argumentCaptor = argumentCaptor<LogEvent>()
+        val argumentCaptor = argumentCaptor<WebLogEvent>()
         verify(mockInternalLogsWriter).write(argumentCaptor.capture())
-        DeserializedLogEventAssert.assertThat(argumentCaptor.firstValue)
+        DeserializedWebLogEventAssert.assertThat(argumentCaptor.firstValue)
             .isEqualTo(
                 fakeLogEvent.copy(
                     ddtags = mobileSdkDdtags() +
@@ -327,7 +327,7 @@ internal class WebLogEventConsumerTest {
 
     @Test
     fun `M add local ddtags W consume { user log, no extra ddtags }`(
-        @Forgery fakeLogEvent: LogEvent
+        @Forgery fakeLogEvent: WebLogEvent
     ) {
         // When
         // Given
@@ -342,15 +342,15 @@ internal class WebLogEventConsumerTest {
         )
 
         // Then
-        val argumentCaptor = argumentCaptor<LogEvent>()
+        val argumentCaptor = argumentCaptor<WebLogEvent>()
         verify(mockUserLogsWriter).write(argumentCaptor.capture())
-        DeserializedLogEventAssert.assertThat(argumentCaptor.firstValue)
+        DeserializedWebLogEventAssert.assertThat(argumentCaptor.firstValue)
             .isEqualTo(fakeLogEvent.copy(ddtags = mobileSdkDdtags()))
     }
 
     @Test
     fun `M add local ddtags W consume { internal log, no exta ddtags }`(
-        @Forgery fakeLogEvent: LogEvent
+        @Forgery fakeLogEvent: WebLogEvent
     ) {
         // When
         // Given
@@ -365,9 +365,9 @@ internal class WebLogEventConsumerTest {
         )
 
         // Then
-        val argumentCaptor = argumentCaptor<LogEvent>()
+        val argumentCaptor = argumentCaptor<WebLogEvent>()
         verify(mockInternalLogsWriter).write(argumentCaptor.capture())
-        DeserializedLogEventAssert.assertThat(argumentCaptor.firstValue)
+        DeserializedWebLogEventAssert.assertThat(argumentCaptor.firstValue)
             .isEqualTo(fakeLogEvent.copy(ddtags = mobileSdkDdtags()))
     }
 
