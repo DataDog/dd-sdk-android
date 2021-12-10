@@ -4,33 +4,36 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.monitoring.internal
+package com.datadog.android.log.internal.domain
 
 import android.content.Context
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
 import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.domain.event.LogEventSerializer
-import com.datadog.android.log.model.LogEvent
+import com.datadog.android.log.internal.WebLogsFeature
+import com.datadog.android.log.internal.domain.event.WebLogEventSerializer
+import com.datadog.android.log.model.WebLogEvent
 import java.util.concurrent.ExecutorService
 
-internal class InternalLogFilePersistenceStrategy(
+internal class WebLogFilePersistenceStrategy(
     consentProvider: ConsentProvider,
     context: Context,
     executorService: ExecutorService,
     internalLogger: Logger
-) : BatchFilePersistenceStrategy<LogEvent>(
-    FeatureFileOrchestrator(
-        consentProvider,
-        context,
-        InternalLogsFeature.INTERNAL_LOGS_FEATURE_NAME,
+) :
+    BatchFilePersistenceStrategy<WebLogEvent>(
+        FeatureFileOrchestrator(
+            consentProvider,
+            context,
+            WebLogsFeature.WEB_LOGS_FEATURE_NAME,
+            executorService,
+            internalLogger
+        ),
         executorService,
-        internalLogger
-    ),
-    executorService,
-    LogEventSerializer(),
-    PayloadDecoration.JSON_ARRAY_DECORATION,
-    internalLogger
-)
+        WebLogEventSerializer(),
+        PayloadDecoration.JSON_ARRAY_DECORATION,
+        sdkLogger
+    )
