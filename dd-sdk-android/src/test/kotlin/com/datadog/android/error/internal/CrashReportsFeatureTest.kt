@@ -61,6 +61,8 @@ internal class CrashReportsFeatureTest :
         return "crash"
     }
 
+    override fun doesFeatureNeedMigration(): Boolean = true
+
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
         // When

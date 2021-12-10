@@ -22,15 +22,15 @@ import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.log.internal.WebLogsFeature
 import com.datadog.android.monitoring.internal.InternalLogsFeature
-import com.datadog.android.monitoring.internal.WebInternalLogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.WebRumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.tracing.internal.TracingFeature
+import com.datadog.android.webview.internal.log.WebViewInternalLogsFeature
+import com.datadog.android.webview.internal.log.WebViewLogsFeature
+import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import java.lang.IllegalArgumentException
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -152,9 +152,9 @@ object Datadog {
         RumFeature.clearAllData()
         TracingFeature.clearAllData()
         InternalLogsFeature.clearAllData()
-        WebInternalLogsFeature.clearAllData()
-        WebLogsFeature.clearAllData()
-        WebRumFeature.clearAllData()
+        WebViewInternalLogsFeature.clearAllData()
+        WebViewLogsFeature.clearAllData()
+        WebViewRumFeature.clearAllData()
     }
 
     // Stop all Datadog work (for test purposes).
@@ -167,9 +167,9 @@ object Datadog {
             CrashReportsFeature.stop()
             CoreFeature.stop()
             InternalLogsFeature.stop()
-            WebLogsFeature.stop()
-            WebInternalLogsFeature.stop()
-            WebRumFeature.stop()
+            WebViewLogsFeature.stop()
+            WebViewInternalLogsFeature.stop()
+            WebViewRumFeature.stop()
             isDebug = false
             initialized.set(false)
         }
@@ -280,7 +280,7 @@ object Datadog {
     ) {
         if (configuration != null) {
             LogsFeature.initialize(appContext, configuration)
-            WebLogsFeature.initialize(appContext, configuration)
+            WebViewLogsFeature.initialize(appContext, configuration)
         }
     }
 
@@ -311,7 +311,7 @@ object Datadog {
                 devLogger.w(WARNING_MESSAGE_APPLICATION_ID_IS_NULL)
             }
             RumFeature.initialize(appContext, configuration)
-            WebRumFeature.initialize(appContext, configuration)
+            WebViewRumFeature.initialize(appContext, configuration)
         }
     }
 
@@ -321,7 +321,7 @@ object Datadog {
     ) {
         if (configuration != null) {
             InternalLogsFeature.initialize(appContext, configuration)
-            WebInternalLogsFeature.initialize(appContext, configuration)
+            WebViewInternalLogsFeature.initialize(appContext, configuration)
         }
     }
 
