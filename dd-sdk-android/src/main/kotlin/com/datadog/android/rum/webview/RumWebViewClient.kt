@@ -27,6 +27,7 @@ import com.datadog.android.rum.RumResourceKind
  * This will map the page loading, and webview errors into RUM Resource and
  * Error events respectively.
  */
+@Deprecated("You should use the DatadogEventBridge JavaScript interface instead.")
 open class RumWebViewClient : WebViewClient() {
 
     // region WebViewClient
