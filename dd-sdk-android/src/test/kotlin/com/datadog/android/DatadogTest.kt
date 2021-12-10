@@ -19,20 +19,20 @@ import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.log.internal.WebLogsFeature
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.monitoring.internal.InternalLogsFeature
-import com.datadog.android.monitoring.internal.WebInternalLogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.WebRumFeature
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.android.webview.internal.log.WebViewInternalLogsFeature
+import com.datadog.android.webview.internal.log.WebViewLogsFeature
+import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -311,9 +311,9 @@ internal class DatadogTest {
         assertThat(TracingFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isTrue()
         assertThat(InternalLogsFeature.initialized.get()).isFalse()
-        assertThat(WebInternalLogsFeature.initialized.get()).isFalse()
-        assertThat(WebLogsFeature.initialized.get()).isTrue()
-        assertThat(WebRumFeature.initialized.get()).isTrue()
+        assertThat(WebViewInternalLogsFeature.initialized.get()).isFalse()
+        assertThat(WebViewLogsFeature.initialized.get()).isTrue()
+        assertThat(WebViewRumFeature.initialized.get()).isTrue()
     }
 
     @Test
@@ -342,9 +342,9 @@ internal class DatadogTest {
         assertThat(TracingFeature.initialized.get()).isEqualTo(tracesEnabled)
         assertThat(RumFeature.initialized.get()).isEqualTo(rumEnabled)
         assertThat(InternalLogsFeature.initialized.get()).isFalse()
-        assertThat(WebInternalLogsFeature.initialized.get()).isFalse()
-        assertThat(WebLogsFeature.initialized.get()).isEqualTo(logsEnabled)
-        assertThat(WebRumFeature.initialized.get()).isEqualTo(rumEnabled)
+        assertThat(WebViewInternalLogsFeature.initialized.get()).isFalse()
+        assertThat(WebViewLogsFeature.initialized.get()).isEqualTo(logsEnabled)
+        assertThat(WebViewRumFeature.initialized.get()).isEqualTo(rumEnabled)
     }
 
     @Test
@@ -368,9 +368,9 @@ internal class DatadogTest {
         assertThat(TracingFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isTrue()
         assertThat(InternalLogsFeature.initialized.get()).isFalse()
-        assertThat(WebInternalLogsFeature.initialized.get()).isFalse()
-        assertThat(WebLogsFeature.initialized.get()).isTrue()
-        assertThat(WebRumFeature.initialized.get()).isTrue()
+        assertThat(WebViewInternalLogsFeature.initialized.get()).isFalse()
+        assertThat(WebViewLogsFeature.initialized.get()).isTrue()
+        assertThat(WebViewRumFeature.initialized.get()).isTrue()
         verify(mockDevLogHandler).handleLog(
             android.util.Log.WARN,
             Datadog.WARNING_MESSAGE_APPLICATION_ID_IS_NULL
@@ -398,9 +398,9 @@ internal class DatadogTest {
         assertThat(TracingFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isFalse()
         assertThat(InternalLogsFeature.initialized.get()).isFalse()
-        assertThat(WebInternalLogsFeature.initialized.get()).isFalse()
-        assertThat(WebLogsFeature.initialized.get()).isTrue()
-        assertThat(WebRumFeature.initialized.get()).isFalse()
+        assertThat(WebViewInternalLogsFeature.initialized.get()).isFalse()
+        assertThat(WebViewLogsFeature.initialized.get()).isTrue()
+        assertThat(WebViewRumFeature.initialized.get()).isFalse()
         verify(mockDevLogHandler, never()).handleLog(
             android.util.Log.WARN,
             Datadog.WARNING_MESSAGE_APPLICATION_ID_IS_NULL
@@ -433,9 +433,9 @@ internal class DatadogTest {
         assertThat(TracingFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isTrue()
         assertThat(InternalLogsFeature.initialized.get()).isTrue()
-        assertThat(WebInternalLogsFeature.initialized.get()).isTrue()
-        assertThat(WebLogsFeature.initialized.get()).isTrue()
-        assertThat(WebRumFeature.initialized.get()).isTrue()
+        assertThat(WebViewInternalLogsFeature.initialized.get()).isTrue()
+        assertThat(WebViewLogsFeature.initialized.get()).isTrue()
+        assertThat(WebViewRumFeature.initialized.get()).isTrue()
     }
 
     @Test
@@ -528,8 +528,8 @@ internal class DatadogTest {
                 RumFeature.uploader,
                 TracingFeature.uploader,
                 CrashReportsFeature.uploader,
-                WebRumFeature.uploader,
-                WebLogsFeature.uploader,
+                WebViewRumFeature.uploader,
+                WebViewLogsFeature.uploader,
             )
                 .map { (it as DataOkHttpUploaderV2).source }
         )
@@ -562,8 +562,8 @@ internal class DatadogTest {
                 RumFeature.uploader,
                 TracingFeature.uploader,
                 CrashReportsFeature.uploader,
-                WebRumFeature.uploader,
-                WebLogsFeature.uploader
+                WebViewRumFeature.uploader,
+                WebViewLogsFeature.uploader
             )
                 .map { (it as DataOkHttpUploaderV2).source }
         )
@@ -596,8 +596,8 @@ internal class DatadogTest {
                 RumFeature.uploader,
                 TracingFeature.uploader,
                 CrashReportsFeature.uploader,
-                WebRumFeature.uploader,
-                WebLogsFeature.uploader
+                WebViewRumFeature.uploader,
+                WebViewLogsFeature.uploader
             )
                 .map { (it as DataOkHttpUploaderV2).sdkVersion }
         )
@@ -632,8 +632,8 @@ internal class DatadogTest {
                 RumFeature.uploader,
                 TracingFeature.uploader,
                 CrashReportsFeature.uploader,
-                WebRumFeature.uploader,
-                WebLogsFeature.uploader
+                WebViewRumFeature.uploader,
+                WebViewLogsFeature.uploader
             )
                 .map { (it as DataOkHttpUploaderV2).sdkVersion }
         )
@@ -666,8 +666,8 @@ internal class DatadogTest {
                 RumFeature.uploader,
                 TracingFeature.uploader,
                 CrashReportsFeature.uploader,
-                WebRumFeature.uploader,
-                WebLogsFeature.uploader
+                WebViewRumFeature.uploader,
+                WebViewLogsFeature.uploader
             )
                 .map { (it as DataOkHttpUploaderV2).sdkVersion }
         )
@@ -700,8 +700,8 @@ internal class DatadogTest {
                 RumFeature.uploader,
                 TracingFeature.uploader,
                 CrashReportsFeature.uploader,
-                WebLogsFeature.uploader,
-                WebRumFeature.uploader
+                WebViewLogsFeature.uploader,
+                WebViewRumFeature.uploader
             )
                 .map { (it as DataOkHttpUploaderV2).sdkVersion }
         )

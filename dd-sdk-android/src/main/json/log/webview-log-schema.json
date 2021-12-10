@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "webview-log-schema.json",
+  "title": "WebViewLogEvent",
+  "type": "object",
+  "description": "Structure holding information about a Log",
+  "properties": {
+    "status": {
+      "type": "string",
+      "description": "The severity of this log",
+      "enum": [
+        "critical",
+        "error",
+        "warn",
+        "info",
+        "debug",
+        "trace",
+        "emergency"
+      ],
+      "readOnly": false
+    },
+    "service": {
+      "type": "string",
+      "description": "The service name",
+      "readOnly": true
+    },
+    "message": {
+      "type": "string",
+      "description": "The log message",
+      "readOnly": false
+    },
+    "date": {
+      "type": "string",
+      "description": "The date when the log is fired as an ISO-8601 String",
+      "readOnly": true
+    },
+    "ddtags": {
+      "type": "string",
+      "description": "The list of tags joined into a String and divided by ',' ",
+      "readOnly": false
+    }
+  },
+  "required": [
+    "date",
+    "service",
+    "message",
+    "ddtags"
+  ],
+  "additionalProperties": {
+    "type": "object",
+    "description": "additional log attributes"
+  }
+}
