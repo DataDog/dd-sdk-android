@@ -6,6 +6,7 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.log.internal.utils.ISO_8601
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
@@ -70,7 +71,7 @@ internal fun <K, V> Forge.aFilteredMap(
     return filtered
 }
 
-internal fun Forge.aFormattedTimestamp(format: String = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"): String {
+internal fun Forge.aFormattedTimestamp(format: String = ISO_8601): String {
     val simpleDateFormat = SimpleDateFormat(format, Locale.US).apply {
         timeZone = TimeZone.getTimeZone("UTC")
     }

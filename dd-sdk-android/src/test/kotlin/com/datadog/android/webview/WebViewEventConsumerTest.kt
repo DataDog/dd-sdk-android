@@ -53,13 +53,13 @@ internal class WebViewEventConsumerTest {
     lateinit var mockLogsEventConsumer: WebViewLogEventConsumer
 
     @Mock
-    lateinit var mockSdkLogHandler: LogHandler
+    lateinit var mockedSdkLogHandler: LogHandler
 
     lateinit var originalSdkLogHandler: LogHandler
 
     @BeforeEach
     fun `set up`() {
-        originalSdkLogHandler = mockSdkLogHandler(mockSdkLogHandler)
+        originalSdkLogHandler = mockSdkLogHandler(mockedSdkLogHandler)
         testedWebViewEventConsumer = WebViewEventConsumer(
             mockRumEventConsumer,
             mockLogsEventConsumer
@@ -140,7 +140,7 @@ internal class WebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
-        verify(mockSdkLogHandler).handleLog(
+        verify(mockedSdkLogHandler).handleLog(
             Log.ERROR,
             WebViewEventConsumer.WRONG_EVENT_TYPE_ERROR_MESSAGE.format(
                 US,
@@ -173,7 +173,7 @@ internal class WebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
-        verify(mockSdkLogHandler).handleLog(
+        verify(mockedSdkLogHandler).handleLog(
             Log.ERROR,
             WebViewEventConsumer.WEB_EVENT_MISSING_TYPE_ERROR_MESSAGE.format(
                 US,
@@ -206,7 +206,7 @@ internal class WebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
-        verify(mockSdkLogHandler).handleLog(
+        verify(mockedSdkLogHandler).handleLog(
             Log.ERROR,
             WebViewEventConsumer.WEB_EVENT_MISSING_WRAPPED_EVENT.format(US, fakeWebEvent)
         )
@@ -246,7 +246,7 @@ internal class WebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeBadJsonFormatEvent)
 
         // Then
-        verify(mockSdkLogHandler).handleLog(
+        verify(mockedSdkLogHandler).handleLog(
             eq(Log.ERROR),
             eq(
                 WebViewEventConsumer.WEB_EVENT_PARSING_ERROR_MESSAGE.format(
