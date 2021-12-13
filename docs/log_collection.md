@@ -334,4 +334,4 @@ If your existing codebase is using Timber, you can forward all those logs to  Da
 [4]: https://docs.datadoghq.com/logs/processing/attributes_naming_convention/
 [5]: https://docs.datadoghq.com/tagging/
 [6]: https://docs.datadoghq.com/real_user_monitoring/android/?tab=us
-[7]: /real_user_monitoring/error_tracking/android/#upload-your-mapping-file
+[7]: https://docs.datadoghq.com/real_user_monitoring/error_tracking/android/#upload-your-mapping-file
