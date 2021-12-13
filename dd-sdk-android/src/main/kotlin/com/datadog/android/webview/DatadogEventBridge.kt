@@ -9,6 +9,7 @@ package com.datadog.android.webview
 import android.webkit.JavascriptInterface
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.webview.internal.WebViewEventConsumer
+import com.datadog.android.webview.internal.log.WebLogEventDateCorrector
 import com.datadog.android.webview.internal.log.WebViewInternalLogsFeature
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
@@ -37,7 +38,9 @@ class DatadogEventBridge {
         WebViewLogEventConsumer(
             WebViewLogsFeature.persistenceStrategy.getWriter(),
             WebViewInternalLogsFeature.persistenceStrategy.getWriter(),
-            contextProvider
+            contextProvider,
+            WebLogEventDateCorrector(CoreFeature.timeProvider)
+
         )
     )
 
