@@ -1,5 +1,8 @@
 # Android Log Collection
 
+{{< site-region region="us3,gov" >}}
+<div class="alert alert-warning">Android log collection is not supported for this site.</div>
+{{< /site-region >}}
 Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-android` client-side logging library][1] and leverage the following features:
 
 * Log to Datadog in JSON format natively.
@@ -20,78 +23,74 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
 
 2. Initialize the library with your application context, tracking consent, and the [Datadog client token][2] and Application ID generated when you create a new RUM application in the Datadog UI (see [Getting Started with Android RUM Collection][6] for more information). For security reasons, you must use a client token: you cannot use [Datadog API keys][3] to configure the `dd-sdk-android` library as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [client token documentation][2]:
 
-**US**
-
+{{< site-region region="us,us5" >}}
 {{< tabs >}}
 {{% tab "Kotlin" %}}
-   ```kotlin
-      class SampleApplication : Application() {
-     
-         override fun onCreate() {
+```kotlin
+    class SampleApplication : Application() {
+        override fun onCreate() {
             super.onCreate()
             val configuration = Configuration.Builder(logsEnabled = true, ...).build()
             val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
             Datadog.initialize(this, credentials, configuration, trackingConsent)
-         }
-      }
-   ```
+        }
+    }
+```
 {{% /tab %}}
 {{% tab "Java" %}}
-   ```java
-      public class SampleApplication extends Application {
-      
-            @Override
-            public void onCreate() {
-               super.onCreate();
-               Configuration configuration =
-                       new Configuration.Builder(true, true, true, true)
-                               .build();
-               Credentials credentials = new Credentials( < CLIENT_TOKEN >, <ENV_NAME >, <APP_VARIANT_NAME >, <
-               APPLICATION_ID >);
-               Datadog.initialize(this, credentials, configuration, trackingConsent);
-            }
-      }
-   ```
+```Java
+    public class SampleApplication extends Application {
+        @Override
+        public void onCreate() {
+            super.onCreate();
+            Configuration configuration =
+                    new Configuration.Builder(true, true, true, true)
+                            .build();
+            Credentials credentials = new Credentials( < CLIENT_TOKEN >, <ENV_NAME >, <APP_VARIANT_NAME >, <
+            APPLICATION_ID >);
+            Datadog.initialize(this, credentials, configuration, trackingConsent);
+        }
+    }
+```
 {{% /tab %}}
 {{< /tabs >}}
+{{< /site-region >}}
 
-**EU**
-
+{{< site-region region="eu" >}}
 {{< tabs >}}
 {{% tab "Kotlin" %}}
-   ```kotlin
-      class SampleApplication : Application() {
-     
-         override fun onCreate() {
-            super.onCreate()
-            val configuration = Configuration.Builder(logsEnabled = true, ...)
-                                .useSite(DatadogSite.EU1)
-                                .build()
-            val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
-            Datadog.initialize(this, credentials, configuration, trackingConsent)
-         }
-      }
-   ```
+```kotlin
+    class SampleApplication : Application() {
+        override fun onCreate() {
+        super.onCreate()
+        val configuration = Configuration.Builder(logsEnabled = true, ...)
+                            .useSite(DatadogSite.EU1)
+                            .build()
+        val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
+        Datadog.initialize(this, credentials, configuration, trackingConsent)
+        }
+    }
+```
 {{% /tab %}}
 {{% tab "Java" %}}
-   ```java
-      public class SampleApplication extends Application {
-      
-            @Override
-            public void onCreate() {
-               super.onCreate();
-               Configuration configuration =
-                       new Configuration.Builder(true, true, true, true)
-                               .useSite(DatadogSite.EU1)
-                               .build();
-               Credentials credentials = new Credentials( < CLIENT_TOKEN >, <ENV_NAME >, <APP_VARIANT_NAME >, <
-               APPLICATION_ID >);
-               Datadog.initialize(this, credentials, configuration, trackingConsent);
-            }
-      }
-   ```
+```java
+    public class SampleApplication extends Application {
+        @Override
+        public void onCreate() {
+            super.onCreate();
+            Configuration configuration =
+                    new Configuration.Builder(true, true, true, true)
+                            .useSite(DatadogSite.EU1)
+                            .build();
+            Credentials credentials = new Credentials( < CLIENT_TOKEN >, <ENV_NAME >, <APP_VARIANT_NAME >, <
+            APPLICATION_ID >);
+            Datadog.initialize(this, credentials, configuration, trackingConsent);
+        }
+    }
+```
 {{% /tab %}}
 {{< /tabs >}}
+{{< /site-region >}}
 
    To be compliant with the GDPR regulation, the SDK requires the tracking consent value at initialization.
    The tracking consent can be one of the following values:
@@ -106,7 +105,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
    * `TrackingConsent.GRANTED`: The SDK sends all current batched data and future data directly to the data collection endpoint.
    * `TrackingConsent.NOT_GRANTED`: The SDK wipes all batched data and does not collect any future data.
 
-**Note**: In the credentials required for initialization, your application variant name is also required, and should use your `BuildConfig.FLAVOR` value (or an empty string if you don't have variants). This is important because it enables the right ProGuard `mapping.txt` file to be automatically uploaded at build time to be able to view de-obfuscated RUM error stack traces. For more information see the [guide to uploading Android source mapping files][8].
+**Note**: In the credentials required for initialization, your application variant name is also required, and should use your `BuildConfig.FLAVOR` value (or an empty string if you don't have variants). This is important because it enables the right ProGuard `mapping.txt` file to be automatically uploaded at build time to be able to view de-obfuscated RUM error stack traces. For more information see the [guide to uploading Android source mapping files][7].
 
    Use the utility method `isInitialized` to check if the SDK is properly initialized:
 
@@ -335,3 +334,4 @@ If your existing codebase is using Timber, you can forward all those logs to  Da
 [4]: https://docs.datadoghq.com/logs/processing/attributes_naming_convention/
 [5]: https://docs.datadoghq.com/tagging/
 [6]: https://docs.datadoghq.com/real_user_monitoring/android/?tab=us
+[7]: /real_user_monitoring/error_tracking/android/#upload-your-mapping-file
