@@ -18,7 +18,8 @@ import com.google.gson.JsonParseException
 internal class WebViewLogEventConsumer(
     private val userLogsWriter: DataWriter<WebViewLogEvent>,
     private val internalLogsWriter: DataWriter<WebViewLogEvent>,
-    private val rumContextProvider: WebViewRumEventContextProvider
+    private val rumContextProvider: WebViewRumEventContextProvider,
+    private val dateCorrector: WebLogEventDateCorrector
 ) {
 
     private val ddTags: String by lazy {
@@ -37,21 +38,22 @@ internal class WebViewLogEventConsumer(
     }
 
     private fun map(event: JsonObject): WebViewLogEvent? {
-        return try {
+        try {
             addDdTags(event)
             val logEvent = WebViewLogEvent.fromJson(event.toString())
             val rumContext = rumContextProvider.getRumContext()
-            if (rumContext != null) {
+            val correctedDate = dateCorrector.correctDate(logEvent.date) ?: return null
+            return if (rumContext != null) {
                 val resolvedProperties = logEvent.additionalProperties.toMutableMap()
                 resolvedProperties[LogAttributes.RUM_APPLICATION_ID] = rumContext.applicationId
                 resolvedProperties[LogAttributes.RUM_SESSION_ID] = rumContext.sessionId
-                logEvent.copy(additionalProperties = resolvedProperties)
+                logEvent.copy(additionalProperties = resolvedProperties, date = correctedDate)
             } else {
-                logEvent
+                logEvent.copy(date = correctedDate)
             }
         } catch (e: JsonParseException) {
             sdkLogger.e(JSON_PARSING_ERROR_MESSAGE, e)
-            null
+            return null
         }
     }
 
