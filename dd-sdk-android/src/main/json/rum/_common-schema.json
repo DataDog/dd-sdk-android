@@ -45,7 +45,7 @@
         "type": {
           "type": "string",
           "description": "Type of the session",
-          "enum": ["user", "synthetics"],
+          "enum": ["user", "synthetics", "ci_test"],
           "readOnly": true
         },
         "has_replay": {
@@ -171,6 +171,24 @@
           "type": "string",
           "description": "The identifier of the current Synthetics test results",
           "readOnly": true
+        },
+        "injected": {
+          "type": "boolean",
+          "description": "Whether the event comes from a SDK instance injected by Synthetics",
+          "readOnly": true
+        }
+      },
+      "readOnly": true
+    },
+    "ci_test": {
+      "type": "object",
+      "description": "CI Visibility properties",
+      "required": ["test_execution_id"],
+      "properties": {
+        "test_execution_id": {
+          "type": "string",
+          "description": "The identifier of the current CI Visibility test execution",
+          "readOnly": true
         }
       },
       "readOnly": true
@@ -197,6 +215,11 @@
               "enum": [1, 2]
             }
           }
+        },
+        "browser_sdk_version": {
+          "type": "string",
+          "description": "Browser SDK version",
+          "readOnly": true
         }
       },
       "readOnly": true
