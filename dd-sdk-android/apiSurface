@@ -450,7 +450,7 @@ data class com.datadog.android.rum.model.ActionEvent
   data class CiTest
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): CiTest
   data class Dd
     constructor(DdSession? = null, kotlin.String? = null)
@@ -511,7 +511,7 @@ data class com.datadog.android.rum.model.ActionEvent
     - FLUTTER
     - REACT_NATIVE
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): Source
   enum ActionEventSessionType
     constructor(kotlin.String)
@@ -601,7 +601,7 @@ data class com.datadog.android.rum.model.ErrorEvent
   data class CiTest
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): CiTest
   data class Dd
     constructor(DdSession? = null, kotlin.String? = null)
@@ -652,7 +652,7 @@ data class com.datadog.android.rum.model.ErrorEvent
     - FLUTTER
     - REACT_NATIVE
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): ErrorEventSource
   enum ErrorEventSessionType
     constructor(kotlin.String)
@@ -789,7 +789,7 @@ data class com.datadog.android.rum.model.LongTaskEvent
   data class CiTest
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): CiTest
   data class Dd
     constructor(DdSession? = null, kotlin.String? = null)
@@ -830,7 +830,7 @@ data class com.datadog.android.rum.model.LongTaskEvent
     - FLUTTER
     - REACT_NATIVE
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): Source
   enum Type
     constructor(kotlin.String)
@@ -908,7 +908,7 @@ data class com.datadog.android.rum.model.ResourceEvent
   data class CiTest
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): CiTest
   data class Dd
     constructor(DdSession? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
@@ -984,7 +984,7 @@ data class com.datadog.android.rum.model.ResourceEvent
     - FLUTTER
     - REACT_NATIVE
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): Source
   enum ResourceEventSessionType
     constructor(kotlin.String)
@@ -1108,7 +1108,7 @@ data class com.datadog.android.rum.model.ViewEvent
   data class CiTest
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): CiTest
   data class Dd
     constructor(DdSession? = null, kotlin.String? = null, kotlin.Long)
@@ -1179,7 +1179,7 @@ data class com.datadog.android.rum.model.ViewEvent
     - FLUTTER
     - REACT_NATIVE
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): Source
   enum Type
     constructor(kotlin.String)
