@@ -20,6 +20,7 @@ import com.datadog.android.rum.RumErrorSource
  * Any console message will be forwarded to an internal [Logger], and errors
  * will be sent to the [GlobalRum] monitor as RUM Errors.
  */
+@Deprecated("You should use the DatadogEventBridge JavaScript interface instead.")
 open class RumWebChromeClient
 internal constructor(private val logger: Logger) : WebChromeClient() {
 

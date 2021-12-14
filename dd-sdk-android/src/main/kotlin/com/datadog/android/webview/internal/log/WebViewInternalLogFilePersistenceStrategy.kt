@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.monitoring.internal
+package com.datadog.android.webview.internal.log
 
 import android.content.Context
 import com.datadog.android.core.internal.persistence.PayloadDecoration
@@ -12,25 +12,25 @@ import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOr
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.domain.event.LogEventSerializer
-import com.datadog.android.log.model.LogEvent
+import com.datadog.android.log.internal.domain.event.WebViewLogEventSerializer
+import com.datadog.android.log.model.WebViewLogEvent
 import java.util.concurrent.ExecutorService
 
-internal class InternalLogFilePersistenceStrategy(
+internal class WebViewInternalLogFilePersistenceStrategy(
     consentProvider: ConsentProvider,
     context: Context,
     executorService: ExecutorService,
     internalLogger: Logger
-) : BatchFilePersistenceStrategy<LogEvent>(
+) : BatchFilePersistenceStrategy<WebViewLogEvent>(
     FeatureFileOrchestrator(
         consentProvider,
         context,
-        InternalLogsFeature.INTERNAL_LOGS_FEATURE_NAME,
+        WebViewInternalLogsFeature.WEB_INTERNAL_LOGS_FEATURE_NAME,
         executorService,
         internalLogger
     ),
     executorService,
-    LogEventSerializer(),
+    WebViewLogEventSerializer(),
     PayloadDecoration.JSON_ARRAY_DECORATION,
     internalLogger
 )

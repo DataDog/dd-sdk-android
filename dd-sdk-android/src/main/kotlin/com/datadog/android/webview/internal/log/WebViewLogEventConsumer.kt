@@ -4,20 +4,21 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.webview
+package com.datadog.android.webview.internal.log
 
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.model.LogEvent
+import com.datadog.android.log.model.WebViewLogEvent
+import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 
-internal class WebLogEventConsumer(
-    private val userLogsWriter: DataWriter<LogEvent>,
-    private val internalLogsWriter: DataWriter<LogEvent>,
-    private val rumContextProvider: WebRumEventContextProvider
+internal class WebViewLogEventConsumer(
+    private val userLogsWriter: DataWriter<WebViewLogEvent>,
+    private val internalLogsWriter: DataWriter<WebViewLogEvent>,
+    private val rumContextProvider: WebViewRumEventContextProvider
 ) {
 
     private val ddTags: String by lazy {
@@ -35,10 +36,10 @@ internal class WebLogEventConsumer(
         }
     }
 
-    private fun map(event: JsonObject): LogEvent? {
+    private fun map(event: JsonObject): WebViewLogEvent? {
         return try {
             addDdTags(event)
-            val logEvent = LogEvent.fromJson(event.toString())
+            val logEvent = WebViewLogEvent.fromJson(event.toString())
             val rumContext = rumContextProvider.getRumContext()
             if (rumContext != null) {
                 val resolvedProperties = logEvent.additionalProperties.toMutableMap()

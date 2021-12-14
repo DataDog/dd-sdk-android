@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.webview
+package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
@@ -20,11 +20,11 @@ import com.google.gson.JsonParseException
 import java.util.Locale.US
 import kotlin.collections.LinkedHashMap
 
-internal class WebRumEventConsumer(
+internal class WebViewRumEventConsumer(
     private val dataWriter: DataWriter<Any>,
     private val timeProvider: TimeProvider,
-    private val webRumEventMapper: WebRumEventMapper = WebRumEventMapper(),
-    private val contextProvider: WebRumEventContextProvider = WebRumEventContextProvider()
+    private val webViewRumEventMapper: WebViewRumEventMapper = WebViewRumEventMapper(),
+    private val contextProvider: WebViewRumEventContextProvider = WebViewRumEventContextProvider()
 ) {
 
     internal val offsets: LinkedHashMap<String, Long> = LinkedHashMap()
@@ -49,7 +49,7 @@ internal class WebRumEventConsumer(
             when (eventType) {
                 VIEW_EVENT_TYPE -> {
                     val parsedViewEvent = ViewEvent.fromJson(event.toString())
-                    webRumEventMapper.mapViewEvent(
+                    webViewRumEventMapper.mapViewEvent(
                         parsedViewEvent,
                         rumContext,
                         getOffset(parsedViewEvent.view.id)
@@ -57,7 +57,7 @@ internal class WebRumEventConsumer(
                 }
                 ACTION_EVENT_TYPE -> {
                     val parsedActionEvent = ActionEvent.fromJson(event.toString())
-                    webRumEventMapper.mapActionEvent(
+                    webViewRumEventMapper.mapActionEvent(
                         parsedActionEvent,
                         rumContext,
                         getOffset(parsedActionEvent.view.id)
@@ -65,7 +65,7 @@ internal class WebRumEventConsumer(
                 }
                 RESOURCE_EVENT_TYPE -> {
                     val parsedResourceEvent = ResourceEvent.fromJson(event.toString())
-                    webRumEventMapper.mapResourceEvent(
+                    webViewRumEventMapper.mapResourceEvent(
                         parsedResourceEvent,
                         rumContext,
                         getOffset(parsedResourceEvent.view.id)
@@ -73,7 +73,7 @@ internal class WebRumEventConsumer(
                 }
                 ERROR_EVENT_TYPE -> {
                     val parsedErrorEvent = ErrorEvent.fromJson(event.toString())
-                    webRumEventMapper.mapErrorEvent(
+                    webViewRumEventMapper.mapErrorEvent(
                         parsedErrorEvent,
                         rumContext,
                         getOffset(parsedErrorEvent.view.id)
@@ -81,7 +81,7 @@ internal class WebRumEventConsumer(
                 }
                 LONG_TASK_EVENT_TYPE -> {
                     val parsedLongTaskEvent = LongTaskEvent.fromJson(event.toString())
-                    webRumEventMapper.mapLongTaskEvent(
+                    webViewRumEventMapper.mapLongTaskEvent(
                         parsedLongTaskEvent,
                         rumContext,
                         getOffset(parsedLongTaskEvent.view.id)

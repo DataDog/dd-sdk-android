@@ -4,13 +4,17 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.webview
+package com.datadog.android.webview
 
 import android.webkit.JavascriptInterface
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.monitoring.internal.InternalLogsFeature
-import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.webview.internal.WebViewEventConsumer
+import com.datadog.android.webview.internal.log.WebViewInternalLogsFeature
+import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
+import com.datadog.android.webview.internal.log.WebViewLogsFeature
+import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
+import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
+import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.google.gson.JsonArray
 
 /**
@@ -23,16 +27,16 @@ import com.google.gson.JsonArray
  */
 class DatadogEventBridge {
 
-    private val contextProvider = WebRumEventContextProvider()
-    private val webEventConsumer: WebEventConsumer = WebEventConsumer(
-        WebRumEventConsumer(
-            RumFeature.persistenceStrategy.getWriter(),
+    private val contextProvider = WebViewRumEventContextProvider()
+    private val webViewEventConsumer: WebViewEventConsumer = WebViewEventConsumer(
+        WebViewRumEventConsumer(
+            WebViewRumFeature.persistenceStrategy.getWriter(),
             CoreFeature.timeProvider,
             contextProvider = contextProvider
         ),
-        WebLogEventConsumer(
-            LogsFeature.persistenceStrategy.getWriter(),
-            InternalLogsFeature.persistenceStrategy.getWriter(),
+        WebViewLogEventConsumer(
+            WebViewLogsFeature.persistenceStrategy.getWriter(),
+            WebViewInternalLogsFeature.persistenceStrategy.getWriter(),
             contextProvider
         )
     )
@@ -46,7 +50,7 @@ class DatadogEventBridge {
      */
     @JavascriptInterface
     fun send(event: String) {
-        webEventConsumer.consume(event)
+        webViewEventConsumer.consume(event)
     }
 
     /**

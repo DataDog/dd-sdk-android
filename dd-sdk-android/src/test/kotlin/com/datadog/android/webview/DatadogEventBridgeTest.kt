@@ -4,12 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.webview
+package com.datadog.android.webview
 
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.rum.webview.DatadogEventBridge
-import com.datadog.android.rum.webview.WebEventConsumer
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.tools.unit.setFieldValue
 import com.google.gson.JsonArray
 import com.nhaarman.mockitokotlin2.verify
@@ -39,12 +38,15 @@ internal class DatadogEventBridgeTest {
     lateinit var testedDatadogEventBridge: DatadogEventBridge
 
     @Mock
-    lateinit var mockWebEventConsumer: WebEventConsumer
+    lateinit var mockWebViewEventConsumer: WebViewEventConsumer
 
     @BeforeEach
     fun `set up`() {
         testedDatadogEventBridge = DatadogEventBridge()
-        testedDatadogEventBridge.setFieldValue("webEventConsumer", mockWebEventConsumer)
+        testedDatadogEventBridge.setFieldValue(
+            "webViewEventConsumer",
+            mockWebViewEventConsumer
+        )
     }
 
     @Test
@@ -53,7 +55,7 @@ internal class DatadogEventBridgeTest {
         testedDatadogEventBridge.send(fakeEvent)
 
         // Then
-        verify(mockWebEventConsumer).consume(fakeEvent)
+        verify(mockWebViewEventConsumer).consume(fakeEvent)
     }
 
     @Test

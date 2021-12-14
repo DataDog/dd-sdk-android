@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.webview
+package com.datadog.android.webview.internal.rum
 
 import android.util.Log
 import com.datadog.android.core.internal.persistence.DataWriter
@@ -15,9 +15,6 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.webview.WebRumEventConsumer
-import com.datadog.android.rum.webview.WebRumEventContextProvider
-import com.datadog.android.rum.webview.WebRumEventMapper
 import com.datadog.android.utils.assertj.DeserializedActionEventAssert
 import com.datadog.android.utils.assertj.DeserializedErrorEventAssert
 import com.datadog.android.utils.assertj.DeserializedLongTaskEventAssert
@@ -66,8 +63,8 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class WebRumEventConsumerTest {
-    lateinit var testedRumEventConsumer: WebRumEventConsumer
+internal class WebViewRumEventConsumerTest {
+    lateinit var testedRumEventConsumer: WebViewRumEventConsumer
 
     @Mock
     lateinit var mockDataWriter: DataWriter<Any>
@@ -96,7 +93,7 @@ internal class WebRumEventConsumerTest {
     lateinit var fakeTags: Map<String, String>
 
     @Mock
-    lateinit var mockWebRumEventMapper: WebRumEventMapper
+    lateinit var mockWebViewRumEventMapper: WebViewRumEventMapper
 
     @Mock
     lateinit var mockSdkLogHandler: LogHandler
@@ -104,7 +101,7 @@ internal class WebRumEventConsumerTest {
     lateinit var originalSdkLogHandler: LogHandler
 
     @Mock
-    lateinit var mockRumContextProvider: WebRumEventContextProvider
+    lateinit var mockRumContextProvider: WebViewRumEventContextProvider
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -119,10 +116,10 @@ internal class WebRumEventConsumerTest {
             emptyMap()
         }
         whenever(mockTimeProvider.getServerOffsetMillis()).thenReturn(fakeServerTimeOffsetInMillis)
-        testedRumEventConsumer = WebRumEventConsumer(
+        testedRumEventConsumer = WebViewRumEventConsumer(
             mockDataWriter,
             mockTimeProvider,
-            mockWebRumEventMapper,
+            mockWebViewRumEventMapper,
             mockRumContextProvider
         )
     }
@@ -139,7 +136,7 @@ internal class WebRumEventConsumerTest {
         // Given
         val fakeViewEvent: ViewEvent = forge.getForgery()
         whenever(
-            mockWebRumEventMapper.mapViewEvent(
+            mockWebViewRumEventMapper.mapViewEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -150,7 +147,7 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeViewEvent.toJson().asJsonObject,
-            WebRumEventConsumer.VIEW_EVENT_TYPE
+            WebViewRumEventConsumer.VIEW_EVENT_TYPE
         )
 
         // Then
@@ -167,7 +164,7 @@ internal class WebRumEventConsumerTest {
         val fakeViewEvent: ViewEvent = forge.getForgery()
         val fakeViewEventAsJson = fakeViewEvent.toJson().asJsonObject
         whenever(
-            mockWebRumEventMapper.mapViewEvent(
+            mockWebViewRumEventMapper.mapViewEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -178,7 +175,7 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeViewEventAsJson,
-            WebRumEventConsumer.VIEW_EVENT_TYPE
+            WebViewRumEventConsumer.VIEW_EVENT_TYPE
         )
 
         // Then
@@ -194,7 +191,7 @@ internal class WebRumEventConsumerTest {
             .asJsonObject
         fakeViewEventBrokenJson.addProperty("date", "aDate")
         whenever(
-            mockWebRumEventMapper.mapViewEvent(
+            mockWebViewRumEventMapper.mapViewEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -205,7 +202,7 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeViewEventBrokenJson,
-            WebRumEventConsumer.LONG_TASK_EVENT_TYPE
+            WebViewRumEventConsumer.LONG_TASK_EVENT_TYPE
         )
 
         // Then
@@ -221,7 +218,7 @@ internal class WebRumEventConsumerTest {
             .asJsonObject
         fakeViewEventBrokenJson.addProperty("date", "aDate")
         whenever(
-            mockWebRumEventMapper.mapViewEvent(
+            mockWebViewRumEventMapper.mapViewEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -232,13 +229,13 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeViewEventBrokenJson,
-            WebRumEventConsumer.LONG_TASK_EVENT_TYPE
+            WebViewRumEventConsumer.LONG_TASK_EVENT_TYPE
         )
 
         // Then
         verify(mockSdkLogHandler).handleLog(
             eq(Log.ERROR),
-            eq(WebRumEventConsumer.JSON_PARSING_ERROR_MESSAGE),
+            eq(WebViewRumEventConsumer.JSON_PARSING_ERROR_MESSAGE),
             argThat { this is JsonParseException },
             any(),
             any(),
@@ -255,7 +252,7 @@ internal class WebRumEventConsumerTest {
         // Given
         val fakeActionEvent: ActionEvent = forge.getForgery()
         whenever(
-            mockWebRumEventMapper.mapActionEvent(
+            mockWebViewRumEventMapper.mapActionEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -266,7 +263,7 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeActionEvent.toJson().asJsonObject,
-            WebRumEventConsumer.ACTION_EVENT_TYPE
+            WebViewRumEventConsumer.ACTION_EVENT_TYPE
         )
 
         // Then
@@ -283,7 +280,7 @@ internal class WebRumEventConsumerTest {
         val fakeActionEvent: ActionEvent = forge.getForgery()
         val fakeActionEventAsJson = fakeActionEvent.toJson().asJsonObject
         whenever(
-            mockWebRumEventMapper.mapActionEvent(
+            mockWebViewRumEventMapper.mapActionEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -294,7 +291,7 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeActionEventAsJson,
-            WebRumEventConsumer.ACTION_EVENT_TYPE
+            WebViewRumEventConsumer.ACTION_EVENT_TYPE
         )
 
         // Then
@@ -310,7 +307,7 @@ internal class WebRumEventConsumerTest {
             .asJsonObject
         fakeActionEventBrokenJson.addProperty("date", "aDate")
         whenever(
-            mockWebRumEventMapper.mapActionEvent(
+            mockWebViewRumEventMapper.mapActionEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -321,7 +318,7 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeActionEventBrokenJson,
-            WebRumEventConsumer.LONG_TASK_EVENT_TYPE
+            WebViewRumEventConsumer.LONG_TASK_EVENT_TYPE
         )
 
         // Then
@@ -337,7 +334,7 @@ internal class WebRumEventConsumerTest {
             .asJsonObject
         fakeActionEventBrokenJson.addProperty("date", "aDate")
         whenever(
-            mockWebRumEventMapper.mapActionEvent(
+            mockWebViewRumEventMapper.mapActionEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -348,13 +345,13 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeActionEventBrokenJson,
-            WebRumEventConsumer.LONG_TASK_EVENT_TYPE
+            WebViewRumEventConsumer.LONG_TASK_EVENT_TYPE
         )
 
         // Then
         verify(mockSdkLogHandler).handleLog(
             eq(Log.ERROR),
-            eq(WebRumEventConsumer.JSON_PARSING_ERROR_MESSAGE),
+            eq(WebViewRumEventConsumer.JSON_PARSING_ERROR_MESSAGE),
             argThat { this is JsonParseException },
             any(),
             any(),
@@ -371,7 +368,7 @@ internal class WebRumEventConsumerTest {
         // Given
         val fakeResourceEvent: ResourceEvent = forge.getForgery()
         whenever(
-            mockWebRumEventMapper.mapResourceEvent(
+            mockWebViewRumEventMapper.mapResourceEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -382,7 +379,7 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeResourceEvent.toJson().asJsonObject,
-            WebRumEventConsumer.RESOURCE_EVENT_TYPE
+            WebViewRumEventConsumer.RESOURCE_EVENT_TYPE
         )
 
         // Then
@@ -399,7 +396,7 @@ internal class WebRumEventConsumerTest {
         val fakeResourceEvent: ResourceEvent = forge.getForgery()
         val fakeResourceEventAsJson = fakeResourceEvent.toJson().asJsonObject
         whenever(
-            mockWebRumEventMapper.mapResourceEvent(
+            mockWebViewRumEventMapper.mapResourceEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -410,7 +407,7 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeResourceEventAsJson,
-            WebRumEventConsumer.RESOURCE_EVENT_TYPE
+            WebViewRumEventConsumer.RESOURCE_EVENT_TYPE
         )
 
         // Then
@@ -426,7 +423,7 @@ internal class WebRumEventConsumerTest {
             .asJsonObject
         fakeResourceEventBrokenJson.addProperty("date", "aDate")
         whenever(
-            mockWebRumEventMapper.mapResourceEvent(
+            mockWebViewRumEventMapper.mapResourceEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -437,7 +434,7 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeResourceEventBrokenJson,
-            WebRumEventConsumer.LONG_TASK_EVENT_TYPE
+            WebViewRumEventConsumer.LONG_TASK_EVENT_TYPE
         )
 
         // Then
@@ -452,7 +449,7 @@ internal class WebRumEventConsumerTest {
             .asJsonObject
         fakeResourceEventBrokenJson.addProperty("date", "aDate")
         whenever(
-            mockWebRumEventMapper.mapResourceEvent(
+            mockWebViewRumEventMapper.mapResourceEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -463,13 +460,13 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeResourceEventBrokenJson,
-            WebRumEventConsumer.LONG_TASK_EVENT_TYPE
+            WebViewRumEventConsumer.LONG_TASK_EVENT_TYPE
         )
 
         // Then
         verify(mockSdkLogHandler).handleLog(
             eq(Log.ERROR),
-            eq(WebRumEventConsumer.JSON_PARSING_ERROR_MESSAGE),
+            eq(WebViewRumEventConsumer.JSON_PARSING_ERROR_MESSAGE),
             argThat { this is JsonParseException },
             any(),
             any(),
@@ -486,7 +483,7 @@ internal class WebRumEventConsumerTest {
         // Given
         val fakeErrorEvent: ErrorEvent = forge.getForgery()
         whenever(
-            mockWebRumEventMapper.mapErrorEvent(
+            mockWebViewRumEventMapper.mapErrorEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -497,7 +494,7 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeErrorEvent.toJson().asJsonObject,
-            WebRumEventConsumer.ERROR_EVENT_TYPE
+            WebViewRumEventConsumer.ERROR_EVENT_TYPE
         )
 
         // Then
@@ -514,7 +511,7 @@ internal class WebRumEventConsumerTest {
         val fakeErrorEvent: ErrorEvent = forge.getForgery()
         val fakeErrorEventAsJson = fakeErrorEvent.toJson().asJsonObject
         whenever(
-            mockWebRumEventMapper.mapErrorEvent(
+            mockWebViewRumEventMapper.mapErrorEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -525,7 +522,7 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeErrorEventAsJson,
-            WebRumEventConsumer.ERROR_EVENT_TYPE
+            WebViewRumEventConsumer.ERROR_EVENT_TYPE
         )
 
         // Then
@@ -541,7 +538,7 @@ internal class WebRumEventConsumerTest {
             .asJsonObject
         fakeErrorEventBrokenJson.addProperty("date", "aDate")
         whenever(
-            mockWebRumEventMapper.mapErrorEvent(
+            mockWebViewRumEventMapper.mapErrorEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -552,7 +549,7 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeErrorEventBrokenJson,
-            WebRumEventConsumer.LONG_TASK_EVENT_TYPE
+            WebViewRumEventConsumer.LONG_TASK_EVENT_TYPE
         )
 
         // Then
@@ -568,7 +565,7 @@ internal class WebRumEventConsumerTest {
             .asJsonObject
         fakeErrorEventBrokenJson.addProperty("date", "aDate")
         whenever(
-            mockWebRumEventMapper.mapErrorEvent(
+            mockWebViewRumEventMapper.mapErrorEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -579,13 +576,13 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeErrorEventBrokenJson,
-            WebRumEventConsumer.LONG_TASK_EVENT_TYPE
+            WebViewRumEventConsumer.LONG_TASK_EVENT_TYPE
         )
 
         // Then
         verify(mockSdkLogHandler).handleLog(
             eq(Log.ERROR),
-            eq(WebRumEventConsumer.JSON_PARSING_ERROR_MESSAGE),
+            eq(WebViewRumEventConsumer.JSON_PARSING_ERROR_MESSAGE),
             argThat { this is JsonParseException },
             any(),
             any(),
@@ -602,7 +599,7 @@ internal class WebRumEventConsumerTest {
         // Given
         val fakeLongTaskEvent: LongTaskEvent = forge.getForgery()
         whenever(
-            mockWebRumEventMapper.mapLongTaskEvent(
+            mockWebViewRumEventMapper.mapLongTaskEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -613,7 +610,7 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeLongTaskEvent.toJson().asJsonObject,
-            WebRumEventConsumer.LONG_TASK_EVENT_TYPE
+            WebViewRumEventConsumer.LONG_TASK_EVENT_TYPE
         )
 
         // Then
@@ -630,7 +627,7 @@ internal class WebRumEventConsumerTest {
         val fakeLongTaskEvent: LongTaskEvent = forge.getForgery()
         val fakeLongTaskEventAsJson = fakeLongTaskEvent.toJson().asJsonObject
         whenever(
-            mockWebRumEventMapper.mapLongTaskEvent(
+            mockWebViewRumEventMapper.mapLongTaskEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -641,7 +638,7 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeLongTaskEventAsJson,
-            WebRumEventConsumer.LONG_TASK_EVENT_TYPE
+            WebViewRumEventConsumer.LONG_TASK_EVENT_TYPE
         )
 
         // Then
@@ -657,7 +654,7 @@ internal class WebRumEventConsumerTest {
             .asJsonObject
         fakeLongTaskEventBrokenJson.addProperty("date", "aDate")
         whenever(
-            mockWebRumEventMapper.mapLongTaskEvent(
+            mockWebViewRumEventMapper.mapLongTaskEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -668,7 +665,7 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeLongTaskEventBrokenJson,
-            WebRumEventConsumer.LONG_TASK_EVENT_TYPE
+            WebViewRumEventConsumer.LONG_TASK_EVENT_TYPE
         )
 
         // Then
@@ -684,7 +681,7 @@ internal class WebRumEventConsumerTest {
             .asJsonObject
         fakeLongTaskEventBrokenJson.addProperty("date", "aDate")
         whenever(
-            mockWebRumEventMapper.mapLongTaskEvent(
+            mockWebViewRumEventMapper.mapLongTaskEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -695,13 +692,13 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeLongTaskEventBrokenJson,
-            WebRumEventConsumer.LONG_TASK_EVENT_TYPE
+            WebViewRumEventConsumer.LONG_TASK_EVENT_TYPE
         )
 
         // Then
         verify(mockSdkLogHandler).handleLog(
             eq(Log.ERROR),
-            eq(WebRumEventConsumer.JSON_PARSING_ERROR_MESSAGE),
+            eq(WebViewRumEventConsumer.JSON_PARSING_ERROR_MESSAGE),
             argThat { this is JsonParseException },
             any(),
             any(),
@@ -737,7 +734,7 @@ internal class WebRumEventConsumerTest {
             view = fakeLongTaskEvent.view.copy(id = fakeViewEvent.view.id)
         )
         whenever(
-            mockWebRumEventMapper.mapViewEvent(
+            mockWebViewRumEventMapper.mapViewEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -745,7 +742,7 @@ internal class WebRumEventConsumerTest {
         )
             .thenReturn(fakeMappedViewEvent)
         whenever(
-            mockWebRumEventMapper.mapLongTaskEvent(
+            mockWebViewRumEventMapper.mapLongTaskEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -753,7 +750,7 @@ internal class WebRumEventConsumerTest {
         )
             .thenReturn(fakeMappedLongTaskEvent)
         whenever(
-            mockWebRumEventMapper.mapResourceEvent(
+            mockWebViewRumEventMapper.mapResourceEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -761,7 +758,7 @@ internal class WebRumEventConsumerTest {
         )
             .thenReturn(fakeMappedResourceEvent)
         whenever(
-            mockWebRumEventMapper.mapActionEvent(
+            mockWebViewRumEventMapper.mapActionEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -769,7 +766,7 @@ internal class WebRumEventConsumerTest {
         )
             .thenReturn(fakeMappedActionEvent)
         whenever(
-            mockWebRumEventMapper.mapErrorEvent(
+            mockWebViewRumEventMapper.mapErrorEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -780,47 +777,47 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeViewEvent.toJson().asJsonObject,
-            WebRumEventConsumer.VIEW_EVENT_TYPE
+            WebViewRumEventConsumer.VIEW_EVENT_TYPE
         )
         testedRumEventConsumer.consume(
             fakeViewResourceEvent.toJson().asJsonObject,
-            WebRumEventConsumer.RESOURCE_EVENT_TYPE
+            WebViewRumEventConsumer.RESOURCE_EVENT_TYPE
         )
         testedRumEventConsumer.consume(
             fakeViewActionEvent.toJson().asJsonObject,
-            WebRumEventConsumer.ACTION_EVENT_TYPE
+            WebViewRumEventConsumer.ACTION_EVENT_TYPE
         )
         testedRumEventConsumer.consume(
             fakeViewLongTaskEvent.toJson().asJsonObject,
-            WebRumEventConsumer.LONG_TASK_EVENT_TYPE
+            WebViewRumEventConsumer.LONG_TASK_EVENT_TYPE
         )
         testedRumEventConsumer.consume(
             fakeViewErrorEvent.toJson().asJsonObject,
-            WebRumEventConsumer.ERROR_EVENT_TYPE
+            WebViewRumEventConsumer.ERROR_EVENT_TYPE
         )
 
         // Then
-        verify(mockWebRumEventMapper).mapViewEvent(
+        verify(mockWebViewRumEventMapper).mapViewEvent(
             any(),
             eq(sessionScopeTestConfiguration.fakeRumContext),
             eq(fakeServerTimeOffsetInMillis)
         )
-        verify(mockWebRumEventMapper).mapErrorEvent(
+        verify(mockWebViewRumEventMapper).mapErrorEvent(
             any(),
             eq(sessionScopeTestConfiguration.fakeRumContext),
             eq(fakeServerTimeOffsetInMillis)
         )
-        verify(mockWebRumEventMapper).mapActionEvent(
+        verify(mockWebViewRumEventMapper).mapActionEvent(
             any(),
             eq(sessionScopeTestConfiguration.fakeRumContext),
             eq(fakeServerTimeOffsetInMillis)
         )
-        verify(mockWebRumEventMapper).mapResourceEvent(
+        verify(mockWebViewRumEventMapper).mapResourceEvent(
             any(),
             eq(sessionScopeTestConfiguration.fakeRumContext),
             eq(fakeServerTimeOffsetInMillis)
         )
-        verify(mockWebRumEventMapper).mapLongTaskEvent(
+        verify(mockWebViewRumEventMapper).mapLongTaskEvent(
             any(),
             eq(sessionScopeTestConfiguration.fakeRumContext),
             eq(fakeServerTimeOffsetInMillis)
@@ -837,7 +834,7 @@ internal class WebRumEventConsumerTest {
         val fakeViewEvent2: ViewEvent = fakeViewEvent.copy()
         val fakeViewEvent3: ViewEvent = fakeViewEvent2.copy()
         whenever(
-            mockWebRumEventMapper.mapViewEvent(
+            mockWebViewRumEventMapper.mapViewEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -848,19 +845,19 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeViewEvent.toJson().asJsonObject,
-            WebRumEventConsumer.VIEW_EVENT_TYPE
+            WebViewRumEventConsumer.VIEW_EVENT_TYPE
         )
         testedRumEventConsumer.consume(
             fakeViewEvent2.toJson().asJsonObject,
-            WebRumEventConsumer.VIEW_EVENT_TYPE
+            WebViewRumEventConsumer.VIEW_EVENT_TYPE
         )
         testedRumEventConsumer.consume(
             fakeViewEvent3.toJson().asJsonObject,
-            WebRumEventConsumer.VIEW_EVENT_TYPE
+            WebViewRumEventConsumer.VIEW_EVENT_TYPE
         )
 
         // Then
-        verify(mockWebRumEventMapper, times(3)).mapViewEvent(
+        verify(mockWebViewRumEventMapper, times(3)).mapViewEvent(
             any(),
             eq(sessionScopeTestConfiguration.fakeRumContext),
             eq(fakeServerTimeOffsetInMillis)
@@ -879,7 +876,7 @@ internal class WebRumEventConsumerTest {
         val fakeViewEvent: ViewEvent = forge.getForgery()
         val fakeViewEvent2: ViewEvent = forge.getForgery()
         whenever(
-            mockWebRumEventMapper.mapViewEvent(
+            mockWebViewRumEventMapper.mapViewEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeServerTimeOffsetInMillis)
@@ -887,7 +884,7 @@ internal class WebRumEventConsumerTest {
         )
             .thenReturn(fakeMappedViewEvent)
         whenever(
-            mockWebRumEventMapper.mapViewEvent(
+            mockWebViewRumEventMapper.mapViewEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 eq(fakeSecondServerTimeOffset)
@@ -898,20 +895,20 @@ internal class WebRumEventConsumerTest {
         // When
         testedRumEventConsumer.consume(
             fakeViewEvent.toJson().asJsonObject,
-            WebRumEventConsumer.VIEW_EVENT_TYPE
+            WebViewRumEventConsumer.VIEW_EVENT_TYPE
         )
         testedRumEventConsumer.consume(
             fakeViewEvent2.toJson().asJsonObject,
-            WebRumEventConsumer.VIEW_EVENT_TYPE
+            WebViewRumEventConsumer.VIEW_EVENT_TYPE
         )
 
         // Then
-        verify(mockWebRumEventMapper).mapViewEvent(
+        verify(mockWebViewRumEventMapper).mapViewEvent(
             any(),
             eq(sessionScopeTestConfiguration.fakeRumContext),
             eq(fakeServerTimeOffsetInMillis)
         )
-        verify(mockWebRumEventMapper).mapViewEvent(
+        verify(mockWebViewRumEventMapper).mapViewEvent(
             any(),
             eq(sessionScopeTestConfiguration.fakeRumContext),
             eq(fakeSecondServerTimeOffset)
@@ -933,15 +930,15 @@ internal class WebRumEventConsumerTest {
         val expectedOffsets = LinkedHashMap<String, Long>()
         val expectedOffsetsKeys =
             fakeViewEvents
-                .takeLast(WebRumEventConsumer.MAX_VIEW_TIME_OFFSETS_RETAIN)
+                .takeLast(WebViewRumEventConsumer.MAX_VIEW_TIME_OFFSETS_RETAIN)
                 .map { it.view.id }
         val expectedOffsetsValues =
-            fakeServerOffsets.takeLast(WebRumEventConsumer.MAX_VIEW_TIME_OFFSETS_RETAIN)
+            fakeServerOffsets.takeLast(WebViewRumEventConsumer.MAX_VIEW_TIME_OFFSETS_RETAIN)
         expectedOffsetsKeys.forEachIndexed { index, key ->
             expectedOffsets[key] = expectedOffsetsValues[index]
         }
         whenever(
-            mockWebRumEventMapper.mapViewEvent(
+            mockWebViewRumEventMapper.mapViewEvent(
                 any(),
                 eq(sessionScopeTestConfiguration.fakeRumContext),
                 any()
@@ -953,7 +950,7 @@ internal class WebRumEventConsumerTest {
         fakeViewEvents.forEach {
             testedRumEventConsumer.consume(
                 it.toJson().asJsonObject,
-                WebRumEventConsumer.VIEW_EVENT_TYPE
+                WebViewRumEventConsumer.VIEW_EVENT_TYPE
             )
         }
 
@@ -982,7 +979,7 @@ internal class WebRumEventConsumerTest {
         // Then
         verify(mockSdkLogHandler).handleLog(
             Log.ERROR,
-            WebRumEventConsumer.WRONG_EVENT_TYPE_ERROR_MESSAGE.format(
+            WebViewRumEventConsumer.WRONG_EVENT_TYPE_ERROR_MESSAGE.format(
                 Locale.US,
                 fakeUnknownEventType
             )
@@ -1021,11 +1018,11 @@ internal class WebRumEventConsumerTest {
 
     private fun Forge.anUnknownEventType(): String {
         val knownTypes = setOf(
-            WebRumEventConsumer.VIEW_EVENT_TYPE,
-            WebRumEventConsumer.ACTION_EVENT_TYPE,
-            WebRumEventConsumer.ERROR_EVENT_TYPE,
-            WebRumEventConsumer.RESOURCE_EVENT_TYPE,
-            WebRumEventConsumer.LONG_TASK_EVENT_TYPE
+            WebViewRumEventConsumer.VIEW_EVENT_TYPE,
+            WebViewRumEventConsumer.ACTION_EVENT_TYPE,
+            WebViewRumEventConsumer.ERROR_EVENT_TYPE,
+            WebViewRumEventConsumer.RESOURCE_EVENT_TYPE,
+            WebViewRumEventConsumer.LONG_TASK_EVENT_TYPE
         )
         while (true) {
             val type = this.anAlphaNumericalString()

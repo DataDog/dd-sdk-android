@@ -4,13 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.webview
+package com.datadog.android.webview.internal.rum
 
 import android.util.Log
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.webview.WebRumEventContextProvider
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockDevLogHandler
@@ -42,9 +41,9 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class WebRumEventContextProviderTest {
+internal class WebViewRumEventContextProviderTest {
 
-    lateinit var testedContextProvider: WebRumEventContextProvider
+    lateinit var testedContextProvider: WebViewRumEventContextProvider
 
     @Mock
     lateinit var mockSdkLogHandler: LogHandler
@@ -57,7 +56,7 @@ internal class WebRumEventContextProviderTest {
     fun `set up`() {
         originalSdkLogHandler = mockSdkLogHandler(mockSdkLogHandler)
         mockDevLogHandler = mockDevLogHandler()
-        testedContextProvider = WebRumEventContextProvider()
+        testedContextProvider = WebViewRumEventContextProvider()
     }
 
     @AfterEach
@@ -109,7 +108,7 @@ internal class WebRumEventContextProviderTest {
         // Then
         verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            WebRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
+            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
         )
     }
 
@@ -127,7 +126,7 @@ internal class WebRumEventContextProviderTest {
         // Then
         verify(mockSdkLogHandler).handleLog(
             Log.ERROR,
-            WebRumEventContextProvider.RUM_NOT_INITIALIZED_ERROR_MESSAGE
+            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_ERROR_MESSAGE
         )
     }
 
@@ -145,7 +144,7 @@ internal class WebRumEventContextProviderTest {
         // Then
         verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            WebRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
+            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
         )
     }
 
@@ -163,7 +162,7 @@ internal class WebRumEventContextProviderTest {
         // Then
         verify(mockSdkLogHandler).handleLog(
             Log.ERROR,
-            WebRumEventContextProvider.RUM_NOT_INITIALIZED_ERROR_MESSAGE
+            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_ERROR_MESSAGE
         )
     }
 
@@ -185,7 +184,7 @@ internal class WebRumEventContextProviderTest {
         // Then
         verify(mockSdkLogHandler).handleLog(
             Log.ERROR,
-            WebRumEventContextProvider.RUM_NOT_INITIALIZED_ERROR_MESSAGE
+            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_ERROR_MESSAGE
         )
         verifyNoMoreInteractions(mockSdkLogHandler)
     }
@@ -208,7 +207,7 @@ internal class WebRumEventContextProviderTest {
         // Then
         verify(mockSdkLogHandler).handleLog(
             Log.ERROR,
-            WebRumEventContextProvider.RUM_NOT_INITIALIZED_ERROR_MESSAGE
+            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_ERROR_MESSAGE
         )
         verifyNoMoreInteractions(mockSdkLogHandler)
     }
@@ -231,7 +230,7 @@ internal class WebRumEventContextProviderTest {
         // Then
         verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            WebRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
+            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
         )
         verifyNoMoreInteractions(mockDevLogHandler)
     }
@@ -254,7 +253,7 @@ internal class WebRumEventContextProviderTest {
         // Then
         verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            WebRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
+            WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
         )
         verifyNoMoreInteractions(mockDevLogHandler)
     }

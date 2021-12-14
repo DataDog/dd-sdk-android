@@ -4,14 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.webview
+package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
 
-internal class WebRumEventContextProvider {
+internal class WebViewRumEventContextProvider {
 
     private var rumFeatureDisabled = false
 

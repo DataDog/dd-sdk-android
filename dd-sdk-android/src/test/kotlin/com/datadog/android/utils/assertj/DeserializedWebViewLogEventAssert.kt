@@ -6,29 +6,20 @@
 
 package com.datadog.android.utils.assertj
 
-import com.datadog.android.log.model.LogEvent
+import com.datadog.android.log.model.WebViewLogEvent
 import org.assertj.core.api.AbstractAssert
-import org.assertj.core.api.Assertions.assertThat
 
-internal class DeserializedLogEventAssert(actual: LogEvent) :
-    AbstractAssert<DeserializedLogEventAssert, LogEvent>(
+internal class DeserializedWebViewLogEventAssert(actual: WebViewLogEvent) :
+    AbstractAssert<DeserializedWebViewLogEventAssert, WebViewLogEvent>(
         actual,
-        DeserializedLogEventAssert::class.java
+        DeserializedWebViewLogEventAssert::class.java
     ) {
 
-    fun isEqualTo(expected: LogEvent): DeserializedLogEventAssert {
+    fun isEqualTo(expected: WebViewLogEvent): DeserializedWebViewLogEventAssert {
         assertThat(actual)
             .usingRecursiveComparison()
-            .ignoringFields("usr", "additionalProperties")
-            .isEqualTo(expected)
-        assertThat(actual.usr)
-            .usingRecursiveComparison()
             .ignoringFields("additionalProperties")
-            .isEqualTo(expected.usr)
-        assertProperties(
-            actual.usr?.additionalProperties,
-            expected.usr?.additionalProperties
-        )
+            .isEqualTo(expected)
         assertProperties(
             actual.additionalProperties,
             expected.additionalProperties
@@ -42,8 +33,8 @@ internal class DeserializedLogEventAssert(actual: LogEvent) :
     }
 
     companion object {
-        fun assertThat(actual: LogEvent): DeserializedLogEventAssert {
-            return DeserializedLogEventAssert(actual)
+        fun assertThat(actual: WebViewLogEvent): DeserializedWebViewLogEventAssert {
+            return DeserializedWebViewLogEventAssert(actual)
         }
     }
 }

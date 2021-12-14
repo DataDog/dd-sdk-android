@@ -4,16 +4,18 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.webview
+package com.datadog.android.webview.internal
 
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
+import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.util.Locale.US
 
-internal class WebEventConsumer(
-    private val rumEventConsumer: WebRumEventConsumer,
-    private val logsEventConsumer: WebLogEventConsumer
+internal class WebViewEventConsumer(
+    private val rumEventConsumer: WebViewRumEventConsumer,
+    private val logsEventConsumer: WebViewLogEventConsumer
 ) {
     fun consume(event: String) {
         try {
@@ -29,10 +31,10 @@ internal class WebEventConsumer(
             val eventType = webEvent.get(EVENT_TYPE_KEY).asString
             val wrappedEvent = webEvent.get(EVENT_KEY).asJsonObject
             when (eventType) {
-                in (WebLogEventConsumer.LOG_EVENT_TYPES) -> {
+                in (WebViewLogEventConsumer.LOG_EVENT_TYPES) -> {
                     logsEventConsumer.consume(wrappedEvent, eventType)
                 }
-                in (WebRumEventConsumer.RUM_EVENT_TYPES) -> {
+                in (WebViewRumEventConsumer.RUM_EVENT_TYPES) -> {
                     rumEventConsumer.consume(wrappedEvent, eventType)
                 }
                 else -> {

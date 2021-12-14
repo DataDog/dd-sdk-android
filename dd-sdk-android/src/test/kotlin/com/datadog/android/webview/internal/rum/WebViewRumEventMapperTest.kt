@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.webview
+package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.rum.model.ActionEvent
@@ -12,7 +12,6 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.webview.WebRumEventMapper
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -39,9 +38,9 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class WebRumEventMapperTest {
+internal class WebViewRumEventMapperTest {
 
-    lateinit var testedWebRumEventMapper: WebRumEventMapper
+    lateinit var testedWebViewRumEventMapper: WebViewRumEventMapper
 
     @LongForgery
     var fakeServerTimeOffset: Long = 0L
@@ -59,7 +58,7 @@ internal class WebRumEventMapperTest {
         } else {
             emptyMap()
         }
-        testedWebRumEventMapper = WebRumEventMapper()
+        testedWebViewRumEventMapper = WebViewRumEventMapper()
         CoreFeature.serviceName = fakeServiceName
     }
 
@@ -69,7 +68,7 @@ internal class WebRumEventMapperTest {
         val fakeViewEvent = forge.getForgery<ViewEvent>()
 
         // When
-        val mappedEvent = testedWebRumEventMapper.mapViewEvent(
+        val mappedEvent = testedWebViewRumEventMapper.mapViewEvent(
             fakeViewEvent,
             rumMonitor.context,
             fakeServerTimeOffset
@@ -105,7 +104,7 @@ internal class WebRumEventMapperTest {
         val fakeActionEvent = forge.getForgery<ActionEvent>()
 
         // When
-        val mappedEvent = testedWebRumEventMapper.mapActionEvent(
+        val mappedEvent = testedWebViewRumEventMapper.mapActionEvent(
             fakeActionEvent,
             rumMonitor.context,
             fakeServerTimeOffset
@@ -140,7 +139,7 @@ internal class WebRumEventMapperTest {
         val fakeErrorEvent = forge.getForgery<ErrorEvent>()
 
         // When
-        val mappedEvent = testedWebRumEventMapper.mapErrorEvent(
+        val mappedEvent = testedWebViewRumEventMapper.mapErrorEvent(
             fakeErrorEvent,
             rumMonitor.context,
             fakeServerTimeOffset
@@ -175,7 +174,7 @@ internal class WebRumEventMapperTest {
         val fakeResourceEvent = forge.getForgery<ResourceEvent>()
 
         // When
-        val mappedEvent = testedWebRumEventMapper.mapResourceEvent(
+        val mappedEvent = testedWebViewRumEventMapper.mapResourceEvent(
             fakeResourceEvent,
             rumMonitor.context,
             fakeServerTimeOffset
@@ -210,7 +209,7 @@ internal class WebRumEventMapperTest {
         val fakeLongTaskEvent = forge.getForgery<LongTaskEvent>()
 
         // When
-        val mappedEvent = testedWebRumEventMapper.mapLongTaskEvent(
+        val mappedEvent = testedWebViewRumEventMapper.mapLongTaskEvent(
             fakeLongTaskEvent,
             rumMonitor.context,
             fakeServerTimeOffset

@@ -100,6 +100,8 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
 
     abstract fun featureDirName(): String
 
+    abstract fun doesFeatureNeedMigration(): Boolean
+
     @Test
     fun `𝕄 mark itself as initialized 𝕎 initialize()`() {
         // When
@@ -283,6 +285,10 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     fun `𝕄 migrate batch files 𝕎 initialize()`(
         @StringForgery message: String
     ) {
+        if (!doesFeatureNeedMigration()) {
+            return
+        }
+
         // Given
         val fileName = System.currentTimeMillis().toString()
         val oldFilesDir = File(appContext.fakeFilesDir, "dd-${featureDirName()}-v1")

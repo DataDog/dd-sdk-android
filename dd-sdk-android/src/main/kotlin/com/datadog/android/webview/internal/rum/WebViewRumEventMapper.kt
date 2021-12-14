@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.webview
+package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.rum.internal.domain.RumContext
@@ -14,7 +14,7 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 
-internal class WebRumEventMapper {
+internal class WebViewRumEventMapper {
 
     fun mapViewEvent(
         event: ViewEvent,

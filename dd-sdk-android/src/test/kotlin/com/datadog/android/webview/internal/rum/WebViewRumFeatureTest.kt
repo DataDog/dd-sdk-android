@@ -4,14 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.monitoring.internal
+package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
-import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
-import com.datadog.android.log.model.LogEvent
+import com.datadog.android.rum.internal.net.RumOkHttpUploaderV2
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -34,22 +32,22 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class InternalLogsFeatureTest :
-    SdkFeatureTest<LogEvent, Configuration.Feature.InternalLogs, InternalLogsFeature>() {
+internal class WebViewRumFeatureTest : SdkFeatureTest<Any,
+    Configuration.Feature.RUM, WebViewRumFeature>() {
 
-    override fun createTestedFeature(): InternalLogsFeature {
-        return InternalLogsFeature
+    override fun createTestedFeature(): WebViewRumFeature {
+        return WebViewRumFeature
     }
 
-    override fun forgeConfiguration(forge: Forge): Configuration.Feature.InternalLogs {
+    override fun forgeConfiguration(forge: Forge): Configuration.Feature.RUM {
         return forge.getForgery()
     }
 
     override fun featureDirName(): String {
-        return "internal-logs"
+        return "web-rum"
     }
 
-    override fun doesFeatureNeedMigration(): Boolean = true
+    override fun doesFeatureNeedMigration(): Boolean = false
 
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
@@ -58,34 +56,7 @@ internal class InternalLogsFeatureTest :
 
         // Then
         assertThat(testedFeature.persistenceStrategy)
-            .isInstanceOf(InternalLogFilePersistenceStrategy::class.java)
-    }
-
-    @Test
-    fun `𝕄 rebuild the sdkLogger 𝕎 initialize()`() {
-        // Given
-        val originalHandler = sdkLogger.handler
-
-        // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
-
-        // Then
-        assertThat(sdkLogger.handler).isNotSameAs(originalHandler)
-    }
-
-    @Test
-    fun `𝕄 rebuild the sdkLogger 𝕎 stop()`() {
-        // Given
-        val originalHandler = sdkLogger.handler
-
-        // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
-        val initHandler = sdkLogger.handler
-        testedFeature.stop()
-
-        // Then
-        assertThat(sdkLogger.handler).isNotSameAs(originalHandler)
-        assertThat(sdkLogger.handler).isNotSameAs(initHandler)
+            .isInstanceOf(WebViewRumFilePersistenceStrategy::class.java)
     }
 
     @Test
@@ -94,10 +65,10 @@ internal class InternalLogsFeatureTest :
         val uploader = testedFeature.createUploader(fakeConfigurationFeature)
 
         // Then
-        assertThat(uploader).isInstanceOf(LogsOkHttpUploaderV2::class.java)
-        val logsUploader = uploader as LogsOkHttpUploaderV2
-        assertThat(logsUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
-        assertThat(logsUploader.intakeUrl).endsWith("/api/v2/logs")
-        assertThat(logsUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
+        assertThat(uploader).isInstanceOf(RumOkHttpUploaderV2::class.java)
+        val rumUploader = uploader as RumOkHttpUploaderV2
+        assertThat(rumUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
+        assertThat(rumUploader.intakeUrl).endsWith("/api/v2/rum")
+        assertThat(rumUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
     }
 }
