@@ -668,8 +668,6 @@ internal open class RumViewScope(
 
         internal const val ACTION_DROPPED_WARNING = "RUM Action (%s on %s) was dropped, because" +
             " another action is still active for the same view"
-        internal const val RUM_BACKGROUND_VIEW_URL = "com/datadog/background/view"
-        internal const val RUM_BACKGROUND_VIEW_NAME = "Background"
 
         internal val FROZEN_FRAME_THRESHOLD_NS = TimeUnit.MILLISECONDS.toNanos(700)
         internal const val SLOW_RENDERED_THRESHOLD_FPS = 55
