@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal
 
+import android.app.Application
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
@@ -294,5 +295,35 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
         assertThat(testedFeature.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
         assertThat(testedFeature.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
         assertThat(testedFeature.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+    }
+
+    @Test
+    fun `𝕄 enable RUM debugging 𝕎 enableDebugging()`() {
+        // Given
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+
+        // When
+        testedFeature.enableDebugging()
+
+        // Then
+        assertThat(testedFeature.debugActivityLifecycleListener).isNotNull
+        verify(testedFeature.appContext as Application)
+            .registerActivityLifecycleCallbacks(testedFeature.debugActivityLifecycleListener)
+    }
+
+    @Test
+    fun `𝕄 disable RUM debugging 𝕎 disableDebugging()`() {
+        // Given
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        testedFeature.enableDebugging()
+        val listener = testedFeature.debugActivityLifecycleListener
+
+        // When
+        testedFeature.disableDebugging()
+
+        // Then
+        assertThat(testedFeature.debugActivityLifecycleListener).isNull()
+        verify(testedFeature.appContext as Application)
+            .unregisterActivityLifecycleCallbacks(listener)
     }
 }

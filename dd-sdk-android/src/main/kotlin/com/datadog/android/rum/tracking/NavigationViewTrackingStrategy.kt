@@ -101,7 +101,11 @@ class NavigationViewTrackingStrategy(
     /**
      * Starts tracking on current activity.
      *
-     * This is automatically called when activity starts. If using static navigation setup, with navigation container in XML layout, there's no need to call it manually. However if using dynamic navigation setup where navigation controller is created programmatically, then this function must be called after navigation controller is injected into view hierarchy. Regardless of the usage, the function always relies on view ID provided with the constructor.
+     * This is automatically called when activity starts. If using static navigation setup, with
+     * navigation container in XML layout, there's no need to call it manually. However if using
+     * dynamic navigation setup where navigation controller is created programmatically, then this
+     * function must be called after navigation controller is injected into view hierarchy.
+     * Regardless of the usage, the function always relies on view ID provided with the constructor.
      *
      * If activity is stopped, the function will return immediately without starting tracking.
      */
@@ -124,7 +128,12 @@ class NavigationViewTrackingStrategy(
     /**
      * Stops tracking current activity.
      *
-     * This is automatically called when activity stops. If using static navigation setup, with navigation container in XML layout, there's no need to call it manually. Even with dynamic navigation setup where navigation controller is created programmatically, default behavior should be enough. But the function is here in case tracking needs to be managed outside of the default activity lifecycle. In this case note that it's possible to call [startTracking] and [stopTracking] multiple times in succession.
+     * This is automatically called when activity stops. If using static navigation setup, with
+     * navigation container in XML layout, there's no need to call it manually. Even with dynamic
+     * navigation setup where navigation controller is created programmatically, default behavior
+     * should be enough. But the function is here in case tracking needs to be managed outside of
+     * the default activity lifecycle. In this case note that it's possible to
+     * call [startTracking] and [stopTracking] multiple times in succession.
      *
      * If activity is stopped, the function will return immediately.
      */

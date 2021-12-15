@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal
 
+import android.app.Application
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
@@ -20,6 +21,7 @@ import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
+import com.datadog.android.rum.internal.debug.UiRumDebugListener
 import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.rum.internal.net.RumOkHttpUploaderV2
@@ -61,10 +63,13 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
     internal var memoryVitalMonitor: VitalMonitor = NoOpVitalMonitor()
     internal var frameRateVitalMonitor: VitalMonitor = NoOpVitalMonitor()
 
+    internal var debugActivityLifecycleListener: Application.ActivityLifecycleCallbacks? = null
+
     internal lateinit var vitalExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var anrDetectorExecutorService: ExecutorService
     internal lateinit var anrDetectorRunnable: ANRDetectorRunnable
     internal lateinit var anrDetectorHandler: Handler
+    internal lateinit var appContext: Context
 
     // region SdkFeature
 
@@ -81,6 +86,8 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
         initializeANRDetector()
 
         registerTrackingStrategies(context)
+
+        appContext = context.applicationContext
     }
 
     override fun onStop() {
@@ -131,6 +138,22 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
     // endregion
 
     // region Internal
+
+    internal fun enableDebugging() {
+        val context = appContext
+        if (context is Application) {
+            debugActivityLifecycleListener = UiRumDebugListener()
+            context.registerActivityLifecycleCallbacks(debugActivityLifecycleListener)
+        }
+    }
+
+    internal fun disableDebugging() {
+        val context = appContext
+        if (debugActivityLifecycleListener != null && context is Application) {
+            context.unregisterActivityLifecycleCallbacks(debugActivityLifecycleListener)
+            debugActivityLifecycleListener = null
+        }
+    }
 
     private fun registerTrackingStrategies(appContext: Context) {
         actionTrackingStrategy.register(appContext)

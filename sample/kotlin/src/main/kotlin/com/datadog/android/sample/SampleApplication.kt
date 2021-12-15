@@ -93,6 +93,7 @@ class SampleApplication : Application() {
             preferences.getTrackingConsent()
         )
         Datadog.setVerbosity(Log.VERBOSE)
+        Datadog.enableRumDebugging(true)
         setUserInfo(
             preferences.getUserId(),
             preferences.getUserName(),

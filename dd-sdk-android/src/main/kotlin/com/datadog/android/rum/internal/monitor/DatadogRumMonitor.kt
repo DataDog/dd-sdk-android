@@ -18,12 +18,15 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
+import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.asTime
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
+import com.datadog.android.rum.internal.domain.scope.RumSessionScope
+import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
 import java.util.Locale
@@ -63,6 +66,8 @@ internal class DatadogRumMonitor(
     internal val keepAliveRunnable = Runnable {
         handleEvent(RumRawEvent.KeepAlive())
     }
+
+    internal var debugListener: RumDebugListener? = null
 
     init {
         handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
@@ -282,6 +287,10 @@ internal class DatadogRumMonitor(
         }
     }
 
+    override fun setDebugListener(listener: RumDebugListener?) {
+        debugListener = listener
+    }
+
     // endregion
 
     // region Internal
@@ -312,6 +321,7 @@ internal class DatadogRumMonitor(
                     executorService.submit {
                         synchronized(rootScope) {
                             rootScope.handleEvent(event, writer)
+                            notifyDebugListenerWithState()
                         }
                         handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
                     }
@@ -324,6 +334,20 @@ internal class DatadogRumMonitor(
 
     internal fun stopKeepAliveCallback() {
         handler.removeCallbacks(keepAliveRunnable)
+    }
+
+    internal fun notifyDebugListenerWithState() {
+        debugListener?.let {
+            val applicationScope = rootScope as? RumApplicationScope
+            val sessionScope = applicationScope?.childScope as? RumSessionScope
+            if (sessionScope != null) {
+                it.onReceiveActiveRumViews(
+                    sessionScope.activeChildrenScopes
+                        .filterIsInstance<RumViewScope>()
+                        .mapNotNull { viewScope -> viewScope.getRumContext().viewName }
+                )
+            }
+        }
     }
 
     private fun getEventTime(attributes: Map<String, Any?>): Time {

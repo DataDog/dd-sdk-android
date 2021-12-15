@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.monitor
 
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.tools.annotation.NoOpImplementation
@@ -34,4 +35,6 @@ internal interface AdvancedRumMonitor : RumMonitor {
     fun eventSent(viewId: String, type: EventType)
 
     fun eventDropped(viewId: String, type: EventType)
+
+    fun setDebugListener(listener: RumDebugListener?)
 }

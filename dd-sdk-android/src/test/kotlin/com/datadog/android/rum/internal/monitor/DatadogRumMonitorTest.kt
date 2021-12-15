@@ -16,10 +16,16 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
+import com.datadog.android.rum.internal.debug.RumDebugListener
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.domain.scope.RumActionScope
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
+import com.datadog.android.rum.internal.domain.scope.RumResourceScope
 import com.datadog.android.rum.internal.domain.scope.RumScope
+import com.datadog.android.rum.internal.domain.scope.RumSessionScope
+import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
@@ -29,6 +35,7 @@ import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
@@ -1186,6 +1193,100 @@ internal class DatadogRumMonitorTest {
 
         // Then
         verify(mockExecutorService, never()).submit(any())
+    }
+
+    @Test
+    fun `M set debug listener W setDebugListener()`() {
+        // Given
+        val listener = mock<RumDebugListener>()
+
+        // When
+        testedMonitor.setDebugListener(listener)
+
+        // Then
+        assertThat(testedMonitor.debugListener).isNotNull
+    }
+
+    @Test
+    fun `M notify debug listener with active RUM views W notifyDebugListenerWithState()`(
+        forge: Forge
+    ) {
+        // Given
+        val mockRumApplicationScope = mock<RumApplicationScope>()
+        testedMonitor.setFieldValue("rootScope", mockRumApplicationScope)
+
+        val mockSessionScope = mock<RumSessionScope>()
+
+        val listener = mock<RumDebugListener>()
+        testedMonitor.debugListener = listener
+
+        val viewScopes = forge.aList {
+            mock<RumViewScope>().apply {
+                whenever(getRumContext()) doReturn
+                    RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
+            }
+        }
+
+        val expectedViewNames = viewScopes.mapNotNull { it.getRumContext().viewName }
+
+        val otherScopes = forge.aList {
+            forge.anElementFrom(mock(), mock<RumActionScope>(), mock<RumResourceScope>())
+        }
+
+        whenever(mockRumApplicationScope.childScope) doReturn mockSessionScope
+        whenever(mockSessionScope.activeChildrenScopes) doReturn
+            (viewScopes + otherScopes).toMutableList()
+
+        // When
+        testedMonitor.notifyDebugListenerWithState()
+
+        // Then
+        verify(listener).onReceiveActiveRumViews(expectedViewNames)
+    }
+
+    @Test
+    fun `M not notify debug listener W notifyDebugListenerWithState(){no session scope}`(
+        forge: Forge
+    ) {
+        // Given
+        val mockRumApplicationScope = mock<RumApplicationScope>()
+        testedMonitor.setFieldValue("rootScope", mockRumApplicationScope)
+
+        val listener = mock<RumDebugListener>()
+        testedMonitor.debugListener = listener
+
+        whenever(mockRumApplicationScope.childScope) doReturn forge.anElementFrom(
+            mock(), mock<RumViewScope>(), mock<RumActionScope>(), mock<RumResourceScope>()
+        )
+
+        // When
+        testedMonitor.notifyDebugListenerWithState()
+
+        // Then
+        verifyZeroInteractions(listener)
+    }
+
+    @Test
+    fun `M not notify debug listener W notifyDebugListenerWithState(){no app scope}`(
+        forge: Forge
+    ) {
+        // Given
+        testedMonitor.setFieldValue(
+            "rootScope",
+            forge.anElementFrom(
+                mock(), mock<RumViewScope>(), mock<RumActionScope>(),
+                mock<RumResourceScope>(), mock<RumSessionScope>()
+            )
+        )
+
+        val listener = mock<RumDebugListener>()
+        testedMonitor.debugListener = listener
+
+        // When
+        testedMonitor.notifyDebugListenerWithState()
+
+        // Then
+        verifyZeroInteractions(listener)
     }
 
     companion object {

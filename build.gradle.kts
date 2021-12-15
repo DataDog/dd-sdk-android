@@ -266,4 +266,4 @@ tasks.register("buildNdkIntegrationTestsArtifacts") {
     dependsOn(":instrumented:integration:assembleDebug")
 }
 
-nightlyTestsCoverageConfig(threshold = 0.91f)
+nightlyTestsCoverageConfig(threshold = 0.9f)
