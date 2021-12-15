@@ -1,6 +1,6 @@
 # Android Log Collection
 
-{{< site-region region="us3,gov" >}}
+{{< site-region region="us3" >}}
 <div class="alert alert-warning">Android log collection is not supported for this site.</div>
 {{< /site-region >}}
 Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-android` client-side logging library][1] and leverage the following features:
@@ -81,6 +81,42 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
             Configuration configuration =
                     new Configuration.Builder(true, true, true, true)
                             .useSite(DatadogSite.EU1)
+                            .build();
+            Credentials credentials = new Credentials( < CLIENT_TOKEN >, <ENV_NAME >, <APP_VARIANT_NAME >, <
+            APPLICATION_ID >);
+            Datadog.initialize(this, credentials, configuration, trackingConsent);
+        }
+    }
+```
+{{% /tab %}}
+{{< /tabs >}}
+{{< /site-region >}}
+
+{{< site-region region="gov" >}}
+{{< tabs >}}
+{{% tab "Kotlin" %}}
+```kotlin
+    class SampleApplication : Application() {
+        override fun onCreate() {
+        super.onCreate()
+        val configuration = Configuration.Builder(logsEnabled = true, ...)
+                            .useSite(DatadogSite.US1_FED)
+                            .build()
+        val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
+        Datadog.initialize(this, credentials, configuration, trackingConsent)
+        }
+    }
+```
+{{% /tab %}}
+{{% tab "Java" %}}
+```java
+    public class SampleApplication extends Application {
+        @Override
+        public void onCreate() {
+            super.onCreate();
+            Configuration configuration =
+                    new Configuration.Builder(true, true, true, true)
+                            .useSite(DatadogSite.US1_FED)
                             .build();
             Credentials credentials = new Credentials( < CLIENT_TOKEN >, <ENV_NAME >, <APP_VARIANT_NAME >, <
             APPLICATION_ID >);
