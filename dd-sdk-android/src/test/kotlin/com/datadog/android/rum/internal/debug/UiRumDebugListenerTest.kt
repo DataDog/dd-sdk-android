@@ -253,12 +253,61 @@ internal class UiRumDebugListenerTest {
         testedListener.onReceiveActiveRumViews(rumViews)
 
         // THEN
-
         inOrder(container) {
             verify(container).removeAllViews()
             verify(container, times(rumViews.size)).addView(isA<TextView>())
             verifyNoMoreInteractions()
         }
+    }
+
+    @Test
+    fun `M add RUM views to container only if changed W onReceiveActiveRumViews()`(forge: Forge) {
+        // GIVEN
+        val viewsOne = listOf(forge.anAlphaNumericalString())
+        val viewsTwo = listOf(forge.anAlphaNumericalString())
+        val viewsThree = listOf(viewsOne[0], viewsTwo[0])
+        val viewsFour = listOf(viewsTwo[0], viewsOne[0])
+        val viewsFive = listOf(forge.anAlphaNumericalString())
+
+        val container = mock<LinearLayout>().apply {
+            val mockDisplayMetrics = mock<DisplayMetrics>()
+            val mockContext = mock<Context>()
+            val mockResources = mock<Resources>()
+
+            whenever(mockResources.displayMetrics) doReturn mockDisplayMetrics
+            whenever(mockContext.resources) doReturn mockResources
+            whenever(context) doReturn mockContext
+        }
+        testedListener.rumViewsContainer = container
+
+        whenever(container.post(any())) doAnswer {
+            it.getArgument(0, Runnable::class.java).run()
+            true
+        }
+
+        // WHEN
+        testedListener.onReceiveActiveRumViews(viewsOne)
+        testedListener.onReceiveActiveRumViews(viewsOne)
+        testedListener.onReceiveActiveRumViews(viewsTwo)
+        testedListener.onReceiveActiveRumViews(viewsTwo)
+        testedListener.onReceiveActiveRumViews(viewsThree)
+        testedListener.onReceiveActiveRumViews(viewsThree)
+        testedListener.onReceiveActiveRumViews(viewsFour)
+        testedListener.onReceiveActiveRumViews(viewsFour)
+        testedListener.onReceiveActiveRumViews(viewsFive)
+
+        // THEN
+        verify(container, times(5)).removeAllViews()
+        verify(
+            container,
+            times(
+                viewsOne.size +
+                    viewsTwo.size +
+                    viewsThree.size +
+                    viewsFour.size +
+                    viewsFive.size
+            )
+        ).addView(isA<TextView>())
     }
 
     @Test
@@ -284,7 +333,6 @@ internal class UiRumDebugListenerTest {
         testedListener.onReceiveActiveRumViews(emptyList())
 
         // THEN
-
         inOrder(container) {
             verify(container).removeAllViews()
             verify(container).addView(isA<TextView>())

@@ -38,6 +38,8 @@ internal class UiRumDebugListener(
     internal var rumViewsContainer: LinearLayout? = null
     internal var rumMonitor: AdvancedRumMonitor? = null
 
+    private val viewsSnapshot = mutableListOf<String>()
+
     // region Application.ActivityLifecycleCallbacks
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
@@ -90,6 +92,7 @@ internal class UiRumDebugListener(
         rumViewsContainer = null
         rumMonitor?.setDebugListener(null)
         rumMonitor = null
+        viewsSnapshot.clear()
     }
 
     override fun onActivityStopped(activity: Activity) {
@@ -109,8 +112,17 @@ internal class UiRumDebugListener(
     // region RumDebugListener
 
     override fun onReceiveActiveRumViews(viewNames: List<String>) {
-        rumViewsContainer?.post {
-            showRumViewsInfo(viewNames)
+        synchronized(viewsSnapshot) {
+            if (viewsSnapshot.isEmpty() ||
+                viewsSnapshot.size != viewNames.size ||
+                viewsSnapshot.withIndex().any { it.value != viewNames.getOrNull(it.index) }
+            ) {
+                viewsSnapshot.clear()
+                viewsSnapshot.addAll(viewNames)
+                rumViewsContainer?.post {
+                    showRumViewsInfo(viewsSnapshot)
+                }
+            }
         }
     }
 
