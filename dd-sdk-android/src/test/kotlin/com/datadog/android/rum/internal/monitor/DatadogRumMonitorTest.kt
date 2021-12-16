@@ -1241,7 +1241,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor.notifyDebugListenerWithState()
 
         // Then
-        verify(listener).onReceiveActiveRumViews(expectedViewNames)
+        verify(listener).onReceiveRumActiveViews(expectedViewNames)
     }
 
     @Test

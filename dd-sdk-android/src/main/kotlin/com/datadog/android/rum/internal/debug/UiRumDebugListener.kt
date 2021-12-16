@@ -25,20 +25,31 @@ import androidx.core.view.setPadding
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import java.util.Locale
 import kotlin.math.pow
 
-internal class UiRumDebugListener(
-    private val rumMonitorProvider: () -> AdvancedRumMonitor? = {
-        GlobalRum.get() as? AdvancedRumMonitor
-    }
-) :
+internal class UiRumDebugListener :
     Application.ActivityLifecycleCallbacks, RumDebugListener {
 
     internal var rumViewsContainer: LinearLayout? = null
-    internal var rumMonitor: AdvancedRumMonitor? = null
 
     private val viewsSnapshot = mutableListOf<String>()
+
+    private val advancedRumMonitor by lazy {
+        val monitor = GlobalRum.get() as? AdvancedRumMonitor
+        if (monitor == null) {
+            devLogger.w(
+                MISSING_RUM_MONITOR_TYPE.format(
+                    Locale.US,
+                    AdvancedRumMonitor::class.qualifiedName
+                )
+            )
+            NoOpAdvancedRumMonitor()
+        } else {
+            monitor
+        }
+    }
 
     // region Application.ActivityLifecycleCallbacks
 
@@ -52,22 +63,16 @@ internal class UiRumDebugListener(
 
     override fun onActivityResumed(activity: Activity) {
 
+        if (advancedRumMonitor is NoOpAdvancedRumMonitor) {
+            return
+        }
+
         val contentView = findContentView(activity)
         if (contentView == null) {
             devLogger.w(CANNOT_FIND_CONTENT_VIEW_MESSAGE)
             return
         }
 
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        val rumMonitor = rumMonitorProvider()
-        if (rumMonitor == null) {
-            devLogger.w(
-                MISSING_RUM_MONITOR_TYPE.format(Locale.US, AdvancedRumMonitor::class.qualifiedName)
-            )
-            return
-        }
-
-        @Suppress("UnsafeThirdPartyFunctionCall")
         rumViewsContainer = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
         }
@@ -82,16 +87,16 @@ internal class UiRumDebugListener(
             }
         )
 
-        rumMonitor.setDebugListener(this)
-
-        this.rumMonitor = rumMonitor
+        advancedRumMonitor.setDebugListener(this)
     }
 
     override fun onActivityPaused(activity: Activity) {
+        if (advancedRumMonitor is NoOpAdvancedRumMonitor) {
+            return
+        }
         findContentView(activity)?.removeView(rumViewsContainer)
         rumViewsContainer = null
-        rumMonitor?.setDebugListener(null)
-        rumMonitor = null
+        advancedRumMonitor.setDebugListener(null)
         viewsSnapshot.clear()
     }
 
@@ -111,7 +116,7 @@ internal class UiRumDebugListener(
 
     // region RumDebugListener
 
-    override fun onReceiveActiveRumViews(viewNames: List<String>) {
+    override fun onReceiveRumActiveViews(viewNames: List<String>) {
         synchronized(viewsSnapshot) {
             if (viewsSnapshot.isEmpty() ||
                 viewsSnapshot.size != viewNames.size ||
@@ -120,7 +125,7 @@ internal class UiRumDebugListener(
                 viewsSnapshot.clear()
                 viewsSnapshot.addAll(viewNames)
                 rumViewsContainer?.post {
-                    showRumViewsInfo(viewsSnapshot)
+                    showRumViewsInfo(viewNames)
                 }
             }
         }

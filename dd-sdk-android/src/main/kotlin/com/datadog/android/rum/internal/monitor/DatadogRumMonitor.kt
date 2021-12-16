@@ -341,7 +341,7 @@ internal class DatadogRumMonitor(
             val applicationScope = rootScope as? RumApplicationScope
             val sessionScope = applicationScope?.childScope as? RumSessionScope
             if (sessionScope != null) {
-                it.onReceiveActiveRumViews(
+                it.onReceiveRumActiveViews(
                     sessionScope.activeChildrenScopes
                         .filterIsInstance<RumViewScope>()
                         .mapNotNull { viewScope -> viewScope.getRumContext().viewName }

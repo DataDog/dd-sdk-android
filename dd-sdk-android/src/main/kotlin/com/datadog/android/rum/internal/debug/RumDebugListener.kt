@@ -11,5 +11,5 @@ internal interface RumDebugListener {
      * It receives collection on purpose - it will allow to debug a situation when previous view
      * is not yet collected when another view is started.
      */
-    fun onReceiveActiveRumViews(viewNames: List<String>)
+    fun onReceiveRumActiveViews(viewNames: List<String>)
 }

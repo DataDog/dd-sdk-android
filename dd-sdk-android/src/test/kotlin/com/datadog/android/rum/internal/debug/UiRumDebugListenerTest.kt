@@ -18,9 +18,14 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
@@ -48,13 +53,11 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class UiRumDebugListenerTest {
-
-    @Mock
-    lateinit var mockRumMonitor: AdvancedRumMonitor
 
     @Mock
     lateinit var mockActivity: Activity
@@ -74,9 +77,7 @@ internal class UiRumDebugListenerTest {
 
     @BeforeEach
     fun setUp() {
-        testedListener = UiRumDebugListener(
-            rumMonitorProvider = { mockRumMonitor }
-        )
+        testedListener = UiRumDebugListener()
 
         mockDevLogHandler = mockDevLogHandler()
 
@@ -101,7 +102,7 @@ internal class UiRumDebugListenerTest {
             UiRumDebugListener.CANNOT_FIND_CONTENT_VIEW_MESSAGE
         )
 
-        verifyZeroInteractions(mockRumMonitor, mockContentView)
+        verifyZeroInteractions(rumMonitor.mockInstance, mockContentView)
     }
 
     @Test
@@ -118,7 +119,7 @@ internal class UiRumDebugListenerTest {
             UiRumDebugListener.CANNOT_FIND_CONTENT_VIEW_MESSAGE
         )
 
-        verifyZeroInteractions(mockRumMonitor, mockContentView)
+        verifyZeroInteractions(rumMonitor.mockInstance, mockContentView)
     }
 
     @Test
@@ -135,15 +136,14 @@ internal class UiRumDebugListenerTest {
             UiRumDebugListener.CANNOT_FIND_CONTENT_VIEW_MESSAGE
         )
 
-        verifyZeroInteractions(mockRumMonitor, mockContentView)
+        verifyZeroInteractions(rumMonitor.mockInstance, mockContentView)
     }
 
     @Test
     fun `M log a warning W onActivityResumed() { RUM monitor is not AdvancedRumMonitor }`() {
         // GIVEN
-        testedListener = UiRumDebugListener(
-            rumMonitorProvider = { null }
-        )
+        GlobalRum.monitor = mock()
+        testedListener = UiRumDebugListener()
 
         // WHEN
         testedListener.onActivityResumed(mockActivity)
@@ -179,21 +179,17 @@ internal class UiRumDebugListenerTest {
         testedListener.onActivityResumed(mockActivity)
 
         // THEN
-        verify(mockRumMonitor).setDebugListener(testedListener)
+        verify(rumMonitor.mockInstance).setDebugListener(testedListener)
         verifyZeroInteractions(mockDevLogHandler)
     }
 
     @Test
     fun `M unregister listener W onActivityPaused()`() {
-        // GIVEN
-        testedListener.rumMonitor = mockRumMonitor
-
         // WHEN
         testedListener.onActivityPaused(mockActivity)
 
         // THEN
-        verify(mockRumMonitor).setDebugListener(null)
-        assertThat(testedListener.rumMonitor).isNull()
+        verify(rumMonitor.mockInstance).setDebugListener(null)
     }
 
     @Test
@@ -219,7 +215,7 @@ internal class UiRumDebugListenerTest {
         testedListener.onActivityStopped(mockActivity)
 
         // THEN
-        verifyZeroInteractions(mockActivity, mockDevLogHandler, mockRumMonitor)
+        verifyZeroInteractions(mockActivity, mockDevLogHandler, rumMonitor.mockInstance)
     }
 
     // endregion
@@ -227,7 +223,7 @@ internal class UiRumDebugListenerTest {
     // region RumDebugListener
 
     @Test
-    fun `M add active RUM views to container W onReceiveActiveRumViews()`(forge: Forge) {
+    fun `M add active RUM views to container W onReceiveRumActiveViews()`(forge: Forge) {
         // GIVEN
         val rumViews = forge.aList {
             forge.anAlphaNumericalString()
@@ -250,7 +246,7 @@ internal class UiRumDebugListenerTest {
         }
 
         // WHEN
-        testedListener.onReceiveActiveRumViews(rumViews)
+        testedListener.onReceiveRumActiveViews(rumViews)
 
         // THEN
         inOrder(container) {
@@ -261,7 +257,7 @@ internal class UiRumDebugListenerTest {
     }
 
     @Test
-    fun `M add RUM views to container only if changed W onReceiveActiveRumViews()`(forge: Forge) {
+    fun `M add RUM views to container only if changed W onReceiveRumActiveViews()`(forge: Forge) {
         // GIVEN
         val viewsOne = listOf(forge.anAlphaNumericalString())
         val viewsTwo = listOf(forge.anAlphaNumericalString())
@@ -286,15 +282,15 @@ internal class UiRumDebugListenerTest {
         }
 
         // WHEN
-        testedListener.onReceiveActiveRumViews(viewsOne)
-        testedListener.onReceiveActiveRumViews(viewsOne)
-        testedListener.onReceiveActiveRumViews(viewsTwo)
-        testedListener.onReceiveActiveRumViews(viewsTwo)
-        testedListener.onReceiveActiveRumViews(viewsThree)
-        testedListener.onReceiveActiveRumViews(viewsThree)
-        testedListener.onReceiveActiveRumViews(viewsFour)
-        testedListener.onReceiveActiveRumViews(viewsFour)
-        testedListener.onReceiveActiveRumViews(viewsFive)
+        testedListener.onReceiveRumActiveViews(viewsOne)
+        testedListener.onReceiveRumActiveViews(viewsOne)
+        testedListener.onReceiveRumActiveViews(viewsTwo)
+        testedListener.onReceiveRumActiveViews(viewsTwo)
+        testedListener.onReceiveRumActiveViews(viewsThree)
+        testedListener.onReceiveRumActiveViews(viewsThree)
+        testedListener.onReceiveRumActiveViews(viewsFour)
+        testedListener.onReceiveRumActiveViews(viewsFour)
+        testedListener.onReceiveRumActiveViews(viewsFive)
 
         // THEN
         verify(container, times(5)).removeAllViews()
@@ -311,7 +307,7 @@ internal class UiRumDebugListenerTest {
     }
 
     @Test
-    fun `M add missing RUM view text to container W onReceiveActiveRumViews()`() {
+    fun `M add missing RUM view text to container W onReceiveRumActiveViews()`() {
         // GIVEN
         val container = mock<LinearLayout>().apply {
             val mockDisplayMetrics = mock<DisplayMetrics>()
@@ -330,7 +326,7 @@ internal class UiRumDebugListenerTest {
         }
 
         // WHEN
-        testedListener.onReceiveActiveRumViews(emptyList())
+        testedListener.onReceiveRumActiveViews(emptyList())
 
         // THEN
         inOrder(container) {
@@ -341,4 +337,14 @@ internal class UiRumDebugListenerTest {
     }
 
     // endregion
+
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
+        }
+    }
 }
