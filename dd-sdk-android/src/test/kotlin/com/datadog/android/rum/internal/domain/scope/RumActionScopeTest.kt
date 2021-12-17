@@ -495,6 +495,162 @@ internal class RumActionScopeTest {
     }
 
     @Test
+    fun `𝕄 send Action immediately 𝕎 handleEvent(StartView) {resourceCount != 0}`(
+        @StringForgery fakeActionName: String,
+        @LongForgery(1, 1024) count: Long
+    ) {
+        // Given
+        testedScope.resourceCount = count
+
+        // When
+        fakeEvent = RumRawEvent.StartView(Object(), fakeActionName, emptyMap())
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(count)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action immediately 𝕎 handleEvent(StartView) {longTaskCount != 0}`(
+        @StringForgery fakeActionName: String,
+        @LongForgery(1, 1024) count: Long
+    ) {
+        // Given
+        testedScope.longTaskCount = count
+
+        // When
+        fakeEvent = RumRawEvent.StartView(Object(), fakeActionName, emptyMap())
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasLongTaskCount(count)
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action immediately 𝕎 handleEvent(StartView) {errorCount != 0}`(
+        @StringForgery fakeActionName: String,
+        @LongForgery(1, 1024) count: Long
+    ) {
+        // Given
+        testedScope.errorCount = count
+
+        // When
+        fakeEvent = RumRawEvent.StartView(Object(), fakeActionName, emptyMap())
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(count)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasView(fakeParentContext)
+                    hasUserInfo(fakeUserInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action immediately 𝕎 handleEvent(StartView) {crashCount != 0}`(
+        @StringForgery fakeActionName: String,
+        @LongForgery(1, 1024) nonFatalCount: Long,
+        @LongForgery(1, 1024) fatalCount: Long
+    ) {
+        // Given
+        testedScope.errorCount = nonFatalCount + fatalCount
+        testedScope.crashCount = fatalCount
+
+        // When
+        fakeEvent = RumRawEvent.StartView(Object(), fakeActionName, emptyMap())
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(nonFatalCount + fatalCount)
+                    hasCrashCount(fatalCount)
+                    hasLongTaskCount(0)
+                    hasView(fakeParentContext)
+                    hasUserInfo(fakeUserInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isNull()
+    }
+
+    @Test
     fun `𝕄 send Action immediately 𝕎 handleEvent(StopView) {resourceCount != 0}`(
         @LongForgery(1, 1024) count: Long
     ) {
@@ -929,6 +1085,84 @@ internal class RumActionScopeTest {
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
         assertThat(result2).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action 𝕎 handleEvent(StartView) {no side effect}`(
+        @StringForgery fakeActionName: String
+    ) {
+        // Given
+        testedScope.resourceCount = 0
+        testedScope.errorCount = 0
+        testedScope.crashCount = 0
+        fakeEvent = RumRawEvent.StartView(Object(), fakeActionName, emptyMap())
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasView(fakeParentContext)
+                    hasUserInfo(fakeUserInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
+                }
+        }
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action event 𝕎 handleEvent(StartView) {no side effect}`(
+        @StringForgery fakeActionName: String
+    ) {
+        // Given
+        testedScope.resourceCount = 0
+        testedScope.errorCount = 0
+        testedScope.crashCount = 0
+        testedScope.longTaskCount = 0
+        fakeEvent = RumRawEvent.StartView(Object(), fakeActionName, emptyMap())
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasView(fakeParentContext)
+                    hasUserInfo(fakeUserInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        assertThat(result).isNull()
     }
 
     @Test

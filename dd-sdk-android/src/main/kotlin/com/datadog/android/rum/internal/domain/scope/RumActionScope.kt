@@ -68,6 +68,7 @@ internal class RumActionScope(
             shouldStop -> sendAction(lastInteractionNanos, writer)
             isLongDuration -> sendAction(now, writer)
             event is RumRawEvent.SendCustomActionNow -> sendAction(lastInteractionNanos, writer)
+            event is RumRawEvent.StartView -> onStartView(now, writer)
             event is RumRawEvent.StopView -> onStopView(now, writer)
             event is RumRawEvent.StopAction -> onStopAction(event, now)
             event is RumRawEvent.StartResource -> onStartResource(event, now)
@@ -87,6 +88,15 @@ internal class RumActionScope(
     // endregion
 
     // region Internal
+
+    private fun onStartView(
+        now: Long,
+        writer: DataWriter<Any>
+    ) {
+        // another view starts, complete this action
+        ongoingResourceKeys.clear()
+        sendAction(now, writer)
+    }
 
     private fun onStopView(
         now: Long,
