@@ -82,7 +82,7 @@ object Datadog {
         var mutableConfig = configuration
         if (isDebug and configuration.coreConfig.enableDeveloperModeWhenDebuggable) {
             mutableConfig = modifyConfigurationForDeveloperDebug(configuration)
-            Datadog.setVerbosity(Log.VERBOSE)
+            setVerbosity(Log.VERBOSE)
         }
 
         // always initialize Core Features first
@@ -109,6 +109,7 @@ object Datadog {
         // Make sure we stop Datadog when the Runtime shuts down
         try {
             val hookRunnable = Runnable { stop() }
+
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             val hook = Thread(hookRunnable, SHUTDOWN_THREAD)
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
@@ -242,6 +243,22 @@ object Datadog {
                 extraInfo
             )
         )
+    }
+
+    /**
+     * Utility setting to inspect the active RUM View.
+     * If set, a debugging outline will be displayed on top of the application, describing the name
+     * of the active RUM View. May be used to debug issues with RUM instrumentation in your app.
+     *
+     * @param enable if enabled, then app will show an overlay describing the active RUM view.
+     */
+    @JvmStatic
+    fun enableRumDebugging(enable: Boolean) {
+        if (enable) {
+            RumFeature.enableDebugging()
+        } else {
+            RumFeature.disableDebugging()
+        }
     }
 
     // endregion

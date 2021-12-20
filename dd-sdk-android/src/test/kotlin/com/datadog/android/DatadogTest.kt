@@ -735,6 +735,46 @@ internal class DatadogTest {
             .containsOnly(CoreFeature.DEFAULT_SDK_VERSION)
     }
 
+    @Test
+    fun `𝕄 enable RUM debugging 𝕎 enableRumDebugging(true)`() {
+        // Given
+        val config = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .build()
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+
+        // When
+        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
+        Datadog.enableRumDebugging(true)
+
+        // Then
+        assertThat(RumFeature.debugActivityLifecycleListener).isNotNull
+    }
+
+    @Test
+    fun `𝕄 disable RUM debugging 𝕎 enableRumDebugging(false)`() {
+        // Given
+        val config = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .build()
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+
+        // When
+        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
+        Datadog.enableRumDebugging(false)
+
+        // Then
+        assertThat(RumFeature.debugActivityLifecycleListener).isNull()
+    }
+
     // region Internal
 
     private fun stubApplicationInfo(mockContext: Context, isDebuggable: Boolean) {
