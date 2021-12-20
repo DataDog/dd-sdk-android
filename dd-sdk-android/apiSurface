@@ -1208,6 +1208,8 @@ class com.datadog.android.rum.tracking.NavigationViewTrackingStrategy : Activity
   override fun onActivityStopped(android.app.Activity)
   override fun onActivityPaused(android.app.Activity)
   override fun onDestinationChanged(androidx.navigation.NavController, androidx.navigation.NavDestination, android.os.Bundle?)
+  fun startTracking()
+  fun stopTracking()
 interface com.datadog.android.rum.tracking.TrackingStrategy
   fun register(android.content.Context)
   fun unregister(android.content.Context?)
