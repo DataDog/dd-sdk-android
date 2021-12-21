@@ -92,6 +92,42 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
 {{< /tabs >}}
 {{< /site-region >}}
 
+{{< site-region region="us3" >}}
+{{< tabs >}}
+{{% tab "Kotlin" %}}
+```kotlin
+    class SampleApplication : Application() {
+        override fun onCreate() {
+        super.onCreate()
+        val configuration = Configuration.Builder(logsEnabled = true, ...)
+                            .useSite(DatadogSite.US3)
+                            .build()
+        val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
+        Datadog.initialize(this, credentials, configuration, trackingConsent)
+        }
+    }
+```
+{{% /tab %}}
+{{% tab "Java" %}}
+```java
+    public class SampleApplication extends Application {
+        @Override
+        public void onCreate() {
+            super.onCreate();
+            Configuration configuration =
+                    new Configuration.Builder(true, true, true, true)
+                            .useSite(DatadogSite.US3)
+                            .build();
+            Credentials credentials = new Credentials( < CLIENT_TOKEN >, <ENV_NAME >, <APP_VARIANT_NAME >, <
+            APPLICATION_ID >);
+            Datadog.initialize(this, credentials, configuration, trackingConsent);
+        }
+    }
+```
+{{% /tab %}}
+{{< /tabs >}}
+{{< /site-region >}}
+
 {{< site-region region="us5" >}}
 {{< tabs >}}
 {{% tab "Kotlin" %}}
