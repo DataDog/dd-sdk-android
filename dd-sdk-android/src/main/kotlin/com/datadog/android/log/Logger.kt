@@ -29,6 +29,8 @@ import com.google.gson.JsonObject
 import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArraySet
+import org.json.JSONArray
+import org.json.JSONObject
 
 /**
  * A class enabling Datadog logging features.
@@ -494,6 +496,32 @@ internal constructor(internal val handler: LogHandler) {
      * @param value the (nullable) [JsonArray] value of this attribute
      */
     fun addAttribute(key: String, value: JsonArray?) {
+        safelyAddAttribute(key, value)
+    }
+
+    /**
+     * Add a custom attribute to all future logs sent by this logger.
+     *
+     * Values can be nested up to 10 levels deep. Keys
+     * using more than 10 levels will be sanitized by SDK.
+     *
+     * @param key the key for this attribute
+     * @param value the (nullable) [JSONObject] value of this attribute
+     */
+    fun addAttribute(key: String, value: JSONObject?) {
+        safelyAddAttribute(key, value)
+    }
+
+    /**
+     * Add a custom attribute to all future logs sent by this logger.
+     *
+     * Values can be nested up to 10 levels deep. Keys
+     * using more than 10 levels will be sanitized by SDK.
+     *
+     * @param key the key for this attribute
+     * @param value the (nullable) [JSONArray] value of this attribute
+     */
+    fun addAttribute(key: String, value: JSONArray?) {
         safelyAddAttribute(key, value)
     }
 

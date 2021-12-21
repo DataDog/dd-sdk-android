@@ -25,6 +25,8 @@ import java.util.concurrent.TimeUnit
 import kotlin.system.measureNanoTime
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
+import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -148,6 +150,10 @@ internal class MiscUtilsTest {
                     assertJsonElement(entry.value, it[entry.key.toString()])
                 }
             }
+            is JSONArray -> assertThat(jsonElement.asJsonArray.toString())
+                .isEqualTo(kotlinObject.toString())
+            is JSONObject -> assertThat(jsonElement.asJsonObject.toString())
+                .isEqualTo(kotlinObject.toString())
             else -> assertThat(jsonElement.asString).isEqualTo(kotlinObject.toString())
         }
     }

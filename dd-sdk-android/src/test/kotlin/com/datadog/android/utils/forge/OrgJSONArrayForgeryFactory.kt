@@ -6,15 +6,15 @@
 
 package com.datadog.android.utils.forge
 
-import com.google.gson.JsonArray
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
+import org.json.JSONArray
 
-class JsonArrayForgeryFactory : ForgeryFactory<JsonArray> {
+class OrgJSONArrayForgeryFactory : ForgeryFactory<JSONArray> {
 
-    override fun getForgery(forge: Forge): JsonArray {
+    override fun getForgery(forge: Forge): JSONArray {
         return forge.anElementFrom(
-            JsonArray(),
+            JSONArray(),
             forge.aStringArray(),
             forge.anIntArray(),
             forge.aDoubleArray()
@@ -23,24 +23,24 @@ class JsonArrayForgeryFactory : ForgeryFactory<JsonArray> {
 
     // region Internal
 
-    private fun Forge.aStringArray(): JsonArray {
-        return JsonArray().apply {
+    private fun Forge.aStringArray(): JSONArray {
+        return JSONArray().apply {
             aList { anAlphabeticalString() }
-                .forEach { add(it) }
+                .forEach { put(it) }
         }
     }
 
-    private fun Forge.anIntArray(): JsonArray {
-        return JsonArray().apply {
+    private fun Forge.anIntArray(): JSONArray {
+        return JSONArray().apply {
             aList { anInt() }
-                .forEach { add(it) }
+                .forEach { put(it) }
         }
     }
 
-    private fun Forge.aDoubleArray(): JsonArray {
-        return JsonArray().apply {
+    private fun Forge.aDoubleArray(): JSONArray {
+        return JSONArray().apply {
             aList { aDouble() }
-                .forEach { add(it) }
+                .forEach { put(it) }
         }
     }
 

@@ -10,7 +10,7 @@ import com.google.gson.JsonPrimitive
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class JsonPrimitiveForgeryFactory : ForgeryFactory<JsonPrimitive> {
+class GsonJsonPrimitiveForgeryFactory : ForgeryFactory<JsonPrimitive> {
 
     override fun getForgery(forge: Forge): JsonPrimitive {
         return forge.anElementFrom(

@@ -162,6 +162,7 @@ unMock {
     keep("android.os.SystemProperties")
     keep("android.view.Choreographer")
     keep("android.view.DisplayEventReceiver")
+    keepStartingWith("org.json")
 }
 
 apply(from = "clone_dd_trace.gradle.kts")
