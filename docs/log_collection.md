@@ -1,8 +1,5 @@
 # Android Log Collection
 
-{{< site-region region="us3" >}}
-<div class="alert alert-warning">Android log collection is not supported for this site.</div>
-{{< /site-region >}}
 Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-android` client-side logging library][1] and leverage the following features:
 
 * Log to Datadog in JSON format natively.
