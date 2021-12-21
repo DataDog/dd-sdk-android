@@ -22,6 +22,7 @@ class OrgJSONObjectForgeryFactory : ForgeryFactory<JSONObject> {
                     forge.anElementFrom(
                         forge.anInt(),
                         forge.aLong(),
+                        forge.aBool(),
                         forge.anAlphaNumericalString(),
                         forge.aDouble(),
                         forge.getForgery<JSONArray>()

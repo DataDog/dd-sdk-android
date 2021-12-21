@@ -17,7 +17,8 @@ class OrgJSONArrayForgeryFactory : ForgeryFactory<JSONArray> {
             JSONArray(),
             forge.aStringArray(),
             forge.anIntArray(),
-            forge.aDoubleArray()
+            forge.aDoubleArray(),
+            forge.aBooleanArray()
         )
     }
 
@@ -40,6 +41,13 @@ class OrgJSONArrayForgeryFactory : ForgeryFactory<JSONArray> {
     private fun Forge.aDoubleArray(): JSONArray {
         return JSONArray().apply {
             aList { aDouble() }
+                .forEach { put(it) }
+        }
+    }
+
+    private fun Forge.aBooleanArray(): JSONArray {
+        return JSONArray().apply {
+            aList { aBool() }
                 .forEach { put(it) }
         }
     }

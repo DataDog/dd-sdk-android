@@ -17,7 +17,8 @@ class GsonJsonArrayForgeryFactory : ForgeryFactory<JsonArray> {
             JsonArray(),
             forge.aStringArray(),
             forge.anIntArray(),
-            forge.aDoubleArray()
+            forge.aDoubleArray(),
+            forge.aBooleanArray()
         )
     }
 
@@ -40,6 +41,13 @@ class GsonJsonArrayForgeryFactory : ForgeryFactory<JsonArray> {
     private fun Forge.aDoubleArray(): JsonArray {
         return JsonArray().apply {
             aList { aDouble() }
+                .forEach { add(it) }
+        }
+    }
+
+    private fun Forge.aBooleanArray(): JsonArray {
+        return JsonArray().apply {
+            aList { aBool() }
                 .forEach { add(it) }
         }
     }
