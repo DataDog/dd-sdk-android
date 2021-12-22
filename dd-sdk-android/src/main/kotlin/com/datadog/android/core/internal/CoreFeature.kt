@@ -104,6 +104,8 @@ internal object CoreFeature {
     internal var sdkVersion: String = DEFAULT_SDK_VERSION
     internal var rumApplicationId: String? = null
     internal var isMainProcess: Boolean = true
+    internal var processImportance: Int =
+        ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
     internal var envName: String = ""
     internal var variant: String = ""
     internal var batchSize: BatchSize = BatchSize.MEDIUM
@@ -125,7 +127,7 @@ internal object CoreFeature {
         }
         readConfigurationSettings(configuration)
         readApplicationInformation(appContext, credentials)
-        resolveIsMainProcess(appContext)
+        resolveProcessInfo(appContext)
         initializeClockSync(appContext)
         setupOkHttpClient(configuration)
         firstPartyHostDetector.addKnownHosts(configuration.firstPartyHosts)
@@ -357,16 +359,18 @@ internal object CoreFeature {
         )
     }
 
-    private fun resolveIsMainProcess(appContext: Context) {
+    private fun resolveProcessInfo(appContext: Context) {
         val currentProcessId = Process.myPid()
         val manager = appContext.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
         val currentProcess = manager?.runningAppProcesses?.firstOrNull {
             it.pid == currentProcessId
         }
-        isMainProcess = if (currentProcess == null) {
-            true
+        if (currentProcess == null) {
+            isMainProcess = true
+            processImportance = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         } else {
-            appContext.packageName == currentProcess.processName
+            isMainProcess = appContext.packageName == currentProcess.processName
+            processImportance = currentProcess.importance
         }
     }
 
