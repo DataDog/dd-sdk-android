@@ -27,7 +27,12 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
     class SampleApplication : Application() {
         override fun onCreate() {
             super.onCreate()
-            val configuration = Configuration.Builder(logsEnabled = true, ...).build()
+            val configuration = Configuration.Builder(
+                logsEnabled = true,
+                tracesEnabled = true,
+                crashReportsEnabled = true,
+                rumEnabled = true
+            ).build()
             val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
             Datadog.initialize(this, credentials, configuration, trackingConsent)
         }
@@ -59,12 +64,17 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
 ```kotlin
     class SampleApplication : Application() {
         override fun onCreate() {
-        super.onCreate()
-        val configuration = Configuration.Builder(logsEnabled = true, ...)
-                            .useSite(DatadogSite.EU1)
-                            .build()
-        val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
-        Datadog.initialize(this, credentials, configuration, trackingConsent)
+            super.onCreate()
+            val configuration = Configuration.Builder(
+                    logsEnabled = true,
+                    tracesEnabled = true,
+                    crashReportsEnabled = true,
+                    rumEnabled = true
+                )
+                .useSite(DatadogSite.EU1)
+                .build()
+            val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
+            Datadog.initialize(this, credentials, configuration, trackingConsent)
         }
     }
 ```
@@ -95,12 +105,17 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
 ```kotlin
     class SampleApplication : Application() {
         override fun onCreate() {
-        super.onCreate()
-        val configuration = Configuration.Builder(logsEnabled = true, ...)
-                            .useSite(DatadogSite.US3)
-                            .build()
-        val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
-        Datadog.initialize(this, credentials, configuration, trackingConsent)
+            super.onCreate()
+            val configuration = Configuration.Builder(
+                    logsEnabled = true,
+                    tracesEnabled = true,
+                    crashReportsEnabled = true,
+                    rumEnabled = true
+                )
+                .useSite(DatadogSite.US3)
+                .build()
+            val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
+            Datadog.initialize(this, credentials, configuration, trackingConsent)
         }
     }
 ```
@@ -131,12 +146,17 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
 ```kotlin
     class SampleApplication : Application() {
         override fun onCreate() {
-        super.onCreate()
-        val configuration = Configuration.Builder(logsEnabled = true, ...)
-                            .useSite(DatadogSite.US5)
-                            .build()
-        val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
-        Datadog.initialize(this, credentials, configuration, trackingConsent)
+            super.onCreate()
+            val configuration = Configuration.Builder(
+                    logsEnabled = true,
+                    tracesEnabled = true,
+                    crashReportsEnabled = true,
+                    rumEnabled = true
+                )
+                .useSite(DatadogSite.US5)
+                .build()
+            val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
+            Datadog.initialize(this, credentials, configuration, trackingConsent)
         }
     }
 ```
@@ -167,12 +187,17 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
 ```kotlin
     class SampleApplication : Application() {
         override fun onCreate() {
-        super.onCreate()
-        val configuration = Configuration.Builder(logsEnabled = true, ...)
-                            .useSite(DatadogSite.US1_FED)
-                            .build()
-        val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
-        Datadog.initialize(this, credentials, configuration, trackingConsent)
+            super.onCreate()
+            val configuration = Configuration.Builder(
+                    logsEnabled = true,
+                    tracesEnabled = true,
+                    crashReportsEnabled = true,
+                    rumEnabled = true
+                )
+                .useSite(DatadogSite.US1_FED)
+                .build()
+            val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
+            Datadog.initialize(this, credentials, configuration, trackingConsent)
         }
     }
 ```
