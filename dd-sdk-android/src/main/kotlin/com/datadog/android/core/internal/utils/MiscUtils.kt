@@ -12,6 +12,8 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import java.util.Date
+import org.json.JSONArray
+import org.json.JSONObject
 
 internal fun retryWithDelay(
     times: Int,
@@ -62,6 +64,8 @@ internal fun Any?.toJsonElement(): JsonElement {
         is JsonObject -> this
         is JsonArray -> this
         is JsonPrimitive -> this
+        is JSONObject -> this.toJsonObject()
+        is JSONArray -> this.toJsonArray()
         else -> JsonPrimitive(toString())
     }
 }
@@ -97,6 +101,22 @@ internal fun Map<*, *>.toJsonObject(): JsonElement {
     val obj = JsonObject()
     forEach {
         obj.add(it.key.toString(), it.value.toJsonElement())
+    }
+    return obj
+}
+
+internal fun JSONObject.toJsonObject(): JsonElement {
+    val obj = JsonObject()
+    for (key in keys()) {
+        obj.add(key, get(key).toJsonElement())
+    }
+    return obj
+}
+
+internal fun JSONArray.toJsonArray(): JsonElement {
+    val obj = JsonArray()
+    for (index in 0 until length()) {
+        obj.add(get(index).toJsonElement())
     }
     return obj
 }

@@ -19,6 +19,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.jupiter.api.Assumptions.assumeTrue
 
 /**
@@ -113,6 +115,8 @@ private fun generateMapWithExhaustiveValues(forge: Forge): Map<String, Any?> {
             getForgery<File>(),
             getForgery<JsonObject>(),
             getForgery<JsonArray>(),
+            getForgery<JSONObject>(),
+            getForgery<JSONArray>(),
             aList { anAlphabeticalString() },
             aList { aDouble() },
             null

@@ -13,6 +13,8 @@ import com.datadog.tools.unit.assertj.JsonObjectAssert
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Date
+import org.json.JSONArray
+import org.json.JSONObject
 
 fun JsonObjectAssert.containsExtraAttributes(
     attributes: Map<String, Any?>,
@@ -36,6 +38,8 @@ fun JsonObjectAssert.containsExtraAttributes(
                 is JsonArray -> hasField(key, value)
                 is Iterable<*> -> hasField(key, value.toJsonArray())
                 is Map<*, *> -> hasField(key, value.toJsonObject())
+                is JSONArray -> hasField(key, value.toJsonArray())
+                is JSONObject -> hasField(key, value.toJsonObject())
                 else -> hasField(key, value.toString())
             }
         }

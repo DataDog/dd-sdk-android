@@ -25,6 +25,8 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -392,7 +394,7 @@ internal class LoggerTest {
     }
 
     @Test
-    fun `add JsonObject attribute to logger`(forge: Forge, @Forgery value: JsonObject) {
+    fun `add  GSON JsonObject attribute to logger`(forge: Forge, @Forgery value: JsonObject) {
         val key = forge.anAlphabeticalString()
 
         testedLogger.addAttribute(key, value)
@@ -409,7 +411,41 @@ internal class LoggerTest {
     }
 
     @Test
-    fun `add JsonArray attribute to logger`(forge: Forge, @Forgery value: JsonArray) {
+    fun `add GSON JsonArray attribute to logger`(forge: Forge, @Forgery value: JsonArray) {
+        val key = forge.anAlphabeticalString()
+
+        testedLogger.addAttribute(key, value)
+        testedLogger.i(fakeMessage)
+
+        verify(mockLogHandler)
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                mapOf(key to value),
+                emptySet()
+            )
+    }
+
+    @Test
+    fun `add OrgJson JSONObject attribute to logger`(forge: Forge, @Forgery value: JSONObject) {
+        val key = forge.anAlphabeticalString()
+
+        testedLogger.addAttribute(key, value)
+        testedLogger.i(fakeMessage)
+
+        verify(mockLogHandler)
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                null,
+                mapOf(key to value),
+                emptySet()
+            )
+    }
+
+    @Test
+    fun `add OrgJson JSONArray attribute to logger`(forge: Forge, @Forgery value: JSONArray) {
         val key = forge.anAlphabeticalString()
 
         testedLogger.addAttribute(key, value)

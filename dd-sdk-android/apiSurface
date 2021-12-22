@@ -220,6 +220,8 @@ class com.datadog.android.log.Logger
   fun addAttribute(String, java.util.Date?)
   fun addAttribute(String, com.google.gson.JsonObject?)
   fun addAttribute(String, com.google.gson.JsonArray?)
+  fun addAttribute(String, org.json.JSONObject?)
+  fun addAttribute(String, org.json.JSONArray?)
   fun removeAttribute(String)
   fun addTag(String, String)
   fun addTag(String)

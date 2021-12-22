@@ -15,6 +15,8 @@ import com.google.gson.JsonObject
 import java.util.Date
 import org.assertj.core.api.AbstractAssert
 import org.assertj.core.api.Assertions
+import org.json.JSONArray
+import org.json.JSONObject
 
 internal class JsonElementAssert(actual: JsonElement) :
     AbstractAssert<JsonElementAssert, JsonElement>(
@@ -39,6 +41,12 @@ internal class JsonElementAssert(actual: JsonElement) :
                 expected.toJsonArray()
             )
             is Map<*, *> -> Assertions.assertThat(actual.asJsonObject).isEqualTo(
+                expected.toJsonObject()
+            )
+            is JSONArray -> Assertions.assertThat(actual.asJsonArray).isEqualTo(
+                expected.toJsonArray()
+            )
+            is JSONObject -> Assertions.assertThat(actual.asJsonObject).isEqualTo(
                 expected.toJsonObject()
             )
             else -> Assertions.assertThat(actual.asString).isEqualTo(expected.toString())

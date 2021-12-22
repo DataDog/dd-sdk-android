@@ -57,9 +57,11 @@ internal class Configurator :
 
         // MISC
         forge.addFactory(BigIntegerFactory())
-        forge.addFactory(JsonArrayForgeryFactory())
-        forge.addFactory(JsonObjectForgeryFactory())
-        forge.addFactory(JsonPrimitiveForgeryFactory())
+        forge.addFactory(GsonJsonArrayForgeryFactory())
+        forge.addFactory(GsonJsonObjectForgeryFactory())
+        forge.addFactory(GsonJsonPrimitiveForgeryFactory())
+        forge.addFactory(OrgJSONObjectForgeryFactory())
+        forge.addFactory(OrgJSONArrayForgeryFactory())
 
         forge.useJvmFactories()
     }

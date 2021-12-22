@@ -10,14 +10,15 @@ import com.google.gson.JsonArray
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class JsonArrayForgeryFactory : ForgeryFactory<JsonArray> {
+class GsonJsonArrayForgeryFactory : ForgeryFactory<JsonArray> {
 
     override fun getForgery(forge: Forge): JsonArray {
         return forge.anElementFrom(
             JsonArray(),
             forge.aStringArray(),
             forge.anIntArray(),
-            forge.aDoubleArray()
+            forge.aDoubleArray(),
+            forge.aBooleanArray()
         )
     }
 
@@ -40,6 +41,13 @@ class JsonArrayForgeryFactory : ForgeryFactory<JsonArray> {
     private fun Forge.aDoubleArray(): JsonArray {
         return JsonArray().apply {
             aList { aDouble() }
+                .forEach { add(it) }
+        }
+    }
+
+    private fun Forge.aBooleanArray(): JsonArray {
+        return JsonArray().apply {
+            aList { aBool() }
                 .forEach { add(it) }
         }
     }

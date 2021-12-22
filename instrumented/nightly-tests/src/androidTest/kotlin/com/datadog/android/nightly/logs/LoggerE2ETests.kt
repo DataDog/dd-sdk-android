@@ -34,6 +34,8 @@ import fr.xgouchet.elmyr.junit4.ForgeRule
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.TimeZone
+import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -366,10 +368,10 @@ class LoggerE2ETests {
      * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, com.google.gson.JsonArray?)
      */
     @Test
-    fun logs_logger_add_jsonarray_attribute() {
-        val testMethodName = "logs_logger_add_jsonarray_attribute"
+    fun logs_logger_add_gson_jsonarray_attribute() {
+        val testMethodName = "logs_logger_add_gson_jsonarray_attribute"
         measure(testMethodName) {
-            logger.addAttribute(SPECIAL_JSONARRAY_ATTRIBUTE_NAME, CUSTOM_JSON_ARRAY_ATTRIBUTE)
+            logger.addAttribute(SPECIAL_JSONARRAY_ATTRIBUTE_NAME, CUSTOM_GSON_JSON_ARRAY_ATTRIBUTE)
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -378,8 +380,8 @@ class LoggerE2ETests {
      * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, com.google.gson.JsonArray?)
      */
     @Test
-    fun logs_logger_add_jsonarray_null_attribute() {
-        val testMethodName = "logs_logger_add_jsonarray_null_attribute"
+    fun logs_logger_add_gson_jsonarray_null_attribute() {
+        val testMethodName = "logs_logger_add_gson_jsonarray_null_attribute"
         val nullJsonArray: JsonArray? = null
         measure(testMethodName) {
             logger.addAttribute(SPECIAL_JSONARRAY_ATTRIBUTE_NAME, nullJsonArray)
@@ -391,10 +393,13 @@ class LoggerE2ETests {
      * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, com.google.gson.JsonObject?)
      */
     @Test
-    fun logs_logger_add_jsonobject_attribute() {
-        val testMethodName = "logs_logger_add_jsonobject_attribute"
+    fun logs_logger_add_gson_jsonobject_attribute() {
+        val testMethodName = "logs_logger_add_gson_jsonobject_attribute"
         measure(testMethodName) {
-            logger.addAttribute(SPECIAL_JSONOBJECT_ATTRIBUTE_NAME, CUSTOM_JSON_OBJECT_ATTRIBUTE)
+            logger.addAttribute(
+                SPECIAL_JSONOBJECT_ATTRIBUTE_NAME,
+                CUSTOM_GSON_JSON_OBJECT_ATTRIBUTE
+            )
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -403,9 +408,65 @@ class LoggerE2ETests {
      * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, com.google.gson.JsonObject?)
      */
     @Test
-    fun logs_logger_add_jsonobject_null_attribute() {
-        val testMethodName = "logs_logger_add_jsonobject_null_attribute"
+    fun logs_logger_add_gson_jsonobject_null_attribute() {
+        val testMethodName = "logs_logger_add_gson_jsonobject_null_attribute"
         val nullJsonObject: JsonObject? = null
+        measure(testMethodName) {
+            logger.addAttribute(SPECIAL_JSONOBJECT_ATTRIBUTE_NAME, nullJsonObject)
+        }
+        logger.sendRandomLog(testMethodName, forge)
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, org.json.JSONArray?)
+     */
+    @Test
+    fun logs_logger_add_org_json_jsonarray_attribute() {
+        val testMethodName = "logs_logger_add_org_json_jsonarray_attribute"
+        measure(testMethodName) {
+            logger.addAttribute(
+                SPECIAL_JSONARRAY_ATTRIBUTE_NAME,
+                CUSTOM_ORG_JSON_JSON_ARRAY_ATTRIBUTE
+            )
+        }
+        logger.sendRandomLog(testMethodName, forge)
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, org.json.JSONArray?)
+     */
+    @Test
+    fun logs_logger_add_org_json_jsonarray_null_attribute() {
+        val testMethodName = "logs_logger_add_org_json_jsonarray_null_attribute"
+        val nullJsonArray: JSONArray? = null
+        measure(testMethodName) {
+            logger.addAttribute(SPECIAL_JSONARRAY_ATTRIBUTE_NAME, nullJsonArray)
+        }
+        logger.sendRandomLog(testMethodName, forge)
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, org.json.JSONObject?)
+     */
+    @Test
+    fun logs_logger_add_org_json_jsonobject_attribute() {
+        val testMethodName = "logs_logger_add_org_json_jsonobject_attribute"
+        measure(testMethodName) {
+            logger.addAttribute(
+                SPECIAL_JSONOBJECT_ATTRIBUTE_NAME,
+                CUSTOM_ORG_JSON_JSON_OBJECT_ATTRIBUTE
+            )
+        }
+        logger.sendRandomLog(testMethodName, forge)
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.log.Logger#fun addAttribute(String, org.json.JSONObject?)
+     */
+    @Test
+    fun logs_logger_add_org_json_jsonobject_null_attribute() {
+        val testMethodName = "logs_logger_add_org_json_jsonobject_null_attribute"
+        val nullJsonObject: JSONObject? = null
         measure(testMethodName) {
             logger.addAttribute(SPECIAL_JSONOBJECT_ATTRIBUTE_NAME, nullJsonObject)
         }
@@ -443,7 +504,7 @@ class LoggerE2ETests {
     @Test
     fun logs_logger_remove_attribute() {
         val testMethodName = "logs_logger_remove_attribute"
-        when (forge.anInt(min = 1, max = 9)) {
+        when (forge.anInt(min = 1, max = 11)) {
             1 -> logger.addAttribute(
                 SPECIAL_ATTRIBUTE_NAME,
                 forge.aNullable { forge.anAlphabeticalString() }
@@ -454,13 +515,21 @@ class LoggerE2ETests {
             5 -> logger.addAttribute(SPECIAL_ATTRIBUTE_NAME, forge.aBool())
             6 -> logger.addAttribute(
                 SPECIAL_ATTRIBUTE_NAME,
-                forge.aNullable { CUSTOM_JSON_OBJECT_ATTRIBUTE }
+                forge.aNullable { CUSTOM_GSON_JSON_OBJECT_ATTRIBUTE }
             )
             7 -> logger.addAttribute(
                 SPECIAL_ATTRIBUTE_NAME,
-                forge.aNullable { CUSTOM_JSON_ARRAY_ATTRIBUTE }
+                forge.aNullable { CUSTOM_GSON_JSON_ARRAY_ATTRIBUTE }
             )
             8 -> logger.addAttribute(
+                SPECIAL_ATTRIBUTE_NAME,
+                forge.aNullable { CUSTOM_ORG_JSON_JSON_OBJECT_ATTRIBUTE }
+            )
+            9 -> logger.addAttribute(
+                SPECIAL_ATTRIBUTE_NAME,
+                forge.aNullable { CUSTOM_ORG_JSON_JSON_ARRAY_ATTRIBUTE }
+            )
+            10 -> logger.addAttribute(
                 SPECIAL_ATTRIBUTE_NAME,
                 forge.aNullable { CUSTOM_DATE_ATTRIBUTE }
             )
@@ -544,15 +613,23 @@ class LoggerE2ETests {
 
     companion object {
         const val CUSTOM_STRING_TAG: String = "custom_tag"
-        const val CUSTOM_INT_ATTRIBUTE: Int = 1
+        private const val CUSTOM_INT_ATTRIBUTE: Int = 1
         private const val CUSTOM_JSON_OBJECT_PROPERTY = "custom_json_property"
-        val CUSTOM_JSON_ARRAY_ATTRIBUTE: JsonArray = JsonArray().apply {
+        val CUSTOM_GSON_JSON_ARRAY_ATTRIBUTE: JsonArray = JsonArray().apply {
             this.add(
                 CUSTOM_INT_ATTRIBUTE
             )
         }
-        val CUSTOM_JSON_OBJECT_ATTRIBUTE: JsonObject = JsonObject().apply {
+        val CUSTOM_GSON_JSON_OBJECT_ATTRIBUTE: JsonObject = JsonObject().apply {
             addProperty(CUSTOM_JSON_OBJECT_PROPERTY, CUSTOM_INT_ATTRIBUTE)
+        }
+        val CUSTOM_ORG_JSON_JSON_ARRAY_ATTRIBUTE: JSONArray = JSONArray().apply {
+            this.put(
+                CUSTOM_INT_ATTRIBUTE
+            )
+        }
+        val CUSTOM_ORG_JSON_JSON_OBJECT_ATTRIBUTE: JSONObject = JSONObject().apply {
+            put(CUSTOM_JSON_OBJECT_PROPERTY, CUSTOM_INT_ATTRIBUTE)
         }
         val CUSTOM_DATE_ATTRIBUTE: Date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
             .apply { timeZone = TimeZone.getTimeZone("UTC") }

@@ -761,6 +761,8 @@ datadog:
       - "android.view.Window.Callback.dispatchKeyEvent(android.view.KeyEvent)"
       - "android.view.Window.Callback.dispatchTouchEvent(android.view.MotionEvent)"
       - "android.view.Window.Callback.onMenuItemSelected(kotlin.Int, android.view.MenuItem)"
+      - "org.json.JSONArray.toJsonArray()"
+      - "org.json.JSONObject.toJsonObject()"
       # endregion
       # region Android Webview APIs
       - "android.webkit.ConsoleMessage.MessageLevel.toLogLevel()"
