@@ -103,7 +103,7 @@ class RumConfigE2ETests {
      * apiMethodSignature: com.datadog.android.core.configuration.Credentials#constructor(String, String, String, String?, String? = null)
      */
     @Test
-    fun logs_config_logs_feature_disabled() {
+    fun rum_config_rum_feature_disabled() {
         val testMethodName = "rum_config_rum_feature_disabled"
         measureSdkInitialize {
             initializeSdk(
