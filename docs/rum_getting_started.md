@@ -41,31 +41,32 @@ To ensure the safety of your data, you must use a client token. You cannot use o
 
 ### Initialize the library with application context
 
-#### US
-
+{{< site-region region="us" >}}
 {{< tabs >}}
 {{% tab "Kotlin" %}}
-   ```kotlin
-      class SampleApplication : Application() {
-     
-         override fun onCreate() {
+```kotlin
+    class SampleApplication : Application() {
+        override fun onCreate() {
             super.onCreate()
-             val configuration = Configuration.Builder(
-                     rumEnabled = true,
-                     crashReportsEnabled = true
-             )
-                     .trackInteractions()
-                     .trackLongTasks(durationThreshold)
-                     .useViewTrackingStrategy(strategy)
-                     .build()
-             val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
-             Datadog.initialize(this, credentials, configuration, trackingConsent)
-         }
-      }
-   ```
+            val configuration = Configuration.Builder(
+                    logsEnabled = true,
+                    tracesEnabled = true,
+                    crashReportsEnabled = true,
+                    rumEnabled = true
+                )
+                .useSite(DatadogSite.US3)
+                .trackInteractions()
+                .trackLongTasks(durationThreshold)
+                .useViewTrackingStrategy(strategy)
+                .build()
+            val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
+            Datadog.initialize(this, credentials, configuration, trackingConsent)
+        }
+    }
+```
 {{% /tab %}}
 {{% tab "Java" %}}
-   ```java
+```java
       public class SampleApplication extends Application {
       
             @Override
@@ -81,33 +82,34 @@ To ensure the safety of your data, you must use a client token. You cannot use o
                Datadog.initialize(this, credentials, configuration, trackingConsent);
             }
       }
-   ```
+```
 {{% /tab %}}
 {{< /tabs >}}
+{{< /site-region >}}
 
-#### EU
-
+{{< site-region region="eu" >}}
 {{< tabs >}}
 {{% tab "Kotlin" %}}
-   ```kotlin
-      class SampleApplication : Application() {
-     
-         override fun onCreate() {
+```kotlin
+    class SampleApplication : Application() {
+        override fun onCreate() {
             super.onCreate()
-             val configuration = Configuration.Builder(
-                     rumEnabled = true,
-                     crashReportsEnabled = true
-             )
-                     .trackInteractions()
-                     .trackLongTasks(durationThreshold)
-                     .useViewTrackingStrategy(strategy)
-                     .useSite(DatadogSite.EU1)
-                     .build()
-             val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
-             Datadog.initialize(this, credentials, configuration, trackingConsent)
-         }
-      }
-   ```
+            val configuration = Configuration.Builder(
+                    logsEnabled = true,
+                    tracesEnabled = true,
+                    crashReportsEnabled = true,
+                    rumEnabled = true
+                )
+                .useSite(DatadogSite.EU1)
+                .trackInteractions()
+                .trackLongTasks(durationThreshold)
+                .useViewTrackingStrategy(strategy)
+                .build()
+            val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
+            Datadog.initialize(this, credentials, configuration, trackingConsent)
+        }
+    }
+```
 {{% /tab %}}
 {{% tab "Java" %}}
    ```java
@@ -130,6 +132,148 @@ To ensure the safety of your data, you must use a client token. You cannot use o
    ```
 {{% /tab %}}
 {{< /tabs >}}
+{{< /site-region >}}
+
+{{< site-region region="us3" >}}
+{{< tabs >}}
+{{% tab "Kotlin" %}}
+```kotlin
+    class SampleApplication : Application() {
+        override fun onCreate() {
+            super.onCreate()
+            val configuration = Configuration.Builder(
+                    logsEnabled = true,
+                    tracesEnabled = true,
+                    crashReportsEnabled = true,
+                    rumEnabled = true
+                )
+                .useSite(DatadogSite.US3)
+                .trackInteractions()
+                .trackLongTasks(durationThreshold)
+                .useViewTrackingStrategy(strategy)
+                .build()
+            val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
+            Datadog.initialize(this, credentials, configuration, trackingConsent)
+        }
+    }
+```
+{{% /tab %}}
+{{% tab "Java" %}}
+   ```java
+      public class SampleApplication extends Application {
+
+            @Override
+            public void onCreate() {
+               super.onCreate();
+               final Configuration configuration =
+                       new Configuration.Builder(true, true, true, true)
+                               .trackInteractions()
+                               .trackLongTasks(durationThreshold)
+                               .useViewTrackingStrategy(strategy)
+                               .useSite(DatadogSite.US3)
+                               .build();
+               Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
+               Datadog.initialize(this, credentials, configuration, trackingConsent);
+            }
+      }
+   ```
+{{% /tab %}}
+{{< /tabs >}}
+{{< /site-region >}}
+
+{{< site-region region="us5" >}}
+{{< tabs >}}
+{{% tab "Kotlin" %}}
+```kotlin
+    class SampleApplication : Application() {
+        override fun onCreate() {
+            super.onCreate()
+            val configuration = Configuration.Builder(
+                    logsEnabled = true,
+                    tracesEnabled = true,
+                    crashReportsEnabled = true,
+                    rumEnabled = true
+                )
+                .useSite(DatadogSite.US5)
+                .trackInteractions()
+                .trackLongTasks(durationThreshold)
+                .useViewTrackingStrategy(strategy)
+                .build()
+            val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
+            Datadog.initialize(this, credentials, configuration, trackingConsent)
+        }
+    }
+```
+{{% /tab %}}
+{{% tab "Java" %}}
+   ```java
+      public class SampleApplication extends Application {
+
+            @Override
+            public void onCreate() {
+               super.onCreate();
+               final Configuration configuration =
+                       new Configuration.Builder(true, true, true, true)
+                               .trackInteractions()
+                               .trackLongTasks(durationThreshold)
+                               .useViewTrackingStrategy(strategy)
+                               .useSite(DatadogSite.US5)
+                               .build();
+               Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
+               Datadog.initialize(this, credentials, configuration, trackingConsent);
+            }
+      }
+   ```
+{{% /tab %}}
+{{< /tabs >}}
+{{< /site-region >}}
+
+{{< site-region region="gov" >}}
+{{< tabs >}}
+{{% tab "Kotlin" %}}
+```kotlin
+    class SampleApplication : Application() {
+        override fun onCreate() {
+            super.onCreate()
+            val configuration = Configuration.Builder(
+                    logsEnabled = true,
+                    tracesEnabled = true,
+                    crashReportsEnabled = true,
+                    rumEnabled = true
+                )
+                .useSite(DatadogSite.US1_FED)
+                .trackInteractions()
+                .trackLongTasks(durationThreshold)
+                .useViewTrackingStrategy(strategy)
+                .build()
+            val credentials = Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>)
+            Datadog.initialize(this, credentials, configuration, trackingConsent)
+        }
+    }
+```
+{{% /tab %}}
+{{% tab "Java" %}}
+   ```java
+      public class SampleApplication extends Application {
+
+            @Override
+            public void onCreate() {
+               super.onCreate();
+               final Configuration configuration =
+                       new Configuration.Builder(true, true, true, true)
+                               .trackInteractions()
+                               .trackLongTasks(durationThreshold)
+                               .useViewTrackingStrategy(strategy)
+                               .useSite(DatadogSite.US1_FED)
+                               .build();
+               Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
+               Datadog.initialize(this, credentials, configuration, trackingConsent);
+            }
+      }
+   ```
+{{% /tab %}}
+{{< /tabs >}}
+{{< /site-region >}}
 
 Learn more about [`ViewTrackingStrategy`][5] to enable automatic tracking of all your views (activities, fragments, etc.), [`trackingConsent`][6] to add GDPR compliance for your EU users, and [other configuration options][7] to initialize the library.
 
