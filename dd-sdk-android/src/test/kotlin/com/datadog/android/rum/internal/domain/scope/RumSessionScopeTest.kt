@@ -6,10 +6,12 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.app.ActivityManager.RunningAppProcessInfo
 import android.content.Context
 import android.os.Build
 import android.util.Log
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.NoOpDataWriter
@@ -40,8 +42,8 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.same
-import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
@@ -54,6 +56,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.net.URL
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
@@ -135,6 +138,9 @@ internal class RumSessionScopeTest {
             .thenReturn(fakeNetworkInfo)
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
+
+        CoreFeature.processImportance = RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+
         testedScope = RumSessionScope(
             mockParentScope,
             100f,
@@ -148,7 +154,6 @@ internal class RumSessionScopeTest {
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
-
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
     }
 
@@ -534,6 +539,34 @@ internal class RumSessionScopeTest {
     }
 
     @Test
+    fun `M not send ApplicationStarted event W applicationDisplayed {not a foreground process}`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        forge: Forge
+    ) {
+        CoreFeature.processImportance = forge.anElementFrom(
+            RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
+            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
+            @Suppress("DEPRECATION")
+            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING_PRE_28,
+            RunningAppProcessInfo.IMPORTANCE_VISIBLE,
+            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE,
+            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE_PRE_26,
+            RunningAppProcessInfo.IMPORTANCE_CANT_SAVE_STATE,
+            RunningAppProcessInfo.IMPORTANCE_SERVICE,
+            RunningAppProcessInfo.IMPORTANCE_CACHED,
+            RunningAppProcessInfo.IMPORTANCE_GONE
+        )
+        val childView: RumViewScope = mock()
+        val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
+
+        testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
+
+        verify(childView, never()).handleEvent(any(), same(mockWriter))
+        verifyZeroInteractions(mockWriter)
+    }
+
+    @Test
     fun `M do nothing W applicationDisplayed if session not kept`(
         @StringForgery key: String,
         @StringForgery name: String
@@ -598,23 +631,60 @@ internal class RumSessionScopeTest {
     }
 
     @Test
+    fun `M start a Background ViewScope W handleEvent { event is relevant, not foreground }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        CoreFeature.processImportance = forge.anElementFrom(
+            RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
+            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
+            @Suppress("DEPRECATION")
+            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING_PRE_28,
+            RunningAppProcessInfo.IMPORTANCE_VISIBLE,
+            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE,
+            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE_PRE_26,
+            RunningAppProcessInfo.IMPORTANCE_CANT_SAVE_STATE,
+            RunningAppProcessInfo.IMPORTANCE_SERVICE,
+            RunningAppProcessInfo.IMPORTANCE_CACHED,
+            RunningAppProcessInfo.IMPORTANCE_GONE
+        )
+        testedScope = RumSessionScope(
+            parentScope = mockParentScope,
+            samplingRate = 100f,
+            backgroundTrackingEnabled = true,
+            firstPartyHostDetector = mockDetector,
+            cpuVitalMonitor = mockCpuVitalMonitor,
+            memoryVitalMonitor = mockMemoryVitalMonitor,
+            frameRateVitalMonitor = mockFrameRateVitalMonitor,
+            timeProvider = mockTimeProvider,
+            sessionListener = mockSessionListener,
+            sessionInactivityNanos = TEST_INACTIVITY_NS,
+            sessionMaxDurationNanos = TEST_MAX_DURATION_NS
+        )
+        testedScope.applicationDisplayed = false
+        val fakeEvent = forge.forgeValidAppLaunchEvent()
+
+        // WHEN
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        assertThat(testedScope.activeChildrenScopes).hasSize(1)
+        assertThat(testedScope.activeChildrenScopes[0])
+            .isInstanceOfSatisfying(RumViewScope::class.java) {
+                assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
+                assertThat(it.keyRef.get()).isEqualTo(RumSessionScope.RUM_BACKGROUND_VIEW_URL)
+                assertThat(it.name).isEqualTo(RumSessionScope.RUM_BACKGROUND_VIEW_NAME)
+                assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+                assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+                assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+            }
+    }
+
+    @Test
     fun `M start an AppLaunch ViewScope W handleEvent { app not displayed, event is relevant }`(
         forge: Forge
     ) {
         // GIVEN
-        testedScope = RumSessionScope(
-            mockParentScope,
-            100f,
-            true,
-            mockDetector,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockTimeProvider,
-            mockSessionListener,
-            TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS
-        )
         testedScope.applicationDisplayed = false
         val fakeEvent = forge.forgeValidAppLaunchEvent()
 
@@ -632,6 +702,47 @@ internal class RumSessionScopeTest {
                 assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
             }
+    }
+
+    @Test
+    fun `M not start an AppLaunch ViewScope W handleEvent { event is relevant, not foreground }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        CoreFeature.processImportance = forge.anElementFrom(
+            RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
+            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
+            @Suppress("DEPRECATION")
+            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING_PRE_28,
+            RunningAppProcessInfo.IMPORTANCE_VISIBLE,
+            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE,
+            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE_PRE_26,
+            RunningAppProcessInfo.IMPORTANCE_CANT_SAVE_STATE,
+            RunningAppProcessInfo.IMPORTANCE_SERVICE,
+            RunningAppProcessInfo.IMPORTANCE_CACHED,
+            RunningAppProcessInfo.IMPORTANCE_GONE
+        )
+        testedScope = RumSessionScope(
+            parentScope = mockParentScope,
+            samplingRate = 100f,
+            backgroundTrackingEnabled = false,
+            firstPartyHostDetector = mockDetector,
+            cpuVitalMonitor = mockCpuVitalMonitor,
+            memoryVitalMonitor = mockMemoryVitalMonitor,
+            frameRateVitalMonitor = mockFrameRateVitalMonitor,
+            timeProvider = mockTimeProvider,
+            sessionListener = mockSessionListener,
+            sessionInactivityNanos = TEST_INACTIVITY_NS,
+            sessionMaxDurationNanos = TEST_MAX_DURATION_NS
+        )
+        testedScope.applicationDisplayed = false
+        val fakeEvent = forge.forgeValidAppLaunchEvent()
+
+        // WHEN
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        assertThat(testedScope.activeChildrenScopes).hasSize(0)
     }
 
     @Test

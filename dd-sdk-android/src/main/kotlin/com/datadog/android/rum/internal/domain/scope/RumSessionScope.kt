@@ -6,10 +6,12 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.app.ActivityManager.RunningAppProcessInfo
 import android.os.Build
 import android.os.Process
 import android.os.SystemClock
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.NoOpDataWriter
@@ -117,7 +119,9 @@ internal class RumSessionScope(
         event: RumRawEvent,
         writer: DataWriter<Any>
     ) {
-        if (applicationDisplayed) {
+        val isForegroundProcess =
+            CoreFeature.processImportance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        if (applicationDisplayed || !isForegroundProcess) {
             handleBackgroundEvent(event, writer)
         } else {
             handleAppLaunchEvent(event, writer)
@@ -194,11 +198,15 @@ internal class RumSessionScope(
     ) {
         if (!applicationDisplayed) {
             applicationDisplayed = true
-            val applicationStartTime = resolveStartupTimeNs()
-            viewScope.handleEvent(
-                RumRawEvent.ApplicationStarted(event.eventTime, applicationStartTime),
-                writer
-            )
+            val isForegroundProcess =
+                CoreFeature.processImportance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+            if (isForegroundProcess) {
+                val applicationStartTime = resolveStartupTimeNs()
+                viewScope.handleEvent(
+                    RumRawEvent.ApplicationStarted(event.eventTime, applicationStartTime),
+                    writer
+                )
+            }
         }
     }
 
