@@ -8,7 +8,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `kotlin-dsl`
-    id("java-gradle-plugin")
     @Suppress("DSL_SCOPE_VIOLATION", "UnstableApiUsage")
     alias(libs.plugins.versionsPluginGradle)
 }
@@ -18,8 +17,6 @@ buildscript {
         mavenCentral()
     }
 }
-
-apply(plugin = "kotlin")
 
 repositories {
     mavenCentral()
@@ -32,7 +29,7 @@ repositories {
 dependencies {
 
     // Dependencies used to configure the gradle plugins
-    implementation(embeddedKotlin("gradle-plugin"))
+    implementation(libs.kotlinPluginGradle)
     implementation(libs.detektPluginGradle)
     implementation(libs.ktLintPluginGradle)
     implementation(libs.androidToolsPluginGradle)

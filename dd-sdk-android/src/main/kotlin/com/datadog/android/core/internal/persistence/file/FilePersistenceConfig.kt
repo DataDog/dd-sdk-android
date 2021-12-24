@@ -18,9 +18,9 @@ internal data class FilePersistenceConfig(
     val maxDiskSpace: Long = MAX_DISK_SPACE
 ) {
     companion object {
-        internal const val MAX_BATCH_SIZE: Long = 4 * 1024 * 1024 // 4 MB
+        internal const val MAX_BATCH_SIZE: Long = 4L * 1024 * 1024 // 4 MB
         internal const val MAX_ITEMS_PER_BATCH: Int = 500
-        internal const val MAX_ITEMS_SIZE: Long = 512 * 1024 // 512 KB
+        internal const val MAX_ITEMS_SIZE: Long = 512L * 1024 // 512 KB
         internal const val OLD_FILE_THRESHOLD: Long = 18L * 60L * 60L * 1000L // 18 hours
         internal const val MAX_DISK_SPACE: Long = 128 * MAX_BATCH_SIZE // 512 MB
         internal const val MAX_DELAY_BETWEEN_MESSAGES_MS = 5000L
