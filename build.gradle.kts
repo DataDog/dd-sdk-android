@@ -9,6 +9,7 @@ import com.datadog.gradle.config.nightlyTestsCoverageConfig
 plugins {
     `maven-publish`
     id("io.github.gradle-nexus.publish-plugin")
+    id("org.jetbrains.kotlinx.kover")
 }
 
 buildscript {
@@ -60,7 +61,7 @@ tasks.register("checkAll") {
         "detektAll",
         "lintCheckAll",
         "unitTestAll",
-        "jacocoReportAll",
+        "koverReportAll",
         "instrumentTestAll"
     )
 }
@@ -98,25 +99,15 @@ tasks.register("unitTestRelease") {
 tasks.register("unitTestDebug") {
     dependsOn(
         ":dd-sdk-android:testDebugUnitTest",
-        ":dd-sdk-android:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-coil:testDebugUnitTest",
-        ":dd-sdk-android-coil:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-compose:testDebugUnitTest",
-        ":dd-sdk-android-compose:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-fresco:testDebugUnitTest",
-        ":dd-sdk-android-fresco:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-glide:testDebugUnitTest",
-        ":dd-sdk-android-glide:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-ktx:testDebugUnitTest",
-        ":dd-sdk-android-ktx:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-ndk:testDebugUnitTest",
-        ":dd-sdk-android-ndk:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-rx:testDebugUnitTest",
-        ":dd-sdk-android-rx:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-sqldelight:testDebugUnitTest",
-        ":dd-sdk-android-sqldelight:jacocoTestDebugUnitTestReport",
         ":dd-sdk-android-timber:testDebugUnitTest",
-        ":dd-sdk-android-timber:jacocoTestDebugUnitTestReport"
     )
 }
 
@@ -218,31 +209,18 @@ tasks.register("detektAll") {
     )
 }
 
-tasks.register("jacocoReportAll") {
+tasks.register("koverReportAll") {
     dependsOn(
-        ":dd-sdk-android:jacocoTestDebugUnitTestReport",
-        ":dd-sdk-android:jacocoTestReleaseUnitTestReport",
-        ":dd-sdk-android-coil:jacocoTestDebugUnitTestReport",
-        ":dd-sdk-android-coil:jacocoTestReleaseUnitTestReport",
-        ":dd-sdk-android-compose:jacocoTestDebugUnitTestReport",
-        ":dd-sdk-android-compose:jacocoTestReleaseUnitTestReport",
-        ":dd-sdk-android-fresco:jacocoTestDebugUnitTestReport",
-        ":dd-sdk-android-fresco:jacocoTestReleaseUnitTestReport",
-        ":dd-sdk-android-glide:jacocoTestDebugUnitTestReport",
-        ":dd-sdk-android-glide:jacocoTestReleaseUnitTestReport",
-        ":dd-sdk-android-ktx:jacocoTestDebugUnitTestReport",
-        ":dd-sdk-android-ktx:jacocoTestReleaseUnitTestReport",
-        ":dd-sdk-android-ndk:jacocoTestDebugUnitTestReport",
-        ":dd-sdk-android-ndk:jacocoTestReleaseUnitTestReport",
-        ":dd-sdk-android-rx:jacocoTestDebugUnitTestReport",
-        ":dd-sdk-android-rx:jacocoTestReleaseUnitTestReport",
-        ":dd-sdk-android-sqldelight:jacocoTestDebugUnitTestReport",
-        ":dd-sdk-android-sqldelight:jacocoTestReleaseUnitTestReport",
-        ":dd-sdk-android-timber:jacocoTestDebugUnitTestReport",
-        ":dd-sdk-android-timber:jacocoTestReleaseUnitTestReport",
-        ":tools:detekt:jacocoTestReport",
-        ":tools:unit:jacocoTestDebugUnitTestReport",
-        ":tools:unit:jacocoTestReleaseUnitTestReport"
+        ":dd-sdk-android:koverXmlProjectReport",
+        ":dd-sdk-android-coil:koverXmlProjectReport",
+        ":dd-sdk-android-compose:koverXmlProjectReport",
+        ":dd-sdk-android-fresco:koverXmlProjectReport",
+        ":dd-sdk-android-glide:koverXmlProjectReport",
+        ":dd-sdk-android-ktx:koverXmlProjectReport",
+        ":dd-sdk-android-ndk:koverXmlProjectReport",
+        ":dd-sdk-android-rx:koverXmlProjectReport",
+        ":dd-sdk-android-sqldelight:koverXmlProjectReport",
+        ":dd-sdk-android-timber:koverXmlProjectReport"
     )
 }
 
@@ -267,3 +245,19 @@ tasks.register("buildNdkIntegrationTestsArtifacts") {
 }
 
 nightlyTestsCoverageConfig(threshold = 0.9f)
+kover {
+    isDisabled = false
+    disabledProjects = setOf(
+        "instrumented",
+        "sample",
+        "tools",
+        "integration",
+        "nightly-tests",
+        "kotlin",
+        "detekt",
+        "javabackport",
+        "noopfactory",
+        "unit"
+    )
+    instrumentAndroidPackage = false
+}

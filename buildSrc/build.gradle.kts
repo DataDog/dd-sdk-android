@@ -38,6 +38,7 @@ dependencies {
     implementation(libs.dokkaPluginGradle)
     implementation(libs.mavenModel)
     implementation(libs.nexusPublishPluginGradle)
+    implementation(libs.kover)
 
     // check api surface
     implementation(libs.kotlinGrammarParser)

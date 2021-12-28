@@ -9,7 +9,6 @@ import com.datadog.gradle.config.BuildConfigPropertiesKeys
 import com.datadog.gradle.config.GradlePropertiesKeys
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektConfig
-import com.datadog.gradle.config.jacocoConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -34,7 +33,6 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint")
 
     // Tests
-    jacoco
     id("de.mobilej.unmock")
 
     // Internal Generation
@@ -183,7 +181,6 @@ detektConfig(
 )
 ktLintConfig()
 junitConfig()
-jacocoConfig()
 javadocConfig()
 dependencyUpdateConfig()
 publishingConfig("Datadog monitoring library for Android applications.")

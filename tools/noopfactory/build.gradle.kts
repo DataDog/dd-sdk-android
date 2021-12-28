@@ -16,7 +16,6 @@ plugins {
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")
-    jacoco
 }
 
 dependencies {
@@ -26,7 +25,7 @@ dependencies {
 
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
-    testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.2.7")
+    testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.4.7")
 }
 
 kotlinConfig()

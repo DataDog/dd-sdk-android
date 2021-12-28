@@ -214,8 +214,6 @@ class DependenciesLicenseProvider {
             "debugUnitTestCompileClasspath",
             "debugUnitTestImplementationDependenciesMetadata",
             "debugUnitTestRuntimeClasspath",
-            "jacocoAgent",
-            "jacocoAnt",
             "releaseUnitTestCompileClasspath",
             "releaseUnitTestImplementationDependenciesMetadata",
             "releaseUnitTestRuntimeClasspath",

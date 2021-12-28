@@ -10,9 +10,6 @@ object Dependencies {
 
     object Versions {
 
-        // Tests Tools
-        const val Jacoco = "0.8.7"
-
         // NDK
         const val Ndk = "22.1.7171670"
         // TODO RUMM-1660. Check if Cmake >= 3.20.4 is available when doing AGP 7 migration
