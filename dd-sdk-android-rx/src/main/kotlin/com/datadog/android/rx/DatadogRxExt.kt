@@ -17,7 +17,7 @@ import io.reactivex.rxjava3.core.Single
  *  if this [Observable<T>] emits an error.
  *  Note that the error will also be emitted by the returned [Observable<T>]
  */
-fun <T> Observable<T>.sendErrorToDatadog(): Observable<T> {
+fun <T : Any> Observable<T>.sendErrorToDatadog(): Observable<T> {
     return this.doOnError(DatadogRumErrorConsumer())
 }
 
@@ -26,7 +26,7 @@ fun <T> Observable<T>.sendErrorToDatadog(): Observable<T> {
  *  if this [Single<T>] emits an error.
  *  Note that the error will also be emitted by the returned [Single<T>]
  */
-fun <T> Single<T>.sendErrorToDatadog(): Single<T> {
+fun <T : Any> Single<T>.sendErrorToDatadog(): Single<T> {
     return this.doOnError(DatadogRumErrorConsumer())
 }
 
@@ -35,7 +35,7 @@ fun <T> Single<T>.sendErrorToDatadog(): Single<T> {
  *  if this [Flowable<T>] emits an error.
  *  Note that the error will also be emitted by the returned [Flowable<T>]
  */
-fun <T> Flowable<T>.sendErrorToDatadog(): Flowable<T> {
+fun <T : Any> Flowable<T>.sendErrorToDatadog(): Flowable<T> {
     return this.doOnError(DatadogRumErrorConsumer())
 }
 

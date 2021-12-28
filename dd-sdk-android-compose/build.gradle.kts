@@ -101,7 +101,7 @@ unMock {
     keep("android.os.Bundle")
 }
 
-kotlinConfig()
+kotlinConfig(evaluateWarningsAsErrors = false)
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions {
         freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
