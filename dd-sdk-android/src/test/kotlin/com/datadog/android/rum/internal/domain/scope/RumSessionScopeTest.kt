@@ -6,10 +6,12 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.app.ActivityManager.RunningAppProcessInfo
 import android.content.Context
 import android.os.Build
 import android.util.Log
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.NoOpDataWriter
@@ -40,8 +42,8 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.same
-import com.nhaarman.mockitokotlin2.spy
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
@@ -54,6 +56,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.net.URL
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
@@ -135,6 +138,9 @@ internal class RumSessionScopeTest {
             .thenReturn(fakeNetworkInfo)
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
+
+        CoreFeature.processImportance = RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+
         testedScope = RumSessionScope(
             mockParentScope,
             100f,
@@ -148,7 +154,6 @@ internal class RumSessionScopeTest {
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
-
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
     }
 
@@ -457,7 +462,7 @@ internal class RumSessionScopeTest {
         val childView: RumViewScope = mock()
         val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
 
-        testedScope.onApplicationDisplayed(startViewEvent, childView, mockWriter)
+        testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
 
         argumentCaptor<RumRawEvent> {
             verify(childView).handleEvent(capture(), same(mockWriter))
@@ -477,7 +482,7 @@ internal class RumSessionScopeTest {
         val childView: RumViewScope = mock()
         val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
 
-        testedScope.onApplicationDisplayed(startViewEvent, childView, mockWriter)
+        testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
 
         argumentCaptor<RumRawEvent> {
             verify(childView).handleEvent(capture(), same(mockWriter))
@@ -497,8 +502,8 @@ internal class RumSessionScopeTest {
         val childView: RumViewScope = mock()
         val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
 
-        testedScope.onApplicationDisplayed(startViewEvent, childView, mockWriter)
-        testedScope.onApplicationDisplayed(startViewEvent, childView, mockWriter)
+        testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
+        testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
 
         argumentCaptor<RumRawEvent> {
             verify(childView).handleEvent(capture(), same(mockWriter))
@@ -517,10 +522,10 @@ internal class RumSessionScopeTest {
         val childView: RumViewScope = mock()
         val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
 
-        testedScope.onApplicationDisplayed(startViewEvent, childView, mockWriter)
+        testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
         val resetNanos = System.nanoTime()
         testedScope.handleEvent(RumRawEvent.ResetSession(), mockWriter)
-        testedScope.onApplicationDisplayed(startViewEvent, childView, mockWriter)
+        testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
 
         argumentCaptor<RumRawEvent> {
             verify(childView, times(2)).handleEvent(capture(), same(mockWriter))
@@ -530,6 +535,34 @@ internal class RumSessionScopeTest {
             val event2 = lastValue as RumRawEvent.ApplicationStarted
             assertThat(event2.applicationStartupNanos).isGreaterThanOrEqualTo(resetNanos)
         }
+        verifyZeroInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M not send ApplicationStarted event W applicationDisplayed {not a foreground process}`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        forge: Forge
+    ) {
+        CoreFeature.processImportance = forge.anElementFrom(
+            RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
+            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
+            @Suppress("DEPRECATION")
+            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING_PRE_28,
+            RunningAppProcessInfo.IMPORTANCE_VISIBLE,
+            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE,
+            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE_PRE_26,
+            RunningAppProcessInfo.IMPORTANCE_CANT_SAVE_STATE,
+            RunningAppProcessInfo.IMPORTANCE_SERVICE,
+            RunningAppProcessInfo.IMPORTANCE_CACHED,
+            RunningAppProcessInfo.IMPORTANCE_GONE
+        )
+        val childView: RumViewScope = mock()
+        val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
+
+        testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
+
+        verify(childView, never()).handleEvent(any(), same(mockWriter))
         verifyZeroInteractions(mockWriter)
     }
 
@@ -561,7 +594,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `M start a background ViewScope W handleEvent { no active scope, event is relevant }`(
+    fun `M start a background ViewScope W handleEvent { app displayed, event is relevant }`(
         forge: Forge
     ) {
         // GIVEN
@@ -578,6 +611,7 @@ internal class RumSessionScopeTest {
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
+        testedScope.applicationDisplayed = true
         val fakeEvent = forge.forgeValidBackgroundEvent()
 
         // WHEN
@@ -588,8 +622,8 @@ internal class RumSessionScopeTest {
         assertThat(testedScope.activeChildrenScopes[0])
             .isInstanceOfSatisfying(RumViewScope::class.java) {
                 assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
-                assertThat(it.keyRef.get()).isEqualTo(RumViewScope.RUM_BACKGROUND_VIEW_URL)
-                assertThat(it.name).isEqualTo(RumViewScope.RUM_BACKGROUND_VIEW_NAME)
+                assertThat(it.keyRef.get()).isEqualTo(RumSessionScope.RUM_BACKGROUND_VIEW_URL)
+                assertThat(it.name).isEqualTo(RumSessionScope.RUM_BACKGROUND_VIEW_NAME)
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
@@ -597,7 +631,122 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `M ignore event W handleEvent { no active scope, event is relevant, background disabled }`(
+    fun `M start a Background ViewScope W handleEvent { event is relevant, not foreground }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        CoreFeature.processImportance = forge.anElementFrom(
+            RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
+            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
+            @Suppress("DEPRECATION")
+            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING_PRE_28,
+            RunningAppProcessInfo.IMPORTANCE_VISIBLE,
+            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE,
+            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE_PRE_26,
+            RunningAppProcessInfo.IMPORTANCE_CANT_SAVE_STATE,
+            RunningAppProcessInfo.IMPORTANCE_SERVICE,
+            RunningAppProcessInfo.IMPORTANCE_CACHED,
+            RunningAppProcessInfo.IMPORTANCE_GONE
+        )
+        testedScope = RumSessionScope(
+            parentScope = mockParentScope,
+            samplingRate = 100f,
+            backgroundTrackingEnabled = true,
+            firstPartyHostDetector = mockDetector,
+            cpuVitalMonitor = mockCpuVitalMonitor,
+            memoryVitalMonitor = mockMemoryVitalMonitor,
+            frameRateVitalMonitor = mockFrameRateVitalMonitor,
+            timeProvider = mockTimeProvider,
+            sessionListener = mockSessionListener,
+            sessionInactivityNanos = TEST_INACTIVITY_NS,
+            sessionMaxDurationNanos = TEST_MAX_DURATION_NS
+        )
+        testedScope.applicationDisplayed = false
+        val fakeEvent = forge.forgeValidAppLaunchEvent()
+
+        // WHEN
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        assertThat(testedScope.activeChildrenScopes).hasSize(1)
+        assertThat(testedScope.activeChildrenScopes[0])
+            .isInstanceOfSatisfying(RumViewScope::class.java) {
+                assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
+                assertThat(it.keyRef.get()).isEqualTo(RumSessionScope.RUM_BACKGROUND_VIEW_URL)
+                assertThat(it.name).isEqualTo(RumSessionScope.RUM_BACKGROUND_VIEW_NAME)
+                assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+                assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+                assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+            }
+    }
+
+    @Test
+    fun `M start an AppLaunch ViewScope W handleEvent { app not displayed, event is relevant }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        testedScope.applicationDisplayed = false
+        val fakeEvent = forge.forgeValidAppLaunchEvent()
+
+        // WHEN
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        assertThat(testedScope.activeChildrenScopes).hasSize(1)
+        assertThat(testedScope.activeChildrenScopes[0])
+            .isInstanceOfSatisfying(RumViewScope::class.java) {
+                assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
+                assertThat(it.keyRef.get()).isEqualTo(RumSessionScope.RUM_APP_LAUNCH_VIEW_URL)
+                assertThat(it.name).isEqualTo(RumSessionScope.RUM_APP_LAUNCH_VIEW_NAME)
+                assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+                assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+                assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+            }
+    }
+
+    @Test
+    fun `M not start an AppLaunch ViewScope W handleEvent { event is relevant, not foreground }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        CoreFeature.processImportance = forge.anElementFrom(
+            RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
+            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
+            @Suppress("DEPRECATION")
+            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING_PRE_28,
+            RunningAppProcessInfo.IMPORTANCE_VISIBLE,
+            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE,
+            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE_PRE_26,
+            RunningAppProcessInfo.IMPORTANCE_CANT_SAVE_STATE,
+            RunningAppProcessInfo.IMPORTANCE_SERVICE,
+            RunningAppProcessInfo.IMPORTANCE_CACHED,
+            RunningAppProcessInfo.IMPORTANCE_GONE
+        )
+        testedScope = RumSessionScope(
+            parentScope = mockParentScope,
+            samplingRate = 100f,
+            backgroundTrackingEnabled = false,
+            firstPartyHostDetector = mockDetector,
+            cpuVitalMonitor = mockCpuVitalMonitor,
+            memoryVitalMonitor = mockMemoryVitalMonitor,
+            frameRateVitalMonitor = mockFrameRateVitalMonitor,
+            timeProvider = mockTimeProvider,
+            sessionListener = mockSessionListener,
+            sessionInactivityNanos = TEST_INACTIVITY_NS,
+            sessionMaxDurationNanos = TEST_MAX_DURATION_NS
+        )
+        testedScope.applicationDisplayed = false
+        val fakeEvent = forge.forgeValidAppLaunchEvent()
+
+        // WHEN
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        assertThat(testedScope.activeChildrenScopes).hasSize(0)
+    }
+
+    @Test
+    fun `M ignore event W handleEvent { app displayed, event is relevant, background disabled }`(
         forge: Forge
     ) {
         // GIVEN
@@ -614,7 +763,7 @@ internal class RumSessionScopeTest {
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
-        val fakeEvent = forge.forgeValidBackgroundEvent()
+        val fakeEvent = forge.forgeInvalidAppLaunchEvent()
 
         // WHEN
         testedScope.handleEvent(fakeEvent, mockWriter)
@@ -624,7 +773,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `M send warn dev log W handleEvent { no active scope, event is relevant, bg disabled }`(
+    fun `M send warn dev log W handleEvent { app displayed, event is relevant, bg disabled }`(
         forge: Forge
     ) {
         // GIVEN
@@ -641,6 +790,7 @@ internal class RumSessionScopeTest {
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
+        testedScope.applicationDisplayed = true
         val fakeEvent = forge.forgeValidBackgroundEvent()
 
         // WHEN
@@ -651,73 +801,11 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `M handle event in the background ViewScope W handleEvent { event is relevant }`(
+    fun `M not start a background ViewScope W handleEvent { app displayed, event not relevant}`(
         forge: Forge
     ) {
         // GIVEN
-        testedScope = RumSessionScope(
-            mockParentScope,
-            100f,
-            true,
-            mockDetector,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockTimeProvider,
-            mockSessionListener,
-            TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS
-        )
-        val fakeEvent = forge.forgeValidBackgroundEvent()
-        val mockBackgroundViewScope: RumViewScope = mock()
-
-        // WHEN
-        val testedSpyScope = spy(testedScope)
-        doReturn(mockBackgroundViewScope).whenever(testedSpyScope)
-            .produceRumBackgroundViewScope(fakeEvent)
-        testedSpyScope.handleEvent(fakeEvent, mockWriter)
-
-        // THEN
-        verify(mockBackgroundViewScope).handleEvent(fakeEvent, mockWriter)
-    }
-
-    @Test
-    fun `M ignore background event W handleEvent { event is not relevant }`(
-        forge: Forge
-    ) {
-        // GIVEN
-        testedScope = RumSessionScope(
-            mockParentScope,
-            100f,
-            true,
-            mockDetector,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockTimeProvider,
-            mockSessionListener,
-            TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS
-        )
-        val fakeEvent = forge.forgeInvalidBackgroundEvent()
-        val mockBackgroundViewScope: RumViewScope = mock()
-
-        // WHEN
-        val testedSpyScope = spy(testedScope)
-        doReturn(mockBackgroundViewScope).whenever(testedSpyScope)
-            .produceRumBackgroundViewScope(fakeEvent)
-        testedSpyScope.handleEvent(fakeEvent, mockWriter)
-
-        // THEN
-        verifyZeroInteractions(mockBackgroundViewScope)
-        verify(mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
-    }
-
-    @Test
-    fun `M not start a background ViewScope W handleEvent { no active scope, event not relevant}`(
-        forge: Forge
-    ) {
-        // GIVEN
+        testedScope.applicationDisplayed = true
         val fakeEvent = forge.forgeInvalidBackgroundEvent()
 
         // WHEN
@@ -728,11 +816,42 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `M send warn dev log W handleEvent { no active scope, event not relevant}`(
+    fun `M not start an appLaunch ViewScope W handleEvent { app not displayed, event not relevant}`(
         forge: Forge
     ) {
         // GIVEN
+        testedScope.applicationDisplayed = false
+        val fakeEvent = forge.forgeInvalidAppLaunchEvent()
+
+        // WHEN
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        assertThat(testedScope.activeChildrenScopes).hasSize(0)
+    }
+
+    @Test
+    fun `M send warn dev log W handleEvent { app displayed, bg event not relevant}`(
+        forge: Forge
+    ) {
+        // GIVEN
+        testedScope.applicationDisplayed = true
         val fakeEvent = forge.forgeInvalidBackgroundEvent()
+
+        // WHEN
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        verify(mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
+    }
+
+    @Test
+    fun `M send warn dev log W handleEvent { app not displayed, app launch event not relevant}`(
+        forge: Forge
+    ) {
+        // GIVEN
+        testedScope.applicationDisplayed = false
+        val fakeEvent = forge.forgeInvalidAppLaunchEvent()
 
         // WHEN
         testedScope.handleEvent(fakeEvent, mockWriter)
@@ -742,6 +861,39 @@ internal class RumSessionScopeTest {
     }
 
     private fun Forge.forgeValidBackgroundEvent(): RumRawEvent {
+        val fakeEventTime = Time()
+        val fakeName = this.anAlphabeticalString()
+
+        return this.anElementFrom(
+            listOf(
+                RumRawEvent.StartAction(
+                    this.aValueFrom(RumActionType::class.java),
+                    fakeName,
+                    this.aBool(),
+                    emptyMap(),
+                    fakeEventTime
+                ),
+                RumRawEvent.AddError(
+                    fakeName,
+                    this.aValueFrom(RumErrorSource::class.java),
+                    stacktrace = null,
+                    throwable = null,
+                    isFatal = this.aBool(),
+                    attributes = emptyMap(),
+                    eventTime = fakeEventTime
+                ),
+                RumRawEvent.StartResource(
+                    fakeName,
+                    getForgery<URL>().toString(),
+                    anElementFrom("POST", "GET", "PUT", "DELETE", "HEAD"),
+                    emptyMap(),
+                    fakeEventTime
+                )
+            )
+        )
+    }
+
+    private fun Forge.forgeValidAppLaunchEvent(): RumRawEvent {
         val fakeEventTime = Time()
         val fakeName = this.anAlphabeticalString()
 
@@ -764,10 +916,10 @@ internal class RumSessionScopeTest {
                     attributes = emptyMap(),
                     eventTime = fakeEventTime
                 ),
-                RumRawEvent.StartAction(
-                    this.aValueFrom(RumActionType::class.java),
+                RumRawEvent.StartResource(
                     fakeName,
-                    this.aBool(),
+                    getForgery<URL>().toString(),
+                    anElementFrom("POST", "GET", "PUT", "DELETE", "HEAD"),
                     emptyMap(),
                     fakeEventTime
                 )
@@ -776,6 +928,46 @@ internal class RumSessionScopeTest {
     }
 
     private fun Forge.forgeInvalidBackgroundEvent(): RumRawEvent {
+        val fakeEventTime = Time()
+        val fakeKey = anAlphabeticalString()
+        val fakeName = anAlphabeticalString()
+
+        return this.anElementFrom(
+            listOf(
+                RumRawEvent.AddLongTask(System.nanoTime(), fakeName, fakeEventTime),
+                RumRawEvent.StopAction(
+                    this.aValueFrom(RumActionType::class.java),
+                    fakeKey,
+                    emptyMap(),
+                    fakeEventTime
+                ),
+                RumRawEvent.StopResource(
+                    fakeKey,
+                    statusCode = null,
+                    size = null,
+                    kind = this.aValueFrom(RumResourceKind::class.java),
+                    attributes = emptyMap(),
+                    eventTime = fakeEventTime
+                ),
+                RumRawEvent.StopResourceWithError(
+                    fakeKey,
+                    message = this.aString(),
+                    statusCode = null,
+                    source = this.aValueFrom(RumErrorSource::class.java),
+                    throwable = this.getForgery(),
+                    attributes = emptyMap(),
+                    eventTime = fakeEventTime
+                ),
+                RumRawEvent.StopView(
+                    fakeKey,
+                    emptyMap(),
+                    fakeEventTime
+                )
+            )
+        )
+    }
+
+    private fun Forge.forgeInvalidAppLaunchEvent(): RumRawEvent {
         val fakeEventTime = Time()
         val fakeKey = this.anAlphabeticalString()
 

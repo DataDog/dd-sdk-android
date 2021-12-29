@@ -6,10 +6,12 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.app.ActivityManager.RunningAppProcessInfo
 import android.os.Build
 import android.os.Process
 import android.os.SystemClock
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.NoOpDataWriter
@@ -48,7 +50,7 @@ internal class RumSessionScope(
 
     private var resetSessionTime: Long? = null
 
-    private var applicationDisplayed: Boolean = false
+    internal var applicationDisplayed: Boolean = false
 
     private val random = SecureRandom()
     private val noOpWriter = NoOpDataWriter<Any>()
@@ -91,7 +93,7 @@ internal class RumSessionScope(
                 frameRateVitalMonitor,
                 timeProvider
             )
-            onApplicationDisplayed(event, viewScope, actualWriter)
+            onViewDisplayed(event, viewScope, actualWriter)
             activeChildrenScopes.add(viewScope)
         } else if (activeChildrenScopes.size == 0) {
             handleOrphanEvent(event, actualWriter)
@@ -112,21 +114,28 @@ internal class RumSessionScope(
     // endregion
 
     // region Internal
-    @Suppress("ComplexCondition")
+
     private fun handleOrphanEvent(
+        event: RumRawEvent,
+        writer: DataWriter<Any>
+    ) {
+        val isForegroundProcess =
+            CoreFeature.processImportance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+        if (applicationDisplayed || !isForegroundProcess) {
+            handleBackgroundEvent(event, writer)
+        } else {
+            handleAppLaunchEvent(event, writer)
+        }
+    }
+
+    private fun handleAppLaunchEvent(
         event: RumRawEvent,
         actualWriter: DataWriter<Any>
     ) {
-        val isValidBackgroundEvent = event is RumRawEvent.AddError ||
-            event is RumRawEvent.AddLongTask ||
-            event is RumRawEvent.StartAction ||
-            event is RumRawEvent.StartResource
+        val isValidAppLaunchEvent = event.javaClass in validAppLaunchEventTypes
 
-        if (isValidBackgroundEvent && backgroundTrackingEnabled) {
-            // there is no active ViewScope to handle this event. We will assume the application
-            // is in background and we will create a special ViewScope (background)
-            // to handle all the events.
-            val viewScope = produceRumBackgroundViewScope(event)
+        if (isValidAppLaunchEvent) {
+            val viewScope = createAppLaunchViewScope(event)
             viewScope.handleEvent(event, actualWriter)
             activeChildrenScopes.add(viewScope)
         } else {
@@ -134,11 +143,29 @@ internal class RumSessionScope(
         }
     }
 
-    internal fun produceRumBackgroundViewScope(event: RumRawEvent): RumViewScope {
+    private fun handleBackgroundEvent(
+        event: RumRawEvent,
+        writer: DataWriter<Any>
+    ) {
+        val isValidBackgroundEvent = event.javaClass in validBackgroundEventTypes
+
+        if (isValidBackgroundEvent && backgroundTrackingEnabled) {
+            // there is no active ViewScope to handle this event. We will assume the application
+            // is in background and we will create a special ViewScope (background)
+            // to handle all the events.
+            val viewScope = createBackgroundViewScope(event)
+            viewScope.handleEvent(event, writer)
+            activeChildrenScopes.add(viewScope)
+        } else {
+            devLogger.w(MESSAGE_MISSING_VIEW)
+        }
+    }
+
+    internal fun createBackgroundViewScope(event: RumRawEvent): RumViewScope {
         return RumViewScope(
             this,
-            RumViewScope.RUM_BACKGROUND_VIEW_URL,
-            RumViewScope.RUM_BACKGROUND_VIEW_NAME,
+            RUM_BACKGROUND_VIEW_URL,
+            RUM_BACKGROUND_VIEW_NAME,
             event.eventTime,
             emptyMap(),
             firstPartyHostDetector,
@@ -149,18 +176,37 @@ internal class RumSessionScope(
         )
     }
 
-    internal fun onApplicationDisplayed(
+    internal fun createAppLaunchViewScope(event: RumRawEvent): RumViewScope {
+        return RumViewScope(
+            this,
+            RUM_APP_LAUNCH_VIEW_URL,
+            RUM_APP_LAUNCH_VIEW_NAME,
+            event.eventTime,
+            emptyMap(),
+            firstPartyHostDetector,
+            NoOpVitalMonitor(),
+            NoOpVitalMonitor(),
+            NoOpVitalMonitor(),
+            timeProvider
+        )
+    }
+
+    internal fun onViewDisplayed(
         event: RumRawEvent.StartView,
         viewScope: RumViewScope,
         writer: DataWriter<Any>
     ) {
         if (!applicationDisplayed) {
             applicationDisplayed = true
-            val applicationStartTime = resolveStartupTimeNs()
-            viewScope.handleEvent(
-                RumRawEvent.ApplicationStarted(event.eventTime, applicationStartTime),
-                writer
-            )
+            val isForegroundProcess =
+                CoreFeature.processImportance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+            if (isForegroundProcess) {
+                val applicationStartTime = resolveStartupTimeNs()
+                viewScope.handleEvent(
+                    RumRawEvent.ApplicationStarted(event.eventTime, applicationStartTime),
+                    writer
+                )
+            }
         }
     }
 
@@ -198,8 +244,27 @@ internal class RumSessionScope(
     // endregion
 
     companion object {
+
+        internal val validBackgroundEventTypes = arrayOf<Class<*>>(
+            RumRawEvent.AddError::class.java,
+            RumRawEvent.StartAction::class.java,
+            RumRawEvent.StartResource::class.java
+        )
+        internal val validAppLaunchEventTypes = arrayOf<Class<*>>(
+            RumRawEvent.AddError::class.java,
+            RumRawEvent.AddLongTask::class.java,
+            RumRawEvent.StartAction::class.java,
+            RumRawEvent.StartResource::class.java
+        )
+
         internal val DEFAULT_SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)
         internal val DEFAULT_SESSION_MAX_DURATION_NS = TimeUnit.HOURS.toNanos(4)
+
+        internal const val RUM_BACKGROUND_VIEW_URL = "com/datadog/background/view"
+        internal const val RUM_BACKGROUND_VIEW_NAME = "Background"
+
+        internal const val RUM_APP_LAUNCH_VIEW_URL = "com/datadog/application-launch/view"
+        internal const val RUM_APP_LAUNCH_VIEW_NAME = "ApplicationLaunch"
 
         internal const val MESSAGE_MISSING_VIEW =
             "A RUM event was detected, but no view is active. " +
