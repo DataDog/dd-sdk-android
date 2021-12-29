@@ -20,6 +20,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -65,7 +66,7 @@ internal class JetpackViewAttributesProviderTest : ObjectTest<JetpackViewAttribu
         forge: Forge
     ): JetpackViewAttributesProvider? = null
 
-    @Test
+    @RepeatedTest(4)
     fun `will add the adapter position event if the target is a RecyclerView nested child`(
         forge: Forge
     ) {
@@ -115,7 +116,7 @@ internal class JetpackViewAttributesProviderTest : ObjectTest<JetpackViewAttribu
         )
     }
 
-    @Test
+    @RepeatedTest(4)
     fun `will add the adapter position if the target is a RecyclerView direct child`(
         forge: Forge
     ) {

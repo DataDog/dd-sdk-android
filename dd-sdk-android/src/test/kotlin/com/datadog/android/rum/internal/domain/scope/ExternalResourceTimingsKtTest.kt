@@ -81,7 +81,7 @@ internal class ExternalResourceTimingsKtTest {
     }
 
     @Test
-    fun `𝕄 create timings 𝕎 extractResourceTiming { timing info is incomplete }`(
+    fun `𝕄 create timings 𝕎 extractResourceTiming { ssl timing info is incomplete }`(
         @Forgery reference: ResourceTiming,
         forge: Forge
     ) {
@@ -89,7 +89,7 @@ internal class ExternalResourceTimingsKtTest {
         // Given
         val timingsPayload = reference.asTimingsPayload()
 
-        val badTiming = forge.anElementFrom("ssl", "firstByte", "download", "connect", "dns")
+        val badTiming = "ssl"
 
         @Suppress("UNCHECKED_CAST")
         val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
@@ -103,50 +103,25 @@ internal class ExternalResourceTimingsKtTest {
         assertThat(timings).isNotNull
 
         timings!!.let {
-            if (badTiming == "ssl") {
-                assertThat(it.sslStart).isEqualTo(0L)
-                assertThat(it.sslDuration).isEqualTo(0L)
-            } else {
-                assertThat(it.sslStart).isEqualTo(timingsPayload.startTimeOf("ssl"))
-                assertThat(it.sslDuration).isEqualTo(timingsPayload.durationOf("ssl"))
-            }
+            assertThat(it.sslStart).isEqualTo(0L)
+            assertThat(it.sslDuration).isEqualTo(0L)
 
-            if (badTiming == "connect") {
-                assertThat(it.connectStart).isEqualTo(0L)
-                assertThat(it.connectDuration).isEqualTo(0L)
-            } else {
-                assertThat(it.connectStart).isEqualTo(timingsPayload.startTimeOf("connect"))
-                assertThat(it.connectDuration).isEqualTo(timingsPayload.durationOf("connect"))
-            }
+            assertThat(it.connectStart).isEqualTo(timingsPayload.startTimeOf("connect"))
+            assertThat(it.connectDuration).isEqualTo(timingsPayload.durationOf("connect"))
 
-            if (badTiming == "download") {
-                assertThat(it.downloadStart).isEqualTo(0L)
-                assertThat(it.downloadDuration).isEqualTo(0L)
-            } else {
-                assertThat(it.downloadStart).isEqualTo(timingsPayload.startTimeOf("download"))
-                assertThat(it.downloadDuration).isEqualTo(timingsPayload.durationOf("download"))
-            }
+            assertThat(it.downloadStart).isEqualTo(timingsPayload.startTimeOf("download"))
+            assertThat(it.downloadDuration).isEqualTo(timingsPayload.durationOf("download"))
 
-            if (badTiming == "dns") {
-                assertThat(it.dnsStart).isEqualTo(0L)
-                assertThat(it.dnsDuration).isEqualTo(0L)
-            } else {
-                assertThat(it.dnsStart).isEqualTo(timingsPayload.startTimeOf("dns"))
-                assertThat(it.dnsDuration).isEqualTo(timingsPayload.durationOf("dns"))
-            }
+            assertThat(it.dnsStart).isEqualTo(timingsPayload.startTimeOf("dns"))
+            assertThat(it.dnsDuration).isEqualTo(timingsPayload.durationOf("dns"))
 
-            if (badTiming == "firstByte") {
-                assertThat(it.firstByteStart).isEqualTo(0L)
-                assertThat(it.firstByteDuration).isEqualTo(0L)
-            } else {
-                assertThat(it.firstByteStart).isEqualTo(timingsPayload.startTimeOf("firstByte"))
-                assertThat(it.firstByteDuration).isEqualTo(timingsPayload.durationOf("firstByte"))
-            }
+            assertThat(it.firstByteStart).isEqualTo(timingsPayload.startTimeOf("firstByte"))
+            assertThat(it.firstByteDuration).isEqualTo(timingsPayload.durationOf("firstByte"))
         }
     }
 
     @Test
-    fun `𝕄 create timings 𝕎 extractResourceTiming { timing info with wrong structure }`(
+    fun `𝕄 create timings 𝕎 extractResourceTiming { connect timing info is incomplete }`(
         @Forgery reference: ResourceTiming,
         forge: Forge
     ) {
@@ -154,7 +129,168 @@ internal class ExternalResourceTimingsKtTest {
         // Given
         val timingsPayload = reference.asTimingsPayload()
 
-        val badTiming = forge.anElementFrom("ssl", "firstByte", "download", "connect", "dns")
+        val badTiming = "connect"
+
+        @Suppress("UNCHECKED_CAST")
+        val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
+
+        timing.remove(forge.anElementFrom("startTime", "duration"))
+
+        // When
+        val timings = extractResourceTiming(timingsPayload)
+
+        // Then
+        assertThat(timings).isNotNull
+
+        timings!!.let {
+
+            assertThat(it.sslStart).isEqualTo(timingsPayload.startTimeOf("ssl"))
+            assertThat(it.sslDuration).isEqualTo(timingsPayload.durationOf("ssl"))
+
+            assertThat(it.connectStart).isEqualTo(0L)
+            assertThat(it.connectDuration).isEqualTo(0L)
+
+            assertThat(it.downloadStart).isEqualTo(timingsPayload.startTimeOf("download"))
+            assertThat(it.downloadDuration).isEqualTo(timingsPayload.durationOf("download"))
+
+            assertThat(it.dnsStart).isEqualTo(timingsPayload.startTimeOf("dns"))
+            assertThat(it.dnsDuration).isEqualTo(timingsPayload.durationOf("dns"))
+
+            assertThat(it.firstByteStart).isEqualTo(timingsPayload.startTimeOf("firstByte"))
+            assertThat(it.firstByteDuration).isEqualTo(timingsPayload.durationOf("firstByte"))
+        }
+    }
+
+    @Test
+    fun `𝕄 create timings 𝕎 extractResourceTiming { download timing info is incomplete }`(
+        @Forgery reference: ResourceTiming,
+        forge: Forge
+    ) {
+
+        // Given
+        val timingsPayload = reference.asTimingsPayload()
+
+        val badTiming = "download"
+
+        @Suppress("UNCHECKED_CAST")
+        val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
+
+        timing.remove(forge.anElementFrom("startTime", "duration"))
+
+        // When
+        val timings = extractResourceTiming(timingsPayload)
+
+        // Then
+        assertThat(timings).isNotNull
+
+        timings!!.let {
+            assertThat(it.sslStart).isEqualTo(timingsPayload.startTimeOf("ssl"))
+            assertThat(it.sslDuration).isEqualTo(timingsPayload.durationOf("ssl"))
+
+            assertThat(it.connectStart).isEqualTo(timingsPayload.startTimeOf("connect"))
+            assertThat(it.connectDuration).isEqualTo(timingsPayload.durationOf("connect"))
+
+            assertThat(it.downloadStart).isEqualTo(0L)
+            assertThat(it.downloadDuration).isEqualTo(0L)
+
+            assertThat(it.dnsStart).isEqualTo(timingsPayload.startTimeOf("dns"))
+            assertThat(it.dnsDuration).isEqualTo(timingsPayload.durationOf("dns"))
+
+            assertThat(it.firstByteStart).isEqualTo(timingsPayload.startTimeOf("firstByte"))
+            assertThat(it.firstByteDuration).isEqualTo(timingsPayload.durationOf("firstByte"))
+        }
+    }
+
+    @Test
+    fun `𝕄 create timings 𝕎 extractResourceTiming { dns timing info is incomplete }`(
+        @Forgery reference: ResourceTiming,
+        forge: Forge
+    ) {
+
+        // Given
+        val timingsPayload = reference.asTimingsPayload()
+
+        val badTiming = "dns"
+
+        @Suppress("UNCHECKED_CAST")
+        val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
+
+        timing.remove(forge.anElementFrom("startTime", "duration"))
+
+        // When
+        val timings = extractResourceTiming(timingsPayload)
+
+        // Then
+        assertThat(timings).isNotNull
+
+        timings!!.let {
+            assertThat(it.sslStart).isEqualTo(timingsPayload.startTimeOf("ssl"))
+            assertThat(it.sslDuration).isEqualTo(timingsPayload.durationOf("ssl"))
+
+            assertThat(it.connectStart).isEqualTo(timingsPayload.startTimeOf("connect"))
+            assertThat(it.connectDuration).isEqualTo(timingsPayload.durationOf("connect"))
+
+            assertThat(it.downloadStart).isEqualTo(timingsPayload.startTimeOf("download"))
+            assertThat(it.downloadDuration).isEqualTo(timingsPayload.durationOf("download"))
+
+            assertThat(it.dnsStart).isEqualTo(0L)
+            assertThat(it.dnsDuration).isEqualTo(0L)
+
+            assertThat(it.firstByteStart).isEqualTo(timingsPayload.startTimeOf("firstByte"))
+            assertThat(it.firstByteDuration).isEqualTo(timingsPayload.durationOf("firstByte"))
+        }
+    }
+
+    @Test
+    fun `𝕄 create timings 𝕎 extractResourceTiming { firstByte timing info is incomplete }`(
+        @Forgery reference: ResourceTiming,
+        forge: Forge
+    ) {
+
+        // Given
+        val timingsPayload = reference.asTimingsPayload()
+
+        val badTiming = "firstByte"
+
+        @Suppress("UNCHECKED_CAST")
+        val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
+
+        timing.remove(forge.anElementFrom("startTime", "duration"))
+
+        // When
+        val timings = extractResourceTiming(timingsPayload)
+
+        // Then
+        assertThat(timings).isNotNull
+
+        timings!!.let {
+            assertThat(it.sslStart).isEqualTo(timingsPayload.startTimeOf("ssl"))
+            assertThat(it.sslDuration).isEqualTo(timingsPayload.durationOf("ssl"))
+
+            assertThat(it.connectStart).isEqualTo(timingsPayload.startTimeOf("connect"))
+            assertThat(it.connectDuration).isEqualTo(timingsPayload.durationOf("connect"))
+
+            assertThat(it.downloadStart).isEqualTo(timingsPayload.startTimeOf("download"))
+            assertThat(it.downloadDuration).isEqualTo(timingsPayload.durationOf("download"))
+
+            assertThat(it.dnsStart).isEqualTo(timingsPayload.startTimeOf("dns"))
+            assertThat(it.dnsDuration).isEqualTo(timingsPayload.durationOf("dns"))
+
+            assertThat(it.firstByteStart).isEqualTo(0L)
+            assertThat(it.firstByteDuration).isEqualTo(0L)
+        }
+    }
+
+    @Test
+    fun `𝕄 create timings 𝕎 extractResourceTiming { ssl timing info with wrong structure }`(
+        @Forgery reference: ResourceTiming,
+        forge: Forge
+    ) {
+
+        // Given
+        val timingsPayload = reference.asTimingsPayload()
+
+        val badTiming = "ssl"
 
         @Suppress("UNCHECKED_CAST")
         val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
@@ -167,45 +303,176 @@ internal class ExternalResourceTimingsKtTest {
         assertThat(timings).isNotNull
 
         timings!!.let {
-            if (badTiming == "ssl") {
-                assertThat(it.sslStart).isEqualTo(0L)
-                assertThat(it.sslDuration).isEqualTo(0L)
-            } else {
-                assertThat(it.sslStart).isEqualTo(timingsPayload.startTimeOf("ssl"))
-                assertThat(it.sslDuration).isEqualTo(timingsPayload.durationOf("ssl"))
-            }
+            assertThat(it.sslStart).isEqualTo(0L)
+            assertThat(it.sslDuration).isEqualTo(0L)
 
-            if (badTiming == "connect") {
-                assertThat(it.connectStart).isEqualTo(0L)
-                assertThat(it.connectDuration).isEqualTo(0L)
-            } else {
-                assertThat(it.connectStart).isEqualTo(timingsPayload.startTimeOf("connect"))
-                assertThat(it.connectDuration).isEqualTo(timingsPayload.durationOf("connect"))
-            }
+            assertThat(it.connectStart).isEqualTo(timingsPayload.startTimeOf("connect"))
+            assertThat(it.connectDuration).isEqualTo(timingsPayload.durationOf("connect"))
 
-            if (badTiming == "download") {
-                assertThat(it.downloadStart).isEqualTo(0L)
-                assertThat(it.downloadDuration).isEqualTo(0L)
-            } else {
-                assertThat(it.downloadStart).isEqualTo(timingsPayload.startTimeOf("download"))
-                assertThat(it.downloadDuration).isEqualTo(timingsPayload.durationOf("download"))
-            }
+            assertThat(it.downloadStart).isEqualTo(timingsPayload.startTimeOf("download"))
+            assertThat(it.downloadDuration).isEqualTo(timingsPayload.durationOf("download"))
 
-            if (badTiming == "dns") {
-                assertThat(it.dnsStart).isEqualTo(0L)
-                assertThat(it.dnsDuration).isEqualTo(0L)
-            } else {
-                assertThat(it.dnsStart).isEqualTo(timingsPayload.startTimeOf("dns"))
-                assertThat(it.dnsDuration).isEqualTo(timingsPayload.durationOf("dns"))
-            }
+            assertThat(it.dnsStart).isEqualTo(timingsPayload.startTimeOf("dns"))
+            assertThat(it.dnsDuration).isEqualTo(timingsPayload.durationOf("dns"))
 
-            if (badTiming == "firstByte") {
-                assertThat(it.firstByteStart).isEqualTo(0L)
-                assertThat(it.firstByteDuration).isEqualTo(0L)
-            } else {
-                assertThat(it.firstByteStart).isEqualTo(timingsPayload.startTimeOf("firstByte"))
-                assertThat(it.firstByteDuration).isEqualTo(timingsPayload.durationOf("firstByte"))
-            }
+            assertThat(it.firstByteStart).isEqualTo(timingsPayload.startTimeOf("firstByte"))
+            assertThat(it.firstByteDuration).isEqualTo(timingsPayload.durationOf("firstByte"))
+        }
+    }
+
+    @Test
+    fun `𝕄 create timings 𝕎 extractResourceTiming { connect timing info with wrong structure }`(
+        @Forgery reference: ResourceTiming,
+        forge: Forge
+    ) {
+
+        // Given
+        val timingsPayload = reference.asTimingsPayload()
+
+        val badTiming = "connect"
+
+        @Suppress("UNCHECKED_CAST")
+        val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
+        timing[forge.anElementFrom("startTime", "duration")] = true
+
+        // When
+        val timings = extractResourceTiming(timingsPayload)
+
+        // Then
+        assertThat(timings).isNotNull
+
+        timings!!.let {
+            assertThat(it.sslStart).isEqualTo(timingsPayload.startTimeOf("ssl"))
+            assertThat(it.sslDuration).isEqualTo(timingsPayload.durationOf("ssl"))
+
+            assertThat(it.connectStart).isEqualTo(0L)
+            assertThat(it.connectDuration).isEqualTo(0L)
+
+            assertThat(it.downloadStart).isEqualTo(timingsPayload.startTimeOf("download"))
+            assertThat(it.downloadDuration).isEqualTo(timingsPayload.durationOf("download"))
+
+            assertThat(it.dnsStart).isEqualTo(timingsPayload.startTimeOf("dns"))
+            assertThat(it.dnsDuration).isEqualTo(timingsPayload.durationOf("dns"))
+
+            assertThat(it.firstByteStart).isEqualTo(timingsPayload.startTimeOf("firstByte"))
+            assertThat(it.firstByteDuration).isEqualTo(timingsPayload.durationOf("firstByte"))
+        }
+    }
+
+    @Test
+    fun `𝕄 create timings 𝕎 extractResourceTiming { download timing info with wrong structure }`(
+        @Forgery reference: ResourceTiming,
+        forge: Forge
+    ) {
+
+        // Given
+        val timingsPayload = reference.asTimingsPayload()
+
+        val badTiming = "download"
+
+        @Suppress("UNCHECKED_CAST")
+        val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
+        timing[forge.anElementFrom("startTime", "duration")] = true
+
+        // When
+        val timings = extractResourceTiming(timingsPayload)
+
+        // Then
+        assertThat(timings).isNotNull
+
+        timings!!.let {
+            assertThat(it.sslStart).isEqualTo(timingsPayload.startTimeOf("ssl"))
+            assertThat(it.sslDuration).isEqualTo(timingsPayload.durationOf("ssl"))
+
+            assertThat(it.connectStart).isEqualTo(timingsPayload.startTimeOf("connect"))
+            assertThat(it.connectDuration).isEqualTo(timingsPayload.durationOf("connect"))
+
+            assertThat(it.downloadStart).isEqualTo(0L)
+            assertThat(it.downloadDuration).isEqualTo(0L)
+
+            assertThat(it.dnsStart).isEqualTo(timingsPayload.startTimeOf("dns"))
+            assertThat(it.dnsDuration).isEqualTo(timingsPayload.durationOf("dns"))
+
+            assertThat(it.firstByteStart).isEqualTo(timingsPayload.startTimeOf("firstByte"))
+            assertThat(it.firstByteDuration).isEqualTo(timingsPayload.durationOf("firstByte"))
+        }
+    }
+
+    @Test
+    fun `𝕄 create timings 𝕎 extractResourceTiming { dns timing info with wrong structure }`(
+        @Forgery reference: ResourceTiming,
+        forge: Forge
+    ) {
+
+        // Given
+        val timingsPayload = reference.asTimingsPayload()
+
+        val badTiming = "dns"
+
+        @Suppress("UNCHECKED_CAST")
+        val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
+        timing[forge.anElementFrom("startTime", "duration")] = true
+
+        // When
+        val timings = extractResourceTiming(timingsPayload)
+
+        // Then
+        assertThat(timings).isNotNull
+
+        timings!!.let {
+            assertThat(it.sslStart).isEqualTo(timingsPayload.startTimeOf("ssl"))
+            assertThat(it.sslDuration).isEqualTo(timingsPayload.durationOf("ssl"))
+
+            assertThat(it.connectStart).isEqualTo(timingsPayload.startTimeOf("connect"))
+            assertThat(it.connectDuration).isEqualTo(timingsPayload.durationOf("connect"))
+
+            assertThat(it.downloadStart).isEqualTo(timingsPayload.startTimeOf("download"))
+            assertThat(it.downloadDuration).isEqualTo(timingsPayload.durationOf("download"))
+
+            assertThat(it.dnsStart).isEqualTo(0L)
+            assertThat(it.dnsDuration).isEqualTo(0L)
+
+            assertThat(it.firstByteStart).isEqualTo(timingsPayload.startTimeOf("firstByte"))
+            assertThat(it.firstByteDuration).isEqualTo(timingsPayload.durationOf("firstByte"))
+        }
+    }
+
+    @Test
+    fun `𝕄 create timings 𝕎 extractResourceTiming { firstByte timing info with wrong structure }`(
+        @Forgery reference: ResourceTiming,
+        forge: Forge
+    ) {
+
+        // Given
+        val timingsPayload = reference.asTimingsPayload()
+
+        val badTiming = "firstByte"
+
+        @Suppress("UNCHECKED_CAST")
+        val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
+        timing[forge.anElementFrom("startTime", "duration")] = true
+
+        // When
+        val timings = extractResourceTiming(timingsPayload)
+
+        // Then
+        assertThat(timings).isNotNull
+
+        timings!!.let {
+            assertThat(it.sslStart).isEqualTo(timingsPayload.startTimeOf("ssl"))
+            assertThat(it.sslDuration).isEqualTo(timingsPayload.durationOf("ssl"))
+
+            assertThat(it.connectStart).isEqualTo(timingsPayload.startTimeOf("connect"))
+            assertThat(it.connectDuration).isEqualTo(timingsPayload.durationOf("connect"))
+
+            assertThat(it.downloadStart).isEqualTo(timingsPayload.startTimeOf("download"))
+            assertThat(it.downloadDuration).isEqualTo(timingsPayload.durationOf("download"))
+
+            assertThat(it.dnsStart).isEqualTo(timingsPayload.startTimeOf("dns"))
+            assertThat(it.dnsDuration).isEqualTo(timingsPayload.durationOf("dns"))
+
+            assertThat(it.firstByteStart).isEqualTo(0L)
+            assertThat(it.firstByteDuration).isEqualTo(0L)
         }
     }
 
@@ -214,6 +481,16 @@ internal class ExternalResourceTimingsKtTest {
 
         // When
         val timings = extractResourceTiming(null)
+
+        // Then
+        assertThat(timings).isNull()
+    }
+
+    @Test
+    fun `𝕄 not create timings 𝕎 extractResourceTiming { payload is empty }`() {
+
+        // When
+        val timings = extractResourceTiming(emptyMap())
 
         // Then
         assertThat(timings).isNull()

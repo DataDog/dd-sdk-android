@@ -530,8 +530,16 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         forge: Forge
     ): FragmentViewTrackingStrategy? {
         return FragmentViewTrackingStrategy(
-            !source.trackArguments,
-            StubComponentPredicate(forge, useAlpha = false),
+            if (forge.aBool()) {
+                !source.trackArguments
+            } else {
+                source.trackArguments
+            },
+            if (forge.aBool()) {
+                StubComponentPredicate(forge, useAlpha = false)
+            } else {
+                source.supportFragmentComponentPredicate
+            },
             StubComponentPredicate(forge, useAlpha = false)
         )
     }

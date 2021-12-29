@@ -27,6 +27,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.math.BigInteger
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -81,7 +82,7 @@ internal class DdSpanToSpanEventMapperTest {
             DdSpanToSpanEventMapper(mockTimeProvider, mockNetworkInfoProvider, mockUserInfoProvider)
     }
 
-    @Test
+    @RepeatedTest(4)
     fun `M map a DdSpan to a SpanEvent W map`(
         @Forgery fakeSpan: DDSpan
     ) {

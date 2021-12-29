@@ -31,7 +31,6 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -302,19 +301,13 @@ internal class OreoFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    fun `𝕄 start RUM View and update loading time 𝕎 onFragmentResumed()`(
-        @BoolForgery firstTimeLoading: Boolean,
+    fun `𝕄 start RUM View and update loading time 𝕎 onFragmentResumed() { first display }`(
         @LongForgery(1L) loadingTime: Long
     ) {
         // Given
         whenever(mockPredicate.accept(mockFragment)) doReturn true
-        val expectedLoadingType = if (firstTimeLoading) {
-            ViewEvent.LoadingType.FRAGMENT_DISPLAY
-        } else {
-            ViewEvent.LoadingType.FRAGMENT_REDISPLAY
-        }
         whenever(mockViewLoadingTimer.getLoadingTime(mockFragment)) doReturn loadingTime
-        whenever(mockViewLoadingTimer.isFirstTimeLoading(mockFragment)) doReturn firstTimeLoading
+        whenever(mockViewLoadingTimer.isFirstTimeLoading(mockFragment)) doReturn true
 
         // When
         testedLifecycleCallbacks.onFragmentResumed(mockFragmentManager, mockFragment)
@@ -330,7 +323,35 @@ internal class OreoFragmentLifecycleCallbacksTest {
             verify(mockAdvancedRumMonitor).updateViewLoadingTime(
                 mockFragment,
                 loadingTime,
-                expectedLoadingType
+                ViewEvent.LoadingType.FRAGMENT_DISPLAY
+            )
+        }
+    }
+
+    @Test
+    fun `𝕄 start RUM View and update loading time 𝕎 onFragmentResumed() { redisplay }`(
+        @LongForgery(1L) loadingTime: Long
+    ) {
+        // Given
+        whenever(mockPredicate.accept(mockFragment)) doReturn true
+        whenever(mockViewLoadingTimer.getLoadingTime(mockFragment)) doReturn loadingTime
+        whenever(mockViewLoadingTimer.isFirstTimeLoading(mockFragment)) doReturn false
+
+        // When
+        testedLifecycleCallbacks.onFragmentResumed(mockFragmentManager, mockFragment)
+
+        // Then
+        inOrder(mockRumMonitor, mockAdvancedRumMonitor, mockViewLoadingTimer) {
+            verify(mockViewLoadingTimer).onFinishedLoading(mockFragment)
+            verify(mockRumMonitor).startView(
+                mockFragment,
+                mockFragment.resolveViewUrl(),
+                fakeAttributes
+            )
+            verify(mockAdvancedRumMonitor).updateViewLoadingTime(
+                mockFragment,
+                loadingTime,
+                ViewEvent.LoadingType.FRAGMENT_REDISPLAY
             )
         }
     }

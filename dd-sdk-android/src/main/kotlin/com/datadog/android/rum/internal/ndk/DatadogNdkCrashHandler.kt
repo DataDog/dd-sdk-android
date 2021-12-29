@@ -353,9 +353,5 @@ internal class DatadogNdkCrashHandler(
         internal fun getGrantedUserInfoFile(context: Context): File {
             return File(getNdkGrantedDir(context), USER_INFO_FILE_NAME)
         }
-
-        internal fun getCrashDataFile(context: Context): File {
-            return File(getNdkGrantedDir(context), CRASH_DATA_FILE_NAME)
-        }
     }
 }

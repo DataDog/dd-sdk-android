@@ -30,6 +30,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -210,7 +211,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         verify(mockWriter).write(networkInfo)
     }
 
-    @Test
+    @RepeatedTest(4)
     fun `connected to mobile 2G`(forge: Forge) {
         val subtype = forge.anElementFrom(known2GSubtypes)
         val carrierName = forge.anAlphabeticalString()
@@ -228,7 +229,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
-    @Test
+    @RepeatedTest(4)
     @TestTargetApi(Build.VERSION_CODES.P)
     fun `connected to mobile 2G API 28+`(forge: Forge) {
         val subtype = forge.anElementFrom(known2GSubtypes)
@@ -247,7 +248,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
-    @Test
+    @RepeatedTest(4)
     fun `connected to mobile 3G`(forge: Forge) {
         val subtype = forge.anElementFrom(known3GSubtypes)
         val carrierName = forge.anAlphabeticalString()
@@ -265,7 +266,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
-    @Test
+    @RepeatedTest(4)
     @TestTargetApi(Build.VERSION_CODES.P)
     fun `connected to mobile 3G API 28+`(forge: Forge) {
         val subtype = forge.anElementFrom(known3GSubtypes)
@@ -284,7 +285,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
-    @Test
+    @RepeatedTest(4)
     fun `connected to mobile 4G`(forge: Forge) {
         val subtype = forge.anElementFrom(known4GSubtypes)
         val carrierName = forge.anAlphabeticalString()
@@ -302,7 +303,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
-    @Test
+    @RepeatedTest(4)
     @TestTargetApi(Build.VERSION_CODES.P)
     fun `connected to mobile 4G API 28+`(forge: Forge) {
         val subtype = forge.anElementFrom(known4GSubtypes)
@@ -321,7 +322,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
-    @Test
+    @RepeatedTest(4)
     fun `connected to mobile 5G`(forge: Forge) {
         val subtype = forge.anElementFrom(known5GSubtypes)
         val carrierName = forge.anAlphabeticalString()
@@ -339,7 +340,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasCellularTechnology(mobileSubtypeNames[subtype])
     }
 
-    @Test
+    @RepeatedTest(4)
     @TestTargetApi(Build.VERSION_CODES.P)
     fun `connected to mobile 5G API 28+`(forge: Forge) {
         val subtype = forge.anElementFrom(known5GSubtypes)
@@ -432,7 +433,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     private fun stubTelephonyManager(carrierName: String?, carrierId: Int) {
         whenever(mockTelephonyManager.simCarrierIdName) doReturn carrierName
-        whenever(mockTelephonyManager.simCarrierId) doReturn carrierId.toInt()
+        whenever(mockTelephonyManager.simCarrierId) doReturn carrierId
     }
 
     private fun stubNetworkInfo(networkType: Int, networkSubtype: Int) {

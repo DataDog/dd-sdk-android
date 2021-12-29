@@ -53,6 +53,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -367,7 +368,7 @@ internal class DatadogTest {
         assertThat(InternalLogsFeature.initialized.get()).isFalse()
     }
 
-    @Test
+    @RepeatedTest(8)
     fun `𝕄 not initialize features 𝕎 initialize() with features disabled`(
         @BoolForgery logsEnabled: Boolean,
         @BoolForgery tracesEnabled: Boolean,

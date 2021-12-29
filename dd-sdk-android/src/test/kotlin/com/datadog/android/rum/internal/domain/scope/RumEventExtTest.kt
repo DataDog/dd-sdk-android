@@ -12,6 +12,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -235,7 +236,7 @@ internal class RumEventExtTest {
         )
     }
 
-    @Test
+    @RepeatedTest(12)
     fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Cellular}`(
         forge: Forge
     ) {
@@ -387,7 +388,7 @@ internal class RumEventExtTest {
         )
     }
 
-    @Test
+    @RepeatedTest(12)
     fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Cellular}`(
         forge: Forge
     ) {
@@ -434,6 +435,158 @@ internal class RumEventExtTest {
             ErrorEvent.Connectivity(
                 ErrorEvent.Status.CONNECTED,
                 listOf(ErrorEvent.Interface.OTHER),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {not connected}`() {
+        // Given
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
+        )
+
+        // When
+        val result = networkInfo.toLongTaskConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            LongTaskEvent.Connectivity(
+                LongTaskEvent.Status.NOT_CONNECTED,
+                emptyList(),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Wifi}`() {
+        // Given
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_WIFI
+        )
+
+        // When
+        val result = networkInfo.toLongTaskConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            LongTaskEvent.Connectivity(
+                LongTaskEvent.Status.CONNECTED,
+                listOf(LongTaskEvent.Interface.WIFI),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Wimax}`() {
+        // Given
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_WIMAX
+        )
+
+        // When
+        val result = networkInfo.toLongTaskConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            LongTaskEvent.Connectivity(
+                LongTaskEvent.Status.CONNECTED,
+                listOf(LongTaskEvent.Interface.WIMAX),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Ethernet}`() {
+        // Given
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_ETHERNET
+        )
+
+        // When
+        val result = networkInfo.toLongTaskConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            LongTaskEvent.Connectivity(
+                LongTaskEvent.Status.CONNECTED,
+                listOf(LongTaskEvent.Interface.ETHERNET),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Bluetooth}`() {
+        // Given
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_BLUETOOTH
+        )
+
+        // When
+        val result = networkInfo.toLongTaskConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            LongTaskEvent.Connectivity(
+                LongTaskEvent.Status.CONNECTED,
+                listOf(LongTaskEvent.Interface.BLUETOOTH),
+                null
+            )
+        )
+    }
+
+    @RepeatedTest(12)
+    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Cellular}`(
+        forge: Forge
+    ) {
+        // Given
+        val connectivity = forge.anElementFrom(
+            NetworkInfo.Connectivity.NETWORK_2G,
+            NetworkInfo.Connectivity.NETWORK_3G,
+            NetworkInfo.Connectivity.NETWORK_4G,
+            NetworkInfo.Connectivity.NETWORK_5G,
+            NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
+            NetworkInfo.Connectivity.NETWORK_CELLULAR
+        )
+        val technology = forge.anAlphabeticalString()
+        val networkInfo = NetworkInfo(
+            connectivity,
+            cellularTechnology = technology
+        )
+
+        // When
+        val result = networkInfo.toLongTaskConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            LongTaskEvent.Connectivity(
+                LongTaskEvent.Status.CONNECTED,
+                listOf(LongTaskEvent.Interface.CELLULAR),
+                LongTaskEvent.Cellular(technology)
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Other}`() {
+        // Given
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_OTHER
+        )
+
+        // When
+        val result = networkInfo.toLongTaskConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            LongTaskEvent.Connectivity(
+                LongTaskEvent.Status.CONNECTED,
+                listOf(LongTaskEvent.Interface.OTHER),
                 null
             )
         )
