@@ -61,6 +61,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -835,7 +836,7 @@ internal class DatadogRumMonitorTest {
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
-    @Test
+    @RepeatedTest(10)
     fun `M delegate event to rootScope W error source type onAddErrorWithStacktrace`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,

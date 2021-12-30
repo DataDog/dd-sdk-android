@@ -157,6 +157,94 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
+    fun `𝕄 build config without logsConfig 𝕎 build() { logs disabled }`() {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = false,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+
+        // When
+        val config = testedBuilder.build()
+
+        // Then
+        assertThat(config.logsConfig).isNull()
+        assertThat(config.tracesConfig).isNotNull
+        assertThat(config.crashReportConfig).isNotNull
+        assertThat(config.rumConfig).isNotNull
+        assertThat(config.internalLogsConfig).isNull()
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 build config without tracesConfig 𝕎 build() { traces disabled }`() {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = false,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+
+        // When
+        val config = testedBuilder.build()
+
+        // Then
+        assertThat(config.logsConfig).isNotNull
+        assertThat(config.tracesConfig).isNull()
+        assertThat(config.crashReportConfig).isNotNull
+        assertThat(config.rumConfig).isNotNull
+        assertThat(config.internalLogsConfig).isNull()
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 build config without crashReportConfig 𝕎 build() { crashReports disabled }`() {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = false,
+            rumEnabled = true
+        )
+
+        // When
+        val config = testedBuilder.build()
+
+        // Then
+        assertThat(config.logsConfig).isNotNull
+        assertThat(config.tracesConfig).isNotNull
+        assertThat(config.crashReportConfig).isNull()
+        assertThat(config.rumConfig).isNotNull
+        assertThat(config.internalLogsConfig).isNull()
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 build config without rumConfig 𝕎 build() { RUM disabled }`() {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = false
+        )
+
+        // When
+        val config = testedBuilder.build()
+
+        // Then
+        assertThat(config.logsConfig).isNotNull
+        assertThat(config.tracesConfig).isNotNull
+        assertThat(config.crashReportConfig).isNotNull
+        assertThat(config.rumConfig).isNull()
+        assertThat(config.internalLogsConfig).isNull()
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
     fun `𝕄 build config with custom site 𝕎 useSite() and build()`(
         @Forgery site: DatadogSite
     ) {

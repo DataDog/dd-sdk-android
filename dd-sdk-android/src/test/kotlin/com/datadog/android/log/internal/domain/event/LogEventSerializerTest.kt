@@ -17,6 +17,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -39,7 +40,7 @@ internal class LogEventSerializerTest {
         testedSerializer = LogEventSerializer()
     }
 
-    @Test
+    @RepeatedTest(4)
     fun `serializes full log as json`(@Forgery fakeLog: LogEvent) {
         val serialized = testedSerializer.serialize(fakeLog)
         assertSerializedLogMatchesInputLog(serialized, fakeLog)

@@ -10,6 +10,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 
@@ -85,7 +86,7 @@ abstract class ObjectTest<T : Any> {
      * `equals` must be consistent.
      * if a (relevant) field is changed, equals should detect it
      */
-    @Test
+    @RepeatedTest(4)
     fun equalsIsConsistent(forge: Forge) {
         // Given
         val x = createInstance(forge)
@@ -125,7 +126,7 @@ abstract class ObjectTest<T : Any> {
     // region `hashCode` contract
 
     /**
-     * `hashCode` must be consistent internaly.
+     * `hashCode` must be consistent internally.
      * if a (relevant) field is changed, hashCode may detect it (but collisions can happen)
      */
     @Test
@@ -157,7 +158,7 @@ abstract class ObjectTest<T : Any> {
     }
 
     /**
-     * `hashCode` must be consistent internaly.
+     * `hashCode` must be consistent internally.
      * if (x.equals(y)) then x.hashCode() == y.hashCode()
      */
     @Test

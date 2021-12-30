@@ -14,6 +14,10 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.android.utils.times
 import com.datadog.tools.unit.setStaticValue
+import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.isNull
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Case
@@ -323,35 +327,55 @@ internal class DatadogDataConstraintsTest {
         forge: Forge
     ) {
         // Given
-        val goodTimingPart = forge.anAlphabeticalString(case = Case.ANY)
-        val badTimingPart = forge.anAsciiString()
-            .replace(Regex("[a-zA-Z0-9:\\-_.@\$]"), "%|*|!|&|")
+        val expectedSanitizedKeys = mutableSetOf<String>()
+        val badToSanitizedKeys = mutableMapOf<String, String>()
 
-        val malformedKey = (goodTimingPart + badTimingPart)
+        val customTimings = forge.aMap {
+            val goodTimingPart = forge.anAlphabeticalString(case = Case.ANY)
+            if (forge.aBool()) {
+                expectedSanitizedKeys.add(goodTimingPart)
+                goodTimingPart to forge.aLong()
+            } else {
+                val badTimingPart = forge.anAsciiString()
+                    .replace(Regex("[a-zA-Z0-9\\-_.@$]"), forge.anElementFrom("%", "*", "!", "&"))
 
-        val customTimings = mapOf(
-            malformedKey to forge.aGaussianLong()
-        )
+                val badKey = goodTimingPart + badTimingPart
+                val sanitizedKey = goodTimingPart + "_".repeat(badTimingPart.length)
+
+                expectedSanitizedKeys.add(sanitizedKey)
+                badToSanitizedKeys[badKey] = sanitizedKey
+
+                badKey to forge.aLong()
+            }
+        }
 
         // When
         val sanitizedTimings =
             testedConstraints.validateTimings(customTimings)
 
         // Then
-        assertThat(sanitizedTimings.size)
-            .isEqualTo(customTimings.size)
+        assertThat(sanitizedTimings.keys)
+            .isEqualTo(expectedSanitizedKeys)
 
-        val sanitizedBadTimingPart = "_".repeat(badTimingPart.length)
+        val logArgumentCaptor = argumentCaptor<String>()
 
-        assertThat(sanitizedTimings.keys.first())
-            .isEqualTo(goodTimingPart + sanitizedBadTimingPart)
+        verify(mockDevLogHandler, times(badToSanitizedKeys.size)).handleLog(
+            eq(Log.WARN),
+            logArgumentCaptor.capture(),
+            isNull(),
+            eq(emptyMap()),
+            eq(emptySet()),
+            isNull()
+        )
 
-        verify(mockDevLogHandler).handleLog(
-            Log.WARN,
-            DatadogDataConstraints.CUSTOM_TIMING_KEY_REPLACED_WARNING.format(
-                malformedKey,
-                goodTimingPart + sanitizedBadTimingPart
-            )
+        assertThat(logArgumentCaptor.allValues).containsExactlyInAnyOrderElementsOf(
+            badToSanitizedKeys.toList().map {
+                DatadogDataConstraints.CUSTOM_TIMING_KEY_REPLACED_WARNING.format(
+                    Locale.US,
+                    it.first,
+                    it.second
+                )
+            }
         )
     }
 

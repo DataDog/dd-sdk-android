@@ -67,7 +67,7 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
                         ?: NoOpAdvancedRumMonitor()
                 )
             } else {
-                NoOpFragmentLifecycleCallbacks<Activity>()
+                NoOpFragmentLifecycleCallbacks()
             }
         }
 

@@ -26,6 +26,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -49,7 +50,7 @@ internal class RumEventSerializerTest {
         testedSerializer = RumEventSerializer()
     }
 
-    @Test
+    @RepeatedTest(4)
     fun `𝕄 serialize RUM event 𝕎 serialize() with ResourceEvent`(@Forgery event: ResourceEvent) {
         val serialized = testedSerializer.serialize(event)
 
@@ -95,7 +96,7 @@ internal class RumEventSerializerTest {
         }
     }
 
-    @Test
+    @RepeatedTest(4)
     fun `𝕄 serialize RUM event 𝕎 serialize() with ActionEvent`(
         @Forgery event: ActionEvent
     ) {
@@ -159,7 +160,7 @@ internal class RumEventSerializerTest {
         }
     }
 
-    @Test
+    @RepeatedTest(4)
     fun `𝕄 serialize RUM event 𝕎 serialize() with ViewEvent`(@Forgery event: ViewEvent) {
         val serialized = testedSerializer.serialize(event)
 
@@ -211,7 +212,7 @@ internal class RumEventSerializerTest {
         }
     }
 
-    @Test
+    @RepeatedTest(4)
     fun `𝕄 serialize RUM event 𝕎 serialize() with ErrorEvent`(@Forgery event: ErrorEvent) {
         val serialized = testedSerializer.serialize(event)
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
@@ -264,7 +265,7 @@ internal class RumEventSerializerTest {
         }
     }
 
-    @Test
+    @RepeatedTest(4)
     fun `𝕄 serialize RUM event 𝕎 serialize() with LongTaskEvent`(
         @Forgery event: LongTaskEvent
     ) {

@@ -17,6 +17,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 
@@ -96,7 +97,7 @@ internal class LogcatLogHandlerTest {
             )
     }
 
-    @Test
+    @RepeatedTest(4)
     fun `resolves valid stack trace element when wrapped in timber`(forge: Forge) {
 
         // Given

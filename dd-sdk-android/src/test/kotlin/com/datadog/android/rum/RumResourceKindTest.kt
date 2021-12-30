@@ -39,12 +39,25 @@ internal class RumResourceKindTest {
     }
 
     @Test
-    fun `detect media MimeType`(
+    fun `detect media MimeType { audio }`(
         forge: Forge
     ) {
         val mimeType = forge.aStringMatching(
-            "(video|audio)/" +
-                "((vnd\\.)|([xX]\\.)|(x\\-)|([a-z]))[a-z]{2,8}"
+            "audio/((vnd\\.)|([xX]\\.)|(x\\-)|([a-z]))[a-z]{2,8}"
+        )
+
+        val kind = RumResourceKind.fromMimeType(mimeType)
+
+        assertThat(kind)
+            .isEqualTo(RumResourceKind.MEDIA)
+    }
+
+    @Test
+    fun `detect media MimeType { video }`(
+        forge: Forge
+    ) {
+        val mimeType = forge.aStringMatching(
+            "video/((vnd\\.)|([xX]\\.)|(x\\-)|([a-z]))[a-z]{2,8}"
         )
 
         val kind = RumResourceKind.fromMimeType(mimeType)
