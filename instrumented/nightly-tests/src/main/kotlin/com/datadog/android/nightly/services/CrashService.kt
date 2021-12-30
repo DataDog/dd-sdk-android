@@ -23,6 +23,8 @@ internal abstract class CrashService : Service() {
             }
         }
         GlobalRum.get().startView(this, this.javaClass.simpleName.toString())
+        // this is a hack to write RUM view to the disk, so that file exists by the time NDK crashes
+        GlobalRum.get().addTiming("foo")
     }
 
     protected fun getCredentials() = Credentials(
