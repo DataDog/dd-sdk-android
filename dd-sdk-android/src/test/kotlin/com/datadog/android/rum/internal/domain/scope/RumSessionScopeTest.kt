@@ -662,7 +662,7 @@ internal class RumSessionScopeTest {
             sessionMaxDurationNanos = TEST_MAX_DURATION_NS
         )
         testedScope.applicationDisplayed = false
-        val fakeEvent = forge.forgeValidAppLaunchEvent()
+        val fakeEvent = forge.forgeValidBackgroundEvent()
 
         // WHEN
         testedScope.handleEvent(fakeEvent, mockWriter)
