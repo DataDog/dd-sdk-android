@@ -10,6 +10,7 @@ import com.datadog.android.rum.model.ViewEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import fr.xgouchet.elmyr.jvm.ext.aTimestamp
+import java.net.URL
 import java.util.UUID
 
 internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
@@ -19,41 +20,89 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
             date = forge.aTimestamp(),
             view = ViewEvent.View(
                 id = forge.getForgery<UUID>().toString(),
-                url = forge.aStringMatching("https://[a-z]+.com/[a-z0-9_/]+"),
-                referrer = null,
+                url = forge.aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),
+                referrer = forge.aNullable { getForgery<URL>().toString() },
+                name = forge.aNullable { anAlphabeticalString() },
                 timeSpent = forge.aPositiveLong(),
                 error = ViewEvent.Error(forge.aPositiveLong()),
+                crash = forge.aNullable { ViewEvent.Crash(aPositiveLong()) },
                 action = ViewEvent.Action(forge.aPositiveLong()),
                 resource = ViewEvent.Resource(forge.aPositiveLong()),
-                longTask = ViewEvent.LongTask(forge.aPositiveLong()),
+                longTask = forge.aNullable { ViewEvent.LongTask(forge.aPositiveLong()) },
+                frozenFrame = forge.aNullable { ViewEvent.FrozenFrame(aPositiveLong()) },
                 loadingType = forge.aNullable(),
                 loadingTime = forge.aNullable { aPositiveLong() },
                 firstContentfulPaint = forge.aNullable { aPositiveLong() },
-                domInteractive = forge.aNullable { aPositiveLong() },
-                domContentLoaded = forge.aNullable { aPositiveLong() },
+                largestContentfulPaint = forge.aNullable { aPositiveLong() },
+                firstInputDelay = forge.aNullable { aPositiveLong() },
+                firstInputTime = forge.aNullable { aPositiveLong() },
+                cumulativeLayoutShift = forge.aNullable { aPositiveLong() },
                 domComplete = forge.aNullable { aPositiveLong() },
+                domContentLoaded = forge.aNullable { aPositiveLong() },
+                domInteractive = forge.aNullable { aPositiveLong() },
                 loadEvent = forge.aNullable { aPositiveLong() },
                 customTimings = forge.aNullable {
                     ViewEvent.CustomTimings(
                         aMap { anAlphabeticalString() to aLong() }
                     )
-                }
+                },
+                isActive = forge.aNullable { aBool() },
+                isSlowRendered = forge.aNullable { aBool() },
+                inForegroundPeriods = forge.aNullable {
+                    aList {
+                        ViewEvent.InForegroundPeriod(
+                            start = aPositiveLong(),
+                            duration = aPositiveLong()
+                        )
+                    }
+                },
+                memoryAverage = forge.aNullable { aPositiveDouble() },
+                memoryMax = forge.aNullable { aPositiveDouble() },
+                cpuTicksCount = forge.aNullable { aPositiveDouble() },
+                cpuTicksPerSecond = forge.aNullable { aPositiveDouble() },
+                refreshRateAverage = forge.aNullable { aPositiveDouble() },
+                refreshRateMin = forge.aNullable { aPositiveDouble() }
             ),
-            usr = ViewEvent.Usr(
-                id = forge.anHexadecimalString(),
-                name = forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+"),
-                email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}"),
-                additionalProperties = forge.exhaustiveAttributes()
-            ),
+            connectivity = forge.aNullable {
+                ViewEvent.Connectivity(
+                    status = getForgery(),
+                    interfaces = aList { getForgery() },
+                    cellular = aNullable {
+                        ViewEvent.Cellular(
+                            technology = aNullable { anAlphabeticalString() },
+                            carrierName = aNullable { anAlphabeticalString() }
+                        )
+                    }
+                )
+            },
+            synthetics = forge.aNullable {
+                ViewEvent.Synthetics(
+                    testId = forge.anHexadecimalString(),
+                    resultId = forge.anHexadecimalString()
+                )
+            },
+            usr = forge.aNullable {
+                ViewEvent.Usr(
+                    id = aNullable { anHexadecimalString() },
+                    name = aNullable { aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+") },
+                    email = aNullable { aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}") },
+                    additionalProperties = exhaustiveAttributes()
+                )
+            },
             application = ViewEvent.Application(forge.getForgery<UUID>().toString()),
+            service = forge.aNullable { anAlphabeticalString() },
             session = ViewEvent.ViewEventSession(
                 id = forge.getForgery<UUID>().toString(),
-                type = ViewEvent.Type.USER
+                type = ViewEvent.Type.USER,
+                hasReplay = forge.aNullable { aBool() }
             ),
-            context = ViewEvent.Context(
-                additionalProperties = forge.exhaustiveAttributes()
-            ),
+            context = forge.aNullable {
+                ViewEvent.Context(
+                    additionalProperties = exhaustiveAttributes()
+                )
+            },
             dd = ViewEvent.Dd(
+                session = forge.aNullable { ViewEvent.DdSession(getForgery()) },
                 documentVersion = forge.aPositiveLong(strict = true)
             )
         )

@@ -154,7 +154,8 @@ internal class RumSessionScopeTest {
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
-        assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
+        val originalRumContext = testedScope.getRumContext()
+        assertThat(GlobalRum.getRumContext()).isEqualTo(originalRumContext)
     }
 
     // region Session management
@@ -662,7 +663,7 @@ internal class RumSessionScopeTest {
             sessionMaxDurationNanos = TEST_MAX_DURATION_NS
         )
         testedScope.applicationDisplayed = false
-        val fakeEvent = forge.forgeValidAppLaunchEvent()
+        val fakeEvent = forge.forgeValidBackgroundEvent()
 
         // WHEN
         testedScope.handleEvent(fakeEvent, mockWriter)

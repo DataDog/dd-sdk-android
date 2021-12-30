@@ -19,7 +19,8 @@ internal fun Any.resolveViewUrl(): String {
 
 internal fun ComponentName.resolveViewUrl(): String {
     return when {
-        className.startsWith(packageName) -> className
+        packageName.isEmpty() -> className
+        className.startsWith("$packageName.") -> className
         className.contains('.') -> className
         else -> "$packageName.$className"
     }

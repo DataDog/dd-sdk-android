@@ -12,6 +12,7 @@ import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import fr.xgouchet.elmyr.jvm.ext.aTimestamp
+import java.net.URL
 import java.util.UUID
 
 internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
@@ -20,39 +21,77 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
         return ErrorEvent(
             date = forge.aTimestamp(),
             error = ErrorEvent.Error(
+                id = forge.aNullable { getForgery<UUID>().toString() },
                 message = forge.anAlphabeticalString(),
                 source = forge.getForgery(),
                 stack = forge.aNullable { aThrowable().loggableStackTrace() },
                 resource = forge.aNullable {
                     ErrorEvent.Resource(
-                        url = aStringMatching("https://[a-z]+.com/[a-z0-9_/]+"),
+                        url = aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),
                         method = getForgery(),
-                        statusCode = aLong(200, 600)
+                        statusCode = aLong(200, 600),
+                        provider = aNullable {
+                            ErrorEvent.Provider(
+                                domain = aNullable { aStringMatching("[a-z]+\\.[a-z]{3}") },
+                                name = aNullable { anAlphabeticalString() },
+                                type = aNullable()
+                            )
+                        }
                     )
                 },
-                sourceType = forge.getForgery()
+                sourceType = forge.aNullable { forge.getForgery() },
+                isCrash = forge.aNullable { aBool() },
+                type = forge.aNullable { anAlphabeticalString() },
+                handling = forge.aNullable { getForgery() },
+                handlingStack = forge.aNullable { aThrowable().loggableStackTrace() },
             ),
             view = ErrorEvent.View(
                 id = forge.getForgery<UUID>().toString(),
-                url = forge.aStringMatching("https://[a-z]+.com/[a-z0-9_/]+"),
-                referrer = null
+                url = forge.aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),
+                referrer = forge.aNullable { getForgery<URL>().toString() },
+                name = forge.aNullable { anAlphabeticalString() },
+                inForeground = forge.aNullable { aBool() }
             ),
-            usr = ErrorEvent.Usr(
-                id = forge.anHexadecimalString(),
-                name = forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+"),
-                email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}"),
-                additionalProperties = forge.exhaustiveAttributes()
-            ),
+            connectivity = forge.aNullable {
+                ErrorEvent.Connectivity(
+                    status = getForgery(),
+                    interfaces = aList { getForgery() },
+                    cellular = aNullable {
+                        ErrorEvent.Cellular(
+                            technology = aNullable { anAlphabeticalString() },
+                            carrierName = aNullable { anAlphabeticalString() }
+                        )
+                    }
+                )
+            },
+            synthetics = forge.aNullable {
+                ErrorEvent.Synthetics(
+                    testId = forge.anHexadecimalString(),
+                    resultId = forge.anHexadecimalString()
+                )
+            },
+            usr = forge.aNullable {
+                ErrorEvent.Usr(
+                    id = aNullable { anHexadecimalString() },
+                    name = aNullable { aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+") },
+                    email = aNullable { aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}") },
+                    additionalProperties = exhaustiveAttributes()
+                )
+            },
             action = forge.aNullable { ErrorEvent.Action(getForgery<UUID>().toString()) },
             application = ErrorEvent.Application(forge.getForgery<UUID>().toString()),
+            service = forge.aNullable { anAlphabeticalString() },
             session = ErrorEvent.ErrorEventSession(
                 id = forge.getForgery<UUID>().toString(),
-                type = ErrorEvent.ErrorEventSessionType.USER
+                type = ErrorEvent.ErrorEventSessionType.USER,
+                hasReplay = forge.aNullable { aBool() }
             ),
             context = forge.aNullable {
                 ErrorEvent.Context(additionalProperties = forge.exhaustiveAttributes())
             },
-            dd = ErrorEvent.Dd()
+            dd = ErrorEvent.Dd(
+                session = forge.aNullable { ErrorEvent.DdSession(getForgery()) }
+            )
         )
     }
 }

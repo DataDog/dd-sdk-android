@@ -52,6 +52,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class RumEventMapperTest {
+
     lateinit var testedRumEventMapper: RumEventMapper
 
     @Mock
@@ -240,8 +241,9 @@ internal class RumEventMapperTest {
     fun `M return null event W map returns null object { ErrorEvent }`(forge: Forge) {
         // GIVEN
         val fakeErrorEvent = forge.getForgery<ErrorEvent>()
-        val fakeNoCrashEvent =
-            fakeErrorEvent.copy(error = fakeErrorEvent.error.copy(isCrash = false))
+        val fakeNoCrashEvent = fakeErrorEvent.copy(
+            error = fakeErrorEvent.error.copy(isCrash = false)
+        )
         whenever(mockErrorEventMapper.map(fakeNoCrashEvent))
             .thenReturn(null)
 
@@ -261,19 +263,19 @@ internal class RumEventMapperTest {
     fun `M return event W map returns null object { fatal ErrorEvent }`(forge: Forge) {
         // GIVEN
         val fakeErrorEvent = forge.getForgery<ErrorEvent>()
-        val fakeCrasEvent = fakeErrorEvent.copy(
+        val fakeCrashEvent = fakeErrorEvent.copy(
             error = fakeErrorEvent.error.copy(isCrash = true)
         )
-        whenever(mockErrorEventMapper.map(fakeCrasEvent))
+        whenever(mockErrorEventMapper.map(fakeCrashEvent))
             .thenReturn(null)
 
         // WHEN
-        val mappedRumEvent = testedRumEventMapper.map(fakeCrasEvent)
+        val mappedRumEvent = testedRumEventMapper.map(fakeCrashEvent)
 
         // THEN
         assertThat(mappedRumEvent)
-            .isSameAs(fakeCrasEvent)
-            .isEqualTo(fakeCrasEvent)
+            .isSameAs(fakeCrashEvent)
+            .isEqualTo(fakeCrashEvent)
     }
 
     @Test
@@ -352,20 +354,26 @@ internal class RumEventMapperTest {
     }
 
     @Test
-    fun `M return null event W map returns different object { ErrorEvent }`(forge: Forge) {
+    fun `M return null event W map returns different object { ErrorEvent }`(
+        @Forgery fakeRumEvent: ErrorEvent,
+        @Forgery fakeMappedRumEvent: ErrorEvent
+    ) {
         // GIVEN
-        val fakeRumEvent = forge.getForgery<ErrorEvent>()
-        whenever(mockErrorEventMapper.map(fakeRumEvent))
-            .thenReturn(forge.getForgery())
+        val fakeNoCrashEvent = fakeRumEvent.copy(
+            error = fakeRumEvent.error.copy(isCrash = false)
+        )
+        whenever(mockErrorEventMapper.map(fakeNoCrashEvent))
+            .thenReturn(fakeMappedRumEvent)
 
         // WHEN
-        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
+        val mappedRumEvent = testedRumEventMapper.map(fakeNoCrashEvent)
 
         // THEN
         assertThat(mappedRumEvent).isNull()
         verify(mockDevLogHandler).handleLog(
             Log.WARN,
-            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
+            RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE
+                .format(Locale.US, fakeNoCrashEvent)
         )
     }
 
@@ -442,14 +450,17 @@ internal class RumEventMapperTest {
         @Forgery fakeRumEvent: ErrorEvent
     ) {
         // Given
-        whenever(mockErrorEventMapper.map(fakeRumEvent)) doReturn null
+        val fakeNoCrashEvent = fakeRumEvent.copy(
+            error = fakeRumEvent.error.copy(isCrash = false)
+        )
+        whenever(mockErrorEventMapper.map(fakeNoCrashEvent)) doReturn null
 
         // WHEN
-        val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
+        val mappedRumEvent = testedRumEventMapper.map(fakeNoCrashEvent)
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance).eventDropped(fakeRumEvent.view.id, EventType.ERROR)
+        verify(rumMonitor.mockInstance).eventDropped(fakeNoCrashEvent.view.id, EventType.ERROR)
     }
 
     @Test

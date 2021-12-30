@@ -17,7 +17,6 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.google.gson.JsonArray
 import com.google.gson.JsonParser
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -25,6 +24,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.Locale
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
@@ -50,7 +50,7 @@ internal class RumEventSerializerTest {
         testedSerializer = RumEventSerializer()
     }
 
-    @RepeatedTest(4)
+    @RepeatedTest(8)
     fun `𝕄 serialize RUM event 𝕎 serialize() with ResourceEvent`(@Forgery event: ResourceEvent) {
         val serialized = testedSerializer.serialize(event)
 
@@ -59,7 +59,7 @@ internal class RumEventSerializerTest {
             .hasField("type", "resource")
             .hasField("date", event.date)
             .hasField("resource") {
-                hasField("type", event.resource.type.name.lowercase())
+                hasField("type", event.resource.type.name.lowercase(Locale.US))
                 hasField("url", event.resource.url)
                 hasField("duration", event.resource.duration)
                 hasNullableField("method", event.resource.method?.name)
@@ -72,7 +72,7 @@ internal class RumEventSerializerTest {
             }
             .hasField("session") {
                 hasField("id", event.session.id)
-                hasField("type", event.session.type.name.lowercase())
+                hasField("type", event.session.type.name.lowercase(Locale.US))
             }
             .hasField("view") {
                 hasField("id", event.view.id)
@@ -80,13 +80,31 @@ internal class RumEventSerializerTest {
             }
             .hasField("_dd") {
                 hasField("format_version", 2L)
+                hasNullableField("span_id", event.dd.spanId)
+                hasNullableField("trace_id", event.dd.traceId)
             }
-        event.usr?.let {
+
+        event.usr?.let { usr ->
             assertThat(jsonObject).hasField("usr") {
-                hasNullableField("id", event.usr?.id)
-                hasNullableField("name", event.usr?.name)
-                hasNullableField("email", event.usr?.email)
-                containsAttributes(it.additionalProperties)
+                hasNullableField("id", usr.id)
+                hasNullableField("name", usr.name)
+                hasNullableField("email", usr.email)
+                containsAttributes(usr.additionalProperties)
+            }
+        }
+        event.connectivity?.let { connectivity ->
+            assertThat(jsonObject).hasField("connectivity") {
+                hasNullableField("status", connectivity.status.name.lowercase(Locale.US))
+                hasNullableField(
+                    "interfaces",
+                    connectivity.interfaces.map { it.name.lowercase(Locale.US) }
+                )
+                connectivity.cellular?.let { cellular ->
+                    hasField("cellular") {
+                        hasNullableField("technology", cellular.technology)
+                        hasNullableField("carrier_name", cellular.carrierName)
+                    }
+                }
             }
         }
         event.context?.additionalProperties?.let {
@@ -96,7 +114,7 @@ internal class RumEventSerializerTest {
         }
     }
 
-    @RepeatedTest(4)
+    @RepeatedTest(8)
     fun `𝕄 serialize RUM event 𝕎 serialize() with ActionEvent`(
         @Forgery event: ActionEvent
     ) {
@@ -107,7 +125,7 @@ internal class RumEventSerializerTest {
             .hasField("type", "action")
             .hasField("date", event.date)
             .hasField("action") {
-                hasField("type", event.action.type.name.lowercase())
+                hasField("type", event.action.type.name.lowercase(Locale.US))
                 hasNullableField("id", event.action.id)
                 event.action.target?.let {
                     hasField("target") {
@@ -129,6 +147,11 @@ internal class RumEventSerializerTest {
                         hasField("count", it.count)
                     }
                 }
+                event.action.crash?.let {
+                    hasField("crash") {
+                        hasField("count", it.count)
+                    }
+                }
                 hasNullableField("loading_time", event.action.loadingTime)
             }
             .hasField("application") {
@@ -136,7 +159,7 @@ internal class RumEventSerializerTest {
             }
             .hasField("session") {
                 hasField("id", event.session.id)
-                hasField("type", event.session.type.name.lowercase())
+                hasField("type", event.session.type.name.lowercase(Locale.US))
             }
             .hasField("view") {
                 hasField("id", event.view.id)
@@ -145,12 +168,28 @@ internal class RumEventSerializerTest {
             .hasField("_dd") {
                 hasField("format_version", 2L)
             }
-        event.usr?.let {
+
+        event.usr?.let { usr ->
             assertThat(jsonObject).hasField("usr") {
-                hasNullableField("id", event.usr?.id)
-                hasNullableField("name", event.usr?.name)
-                hasNullableField("email", event.usr?.email)
-                containsAttributes(it.additionalProperties)
+                hasNullableField("id", usr.id)
+                hasNullableField("name", usr.name)
+                hasNullableField("email", usr.email)
+                containsAttributes(usr.additionalProperties)
+            }
+        }
+        event.connectivity?.let { connectivity ->
+            assertThat(jsonObject).hasField("connectivity") {
+                hasNullableField("status", connectivity.status.name.lowercase(Locale.US))
+                hasNullableField(
+                    "interfaces",
+                    connectivity.interfaces.map { it.name.lowercase(Locale.US) }
+                )
+                connectivity.cellular?.let { cellular ->
+                    hasField("cellular") {
+                        hasNullableField("technology", cellular.technology)
+                        hasNullableField("carrier_name", cellular.carrierName)
+                    }
+                }
             }
         }
         event.context?.additionalProperties?.let {
@@ -160,7 +199,7 @@ internal class RumEventSerializerTest {
         }
     }
 
-    @RepeatedTest(4)
+    @RepeatedTest(8)
     fun `𝕄 serialize RUM event 𝕎 serialize() with ViewEvent`(@Forgery event: ViewEvent) {
         val serialized = testedSerializer.serialize(event)
 
@@ -173,7 +212,7 @@ internal class RumEventSerializerTest {
             }
             .hasField("session") {
                 hasField("id", event.session.id)
-                hasField("type", event.session.type.name.lowercase())
+                hasField("type", event.session.type.name.lowercase(Locale.US))
             }
             .hasField("view") {
                 hasField("id", event.view.id)
@@ -197,12 +236,28 @@ internal class RumEventSerializerTest {
             .hasField("_dd") {
                 hasField("format_version", 2L)
             }
-        event.usr?.let {
+
+        event.usr?.let { usr ->
             assertThat(jsonObject).hasField("usr") {
-                hasNullableField("id", event.usr?.id)
-                hasNullableField("name", event.usr?.name)
-                hasNullableField("email", event.usr?.email)
-                containsAttributes(it.additionalProperties)
+                hasNullableField("id", usr.id)
+                hasNullableField("name", usr.name)
+                hasNullableField("email", usr.email)
+                containsAttributes(usr.additionalProperties)
+            }
+        }
+        event.connectivity?.let { connectivity ->
+            assertThat(jsonObject).hasField("connectivity") {
+                hasNullableField("status", connectivity.status.name.lowercase(Locale.US))
+                hasNullableField(
+                    "interfaces",
+                    connectivity.interfaces.map { it.name.lowercase(Locale.US) }
+                )
+                connectivity.cellular?.let { cellular ->
+                    hasField("cellular") {
+                        hasNullableField("technology", cellular.technology)
+                        hasNullableField("carrier_name", cellular.carrierName)
+                    }
+                }
             }
         }
         event.context?.additionalProperties?.let {
@@ -212,7 +267,7 @@ internal class RumEventSerializerTest {
         }
     }
 
-    @RepeatedTest(4)
+    @RepeatedTest(8)
     fun `𝕄 serialize RUM event 𝕎 serialize() with ErrorEvent`(@Forgery event: ErrorEvent) {
         val serialized = testedSerializer.serialize(event)
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
@@ -221,7 +276,7 @@ internal class RumEventSerializerTest {
             .hasField("date", event.date)
             .hasField("error") {
                 hasField("message", event.error.message)
-                hasField("source", event.error.source.name.lowercase())
+                hasField("source", event.error.source.name.lowercase(Locale.US))
                 hasNullableField("stack", event.error.stack)
                 event.error.resource?.let {
                     hasField("resource") {
@@ -236,26 +291,37 @@ internal class RumEventSerializerTest {
             }
             .hasField("session") {
                 hasField("id", event.session.id)
-                hasField("type", event.session.type.name.lowercase())
+                hasField("type", event.session.type.name.lowercase(Locale.US))
             }
             .hasField("view") {
                 hasField("id", event.view.id)
                 hasField("url", event.view.url)
             }
-            .hasField("usr") {
-                hasNullableField("id", event.usr?.id)
-                hasNullableField("name", event.usr?.name)
-                hasNullableField("email", event.usr?.email)
-            }
             .hasField("_dd") {
                 hasField("format_version", 2L)
             }
-        event.usr?.let {
+
+        event.usr?.let { usr ->
             assertThat(jsonObject).hasField("usr") {
-                hasNullableField("id", event.usr?.id)
-                hasNullableField("name", event.usr?.name)
-                hasNullableField("email", event.usr?.email)
-                containsAttributes(it.additionalProperties)
+                hasNullableField("id", usr.id)
+                hasNullableField("name", usr.name)
+                hasNullableField("email", usr.email)
+                containsAttributes(usr.additionalProperties)
+            }
+        }
+        event.connectivity?.let { connectivity ->
+            assertThat(jsonObject).hasField("connectivity") {
+                hasNullableField("status", connectivity.status.name.lowercase(Locale.US))
+                hasNullableField(
+                    "interfaces",
+                    connectivity.interfaces.map { it.name.lowercase(Locale.US) }
+                )
+                connectivity.cellular?.let { cellular ->
+                    hasField("cellular") {
+                        hasNullableField("technology", cellular.technology)
+                        hasNullableField("carrier_name", cellular.carrierName)
+                    }
+                }
             }
         }
         event.context?.additionalProperties?.let {
@@ -265,7 +331,7 @@ internal class RumEventSerializerTest {
         }
     }
 
-    @RepeatedTest(4)
+    @RepeatedTest(8)
     fun `𝕄 serialize RUM event 𝕎 serialize() with LongTaskEvent`(
         @Forgery event: LongTaskEvent
     ) {
@@ -282,35 +348,45 @@ internal class RumEventSerializerTest {
             }
             .hasField("session") {
                 hasField("id", event.session.id)
-                hasField("type", event.session.type.name.lowercase())
+                hasField("type", event.session.type.name.lowercase(Locale.US))
             }
             .hasField("view") {
                 hasField("id", event.view.id)
                 hasField("url", event.view.url)
             }
-            .hasField("usr") {
-                hasNullableField("id", event.usr?.id)
-                hasNullableField("name", event.usr?.name)
-                hasNullableField("email", event.usr?.email)
-            }
             .hasField("_dd") {
                 hasField("format_version", 2L)
             }
             .hasNullableField("service", event.service)
-            .hasField("connectivity") {
-                hasField("status", event.connectivity!!.status.name.lowercase())
-                hasField(
+
+        event.usr?.let { usr ->
+            assertThat(jsonObject).hasField("usr") {
+                hasNullableField("id", usr.id)
+                hasNullableField("name", usr.name)
+                hasNullableField("email", usr.email)
+                containsAttributes(usr.additionalProperties)
+            }
+        }
+        event.connectivity?.let { connectivity ->
+            assertThat(jsonObject).hasField("connectivity") {
+                hasNullableField("status", connectivity.status.name.lowercase(Locale.US))
+                hasNullableField(
                     "interfaces",
-                    event.connectivity!!.interfaces.fold(JsonArray()) { acc, element ->
-                        acc.add(element.toJson())
-                        acc
-                    }
+                    connectivity.interfaces.map { it.name.lowercase(Locale.US) }
                 )
-                hasField("cellular") {
-                    hasNullableField("technology", event.connectivity?.cellular?.technology)
-                    hasNullableField("carrier_name", event.connectivity?.cellular?.carrierName)
+                connectivity.cellular?.let { cellular ->
+                    hasField("cellular") {
+                        hasNullableField("technology", cellular.technology)
+                        hasNullableField("carrier_name", cellular.carrierName)
+                    }
                 }
             }
+        }
+        event.context?.additionalProperties?.let {
+            assertThat(jsonObject).hasField("context") {
+                containsAttributes(it)
+            }
+        }
     }
 
     @Test
@@ -601,31 +677,33 @@ internal class RumEventSerializerTest {
             1 -> this.getForgery(ViewEvent::class.java).let {
                 it.copy(
                     context = ViewEvent.Context(additionalProperties = attributes),
-                    usr = it.usr?.copy(additionalProperties = userAttributes)
+                    usr = (it.usr ?: ViewEvent.Usr()).copy(additionalProperties = userAttributes)
                 )
             }
             2 -> this.getForgery(ActionEvent::class.java).let {
                 it.copy(
                     context = ActionEvent.Context(additionalProperties = attributes),
-                    usr = it.usr?.copy(additionalProperties = userAttributes)
+                    usr = (it.usr ?: ActionEvent.Usr()).copy(additionalProperties = userAttributes)
                 )
             }
             3 -> this.getForgery(ErrorEvent::class.java).let {
                 it.copy(
                     context = ErrorEvent.Context(additionalProperties = attributes),
-                    usr = it.usr?.copy(additionalProperties = userAttributes)
+                    usr = (it.usr ?: ErrorEvent.Usr()).copy(additionalProperties = userAttributes)
                 )
             }
             4 -> this.getForgery(ResourceEvent::class.java).let {
                 it.copy(
                     context = ResourceEvent.Context(additionalProperties = attributes),
-                    usr = it.usr?.copy(additionalProperties = userAttributes)
+                    usr = (it.usr ?: ResourceEvent.Usr())
+                        .copy(additionalProperties = userAttributes)
                 )
             }
             else -> this.getForgery(LongTaskEvent::class.java).let {
                 it.copy(
                     context = LongTaskEvent.Context(additionalProperties = attributes),
-                    usr = it.usr?.copy(additionalProperties = userAttributes)
+                    usr = (it.usr ?: LongTaskEvent.Usr())
+                        .copy(additionalProperties = userAttributes)
                 )
             }
         }

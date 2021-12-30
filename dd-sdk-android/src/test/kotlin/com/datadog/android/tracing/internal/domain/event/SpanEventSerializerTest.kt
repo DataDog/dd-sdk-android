@@ -70,7 +70,7 @@ internal class SpanEventSerializerTest {
     // region tests
 
     @Test
-    fun `M serialize a SpanEvent when serialize`(@Forgery fakeSpanEvent: SpanEvent) {
+    fun `M serialize a SpanEvent W serialize`(@Forgery fakeSpanEvent: SpanEvent) {
         // WHEN
         val serialized = testedSerializer.serialize(fakeSpanEvent)
 
@@ -160,7 +160,12 @@ internal class SpanEventSerializerTest {
             .hasField(KEY_TYPE, TYPE_CUSTOM)
             .hasField(KEY_META) {
                 hasField(KEY_DD) {
-                    hasField(KEY_SOURCE, DD_SOURCE_ANDROID)
+                    val expectedSource = span.meta.dd.source
+                    if (expectedSource == null) {
+                        doesNotHaveField(KEY_SOURCE)
+                    } else {
+                        hasField(KEY_SOURCE, expectedSource)
+                    }
                 }
                 hasField(KEY_SPAN) {
                     hasField(KEY_KIND, KIND_CLIENT)

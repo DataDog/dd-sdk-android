@@ -10,6 +10,7 @@ import com.datadog.android.rum.model.ActionEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import fr.xgouchet.elmyr.jvm.ext.aTimestamp
+import java.net.URL
 import java.util.UUID
 
 internal class ActionEventForgeryFactory :
@@ -22,30 +23,57 @@ internal class ActionEventForgeryFactory :
                 id = forge.getForgery<UUID>().toString(),
                 target = forge.aNullable { ActionEvent.Target(anAlphabeticalString()) },
                 error = forge.aNullable { ActionEvent.Error(aLong(0, 512)) },
+                crash = forge.aNullable { ActionEvent.Crash(aLong(0, 512)) },
                 resource = forge.aNullable { ActionEvent.Resource(aLong(0, 512)) },
-                longTask = null,
+                longTask = forge.aNullable { ActionEvent.LongTask(aLong(0, 512)) },
                 loadingTime = forge.aNullable { aPositiveLong(strict = true) }
             ),
             view = ActionEvent.View(
                 id = forge.getForgery<UUID>().toString(),
-                url = forge.aStringMatching("https://[a-z]+.com/[a-z0-9_/]+"),
-                referrer = null
+                url = forge.aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),
+                referrer = forge.aNullable { getForgery<URL>().toString() },
+                name = forge.aNullable { anAlphabeticalString() },
+                inForeground = forge.aNullable { aBool() }
             ),
-            usr = ActionEvent.Usr(
-                id = forge.anHexadecimalString(),
-                name = forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+"),
-                email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}"),
-                additionalProperties = forge.exhaustiveAttributes()
-            ),
+            connectivity = forge.aNullable {
+                ActionEvent.Connectivity(
+                    status = getForgery(),
+                    interfaces = aList { getForgery() },
+                    cellular = aNullable {
+                        ActionEvent.Cellular(
+                            technology = aNullable { anAlphabeticalString() },
+                            carrierName = aNullable { anAlphabeticalString() }
+                        )
+                    }
+                )
+            },
+            synthetics = forge.aNullable {
+                ActionEvent.Synthetics(
+                    testId = forge.anHexadecimalString(),
+                    resultId = forge.anHexadecimalString()
+                )
+            },
+            usr = forge.aNullable {
+                ActionEvent.Usr(
+                    id = aNullable { anHexadecimalString() },
+                    name = aNullable { aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+") },
+                    email = aNullable { aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}") },
+                    additionalProperties = exhaustiveAttributes()
+                )
+            },
             application = ActionEvent.Application(forge.getForgery<UUID>().toString()),
+            service = forge.aNullable { anAlphabeticalString() },
             session = ActionEvent.ActionEventSession(
                 id = forge.getForgery<UUID>().toString(),
-                type = ActionEvent.ActionEventSessionType.USER
+                type = ActionEvent.ActionEventSessionType.USER,
+                hasReplay = forge.aNullable { aBool() }
             ),
             context = forge.aNullable {
                 ActionEvent.Context(additionalProperties = forge.exhaustiveAttributes())
             },
-            dd = ActionEvent.Dd()
+            dd = ActionEvent.Dd(
+                session = forge.aNullable { ActionEvent.DdSession(getForgery()) }
+            )
         )
     }
 }

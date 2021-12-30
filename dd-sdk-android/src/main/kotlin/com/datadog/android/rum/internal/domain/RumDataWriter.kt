@@ -62,7 +62,7 @@ internal class RumDataWriter(
     // region Internal
 
     private fun persistViewEvent(data: ByteArray) {
-        handler.writeData(lastViewEventFile, data)
+        handler.writeData(lastViewEventFile, data, false, null)
     }
 
     private fun notifyEventSent(viewId: String, eventType: EventType) {

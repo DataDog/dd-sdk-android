@@ -48,7 +48,7 @@ import org.mockito.quality.Strictness
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(value = Configurator::class)
 internal class ANRDetectorRunnableTest {
 
     lateinit var testedRunnable: ANRDetectorRunnable

@@ -10,6 +10,7 @@ import com.datadog.android.rum.model.LongTaskEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import fr.xgouchet.elmyr.jvm.ext.aTimestamp
+import java.net.URL
 import java.util.UUID
 
 internal class LongTaskEventForgeryFactory :
@@ -18,33 +19,57 @@ internal class LongTaskEventForgeryFactory :
         return LongTaskEvent(
             date = forge.aTimestamp(),
             longTask = LongTaskEvent.LongTask(
-                duration = forge.aPositiveLong()
+                id = forge.aNullable { getForgery<UUID>().toString() },
+                duration = forge.aPositiveLong(),
+                isFrozenFrame = forge.aNullable { aBool() }
             ),
             view = LongTaskEvent.View(
                 id = forge.getForgery<UUID>().toString(),
-                url = forge.aStringMatching("https://[a-z]+.com/[a-z0-9_/]+"),
-                referrer = null
+                referrer = forge.aNullable { getForgery<URL>().toString() },
+                url = forge.aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),
+                name = forge.aNullable { anAlphabeticalString() }
             ),
-            usr = LongTaskEvent.Usr(
-                id = forge.anHexadecimalString(),
-                name = forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+"),
-                email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}")
-            ),
+            connectivity = forge.aNullable {
+                LongTaskEvent.Connectivity(
+                    status = getForgery(),
+                    interfaces = aList { getForgery() },
+                    cellular = aNullable {
+                        LongTaskEvent.Cellular(
+                            technology = aNullable { anAlphabeticalString() },
+                            carrierName = aNullable { anAlphabeticalString() }
+                        )
+                    }
+                )
+            },
+            synthetics = forge.aNullable {
+                LongTaskEvent.Synthetics(
+                    testId = forge.anHexadecimalString(),
+                    resultId = forge.anHexadecimalString()
+                )
+            },
+            usr = forge.aNullable {
+                LongTaskEvent.Usr(
+                    id = aNullable { anHexadecimalString() },
+                    name = aNullable { aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+") },
+                    email = aNullable { aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}") },
+                    additionalProperties = exhaustiveAttributes()
+                )
+            },
             action = forge.aNullable { LongTaskEvent.Action(getForgery<UUID>().toString()) },
             application = LongTaskEvent.Application(forge.getForgery<UUID>().toString()),
+            service = forge.aNullable { anAlphabeticalString() },
             session = LongTaskEvent.LongTaskEventSession(
                 id = forge.getForgery<UUID>().toString(),
-                type = LongTaskEvent.Type.USER
+                type = LongTaskEvent.Type.USER,
+                hasReplay = forge.aNullable { aBool() }
             ),
-            dd = LongTaskEvent.Dd(),
-            service = forge.aNullable { forge.aString() },
-            connectivity = LongTaskEvent.Connectivity(
-                status = forge.aValueFrom(LongTaskEvent.Status::class.java),
-                interfaces = forge.aSubListOf(LongTaskEvent.Interface.values().asList()),
-                cellular = LongTaskEvent.Cellular(
-                    technology = forge.aNullable { forge.aString() },
-                    carrierName = forge.aNullable { forge.aString() }
+            context = forge.aNullable {
+                LongTaskEvent.Context(
+                    additionalProperties = forge.exhaustiveAttributes()
                 )
+            },
+            dd = LongTaskEvent.Dd(
+                session = forge.aNullable { LongTaskEvent.DdSession(getForgery()) }
             )
         )
     }

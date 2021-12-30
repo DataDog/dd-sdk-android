@@ -15,8 +15,8 @@ import fr.xgouchet.elmyr.ForgeryFactory
 
 internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
     override fun getForgery(forge: Forge): LogEvent {
-        val networkInfo: NetworkInfo = forge.getForgery()
-        val userInfo: UserInfo = forge.getForgery()
+        val networkInfo: NetworkInfo? = forge.aNullable()
+        val userInfo: UserInfo? = forge.aNullable()
 
         return LogEvent(
             service = forge.anAlphabeticalString(),
@@ -24,23 +24,21 @@ internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
             message = forge.anAlphabeticalString(),
             date = forge.aFormattedTimestamp(),
             error = forge.aNullable {
-                val aThrowable = forge.aThrowable()
+                val throwable = forge.aNullable { aThrowable() }
                 LogEvent.Error(
-                    message = aThrowable.message,
-                    stack = forge.aNullable { aThrowable.stackTraceToString() },
-                    kind = forge.aNullable {
-                        aThrowable.javaClass.canonicalName ?: aThrowable.javaClass.simpleName
-                    }
+                    message = throwable?.message,
+                    stack = throwable?.stackTraceToString(),
+                    kind = throwable?.javaClass?.canonicalName ?: throwable?.javaClass?.simpleName
                 )
             },
             additionalProperties = forge.exhaustiveAttributes(),
             ddtags = forge.exhaustiveTags().joinToString(separator = ","),
             usr = forge.aNullable {
                 LogEvent.Usr(
-                    id = userInfo.id,
-                    name = userInfo.name,
-                    email = userInfo.email,
-                    additionalProperties = userInfo.additionalProperties
+                    id = userInfo?.id,
+                    name = userInfo?.name,
+                    email = userInfo?.email,
+                    additionalProperties = userInfo?.additionalProperties.orEmpty()
 
                 )
             },
@@ -49,14 +47,14 @@ internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
                     client = LogEvent.Client(
                         simCarrier = forge.aNullable {
                             LogEvent.SimCarrier(
-                                id = networkInfo.carrierId.toString(),
-                                name = networkInfo.carrierName
+                                id = networkInfo?.carrierId?.toString(),
+                                name = networkInfo?.carrierName
                             )
                         },
-                        signalStrength = networkInfo.strength.toString(),
-                        uplinkKbps = networkInfo.upKbps.toString(),
-                        downlinkKbps = networkInfo.downKbps.toString(),
-                        connectivity = networkInfo.connectivity.toString()
+                        signalStrength = networkInfo?.strength?.toString(),
+                        uplinkKbps = networkInfo?.upKbps?.toString(),
+                        downlinkKbps = networkInfo?.downKbps?.toString(),
+                        connectivity = networkInfo?.connectivity?.toString().orEmpty()
                     )
                 )
             },

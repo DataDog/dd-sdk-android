@@ -16,6 +16,7 @@ import com.datadog.android.rum.model.ResourceEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import fr.xgouchet.elmyr.jvm.ext.aTimestamp
+import java.net.URL
 import java.util.UUID
 
 internal class ResourceEventForgeryFactory :
@@ -25,8 +26,9 @@ internal class ResourceEventForgeryFactory :
         return ResourceEvent(
             date = forge.aTimestamp(),
             resource = ResourceEvent.Resource(
+                id = forge.aNullable { getForgery<UUID>().toString() },
                 type = forge.getForgery(),
-                url = forge.aStringMatching("https://[a-z]+.com/[a-z0-9_/]+"),
+                url = forge.aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),
                 duration = forge.aPositiveLong(),
                 method = forge.aNullable(),
                 statusCode = forge.aNullable { aLong(200, 600) },
@@ -36,31 +38,70 @@ internal class ResourceEventForgeryFactory :
                 ssl = timing?.ssl(),
                 firstByte = timing?.firstByte(),
                 download = timing?.download(),
-                redirect = null
+                redirect = forge.aNullable {
+                    ResourceEvent.Redirect(
+                        aPositiveLong(),
+                        aPositiveLong()
+                    )
+                },
+                provider = forge.aNullable {
+                    ResourceEvent.Provider(
+                        domain = aNullable { aStringMatching("[a-z]+\\.[a-z]{3}") },
+                        name = aNullable { anAlphabeticalString() },
+                        type = aNullable()
+                    )
+                }
             ),
             view = ResourceEvent.View(
                 id = forge.getForgery<UUID>().toString(),
-                url = forge.aStringMatching("https://[a-z]+.com/[a-z0-9_/]+"),
-                referrer = null
+                url = forge.aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),
+                referrer = forge.aNullable { getForgery<URL>().toString() },
+                name = forge.aNullable { anAlphabeticalString() }
             ),
-            usr = ResourceEvent.Usr(
-                id = forge.anHexadecimalString(),
-                name = forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+"),
-                email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}"),
-                additionalProperties = forge.exhaustiveAttributes()
-            ),
+            connectivity = forge.aNullable {
+                ResourceEvent.Connectivity(
+                    status = getForgery(),
+                    interfaces = aList { getForgery() },
+                    cellular = aNullable {
+                        ResourceEvent.Cellular(
+                            technology = aNullable { anAlphabeticalString() },
+                            carrierName = aNullable { anAlphabeticalString() }
+                        )
+                    }
+                )
+            },
+            synthetics = forge.aNullable {
+                ResourceEvent.Synthetics(
+                    testId = forge.anHexadecimalString(),
+                    resultId = forge.anHexadecimalString()
+                )
+            },
+            usr = forge.aNullable {
+                ResourceEvent.Usr(
+                    id = aNullable { anHexadecimalString() },
+                    name = aNullable { aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+") },
+                    email = aNullable { aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}") },
+                    additionalProperties = exhaustiveAttributes()
+                )
+            },
             action = forge.aNullable { ResourceEvent.Action(getForgery<UUID>().toString()) },
             application = ResourceEvent.Application(forge.getForgery<UUID>().toString()),
+            service = forge.aNullable { anAlphabeticalString() },
             session = ResourceEvent.ResourceEventSession(
                 id = forge.getForgery<UUID>().toString(),
-                type = ResourceEvent.ResourceEventSessionType.USER
+                type = ResourceEvent.ResourceEventSessionType.USER,
+                hasReplay = forge.aNullable { aBool() }
             ),
             context = forge.aNullable {
                 ResourceEvent.Context(
                     additionalProperties = forge.exhaustiveAttributes()
                 )
             },
-            dd = ResourceEvent.Dd()
+            dd = ResourceEvent.Dd(
+                session = forge.aNullable { ResourceEvent.DdSession(getForgery()) },
+                spanId = forge.aNullable { aNumericalString() },
+                traceId = forge.aNullable { aNumericalString() },
+            )
         )
     }
 }
