@@ -57,7 +57,7 @@ class GdprRumE2ETests {
                 consent = TrackingConsent.GRANTED
             )
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendAllRumEvents(forge, testMethodName)
     }
 
     /**
@@ -87,7 +87,7 @@ class GdprRumE2ETests {
                 consent = TrackingConsent.PENDING
             )
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendAllRumEvents(forge, testMethodName)
         measureSetTrackingConsent {
             Datadog.setTrackingConsent(TrackingConsent.GRANTED)
         }
@@ -162,7 +162,7 @@ class GdprRumE2ETests {
         measureSetTrackingConsent {
             Datadog.setTrackingConsent(TrackingConsent.GRANTED)
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendAllRumEvents(forge, testMethodName)
     }
 
     /**

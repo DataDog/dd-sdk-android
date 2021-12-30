@@ -6,7 +6,11 @@
 
 package com.datadog.android.nightly.rum
 
+import android.os.Handler
+import android.os.Looper
+import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.nightly.INITIALIZE_RUMMONITOR_TEST_METHOD_NAME
+import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
 import com.datadog.android.nightly.utils.aResourceKey
 import com.datadog.android.nightly.utils.aResourceMethod
 import com.datadog.android.nightly.utils.aViewKey
@@ -16,7 +20,6 @@ import com.datadog.android.nightly.utils.anErrorMessage
 import com.datadog.android.nightly.utils.defaultTestAttributes
 import com.datadog.android.nightly.utils.executeInsideView
 import com.datadog.android.nightly.utils.measure
-import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
@@ -79,8 +82,75 @@ fun sendRandomRumEvent(
                     forge.anActionName(),
                     defaultTestAttributes(testMethodName)
                 )
-                sendRandomActionOutcomeEvent(forge)
             }
         }
     }
+}
+
+/**
+ * Send all RUM events: View + Action + Resource + Error + LongTask
+ */
+fun sendAllRumEvents(
+    forge: Forge,
+    testMethodName: String
+) {
+
+    val aViewKey = forge.aViewKey()
+    GlobalRum.get().startView(
+        aViewKey,
+        forge.aViewName(),
+        defaultTestAttributes(testMethodName)
+    )
+
+    listOf(::sendResourceEvent, ::sendActionEvent, ::sendErrorEvent, ::sendLongTaskEvent)
+        .shuffled()
+        .forEach {
+            it.invoke(forge, testMethodName)
+        }
+
+    GlobalRum.get().stopView(aViewKey, defaultTestAttributes(testMethodName))
+}
+
+private fun sendResourceEvent(forge: Forge, testMethodName: String) {
+
+    val aResourceKey = forge.aResourceKey()
+    GlobalRum.get().startResource(
+        aResourceKey,
+        forge.aResourceMethod(),
+        aResourceKey,
+        defaultTestAttributes(testMethodName)
+    )
+    GlobalRum.get().stopResource(
+        aResourceKey,
+        forge.anInt(min = 200, max = 500),
+        forge.aLong(min = 1),
+        forge.aValueFrom(RumResourceKind::class.java),
+        defaultTestAttributes(testMethodName)
+    )
+}
+
+private fun sendErrorEvent(forge: Forge, testMethodName: String) {
+    GlobalRum.get().addError(
+        forge.anErrorMessage(),
+        forge.aValueFrom(RumErrorSource::class.java),
+        forge.aNullable { forge.aThrowable() },
+        defaultTestAttributes(testMethodName)
+    )
+}
+
+private fun sendActionEvent(forge: Forge, testMethodName: String) {
+    GlobalRum.get().addUserAction(
+        forge.aValueFrom(RumActionType::class.java),
+        forge.anActionName(),
+        defaultTestAttributes(testMethodName)
+    )
+}
+
+@Suppress("UNUSED_PARAMETER")
+private fun sendLongTaskEvent(forge: Forge, testMethodName: String) {
+    GlobalRum.addAttribute(TEST_METHOD_NAME_KEY, testMethodName)
+    Handler(Looper.getMainLooper()).post {
+        Thread.sleep(100)
+    }
+    InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 }
