@@ -75,7 +75,7 @@ class RumConfigE2ETests {
                 ).build()
             )
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendAllRumEvents(forge, testMethodName)
     }
 
     /**
@@ -96,7 +96,7 @@ class RumConfigE2ETests {
                 ).setBatchSize(forge.aValueFrom(BatchSize::class.java)).build()
             )
         }
-        sendRandomRumEvent(forge, testMethodName)
+        sendAllRumEvents(forge, testMethodName)
     }
 
     /**
@@ -590,7 +590,7 @@ class RumConfigE2ETests {
             )
         }
 
-        sendRandomRumEvent(forge, testMethodName)
+        sendAllRumEvents(forge, testMethodName)
     }
 
     /**
@@ -612,7 +612,7 @@ class RumConfigE2ETests {
             )
         }
 
-        sendRandomRumEvent(forge, testMethodName)
+        sendAllRumEvents(forge, testMethodName)
     }
 
     /**

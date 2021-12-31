@@ -48,7 +48,7 @@ class RumMonitorBuilderE2ETests {
             }
         )
 
-        sendRandomRumEvent(forge, testMethodName)
+        sendAllRumEvents(forge, testMethodName)
     }
 
     /**
@@ -66,7 +66,7 @@ class RumMonitorBuilderE2ETests {
                 }
             }
         )
-        sendRandomRumEvent(forge, testMethodName)
+        sendAllRumEvents(forge, testMethodName)
     }
 
     /**
