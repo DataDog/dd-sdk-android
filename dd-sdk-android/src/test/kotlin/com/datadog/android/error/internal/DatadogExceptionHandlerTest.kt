@@ -71,6 +71,7 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -314,7 +315,7 @@ internal class DatadogExceptionHandlerTest {
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
     }
 
-    @Test
+    @RepeatedTest(2)
     fun `M log exception W caught { exception without message }`(forge: Forge) {
         val currentThread = Thread.currentThread()
         val now = System.currentTimeMillis()
@@ -476,7 +477,7 @@ internal class DatadogExceptionHandlerTest {
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
     }
 
-    @Test
+    @RepeatedTest(2)
     fun `M register RUM Error W RumMonitor registered { exception without message }`(
         forge: Forge
     ) {

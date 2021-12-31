@@ -16,16 +16,16 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -38,9 +38,10 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class RumEventExtTest {
 
-    @RepeatedTest(12)
+    @ParameterizedTest
+    @EnumSource(ResourceEvent.Method::class)
     fun `𝕄 return method 𝕎 toMethod() {valid name}`(
-        @Forgery method: ResourceEvent.Method
+        method: ResourceEvent.Method
     ) {
         // Given
         val name = method.name
@@ -63,9 +64,10 @@ internal class RumEventExtTest {
         assertThat(result).isEqualTo(ResourceEvent.Method.GET)
     }
 
-    @RepeatedTest(12)
+    @ParameterizedTest
+    @EnumSource(ErrorEvent.Method::class)
     fun `𝕄 return method 𝕎 toErrorMethod() {valid name}`(
-        @Forgery method: ErrorEvent.Method
+        method: ErrorEvent.Method
     ) {
         // Given
         val name = method.name
@@ -88,9 +90,10 @@ internal class RumEventExtTest {
         assertThat(result).isEqualTo(ErrorEvent.Method.GET)
     }
 
-    @RepeatedTest(22)
+    @ParameterizedTest
+    @EnumSource(RumResourceKind::class)
     fun `𝕄 return resource type 𝕎 toSchemaType()`(
-        @Forgery kind: RumResourceKind
+        kind: RumResourceKind
     ) {
         // When
         val result = kind.toSchemaType()
@@ -103,9 +106,10 @@ internal class RumEventExtTest {
         }
     }
 
-    @RepeatedTest(12)
+    @ParameterizedTest
+    @EnumSource(RumErrorSource::class)
     fun `𝕄 return error source 𝕎 toSchemaSource()`(
-        @Forgery kind: RumErrorSource
+        kind: RumErrorSource
     ) {
         // When
         val result = kind.toSchemaSource()
@@ -114,9 +118,10 @@ internal class RumEventExtTest {
         assertThat(kind.name).isEqualTo(result.name)
     }
 
-    @RepeatedTest(6)
+    @ParameterizedTest
+    @EnumSource(RumErrorSourceType::class)
     fun `𝕄 return error source type 𝕎 toSchemaSourceType()`(
-        @Forgery kind: RumErrorSourceType
+        kind: RumErrorSourceType
     ) {
         // When
         val result = kind.toSchemaSourceType()
@@ -125,9 +130,10 @@ internal class RumEventExtTest {
         assertThat(kind.name).isEqualTo(result.name)
     }
 
-    @RepeatedTest(10)
+    @ParameterizedTest
+    @EnumSource(RumActionType::class)
     fun `𝕄 return action type 𝕎 toSchemaType()`(
-        @Forgery type: RumActionType
+        type: RumActionType
     ) {
         // When
         val result = type.toSchemaType()
@@ -236,19 +242,19 @@ internal class RumEventExtTest {
         )
     }
 
-    @RepeatedTest(12)
+    @ParameterizedTest
+    @EnumSource(
+        NetworkInfo.Connectivity::class,
+        names = [
+            "NETWORK_2G", "NETWORK_3G", "NETWORK_4G",
+            "NETWORK_5G", "NETWORK_MOBILE_OTHER", "NETWORK_CELLULAR"
+        ]
+    )
     fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Cellular}`(
+        connectivity: NetworkInfo.Connectivity,
         forge: Forge
     ) {
         // Given
-        val connectivity = forge.anElementFrom(
-            NetworkInfo.Connectivity.NETWORK_2G,
-            NetworkInfo.Connectivity.NETWORK_3G,
-            NetworkInfo.Connectivity.NETWORK_4G,
-            NetworkInfo.Connectivity.NETWORK_5G,
-            NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
-            NetworkInfo.Connectivity.NETWORK_CELLULAR
-        )
         val technology = forge.anAlphabeticalString()
         val networkInfo = NetworkInfo(
             connectivity,
@@ -388,19 +394,19 @@ internal class RumEventExtTest {
         )
     }
 
-    @RepeatedTest(12)
+    @ParameterizedTest
+    @EnumSource(
+        NetworkInfo.Connectivity::class,
+        names = [
+            "NETWORK_2G", "NETWORK_3G", "NETWORK_4G",
+            "NETWORK_5G", "NETWORK_MOBILE_OTHER", "NETWORK_CELLULAR"
+        ]
+    )
     fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Cellular}`(
+        connectivity: NetworkInfo.Connectivity,
         forge: Forge
     ) {
         // Given
-        val connectivity = forge.anElementFrom(
-            NetworkInfo.Connectivity.NETWORK_2G,
-            NetworkInfo.Connectivity.NETWORK_3G,
-            NetworkInfo.Connectivity.NETWORK_4G,
-            NetworkInfo.Connectivity.NETWORK_5G,
-            NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
-            NetworkInfo.Connectivity.NETWORK_CELLULAR
-        )
         val technology = forge.anAlphabeticalString()
         val networkInfo = NetworkInfo(
             connectivity,
@@ -540,19 +546,19 @@ internal class RumEventExtTest {
         )
     }
 
-    @RepeatedTest(12)
+    @ParameterizedTest
+    @EnumSource(
+        NetworkInfo.Connectivity::class,
+        names = [
+            "NETWORK_2G", "NETWORK_3G", "NETWORK_4G",
+            "NETWORK_5G", "NETWORK_MOBILE_OTHER", "NETWORK_CELLULAR"
+        ]
+    )
     fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Cellular}`(
+        connectivity: NetworkInfo.Connectivity,
         forge: Forge
     ) {
         // Given
-        val connectivity = forge.anElementFrom(
-            NetworkInfo.Connectivity.NETWORK_2G,
-            NetworkInfo.Connectivity.NETWORK_3G,
-            NetworkInfo.Connectivity.NETWORK_4G,
-            NetworkInfo.Connectivity.NETWORK_5G,
-            NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
-            NetworkInfo.Connectivity.NETWORK_CELLULAR
-        )
         val technology = forge.anAlphabeticalString()
         val networkInfo = NetworkInfo(
             connectivity,
