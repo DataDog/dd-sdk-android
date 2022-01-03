@@ -615,11 +615,9 @@ datadog:
       - "java.io.FileInputStream.use(kotlin.Function1):java.io.IOException"
       - "java.io.FileOutputStream.use(kotlin.Function1):java.io.IOException"
       - "java.io.FileOutputStream.write(kotlin.ByteArray):java.io.IOException"
-      - "java.io.InputStream.invoke():java.io.IOException"
       - "java.nio.channels.FileChannel.lock():java.io.IOException,java.lang.IllegalStateException"
       - "java.nio.channels.FileLock.use(kotlin.Function1):java.io.IOException"
       - "java.nio.channels.FileLock.release():java.io.IOException"
-      - "kotlin.Function1.invoke(java.nio.channels.FileLock):java.io.IOException"
       # endregion
       # region Java Concurrency
       - "java.lang.Thread.constructor(java.lang.Runnable, kotlin.String):java.lang.NullPointerException,java.lang.SecurityException,java.lang.IllegalArgumentException"
@@ -689,19 +687,6 @@ datadog:
       # endregion
       # region Gson
       - "com.google.gson.JsonParser.parseString(kotlin.String):com.google.gson.JsonParseException"
-      # endregion
-      # region Kotlin Invoke
-      - "io.opentracing.Span.invoke():java.lang.Exception"
-      - "kotlin.Function0.invoke():java.lang.Exception"
-      - "kotlin.Function1.invoke():java.lang.Exception"
-      - "kotlin.Function1.invoke(android.app.Fragment):java.lang.Exception"
-      - "kotlin.Function1.invoke(android.view.MotionEvent):java.lang.Exception"
-      - "kotlin.Function1.invoke(androidx.fragment.app.Fragment):java.lang.Exception"
-      - "kotlin.Function1.invoke(kotlin.Any):java.lang.Exception"
-      - "kotlin.Function2.invoke(kotlin.Int, kotlin.Throwable?):java.lang.Exception"
-      - "kotlin.Function1.invoke(kotlin.String):java.lang.Exception"
-      - "kotlin.Function1.invoke(java.io.Closeable):java.lang.Exception"
-      - "kotlin.Function1.invoke(com.datadog.android.sqldelight.TransactionWithSpanAndWithoutReturn):java.lang.Exception"
       # endregion
     knownSafeCalls:
       # region Android APIs
