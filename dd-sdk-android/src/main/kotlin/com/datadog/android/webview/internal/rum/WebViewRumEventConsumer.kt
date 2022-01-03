@@ -9,6 +9,7 @@ package com.datadog.android.webview.internal.rum
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -29,6 +30,8 @@ internal class WebViewRumEventConsumer(
 
     internal val offsets: LinkedHashMap<String, Long> = LinkedHashMap()
     fun consume(event: JsonObject, eventType: String) {
+        // make sure we send a noop event to the RumSessionScope to refresh the session if needed
+        GlobalRum.notifyIngestedWebViewEvent()
         val rumContext = contextProvider.getRumContext()
         if (rumContext != null) {
             val mappedEvent = map(event, eventType, rumContext)

@@ -10,6 +10,8 @@ import android.util.Log
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -132,6 +134,30 @@ internal class WebViewRumEventConsumerTest {
     // region View
 
     @Test
+    fun `M send a noop WebViewEvent W consume { View event }`(forge: Forge) {
+        // Given
+        val fakeViewEvent: ViewEvent = forge.getForgery()
+        whenever(
+            mockWebViewRumEventMapper.mapViewEvent(
+                any(),
+                eq(sessionScopeTestConfiguration.fakeRumContext),
+                eq(fakeServerTimeOffsetInMillis)
+            )
+        )
+            .thenReturn(fakeMappedViewEvent)
+
+        // When
+        testedRumEventConsumer.consume(
+            fakeViewEvent.toJson().asJsonObject,
+            WebViewRumEventConsumer.VIEW_EVENT_TYPE
+        )
+
+        // Then
+        val mockedMonitor = GlobalRum.monitor as AdvancedRumMonitor
+        verify(mockedMonitor).sendWebViewEvent()
+    }
+
+    @Test
     fun `M consume the event W consume() { View event }`(forge: Forge) {
         // Given
         val fakeViewEvent: ViewEvent = forge.getForgery()
@@ -246,6 +272,30 @@ internal class WebViewRumEventConsumerTest {
     // endregion
 
     // region Action
+
+    @Test
+    fun `M send a noop WebViewEvent W consume { Action event }`(forge: Forge) {
+        // Given
+        val fakeActionEvent: ActionEvent = forge.getForgery()
+        whenever(
+            mockWebViewRumEventMapper.mapActionEvent(
+                any(),
+                eq(sessionScopeTestConfiguration.fakeRumContext),
+                eq(fakeServerTimeOffsetInMillis)
+            )
+        )
+            .thenReturn(fakeMappedActionEvent)
+
+        // When
+        testedRumEventConsumer.consume(
+            fakeActionEvent.toJson().asJsonObject,
+            WebViewRumEventConsumer.ACTION_EVENT_TYPE
+        )
+
+        // Then
+        val mockedMonitor = GlobalRum.monitor as AdvancedRumMonitor
+        verify(mockedMonitor).sendWebViewEvent()
+    }
 
     @Test
     fun `M consume the event W consume() { Action event }`(forge: Forge) {
@@ -364,6 +414,29 @@ internal class WebViewRumEventConsumerTest {
     // region Resource
 
     @Test
+    fun `M send a noop WebViewEvent W consume { Resource event }`(forge: Forge) {
+        // Given
+        val fakeResourceEvent: ResourceEvent = forge.getForgery()
+        whenever(
+            mockWebViewRumEventMapper.mapResourceEvent(
+                any(),
+                eq(sessionScopeTestConfiguration.fakeRumContext),
+                eq(fakeServerTimeOffsetInMillis)
+            )
+        )
+            .thenReturn(fakeMappedResourceEvent)
+
+        // When
+        testedRumEventConsumer.consume(
+            fakeResourceEvent.toJson().asJsonObject,
+            WebViewRumEventConsumer.RESOURCE_EVENT_TYPE
+        )
+
+        // Then
+        val mockedMonitor = GlobalRum.monitor as AdvancedRumMonitor
+        verify(mockedMonitor).sendWebViewEvent()
+    }
+    @Test
     fun `M consume the event W consume() { Resource event }`(forge: Forge) {
         // Given
         val fakeResourceEvent: ResourceEvent = forge.getForgery()
@@ -477,6 +550,30 @@ internal class WebViewRumEventConsumerTest {
     // endregion
 
     // region Error
+
+    @Test
+    fun `M send a noop WebViewEvent W consume { Error event }`(forge: Forge) {
+        // Given
+        val fakeActionEvent: ErrorEvent = forge.getForgery()
+        whenever(
+            mockWebViewRumEventMapper.mapErrorEvent(
+                any(),
+                eq(sessionScopeTestConfiguration.fakeRumContext),
+                eq(fakeServerTimeOffsetInMillis)
+            )
+        )
+            .thenReturn(fakeMappedErrorEvent)
+
+        // When
+        testedRumEventConsumer.consume(
+            fakeActionEvent.toJson().asJsonObject,
+            WebViewRumEventConsumer.ERROR_EVENT_TYPE
+        )
+
+        // Then
+        val mockedMonitor = GlobalRum.monitor as AdvancedRumMonitor
+        verify(mockedMonitor).sendWebViewEvent()
+    }
 
     @Test
     fun `M consume the event W consume() { Error event }`(forge: Forge) {
@@ -593,6 +690,30 @@ internal class WebViewRumEventConsumerTest {
     // endregion
 
     // region LongTask
+
+    @Test
+    fun `M send a noop WebViewEvent W consume { LongTask event }`(forge: Forge) {
+        // Given
+        val fakeLongTaskEvent: LongTaskEvent = forge.getForgery()
+        whenever(
+            mockWebViewRumEventMapper.mapLongTaskEvent(
+                any(),
+                eq(sessionScopeTestConfiguration.fakeRumContext),
+                eq(fakeServerTimeOffsetInMillis)
+            )
+        )
+            .thenReturn(fakeMappedLongTaskEvent)
+
+        // When
+        testedRumEventConsumer.consume(
+            fakeLongTaskEvent.toJson().asJsonObject,
+            WebViewRumEventConsumer.LONG_TASK_EVENT_TYPE
+        )
+
+        // Then
+        val mockedMonitor = GlobalRum.monitor as AdvancedRumMonitor
+        verify(mockedMonitor).sendWebViewEvent()
+    }
 
     @Test
     fun `M consume the event W consume() { LongTask event }`(forge: Forge) {
