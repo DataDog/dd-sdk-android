@@ -235,7 +235,7 @@ class UnsafeThirdPartyFunctionCall(
 
         private val kotlinHelperMethods = arrayOf(
             "let", "run", "with", "apply", "also",
-            "print", "println", "toString"
+            "print", "println", "toString", "invoke"
         )
     }
 }

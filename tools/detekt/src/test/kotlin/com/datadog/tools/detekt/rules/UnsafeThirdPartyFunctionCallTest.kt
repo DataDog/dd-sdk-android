@@ -43,7 +43,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
             """
                 import java.io.File
                 
-                fun test(val f: File): Any {
+                fun test(f: File): Any {
                     return f.inputStream()
                 }
             """.trimIndent()
@@ -69,7 +69,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
             """
                 import java.io.File
                 
-                fun test(val f: File): Any {
+                fun test(f: File): Any {
                     return f.inputStream()
                 }
             """.trimIndent()
@@ -100,7 +100,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
                 import java.io.FilenameFilter
                 import java.io.FileFilter
                 
-                fun test(val f: File, val ff: FileFilter, val fnf: FilenameFilter) {
+                fun test(f: File, ff: FileFilter, fnf: FilenameFilter) {
                     f.listFiles(ff)
                     f.listFiles(fnf)
                 }
@@ -128,7 +128,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
                 import java.io.File
                 import java.lang.ArrayIndexOutOfBoundsException
                 
-                fun test(val f: File): Any {
+                fun test(f: File): Any {
                     try {
                         return f.inputStream()
                     } catch (e: ArrayIndexOutOfBoundsException) {
@@ -160,7 +160,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
                 import java.io.FileNotFoundException
                 import java.lang.ArrayIndexOutOfBoundsException
                 
-                fun test(val f: File): Any? {
+                fun test(f: File): Any? {
                     try {
                         return f.inputStream()
                     } catch (e: FileNotFoundException) {
@@ -194,7 +194,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
                 import java.io.FileNotFoundException
                 import java.lang.ArrayIndexOutOfBoundsException
                 
-                fun test(val f: File): Any? {
+                fun test(f: File): Any? {
                     try {
                         return f.inputStream()
                     } catch (e: Exception) {
@@ -226,7 +226,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
                 import java.io.FileNotFoundException
                 import java.lang.ArrayIndexOutOfBoundsException
                 
-                fun test(val f: File): Any? {
+                fun test(f: File): Any? {
                     try {
                         return f.inputStream()
                     } catch (e: Throwable) {
@@ -260,7 +260,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
                 
                 public actual typealias FNE = java.io.FileNotFoundException
                 
-                fun test(val f: File): Any? {
+                fun test(f: File): Any? {
                     try {
                         return f.inputStream()
                     } catch (e: FNE) {
@@ -293,7 +293,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
                 import java.io.IOException
                 import java.lang.ArrayIndexOutOfBoundsException
                 
-                fun test(val f: File): Any? {
+                fun test(f: File): Any? {
                     try {
                         try {
                             return f.inputStream()
@@ -331,7 +331,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
             """
                 import java.io.File
                 
-                fun test(val f: File): Any? {
+                fun test(f: File): Any? {
                     return f.inputStream()
                 }
             """.trimIndent()
@@ -354,7 +354,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
             """
                 import java.io.File
                 
-                fun test(val f: File): Any {
+                fun test(f: File): Any {
                     return f.inputStream()
                 }
             """.trimIndent()
@@ -377,7 +377,7 @@ internal class UnsafeThirdPartyFunctionCallTest {
             """
                 import java.io.File
                 
-                fun test(val f: File): Any {
+                fun test(f: File): Any {
                     return f.inputStream()
                 }
             """.trimIndent()
@@ -437,18 +437,64 @@ internal class UnsafeThirdPartyFunctionCallTest {
     }
 
     @Test
-    fun `ignore kotlin helper calls`() {
+    fun `ignore kotlin helper calls { let + apply + println + toString }`() {
         // Given
         val code =
             """
                 import java.io.File
                 
-                fun test(val f: File?): Any {
+                fun test(f: File?): Any {
                     return f?.let{
                         it.apply {
                             println(this.toString())
                         }
                     }
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(Config.empty)
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(0)
+    }
+
+    @Test
+    fun `ignore kotlin helper calls { with + run + also + println }`() {
+        // Given
+        val code =
+            """
+                import java.io.File
+                
+                fun test(f: File?): Any {
+                    with(file) {
+                        this.run {
+                            this.readBytes().also { 
+                                println(it)
+                            }
+                        }
+                    } 
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(Config.empty)
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(0)
+    }
+
+    @Test
+    fun `ignore kotlin helper calls { invoke }`() {
+        // Given
+        val code =
+            """
+                import java.io.File
+                
+                fun test(file: File, predicate: File.() -> Boolean): Boolean {
+                    return predicate(file)
                 }
             """.trimIndent()
 
