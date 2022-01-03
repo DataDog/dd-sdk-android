@@ -19,7 +19,6 @@ internal class WebViewRumEventContextProvider {
         if (rumFeatureDisabled) {
             return null
         }
-        GlobalRum.notifyIngestedWebViewEvent()
         val rumContext = GlobalRum.getRumContext()
         return if (
             rumContext.applicationId == RumContext.NULL_UUID ||
