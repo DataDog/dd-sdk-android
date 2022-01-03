@@ -22,7 +22,6 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
-import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -356,19 +355,13 @@ internal class ActivityViewTrackingStrategyTest :
     }
 
     @Test
-    fun `𝕄 stop RUM View and update loading time 𝕎 onActivityPaused()`(
-        @BoolForgery firstTimeLoading: Boolean,
+    fun `𝕄 stop RUM View and update loading time 𝕎 onActivityPaused() { first display }`(
         @LongForgery(1L) loadingTime: Long
     ) {
         // Given
         whenever(mockPredicate.accept(mockActivity)) doReturn true
-        val expectedLoadingType = if (firstTimeLoading) {
-            ViewEvent.LoadingType.ACTIVITY_DISPLAY
-        } else {
-            ViewEvent.LoadingType.ACTIVITY_REDISPLAY
-        }
         whenever(mockViewLoadingTimer.getLoadingTime(mockActivity)) doReturn loadingTime
-        whenever(mockViewLoadingTimer.isFirstTimeLoading(mockActivity)) doReturn firstTimeLoading
+        whenever(mockViewLoadingTimer.isFirstTimeLoading(mockActivity)) doReturn true
 
         // When
         testedStrategy.onActivityPaused(mockActivity)
@@ -378,7 +371,31 @@ internal class ActivityViewTrackingStrategyTest :
             verify(rumMonitor.mockInstance).updateViewLoadingTime(
                 mockActivity,
                 loadingTime,
-                expectedLoadingType
+                ViewEvent.LoadingType.ACTIVITY_DISPLAY
+            )
+            verify(rumMonitor.mockInstance).stopView(mockActivity, emptyMap())
+            verify(mockViewLoadingTimer).onPaused(mockActivity)
+        }
+    }
+
+    @Test
+    fun `𝕄 stop RUM View and update loading time 𝕎 onActivityPaused() { redisplay }`(
+        @LongForgery(1L) loadingTime: Long
+    ) {
+        // Given
+        whenever(mockPredicate.accept(mockActivity)) doReturn true
+        whenever(mockViewLoadingTimer.getLoadingTime(mockActivity)) doReturn loadingTime
+        whenever(mockViewLoadingTimer.isFirstTimeLoading(mockActivity)) doReturn false
+
+        // When
+        testedStrategy.onActivityPaused(mockActivity)
+
+        // Then
+        inOrder(rumMonitor.mockInstance, mockViewLoadingTimer) {
+            verify(rumMonitor.mockInstance).updateViewLoadingTime(
+                mockActivity,
+                loadingTime,
+                ViewEvent.LoadingType.ACTIVITY_REDISPLAY
             )
             verify(rumMonitor.mockInstance).stopView(mockActivity, emptyMap())
             verify(mockViewLoadingTimer).onPaused(mockActivity)
