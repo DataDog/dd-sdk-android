@@ -6,6 +6,7 @@ This folder has dedicated documentation for:
 * [Android Log Collection](log_collection.md)
 * [Android Trace Collection](trace_collection.md)
 * [Getting Started with Android RUM Collection](rum_getting_started.md)
+* [Mobile Vitals](rum_mobile_vitals.md)
 
 ## Advanced Features
 * [Configure Android SDK](configure_rum_android_sdk.md)

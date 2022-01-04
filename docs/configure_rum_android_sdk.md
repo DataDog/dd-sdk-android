@@ -281,11 +281,29 @@ Long running operations performed on the main thread can impact the visual perfo
         .trackLongTasks(durationThreshold)
         .build()
    ```
+
+For example, to replace the default `100 ms` duration, set a custom threshold in your configuration.
+
+   ```kotlin
+      val configuration = Configuration.Builder(…)
+        // …
+        .trackLongTasks(250L) // track tasks longer than 250ms as long tasks
+        .build()
+   ```
 {{% /tab %}}
 {{% tab "Java" %}}
   ```java
       Configuration configuration = new Configuration.Builder(true, true, true, true)
         .trackLongTasks(durationThreshold)
+        .build();
+   ```
+
+For example, to replace the default `100 ms` duration, set a custom threshold in your configuration.
+
+   ```java
+      Configuration configuration = new Configuration.Builder(…)
+        // …
+        .trackLongTasks(250L) // track tasks longer than 250ms as long tasks
         .build();
    ```
 {{% /tab %}}
