@@ -1,6 +1,6 @@
 Dependencies List
 
-androidx.annotation:annotation:1.1.0                            :   27 Kb
+androidx.annotation:annotation:1.2.0                            :   28 Kb
 com.squareup.okhttp3:okhttp:3.12.13                             :  417 Kb
 com.squareup.okio:okio:1.15.0                                   :   86 Kb
 org.jetbrains.kotlin:kotlin-stdlib-common:1.4.20                :  186 Kb
