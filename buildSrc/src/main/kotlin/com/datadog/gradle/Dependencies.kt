@@ -48,10 +48,10 @@ object Dependencies {
         const val Robolectric = "4.4_r1-robolectric-r2" // Use lowest API
 
         // AndroidJunit
-        const val AndroidJunitRunner = "1.3.0"
-        const val AndroidExtJunit = "1.1.2"
-        const val AndroidJunitCore = "1.3.0"
-        const val Espresso = "3.3.0"
+        const val AndroidJunitRunner = "1.4.0"
+        const val AndroidExtJunit = "1.1.3"
+        const val AndroidJunitCore = "1.4.0"
+        const val Espresso = "3.4.0"
 
         // Sample Apps
         const val ConstraintLayout = "2.0.1"
