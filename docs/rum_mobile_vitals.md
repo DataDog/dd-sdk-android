@@ -6,7 +6,7 @@ Real User Monitoring offers Mobile Vitals, a set of metrics inspired by [Android
 
 Mobile vitals appear in your application's **Overview** tab and in the side panel under **Performance** > **Event Timings and Mobile Vitals** when you click on an individual view in the [RUM Explorer][3]. Click on a graph in **Mobile Vitals** to apply a filter by version or examine filtered sessions. 
 
-{{< img src="real_user_monitoring/android/refresh_rate_and_mobile_vitals.png" alt="Mobile Vitals in the RUM Explorer" style="width:70%;">}}
+{{< img src="real_user_monitoring/android/refresh_rate_and_mobile_vitals.png" alt="Event Timings and Mobile Vitals" style="width:70%;">}}
 
 Mobile vitals include recommended benchmark ranges that correlate directly to your application's user experience. You can see where a metric scores on the range and click **Search Views With Poor Performance** to apply a filter in your search query.
 
