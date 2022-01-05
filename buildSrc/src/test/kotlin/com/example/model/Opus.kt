@@ -22,13 +22,13 @@ import kotlin.jvm.Throws
  * @param artists The opus's artists.
  * @param duration The opus's duration in seconds
  */
-data class Opus(
-    val title: String? = null,
-    val composer: String? = null,
-    val artists: List<Artist>? = null,
-    val duration: Long? = null
+public data class Opus(
+    public val title: String? = null,
+    public val composer: String? = null,
+    public val artists: List<Artist>? = null,
+    public val duration: Long? = null
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         title?.let { json.addProperty("title", it) }
         composer?.let { json.addProperty("composer", it) }
@@ -41,10 +41,10 @@ data class Opus(
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Opus {
+        public fun fromJson(serializedObject: String): Opus {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val title = jsonObject.get("title")?.asString
@@ -71,21 +71,21 @@ data class Opus(
      * @param name The artist's name.
      * @param role The artist's role.
      */
-    data class Artist(
-        val name: String? = null,
-        val role: Role? = null
+    public data class Artist(
+        public val name: String? = null,
+        public val role: Role? = null
     ) {
-        fun toJson(): JsonElement {
+        public fun toJson(): JsonElement {
             val json = JsonObject()
             name?.let { json.addProperty("name", it) }
             role?.let { json.add("role", it.toJson()) }
             return json
         }
 
-        companion object {
+        public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            fun fromJson(serializedObject: String): Artist {
+            public fun fromJson(serializedObject: String): Artist {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                     val name = jsonObject.get("name")?.asString
@@ -105,32 +105,25 @@ data class Opus(
     /**
      * The artist's role.
      */
-    enum class Role(
+    public enum class Role(
         private val jsonValue: String
     ) {
         SINGER("singer"),
-
         GUITARIST("guitarist"),
-
         PIANIST("pianist"),
-
         DRUMMER("drummer"),
-
         BASSIST("bassist"),
-
         VIOLINIST("violinist"),
-
         DJ("dj"),
-
         VOCALS("vocals"),
+        OTHER("other"),
+        ;
 
-        OTHER("other");
+        public fun toJson(): JsonElement = JsonPrimitive(jsonValue)
 
-        fun toJson(): JsonElement = JsonPrimitive(jsonValue)
-
-        companion object {
+        public companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): Role = values().first {
+            public fun fromJson(serializedObject: String): Role = values().first {
                 it.jsonValue == serializedObject
             }
         }

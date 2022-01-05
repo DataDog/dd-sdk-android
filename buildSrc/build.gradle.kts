@@ -38,7 +38,7 @@ dependencies {
     implementation("com.android.tools.build:gradle:7.0.3")
     implementation("com.github.ben-manes:gradle-versions-plugin:0.27.0")
     implementation("me.xdrop:fuzzywuzzy:1.2.0")
-    implementation("org.jetbrains.dokka:dokka-gradle-plugin:1.4.32")
+    implementation("org.jetbrains.dokka:dokka-gradle-plugin:1.5.30")
     implementation("org.apache.maven:maven-model:3.6.3")
     implementation("io.github.gradle-nexus:publish-plugin:1.1.0")
 
@@ -47,7 +47,7 @@ dependencies {
 
     // JsonSchema 2 Poko
     implementation("com.google.code.gson:gson:2.8.6")
-    implementation("com.squareup:kotlinpoet:1.6.0")
+    implementation("com.squareup:kotlinpoet:1.9.0")
 
     // Tests
     testImplementation("junit:junit:4.12")

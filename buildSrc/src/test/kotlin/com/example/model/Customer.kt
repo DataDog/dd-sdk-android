@@ -10,12 +10,12 @@ import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Customer(
-    val name: String? = null,
-    val billingAddress: Address? = null,
-    val shippingAddress: Address? = null
+public data class Customer(
+    public val name: String? = null,
+    public val billingAddress: Address? = null,
+    public val shippingAddress: Address? = null
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         name?.let { json.addProperty("name", it) }
         billingAddress?.let { json.add("billing_address", it.toJson()) }
@@ -23,10 +23,10 @@ data class Customer(
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Customer {
+        public fun fromJson(serializedObject: String): Customer {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val name = jsonObject.get("name")?.asString
@@ -45,12 +45,12 @@ data class Customer(
         }
     }
 
-    data class Address(
-        val streetAddress: String,
-        val city: String,
-        val state: String
+    public data class Address(
+        public val streetAddress: String,
+        public val city: String,
+        public val state: String
     ) {
-        fun toJson(): JsonElement {
+        public fun toJson(): JsonElement {
             val json = JsonObject()
             json.addProperty("street_address", streetAddress)
             json.addProperty("city", city)
@@ -58,10 +58,10 @@ data class Customer(
             return json
         }
 
-        companion object {
+        public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            fun fromJson(serializedObject: String): Address {
+            public fun fromJson(serializedObject: String): Address {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                     val streetAddress = jsonObject.get("street_address").asString

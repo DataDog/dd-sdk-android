@@ -12,21 +12,21 @@ import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class DateTime(
-    val date: Date? = null,
-    val time: Time? = null
+public data class DateTime(
+    public val date: Date? = null,
+    public val time: Time? = null
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         date?.let { json.add("date", it.toJson()) }
         time?.let { json.add("time", it.toJson()) }
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): DateTime {
+        public fun fromJson(serializedObject: String): DateTime {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val date = jsonObject.get("date")?.toString()?.let {
@@ -44,12 +44,12 @@ data class DateTime(
         }
     }
 
-    data class Date(
-        val year: Long? = null,
-        val month: Month? = null,
-        val day: Long? = null
+    public data class Date(
+        public val year: Long? = null,
+        public val month: Month? = null,
+        public val day: Long? = null
     ) {
-        fun toJson(): JsonElement {
+        public fun toJson(): JsonElement {
             val json = JsonObject()
             year?.let { json.addProperty("year", it) }
             month?.let { json.add("month", it.toJson()) }
@@ -57,10 +57,10 @@ data class DateTime(
             return json
         }
 
-        companion object {
+        public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            fun fromJson(serializedObject: String): Date {
+            public fun fromJson(serializedObject: String): Date {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                     val year = jsonObject.get("year")?.asLong
@@ -78,12 +78,12 @@ data class DateTime(
         }
     }
 
-    data class Time(
-        val hour: Long? = null,
-        val minute: Long? = null,
-        val seconds: Long? = null
+    public data class Time(
+        public val hour: Long? = null,
+        public val minute: Long? = null,
+        public val seconds: Long? = null
     ) {
-        fun toJson(): JsonElement {
+        public fun toJson(): JsonElement {
             val json = JsonObject()
             hour?.let { json.addProperty("hour", it) }
             minute?.let { json.addProperty("minute", it) }
@@ -91,10 +91,10 @@ data class DateTime(
             return json
         }
 
-        companion object {
+        public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            fun fromJson(serializedObject: String): Time {
+            public fun fromJson(serializedObject: String): Time {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                     val hour = jsonObject.get("hour")?.asLong
@@ -110,38 +110,28 @@ data class DateTime(
         }
     }
 
-    enum class Month(
+    public enum class Month(
         private val jsonValue: String
     ) {
         JAN("jan"),
-
         FEB("feb"),
-
         MAR("mar"),
-
         APR("apr"),
-
         MAY("may"),
-
         JUN("jun"),
-
         JUL("jul"),
-
         AUG("aug"),
-
         SEP("sep"),
-
         OCT("oct"),
-
         NOV("nov"),
+        DEC("dec"),
+        ;
 
-        DEC("dec");
+        public fun toJson(): JsonElement = JsonPrimitive(jsonValue)
 
-        fun toJson(): JsonElement = JsonPrimitive(jsonValue)
-
-        companion object {
+        public companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): Month = values().first {
+            public fun fromJson(serializedObject: String): Month = values().first {
                 it.jsonValue == serializedObject
             }
         }

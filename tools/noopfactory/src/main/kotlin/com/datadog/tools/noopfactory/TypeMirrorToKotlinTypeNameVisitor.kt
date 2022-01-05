@@ -17,6 +17,7 @@ import com.squareup.kotlinpoet.CHAR_ARRAY
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.DOUBLE
 import com.squareup.kotlinpoet.DOUBLE_ARRAY
+import com.squareup.kotlinpoet.DelicateKotlinPoetApi
 import com.squareup.kotlinpoet.FLOAT
 import com.squareup.kotlinpoet.FLOAT_ARRAY
 import com.squareup.kotlinpoet.INT
@@ -98,10 +99,10 @@ internal class TypeMirrorToKotlinTypeNameVisitor : SimpleTypeVisitor8<TypeName, 
     /**
      * Visits a declared type, eg : a class, interface, enum defined in code.
      */
+    @OptIn(DelicateKotlinPoetApi::class)
     override fun visitDeclared(t: DeclaredType, p: Void?): TypeName {
         // The recommended kotlinpoet-metadata API is
         // experimental there. For now we will just suppress the deprecation warning here.
-        @Suppress("DEPRECATION")
         val rawType: ClassName = (t.asElement() as TypeElement).asClassName()
         val enclosingType = t.enclosingType
         val enclosing = if (enclosingType.kind != TypeKind.NONE &&

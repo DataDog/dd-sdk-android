@@ -12,13 +12,13 @@ import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Book(
-    val bookId: Long,
-    val title: String,
-    val price: Number,
-    val author: Author
+public data class Book(
+    public val bookId: Long,
+    public val title: String,
+    public val price: Number,
+    public val author: Author
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("bookId", bookId)
         json.addProperty("title", title)
@@ -27,10 +27,10 @@ data class Book(
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Book {
+        public fun fromJson(serializedObject: String): Book {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val bookId = jsonObject.get("bookId").asLong
@@ -48,12 +48,12 @@ data class Book(
         }
     }
 
-    data class Author(
-        val firstName: String,
-        val lastName: String,
-        val contact: Contact
+    public data class Author(
+        public val firstName: String,
+        public val lastName: String,
+        public val contact: Contact
     ) {
-        fun toJson(): JsonElement {
+        public fun toJson(): JsonElement {
             val json = JsonObject()
             json.addProperty("firstName", firstName)
             json.addProperty("lastName", lastName)
@@ -61,10 +61,10 @@ data class Book(
             return json
         }
 
-        companion object {
+        public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            fun fromJson(serializedObject: String): Author {
+            public fun fromJson(serializedObject: String): Author {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                     val firstName = jsonObject.get("firstName").asString
@@ -82,21 +82,21 @@ data class Book(
         }
     }
 
-    data class Contact(
-        val phone: String? = null,
-        val email: String? = null
+    public data class Contact(
+        public val phone: String? = null,
+        public val email: String? = null
     ) {
-        fun toJson(): JsonElement {
+        public fun toJson(): JsonElement {
             val json = JsonObject()
             phone?.let { json.addProperty("phone", it) }
             email?.let { json.addProperty("email", it) }
             return json
         }
 
-        companion object {
+        public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            fun fromJson(serializedObject: String): Contact {
+            public fun fromJson(serializedObject: String): Contact {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                     val phone = jsonObject.get("phone")?.asString

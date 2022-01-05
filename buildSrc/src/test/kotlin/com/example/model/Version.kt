@@ -12,15 +12,15 @@ import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Version(
-    val id: Id,
-    val date: Date? = null
+public data class Version(
+    public val id: Id,
+    public val date: Date? = null
 ) {
-    val version: Long = 42L
+    public val version: Long = 42L
 
-    val delta: Number = 3.1415
+    public val delta: Number = 3.1415
 
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("version", version)
         json.addProperty("delta", delta)
@@ -29,10 +29,10 @@ data class Version(
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Version {
+        public fun fromJson(serializedObject: String): Version {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val id=Id()
@@ -48,22 +48,22 @@ data class Version(
         }
     }
 
-    class Id {
-        val serialNumber: Number = 12112.0
+    public class Id() {
+        public val serialNumber: Number = 12112.0
 
-        fun toJson(): JsonElement {
+        public fun toJson(): JsonElement {
             val json = JsonObject()
             json.addProperty("serialNumber", serialNumber)
             return json
         }
     }
 
-    class Date {
-        val year: Long = 2021L
+    public class Date() {
+        public val year: Long = 2021L
 
-        val month: Long = 3L
+        public val month: Long = 3L
 
-        fun toJson(): JsonElement {
+        public fun toJson(): JsonElement {
             val json = JsonObject()
             json.addProperty("year", year)
             json.addProperty("month", month)

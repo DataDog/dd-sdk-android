@@ -14,16 +14,16 @@ import kotlin.collections.List
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Message(
-    val destination: List<String>,
-    val origin: String,
-    val subject: String? = null,
-    val message: String? = null,
-    var labels: List<String>? = null,
-    var read: Boolean? = null,
-    var important: Boolean? = null
+public data class Message(
+    public val destination: List<String>,
+    public val origin: String,
+    public val subject: String? = null,
+    public val message: String? = null,
+    public var labels: List<String>? = null,
+    public var read: Boolean? = null,
+    public var important: Boolean? = null
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         val destinationArray = JsonArray(destination.size)
         destination.forEach { destinationArray.add(it) }
@@ -41,10 +41,10 @@ data class Message(
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Message {
+        public fun fromJson(serializedObject: String): Message {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val destination = jsonObject.get("destination").asJsonArray.let { jsonArray ->

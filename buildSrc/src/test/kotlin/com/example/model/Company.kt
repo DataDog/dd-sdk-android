@@ -14,13 +14,13 @@ import kotlin.collections.Map
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Company(
-    val name: String? = null,
-    val ratings: Ratings? = null,
-    val information: Information? = null,
-    val additionalProperties: Map<String, Any?> = emptyMap()
+public data class Company(
+    public val name: String? = null,
+    public val ratings: Ratings? = null,
+    public val information: Information? = null,
+    public val additionalProperties: Map<String, Any?> = emptyMap()
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         name?.let { json.addProperty("name", it) }
         ratings?.let { json.add("ratings", it.toJson()) }
@@ -31,12 +31,12 @@ data class Company(
         return json
     }
 
-    companion object {
+    public companion object {
         internal val RESERVED_PROPERTIES: Array<String> = arrayOf("name", "ratings", "information")
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Company {
+        public fun fromJson(serializedObject: String): Company {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val name = jsonObject.get("name")?.asString
@@ -61,11 +61,11 @@ data class Company(
         }
     }
 
-    data class Ratings(
-        val global: Long,
-        val additionalProperties: Map<String, Long> = emptyMap()
+    public data class Ratings(
+        public val global: Long,
+        public val additionalProperties: Map<String, Long> = emptyMap()
     ) {
-        fun toJson(): JsonElement {
+        public fun toJson(): JsonElement {
             val json = JsonObject()
             json.addProperty("global", global)
             additionalProperties.forEach { (k, v) ->
@@ -74,12 +74,12 @@ data class Company(
             return json
         }
 
-        companion object {
+        public companion object {
             internal val RESERVED_PROPERTIES: Array<String> = arrayOf("global")
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            fun fromJson(serializedObject: String): Ratings {
+            public fun fromJson(serializedObject: String): Ratings {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                     val global = jsonObject.get("global").asLong
@@ -99,12 +99,12 @@ data class Company(
         }
     }
 
-    data class Information(
-        val date: Long? = null,
-        val priority: Long? = null,
-        val additionalProperties: Map<String, Map<String, Any?>> = emptyMap()
+    public data class Information(
+        public val date: Long? = null,
+        public val priority: Long? = null,
+        public val additionalProperties: Map<String, Map<String, Any?>> = emptyMap()
     ) {
-        fun toJson(): JsonElement {
+        public fun toJson(): JsonElement {
             val json = JsonObject()
             date?.let { json.addProperty("date", it) }
             priority?.let { json.addProperty("priority", it) }
@@ -114,12 +114,12 @@ data class Company(
             return json
         }
 
-        companion object {
+        public companion object {
             internal val RESERVED_PROPERTIES: Array<String> = arrayOf("date", "priority")
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            fun fromJson(serializedObject: String): Information {
+            public fun fromJson(serializedObject: String): Information {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                     val date = jsonObject.get("date")?.asLong

@@ -43,7 +43,7 @@ object Dependencies {
         // Tools
         const val Detekt = "1.18.0"
         const val KtLint = "9.4.0"
-        const val Dokka = "1.4.32"
+        const val Dokka = "1.5.30"
         const val Unmock = "0.7.5"
         const val Robolectric = "4.4_r1-robolectric-r2" // Use lowest API
 
@@ -65,9 +65,9 @@ object Dependencies {
         const val Realm = "10.4.0"
         const val Room = "2.2.5"
         const val RxJava = "3.0.0"
-        const val SQLDelight = "1.4.3"
+        const val SQLDelight = "1.5.1"
         const val Timber = "4.7.1"
-        const val Coroutines = "1.4.2"
+        const val Coroutines = "1.5.2"
 
         // NDK
         const val Ndk = "22.1.7171670"

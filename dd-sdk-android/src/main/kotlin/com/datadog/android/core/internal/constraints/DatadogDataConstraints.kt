@@ -109,7 +109,7 @@ internal class DatadogDataConstraints : DataConstraints {
 
     private val tagTransforms = listOf<StringTransform>(
         // Tags must be lowercase
-        { it.toLowerCase(Locale.US) },
+        { it.lowercase(Locale.US) },
         // Tags must start with a letter
         { if (it.get(0) !in 'a'..'z') null else it },
         // Tags convert illegal characters to underscode

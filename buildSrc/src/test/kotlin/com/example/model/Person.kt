@@ -11,12 +11,12 @@ import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Person(
-    val firstName: String? = null,
-    val lastName: String? = null,
-    val age: Long? = null
+public data class Person(
+    public val firstName: String? = null,
+    public val lastName: String? = null,
+    public val age: Long? = null
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         firstName?.let { json.addProperty("firstName", it) }
         lastName?.let { json.addProperty("lastName", it) }
@@ -24,10 +24,10 @@ data class Person(
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Person {
+        public fun fromJson(serializedObject: String): Person {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val firstName = jsonObject.get("firstName")?.asString
