@@ -187,8 +187,8 @@ internal class RumActionScopeTest {
         val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
 
         // Then
-        verifyZeroInteractions(mockParentScope, mockWriter)
-        verifyNoMoreInteractions(mockWriter)
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isSameAs(testedScope)
         assertThat(result3).isSameAs(testedScope)
@@ -1282,8 +1282,8 @@ internal class RumActionScopeTest {
     // endregion
 
     companion object {
-        internal const val TEST_INACTIVITY_MS = 30L
-        internal const val TEST_MAX_DURATION_MS = 500L
+        internal const val TEST_INACTIVITY_MS = 100L
+        internal const val TEST_MAX_DURATION_MS = 1000L
         internal val TEST_MAX_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(TEST_MAX_DURATION_MS)
 
         val appContext = ApplicationContextTestConfiguration(Context::class.java)

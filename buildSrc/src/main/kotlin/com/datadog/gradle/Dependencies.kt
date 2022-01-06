@@ -37,14 +37,14 @@ object Dependencies {
         // Tests Tools
         const val AssertJ = "3.18.1"
         const val Elmyr = "1.3.0"
-        const val Jacoco = "0.8.4"
+        const val Jacoco = "0.8.7"
         const val MockitoKotlin = "2.2.0"
 
         // Tools
         const val Detekt = "1.18.0"
         const val KtLint = "9.4.0"
         const val Dokka = "1.5.30"
-        const val Unmock = "0.7.5"
+        const val Unmock = "0.7.9"
         const val Robolectric = "4.4_r1-robolectric-r2" // Use lowest API
 
         // AndroidJunit
@@ -202,7 +202,7 @@ object Dependencies {
         const val Kotlin = "org.jetbrains.kotlin:kotlin-gradle-plugin:${Versions.Kotlin}"
         const val KtLint = "org.jlleitschuh.gradle:ktlint-gradle:${Versions.KtLint}"
         const val Dokka = "org.jetbrains.dokka:dokka-gradle-plugin:${Versions.Dokka}"
-        const val Unmock = "de.mobilej.unmock:UnMockPlugin:${Versions.Unmock}"
+        const val Unmock = "com.github.bjoernq:unmockplugin:${Versions.Unmock}"
         const val Realm = "io.realm:realm-gradle-plugin:${Versions.Realm}"
         const val SQLDelight = "com.squareup.sqldelight:gradle-plugin:${Versions.SQLDelight}"
     }

@@ -148,7 +148,7 @@ internal class WindowCallbackWrapperTest {
     // region onMenuItemSelected
 
     @Test
-    fun `𝕄 trigger RUM Action with custom name 𝕎 onMenuItemSelected() {custom target not empty}`(
+    fun `M trigger RUM Action with custom name W onMenuItemSelected() {custom target not empty}`(
         @StringForgery itemTitle: String,
         @StringForgery itemResourceName: String,
         @StringForgery customTargetName: String,
@@ -190,7 +190,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 trigger RUM Action with empty name 𝕎 onMenuItemSelected() { custom target empty }`(
+    fun `M trigger RUM Action with empty name W onMenuItemSelected() { custom target empty }`(
         @StringForgery itemTitle: String,
         @StringForgery itemResourceName: String,
         @IntForgery itemId: Int,
@@ -231,7 +231,7 @@ internal class WindowCallbackWrapperTest {
     }
 
     @Test
-    fun `𝕄 trigger RUM Action with empty name 𝕎 onMenuItemSelected() { custom target null }`(
+    fun `M trigger RUM Action with empty name W onMenuItemSelected() { custom target null }`(
         @StringForgery itemTitle: String,
         @StringForgery itemResourceName: String,
         @IntForgery itemId: Int,
@@ -372,6 +372,15 @@ internal class WindowCallbackWrapperTest {
     fun `𝕄 trigger RUM action 𝕎 dispatchKeyEvent() { UP-BACK, custom name null}`() {
         // Given
         val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(keyEvent)).thenReturn(null)
+        }
+
+        testedWrapper = WindowCallbackWrapper(
+            mockCallback,
+            mockGestureDetector,
+            mockInteractionPredicate
+        )
 
         // When
         testedWrapper.dispatchKeyEvent(keyEvent)
@@ -388,6 +397,15 @@ internal class WindowCallbackWrapperTest {
     fun `𝕄 trigger RUM action 𝕎 dispatchKeyEvent() { UP-BACK, custom name empty}`() {
         // Given
         val keyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK)
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(keyEvent)).thenReturn("")
+        }
+
+        testedWrapper = WindowCallbackWrapper(
+            mockCallback,
+            mockGestureDetector,
+            mockInteractionPredicate
+        )
 
         // When
         testedWrapper.dispatchKeyEvent(keyEvent)

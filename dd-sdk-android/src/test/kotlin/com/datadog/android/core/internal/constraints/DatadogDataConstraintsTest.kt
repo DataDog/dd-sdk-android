@@ -106,7 +106,7 @@ internal class DatadogDataConstraintsTest {
 
         val result = testedConstraints.validateTags(listOf(tag))
 
-        val expectedCorrectedTag = "${key.toLowerCase(Locale.US)}:$value"
+        val expectedCorrectedTag = "${key.lowercase(Locale.US)}:$value"
         assertThat(result)
             .containsOnly(expectedCorrectedTag)
         verify(mockDevLogHandler).handleLog(
