@@ -126,9 +126,7 @@ test:debug:
   script:
     - git fetch --depth=1 origin master
     - rm -rf ~/.gradle/daemon/
-    - CODECOV_TOKEN=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.codecov-token  --with-decryption --query "Parameter.Value" --out text)
     - GRADLE_OPTS="-Xmx2560m" ./gradlew :unitTestDebug --stacktrace --no-daemon
-    - bash <(cat ./codecov.sh) -t $CODECOV_TOKEN
 
 test:release:
   tags: [ "runner:main" ]
@@ -149,6 +147,22 @@ test:tools:
     - git fetch --depth=1 origin master
     - rm -rf ~/.gradle/daemon/
     - GRADLE_OPTS="-Xmx2560m" ./gradlew :unitTestTools --stacktrace --no-daemon
+
+test:kover:
+  tags: [ "runner:main" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test
+  timeout: 1h
+  script:
+    - pip3 install datadog
+    - git fetch --depth=1 origin master
+    - rm -rf ~/.gradle/daemon/
+    - export DD_API_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.api_key --with-decryption --query "Parameter.Value" --out text)
+    - export DD_APP_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.app_key --with-decryption --query "Parameter.Value" --out text)
+    - CODECOV_TOKEN=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.codecov-token  --with-decryption --query "Parameter.Value" --out text)
+    - GRADLE_OPTS="-Xmx2560m" ./gradlew :koverReportAll --stacktrace --no-daemon
+    - python3 ddcoverage.py --prefix dd-sdk-android
+    - bash <(cat ./codecov.sh) -t $CODECOV_TOKEN
 
 # PUBLISH ARTIFACTS ON MAVEN
 

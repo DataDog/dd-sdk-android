@@ -35,13 +35,13 @@ internal constructor(private val logger: Logger) : WebChromeClient() {
     override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
         if (consoleMessage != null) {
             val message = consoleMessage.message()
-            val level = consoleMessage.messageLevel()
+            val level = consoleMessage.messageLevel().toLogLevel()
             val attributes = mapOf<String, Any>(
                 SOURCE_ID to consoleMessage.sourceId(),
                 SOURCE_LINE to consoleMessage.lineNumber()
             )
 
-            if (level == ConsoleMessage.MessageLevel.ERROR) {
+            if (level == Log.ERROR) {
                 GlobalRum.get().addError(
                     message,
                     RumErrorSource.WEBVIEW,
@@ -49,7 +49,7 @@ internal constructor(private val logger: Logger) : WebChromeClient() {
                     attributes
                 )
             } else {
-                logger.log(level.toLogLevel(), message, null, attributes)
+                logger.log(level, message, null, attributes)
             }
         }
         return false

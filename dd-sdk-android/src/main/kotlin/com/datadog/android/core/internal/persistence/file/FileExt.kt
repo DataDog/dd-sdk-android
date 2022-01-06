@@ -10,7 +10,6 @@ package com.datadog.android.core.internal.persistence.file
 import com.datadog.android.core.internal.utils.sdkLogger
 import java.io.File
 import java.io.FileFilter
-import java.io.FilenameFilter
 import java.nio.charset.Charset
 
 /*
@@ -38,7 +37,7 @@ private fun <T> File.safeCall(
         sdkLogger.e("Security exception was thrown for file ${this.path}", e)
         default
     } catch (e: Exception) {
-        sdkLogger.e("Security exception was thrown for file ${this.path}", e)
+        sdkLogger.e("Unexpected exception was thrown for file ${this.path}", e)
         default
     }
 }
@@ -51,16 +50,8 @@ internal fun File.canReadSafe(): Boolean {
     return safeCall(default = false) { canRead() }
 }
 
-internal fun File.createNewFileSafe(): Boolean {
-    return safeCall(default = false) { createNewFile() }
-}
-
 internal fun File.deleteSafe(): Boolean {
     return safeCall(default = false) { delete() }
-}
-
-internal fun File.deleteOnExitSafe() {
-    return safeCall(default = Unit) { deleteOnExit() }
 }
 
 internal fun File.existsSafe(): Boolean {
@@ -75,20 +66,8 @@ internal fun File.isDirectorySafe(): Boolean {
     return safeCall(default = false) { isDirectory() }
 }
 
-internal fun File.listSafe(): Array<String>? {
-    return safeCall(default = null) { list() }
-}
-
-internal fun File.listSafe(filter: FilenameFilter): Array<String>? {
-    return safeCall(default = null) { list(filter) }
-}
-
 internal fun File.listFilesSafe(): Array<File>? {
     return safeCall(default = null) { listFiles() }
-}
-
-internal fun File.listFilesSafe(filter: FilenameFilter): Array<File>? {
-    return safeCall(default = null) { listFiles(filter) }
 }
 
 internal fun File.listFilesSafe(filter: FileFilter): Array<File>? {
@@ -97,10 +76,6 @@ internal fun File.listFilesSafe(filter: FileFilter): Array<File>? {
 
 internal fun File.lengthSafe(): Long {
     return safeCall(default = 0L) { length() }
-}
-
-internal fun File.mkdirSafe(): Boolean {
-    return safeCall(default = false) { mkdir() }
 }
 
 internal fun File.mkdirsSafe(): Boolean {

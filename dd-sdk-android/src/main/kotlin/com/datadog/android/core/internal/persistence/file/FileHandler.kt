@@ -24,8 +24,8 @@ internal interface FileHandler {
     fun writeData(
         file: File,
         data: ByteArray,
-        append: Boolean = false,
-        separator: ByteArray? = null
+        append: Boolean,
+        separator: ByteArray?
     ): Boolean
 
     /**
@@ -37,8 +37,8 @@ internal interface FileHandler {
      */
     fun readData(
         file: File,
-        prefix: ByteArray? = null,
-        suffix: ByteArray? = null
+        prefix: ByteArray?,
+        suffix: ByteArray?
     ): ByteArray
 
     /**

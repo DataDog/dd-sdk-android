@@ -15,7 +15,6 @@ plugins {
     kotlin("android")
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")
-    jacoco
 }
 
 android {

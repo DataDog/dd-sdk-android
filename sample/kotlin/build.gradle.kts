@@ -24,7 +24,6 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint")
     id("thirdPartyLicences")
     id("org.jetbrains.dokka")
-    jacoco
     id("realm-android")
     id("com.squareup.sqldelight")
 }

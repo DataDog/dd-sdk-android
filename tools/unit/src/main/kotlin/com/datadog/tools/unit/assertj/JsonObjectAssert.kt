@@ -6,6 +6,7 @@
 
 package com.datadog.tools.unit.assertj
 
+import com.datadog.tools.unit.assertj.JsonArrayAssert.Companion.assertThat
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
@@ -72,6 +73,7 @@ class JsonObjectAssert(actual: JsonObject) :
             is Long -> hasField(name, expectedValue)
             is Float -> hasField(name, expectedValue)
             is Double -> hasField(name, expectedValue)
+            is List<*> -> hasField(name, expectedValue)
             else -> throw IllegalStateException(
                 "Cannot assert on field type ${expectedValue.javaClass}"
             )
@@ -448,6 +450,32 @@ class JsonObjectAssert(actual: JsonObject) :
             .isTrue()
 
         JsonObjectAssert(element as JsonObject).withAssertions()
+
+        return this
+    }
+
+    /**
+     *  Verifies that the actual jsonObject contains a field with the given name,
+     *  and that field contains attributes matching the given map.
+     *  @param name the field name
+     *  @param expectedValue the expected attributes of the field
+     */
+    fun hasField(name: String, expectedValue: List<*>): JsonObjectAssert {
+        assertThat(actual.has(name))
+            .overridingErrorMessage(
+                "Expected json object to have field named $name but couldn't find one"
+            )
+            .isTrue()
+
+        val element = actual.get(name)
+        assertThat(element is JsonArray)
+            .overridingErrorMessage(
+                "Expected json object to have array field $name " +
+                    "but was ${element.javaClass.simpleName}"
+            )
+            .isTrue()
+
+        assertThat(element.asJsonArray).isJsonArrayOf(expectedValue)
 
         return this
     }

@@ -9,6 +9,7 @@ package com.datadog.android.utils.assertj
 import com.datadog.android.rum.model.ViewEvent
 import org.assertj.core.api.AbstractAssert
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset
 
 internal class DeserializedViewEventAssert(actual: ViewEvent) :
     AbstractAssert<DeserializedViewEventAssert, ViewEvent>(
@@ -19,13 +20,35 @@ internal class DeserializedViewEventAssert(actual: ViewEvent) :
     fun isEqualTo(expected: ViewEvent): DeserializedViewEventAssert {
         assertThat(actual)
             .usingRecursiveComparison()
-            .ignoringFields("context", "usr")
+            .ignoringFields("context", "usr", "view")
             .isEqualTo(expected)
+        assertThat(actual.view)
+            .usingRecursiveComparison()
+            .ignoringFields(
+                "memoryAverage",
+                "memoryMax",
+                "cpuTicksCount",
+                "cpuTicksPerSecond",
+                "refreshRateAverage",
+                "refreshRateMin",
+                "cumulativeLayoutShift"
+            )
+            .isEqualTo(expected.view)
+        assertNumberFieldEquals(actual.view.memoryAverage, expected.view.memoryAverage)
+        assertNumberFieldEquals(actual.view.memoryMax, expected.view.memoryMax)
+        assertNumberFieldEquals(actual.view.cpuTicksCount, expected.view.cpuTicksCount)
+        assertNumberFieldEquals(actual.view.cpuTicksPerSecond, expected.view.cpuTicksPerSecond)
+        assertNumberFieldEquals(actual.view.refreshRateAverage, expected.view.refreshRateAverage)
+        assertNumberFieldEquals(actual.view.refreshRateMin, expected.view.refreshRateMin)
+        assertNumberFieldEquals(
+            actual.view.cumulativeLayoutShift,
+            expected.view.cumulativeLayoutShift
+        )
         assertThat(actual.usr)
             .usingRecursiveComparison()
             .ignoringFields("additionalProperties")
             .isEqualTo(expected.usr)
-        assertProperties(
+        assertPropertiesEquals(
             actual.usr?.additionalProperties,
             expected.usr?.additionalProperties
         )
@@ -33,16 +56,26 @@ internal class DeserializedViewEventAssert(actual: ViewEvent) :
             .usingRecursiveComparison()
             .ignoringFields("additionalProperties")
             .isEqualTo(expected.context)
-        assertProperties(
+        assertPropertiesEquals(
             actual.context?.additionalProperties,
             expected.context?.additionalProperties
         )
         return this
     }
 
-    private fun assertProperties(actual: Map<String, Any?>?, expected: Map<String, Any?>?) {
+    private fun assertPropertiesEquals(actual: Map<String, Any?>?, expected: Map<String, Any?>?) {
         DeserializedMapAssert.assertThat(actual ?: emptyMap())
             .isEqualTo(expected ?: emptyMap())
+    }
+
+    private fun assertNumberFieldEquals(actual: Number?, expected: Number?) {
+        if (expected == null) {
+            assertThat(actual).isNull()
+        } else {
+            assertThat(actual).isNotNull()
+            assertThat(actual!!.toDouble())
+                .isCloseTo(expected.toDouble(), Offset.offset(0.0000001))
+        }
     }
 
     companion object {

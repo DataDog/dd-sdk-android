@@ -7,7 +7,6 @@
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektConfig
-import com.datadog.gradle.config.jacocoConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -29,9 +28,6 @@ plugins {
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
     id("org.jlleitschuh.gradle.ktlint")
-
-    // Tests
-    jacoco
 
     // Internal Generation
     id("thirdPartyLicences")
@@ -92,7 +88,6 @@ kotlinConfig()
 detektConfig()
 ktLintConfig()
 junitConfig()
-jacocoConfig()
 javadocConfig()
 dependencyUpdateConfig()
 publishingConfig(

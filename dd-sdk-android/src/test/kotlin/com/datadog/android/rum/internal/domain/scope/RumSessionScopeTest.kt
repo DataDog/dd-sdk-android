@@ -154,7 +154,8 @@ internal class RumSessionScopeTest {
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
-        assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
+        val originalRumContext = testedScope.getRumContext()
+        assertThat(GlobalRum.getRumContext()).isEqualTo(originalRumContext)
     }
 
     // region Session management

@@ -14,9 +14,9 @@ internal class UserInfoForgeryFactory : ForgeryFactory<UserInfo> {
 
     override fun getForgery(forge: Forge): UserInfo {
         return UserInfo(
-            id = forge.anHexadecimalString(),
-            name = forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+"),
-            email = forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}"),
+            id = forge.aNullable { anHexadecimalString() },
+            name = forge.aNullable { forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+") },
+            email = forge.aNullable { forge.aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}") },
             additionalProperties = forge.exhaustiveAttributes()
         )
     }

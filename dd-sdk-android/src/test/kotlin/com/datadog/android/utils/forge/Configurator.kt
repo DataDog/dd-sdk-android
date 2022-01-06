@@ -57,6 +57,7 @@ internal class Configurator :
 
         // MISC
         forge.addFactory(BigIntegerFactory())
+        forge.addFactory(CharsetForgeryFactory())
         forge.addFactory(GsonJsonArrayForgeryFactory())
         forge.addFactory(GsonJsonObjectForgeryFactory())
         forge.addFactory(GsonJsonPrimitiveForgeryFactory())

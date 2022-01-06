@@ -21,7 +21,6 @@ internal fun sleepSafe(durationMs: Long): Boolean {
             // Restore the interrupted status
             Thread.currentThread().interrupt()
         } catch (se: SecurityException) {
-            // this should not happen
             sdkLogger.e("Thread was unable to set its own interrupted state", se)
         }
         return true

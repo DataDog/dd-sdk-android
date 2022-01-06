@@ -43,6 +43,7 @@ espresso = "3.4.0"
 assertJ = "3.18.1"
 elmyr = "1.3.1"
 mockitoKotlin = "2.2.0"
+kover="0.5.0-RC"
 
 # Tools
 detekt = "1.18.0"
@@ -157,6 +158,7 @@ elmyrJUnit5 = { module = "com.github.xgouchet.Elmyr:junit5", version.ref = "elmy
 elmyrJVM = { module = "com.github.xgouchet.Elmyr:jvm", version.ref = "elmyr" }
 mockitoKotlin = { module = "com.nhaarman.mockitokotlin2:mockito-kotlin", version.ref = "mockitoKotlin" }
 kotlinReflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+kover = { module = "org.jetbrains.kotlinx:kover", version.ref = "kover" }
 
 # Tools
 detektCli = { module = "io.gitlab.arturbosch.detekt:detekt-cli", version.ref = "detekt" }

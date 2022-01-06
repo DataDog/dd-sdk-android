@@ -4,17 +4,17 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.ktx.tracing
+package com.datadog.android.ktx.rum
 
-import com.datadog.android.ktx.rum.CLOSABLE_ERROR_NESSAGE
-import com.datadog.android.ktx.rum.useMonitored
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.getStaticValue
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -45,11 +45,11 @@ class CloseableExtTest {
     @Mock
     lateinit var mockRumMonitor: RumMonitor
 
+    @Mock
+    lateinit var mockCloseable: Closeable
+
     @Forgery
     lateinit var fakeException: Throwable
-
-    @Mock
-    lateinit var testMockCloseable: Closeable
 
     @StringForgery
     lateinit var fakeString: String
@@ -72,7 +72,7 @@ class CloseableExtTest {
 
         // WHEN
         try {
-            testMockCloseable.useMonitored {
+            mockCloseable.useMonitored {
                 throw fakeException
             }
         } catch (e: Throwable) {
@@ -93,9 +93,10 @@ class CloseableExtTest {
     fun `M close the closeable instance W exception in the block`() {
         // GIVEN
         val caughtException: Throwable?
+
         // WHEN
         try {
-            testMockCloseable.useMonitored {
+            mockCloseable.useMonitored {
                 throw fakeException
             }
         } catch (e: Throwable) {
@@ -104,20 +105,43 @@ class CloseableExtTest {
 
         // THEN
         assertThat(fakeException).isEqualTo(caughtException)
-        verify(testMockCloseable).close()
-        verifyNoMoreInteractions(testMockCloseable)
+        verify(mockCloseable).close()
+        verifyNoMoreInteractions(mockCloseable)
+    }
+
+    @Test
+    fun `M send an error event W exception on close`() {
+        // GIVEN
+        var caughtException: Throwable? = null
+        whenever(mockCloseable.close()) doThrow fakeException
+
+        // WHEN
+        try {
+            mockCloseable.useMonitored {}
+        } catch (e: Throwable) {
+            caughtException = e
+        }
+
+        // THEN
+        assertThat(caughtException).isNull()
+        verify(mockRumMonitor).addError(
+            CLOSABLE_ERROR_NESSAGE,
+            RumErrorSource.SOURCE,
+            fakeException,
+            emptyMap()
+        )
     }
 
     @Test
     fun `M close the closeable instance W no exception in the block`() {
         // WHEN
-        val returnedValue = testMockCloseable.useMonitored {
+        val returnedValue = mockCloseable.useMonitored {
             fakeString
         }
 
         // THEN
         assertThat(returnedValue).isEqualTo(fakeString)
-        verify(testMockCloseable).close()
-        verifyNoMoreInteractions(testMockCloseable)
+        verify(mockCloseable).close()
+        verifyNoMoreInteractions(mockCloseable)
     }
 }

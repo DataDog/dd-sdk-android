@@ -20,7 +20,7 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
         val resourceName = forge.anAlphabeticalString()
         val serviceName = forge.anAlphabeticalString()
         val errorFlag = if (forge.aBool()) 1L else 0L
-        val isTopLevel = if (forge.aBool()) 1L else 0L
+        val isTopLevel = forge.aNullable { if (forge.aBool()) 1L else 0L }
         val metrics = forge.exhaustiveMetrics()
         val meta = forge.exhaustiveMeta()
         val traceId = forge.aLong(min = 1).toString(16)
@@ -30,8 +30,8 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
         val startTime = TimeUnit.SECONDS.toNanos(System.currentTimeMillis())
         val appPackageVersion = forge.aStringMatching("[0-9]\\.[0-9]\\.[0-9]")
         val tracerVersion = forge.aStringMatching("[0-9]\\.[0-9]\\.[0-9]")
-        val userInfo: UserInfo = forge.getForgery()
-        val networkInfo: NetworkInfo = forge.getForgery()
+        val userInfo: UserInfo? = forge.aNullable()
+        val networkInfo: NetworkInfo? = forge.aNullable()
 
         return SpanEvent(
             spanId = spanId,
@@ -45,27 +45,27 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
             start = startTime,
             meta = SpanEvent.Meta(
                 version = appPackageVersion,
-                dd = SpanEvent.Dd(),
+                dd = SpanEvent.Dd(source = forge.aNullable { anAlphabeticalString() }),
                 span = SpanEvent.Span(),
                 tracer = SpanEvent.Tracer(tracerVersion),
                 usr = SpanEvent.Usr(
-                    id = userInfo.id,
-                    name = userInfo.name,
-                    email = userInfo.email,
-                    additionalProperties = userInfo.additionalProperties
+                    id = userInfo?.id,
+                    name = userInfo?.name,
+                    email = userInfo?.email,
+                    additionalProperties = userInfo?.additionalProperties.orEmpty()
                 ),
                 network = SpanEvent.Network(
                     SpanEvent.Client(
                         simCarrier = forge.aNullable {
                             SpanEvent.SimCarrier(
-                                id = networkInfo.carrierId.toString(),
-                                name = networkInfo.carrierName
+                                id = networkInfo?.carrierId?.toString(),
+                                name = networkInfo?.carrierName
                             )
                         },
-                        signalStrength = networkInfo.strength.toString(),
-                        uplinkKbps = networkInfo.upKbps.toString(),
-                        downlinkKbps = networkInfo.downKbps.toString(),
-                        connectivity = networkInfo.connectivity.toString()
+                        signalStrength = networkInfo?.strength?.toString(),
+                        uplinkKbps = networkInfo?.upKbps?.toString(),
+                        downlinkKbps = networkInfo?.downKbps?.toString(),
+                        connectivity = networkInfo?.connectivity?.toString().orEmpty()
                     )
                 ),
                 additionalProperties = meta
