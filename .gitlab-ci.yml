@@ -77,11 +77,10 @@ analysis:detekt:
   stage: analysis
   timeout: 30m
   cache:
-    key: $CI_PIPELINE_ID
+    key: $CI_COMMIT_REF_SLUG
     paths:
       - cache/caches/
       - cache/notifications/
-    policy: push
   script:
     - git fetch --depth=1 origin master
     - GRADLE_OPTS="-Xmx2560m" ./gradlew :detektAll --stacktrace --no-daemon --build-cache --gradle-user-home cache/
@@ -130,7 +129,7 @@ test:debug:
   stage: test
   timeout: 1h
   cache:
-    key: $CI_PIPELINE_ID
+    key: $CI_COMMIT_REF_SLUG
     paths:
       - cache/caches/
       - cache/notifications/
@@ -146,7 +145,7 @@ test:release:
   stage: test
   timeout: 1h
   cache:
-    key: $CI_PIPELINE_ID
+    key: $CI_COMMIT_REF_SLUG
     paths:
       - cache/caches/
       - cache/notifications/
@@ -162,7 +161,7 @@ test:tools:
   stage: test
   timeout: 1h
   cache:
-    key: $CI_PIPELINE_ID
+    key: $CI_COMMIT_REF_SLUG
     paths:
       - cache/caches/
       - cache/notifications/
@@ -178,11 +177,10 @@ test:kover:
   stage: test
   timeout: 1h
   cache:
-    key: $CI_PIPELINE_ID
+    key: $CI_COMMIT_REF_SLUG
     paths:
       - cache/caches/
       - cache/notifications/
-    policy: pull
   script:
     - pip3 install datadog
     - git fetch --depth=1 origin master
