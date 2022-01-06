@@ -29,7 +29,7 @@ internal class ByteArrayExtTest {
         val rawString = forge.aNumericalString()
         val byteArray = rawString.toByteArray(Charsets.UTF_8)
 
-        val subs = byteArray.split(separationChar.toByte())
+        val subs = byteArray.split(separationChar.code.toByte())
 
         assertThat(subs).hasSize(1)
         assertThat(subs[0]).isEqualTo(byteArray)
@@ -43,7 +43,7 @@ internal class ByteArrayExtTest {
         val rawString = part0 + separationChar + part1
         val byteArray = rawString.toByteArray(Charsets.UTF_8)
 
-        val subs = byteArray.split(separationChar.toByte())
+        val subs = byteArray.split(separationChar.code.toByte())
 
         assertThat(subs).hasSize(2)
         assertThat(String(subs[0])).isEqualTo(part0)
@@ -57,7 +57,7 @@ internal class ByteArrayExtTest {
         val rawString = part0 + separationChar
         val byteArray = rawString.toByteArray(Charsets.UTF_8)
 
-        val subs = byteArray.split(separationChar.toByte())
+        val subs = byteArray.split(separationChar.code.toByte())
 
         assertThat(subs).hasSize(1)
         assertThat(String(subs[0])).isEqualTo(part0)
@@ -70,7 +70,7 @@ internal class ByteArrayExtTest {
         val rawString = separationChar + part0
         val byteArray = rawString.toByteArray(Charsets.UTF_8)
 
-        val subs = byteArray.split(separationChar.toByte())
+        val subs = byteArray.split(separationChar.code.toByte())
 
         assertThat(subs).hasSize(1)
         assertThat(String(subs[0])).isEqualTo(part0)
@@ -84,7 +84,7 @@ internal class ByteArrayExtTest {
         val rawString = part0 + separationChar + separationChar + part1
         val byteArray = rawString.toByteArray(Charsets.UTF_8)
 
-        val subs = byteArray.split(separationChar.toByte())
+        val subs = byteArray.split(separationChar.code.toByte())
 
         assertThat(subs).hasSize(2)
         assertThat(String(subs[0])).isEqualTo(part0)
@@ -100,7 +100,7 @@ internal class ByteArrayExtTest {
         val rawString = forge.aNumericalString()
         val byteArray = rawString.toByteArray(Charsets.UTF_8)
 
-        val index = byteArray.indexOf(forge.anAlphabeticalChar().toByte(), 0)
+        val index = byteArray.indexOf(forge.anAlphabeticalChar().code.toByte(), 0)
 
         assertThat(index).isEqualTo(-1)
     }
@@ -112,7 +112,7 @@ internal class ByteArrayExtTest {
         val expectedIndex = rawString.indexOf(char)
 
         val byteArray = rawString.toByteArray(Charsets.UTF_8)
-        val index = byteArray.indexOf(char.toByte(), 0)
+        val index = byteArray.indexOf(char.code.toByte(), 0)
 
         assertThat(index).isEqualTo(expectedIndex)
     }
@@ -130,10 +130,10 @@ internal class ByteArrayExtTest {
 
         val byteArray = rawString.toByteArray(Charsets.UTF_8)
         val foundIndexes = mutableListOf<Int>()
-        var nextIndex = byteArray.indexOf(char.toByte(), 0)
+        var nextIndex = byteArray.indexOf(char.code.toByte(), 0)
         while (nextIndex != -1) {
             foundIndexes.add(nextIndex)
-            nextIndex = byteArray.indexOf(char.toByte(), nextIndex + 1)
+            nextIndex = byteArray.indexOf(char.code.toByte(), nextIndex + 1)
         }
 
         assertThat(foundIndexes)

@@ -10,8 +10,8 @@ import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
-import com.datadog.gradle.implementation
 import com.datadog.gradle.testImplementation
+import com.datadog.gradle.config.taskConfig
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
@@ -24,13 +24,18 @@ plugins {
 dependencies {
     implementation(Dependencies.Libraries.Kotlin)
     implementation(Dependencies.Libraries.KotlinReflect)
-    implementation("com.squareup:kotlinpoet:1.7.2")
+    implementation("com.squareup:kotlinpoet:1.9.0")
 
     testImplementation(Dependencies.Libraries.JUnit5)
     testImplementation(Dependencies.Libraries.TestTools)
     testImplementation("com.github.tschuchortdev:kotlin-compile-testing:1.2.7")
 }
 
+taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions {
+        freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
+    }
+}
 kotlinConfig()
 detektConfig()
 ktLintConfig()

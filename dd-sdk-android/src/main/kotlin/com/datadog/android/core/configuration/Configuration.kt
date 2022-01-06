@@ -712,7 +712,7 @@ internal constructor(
                     }
                 } else if (it.matches(validHostNameRegEx)) {
                     it
-                } else if (it.toLowerCase(Locale.ENGLISH) == "localhost") {
+                } else if (it.lowercase(Locale.ENGLISH) == "localhost") {
                     // special rule exception to accept `localhost` as a valid domain name
                     it
                 } else {

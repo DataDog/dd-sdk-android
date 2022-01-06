@@ -14,16 +14,16 @@ import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Bike(
-    val productId: Long = 1L,
-    val productName: String,
-    val type: String? = "road",
-    val price: Number = 55.5,
-    val frameMaterial: FrameMaterial? = FrameMaterial.LIGHT_ALUMINIUM,
-    val inStock: Boolean = true,
-    val color: Color = Color.LIME_GREEN
+public data class Bike(
+    public val productId: Long = 1L,
+    public val productName: String,
+    public val type: String? = "road",
+    public val price: Number = 55.5,
+    public val frameMaterial: FrameMaterial? = FrameMaterial.LIGHT_ALUMINIUM,
+    public val inStock: Boolean = true,
+    public val color: Color = Color.LIME_GREEN
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("productId", productId)
         json.addProperty("productName", productName)
@@ -35,10 +35,10 @@ data class Bike(
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Bike {
+        public fun fromJson(serializedObject: String): Bike {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val productId = jsonObject.get("productId").asLong
@@ -61,45 +61,40 @@ data class Bike(
         }
     }
 
-    enum class FrameMaterial(
+    public enum class FrameMaterial(
         private val jsonValue: String
     ) {
         CARBON("carbon"),
-
         LIGHT_ALUMINIUM("light_aluminium"),
+        IRON("iron"),
+        ;
 
-        IRON("iron");
+        public fun toJson(): JsonElement = JsonPrimitive(jsonValue)
 
-        fun toJson(): JsonElement = JsonPrimitive(jsonValue)
-
-        companion object {
+        public companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): FrameMaterial = values().first {
+            public fun fromJson(serializedObject: String): FrameMaterial = values().first {
                 it.jsonValue == serializedObject
             }
         }
     }
 
-    enum class Color(
+    public enum class Color(
         private val jsonValue: String
     ) {
         RED("red"),
-
         AMBER("amber"),
-
         GREEN("green"),
-
         DARK_BLUE("dark_blue"),
-
         LIME_GREEN("lime green"),
+        SUNBURST_YELLOW("sunburst-yellow"),
+        ;
 
-        SUNBURST_YELLOW("sunburst-yellow");
+        public fun toJson(): JsonElement = JsonPrimitive(jsonValue)
 
-        fun toJson(): JsonElement = JsonPrimitive(jsonValue)
-
-        companion object {
+        public companion object {
             @JvmStatic
-            fun fromJson(serializedObject: String): Color = values().first {
+            public fun fromJson(serializedObject: String): Color = values().first {
                 it.jsonValue == serializedObject
             }
         }

@@ -17,6 +17,7 @@ import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.config.publishingConfig
+import com.datadog.gradle.config.setLibraryVersion
 import com.datadog.gradle.implementation
 import com.datadog.gradle.testImplementation
 
@@ -51,15 +52,14 @@ fun isLogEnabledInRelease(): String {
 }
 
 android {
-    compileSdkVersion(AndroidConfig.TARGET_SDK)
-    buildToolsVersion(AndroidConfig.BUILD_TOOLS_VERSION)
+    compileSdk = AndroidConfig.TARGET_SDK
+    buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
 
     defaultConfig {
-        minSdkVersion(AndroidConfig.MIN_SDK)
-        targetSdkVersion(AndroidConfig.TARGET_SDK)
+        minSdk = AndroidConfig.MIN_SDK
+        targetSdk = AndroidConfig.TARGET_SDK
 
-        buildConfigField("int", "SDK_VERSION_CODE", "${AndroidConfig.VERSION.code}")
-        buildConfigField("String", "SDK_VERSION_NAME", "\"${AndroidConfig.VERSION.name}\"")
+        setLibraryVersion()
 
         consumerProguardFiles("consumer-rules.pro")
     }
@@ -109,7 +109,7 @@ android {
         exclude("META-INF/LICENSE-notice.md")
     }
 
-    lintOptions {
+    lint {
         isWarningsAsErrors = true
         isAbortOnError = true
         isCheckReleaseBuilds = false

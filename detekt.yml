@@ -28,7 +28,6 @@ console-reports:
 
 comments:
   active: true
-  excludes: [ "**/test/**","**/androidTest/**","**/*.Test.kt","**/*.Spec.kt","**/*.Spek.kt" ]
   CommentOverPrivateFunction:
     active: true
   CommentOverPrivateProperty:
@@ -38,14 +37,17 @@ comments:
     endOfSentenceFormat: ([.?!][ \t\n\r\f<])|([.?!:]$)
   UndocumentedPublicClass:
     active: true
+    excludes: [ "**/test/**","**/androidTest/**","**/*.Test.kt","**/*.Spec.kt","**/*.Spek.kt" ]
     searchInNestedClass: true
     searchInInnerClass: true
     searchInInnerObject: true
     searchInInnerInterface: true
   UndocumentedPublicFunction:
     active: true
+    excludes: [ "**/test/**","**/androidTest/**","**/*.Test.kt","**/*.Spec.kt","**/*.Spek.kt" ]
   UndocumentedPublicProperty:
     active: true
+    excludes: [ "**/test/**","**/androidTest/**","**/*.Test.kt","**/*.Spec.kt","**/*.Spek.kt" ]
 
 complexity:
   active: true

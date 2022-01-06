@@ -15,6 +15,7 @@ import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.config.publishingConfig
+import com.datadog.gradle.config.setLibraryVersion
 import com.datadog.gradle.testImplementation
 
 plugins {
@@ -42,14 +43,13 @@ plugins {
 }
 
 android {
-    compileSdkVersion(AndroidConfig.TARGET_SDK)
-    buildToolsVersion(AndroidConfig.BUILD_TOOLS_VERSION)
+    compileSdk = AndroidConfig.TARGET_SDK
+    buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
 
     defaultConfig {
-        minSdkVersion(AndroidConfig.MIN_SDK)
-        targetSdkVersion(AndroidConfig.TARGET_SDK)
-        versionCode = AndroidConfig.VERSION.code
-        versionName = AndroidConfig.VERSION.name
+        minSdk = AndroidConfig.MIN_SDK
+        targetSdk = AndroidConfig.TARGET_SDK
+        setLibraryVersion()
         multiDexEnabled = true
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
@@ -78,7 +78,7 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
-    lintOptions {
+    lint {
         isWarningsAsErrors = true
         isAbortOnError = true
         isCheckReleaseBuilds = false

@@ -137,13 +137,12 @@ class LogsForegroundService : Service() {
     private fun createServiceIntent(action: String): PendingIntent {
         val serviceIntent = Intent(this, LogsForegroundService::class.java)
         serviceIntent.action = action
-        val pendingIntent = PendingIntent.getService(
+        return PendingIntent.getService(
             this,
             0,
             serviceIntent,
-            0
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) 0 else PendingIntent.FLAG_IMMUTABLE
         )
-        return pendingIntent
     }
 
     private fun createNotificationChannel() {

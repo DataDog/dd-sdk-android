@@ -13,12 +13,12 @@ import kotlin.collections.Set
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Video(
-    val title: String,
-    val tags: Set<String>? = null,
-    val links: Set<String>? = null
+public data class Video(
+    public val title: String,
+    public val tags: Set<String>? = null,
+    public val links: Set<String>? = null
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("title", title)
         tags?.let { temp ->
@@ -34,10 +34,10 @@ data class Video(
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Video {
+        public fun fromJson(serializedObject: String): Video {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val title = jsonObject.get("title").asString

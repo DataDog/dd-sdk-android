@@ -69,7 +69,7 @@ internal class DatadogSiteTest {
 
     companion object {
         @JvmStatic
-        private fun provideSiteWithLogsEndpoint(): Stream<Arguments?>? {
+        fun provideSiteWithLogsEndpoint(): Stream<Arguments?>? {
             return Stream.of(
                 Arguments.of(DatadogSite.US1, DatadogEndpoint.LOGS_US1),
                 Arguments.of(DatadogSite.US3, DatadogEndpoint.LOGS_US3),
@@ -80,7 +80,7 @@ internal class DatadogSiteTest {
         }
 
         @JvmStatic
-        private fun provideSiteWithTracesEndpoint(): Stream<Arguments?>? {
+        fun provideSiteWithTracesEndpoint(): Stream<Arguments?>? {
             return Stream.of(
                 Arguments.of(DatadogSite.US1, DatadogEndpoint.TRACES_US1),
                 Arguments.of(DatadogSite.US3, DatadogEndpoint.TRACES_US3),
@@ -91,7 +91,7 @@ internal class DatadogSiteTest {
         }
 
         @JvmStatic
-        private fun provideSiteWithRumEndpoint(): Stream<Arguments?>? {
+        fun provideSiteWithRumEndpoint(): Stream<Arguments?>? {
             return Stream.of(
                 Arguments.of(DatadogSite.US1, DatadogEndpoint.RUM_US1),
                 Arguments.of(DatadogSite.US3, DatadogEndpoint.RUM_US3),

@@ -10,21 +10,21 @@ import kotlin.String
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-data class Shipping(
-    val item: String,
-    val destination: Address
+public data class Shipping(
+    public val item: String,
+    public val destination: Address
 ) {
-    fun toJson(): JsonElement {
+    public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("item", item)
         json.add("destination", destination.toJson())
         return json
     }
 
-    companion object {
+    public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        fun fromJson(serializedObject: String): Shipping {
+        public fun fromJson(serializedObject: String): Shipping {
             try {
                 val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                 val item = jsonObject.get("item").asString
@@ -40,12 +40,12 @@ data class Shipping(
         }
     }
 
-    data class Address(
-        val streetAddress: String,
-        val city: String,
-        val state: String
+    public data class Address(
+        public val streetAddress: String,
+        public val city: String,
+        public val state: String
     ) {
-        fun toJson(): JsonElement {
+        public fun toJson(): JsonElement {
             val json = JsonObject()
             json.addProperty("street_address", streetAddress)
             json.addProperty("city", city)
@@ -53,10 +53,10 @@ data class Shipping(
             return json
         }
 
-        companion object {
+        public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            fun fromJson(serializedObject: String): Address {
+            public fun fromJson(serializedObject: String): Address {
                 try {
                     val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
                     val streetAddress = jsonObject.get("street_address").asString

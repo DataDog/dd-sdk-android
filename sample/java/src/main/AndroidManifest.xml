@@ -21,6 +21,7 @@
         android:theme="@style/Sample.Theme"
         tools:ignore="GoogleAppIndexingWarning">
         <activity
+            android:exported="true"
             android:name=".MainActivity"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>

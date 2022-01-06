@@ -10,20 +10,20 @@ object Dependencies {
 
     object Versions {
         // Commons
-        const val Kotlin = "1.4.20"
+        const val Kotlin = "1.5.21"
         const val Gson = "2.8.8"
         const val OkHttp = "3.12.13"
         const val KronosNTP = "0.0.1-alpha11"
 
         // Android
-        const val AndroidToolsPlugin = "4.2.1"
+        const val AndroidToolsPlugin = "7.0.3"
         const val AndroidXAnnotations = "1.1.0"
         const val AndroidXAppCompat = "1.2.0"
         const val AndroidXCore = "1.3.1"
         const val AndroidXMultidex = "2.0.1"
         const val AndroidXNavigation = "2.3.0"
         const val AndroidXRecyclerView = "1.1.0"
-        const val AndroidXWorkManager = "2.4.0"
+        const val AndroidXWorkManager = "2.7.0"
 
         // DD-TRACE-OT
         const val OpenTracing = "0.32.0"
@@ -37,21 +37,21 @@ object Dependencies {
         // Tests Tools
         const val AssertJ = "3.18.1"
         const val Elmyr = "1.3.0"
-        const val Jacoco = "0.8.4"
+        const val Jacoco = "0.8.7"
         const val MockitoKotlin = "2.2.0"
 
         // Tools
-        const val Detekt = "1.17.0"
+        const val Detekt = "1.18.0"
         const val KtLint = "9.4.0"
-        const val Dokka = "1.4.32"
-        const val Unmock = "0.7.5"
+        const val Dokka = "1.5.30"
+        const val Unmock = "0.7.9"
         const val Robolectric = "4.4_r1-robolectric-r2" // Use lowest API
 
         // AndroidJunit
-        const val AndroidJunitRunner = "1.3.0"
-        const val AndroidExtJunit = "1.1.2"
-        const val AndroidJunitCore = "1.3.0"
-        const val Espresso = "3.3.0"
+        const val AndroidJunitRunner = "1.4.0"
+        const val AndroidExtJunit = "1.1.3"
+        const val AndroidJunitCore = "1.4.0"
+        const val Espresso = "3.4.0"
 
         // Sample Apps
         const val ConstraintLayout = "2.0.1"
@@ -65,9 +65,9 @@ object Dependencies {
         const val Realm = "10.4.0"
         const val Room = "2.2.5"
         const val RxJava = "3.0.0"
-        const val SQLDelight = "1.4.3"
+        const val SQLDelight = "1.5.1"
         const val Timber = "4.7.1"
-        const val Coroutines = "1.4.2"
+        const val Coroutines = "1.5.2"
 
         // NDK
         const val Ndk = "22.1.7171670"
@@ -202,7 +202,7 @@ object Dependencies {
         const val Kotlin = "org.jetbrains.kotlin:kotlin-gradle-plugin:${Versions.Kotlin}"
         const val KtLint = "org.jlleitschuh.gradle:ktlint-gradle:${Versions.KtLint}"
         const val Dokka = "org.jetbrains.dokka:dokka-gradle-plugin:${Versions.Dokka}"
-        const val Unmock = "de.mobilej.unmock:UnMockPlugin:${Versions.Unmock}"
+        const val Unmock = "com.github.bjoernq:unmockplugin:${Versions.Unmock}"
         const val Realm = "io.realm:realm-gradle-plugin:${Versions.Realm}"
         const val SQLDelight = "com.squareup.sqldelight:gradle-plugin:${Versions.SQLDelight}"
     }

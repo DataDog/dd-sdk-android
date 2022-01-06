@@ -617,7 +617,7 @@ internal class BatchFileHandlerTest {
         assumeFalse(fakeDstDir.exists())
 
         // in case of file system is not case-sensitive, we need to drop all duplicates
-        val fileNames = fileNamesInput.distinctBy { it.toLowerCase(Locale.US) }
+        val fileNames = fileNamesInput.distinctBy { it.lowercase(Locale.US) }
         fileNames.forEach { name ->
             File(fakeSrcDir, name).writeText(name.reversed())
         }
