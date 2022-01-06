@@ -9,9 +9,12 @@ package com.datadog.gradle.plugin.jsonschema
 import java.io.File
 import org.gradle.api.DefaultTask
 import org.gradle.api.Task
+import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 
 // TODO test all from https://github.com/json-schema-org/JSON-Schema-Test-Suite/tree/master/tests/draft2019-09
@@ -21,6 +24,7 @@ import org.gradle.api.tasks.TaskAction
  *
  * It will read source JsonSchema files and generate the relevant Kotlin data classes.
  */
+@CacheableTask
 open class GenerateJsonSchemaTask : DefaultTask() {
 
     init {
@@ -33,6 +37,7 @@ open class GenerateJsonSchemaTask : DefaultTask() {
     /**
      * The [InputFiles] (E.g.: all the json files in `resources/json`).
      */
+    @PathSensitive(PathSensitivity.RELATIVE)
     @InputFiles
     fun getInputFiles(): List<File> {
         return getInputDir().listFiles().orEmpty().toList()
