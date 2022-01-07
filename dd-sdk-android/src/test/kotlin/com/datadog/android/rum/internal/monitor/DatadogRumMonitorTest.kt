@@ -65,6 +65,8 @@ import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -525,11 +527,14 @@ internal class DatadogRumMonitorTest {
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
-    @Test
-    fun `M delegate event to rootScope W updateViewLoadingTime()`(forge: Forge) {
+    @ParameterizedTest
+    @EnumSource(ViewEvent.LoadingType::class)
+    fun `M delegate event to rootScope W updateViewLoadingTime()`(
+        loadingType: ViewEvent.LoadingType,
+        forge: Forge
+    ) {
         val key = forge.anAsciiString()
         val loadingTime = forge.aLong(min = 1)
-        val loadingType = forge.aValueFrom(ViewEvent.LoadingType::class.java)
 
         testedMonitor.updateViewLoadingTime(key, loadingTime, loadingType)
         Thread.sleep(PROCESSING_DELAY)

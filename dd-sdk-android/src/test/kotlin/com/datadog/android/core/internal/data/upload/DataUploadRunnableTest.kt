@@ -40,6 +40,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -119,16 +121,19 @@ internal class DataUploadRunnableTest {
         )
     }
 
-    @Test
+    @ParameterizedTest
+    @EnumSource(
+        SystemInfo.BatteryStatus::class,
+        names = ["DISCHARGING", "NOT_CHARGING"],
+        mode = EnumSource.Mode.INCLUDE
+    )
     fun `doesn't send batch when battery is low and unplugged`(
+        batteryStatus: SystemInfo.BatteryStatus,
         @Forgery batch: Batch,
         forge: Forge
     ) {
         val systemInfo = SystemInfo(
-            forge.anElementFrom(
-                SystemInfo.BatteryStatus.DISCHARGING,
-                SystemInfo.BatteryStatus.NOT_CHARGING
-            ),
+            batteryStatus,
             forge.anInt(1, 10)
         )
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn systemInfo
@@ -146,16 +151,19 @@ internal class DataUploadRunnableTest {
         )
     }
 
-    @Test
+    @ParameterizedTest
+    @EnumSource(
+        SystemInfo.BatteryStatus::class,
+        names = ["DISCHARGING", "NOT_CHARGING"],
+        mode = EnumSource.Mode.INCLUDE
+    )
     fun `doesn't send batch when power save mode is enabled`(
+        batteryStatus: SystemInfo.BatteryStatus,
         @Forgery batch: Batch,
         forge: Forge
     ) {
         val systemInfo = SystemInfo(
-            batteryStatus = forge.anElementFrom(
-                SystemInfo.BatteryStatus.DISCHARGING,
-                SystemInfo.BatteryStatus.NOT_CHARGING
-            ),
+            batteryStatus = batteryStatus,
             batteryLevel = forge.anInt(50, 100),
             powerSaveMode = true
         )
@@ -429,19 +437,20 @@ internal class DataUploadRunnableTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @EnumSource(
+        UploadStatus::class,
+        names = ["HTTP_REDIRECTION", "HTTP_CLIENT_ERROR", "UNKNOWN_ERROR"],
+        mode = EnumSource.Mode.INCLUDE
+    )
     fun `𝕄 reduce delay between runs 𝕎 batch fails and should be dropped`(
+        uploadStatus: UploadStatus,
         @Forgery batch: Batch,
-        @IntForgery(16, 64) runCount: Int,
-        forge: Forge
+        @IntForgery(16, 64) runCount: Int
     ) {
         // Given
         whenever(mockDataUploader.upload(any())) doAnswer {
-            forge.anElementFrom(
-                UploadStatus.HTTP_REDIRECTION,
-                UploadStatus.HTTP_CLIENT_ERROR,
-                UploadStatus.UNKNOWN_ERROR
-            )
+            uploadStatus
         }
         whenever(mockReader.lockAndReadNext()).doReturn(batch)
 

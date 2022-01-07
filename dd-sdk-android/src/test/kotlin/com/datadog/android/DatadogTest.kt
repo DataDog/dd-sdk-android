@@ -57,6 +57,8 @@ import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -218,10 +220,10 @@ internal class DatadogTest {
         assertThat(CoreFeature.trackingConsentProvider.getConsent()).isEqualTo(fakeConsent)
     }
 
-    @Test
-    fun `M update the ConsentProvider W setConsent`(forge: Forge) {
+    @ParameterizedTest
+    @EnumSource(TrackingConsent::class)
+    fun `M update the ConsentProvider W setConsent`(fakeConsent: TrackingConsent) {
         // GIVEN
-        val fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
         val mockedConsentProvider: ConsentProvider = mock()
         CoreFeature.trackingConsentProvider = mockedConsentProvider
 

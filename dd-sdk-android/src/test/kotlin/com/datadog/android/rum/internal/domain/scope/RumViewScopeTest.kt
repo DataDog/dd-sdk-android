@@ -82,6 +82,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -1989,23 +1991,19 @@ internal class RumViewScopeTest {
             .isEqualTo((testedScope.activeActionScope as RumActionScope).actionId)
     }
 
-    @Test
+    @ParameterizedTest
+    @EnumSource(RumActionType::class, names = ["CUSTOM"], mode = EnumSource.Mode.EXCLUDE)
     fun `𝕄 do nothing + log warning 𝕎 handleEvent(StartAction+!CUSTOM)+active child ActionScope`(
+        actionType: RumActionType,
         @StringForgery name: String,
         @BoolForgery waitForStop: Boolean,
         forge: Forge
     ) {
-
-        val type = forge.aValueFrom(
-            RumActionType::class.java,
-            exclude = listOf(RumActionType.CUSTOM)
-        )
-
         // Given
         val mockDevLogHandler = mockDevLogHandler()
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         testedScope.activeActionScope = mockChildScope
-        fakeEvent = RumRawEvent.StartAction(type, name, waitForStop, attributes)
+        fakeEvent = RumRawEvent.StartAction(actionType, name, waitForStop, attributes)
         whenever(mockChildScope.handleEvent(fakeEvent, mockWriter)) doReturn mockChildScope
 
         // When
@@ -3736,11 +3734,14 @@ internal class RumViewScopeTest {
 
     // region Loading Time
 
-    @Test
-    fun `𝕄 send event 𝕎 handleEvent(UpdateViewLoadingTime) on active view`(forge: Forge) {
+    @ParameterizedTest
+    @EnumSource(ViewEvent.LoadingType::class)
+    fun `𝕄 send event 𝕎 handleEvent(UpdateViewLoadingTime) on active view`(
+        loadingType: ViewEvent.LoadingType,
+        forge: Forge
+    ) {
         // Given
         val loadingTime = forge.aLong(min = 1)
-        val loadingType = forge.aValueFrom(ViewEvent.LoadingType::class.java)
 
         // When
         val result = testedScope.handleEvent(
@@ -3783,12 +3784,15 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
     }
 
-    @Test
-    fun `𝕄 send event 𝕎 handleEvent(UpdateViewLoadingTime) on stopped view`(forge: Forge) {
+    @ParameterizedTest
+    @EnumSource(ViewEvent.LoadingType::class)
+    fun `𝕄 send event 𝕎 handleEvent(UpdateViewLoadingTime) on stopped view`(
+        loadingType: ViewEvent.LoadingType,
+        forge: Forge
+    ) {
         // Given
         testedScope.stopped = true
         val loadingTime = forge.aLong(min = 1)
-        val loadingType = forge.aValueFrom(ViewEvent.LoadingType::class.java)
 
         // When
         val result = testedScope.handleEvent(
@@ -3831,12 +3835,15 @@ internal class RumViewScopeTest {
         assertThat(result).isNull()
     }
 
-    @Test
-    fun `𝕄 do nothing 𝕎 handleEvent(UpdateViewLoadingTime) with different key`(forge: Forge) {
+    @ParameterizedTest
+    @EnumSource(ViewEvent.LoadingType::class)
+    fun `𝕄 do nothing 𝕎 handleEvent(UpdateViewLoadingTime) with different key`(
+        loadingType: ViewEvent.LoadingType,
+        forge: Forge
+    ) {
         // Given
         val differentKey = fakeKey + "different".toByteArray()
         val loadingTime = forge.aLong(min = 1)
-        val loadingType = forge.aValueFrom(ViewEvent.LoadingType::class.java)
 
         // When
         val result = testedScope.handleEvent(

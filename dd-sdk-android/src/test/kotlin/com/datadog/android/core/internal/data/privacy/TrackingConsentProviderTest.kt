@@ -26,6 +26,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -54,11 +56,9 @@ internal class TrackingConsentProviderTest {
         assertThat(testedConsentProvider.getConsent()).isEqualTo(TrackingConsent.PENDING)
     }
 
-    @Test
-    fun `M update last consent W required`(forge: Forge) {
-        // GIVEN
-        val fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
-
+    @ParameterizedTest
+    @EnumSource(TrackingConsent::class)
+    fun `M update last consent W required`(fakeConsent: TrackingConsent) {
         // WHEN
         testedConsentProvider.setConsent(fakeConsent)
 
@@ -66,11 +66,10 @@ internal class TrackingConsentProviderTest {
         assertThat(testedConsentProvider.getConsent()).isEqualTo(fakeConsent)
     }
 
-    @Test
-    fun `M notify callbacks W updating consent`(forge: Forge) {
+    @ParameterizedTest
+    @EnumSource(TrackingConsent::class, names = ["PENDING"], mode = EnumSource.Mode.EXCLUDE)
+    fun `M notify callbacks W updating consent`(fakeConsent: TrackingConsent) {
         // GIVEN
-        val fakeConsent =
-            forge.aValueFrom(TrackingConsent::class.java, listOf(TrackingConsent.PENDING))
         testedConsentProvider.registerCallback(mockedCallback)
 
         // WHEN
@@ -81,11 +80,10 @@ internal class TrackingConsentProviderTest {
         verifyNoMoreInteractions(mockedCallback)
     }
 
-    @Test
-    fun `M not notify callbacks W updating consent with same value`(forge: Forge) {
+    @ParameterizedTest
+    @EnumSource(TrackingConsent::class, names = ["PENDING"], mode = EnumSource.Mode.EXCLUDE)
+    fun `M not notify callbacks W updating consent with same value`(fakeConsent: TrackingConsent) {
         // GIVEN
-        val fakeConsent =
-            forge.aValueFrom(TrackingConsent::class.java, listOf(TrackingConsent.PENDING))
         testedConsentProvider.registerCallback(mockedCallback)
         testedConsentProvider.setConsent(fakeConsent)
 
@@ -97,11 +95,10 @@ internal class TrackingConsentProviderTest {
         verifyNoMoreInteractions(mockedCallback)
     }
 
-    @Test
-    fun `M unregister all callbacks W requested`(forge: Forge) {
+    @ParameterizedTest
+    @EnumSource(TrackingConsent::class, names = ["PENDING"], mode = EnumSource.Mode.EXCLUDE)
+    fun `M unregister all callbacks W requested`(fakeConsent: TrackingConsent) {
         // GIVEN
-        val fakeConsent =
-            forge.aValueFrom(TrackingConsent::class.java, listOf(TrackingConsent.PENDING))
         val anotherMockedCallback: TrackingConsentProviderCallback = mock()
         testedConsentProvider.registerCallback(anotherMockedCallback)
         testedConsentProvider.registerCallback(mockedCallback)
@@ -115,13 +112,10 @@ internal class TrackingConsentProviderTest {
         verifyZeroInteractions(anotherMockedCallback)
     }
 
-    @Test
-    fun `M unregister first W called asynchronously`(forge: Forge) {
+    @ParameterizedTest
+    @EnumSource(TrackingConsent::class, names = ["PENDING"], mode = EnumSource.Mode.EXCLUDE)
+    fun `M unregister first W called asynchronously`(fakeConsent: TrackingConsent) {
         // GIVEN
-        val fakeConsent = forge.aValueFrom(
-            TrackingConsent::class.java,
-            listOf(TrackingConsent.PENDING)
-        )
         testedConsentProvider.registerCallback(mockedCallback)
         val countDownLatch = CountDownLatch(2)
 
