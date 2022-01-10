@@ -13,8 +13,6 @@ import android.os.Build
 import android.os.PowerManager
 import com.datadog.android.log.assertj.SystemInfoAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
@@ -44,8 +42,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(value = Configurator::class)
@@ -62,11 +59,15 @@ internal class BroadcastReceiverSystemInfoProviderTest {
     @Mock
     lateinit var mockPowerMgr: PowerManager
 
+    @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
     @BeforeEach
     fun `set up`() {
         whenever(mockContext.getSystemService(Context.POWER_SERVICE)) doReturn mockPowerMgr
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
 
-        testedProvider = BroadcastReceiverSystemInfoProvider()
+        testedProvider = BroadcastReceiverSystemInfoProvider(mockBuildSdkVersionProvider)
     }
 
     @Test
@@ -112,7 +113,6 @@ internal class BroadcastReceiverSystemInfoProviderTest {
     }
 
     @RepeatedTest(10)
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `M read system info W register() {Lollipop}`(
         @Forgery status: SystemInfo.BatteryStatus,
         @IntForgery(min = 0, max = 100) level: Int,
@@ -120,6 +120,8 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         @BoolForgery powerSaveMode: Boolean
     ) {
         // Given
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.LOLLIPOP
+
         val batteryIntent: Intent = mock()
         val scaledLevel = (level * scale) / 100
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_STATUS), any()))
@@ -146,7 +148,6 @@ internal class BroadcastReceiverSystemInfoProviderTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.KITKAT)
     fun `M read system info W register() {KitKat}`(
         @Forgery status: SystemInfo.BatteryStatus,
         @IntForgery(min = 0, max = 100) level: Int,
@@ -154,6 +155,8 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         @BoolForgery powerSaveMode: Boolean
     ) {
         // Given
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.KITKAT
+
         val batteryIntent: Intent = mock()
         val scaledLevel = (level * scale) / 100
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_STATUS), any()))
@@ -224,11 +227,12 @@ internal class BroadcastReceiverSystemInfoProviderTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `M update data W onReceive() {power save changed, Lollipop+}`(
         @BoolForgery powerSaveMode: Boolean
     ) {
         // Given
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.LOLLIPOP
+
         whenever(mockPowerMgr.isPowerSaveMode) doReturn powerSaveMode
         whenever(mockIntent.action) doReturn PowerManager.ACTION_POWER_SAVE_MODE_CHANGED
 
@@ -242,9 +246,10 @@ internal class BroadcastReceiverSystemInfoProviderTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `M update data W onReceive() {power save changed, no PowerManager}`() {
         // Given
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.LOLLIPOP
+
         whenever(mockContext.getSystemService(Context.POWER_SERVICE)) doReturn null
         whenever(mockIntent.action) doReturn PowerManager.ACTION_POWER_SAVE_MODE_CHANGED
 
@@ -258,9 +263,9 @@ internal class BroadcastReceiverSystemInfoProviderTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.KITKAT)
     fun `M update data W onReceive() {power save changed, KitKat}`() {
         // Given
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.KITKAT
         whenever(mockIntent.action) doReturn PowerManager.ACTION_POWER_SAVE_MODE_CHANGED
 
         // When

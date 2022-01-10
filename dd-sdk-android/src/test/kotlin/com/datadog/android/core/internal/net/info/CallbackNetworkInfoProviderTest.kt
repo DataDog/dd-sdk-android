@@ -13,13 +13,12 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import android.util.Log
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockDevLogHandler
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
@@ -41,8 +40,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -62,6 +60,9 @@ internal class CallbackNetworkInfoProviderTest {
     @Mock
     lateinit var mockWriter: DataWriter<NetworkInfo>
 
+    @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
     @BeforeEach
     fun `set up`() {
         // setup the network capabilities to return the unspecified values by default
@@ -71,9 +72,10 @@ internal class CallbackNetworkInfoProviderTest {
             NetworkCapabilities.SIGNAL_STRENGTH_UNSPECIFIED
         mockDevLogHandler = mockDevLogHandler()
         whenever(mockCapabilities.hasTransport(any())) doReturn false
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
 
         testedProvider =
-            CallbackNetworkInfoProvider(mockWriter)
+            CallbackNetworkInfoProvider(mockWriter, mockBuildSdkVersionProvider)
     }
 
     @Test
@@ -90,20 +92,23 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.Q)
     fun `connected to wifi`(
         @IntForgery(min = 1) upSpeed: Int,
         @IntForgery(min = 1) downSpeed: Int,
         @IntForgery(min = -90, max = -40) strength: Int
     ) {
+        // GIVEN
         whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) doReturn true
         whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn upSpeed
         whenever(mockCapabilities.linkDownstreamBandwidthKbps) doReturn downSpeed
         whenever(mockCapabilities.signalStrength) doReturn strength
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.Q
 
+        // WHEN
         testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
+        // THEN
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
             .hasCarrierName(null)
@@ -114,18 +119,21 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `connected to wifi (no strength)`(
         @IntForgery(min = 1) upSpeed: Int,
         @IntForgery(min = 1) downSpeed: Int
     ) {
+        // GIVEN
         whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) doReturn true
         whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn upSpeed
         whenever(mockCapabilities.linkDownstreamBandwidthKbps) doReturn downSpeed
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.LOLLIPOP
 
+        // WHEN
         testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
+        // THEN
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
             .hasCarrierName(null)
@@ -136,13 +144,16 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `connected to wifi (no up or down bandwidth, no strength)`() {
+        // GIVEN
         whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) doReturn true
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.LOLLIPOP
 
+        // WHEN
         testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
+        // THEN
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_WIFI)
             .hasCarrierName(null)
@@ -153,21 +164,24 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.Q)
     fun `connected to wifi aware`(
         @IntForgery(min = 1) upSpeed: Int,
         @IntForgery(min = 1) downSpeed: Int,
         @IntForgery(min = -90, max = -40) strength: Int
     ) {
+        // GIVEN
         whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI_AWARE))
             .doReturn(true)
         whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn upSpeed
         whenever(mockCapabilities.linkDownstreamBandwidthKbps) doReturn downSpeed
         whenever(mockCapabilities.signalStrength) doReturn strength
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.Q
 
+        // WHEN
         testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
+        // THEN
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)
             .hasCarrierName(null)
@@ -178,19 +192,22 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `connected to wifi aware (no strength)`(
         @IntForgery(min = 1) upSpeed: Int,
         @IntForgery(min = 1) downSpeed: Int
     ) {
+        // GIVEN
         whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI_AWARE))
             .doReturn(true)
         whenever(mockCapabilities.linkUpstreamBandwidthKbps) doReturn upSpeed
         whenever(mockCapabilities.linkDownstreamBandwidthKbps) doReturn downSpeed
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.LOLLIPOP
 
+        // WHEN
         testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
+        // THEN
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)
             .hasCarrierName(null)
@@ -201,14 +218,17 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `connected to wifi aware (no up or down bandwidth, no strength)`() {
+        // GIVEN
         whenever(mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI_AWARE))
             .doReturn(true)
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.LOLLIPOP
 
+        // WHEN
         testedProvider.onCapabilitiesChanged(mockNetwork, mockCapabilities)
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
+        // THEN
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_OTHER)
             .hasCarrierName(null)

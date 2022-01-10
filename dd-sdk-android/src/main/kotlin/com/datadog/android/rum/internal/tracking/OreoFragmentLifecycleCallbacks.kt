@@ -10,6 +10,8 @@ import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import androidx.annotation.RequiresApi
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.resolveViewName
 import com.datadog.android.core.internal.utils.runIfValid
 import com.datadog.android.rum.RumMonitor
@@ -25,19 +27,20 @@ internal class OreoFragmentLifecycleCallbacks(
     private val componentPredicate: ComponentPredicate<Fragment>,
     private val viewLoadingTimer: ViewLoadingTimer = ViewLoadingTimer(),
     private val rumMonitor: RumMonitor,
-    private val advancedRumMonitor: AdvancedRumMonitor
+    private val advancedRumMonitor: AdvancedRumMonitor,
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
 ) : FragmentLifecycleCallbacks<Activity>, FragmentManager.FragmentLifecycleCallbacks() {
 
     // region FragmentLifecycleCallbacks
 
     override fun register(activity: Activity) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.O) {
             activity.fragmentManager.registerFragmentLifecycleCallbacks(this, true)
         }
     }
 
     override fun unregister(activity: Activity) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.O) {
             activity.fragmentManager.unregisterFragmentLifecycleCallbacks(this)
         }
     }

@@ -15,6 +15,7 @@ import android.app.Fragment
 import android.app.FragmentManager
 import android.os.Build
 import android.view.Window
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
@@ -22,8 +23,6 @@ import com.datadog.android.rum.internal.instrumentation.gestures.GesturesTracker
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ComponentPredicate
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
@@ -47,8 +46,7 @@ import org.mockito.quality.Strictness
 @Suppress("DEPRECATION")
 @Extensions(
     ExtendWith(ForgeExtension::class),
-    ExtendWith(MockitoExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(MockitoExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class OreoFragmentLifecycleCallbacksTest {
@@ -88,6 +86,9 @@ internal class OreoFragmentLifecycleCallbacksTest {
     @Mock
     lateinit var mockPredicate: ComponentPredicate<Fragment>
 
+    @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
     lateinit var fakeAttributes: Map<String, Any?>
 
     @BeforeEach
@@ -97,6 +98,7 @@ internal class OreoFragmentLifecycleCallbacksTest {
 
         whenever(mockActivity.fragmentManager).thenReturn(mockFragmentManager)
         whenever(mockActivity.window).thenReturn(mockWindow)
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
 
         fakeAttributes = forge.aMap { forge.aString() to forge.aString() }
         testedLifecycleCallbacks = OreoFragmentLifecycleCallbacks(
@@ -104,7 +106,8 @@ internal class OreoFragmentLifecycleCallbacksTest {
             mockPredicate,
             viewLoadingTimer = mockViewLoadingTimer,
             rumMonitor = mockRumMonitor,
-            advancedRumMonitor = mockAdvancedRumMonitor
+            advancedRumMonitor = mockAdvancedRumMonitor,
+            buildSdkVersionProvider = mockBuildSdkVersionProvider
         )
     }
 
@@ -446,8 +449,10 @@ internal class OreoFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `it will register the callback to fragment manager on O`() {
+        // Given
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.O
+
         // When
         testedLifecycleCallbacks.register(mockActivity)
 
@@ -459,8 +464,10 @@ internal class OreoFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.O)
     fun `it will unregister the callback from fragment manager on O`() {
+        // Given
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.O
+
         // When
         testedLifecycleCallbacks.unregister(mockActivity)
 
@@ -469,8 +476,10 @@ internal class OreoFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.M)
     fun `it will do nothing when calling register on M`() {
+        // Given
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.M
+
         // When
         testedLifecycleCallbacks.register(mockActivity)
 
@@ -479,8 +488,10 @@ internal class OreoFragmentLifecycleCallbacksTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.M)
     fun `it will do nothing when calling unregister on M`() {
+        // Given
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.M
+
         // When
         testedLifecycleCallbacks.unregister(mockActivity)
 

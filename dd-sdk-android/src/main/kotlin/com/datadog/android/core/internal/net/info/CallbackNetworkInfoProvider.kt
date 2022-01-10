@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.net.info
 
+import android.annotation.SuppressLint
 import android.annotation.TargetApi
 import android.content.Context
 import android.net.ConnectivityManager
@@ -13,12 +14,15 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.model.NetworkInfo
 
 @TargetApi(Build.VERSION_CODES.N)
 internal class CallbackNetworkInfoProvider(
-    private val dataWriter: DataWriter<NetworkInfo>
+    private val dataWriter: DataWriter<NetworkInfo>,
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
 ) :
     ConnectivityManager.NetworkCallback(),
     NetworkInfoProvider {
@@ -128,8 +132,9 @@ internal class CallbackNetworkInfoProvider(
         }
     }
 
+    @SuppressLint("NewApi")
     private fun resolveStrength(networkCapabilities: NetworkCapabilities): Long? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+        return if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.Q &&
             networkCapabilities.signalStrength != NetworkCapabilities.SIGNAL_STRENGTH_UNSPECIFIED
         ) {
             networkCapabilities.signalStrength.toLong()

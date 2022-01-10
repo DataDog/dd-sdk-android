@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
@@ -46,8 +47,6 @@ import com.datadog.android.utils.forge.aFilteredMap
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
@@ -92,8 +91,7 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -155,6 +153,9 @@ internal class RumViewScopeTest {
     @Mock
     lateinit var mockTimeProvider: TimeProvider
 
+    @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
     @BeforeEach
     fun `set up`(forge: Forge) {
 
@@ -183,6 +184,7 @@ internal class RumViewScopeTest {
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         whenever(mockActionScope.handleEvent(any(), any())) doReturn mockActionScope
         whenever(mockActionScope.actionId) doReturn fakeActionId
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
 
         testedScope = RumViewScope(
             mockParentScope,
@@ -194,7 +196,8 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider
+            mockTimeProvider,
+            mockBuildSdkVersionProvider
         )
 
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
@@ -4230,7 +4233,6 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
     }
 
-    @TestTargetApi(Build.VERSION_CODES.R)
     @Test
     fun `𝕄 detect slow refresh rate 𝕎 init()+onVitalUpdate()+handleEvent(KeepAlive) {Activity}`(
         @FloatForgery(120.0f, 240.0f) deviceRefreshRate: Float,
@@ -4247,6 +4249,7 @@ internal class RumViewScopeTest {
         whenever(mockTimeProvider.getServerOffsetMillis())
             .thenReturn(fakeServerOffset)
             .thenReturn(fakeServerOffsetSecond)
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
             mockActivity,
@@ -4257,7 +4260,8 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider
+            mockTimeProvider,
+            mockBuildSdkVersionProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -4303,7 +4307,6 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
     }
 
-    @TestTargetApi(Build.VERSION_CODES.R)
     @Test
     fun `𝕄 detect high refresh rate 𝕎 init()+onVitalUpdate()+handleEvent(KeepAlive) {Activity}`(
         @FloatForgery(120.0f, 240.0f) deviceRefreshRate: Float,
@@ -4320,6 +4323,7 @@ internal class RumViewScopeTest {
         whenever(mockTimeProvider.getServerOffsetMillis())
             .thenReturn(fakeServerOffset)
             .thenReturn(fakeServerOffsetSecond)
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
             mockActivity,
@@ -4330,7 +4334,8 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider
+            mockTimeProvider,
+            mockBuildSdkVersionProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -4376,7 +4381,6 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
     }
 
-    @TestTargetApi(Build.VERSION_CODES.R)
     @Test
     fun `𝕄 detect low refresh rate 𝕎 init()+onVitalUpdate()+handleEvent(KeepAlive) {Frag X}`(
         @FloatForgery(120.0f, 240.0f) deviceRefreshRate: Float,
@@ -4395,6 +4399,7 @@ internal class RumViewScopeTest {
         whenever(mockTimeProvider.getServerOffsetMillis())
             .thenReturn(fakeServerOffset)
             .thenReturn(fakeServerOffsetSecond)
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
             mockFragment,
@@ -4405,7 +4410,8 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider
+            mockTimeProvider,
+            mockBuildSdkVersionProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -4451,7 +4457,6 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
     }
 
-    @TestTargetApi(Build.VERSION_CODES.R)
     @Test
     fun `𝕄 detect high refresh rate 𝕎 init()+onVitalUpdate()+handleEvent(KeepAlive) {Frag X}`(
         @FloatForgery(120.0f, 240.0f) deviceRefreshRate: Float,
@@ -4470,6 +4475,7 @@ internal class RumViewScopeTest {
         whenever(mockTimeProvider.getServerOffsetMillis())
             .thenReturn(fakeServerOffset)
             .thenReturn(fakeServerOffsetSecond)
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
             mockFragment,
@@ -4480,7 +4486,8 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider
+            mockTimeProvider,
+            mockBuildSdkVersionProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -4527,7 +4534,6 @@ internal class RumViewScopeTest {
     }
 
     @Suppress("DEPRECATION")
-    @TestTargetApi(Build.VERSION_CODES.R)
     @Test
     fun `𝕄 detect low refresh rate 𝕎 init()+onVitalUpdate()+handleEvent(KeepAlive) {Fragment}`(
         @FloatForgery(120.0f, 240.0f) deviceRefreshRate: Float,
@@ -4546,6 +4552,7 @@ internal class RumViewScopeTest {
         whenever(mockTimeProvider.getServerOffsetMillis())
             .thenReturn(fakeServerOffset)
             .thenReturn(fakeServerOffsetSecond)
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
             mockFragment,
@@ -4556,7 +4563,8 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider
+            mockTimeProvider,
+            mockBuildSdkVersionProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -4603,7 +4611,6 @@ internal class RumViewScopeTest {
     }
 
     @Suppress("DEPRECATION")
-    @TestTargetApi(Build.VERSION_CODES.R)
     @Test
     fun `𝕄 detect high refresh rate 𝕎 init()+onVitalUpdate()+handleEvent(KeepAlive) {Fragment}`(
         @FloatForgery(120.0f, 240.0f) deviceRefreshRate: Float,
@@ -4622,6 +4629,7 @@ internal class RumViewScopeTest {
         whenever(mockTimeProvider.getServerOffsetMillis())
             .thenReturn(fakeServerOffset)
             .thenReturn(fakeServerOffsetSecond)
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
             mockFragment,
@@ -4632,7 +4640,8 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider
+            mockTimeProvider,
+            mockBuildSdkVersionProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())

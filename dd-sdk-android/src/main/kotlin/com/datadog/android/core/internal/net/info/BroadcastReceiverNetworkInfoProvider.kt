@@ -18,12 +18,15 @@ import android.os.Build
 import android.telephony.TelephonyManager
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.model.NetworkInfo
 
 @Suppress("DEPRECATION")
 @SuppressLint("InlinedApi")
 internal class BroadcastReceiverNetworkInfoProvider(
-    private val dataWriter: DataWriter<NetworkInfo>
+    private val dataWriter: DataWriter<NetworkInfo>,
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
 ) :
     ThreadSafeReceiver(),
     NetworkInfoProvider {
@@ -101,7 +104,7 @@ internal class BroadcastReceiverNetworkInfoProvider(
         }
         val cellularTechnology = getCellularTechnology(subtype)
 
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        return if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.P) {
             val telephonyMgr =
                 context.getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
             val carrierName = telephonyMgr?.simCarrierIdName ?: UNKNOWN_CARRIER_NAME

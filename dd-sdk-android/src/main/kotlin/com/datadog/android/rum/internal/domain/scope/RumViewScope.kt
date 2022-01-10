@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.os.Build
@@ -14,6 +15,8 @@ import androidx.fragment.app.Fragment
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
@@ -47,7 +50,8 @@ internal open class RumViewScope(
     internal val cpuVitalMonitor: VitalMonitor,
     internal val memoryVitalMonitor: VitalMonitor,
     internal val frameRateVitalMonitor: VitalMonitor,
-    internal val timeProvider: TimeProvider
+    internal val timeProvider: TimeProvider,
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
 ) : RumScope {
 
     internal val url = key.resolveViewUrl().replace('.', '/')
@@ -644,6 +648,7 @@ internal open class RumViewScope(
      * - it requires a context with a UI (we can't get this from the application context);
      * - it can change between different activities (based on window configuration)
      */
+    @SuppressLint("NewApi")
     @Suppress("DEPRECATION")
     private fun detectRefreshRateScale(key: Any) {
         val activity = when (key) {
@@ -653,7 +658,7 @@ internal open class RumViewScope(
             else -> null
         } ?: return
 
-        val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        val display = if (buildSdkVersionProvider.version() >= Build.VERSION_CODES.R) {
             activity.display
         } else {
             (activity.getSystemService(Context.WINDOW_SERVICE) as? WindowManager)?.defaultDisplay
