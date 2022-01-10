@@ -505,4 +505,34 @@ internal class UnsafeThirdPartyFunctionCallTest {
         // Then
         assertThat(findings).hasSize(0)
     }
+
+    @Test
+    fun `ignore custom kotlin extension`() {
+        // Given
+        val config = TestConfig(
+            mapOf("internalPackagePrefix" to "com.example")
+        )
+        val code =
+            """
+                package com.example.foo
+                
+                import java.io.File
+                
+                fun File.doSomething(): Boolean {
+                    println("doing something with file:$this")
+                    return file.readText().isEmpty()
+                }
+                
+                fun test(file: File): Boolean {
+                    return file.doSomething()
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(config)
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(0)
+    }
 }
