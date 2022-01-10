@@ -18,7 +18,6 @@ import com.datadog.android.tracing.internal.domain.event.SpanMapperSerializer
 import com.datadog.android.tracing.internal.net.TracesOkHttpUploaderV2
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentracing.DDSpan
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.getFieldValue
 import fr.xgouchet.elmyr.Forge
@@ -35,7 +34,6 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class),
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)

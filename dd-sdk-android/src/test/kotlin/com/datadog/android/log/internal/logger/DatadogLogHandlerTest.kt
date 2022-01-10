@@ -60,6 +60,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -266,12 +268,12 @@ internal class DatadogLogHandlerTest {
         verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
-    @Test
-    fun `forward error log to RumMonitor`(forge: Forge) {
-        fakeLevel = forge.anElementFrom(AndroidLog.ERROR, AndroidLog.ASSERT)
+    @ParameterizedTest
+    @ValueSource(ints = [AndroidLog.ERROR, AndroidLog.ASSERT])
+    fun `forward error log to RumMonitor`(logLevel: Int) {
 
         testedHandler.handleLog(
-            fakeLevel,
+            logLevel,
             fakeMessage,
             null,
             fakeAttributes,
@@ -286,12 +288,12 @@ internal class DatadogLogHandlerTest {
         )
     }
 
-    @Test
-    fun `forward error log to RumMonitor with throwable`(forge: Forge) {
-        fakeLevel = forge.anElementFrom(AndroidLog.ERROR, AndroidLog.ASSERT)
+    @ParameterizedTest
+    @ValueSource(ints = [AndroidLog.ERROR, AndroidLog.ASSERT])
+    fun `forward error log to RumMonitor with throwable`(logLevel: Int) {
 
         testedHandler.handleLog(
-            fakeLevel,
+            logLevel,
             fakeMessage,
             fakeThrowable,
             fakeAttributes,

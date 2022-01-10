@@ -47,6 +47,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -1086,11 +1088,10 @@ internal class RumContinuousActionScopeTest {
         assertThat(result3).isNull()
     }
 
-    @Test
-    fun `𝕄 send Action 𝕎 handleEvent(StopView) {no side effect}`(
-        forge: Forge
-    ) {
-        testedScope.type = forge.aValueFrom(RumActionType::class.java, listOf(RumActionType.CUSTOM))
+    @ParameterizedTest
+    @EnumSource(RumActionType::class, names = ["CUSTOM"], mode = EnumSource.Mode.EXCLUDE)
+    fun `𝕄 send Action 𝕎 handleEvent(StopView) {no side effect}`(actionType: RumActionType) {
+        testedScope.type = actionType
 
         // Given
         testedScope.resourceCount = 0

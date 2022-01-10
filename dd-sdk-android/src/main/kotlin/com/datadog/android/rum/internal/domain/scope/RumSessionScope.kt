@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.annotation.SuppressLint
 import android.app.ActivityManager.RunningAppProcessInfo
 import android.os.Build
 import android.os.Process
@@ -15,6 +16,8 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.NoOpDataWriter
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
@@ -37,6 +40,7 @@ internal class RumSessionScope(
     private val frameRateVitalMonitor: VitalMonitor,
     private val timeProvider: TimeProvider,
     internal val sessionListener: RumSessionListener?,
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
 ) : RumScope {
@@ -210,11 +214,12 @@ internal class RumSessionScope(
         }
     }
 
+    @SuppressLint("NewApi")
     private fun resolveStartupTimeNs(): Long {
         val resetTimeNs = resetSessionTime
         return when {
             resetTimeNs != null -> resetTimeNs
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.N -> {
+            buildSdkVersionProvider.version() >= Build.VERSION_CODES.N -> {
                 val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
                 System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(diffMs)
             }

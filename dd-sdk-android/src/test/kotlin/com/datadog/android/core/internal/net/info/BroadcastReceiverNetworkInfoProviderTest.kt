@@ -15,11 +15,10 @@ import android.net.NetworkInfo as AndroidNetworkInfo
 import android.os.Build
 import android.telephony.TelephonyManager
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -44,8 +43,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -72,6 +70,9 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     @Mock
     lateinit var mockIntent: Intent
 
+    @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
     @BeforeEach
     fun `set up`() {
         whenever(mockContext.getSystemService(Context.CONNECTIVITY_SERVICE))
@@ -79,8 +80,12 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         whenever(mockContext.getSystemService(Context.TELEPHONY_SERVICE))
             .doReturn(mockTelephonyManager)
         whenever(mockConnectivityManager.activeNetworkInfo) doReturn mockNetworkInfo
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
 
-        testedProvider = BroadcastReceiverNetworkInfoProvider(mockWriter)
+        testedProvider = BroadcastReceiverNetworkInfoProvider(
+            mockWriter,
+            mockBuildSdkVersionProvider
+        )
     }
 
     @Test
@@ -234,20 +239,24 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     @ParameterizedTest
     @MethodSource("2gSubtypeToMobileTypes")
-    @TestTargetApi(Build.VERSION_CODES.P)
     fun `connected to mobile 2G API 28+`(
         subtype: NetworkType,
         mobileType: MobileType,
         forge: Forge
     ) {
+        // GIVEN
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.P
+
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
         stubNetworkInfo(mobileType.id, subtype.id)
         stubTelephonyManager(carrierName, carrierId)
         testedProvider.onReceive(mockContext, mockIntent)
 
+        // WHEN
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
+        // THEN
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_2G)
             .hasCarrierName(carrierName)
@@ -275,20 +284,24 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     @ParameterizedTest
     @MethodSource("3gSubtypeToMobileTypes")
-    @TestTargetApi(Build.VERSION_CODES.P)
     fun `connected to mobile 3G API 28+`(
         subtype: NetworkType,
         mobileType: MobileType,
         forge: Forge
     ) {
+        // GIVEN
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.P
+
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
         stubNetworkInfo(mobileType.id, subtype.id)
         stubTelephonyManager(carrierName, carrierId)
         testedProvider.onReceive(mockContext, mockIntent)
 
+        // WHEN
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
+        // THEN
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_3G)
             .hasCarrierName(carrierName)
@@ -316,20 +329,24 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     @ParameterizedTest
     @MethodSource("4gSubtypeToMobileTypes")
-    @TestTargetApi(Build.VERSION_CODES.P)
     fun `connected to mobile 4G API 28+`(
         subtype: NetworkType,
         mobileType: MobileType,
         forge: Forge
     ) {
+        // GIVEN
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.P
+
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
         stubNetworkInfo(mobileType.id, subtype.id)
         stubTelephonyManager(carrierName, carrierId)
         testedProvider.onReceive(mockContext, mockIntent)
 
+        // WHEN
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
+        // THEN
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_4G)
             .hasCarrierName(carrierName)
@@ -357,20 +374,24 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     @ParameterizedTest
     @MethodSource("5gSubtypeToMobileTypes")
-    @TestTargetApi(Build.VERSION_CODES.P)
     fun `connected to mobile 5G API 28+`(
         subtype: NetworkType,
         mobileType: MobileType,
         forge: Forge
     ) {
+        // GIVEN
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.P
+
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
         stubNetworkInfo(mobileType.id, subtype.id)
         stubTelephonyManager(carrierName, carrierId)
         testedProvider.onReceive(mockContext, mockIntent)
 
+        // WHEN
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
+        // THEN
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_5G)
             .hasCarrierName(carrierName)
@@ -399,8 +420,10 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     @ParameterizedTest
     @MethodSource("getKnownMobileTypes")
-    @TestTargetApi(Build.VERSION_CODES.P)
     fun `connected to mobile unknown API 28+`(mobileType: MobileType, forge: Forge) {
+        // GIVEN
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.P
+
         val subtype = forge.anInt(min = 32)
         val carrierName = forge.anAlphabeticalString()
         val carrierId = forge.aPositiveInt(strict = true)
@@ -408,8 +431,10 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         stubTelephonyManager(carrierName, carrierId)
         testedProvider.onReceive(mockContext, mockIntent)
 
+        // WHEN
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
+        // THEN
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER)
             .hasCarrierName(carrierName)
@@ -419,8 +444,10 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
 
     @ParameterizedTest
     @MethodSource("getKnownMobileTypes")
-    @TestTargetApi(Build.VERSION_CODES.P)
     fun `connected to mobile unknown carrier`(mobileType: MobileType) {
+        // GIVEN
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.P
+
         stubNetworkInfo(
             mobileType.id,
             TelephonyManager.NETWORK_TYPE_UNKNOWN
@@ -428,8 +455,10 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         stubTelephonyManager(null, 0)
         testedProvider.onReceive(mockContext, mockIntent)
 
+        // WHEN
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
+        // THEN
         assertThat(networkInfo)
             .hasConnectivity(NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER)
             .hasCarrierName("Unknown Carrier Name")

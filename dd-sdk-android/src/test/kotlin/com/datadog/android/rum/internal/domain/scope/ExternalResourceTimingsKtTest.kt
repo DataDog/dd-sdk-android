@@ -9,7 +9,6 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.utils.asTimingsPayload
 import com.datadog.android.utils.forge.Configurator
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -17,6 +16,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 
 @Extensions(
     ExtendWith(ForgeExtension::class)
@@ -50,15 +51,16 @@ internal class ExternalResourceTimingsKtTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = ["ssl", "firstByte", "download", "connect", "dns"])
     fun `𝕄 create timings 𝕎 extractResourceTiming { some timing is missing }`(
-        @Forgery timing: ResourceTiming,
-        forge: Forge
+        missingTiming: String,
+        @Forgery timing: ResourceTiming
     ) {
 
         // Given
         val timingsPayload = timing.asTimingsPayload()
-        timingsPayload.remove(forge.anElementFrom("ssl", "firstByte", "download", "connect", "dns"))
+        timingsPayload.remove(missingTiming)
 
         // When
         val timings = extractResourceTiming(timingsPayload)
@@ -80,10 +82,11 @@ internal class ExternalResourceTimingsKtTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = ["startTime", "duration"])
     fun `𝕄 create timings 𝕎 extractResourceTiming { ssl timing info is incomplete }`(
-        @Forgery reference: ResourceTiming,
-        forge: Forge
+        timingPartToRemove: String,
+        @Forgery reference: ResourceTiming
     ) {
 
         // Given
@@ -94,7 +97,7 @@ internal class ExternalResourceTimingsKtTest {
         @Suppress("UNCHECKED_CAST")
         val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
 
-        timing.remove(forge.anElementFrom("startTime", "duration"))
+        timing.remove(timingPartToRemove)
 
         // When
         val timings = extractResourceTiming(timingsPayload)
@@ -120,10 +123,11 @@ internal class ExternalResourceTimingsKtTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = ["startTime", "duration"])
     fun `𝕄 create timings 𝕎 extractResourceTiming { connect timing info is incomplete }`(
-        @Forgery reference: ResourceTiming,
-        forge: Forge
+        timingPartToRemove: String,
+        @Forgery reference: ResourceTiming
     ) {
 
         // Given
@@ -134,7 +138,7 @@ internal class ExternalResourceTimingsKtTest {
         @Suppress("UNCHECKED_CAST")
         val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
 
-        timing.remove(forge.anElementFrom("startTime", "duration"))
+        timing.remove(timingPartToRemove)
 
         // When
         val timings = extractResourceTiming(timingsPayload)
@@ -161,10 +165,11 @@ internal class ExternalResourceTimingsKtTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = ["startTime", "duration"])
     fun `𝕄 create timings 𝕎 extractResourceTiming { download timing info is incomplete }`(
-        @Forgery reference: ResourceTiming,
-        forge: Forge
+        timingPartToRemove: String,
+        @Forgery reference: ResourceTiming
     ) {
 
         // Given
@@ -175,7 +180,7 @@ internal class ExternalResourceTimingsKtTest {
         @Suppress("UNCHECKED_CAST")
         val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
 
-        timing.remove(forge.anElementFrom("startTime", "duration"))
+        timing.remove(timingPartToRemove)
 
         // When
         val timings = extractResourceTiming(timingsPayload)
@@ -201,10 +206,11 @@ internal class ExternalResourceTimingsKtTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = ["startTime", "duration"])
     fun `𝕄 create timings 𝕎 extractResourceTiming { dns timing info is incomplete }`(
-        @Forgery reference: ResourceTiming,
-        forge: Forge
+        timingPartToRemove: String,
+        @Forgery reference: ResourceTiming
     ) {
 
         // Given
@@ -215,7 +221,7 @@ internal class ExternalResourceTimingsKtTest {
         @Suppress("UNCHECKED_CAST")
         val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
 
-        timing.remove(forge.anElementFrom("startTime", "duration"))
+        timing.remove(timingPartToRemove)
 
         // When
         val timings = extractResourceTiming(timingsPayload)
@@ -241,10 +247,11 @@ internal class ExternalResourceTimingsKtTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = ["startTime", "duration"])
     fun `𝕄 create timings 𝕎 extractResourceTiming { firstByte timing info is incomplete }`(
-        @Forgery reference: ResourceTiming,
-        forge: Forge
+        timingPartToRemove: String,
+        @Forgery reference: ResourceTiming
     ) {
 
         // Given
@@ -255,7 +262,7 @@ internal class ExternalResourceTimingsKtTest {
         @Suppress("UNCHECKED_CAST")
         val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
 
-        timing.remove(forge.anElementFrom("startTime", "duration"))
+        timing.remove(timingPartToRemove)
 
         // When
         val timings = extractResourceTiming(timingsPayload)
@@ -281,10 +288,11 @@ internal class ExternalResourceTimingsKtTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = ["startTime", "duration"])
     fun `𝕄 create timings 𝕎 extractResourceTiming { ssl timing info with wrong structure }`(
-        @Forgery reference: ResourceTiming,
-        forge: Forge
+        timingPartWithWrongType: String,
+        @Forgery reference: ResourceTiming
     ) {
 
         // Given
@@ -294,7 +302,7 @@ internal class ExternalResourceTimingsKtTest {
 
         @Suppress("UNCHECKED_CAST")
         val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
-        timing[forge.anElementFrom("startTime", "duration")] = true
+        timing[timingPartWithWrongType] = true
 
         // When
         val timings = extractResourceTiming(timingsPayload)
@@ -320,10 +328,11 @@ internal class ExternalResourceTimingsKtTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = ["startTime", "duration"])
     fun `𝕄 create timings 𝕎 extractResourceTiming { connect timing info with wrong structure }`(
-        @Forgery reference: ResourceTiming,
-        forge: Forge
+        timingPartWithWrongType: String,
+        @Forgery reference: ResourceTiming
     ) {
 
         // Given
@@ -333,7 +342,7 @@ internal class ExternalResourceTimingsKtTest {
 
         @Suppress("UNCHECKED_CAST")
         val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
-        timing[forge.anElementFrom("startTime", "duration")] = true
+        timing[timingPartWithWrongType] = true
 
         // When
         val timings = extractResourceTiming(timingsPayload)
@@ -359,10 +368,11 @@ internal class ExternalResourceTimingsKtTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = ["startTime", "duration"])
     fun `𝕄 create timings 𝕎 extractResourceTiming { download timing info with wrong structure }`(
-        @Forgery reference: ResourceTiming,
-        forge: Forge
+        timingPartWithWrongType: String,
+        @Forgery reference: ResourceTiming
     ) {
 
         // Given
@@ -372,7 +382,7 @@ internal class ExternalResourceTimingsKtTest {
 
         @Suppress("UNCHECKED_CAST")
         val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
-        timing[forge.anElementFrom("startTime", "duration")] = true
+        timing[timingPartWithWrongType] = true
 
         // When
         val timings = extractResourceTiming(timingsPayload)
@@ -398,10 +408,11 @@ internal class ExternalResourceTimingsKtTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = ["startTime", "duration"])
     fun `𝕄 create timings 𝕎 extractResourceTiming { dns timing info with wrong structure }`(
-        @Forgery reference: ResourceTiming,
-        forge: Forge
+        timingPartWithWrongType: String,
+        @Forgery reference: ResourceTiming
     ) {
 
         // Given
@@ -411,7 +422,7 @@ internal class ExternalResourceTimingsKtTest {
 
         @Suppress("UNCHECKED_CAST")
         val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
-        timing[forge.anElementFrom("startTime", "duration")] = true
+        timing[timingPartWithWrongType] = true
 
         // When
         val timings = extractResourceTiming(timingsPayload)
@@ -437,10 +448,11 @@ internal class ExternalResourceTimingsKtTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = ["startTime", "duration"])
     fun `𝕄 create timings 𝕎 extractResourceTiming { firstByte timing info with wrong structure }`(
-        @Forgery reference: ResourceTiming,
-        forge: Forge
+        timingPartWithWrongType: String,
+        @Forgery reference: ResourceTiming
     ) {
 
         // Given
@@ -450,7 +462,7 @@ internal class ExternalResourceTimingsKtTest {
 
         @Suppress("UNCHECKED_CAST")
         val timing = timingsPayload[badTiming] as MutableMap<String, Any?>
-        timing[forge.anElementFrom("startTime", "duration")] = true
+        timing[timingPartWithWrongType] = true
 
         // When
         val timings = extractResourceTiming(timingsPayload)

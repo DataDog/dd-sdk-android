@@ -20,6 +20,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -62,8 +64,10 @@ internal class NdkCrashReportsPluginTest {
         )
     }
 
-    @Test
+    @ParameterizedTest
+    @EnumSource(TrackingConsent::class)
     fun `M create the NDK crash reports directory W register { nativeLibrary loaded }`(
+        trackingConsent: TrackingConsent,
         forge: Forge
     ) {
         // GIVEN
@@ -74,7 +78,7 @@ internal class NdkCrashReportsPluginTest {
             mockedContext,
             forge.anAlphabeticalString(),
             forge.anAlphabeticalString(),
-            forge.aValueFrom(TrackingConsent::class.java)
+            trackingConsent
         )
         testedPlugin.setFieldValue("nativeLibraryLoaded", true)
 
@@ -90,8 +94,10 @@ internal class NdkCrashReportsPluginTest {
         assertThat(ndkCrashDirectory.exists()).isTrue()
     }
 
-    @Test
+    @ParameterizedTest
+    @EnumSource(TrackingConsent::class)
     fun `M do nothing  W register { nativeLibrary not loaded }`(
+        trackingConsent: TrackingConsent,
         forge: Forge
     ) {
         // GIVEN
@@ -102,7 +108,7 @@ internal class NdkCrashReportsPluginTest {
             mockedContext,
             forge.anAlphabeticalString(),
             forge.anAlphabeticalString(),
-            forge.aValueFrom(TrackingConsent::class.java)
+            trackingConsent
         )
 
         // WHEN

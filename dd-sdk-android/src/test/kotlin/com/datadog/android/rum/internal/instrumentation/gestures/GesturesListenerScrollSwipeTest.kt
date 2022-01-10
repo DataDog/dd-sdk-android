@@ -35,11 +35,16 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.lang.ref.WeakReference
+import java.util.stream.Stream
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -63,8 +68,19 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
 
     // region Tests
 
-    @Test
-    fun `it will send an scroll rum event if fling not detected`(forge: Forge) {
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            GesturesListener.SCROLL_DIRECTION_DOWN,
+            GesturesListener.SCROLL_DIRECTION_UP,
+            GesturesListener.SCROLL_DIRECTION_LEFT,
+            GesturesListener.SCROLL_DIRECTION_RIGHT
+        ]
+    )
+    fun `it will send an scroll rum event if fling not detected`(
+        expectedDirection: String,
+        forge: Forge
+    ) {
         val startDownEvent: MotionEvent = forge.getForgery()
         val listSize = forge.anInt(1, 20)
         val intermediaryEvents =
@@ -73,12 +89,6 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val distancesY = forge.aList(listSize) { forge.aFloat() }
         val targetId = forge.anInt()
         val endUpEvent = intermediaryEvents[intermediaryEvents.size - 1]
-        val expectedDirection = forge.anElementFrom(
-            GesturesListener.SCROLL_DIRECTION_DOWN,
-            GesturesListener.SCROLL_DIRECTION_UP,
-            GesturesListener.SCROLL_DIRECTION_LEFT,
-            GesturesListener.SCROLL_DIRECTION_RIGHT
-        )
         stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
 
         val scrollingTarget: ScrollableView = mockView(
@@ -129,8 +139,19 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
-    @Test
-    fun `it will send a scroll rum event if target is a ListView`(forge: Forge) {
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            GesturesListener.SCROLL_DIRECTION_DOWN,
+            GesturesListener.SCROLL_DIRECTION_UP,
+            GesturesListener.SCROLL_DIRECTION_LEFT,
+            GesturesListener.SCROLL_DIRECTION_RIGHT
+        ]
+    )
+    fun `it will send a scroll rum event if target is a ListView`(
+        expectedDirection: String,
+        forge: Forge
+    ) {
         val startDownEvent: MotionEvent = forge.getForgery()
         val listSize = forge.anInt(1, 20)
         val intermediaryEvents =
@@ -139,12 +160,6 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val distancesY = forge.aList(listSize) { forge.aFloat() }
         val targetId = forge.anInt()
         val endUpEvent = intermediaryEvents[intermediaryEvents.size - 1]
-        val expectedDirection = forge.anElementFrom(
-            GesturesListener.SCROLL_DIRECTION_DOWN,
-            GesturesListener.SCROLL_DIRECTION_UP,
-            GesturesListener.SCROLL_DIRECTION_LEFT,
-            GesturesListener.SCROLL_DIRECTION_RIGHT
-        )
         stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
 
         val scrollingTarget: ScrollableListView = mockView(
@@ -195,8 +210,13 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
-    @Test
-    fun `it will reset the scroll data between 2 consecutive gestures`(forge: Forge) {
+    @ParameterizedTest
+    @MethodSource("twoDirections")
+    fun `it will reset the scroll data between 2 consecutive gestures`(
+        expectedDirection1: String,
+        expectedDirection2: String,
+        forge: Forge
+    ) {
         val startDownEvent: MotionEvent = forge.getForgery()
         val listSize = forge.anInt(1, 20)
         val intermediaryEvents =
@@ -205,18 +225,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val distancesY = forge.aList(listSize) { forge.aFloat() }
         val targetId = forge.anInt()
         val endUpEvent = intermediaryEvents[intermediaryEvents.size - 1]
-        val expectedDirection1 = forge.anElementFrom(
-            GesturesListener.SCROLL_DIRECTION_DOWN,
-            GesturesListener.SCROLL_DIRECTION_UP,
-            GesturesListener.SCROLL_DIRECTION_LEFT,
-            GesturesListener.SCROLL_DIRECTION_RIGHT
-        )
-        val expectedDirection2 = forge.anElementFrom(
-            GesturesListener.SCROLL_DIRECTION_DOWN,
-            GesturesListener.SCROLL_DIRECTION_UP,
-            GesturesListener.SCROLL_DIRECTION_LEFT,
-            GesturesListener.SCROLL_DIRECTION_RIGHT
-        )
+
         val scrollingTarget: ScrollableListView = mockView(
             id = targetId,
             forEvent = startDownEvent,
@@ -374,19 +383,21 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
-    @Test
-    fun `it will send a swipe rum event if detected`(forge: Forge) {
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            GesturesListener.SCROLL_DIRECTION_DOWN,
+            GesturesListener.SCROLL_DIRECTION_UP,
+            GesturesListener.SCROLL_DIRECTION_LEFT,
+            GesturesListener.SCROLL_DIRECTION_RIGHT
+        ]
+    )
+    fun `it will send a swipe rum event if detected`(expectedDirection: String, forge: Forge) {
         val listSize = forge.anInt(1, 20)
         val startDownEvent: MotionEvent = forge.getForgery()
         val intermediaryEvents =
             forge.aList(size = listSize) { forge.getForgery(MotionEvent::class.java) }
         val endUpEvent = intermediaryEvents[intermediaryEvents.size - 1]
-        val expectedDirection = forge.anElementFrom(
-            GesturesListener.SCROLL_DIRECTION_DOWN,
-            GesturesListener.SCROLL_DIRECTION_UP,
-            GesturesListener.SCROLL_DIRECTION_LEFT,
-            GesturesListener.SCROLL_DIRECTION_RIGHT
-        )
         stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
         val distancesX = forge.aList(listSize) { forge.aFloat() }
         val distancesY = forge.aList(listSize) { forge.aFloat() }
@@ -442,8 +453,17 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            GesturesListener.SCROLL_DIRECTION_DOWN,
+            GesturesListener.SCROLL_DIRECTION_UP,
+            GesturesListener.SCROLL_DIRECTION_LEFT,
+            GesturesListener.SCROLL_DIRECTION_RIGHT
+        ]
+    )
     fun `M use the class simple name as target name W scrollDetected { canonicalName is null }`(
+        expectedDirection: String,
         forge: Forge
     ) {
         val listSize = forge.anInt(1, 20)
@@ -451,12 +471,6 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val intermediaryEvents =
             forge.aList(size = listSize) { forge.getForgery(MotionEvent::class.java) }
         val endUpEvent = intermediaryEvents[intermediaryEvents.size - 1]
-        val expectedDirection = forge.anElementFrom(
-            GesturesListener.SCROLL_DIRECTION_DOWN,
-            GesturesListener.SCROLL_DIRECTION_UP,
-            GesturesListener.SCROLL_DIRECTION_LEFT,
-            GesturesListener.SCROLL_DIRECTION_RIGHT
-        )
         stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
         val distancesX = forge.aList(listSize) { forge.aFloat() }
         val distancesY = forge.aList(listSize) { forge.aFloat() }
@@ -686,25 +700,19 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
-    @Test
-    fun `it will reset the swipe data between 2 consecutive gestures`(forge: Forge) {
+    @ParameterizedTest
+    @MethodSource("twoDirections")
+    fun `it will reset the swipe data between 2 consecutive gestures`(
+        expectedDirection1: String,
+        expectedDirection2: String,
+        forge: Forge
+    ) {
         val listSize = forge.anInt(1, 20)
         val startDownEvent: MotionEvent = forge.getForgery()
         val intermediaryEvents =
             forge.aList(size = listSize) { forge.getForgery(MotionEvent::class.java) }
         val endUpEvent = intermediaryEvents[intermediaryEvents.size - 1]
-        val expectedDirection1 = forge.anElementFrom(
-            GesturesListener.SCROLL_DIRECTION_DOWN,
-            GesturesListener.SCROLL_DIRECTION_UP,
-            GesturesListener.SCROLL_DIRECTION_LEFT,
-            GesturesListener.SCROLL_DIRECTION_RIGHT
-        )
-        val expectedDirection2 = forge.anElementFrom(
-            GesturesListener.SCROLL_DIRECTION_DOWN,
-            GesturesListener.SCROLL_DIRECTION_UP,
-            GesturesListener.SCROLL_DIRECTION_LEFT,
-            GesturesListener.SCROLL_DIRECTION_RIGHT
-        )
+
         val distancesX = forge.aList(listSize) { forge.aFloat() }
         val distancesY = forge.aList(listSize) { forge.aFloat() }
         val velocityX = forge.aFloat()
@@ -874,6 +882,24 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
                 whenever(stopEvent.x).thenReturn((initialStartX - 2))
                 whenever(stopEvent.y).thenReturn(initialStartY)
             }
+        }
+    }
+
+    companion object {
+
+        @Suppress("unused")
+        @JvmStatic
+        fun twoDirections(): Stream<Arguments> {
+            val directions = listOf(
+                GesturesListener.SCROLL_DIRECTION_DOWN,
+                GesturesListener.SCROLL_DIRECTION_UP,
+                GesturesListener.SCROLL_DIRECTION_LEFT,
+                GesturesListener.SCROLL_DIRECTION_RIGHT
+            )
+
+            return directions.flatMap { first ->
+                directions.map { second -> Arguments.of(first, second) }
+            }.stream()
         }
     }
 

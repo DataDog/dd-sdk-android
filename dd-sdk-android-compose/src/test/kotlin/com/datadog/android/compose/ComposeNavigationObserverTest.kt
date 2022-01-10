@@ -28,6 +28,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -254,16 +256,15 @@ internal class ComposeNavigationObserverTest {
         verifyZeroInteractions(mockRumMonitor)
     }
 
-    @Test
+    @ParameterizedTest
+    @EnumSource(
+        Lifecycle.Event::class,
+        names = ["ON_PAUSE", "ON_RESUME"],
+        mode = EnumSource.Mode.EXCLUDE
+    )
     fun `M do nothing W neither ON_PAUSE or ON_RESUME event`(
-        forge: Forge
+        lifecycleEvent: Lifecycle.Event
     ) {
-        // Given
-        val lifecycleEvent = forge.aValueFrom(
-            Lifecycle.Event::class.java,
-            exclude = listOf(Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_RESUME)
-        )
-
         // When
         testedObserver.onStateChanged(mock(), lifecycleEvent)
 

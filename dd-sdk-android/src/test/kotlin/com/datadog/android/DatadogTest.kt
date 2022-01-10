@@ -33,7 +33,6 @@ import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.invokeMethod
@@ -57,6 +56,8 @@ import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -65,7 +66,6 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class),
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -218,10 +218,10 @@ internal class DatadogTest {
         assertThat(CoreFeature.trackingConsentProvider.getConsent()).isEqualTo(fakeConsent)
     }
 
-    @Test
-    fun `M update the ConsentProvider W setConsent`(forge: Forge) {
+    @ParameterizedTest
+    @EnumSource(TrackingConsent::class)
+    fun `M update the ConsentProvider W setConsent`(fakeConsent: TrackingConsent) {
         // GIVEN
-        val fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
         val mockedConsentProvider: ConsentProvider = mock()
         CoreFeature.trackingConsentProvider = mockedConsentProvider
 

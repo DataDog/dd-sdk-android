@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.NoOpDataWriter
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
@@ -34,8 +35,6 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
@@ -73,7 +72,6 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class),
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -112,6 +110,9 @@ internal class RumSessionScopeTest {
     @Mock
     lateinit var mockSessionListener: RumSessionListener
 
+    @Mock
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
     lateinit var mockDevLogHandler: LogHandler
 
     @Forgery
@@ -138,6 +139,7 @@ internal class RumSessionScopeTest {
             .thenReturn(fakeNetworkInfo)
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
 
         CoreFeature.processImportance = RunningAppProcessInfo.IMPORTANCE_FOREGROUND
 
@@ -151,6 +153,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -183,6 +186,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -282,6 +286,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -369,6 +374,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -454,17 +460,20 @@ internal class RumSessionScopeTest {
         verifyZeroInteractions(mockWriter)
     }
 
-    @TestTargetApi(Build.VERSION_CODES.KITKAT)
     @Test
     fun `M send ApplicationStarted event W applicationDisplayed`(
         @StringForgery key: String,
         @StringForgery name: String
     ) {
+        // Given
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.KITKAT
         val childView: RumViewScope = mock()
         val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
 
+        // When
         testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(childView).handleEvent(capture(), same(mockWriter))
 
@@ -474,17 +483,20 @@ internal class RumSessionScopeTest {
         verifyZeroInteractions(mockWriter)
     }
 
-    @TestTargetApi(Build.VERSION_CODES.N)
     @Test
     fun `M send ApplicationStarted event W applicationDisplayed {API 24+}`(
         @StringForgery key: String,
         @StringForgery name: String
     ) {
+        // Given
+        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.N
         val childView: RumViewScope = mock()
         val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
 
+        // When
         testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(childView).handleEvent(capture(), same(mockWriter))
 
@@ -582,6 +594,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -609,6 +622,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -761,6 +775,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )
@@ -788,6 +803,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
         )

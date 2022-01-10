@@ -34,17 +34,20 @@ import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Locale
+import java.util.stream.Stream
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
-import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
@@ -78,8 +81,12 @@ class SwipeAndScrollActionTrackerTest {
     )
     lateinit var fakeAttributes: Map<String, String>
 
-    @RepeatedTest(10)
+    @ParameterizedTest
+    @MethodSource("directionToReverseToRtl")
     fun `M report SWIPE action W trackSwipe { Start - Stop }`(
+        swipeDirection: Direction,
+        reverseDirection: Boolean,
+        isRtl: Boolean,
         forge: Forge
     ) {
         // Given
@@ -89,14 +96,11 @@ class SwipeAndScrollActionTrackerTest {
             emit(DragInteraction.Stop(start))
         }
 
-        val swipeDirection = forge.aValueFrom(Direction::class.java)
         val swipeOrientation = swipeDirection.orientation
 
         val startState = forge.anInt()
         val endState = forge.anInt()
 
-        val reverseDirection = forge.aBool()
-        val isRtl = forge.aBool()
         val swipeableState =
             forge.aSwipeableState(startState, endState, swipeDirection, reverseDirection, isRtl)
 
@@ -132,8 +136,12 @@ class SwipeAndScrollActionTrackerTest {
         }
     }
 
-    @RepeatedTest(10)
+    @ParameterizedTest
+    @MethodSource("directionToReverseToRtl")
     fun `M report SWIPE action W trackSwipe { Start - Cancel }`(
+        swipeDirection: Direction,
+        reverseDirection: Boolean,
+        isRtl: Boolean,
         forge: Forge
     ) {
         // Given
@@ -143,14 +151,11 @@ class SwipeAndScrollActionTrackerTest {
             emit(DragInteraction.Cancel(start))
         }
 
-        val swipeDirection = forge.aValueFrom(Direction::class.java)
         val swipeOrientation = swipeDirection.orientation
 
         val startState = forge.anInt()
         val endState = forge.anInt()
 
-        val reverseDirection = forge.aBool()
-        val isRtl = forge.aBool()
         val swipeableState =
             forge.aSwipeableState(startState, endState, swipeDirection, reverseDirection, isRtl)
 
@@ -186,8 +191,12 @@ class SwipeAndScrollActionTrackerTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("directionToReverseToRtl")
     fun `M not report SWIPE stop action W trackSwipe { Start - Start }`(
+        swipeDirection: Direction,
+        reverseDirection: Boolean,
+        isRtl: Boolean,
         forge: Forge
     ) {
         // Given
@@ -196,14 +205,10 @@ class SwipeAndScrollActionTrackerTest {
             emit(DragInteraction.Start())
         }
 
-        val swipeDirection = forge.aValueFrom(Direction::class.java)
         val swipeOrientation = swipeDirection.orientation
 
         val startState = forge.anInt()
         val endState = forge.anInt()
-
-        val reverseDirection = forge.aBool()
-        val isRtl = forge.aBool()
 
         val swipeableState =
             forge.aSwipeableState(startState, endState, swipeDirection, reverseDirection, isRtl)
@@ -228,8 +233,12 @@ class SwipeAndScrollActionTrackerTest {
         verifyNoMoreInteractions(mockRumMonitor)
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("directionToReverseToRtl")
     fun `M not report SWIPE stop action W trackSwipe { Start - Stop for another Start }`(
+        swipeDirection: Direction,
+        reverseDirection: Boolean,
+        isRtl: Boolean,
         forge: Forge
     ) {
         // Given
@@ -238,14 +247,10 @@ class SwipeAndScrollActionTrackerTest {
             emit(DragInteraction.Stop(DragInteraction.Start()))
         }
 
-        val swipeDirection = forge.aValueFrom(Direction::class.java)
         val swipeOrientation = swipeDirection.orientation
 
         val startState = forge.anInt()
         val endState = forge.anInt()
-
-        val reverseDirection = forge.aBool()
-        val isRtl = forge.aBool()
 
         val swipeableState =
             forge.aSwipeableState(startState, endState, swipeDirection, reverseDirection, isRtl)
@@ -270,8 +275,12 @@ class SwipeAndScrollActionTrackerTest {
         verifyNoMoreInteractions(mockRumMonitor)
     }
 
-    @RepeatedTest(10)
+    @ParameterizedTest
+    @MethodSource("directionToReverseToRtl")
     fun `M report SCROLL action W trackScroll { Start - Stop }`(
+        scrollDirection: Direction,
+        reverseLayout: Boolean,
+        isRtl: Boolean,
         forge: Forge
     ) {
         // Given
@@ -283,11 +292,8 @@ class SwipeAndScrollActionTrackerTest {
 
         whenever(mockInteractionSource.interactions) doReturn interactionsFlow
 
-        val scrollDirection = forge.aValueFrom(Direction::class.java)
         val scrollOrientation = scrollDirection.orientation
 
-        val reverseLayout = forge.aBool()
-        val isRtl = forge.aBool()
         val mockScrollableState = forge.aScrollableState(scrollDirection, reverseLayout, isRtl)
 
         val expectedAttributes = fakeAttributes.run {
@@ -322,8 +328,12 @@ class SwipeAndScrollActionTrackerTest {
         }
     }
 
-    @RepeatedTest(10)
+    @ParameterizedTest
+    @MethodSource("directionToReverseToRtl")
     fun `M report SCROLL action W trackScroll { Start - Cancel }`(
+        scrollDirection: Direction,
+        reverseLayout: Boolean,
+        isRtl: Boolean,
         forge: Forge
     ) {
         // Given
@@ -335,11 +345,8 @@ class SwipeAndScrollActionTrackerTest {
 
         whenever(mockInteractionSource.interactions) doReturn interactionsFlow
 
-        val scrollDirection = forge.aValueFrom(Direction::class.java)
         val scrollOrientation = scrollDirection.orientation
 
-        val reverseLayout = forge.aBool()
-        val isRtl = forge.aBool()
         val mockScrollableState = forge.aScrollableState(scrollDirection, reverseLayout, isRtl)
 
         val expectedAttributes = fakeAttributes.run {
@@ -374,8 +381,12 @@ class SwipeAndScrollActionTrackerTest {
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("directionToReverseToRtl")
     fun `M not report SCROLL stop action W trackScroll { Start - Start }`(
+        scrollDirection: Direction,
+        reverseLayout: Boolean,
+        isRtl: Boolean,
         forge: Forge
     ) {
         // Given
@@ -386,11 +397,8 @@ class SwipeAndScrollActionTrackerTest {
 
         whenever(mockInteractionSource.interactions) doReturn interactionsFlow
 
-        val scrollDirection = forge.aValueFrom(Direction::class.java)
         val scrollOrientation = scrollDirection.orientation
 
-        val reverseLayout = forge.aBool()
-        val isRtl = forge.aBool()
         val mockScrollableState = forge.aScrollableState(scrollDirection, reverseLayout, isRtl)
 
         // When
@@ -411,8 +419,12 @@ class SwipeAndScrollActionTrackerTest {
         verifyNoMoreInteractions(mockRumMonitor)
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("directionToReverseToRtl")
     fun `M not report SCROLL stop action W trackScroll { Start - Stop for another Start }`(
+        scrollDirection: Direction,
+        reverseLayout: Boolean,
+        isRtl: Boolean,
         forge: Forge
     ) {
         // Given
@@ -423,11 +435,8 @@ class SwipeAndScrollActionTrackerTest {
 
         whenever(mockInteractionSource.interactions) doReturn interactionsFlow
 
-        val scrollDirection = forge.aValueFrom(Direction::class.java)
         val scrollOrientation = scrollDirection.orientation
 
-        val reverseLayout = forge.aBool()
-        val isRtl = forge.aBool()
         val mockScrollableState = forge.aScrollableState(scrollDirection, reverseLayout, isRtl)
 
         // When
@@ -626,7 +635,7 @@ class SwipeAndScrollActionTrackerTest {
     }
 
     @Suppress("unused")
-    private enum class Direction(val orientation: Orientation) {
+    enum class Direction(val orientation: Orientation) {
         UP(orientation = Orientation.Vertical),
         DOWN(orientation = Orientation.Vertical),
         RIGHT(orientation = Orientation.Horizontal),
@@ -636,6 +645,21 @@ class SwipeAndScrollActionTrackerTest {
     companion object {
         const val MAX_LAZY_LIST_STATE_ITEM_INDEX = 0xFFFF
         const val MAX_LAZY_LIST_STATE_ITEM_OFFSET = 0x7FFF
+
+        @Suppress("unused")
+        @JvmStatic
+        fun directionToReverseToRtl(): Stream<Arguments> {
+            return Direction.values()
+                .flatMap {
+                    listOf(
+                        Arguments.of(it, true, true),
+                        Arguments.of(it, true, false),
+                        Arguments.of(it, false, true),
+                        Arguments.of(it, false, false)
+                    )
+                }
+                .stream()
+        }
     }
 
     // endregion

@@ -30,7 +30,6 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
@@ -65,6 +64,8 @@ import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -72,8 +73,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -525,11 +525,14 @@ internal class DatadogRumMonitorTest {
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
-    @Test
-    fun `M delegate event to rootScope W updateViewLoadingTime()`(forge: Forge) {
+    @ParameterizedTest
+    @EnumSource(ViewEvent.LoadingType::class)
+    fun `M delegate event to rootScope W updateViewLoadingTime()`(
+        loadingType: ViewEvent.LoadingType,
+        forge: Forge
+    ) {
         val key = forge.anAsciiString()
         val loadingTime = forge.aLong(min = 1)
-        val loadingType = forge.aValueFrom(ViewEvent.LoadingType::class.java)
 
         testedMonitor.updateViewLoadingTime(key, loadingTime, loadingType)
         Thread.sleep(PROCESSING_DELAY)

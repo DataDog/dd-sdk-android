@@ -48,6 +48,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -178,18 +180,15 @@ internal class UploadWorkerTest {
             .isEqualTo(ListenableWorker.Result.success())
     }
 
-    @Test
+    @ParameterizedTest
+    @EnumSource(UploadStatus::class, names = ["SUCCESS"], mode = EnumSource.Mode.EXCLUDE)
     fun `𝕄 send and keep batches 𝕎 doWork() {single batch per feature with error}`(
+        status: UploadStatus,
         @Forgery logsBatch: Batch,
         @Forgery tracesBatch: Batch,
         @Forgery rumBatch: Batch,
-        @Forgery crashReportsBatch: Batch,
-        forge: Forge
+        @Forgery crashReportsBatch: Batch
     ) {
-        val status = forge.aValueFrom(
-            UploadStatus::class.java,
-            exclude = listOf(UploadStatus.SUCCESS)
-        )
         whenever(mockLogsReader.lockAndReadNext()).doReturn(logsBatch, null)
         whenever(mockLogsUploader.upload(logsBatch.data)) doReturn status
         whenever(mockTracesReader.lockAndReadNext()).doReturn(tracesBatch, null)
@@ -326,13 +325,13 @@ internal class UploadWorkerTest {
             .isEqualTo(ListenableWorker.Result.success())
     }
 
-    @Test
-    fun `𝕄 send batches 𝕎 doWork() {multiple Log batches, first fails}`(forge: Forge) {
+    @ParameterizedTest
+    @EnumSource(UploadStatus::class, names = ["SUCCESS"], mode = EnumSource.Mode.EXCLUDE)
+    fun `𝕄 send batches 𝕎 doWork() {multiple Log batches, first fails}`(
+        status: UploadStatus,
+        forge: Forge
+    ) {
         val batches = forge.aBatchList()
-        val status = forge.aValueFrom(
-            UploadStatus::class.java,
-            exclude = listOf(UploadStatus.SUCCESS)
-        )
         val firstBatch = batches.first()
         val otherBatchesThenNull = Array(batches.size) {
             batches.getOrNull(it + 1)
@@ -362,13 +361,13 @@ internal class UploadWorkerTest {
             .isEqualTo(ListenableWorker.Result.success())
     }
 
-    @Test
-    fun `𝕄 send batches 𝕎 doWork() {multiple Trace batches, first fails}`(forge: Forge) {
+    @ParameterizedTest
+    @EnumSource(UploadStatus::class, names = ["SUCCESS"], mode = EnumSource.Mode.EXCLUDE)
+    fun `𝕄 send batches 𝕎 doWork() {multiple Trace batches, first fails}`(
+        status: UploadStatus,
+        forge: Forge
+    ) {
         val batches = forge.aBatchList()
-        val status = forge.aValueFrom(
-            UploadStatus::class.java,
-            exclude = listOf(UploadStatus.SUCCESS)
-        )
         val firstBatch = batches.first()
         val otherBatchesThenNull = Array(batches.size) {
             batches.getOrNull(it + 1)
@@ -398,13 +397,13 @@ internal class UploadWorkerTest {
             .isEqualTo(ListenableWorker.Result.success())
     }
 
-    @Test
-    fun `𝕄 send batches 𝕎 doWork() {multiple Rum batches, first fails}`(forge: Forge) {
+    @ParameterizedTest
+    @EnumSource(UploadStatus::class, names = ["SUCCESS"], mode = EnumSource.Mode.EXCLUDE)
+    fun `𝕄 send batches 𝕎 doWork() {multiple Rum batches, first fails}`(
+        status: UploadStatus,
+        forge: Forge
+    ) {
         val batches = forge.aBatchList()
-        val status = forge.aValueFrom(
-            UploadStatus::class.java,
-            exclude = listOf(UploadStatus.SUCCESS)
-        )
         val firstBatch = batches.first()
         val otherBatchesThenNull = Array(batches.size) {
             batches.getOrNull(it + 1)
@@ -434,13 +433,13 @@ internal class UploadWorkerTest {
             .isEqualTo(ListenableWorker.Result.success())
     }
 
-    @Test
-    fun `𝕄 send batches 𝕎 doWork() {multiple Crash batches, first fails}`(forge: Forge) {
+    @ParameterizedTest
+    @EnumSource(UploadStatus::class, names = ["SUCCESS"], mode = EnumSource.Mode.EXCLUDE)
+    fun `𝕄 send batches 𝕎 doWork() {multiple Crash batches, first fails}`(
+        status: UploadStatus,
+        forge: Forge
+    ) {
         val batches = forge.aBatchList()
-        val status = forge.aValueFrom(
-            UploadStatus::class.java,
-            exclude = listOf(UploadStatus.SUCCESS)
-        )
         val firstBatch = batches.first()
         val otherBatchesThenNull = Array(batches.size) {
             batches.getOrNull(it + 1)
