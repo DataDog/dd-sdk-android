@@ -19,6 +19,7 @@ import io.gitlab.arturbosch.detekt.api.config
 import io.gitlab.arturbosch.detekt.api.internal.RequiresTypeResolution
 import java.util.Stack
 import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
+import org.jetbrains.kotlin.descriptors.containingPackage
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtImportDirective
@@ -106,9 +107,9 @@ class UnsafeThirdPartyFunctionCall(
 
         val explicitReceiverType = call.explicitReceiver?.type(bindingContext)
         val receiverType = explicitReceiverType ?: call.dispatchReceiver?.type(bindingContext)
-        val descriptor = resolvedCall.candidateDescriptor
+        val callDescriptor = resolvedCall.candidateDescriptor
 
-        if (descriptor is ClassConstructorDescriptor) {
+        if (callDescriptor is ClassConstructorDescriptor) {
             val arguments = resolvedCall.valueArguments
                 .map { it.key.type.lowerIfFlexible().fullType() }
             checkConstructorCall(expression, "$returnType.constructor(${arguments.joinToString()})")
@@ -117,9 +118,11 @@ class UnsafeThirdPartyFunctionCall(
             val arguments = resolvedCall.valueArguments
                 .map { it.key.type.lowerIfFlexible().fullType() }
             val calleeExpression = call.calleeExpression?.node?.text
+            val callContainingPackage = callDescriptor.containingPackage()?.toString().orEmpty()
             checkFunctionCall(
                 expression,
                 "$receiverFullType.$calleeExpression(${arguments.joinToString()})",
+                callContainingPackage,
                 calleeExpression
             )
         }
@@ -146,9 +149,17 @@ class UnsafeThirdPartyFunctionCall(
     private fun checkFunctionCall(
         expression: KtCallExpression,
         call: String,
+        callContainingPackage: String,
         functionName: String?
     ) {
         if (internalPackagePrefix.isNotEmpty() && call.startsWith(internalPackagePrefix)) {
+            return
+        }
+
+        if (
+            internalPackagePrefix.isNotEmpty() &&
+            callContainingPackage.startsWith(internalPackagePrefix)
+        ) {
             return
         }
 

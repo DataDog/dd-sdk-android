@@ -618,7 +618,6 @@ datadog:
       - "java.io.FileOutputStream.use(kotlin.Function1):java.io.IOException"
       - "java.io.FileOutputStream.write(kotlin.ByteArray):java.io.IOException"
       - "java.nio.channels.FileChannel.lock():java.io.IOException,java.lang.IllegalStateException"
-      - "java.nio.channels.FileLock.use(kotlin.Function1):java.io.IOException"
       - "java.nio.channels.FileLock.release():java.io.IOException"
       # endregion
       # region Java Concurrency
@@ -693,7 +692,6 @@ datadog:
     knownSafeCalls:
       # region Android APIs
       - "android.app.Activity.findNavControllerOrNull()"
-      - "android.app.Activity.findNavControllerOrNull(kotlin.Int)"
       - "android.app.Activity.getSystemService(kotlin.String)"
       - "android.app.Application.registerActivityLifecycleCallbacks(android.app.Application.ActivityLifecycleCallbacks)"
       - "android.app.Application.unregisterActivityLifecycleCallbacks(android.app.Application.ActivityLifecycleCallbacks)"
@@ -705,7 +703,6 @@ datadog:
       - "android.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentStarted(android.app.FragmentManager, android.app.Fragment)"
       - "android.app.FragmentManager.registerFragmentLifecycleCallbacks(android.app.FragmentManager.FragmentLifecycleCallbacks, kotlin.Boolean)"
       - "android.app.FragmentManager.unregisterFragmentLifecycleCallbacks(android.app.FragmentManager.FragmentLifecycleCallbacks)"
-      - "android.content.ComponentName.resolveViewUrl()"
       - "android.content.Context.getSystemService(kotlin.String)"
       - "android.content.Context.registerReceiver(android.content.BroadcastReceiver?, android.content.IntentFilter)"
       - "android.content.Context.unregisterReceiver(android.content.BroadcastReceiver)"
@@ -738,7 +735,6 @@ datadog:
       - "android.util.Log.getStackTraceString(kotlin.Throwable?)"
       - "android.view.Choreographer.postFrameCallback(android.view.Choreographer.FrameCallback)"
       - "android.view.MotionEvent.recycle()"
-      - "android.view.View.targetClassName()"
       - "android.view.ViewGroup.findViewById(kotlin.Int)"
       - "android.view.ViewGroup.getChildAt(kotlin.Int)"
       - "android.view.ViewTreeObserver.addOnGlobalLayoutListener()"
@@ -748,8 +744,6 @@ datadog:
       - "android.view.Window.Callback.dispatchKeyEvent(android.view.KeyEvent)"
       - "android.view.Window.Callback.dispatchTouchEvent(android.view.MotionEvent)"
       - "android.view.Window.Callback.onMenuItemSelected(kotlin.Int, android.view.MenuItem)"
-      - "org.json.JSONArray.toJsonArray()"
-      - "org.json.JSONObject.toJsonObject()"
       # endregion
       # region Android Webview APIs
       - "android.webkit.ConsoleMessage.MessageLevel.toLogLevel()"
@@ -815,11 +809,9 @@ datadog:
       - "com.google.gson.JsonArray.add(com.google.gson.JsonElement)"
       - "com.google.gson.JsonArray.constructor()"
       - "com.google.gson.JsonArray.constructor(kotlin.Int)"
-      - "com.google.gson.JsonElement.fromJsonElement()"
       - "com.google.gson.JsonObject.add(kotlin.String, com.google.gson.JsonElement)"
       - "com.google.gson.JsonObject.addProperty(kotlin.String, kotlin.Number)"
       - "com.google.gson.JsonObject.addProperty(kotlin.String, kotlin.String)"
-      - "com.google.gson.JsonObject.asMap()"
       - "com.google.gson.JsonObject.constructor()"
       - "com.google.gson.JsonObject.entrySet()"
       - "com.google.gson.JsonObject.get(kotlin.String)"
@@ -891,21 +883,8 @@ datadog:
       - "java.util.concurrent.atomic.AtomicReference.set(io.opentracing.Tracer)"
       # endregion
       # region Java I/O
-      - "java.io.File.canReadSafe()"
-      - "java.io.File.canWriteSafe()"
       - "java.io.File.constructor(java.io.File, kotlin.String)"
       - "java.io.File.constructor(kotlin.String)"
-      - "java.io.File.deleteSafe()"
-      - "java.io.File.existsSafe()"
-      - "java.io.File.isDirectorySafe()"
-      - "java.io.File.isFileSafe()"
-      - "java.io.File.lengthSafe()"
-      - "java.io.File.listFilesSafe()"
-      - "java.io.File.listFilesSafe(java.io.FileFilter)"
-      - "java.io.File.mkdirsSafe()"
-      - "java.io.File.readLinesSafe(java.nio.charset.Charset)"
-      - "java.io.File.readTextSafe(java.nio.charset.Charset)"
-      - "java.io.File.renameToSafe(java.io.File)"
       - "java.io.StringWriter.constructor()"
       # endregion
       # region Java misc
@@ -927,7 +906,6 @@ datadog:
       - "java.lang.ref.WeakReference.constructor(android.view.Window)"
       - "java.lang.ref.WeakReference.constructor(kotlin.Any)"
       - "java.lang.ref.WeakReference.get()"
-      - "java.math.BigInteger.toHexString()"
       - "java.math.BigInteger.toLong()"
       - "java.nio.charset.Charset.defaultCharset()"
       - "java.security.SecureRandom.constructor()"
@@ -953,7 +931,6 @@ datadog:
       - "kotlin.Array.orEmpty()"
       - "kotlin.Array.sorted()"
       - "kotlin.collections.Iterable.any(kotlin.Function1)"
-      - "kotlin.collections.Iterable.toJsonArray()"
       - "kotlin.collections.List.any(kotlin.Function1)"
       - "kotlin.collections.List.asSequence()"
       - "kotlin.collections.List.associateWith(kotlin.Function1)"
@@ -985,7 +962,6 @@ datadog:
       - "kotlin.collections.Map.mapKeys(kotlin.Function1)"
       - "kotlin.collections.Map.mapNotNull(kotlin.Function1)"
       - "kotlin.collections.Map.mapValues(kotlin.Function1)"
-      - "kotlin.collections.Map.toJsonObject()"
       - "kotlin.collections.Map.toMutableMap()"
       - "kotlin.collections.MutableIterator.hasNext()"
       - "kotlin.collections.MutableList.add(com.datadog.android.core.internal.persistence.Batch)"
@@ -1029,12 +1005,9 @@ datadog:
       # endregion
       # region Kotlin Primitives
       - "kotlin.Any.constructor()"
-      - "kotlin.Any.resolveViewUrl()"
-      - "kotlin.Any.toJsonElement()"
       - "kotlin.Any.toString()"
       - "kotlin.Boolean.hashCode()"
       - "kotlin.ByteArray.constructor(kotlin.Int)"
-      - "kotlin.ByteArray.copyTo(kotlin.Int, kotlin.ByteArray, kotlin.Int, kotlin.Int)"
       - "kotlin.Double.isNaN()"
       - "kotlin.Double.pow(kotlin.Int)"
       - "kotlin.Double.rangeTo(kotlin.Double)"
@@ -1078,7 +1051,6 @@ datadog:
       - "kotlin.String.toByteArray(java.nio.charset.Charset) "
       - "kotlin.String.toByteArray(java.nio.charset.Charset)"
       - "kotlin.String.toDoubleOrNull()"
-      - "kotlin.String.toErrorMethod()"
       - "kotlin.String.toLongOrNull()"
       - "kotlin.String.toMethod()"
       - "kotlin.String.uppercase(java.util.Locale)"
@@ -1086,7 +1058,6 @@ datadog:
       # region Kotlin Misc
       - "kotlin.ReplaceWith.constructor(kotlin.String, kotlin.Array)"
       - "kotlin.Throwable.constructor()"
-      - "kotlin.Throwable.loggableStackTrace()"
       - "kotlin.Throwable.stackTraceToString()"
       - "kotlin.text.Regex.constructor(kotlin.String)"
       - "kotlin.text.Regex.matchEntire(kotlin.CharSequence)"
@@ -1152,7 +1123,6 @@ datadog:
       - "io.opentracing.Span.context()"
       - "io.opentracing.Span.finish()"
       - "io.opentracing.Span.log(kotlin.collections.MutableMap)"
-      - "io.opentracing.Span.setError(kotlin.Throwable)"
       - "io.opentracing.Span.setTag(kotlin.String, kotlin.Number)"
       - "io.opentracing.Span.setTag(kotlin.String, kotlin.String)"
       - "io.opentracing.SpanContext.toSpanId()"
