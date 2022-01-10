@@ -19,7 +19,6 @@ import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.utils.extension.EnableLogcat
 import com.datadog.android.utils.extension.EnableLogcatExtension
 import com.datadog.android.utils.mockDevLogHandler
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -37,8 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(EnableLogcatExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 class RuntimeUtilsTest {
 

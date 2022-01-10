@@ -26,7 +26,6 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.setFieldValue
@@ -58,7 +57,6 @@ internal typealias NavLifecycleCallbacks =
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ApiLevelExtension::class),
     ExtendWith(ForgeExtension::class),
     ExtendWith(TestConfigurationExtension::class)
 )
