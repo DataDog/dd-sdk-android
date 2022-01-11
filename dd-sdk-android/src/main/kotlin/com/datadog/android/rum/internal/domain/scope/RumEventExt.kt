@@ -55,14 +55,14 @@ internal fun RumResourceKind.toSchemaType(): ResourceEvent.ResourceType {
     }
 }
 
-internal fun RumErrorSource.toSchemaSource(): ErrorEvent.Source {
+internal fun RumErrorSource.toSchemaSource(): ErrorEvent.ErrorSource {
     return when (this) {
-        RumErrorSource.NETWORK -> ErrorEvent.Source.NETWORK
-        RumErrorSource.SOURCE -> ErrorEvent.Source.SOURCE
-        RumErrorSource.CONSOLE -> ErrorEvent.Source.CONSOLE
-        RumErrorSource.LOGGER -> ErrorEvent.Source.LOGGER
-        RumErrorSource.AGENT -> ErrorEvent.Source.AGENT
-        RumErrorSource.WEBVIEW -> ErrorEvent.Source.WEBVIEW
+        RumErrorSource.NETWORK -> ErrorEvent.ErrorSource.NETWORK
+        RumErrorSource.SOURCE -> ErrorEvent.ErrorSource.SOURCE
+        RumErrorSource.CONSOLE -> ErrorEvent.ErrorSource.CONSOLE
+        RumErrorSource.LOGGER -> ErrorEvent.ErrorSource.LOGGER
+        RumErrorSource.AGENT -> ErrorEvent.ErrorSource.AGENT
+        RumErrorSource.WEBVIEW -> ErrorEvent.ErrorSource.WEBVIEW
     }
 }
 
@@ -71,6 +71,7 @@ internal fun RumErrorSourceType.toSchemaSourceType(): ErrorEvent.SourceType {
         RumErrorSourceType.ANDROID -> ErrorEvent.SourceType.ANDROID
         RumErrorSourceType.BROWSER -> ErrorEvent.SourceType.BROWSER
         RumErrorSourceType.REACT_NATIVE -> ErrorEvent.SourceType.REACT_NATIVE
+        RumErrorSourceType.FLUTTER -> ErrorEvent.SourceType.FLUTTER
     }
 }
 

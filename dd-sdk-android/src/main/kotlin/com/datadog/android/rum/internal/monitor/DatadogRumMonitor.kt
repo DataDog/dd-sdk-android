@@ -195,7 +195,7 @@ internal class DatadogRumMonitor(
     ) {
         val eventTime = getEventTime(attributes)
         val errorType = getErrorType(attributes)
-        val errorSourceType = getErrorSourceType(attributes) ?: RumErrorSourceType.ANDROID
+        val errorSourceType = getErrorSourceType(attributes)
         handleEvent(
             RumRawEvent.AddError(
                 message,
@@ -358,18 +358,15 @@ internal class DatadogRumMonitor(
         return attributes[RumAttributes.INTERNAL_ERROR_TYPE] as? String
     }
 
-    private fun getErrorSourceType(attributes: Map<String, Any?>): RumErrorSourceType? {
+    private fun getErrorSourceType(attributes: Map<String, Any?>): RumErrorSourceType {
         val sourceType = attributes[RumAttributes.INTERNAL_ERROR_SOURCE_TYPE] as? String
 
-        return if (sourceType == null) {
-            return null
-        } else {
-            when (sourceType.lowercase(Locale.US)) {
-                "android" -> RumErrorSourceType.ANDROID
-                "react-native" -> RumErrorSourceType.REACT_NATIVE
-                "browser" -> RumErrorSourceType.BROWSER
-                else -> RumErrorSourceType.ANDROID
-            }
+        return when (sourceType?.lowercase(Locale.US)) {
+            "android" -> RumErrorSourceType.ANDROID
+            "react-native" -> RumErrorSourceType.REACT_NATIVE
+            "browser" -> RumErrorSourceType.BROWSER
+            "flutter" -> RumErrorSourceType.FLUTTER
+            else -> RumErrorSourceType.ANDROID
         }
     }
 
