@@ -480,7 +480,7 @@ internal class UploadWorkerTest {
                 ids.add(batch.id)
             }
         }
-        return list
+        return list.distinctBy { it.data.asList() }
     }
 
     companion object {
