@@ -16,8 +16,7 @@ class GsonJsonPrimitiveForgeryFactory : ForgeryFactory<JsonPrimitive> {
         return forge.anElementFrom(
             JsonPrimitive(forge.aBool()),
             JsonPrimitive(forge.anInt()),
-            // TODO RUMM-1531 put it back once proper JSON assertions are ready
-            // JsonPrimitive(forge.aFloat()),
+            JsonPrimitive(forge.aFloat()),
             JsonPrimitive(forge.aLong()),
             JsonPrimitive(forge.aDouble()),
             JsonPrimitive(forge.anAlphabeticalString()),

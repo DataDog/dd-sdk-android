@@ -105,8 +105,7 @@ private fun generateMapWithExhaustiveValues(forge: Forge): Map<String, Any?> {
             aBool(),
             anInt(),
             aLong(),
-            // TODO RUMM-1531 put it back once proper JSON assertions are ready
-            // aFloat(),
+            aFloat(),
             aDouble(),
             anAsciiString(),
             getForgery<Date>(),
