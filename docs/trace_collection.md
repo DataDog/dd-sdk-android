@@ -23,8 +23,7 @@ dependencies {
 {{< tabs >}}
 {{% tab "Kotlin" %}}
 ```kotlin
-class SampleApplication : Application() { 
-    
+class SampleApplication : Application() {
     override fun onCreate() {
       super.onCreate()
       val configuration = Configuration.Builder(

@@ -67,21 +67,20 @@ To ensure the safety of your data, you must use a client token. You cannot use o
 {{% /tab %}}
 {{% tab "Java" %}}
 ```java
-      public class SampleApplication extends Application {
-      
-            @Override
-            public void onCreate() {
-               super.onCreate();
-               final Configuration configuration =
-                       new Configuration.Builder(true, true, true, true)
-                               .trackInteractions()
-                               .trackLongTasks(durationThreshold)
-                               .useViewTrackingStrategy(strategy)
-                               .build();
+    public class SampleApplication extends Application { 
+        @Override 
+        public void onCreate() { 
+            super.onCreate();
+            final Configuration configuration = 
+                    new Configuration.Builder(true, true, true, true)
+                            .trackInteractions()
+                            .trackLongTasks(durationThreshold)
+                            .useViewTrackingStrategy(strategy)
+                            .build();
                final Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
-               Datadog.initialize(this, credentials, configuration, trackingConsent);
-            }
-      }
+               Datadog.initialize(this, credentials, configuration, trackingConsent); 
+        }
+    }
 ```
 {{% /tab %}}
 {{< /tabs >}}
@@ -112,24 +111,23 @@ To ensure the safety of your data, you must use a client token. You cannot use o
 ```
 {{% /tab %}}
 {{% tab "Java" %}}
-   ```java
-      public class SampleApplication extends Application {
-      
-            @Override
-            public void onCreate() {
-               super.onCreate();
-               final Configuration configuration =
-                       new Configuration.Builder(true, true, true, true)
-                               .trackInteractions()
-                               .trackLongTasks(durationThreshold)
-                               .useViewTrackingStrategy(strategy)
-                               .useSite(DatadogSite.EU1)
-                               .build();
-               Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
-               Datadog.initialize(this, credentials, configuration, trackingConsent);
-            }
-      }
-   ```
+```java
+    public class SampleApplication extends Application { 
+        @Override 
+        public void onCreate() { 
+            super.onCreate();
+            final Configuration configuration = 
+                    new Configuration.Builder(true, true, true, true)
+                            .trackInteractions()
+                            .trackLongTasks(durationThreshold)
+                            .useViewTrackingStrategy(strategy)
+                            .useSite(DatadogSite.EU1)
+                            .build();
+            Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
+            Datadog.initialize(this, credentials, configuration, trackingConsent); 
+        }
+    }
+```
 {{% /tab %}}
 {{< /tabs >}}
 {{< /site-region >}}
@@ -159,24 +157,23 @@ To ensure the safety of your data, you must use a client token. You cannot use o
 ```
 {{% /tab %}}
 {{% tab "Java" %}}
-   ```java
-      public class SampleApplication extends Application {
-
-            @Override
-            public void onCreate() {
-               super.onCreate();
-               final Configuration configuration =
-                       new Configuration.Builder(true, true, true, true)
-                               .trackInteractions()
-                               .trackLongTasks(durationThreshold)
-                               .useViewTrackingStrategy(strategy)
-                               .useSite(DatadogSite.US3)
-                               .build();
-               Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
-               Datadog.initialize(this, credentials, configuration, trackingConsent);
-            }
-      }
-   ```
+```java
+    public class SampleApplication extends Application { 
+        @Override 
+        public void onCreate() { 
+            super.onCreate();
+            final Configuration configuration = 
+                    new Configuration.Builder(true, true, true, true)
+                            .trackInteractions()
+                            .trackLongTasks(durationThreshold)
+                            .useViewTrackingStrategy(strategy)
+                            .useSite(DatadogSite.US3)
+                            .build();
+            Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
+            Datadog.initialize(this, credentials, configuration, trackingConsent); 
+        }
+    }
+```
 {{% /tab %}}
 {{< /tabs >}}
 {{< /site-region >}}
@@ -206,24 +203,23 @@ To ensure the safety of your data, you must use a client token. You cannot use o
 ```
 {{% /tab %}}
 {{% tab "Java" %}}
-   ```java
-      public class SampleApplication extends Application {
-
-            @Override
-            public void onCreate() {
-               super.onCreate();
-               final Configuration configuration =
-                       new Configuration.Builder(true, true, true, true)
-                               .trackInteractions()
-                               .trackLongTasks(durationThreshold)
-                               .useViewTrackingStrategy(strategy)
-                               .useSite(DatadogSite.US5)
-                               .build();
-               Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
-               Datadog.initialize(this, credentials, configuration, trackingConsent);
-            }
-      }
-   ```
+```java
+    public class SampleApplication extends Application { 
+        @Override 
+        public void onCreate() { 
+            super.onCreate();
+            final Configuration configuration = 
+                    new Configuration.Builder(true, true, true, true)
+                            .trackInteractions()
+                            .trackLongTasks(durationThreshold)
+                            .useViewTrackingStrategy(strategy)
+                            .useSite(DatadogSite.US5)
+                            .build();
+            Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
+            Datadog.initialize(this, credentials, configuration, trackingConsent); 
+        }
+    }
+```
 {{% /tab %}}
 {{< /tabs >}}
 {{< /site-region >}}
@@ -253,24 +249,23 @@ To ensure the safety of your data, you must use a client token. You cannot use o
 ```
 {{% /tab %}}
 {{% tab "Java" %}}
-   ```java
-      public class SampleApplication extends Application {
-
-            @Override
-            public void onCreate() {
-               super.onCreate();
-               final Configuration configuration =
-                       new Configuration.Builder(true, true, true, true)
-                               .trackInteractions()
-                               .trackLongTasks(durationThreshold)
-                               .useViewTrackingStrategy(strategy)
-                               .useSite(DatadogSite.US1_FED)
-                               .build();
-               Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
-               Datadog.initialize(this, credentials, configuration, trackingConsent);
-            }
-      }
-   ```
+```java
+    public class SampleApplication extends Application { 
+        @Override 
+        public void onCreate() { 
+            super.onCreate();
+            final Configuration configuration = 
+                    new Configuration.Builder(true, true, true, true)
+                            .trackInteractions()
+                            .trackLongTasks(durationThreshold)
+                            .useViewTrackingStrategy(strategy)
+                            .useSite(DatadogSite.US1_FED)
+                            .build();
+            Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
+            Datadog.initialize(this, credentials, configuration, trackingConsent); 
+        }
+    }
+```
 {{% /tab %}}
 {{< /tabs >}}
 {{< /site-region >}}
