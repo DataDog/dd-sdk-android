@@ -13,5 +13,6 @@ package com.datadog.android.rum.internal
 internal enum class RumErrorSourceType {
     ANDROID,
     BROWSER,
-    REACT_NATIVE
+    REACT_NATIVE,
+    FLUTTER
 }

@@ -279,7 +279,7 @@ internal class DatadogNdkCrashHandler(
             context = ErrorEvent.Context(additionalProperties = additionalProperties),
             error = ErrorEvent.Error(
                 message = errorLogMessage,
-                source = ErrorEvent.Source.SOURCE,
+                source = ErrorEvent.ErrorSource.SOURCE,
                 stack = ndkCrashLog.stacktrace,
                 isCrash = true,
                 type = ndkCrashLog.signalName,
