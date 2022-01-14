@@ -40,7 +40,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
 ```
 {{% /tab %}}
 {{% tab "Java" %}}
-```Java
+```java
     public class SampleApplication extends Application {
         @Override
         public void onCreate() {

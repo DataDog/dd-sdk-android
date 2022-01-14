@@ -89,7 +89,6 @@ RUM error event for it.
 {{% tab "Java" %}}
    ```java
        public class <YourOwnSqliteOpenHelper> extends SqliteOpenHelper {
-            
             public <YourOwnSqliteOpenHelper>(){
                 super(<Context>,
                       <DATABASE_NAME>,
