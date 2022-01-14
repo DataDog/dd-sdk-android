@@ -6,7 +6,6 @@
 
 package com.datadog.android.webview.internal.rum
 
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -19,7 +18,6 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -44,9 +42,6 @@ internal class WebViewRumEventMapperTest {
 
     @LongForgery
     var fakeServerTimeOffset: Long = 0L
-
-    @StringForgery
-    lateinit var fakeServiceName: String
     lateinit var fakeTags: Map<String, String>
 
     @BeforeEach
@@ -59,7 +54,6 @@ internal class WebViewRumEventMapperTest {
             emptyMap()
         }
         testedWebViewRumEventMapper = WebViewRumEventMapper()
-        CoreFeature.serviceName = fakeServiceName
     }
 
     @Test
@@ -80,7 +74,6 @@ internal class WebViewRumEventMapperTest {
             .ignoringFields(
                 CONTEXT_KEY,
                 APPLICATION_KEY,
-                SERVICE_KEY,
                 SESSION_KEY,
                 DATE_KEY,
                 DD_KEY
@@ -89,7 +82,6 @@ internal class WebViewRumEventMapperTest {
 
         assertThat(mappedEvent.application.id).isEqualTo(rumMonitor.context.applicationId)
         assertThat(mappedEvent.session.id).isEqualTo(rumMonitor.context.sessionId)
-        assertThat(mappedEvent.service).isEqualTo(fakeServiceName)
         assertThat(mappedEvent.date).isEqualTo(fakeViewEvent.date + fakeServerTimeOffset)
         assertThat(mappedEvent.dd).isEqualTo(
             fakeViewEvent.dd.copy(
@@ -116,7 +108,6 @@ internal class WebViewRumEventMapperTest {
             .ignoringFields(
                 CONTEXT_KEY,
                 APPLICATION_KEY,
-                SERVICE_KEY,
                 SESSION_KEY,
                 DATE_KEY,
                 DD_KEY
@@ -124,7 +115,6 @@ internal class WebViewRumEventMapperTest {
             .isEqualTo(fakeActionEvent)
         assertThat(mappedEvent.application.id).isEqualTo(rumMonitor.context.applicationId)
         assertThat(mappedEvent.session.id).isEqualTo(rumMonitor.context.sessionId)
-        assertThat(mappedEvent.service).isEqualTo(fakeServiceName)
         assertThat(mappedEvent.date).isEqualTo(fakeActionEvent.date + fakeServerTimeOffset)
         assertThat(mappedEvent.dd).isEqualTo(
             fakeActionEvent.dd.copy(
@@ -151,7 +141,6 @@ internal class WebViewRumEventMapperTest {
             .ignoringFields(
                 CONTEXT_KEY,
                 APPLICATION_KEY,
-                SERVICE_KEY,
                 SESSION_KEY,
                 DATE_KEY,
                 DD_KEY
@@ -159,7 +148,6 @@ internal class WebViewRumEventMapperTest {
             .isEqualTo(fakeErrorEvent)
         assertThat(mappedEvent.application.id).isEqualTo(rumMonitor.context.applicationId)
         assertThat(mappedEvent.session.id).isEqualTo(rumMonitor.context.sessionId)
-        assertThat(mappedEvent.service).isEqualTo(fakeServiceName)
         assertThat(mappedEvent.date).isEqualTo(fakeErrorEvent.date + fakeServerTimeOffset)
         assertThat(mappedEvent.dd).isEqualTo(
             fakeErrorEvent.dd.copy(
@@ -186,7 +174,6 @@ internal class WebViewRumEventMapperTest {
             .ignoringFields(
                 CONTEXT_KEY,
                 APPLICATION_KEY,
-                SERVICE_KEY,
                 SESSION_KEY,
                 DATE_KEY,
                 DD_KEY
@@ -194,7 +181,6 @@ internal class WebViewRumEventMapperTest {
             .isEqualTo(fakeResourceEvent)
         assertThat(mappedEvent.application.id).isEqualTo(rumMonitor.context.applicationId)
         assertThat(mappedEvent.session.id).isEqualTo(rumMonitor.context.sessionId)
-        assertThat(mappedEvent.service).isEqualTo(fakeServiceName)
         assertThat(mappedEvent.date).isEqualTo(fakeResourceEvent.date + fakeServerTimeOffset)
         assertThat(mappedEvent.dd).isEqualTo(
             fakeResourceEvent.dd.copy(
@@ -221,7 +207,6 @@ internal class WebViewRumEventMapperTest {
             .ignoringFields(
                 CONTEXT_KEY,
                 APPLICATION_KEY,
-                SERVICE_KEY,
                 SESSION_KEY,
                 DATE_KEY,
                 DD_KEY
@@ -229,7 +214,6 @@ internal class WebViewRumEventMapperTest {
             .isEqualTo(fakeLongTaskEvent)
         assertThat(mappedEvent.application.id).isEqualTo(rumMonitor.context.applicationId)
         assertThat(mappedEvent.session.id).isEqualTo(rumMonitor.context.sessionId)
-        assertThat(mappedEvent.service).isEqualTo(fakeServiceName)
         assertThat(mappedEvent.date).isEqualTo(fakeLongTaskEvent.date + fakeServerTimeOffset)
         assertThat(mappedEvent.dd).isEqualTo(
             fakeLongTaskEvent.dd.copy(
@@ -250,7 +234,6 @@ internal class WebViewRumEventMapperTest {
         private const val CONTEXT_KEY = "context"
         private const val APPLICATION_KEY = "application"
         private const val SESSION_KEY = "session"
-        private const val SERVICE_KEY = "service"
         private const val DATE_KEY = "date"
         private const val DD_KEY = "dd"
     }
