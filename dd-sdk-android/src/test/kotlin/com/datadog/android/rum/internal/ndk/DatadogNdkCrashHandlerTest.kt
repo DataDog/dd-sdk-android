@@ -20,6 +20,7 @@ import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.ErrorEventAssert
 import com.datadog.android.rum.assertj.ViewEventAssert
+import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
@@ -105,8 +106,18 @@ internal class DatadogNdkCrashHandlerTest {
     @Mock
     lateinit var mockTimeProvider: TimeProvider
 
+    var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
+
+    @Mock
+    lateinit var mockRumEventSourceProvider: RumEventSourceProvider
+
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        fakeSourceErrorEvent = forge.aNullable {
+            aValueFrom(ErrorEvent.ErrorEventSource::class.java)
+        }
+        whenever(mockRumEventSourceProvider.errorEventSource)
+            .thenReturn(fakeSourceErrorEvent)
         whenever(mockContext.cacheDir) doReturn fakeCacheDir
         fakeNdkCacheDir = File(fakeCacheDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME)
 
@@ -119,7 +130,8 @@ internal class DatadogNdkCrashHandlerTest {
             mockNetworkInfoDeserializer,
             mockUserInfoDeserializer,
             Logger(mockLogHandler),
-            mockTimeProvider
+            mockTimeProvider,
+            mockRumEventSourceProvider
         )
     }
 
@@ -386,7 +398,7 @@ internal class DatadogNdkCrashHandlerTest {
                 )
                 .hasStackTrace(ndkCrashLog.stacktrace)
                 .isCrash(true)
-                .hasSource(RumErrorSource.SOURCE)
+                .hasErrorSource(RumErrorSource.SOURCE)
                 .hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                 .hasTimestamp(ndkCrashLog.timestamp + fakeServerOffset)
                 .hasUserInfo(
@@ -458,7 +470,7 @@ internal class DatadogNdkCrashHandlerTest {
                 )
                 .hasStackTrace(ndkCrashLog.stacktrace)
                 .isCrash(true)
-                .hasSource(RumErrorSource.SOURCE)
+                .hasErrorSource(RumErrorSource.SOURCE)
                 .hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                 .hasTimestamp(ndkCrashLog.timestamp + fakeServerOffset)
                 .hasUserInfo(
@@ -471,6 +483,7 @@ internal class DatadogNdkCrashHandlerTest {
                 )
                 .hasErrorType(ndkCrashLog.signalName)
                 .hasLiteSessionPlan()
+                .hasSource(fakeSourceErrorEvent)
         }
         verify(mockLogWriter).write(fakeLog)
     }

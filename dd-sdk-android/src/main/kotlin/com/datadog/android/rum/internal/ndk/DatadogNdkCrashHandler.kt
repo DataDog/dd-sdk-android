@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.ndk
 
 import android.content.Context
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.file.existsSafe
@@ -19,6 +20,7 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.model.LogEvent
+import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import java.io.File
@@ -36,7 +38,9 @@ internal class DatadogNdkCrashHandler(
     private val networkInfoDeserializer: Deserializer<NetworkInfo>,
     private val userInfoDeserializer: Deserializer<UserInfo>,
     private val internalLogger: Logger,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val rumEventSourceProvider: RumEventSourceProvider =
+        RumEventSourceProvider(CoreFeature.sourceName)
 ) : NdkCrashHandler {
 
     private val ndkCrashDataDirectory: File = getNdkGrantedDir(appContext)
@@ -262,6 +266,7 @@ internal class DatadogNdkCrashHandler(
                 viewEvent.session.id,
                 ErrorEvent.ErrorEventSessionType.USER
             ),
+            source = rumEventSourceProvider.errorEventSource,
             view = ErrorEvent.View(
                 id = viewEvent.view.id,
                 name = viewEvent.view.name,

@@ -63,6 +63,7 @@ internal class LongTaskEventForgeryFactory :
                 type = LongTaskEvent.Type.USER,
                 hasReplay = forge.aNullable { aBool() }
             ),
+            source = forge.aNullable { aValueFrom(LongTaskEvent.Source::class.java) },
             context = forge.aNullable {
                 LongTaskEvent.Context(
                     additionalProperties = forge.exhaustiveAttributes()
