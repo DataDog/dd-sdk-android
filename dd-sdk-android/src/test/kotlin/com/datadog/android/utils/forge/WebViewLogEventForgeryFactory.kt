@@ -23,7 +23,7 @@ internal class WebViewLogEventForgeryFactory : ForgeryFactory<WebViewLogEvent> {
             service = forge.anAlphabeticalString(),
             status = forge.aValueFrom(WebViewLogEvent.Status::class.java),
             message = forge.anAlphabeticalString(),
-            date = forge.aFormattedTimestamp(),
+            date = forge.aLong(min = 0),
             additionalProperties = forge.exhaustiveAttributes(
                 excludedKeys = reservedKeysAsSet,
                 filterThreshold = 0f

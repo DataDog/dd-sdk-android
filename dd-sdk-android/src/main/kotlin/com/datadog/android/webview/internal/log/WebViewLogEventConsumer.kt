@@ -8,6 +8,7 @@ package com.datadog.android.webview.internal.log
 
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.model.WebViewLogEvent
@@ -19,7 +20,7 @@ internal class WebViewLogEventConsumer(
     private val userLogsWriter: DataWriter<WebViewLogEvent>,
     private val internalLogsWriter: DataWriter<WebViewLogEvent>,
     private val rumContextProvider: WebViewRumEventContextProvider,
-    private val dateCorrector: WebLogEventDateCorrector
+    private val timeProvider: TimeProvider
 ) {
 
     private val ddTags: String by lazy {
@@ -42,7 +43,7 @@ internal class WebViewLogEventConsumer(
             addDdTags(event)
             val logEvent = WebViewLogEvent.fromJson(event.toString())
             val rumContext = rumContextProvider.getRumContext()
-            val correctedDate = dateCorrector.correctDate(logEvent.date) ?: return null
+            val correctedDate = logEvent.date + timeProvider.getServerOffsetMillis()
             return if (rumContext != null) {
                 val resolvedProperties = logEvent.additionalProperties.toMutableMap()
                 resolvedProperties[LogAttributes.RUM_APPLICATION_ID] = rumContext.applicationId

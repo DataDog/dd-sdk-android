@@ -30,8 +30,8 @@
       "readOnly": false
     },
     "date": {
-      "type": "string",
-      "description": "The date when the log is fired as an ISO-8601 String",
+      "type": "integer",
+      "description": "The date in milliseconds when the log was created",
       "readOnly": true
     },
     "ddtags": {
