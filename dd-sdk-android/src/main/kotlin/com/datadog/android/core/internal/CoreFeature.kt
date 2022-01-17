@@ -62,9 +62,11 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import okhttp3.CipherSuite
 import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
+import okhttp3.TlsVersion
 
 internal object CoreFeature {
 
@@ -81,6 +83,35 @@ internal object CoreFeature {
     internal const val DEFAULT_SDK_VERSION = BuildConfig.SDK_VERSION_NAME
     internal const val DEFAULT_APP_VERSION = "?"
 
+    internal val RESTRICTED_CIPHER_SUITES = arrayOf(
+        // TLS 1.3
+
+        // these 3 are mandatory to implement by TLS 1.3 RFC
+        // https://datatracker.ietf.org/doc/html/rfc8446#section-9.1
+        CipherSuite.TLS_AES_128_GCM_SHA256,
+        CipherSuite.TLS_AES_256_GCM_SHA384,
+        CipherSuite.TLS_CHACHA20_POLY1305_SHA256,
+
+        // TLS 1.2
+
+        // these 4 are FIPS 140-2 compliant by OpenSSL
+
+        // GOV DC supports only that one and below
+        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+        CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+
+        CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+        CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+
+        // these 4 are not listed in OpenSSL (because of CBC), but
+        // claimed to be FIPS 140-2 compliant in other sources. Keep them for now, can be safely
+        // dropped once min API is 21 (TODO RUMM-1594).
+        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+        CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+        CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA256,
+        CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA256
+    )
+
     // endregion
 
     internal val initialized = AtomicBoolean(false)
@@ -93,7 +124,7 @@ internal object CoreFeature {
     internal var trackingConsentProvider: ConsentProvider = NoOpConsentProvider()
     internal var userInfoProvider: MutableUserInfoProvider = NoOpMutableUserInfoProvider()
 
-    internal var okHttpClient: OkHttpClient = OkHttpClient.Builder().build()
+    internal lateinit var okHttpClient: OkHttpClient
     internal lateinit var kronosClock: KronosClock
 
     internal var clientToken: String = ""
@@ -320,11 +351,15 @@ internal object CoreFeature {
         networkInfoProvider.register(appContext)
     }
 
+    @Suppress("SpreadOperator")
     private fun setupOkHttpClient(configuration: Configuration.Core) {
         val connectionSpec = when {
             configuration.needsClearTextHttp -> ConnectionSpec.CLEARTEXT
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP -> ConnectionSpec.RESTRICTED_TLS
-            else -> ConnectionSpec.MODERN_TLS
+            else -> ConnectionSpec.Builder(ConnectionSpec.RESTRICTED_TLS)
+                .tlsVersions(TlsVersion.TLS_1_2, TlsVersion.TLS_1_3)
+                .supportsTlsExtensions(true)
+                .cipherSuites(*RESTRICTED_CIPHER_SUITES)
+                .build()
         }
 
         val builder = OkHttpClient.Builder()
