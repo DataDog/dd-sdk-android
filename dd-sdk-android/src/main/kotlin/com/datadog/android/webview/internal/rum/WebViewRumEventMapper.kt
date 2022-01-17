@@ -6,7 +6,6 @@
 
 package com.datadog.android.webview.internal.rum
 
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -25,7 +24,6 @@ internal class WebViewRumEventMapper {
         return event.copy(
             application = event.application.copy(id = context.applicationId),
             session = event.session.copy(id = context.sessionId),
-            service = CoreFeature.serviceName,
             date = event.date + timeOffset,
             dd = event.dd.copy(session = ViewEvent.DdSession(ViewEvent.Plan.PLAN_1))
         )
@@ -40,7 +38,6 @@ internal class WebViewRumEventMapper {
         return event.copy(
             application = event.application.copy(id = context.applicationId),
             session = event.session.copy(id = context.sessionId),
-            service = CoreFeature.serviceName,
             date = event.date + timeOffset,
             dd = event.dd.copy(session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1))
         )
@@ -54,7 +51,6 @@ internal class WebViewRumEventMapper {
         return event.copy(
             application = event.application.copy(id = context.applicationId),
             session = event.session.copy(id = context.sessionId),
-            service = CoreFeature.serviceName,
             date = event.date + timeOffset,
             dd = event.dd.copy(
                 session = ResourceEvent.DdSession(plan = ResourceEvent.Plan.PLAN_1)
@@ -70,7 +66,6 @@ internal class WebViewRumEventMapper {
         return event.copy(
             application = event.application.copy(id = context.applicationId),
             session = event.session.copy(id = context.sessionId),
-            service = CoreFeature.serviceName,
             date = event.date + timeOffset,
             dd = event.dd.copy(session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1))
 
@@ -85,7 +80,6 @@ internal class WebViewRumEventMapper {
         return event.copy(
             application = event.application.copy(id = context.applicationId),
             session = event.session.copy(id = context.sessionId),
-            service = CoreFeature.serviceName,
             date = event.date + timeOffset,
             dd = event.dd.copy(session = ErrorEvent.DdSession(ErrorEvent.Plan.PLAN_1))
         )
