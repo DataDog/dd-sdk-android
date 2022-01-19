@@ -404,6 +404,69 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
+    fun `𝕄 send Action 𝕎 handleEvent(StartResource+StopAction+StopResourceWithStackTrace+any)`(
+        @StringForgery key: String,
+        @StringForgery method: String,
+        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
+        @LongForgery(200, 600) statusCode: Long,
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stackTrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val errorType = forge.aNullable { anAlphabeticalString() }
+
+        // When
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
+        val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
+        fakeEvent = RumRawEvent.StopResourceWithStackTrace(
+            key,
+            statusCode,
+            message,
+            source,
+            stackTrace,
+            errorType,
+            emptyMap()
+        )
+        val result3 = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
+        val result4 = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS * 2))
+                    hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS * 4))
+                    hasResourceCount(0)
+                    hasErrorCount(1)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isSameAs(testedScope)
+        assertThat(result3).isSameAs(testedScope)
+        assertThat(result4).isNull()
+    }
+
+    @Test
     fun `𝕄 send Action 𝕎 handleEvent(StartResource+StopAction+any) missing resource key`(
         @StringForgery method: String,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
