@@ -25,6 +25,17 @@ import org.json.JSONObject
 import org.junit.jupiter.api.Assumptions.assumeTrue
 
 /**
+ * Will generate an alphaNumericalString which is not matching any values provided in the set.
+ */
+internal fun Forge.aStringNotMatchingSet(set: Set<String>): String {
+    var aString = anAlphaNumericalString()
+    while (set.contains(aString)) {
+        aString = anAlphaNumericalString()
+    }
+    return aString
+}
+
+/**
  * Will generate a map with different value types with a possibility to filter out given keys,
  * see [aFilteredMap] for details on filtering.
  */

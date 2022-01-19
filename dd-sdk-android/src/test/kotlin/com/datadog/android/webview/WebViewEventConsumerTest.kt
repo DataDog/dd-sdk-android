@@ -8,6 +8,7 @@ package com.datadog.android.webview
 
 import android.util.Log
 import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.utils.assertj.JsonElementAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockSdkLogHandler
 import com.datadog.android.utils.restoreSdkLogHandler
@@ -19,6 +20,7 @@ import com.google.gson.JsonParseException
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argThat
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -84,10 +86,10 @@ internal class WebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
-        verify(mockRumEventConsumer).consume(
-            fakeBundledEvent,
-            fakeRumEventType
-        )
+        argumentCaptor<JsonObject> {
+            verify(mockRumEventConsumer).consume(capture(), eq(fakeRumEventType))
+            assertThat(firstValue).isEqualTo(fakeBundledEvent)
+        }
     }
 
     @Test
@@ -101,7 +103,10 @@ internal class WebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
-        verify(mockLogsEventConsumer).consume(fakeBundledEvent, fakeLogEventType)
+        argumentCaptor<JsonObject> {
+            verify(mockLogsEventConsumer).consume(capture(), eq(fakeLogEventType))
+            assertThat(firstValue).isEqualTo(fakeBundledEvent)
+        }
     }
 
     @Test

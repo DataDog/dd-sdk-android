@@ -17,6 +17,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import java.net.MalformedURLException
@@ -32,7 +33,8 @@ internal class RumResourceScope(
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
     serverTimeOffsetInMs: Long,
-    internal val firstPartyHostDetector: FirstPartyHostDetector
+    internal val firstPartyHostDetector: FirstPartyHostDetector,
+    private val rumEventSourceProvider: RumEventSourceProvider
 ) : RumScope {
 
     internal val resourceId: String = UUID.randomUUID().toString()
@@ -178,6 +180,7 @@ internal class RumResourceScope(
                 id = context.sessionId,
                 type = ResourceEvent.ResourceEventSessionType.USER
             ),
+            source = rumEventSourceProvider.resourceEventSource,
             context = ResourceEvent.Context(additionalProperties = attributes),
             dd = ResourceEvent.Dd(
                 traceId = traceId,
@@ -245,6 +248,7 @@ internal class RumResourceScope(
                 id = context.sessionId,
                 type = ErrorEvent.ErrorEventSessionType.USER
             ),
+            source = rumEventSourceProvider.errorEventSource,
             context = ErrorEvent.Context(additionalProperties = attributes),
             dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
         )
@@ -290,7 +294,9 @@ internal class RumResourceScope(
             parentScope: RumScope,
             event: RumRawEvent.StartResource,
             firstPartyHostDetector: FirstPartyHostDetector,
-            timestampOffset: Long
+            timestampOffset: Long,
+            rumEventSourceProvider: RumEventSourceProvider
+
         ): RumScope {
             return RumResourceScope(
                 parentScope,
@@ -300,7 +306,8 @@ internal class RumResourceScope(
                 event.eventTime,
                 event.attributes,
                 timestampOffset,
-                firstPartyHostDetector
+                firstPartyHostDetector,
+                rumEventSourceProvider
             )
         }
     }

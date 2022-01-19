@@ -86,6 +86,7 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
                 type = ErrorEvent.ErrorEventSessionType.USER,
                 hasReplay = forge.aNullable { aBool() }
             ),
+            source = forge.aNullable { aValueFrom(ErrorEvent.ErrorEventSource::class.java) },
             context = forge.aNullable {
                 ErrorEvent.Context(additionalProperties = forge.exhaustiveAttributes())
             },
