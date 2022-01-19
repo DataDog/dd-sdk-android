@@ -68,6 +68,9 @@ internal class DdSpanToSpanEventMapperTest {
     @StringForgery
     lateinit var fakeSdkVersion: String
 
+    @StringForgery
+    lateinit var fakeSource: String
+
     @LongForgery
     var fakeServerOffsetNanos: Long = 0L
 
@@ -75,11 +78,15 @@ internal class DdSpanToSpanEventMapperTest {
     fun `set up`() {
         CoreFeature.packageVersion = fakeClientPackageVersion
         CoreFeature.sdkVersion = fakeSdkVersion
+        CoreFeature.sourceName = fakeSource
         whenever(mockTimeProvider.getServerOffsetNanos()).thenReturn(fakeServerOffsetNanos)
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
-        testedMapper =
-            DdSpanToSpanEventMapper(mockTimeProvider, mockNetworkInfoProvider, mockUserInfoProvider)
+        testedMapper = DdSpanToSpanEventMapper(
+            mockTimeProvider,
+            mockNetworkInfoProvider,
+            mockUserInfoProvider
+        )
     }
 
     @RepeatedTest(4)
@@ -101,7 +108,7 @@ internal class DdSpanToSpanEventMapperTest {
             .hasOperationName(fakeSpan.operationName)
             .hasResourceName(fakeSpan.resourceName)
             .hasSpanType("custom")
-            .hasSpanSource("android")
+            .hasSpanSource(fakeSource)
             .hasErrorFlag(fakeSpan.error.toLong())
             .hasSpanStartTime(fakeSpan.startTime + fakeServerOffsetNanos)
             .hasSpanDuration(fakeSpan.durationNano)
