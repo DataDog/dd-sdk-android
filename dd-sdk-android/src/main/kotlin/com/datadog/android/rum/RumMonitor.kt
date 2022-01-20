@@ -208,7 +208,7 @@ interface RumMonitor {
         message: String,
         source: RumErrorSource,
         stackTrace: String,
-        errorType: String,
+        errorType: String?,
         attributes: Map<String, Any?> = emptyMap()
     )
 
