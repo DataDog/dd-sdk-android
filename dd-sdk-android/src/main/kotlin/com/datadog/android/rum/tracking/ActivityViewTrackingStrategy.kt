@@ -19,7 +19,8 @@ import com.datadog.android.rum.model.ViewEvent
  * A [ViewTrackingStrategy] that will track [Activity] as RUM Views.
  *
  * Each activity's lifecycle will be monitored to start and stop RUM Views when relevant.
- * @param trackExtras whether to track Activity Intent extras
+ * @param trackExtras whether to track the Activity's Intent information (extra attributes,
+ * action, data URI)
  * @param componentPredicate to accept the Activities that will be taken into account as
  * valid RUM View events.
  */
@@ -53,7 +54,7 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
         componentPredicate.runIfValid(activity) {
             val viewName = componentPredicate.resolveViewName(activity)
             val attributes = if (trackExtras) {
-                convertToRumAttributes(it.intent?.extras)
+                convertToRumAttributes(it.intent)
             } else {
                 emptyMap()
             }

@@ -1253,6 +1253,7 @@ abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrateg
   override fun onActivityStopped(android.app.Activity)
   override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
   override fun onActivityResumed(android.app.Activity)
+  protected fun convertToRumAttributes(android.content.Intent?): Map<String, Any?>
   protected fun convertToRumAttributes(android.os.Bundle?): Map<String, Any?>
   companion object 
 class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
