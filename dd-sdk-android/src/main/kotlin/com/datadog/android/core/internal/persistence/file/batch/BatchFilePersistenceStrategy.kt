@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.persistence.Serializer
+import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.log.Logger
@@ -23,10 +24,9 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
     private val executorService: ExecutorService,
     serializer: Serializer<T>,
     private val payloadDecoration: PayloadDecoration,
-    internalLogger: Logger
+    internalLogger: Logger,
+    internal val fileHandler: FileHandler
 ) : PersistenceStrategy<T> {
-
-    internal val fileHandler = BatchFileHandler(internalLogger)
 
     private val fileWriter: DataWriter<T> by lazy {
         createWriter(

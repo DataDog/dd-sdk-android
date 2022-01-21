@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.persistence.file.batch
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.persistence.Serializer
+import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.log.Logger
@@ -53,6 +54,9 @@ internal class BatchFilePersistenceStrategyTest {
     @Mock
     lateinit var mockExecutorService: ExecutorService
 
+    @Mock
+    lateinit var mockFileHandler: FileHandler
+
     @Forgery
     lateinit var fakePayloadDecoration: PayloadDecoration
 
@@ -67,7 +71,8 @@ internal class BatchFilePersistenceStrategyTest {
             mockExecutorService,
             mockSerializer,
             fakePayloadDecoration,
-            Logger(mockLogHandler)
+            Logger(mockLogHandler),
+            mockFileHandler
         )
     }
 

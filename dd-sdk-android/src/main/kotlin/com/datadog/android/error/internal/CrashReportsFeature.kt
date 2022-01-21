@@ -41,7 +41,8 @@ internal object CrashReportsFeature : SdkFeature<LogEvent, Configuration.Feature
             CoreFeature.trackingConsentProvider,
             context,
             CoreFeature.persistenceExecutorService,
-            sdkLogger
+            sdkLogger,
+            CoreFeature.localDataEncryption
         )
     }
 

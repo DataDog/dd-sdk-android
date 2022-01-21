@@ -31,7 +31,12 @@ internal class BatchFileDataReader(
 
     override fun lockAndReadNext(): Batch? {
         val file = getAndLockReadableFile() ?: return null
-        val data = handler.readData(file, decoration.prefixBytes, decoration.suffixBytes)
+        val data = handler.readData(
+            file,
+            decoration.prefixBytes,
+            decoration.suffixBytes,
+            decoration.separatorBytes
+        )
 
         return Batch(file.name, data)
     }

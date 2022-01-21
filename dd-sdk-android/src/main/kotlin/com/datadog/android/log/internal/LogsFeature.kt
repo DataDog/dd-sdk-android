@@ -32,7 +32,8 @@ internal object LogsFeature : SdkFeature<LogEvent, Configuration.Feature.Logs>()
             context,
             CoreFeature.persistenceExecutorService,
             sdkLogger,
-            configuration.logsEventMapper
+            configuration.logsEventMapper,
+            CoreFeature.localDataEncryption
         )
     }
 

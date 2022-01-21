@@ -7,12 +7,16 @@
 package com.datadog.android.rum.internal.ndk
 
 import android.content.Context
+import android.util.Base64
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.core.internal.persistence.file.EncryptedFileHandler
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
+import com.datadog.android.core.internal.persistence.file.readBytesSafe
 import com.datadog.android.core.internal.persistence.file.readTextSafe
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
@@ -21,6 +25,7 @@ import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.security.Encryption
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.ExecutorService
@@ -36,7 +41,8 @@ internal class DatadogNdkCrashHandler(
     private val networkInfoDeserializer: Deserializer<NetworkInfo>,
     private val userInfoDeserializer: Deserializer<UserInfo>,
     private val internalLogger: Logger,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val localDataEncryption: Encryption?
 ) : NdkCrashHandler {
 
     private val ndkCrashDataDirectory: File = getNdkGrantedDir(appContext)
@@ -84,16 +90,50 @@ internal class DatadogNdkCrashHandler(
         try {
             ndkCrashDataDirectory.listFilesSafe()?.forEach {
                 when (it.name) {
+                    // TODO RUMM-1944 Data from NDK should be also encrypted
                     CRASH_DATA_FILE_NAME -> lastSerializedNdkCrashLog = it.readTextSafe()
-                    RUM_VIEW_EVENT_FILE_NAME -> lastSerializedRumViewEvent = it.readTextSafe()
-                    USER_INFO_FILE_NAME -> lastSerializedUserInformation = it.readTextSafe()
-                    NETWORK_INFO_FILE_NAME -> lastSerializedNetworkInformation = it.readTextSafe()
+                    RUM_VIEW_EVENT_FILE_NAME ->
+                        lastSerializedRumViewEvent =
+                            readFileContent(it, localDataEncryption)
+                    USER_INFO_FILE_NAME ->
+                        lastSerializedUserInformation =
+                            readFileContent(it, localDataEncryption)
+                    NETWORK_INFO_FILE_NAME ->
+                        lastSerializedNetworkInformation =
+                            readFileContent(it, localDataEncryption)
                 }
             }
         } catch (e: SecurityException) {
             internalLogger.e(ERROR_READ_NDK_DIR, e)
         } finally {
             clearCrashLog()
+        }
+    }
+
+    private fun readFileContent(file: File, encryption: Encryption?): String? {
+        return if (encryption == null) {
+            file.readTextSafe()
+        } else {
+            val bytes = file.readBytesSafe() ?: return null
+            // if bytes is not a valid sequence for the given charset encoding, String
+            // constructor doesn't throw, but replaces bad bytes with default
+            // replacement sequence. If decrypt throws, we let it exception to propagate,
+            // because it is an issue in the user code.
+            // TODO RUMM-1944 Rework that, decoding logic should be encapsulated somewhere and
+            //  shared with EncryptedFileHandler. Should maybe inject file handler in plugin
+            //  instead?
+            val decoded = try {
+                Base64.decode(bytes, EncryptedFileHandler.ENCODING_FLAGS)
+            } catch (iae: IllegalArgumentException) {
+                devLogger.e("Cannot decode previously saved file", iae)
+                null
+            }
+
+            if (decoded != null) {
+                String(encryption.decrypt(decoded), Charsets.UTF_8)
+            } else {
+                null
+            }
         }
     }
 

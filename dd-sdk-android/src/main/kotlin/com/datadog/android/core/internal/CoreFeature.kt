@@ -53,6 +53,7 @@ import com.datadog.android.rum.internal.ndk.NdkCrashLogDeserializer
 import com.datadog.android.rum.internal.ndk.NdkNetworkInfoDataWriter
 import com.datadog.android.rum.internal.ndk.NdkUserInfoDataWriter
 import com.datadog.android.rum.internal.ndk.NoOpNdkCrashHandler
+import com.datadog.android.security.Encryption
 import com.lyft.kronos.AndroidClockFactory
 import com.lyft.kronos.KronosClock
 import java.lang.ref.WeakReference
@@ -145,6 +146,7 @@ internal object CoreFeature {
 
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: ExecutorService
+    internal var localDataEncryption: Encryption? = null
 
     fun initialize(
         appContext: Context,
@@ -246,7 +248,8 @@ internal object CoreFeature {
                 NetworkInfoDeserializer(sdkLogger),
                 UserInfoDeserializer(sdkLogger),
                 sdkLogger,
-                timeProvider
+                timeProvider,
+                localDataEncryption
             )
             ndkCrashHandler.prepareData()
         }
@@ -292,6 +295,7 @@ internal object CoreFeature {
     private fun readConfigurationSettings(configuration: Configuration.Core) {
         batchSize = configuration.batchSize
         uploadFrequency = configuration.uploadFrequency
+        localDataEncryption = configuration.securityConfig.localDataEncryption
     }
 
     private fun setupInfoProviders(
@@ -320,7 +324,7 @@ internal object CoreFeature {
                 appContext,
                 trackingConsentProvider,
                 persistenceExecutorService,
-                BatchFileHandler(sdkLogger),
+                BatchFileHandler.create(sdkLogger, localDataEncryption),
                 sdkLogger
             ),
             persistenceExecutorService,
@@ -337,7 +341,7 @@ internal object CoreFeature {
                 appContext,
                 trackingConsentProvider,
                 persistenceExecutorService,
-                BatchFileHandler(sdkLogger),
+                BatchFileHandler.create(sdkLogger, localDataEncryption),
                 sdkLogger
             ),
             persistenceExecutorService,

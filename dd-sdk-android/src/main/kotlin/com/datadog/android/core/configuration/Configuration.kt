@@ -70,7 +70,8 @@ internal constructor(
         val batchSize: BatchSize,
         val uploadFrequency: UploadFrequency,
         val proxy: Proxy?,
-        val proxyAuth: Authenticator
+        val proxyAuth: Authenticator,
+        val securityConfig: SecurityConfig
     )
 
     internal sealed class Feature {
@@ -606,6 +607,19 @@ internal constructor(
             return this
         }
 
+        /**
+         * Allows to set the necessary security configuration (used to control local
+         * data storage encryption, for example).
+         * @param config Security config to use. If not provided, default one will be used (no
+         * encryption for local data storage).
+         */
+        fun setSecurityConfig(config: SecurityConfig): Builder {
+            coreConfig = coreConfig.copy(
+                securityConfig = config
+            )
+            return this
+        }
+
         private fun checkCustomEndpoint(endpoint: String) {
             if (endpoint.startsWith("http://")) {
                 coreConfig = coreConfig.copy(needsClearTextHttp = true)
@@ -654,7 +668,8 @@ internal constructor(
             batchSize = BatchSize.MEDIUM,
             uploadFrequency = UploadFrequency.AVERAGE,
             proxy = null,
-            proxyAuth = Authenticator.NONE
+            proxyAuth = Authenticator.NONE,
+            securityConfig = SecurityConfig.DEFAULT
         )
         internal val DEFAULT_LOGS_CONFIG = Feature.Logs(
             endpointUrl = DatadogEndpoint.LOGS_US1,
@@ -684,11 +699,11 @@ internal constructor(
             backgroundEventTracking = false
         )
 
-        internal val ERROR_FEATURE_DISABLED = "The %s feature has been disabled in your " +
+        internal const val ERROR_FEATURE_DISABLED = "The %s feature has been disabled in your " +
             "Configuration.Builder, but you're trying to edit the RUM configuration with the " +
             "%s() method."
 
-        private val URL_REGEX = "^(http|https)://(.*)"
+        private const val URL_REGEX = "^(http|https)://(.*)"
 
         private const val VALID_IP_REGEX =
             "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}" +

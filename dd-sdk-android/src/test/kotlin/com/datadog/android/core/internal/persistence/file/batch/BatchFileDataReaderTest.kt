@@ -85,7 +85,8 @@ internal class BatchFileDataReaderTest {
             mockFileHandler.readData(
                 file,
                 fakeDecoration.prefixBytes,
-                fakeDecoration.suffixBytes
+                fakeDecoration.suffixBytes,
+                fakeDecoration.separatorBytes
             )
         ) doReturn readData
 
@@ -126,7 +127,8 @@ internal class BatchFileDataReaderTest {
             mockFileHandler.readData(
                 file,
                 fakeDecoration.prefixBytes,
-                fakeDecoration.suffixBytes
+                fakeDecoration.suffixBytes,
+                fakeDecoration.separatorBytes
             )
         ) doReturn readData
 
@@ -155,7 +157,8 @@ internal class BatchFileDataReaderTest {
             mockFileHandler.readData(
                 file,
                 fakeDecoration.prefixBytes,
-                fakeDecoration.suffixBytes
+                fakeDecoration.suffixBytes,
+                fakeDecoration.separatorBytes
             )
         ) doReturn readData
         val countDownLatch = CountDownLatch(2)
@@ -195,7 +198,8 @@ internal class BatchFileDataReaderTest {
             mockFileHandler.readData(
                 file,
                 fakeDecoration.prefixBytes,
-                fakeDecoration.suffixBytes
+                fakeDecoration.suffixBytes,
+                fakeDecoration.separatorBytes
             )
         ) doReturn readData
 
@@ -228,7 +232,7 @@ internal class BatchFileDataReaderTest {
             val set = invocation.getArgument<Set<String>>(0)
             files.first { it.name !in set }
         }
-        whenever(mockFileHandler.readData(any(), any(), any())) doReturn readData
+        whenever(mockFileHandler.readData(any(), any(), any(), any())) doReturn readData
         val countDownLatch = CountDownLatch(4)
 
         // When
@@ -286,7 +290,8 @@ internal class BatchFileDataReaderTest {
             mockFileHandler.readData(
                 file,
                 fakeDecoration.prefixBytes,
-                fakeDecoration.suffixBytes
+                fakeDecoration.suffixBytes,
+                fakeDecoration.separatorBytes
             )
         ) doReturn readData
         whenever(mockFileHandler.delete(file)) doReturn true
@@ -312,7 +317,8 @@ internal class BatchFileDataReaderTest {
             mockFileHandler.readData(
                 file,
                 fakeDecoration.prefixBytes,
-                fakeDecoration.suffixBytes
+                fakeDecoration.suffixBytes,
+                fakeDecoration.separatorBytes
             )
         ) doReturn readData
         whenever(mockFileHandler.delete(file)) doReturn false
@@ -364,7 +370,8 @@ internal class BatchFileDataReaderTest {
             mockFileHandler.readData(
                 file,
                 fakeDecoration.prefixBytes,
-                fakeDecoration.suffixBytes
+                fakeDecoration.suffixBytes,
+                fakeDecoration.separatorBytes
             )
         ) doReturn readData
         whenever(mockFileHandler.delete(file)) doReturn true

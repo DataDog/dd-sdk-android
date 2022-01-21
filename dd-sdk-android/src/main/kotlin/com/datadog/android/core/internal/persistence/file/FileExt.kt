@@ -94,6 +94,14 @@ internal fun File.readTextSafe(charset: Charset = Charsets.UTF_8): String? {
     }
 }
 
+internal fun File.readBytesSafe(): ByteArray? {
+    return if (existsSafe() && canReadSafe()) {
+        safeCall(default = null) { readBytes() }
+    } else {
+        null
+    }
+}
+
 internal fun File.readLinesSafe(charset: Charset = Charsets.UTF_8): List<String>? {
     return if (existsSafe() && canReadSafe()) {
         safeCall(default = null) { readLines(charset) }
