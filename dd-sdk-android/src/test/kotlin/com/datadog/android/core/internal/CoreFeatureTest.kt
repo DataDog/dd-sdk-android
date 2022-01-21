@@ -64,8 +64,10 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import okhttp3.Authenticator
+import okhttp3.CipherSuite
 import okhttp3.ConnectionSpec
 import okhttp3.Protocol
+import okhttp3.TlsVersion
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -377,8 +379,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    fun `𝕄 initialize okhttp with strict network policy 𝕎 initialize() {LOLLIPOP}`() {
+    fun `𝕄 initialize okhttp with strict network policy 𝕎 initialize()`() {
         // When
         CoreFeature.initialize(
             appContext.mockInstance,
@@ -394,28 +395,27 @@ internal class CoreFeatureTest {
         assertThat(okHttpClient.callTimeoutMillis())
             .isEqualTo(CoreFeature.NETWORK_TIMEOUT_MS.toInt())
         assertThat(okHttpClient.connectionSpecs())
-            .containsExactly(ConnectionSpec.RESTRICTED_TLS)
-    }
+            .hasSize(1)
 
-    @Test
-    @TestTargetApi(Build.VERSION_CODES.KITKAT)
-    fun `𝕄 initialize okhttp with compat network policy 𝕎 initialize() {KITKAT}`() {
-        // When
-        CoreFeature.initialize(
-            appContext.mockInstance,
-            fakeCredentials,
-            fakeConfig.copy(needsClearTextHttp = false),
-            fakeConsent
+        val connectionSpec = okHttpClient.connectionSpecs().first()
+
+        assertThat(connectionSpec.isTls).isTrue()
+        assertThat(connectionSpec.tlsVersions())
+            .containsExactly(TlsVersion.TLS_1_2, TlsVersion.TLS_1_3)
+        assertThat(connectionSpec.supportsTlsExtensions()).isTrue()
+        assertThat(connectionSpec.cipherSuites()).containsExactly(
+            CipherSuite.TLS_AES_128_GCM_SHA256,
+            CipherSuite.TLS_AES_256_GCM_SHA384,
+            CipherSuite.TLS_CHACHA20_POLY1305_SHA256,
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+            CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA256,
+            CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA256
         )
-
-        // Then
-        val okHttpClient = CoreFeature.okHttpClient
-        assertThat(okHttpClient.protocols())
-            .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
-        assertThat(okHttpClient.callTimeoutMillis())
-            .isEqualTo(CoreFeature.NETWORK_TIMEOUT_MS.toInt())
-        assertThat(okHttpClient.connectionSpecs())
-            .containsExactly(ConnectionSpec.MODERN_TLS)
     }
 
     @Test

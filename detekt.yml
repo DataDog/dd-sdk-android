@@ -1069,6 +1069,11 @@ datadog:
       # region OkHttp
       - "okhttp3.Call.Factory.newCall(okhttp3.Request)"
       - "okhttp3.Call.request()"
+      - "okhttp3.ConnectionSpec.Builder.build()"
+      - "okhttp3.ConnectionSpec.Builder.cipherSuites(kotlin.Array)"
+      - "okhttp3.ConnectionSpec.Builder.constructor(okhttp3.ConnectionSpec)"
+      - "okhttp3.ConnectionSpec.Builder.supportsTlsExtensions(kotlin.Boolean)"
+      - "okhttp3.ConnectionSpec.Builder.tlsVersions(kotlin.Array)"
       - "okhttp3.EventListener.callEnd(okhttp3.Call)"
       - "okhttp3.EventListener.callFailed(okhttp3.Call, java.io.IOException)"
       - "okhttp3.EventListener.callStart(okhttp3.Call)"
