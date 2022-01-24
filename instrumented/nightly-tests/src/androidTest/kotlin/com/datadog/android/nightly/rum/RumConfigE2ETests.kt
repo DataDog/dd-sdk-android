@@ -13,10 +13,12 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.SecurityConfig
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
 import com.datadog.android.nightly.rules.NightlyTestRule
+import com.datadog.android.nightly.utils.TestEncryption
 import com.datadog.android.nightly.utils.aResourceKey
 import com.datadog.android.nightly.utils.aResourceMethod
 import com.datadog.android.nightly.utils.aViewKey
@@ -643,6 +645,34 @@ class RumConfigE2ETests {
             GlobalRum.get().invokeMethod("resetSession")
             InstrumentationRegistry.getInstrumentation().waitForIdleSync()
         }
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.core.configuration.SecurityConfig#constructor(com.datadog.android.security.Encryption?)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setSecurityConfig(SecurityConfig): Builder
+     * apiMethodSignature: com.datadog.android.security.Encryption#fun encrypt(ByteArray): ByteArray
+     * apiMethodSignature: com.datadog.android.security.Encryption#fun decrypt(ByteArray): ByteArray
+     */
+    @Test
+    fun rum_config_set_security_config_with_encryption() {
+        val testMethodName = "rum_config_set_security_config_with_encryption"
+        measureSdkInitialize {
+            initializeSdk(
+                InstrumentationRegistry.getInstrumentation().targetContext,
+                TrackingConsent.GRANTED,
+                Configuration
+                    .Builder(
+                        logsEnabled = true,
+                        tracesEnabled = true,
+                        rumEnabled = true,
+                        crashReportsEnabled = true
+                    )
+                    .setSecurityConfig(SecurityConfig(localDataEncryption = TestEncryption()))
+                    .build()
+
+            )
+        }
+        sendAllRumEvents(forge, testMethodName)
     }
 
     // endregion
