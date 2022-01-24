@@ -10,9 +10,12 @@ import android.view.Choreographer
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
@@ -32,7 +35,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class VitalFrameCallbackTest {
 
-    lateinit var testedFrameCallback: Choreographer.FrameCallback
+    lateinit var testedFrameCallback: VitalFrameCallback
 
     @Mock
     lateinit var mockObserver: VitalObserver
@@ -52,6 +55,21 @@ internal class VitalFrameCallbackTest {
         @LongForgery timestampNs: Long
     ) {
         // Given
+
+        // When
+        testedFrameCallback.doFrame(timestampNs)
+
+        // Then
+        verify(mockObserver, never()).onNewSample(any())
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 doFrame() {negative duration}`(
+        @LongForgery timestampNs: Long,
+        @LongForgery(1, ONE_MILLISSECOND_NS) frameDurationNs: Long
+    ) {
+        // Given
+        testedFrameCallback.lastFrameTimestampNs = timestampNs + frameDurationNs
 
         // When
         testedFrameCallback.doFrame(timestampNs)
@@ -117,6 +135,21 @@ internal class VitalFrameCallbackTest {
 
         // Then
         verify(mockChoreographer).postFrameCallback(testedFrameCallback)
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 doFrame() {illegal exception when postiong frame}`(
+        @LongForgery timestampNs: Long,
+        @StringForgery message: String
+    ) {
+        // Given
+        val exception = IllegalStateException(message)
+        whenever(mockChoreographer.postFrameCallback(testedFrameCallback)) doThrow exception
+
+        // When
+        testedFrameCallback.doFrame(timestampNs)
+
+        // Then
     }
 
     @Test

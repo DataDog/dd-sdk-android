@@ -93,6 +93,9 @@ internal class ResourceEventForgeryFactory :
                 hasReplay = forge.aNullable { aBool() }
             ),
             source = forge.aNullable { aValueFrom(ResourceEvent.Source::class.java) },
+            ciTest = forge.aNullable {
+                ResourceEvent.CiTest(anHexadecimalString())
+            },
             context = forge.aNullable {
                 ResourceEvent.Context(
                     additionalProperties = forge.exhaustiveAttributes()
@@ -100,8 +103,9 @@ internal class ResourceEventForgeryFactory :
             },
             dd = ResourceEvent.Dd(
                 session = forge.aNullable { ResourceEvent.DdSession(getForgery()) },
+                browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") },
                 spanId = forge.aNullable { aNumericalString() },
-                traceId = forge.aNullable { aNumericalString() },
+                traceId = forge.aNullable { aNumericalString() }
             )
         )
     }

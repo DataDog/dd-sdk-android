@@ -341,7 +341,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W stopResourceWithError()`(
+    fun `M delegate event to rootScope W stopResourceWithError() {throwable}`(
         @StringForgery key: String,
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
@@ -367,6 +367,41 @@ internal class DatadogRumMonitorTest {
             assertThat(event.message).isEqualTo(message)
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W stopResourceWithError() {stacktrace}`(
+        @StringForgery key: String,
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @IntForgery(200, 600) statusCode: Int,
+        @StringForgery(type = StringForgeryType.ASCII_EXTENDED) stackTrace: String,
+        @StringForgery errorType: String
+    ) {
+        testedMonitor.stopResourceWithError(
+            key,
+            statusCode,
+            message,
+            source,
+            stackTrace,
+            errorType,
+            fakeAttributes
+        )
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.StopResourceWithStackTrace
+            assertThat(event.key).isEqualTo(key)
+            assertThat(event.statusCode).isEqualTo(statusCode.toLong())
+            assertThat(event.message).isEqualTo(message)
+            assertThat(event.source).isEqualTo(source)
+            assertThat(event.stackTrace).isEqualTo(stackTrace)
+            assertThat(event.errorType).isEqualTo(errorType)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -851,6 +886,7 @@ internal class DatadogRumMonitorTest {
             "android" to RumErrorSourceType.ANDROID,
             "browser" to RumErrorSourceType.BROWSER,
             "react-native" to RumErrorSourceType.REACT_NATIVE,
+            "flutter" to RumErrorSourceType.FLUTTER,
             nonSupportedValue to RumErrorSourceType.ANDROID,
             null to RumErrorSourceType.ANDROID
         )

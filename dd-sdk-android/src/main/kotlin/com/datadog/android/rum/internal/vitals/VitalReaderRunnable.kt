@@ -7,9 +7,6 @@
 package com.datadog.android.rum.internal.vitals
 
 import com.datadog.android.core.internal.utils.scheduleSafe
-import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.rum.internal.RumFeature
-import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 

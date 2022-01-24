@@ -9,12 +9,10 @@ package com.datadog.android.tracing
 import android.content.Context
 import android.util.Log
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogInterceptor
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
@@ -202,7 +200,6 @@ internal open class TracingInterceptorTest {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
     }
 
-
     @Test
     fun `M instantiate with default callbacks W init()`() {
         // When
@@ -364,7 +361,8 @@ internal open class TracingInterceptorTest {
         fakeRequest = forgeRequest(forge)
         whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
         stubChain(mockChain, statusCode)
-        doThrow(IllegalStateException(message)).whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        doThrow(IllegalStateException(message)).whenever(mockTracer)
+            .inject<TextMapInject>(any(), any(), any())
 
         val response = testedInterceptor.intercept(mockChain)
 

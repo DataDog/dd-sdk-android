@@ -859,10 +859,11 @@ internal class DatadogTest {
         InternalLogsFeature.persistenceStrategy = mock<PersistenceStrategy<LogEvent>>().apply {
             whenever(getReader()) doReturn dataReaders[4]
         }
-        WebViewInternalLogsFeature.persistenceStrategy = mock<PersistenceStrategy<JsonObject>>().apply {
-            whenever(getReader()) doReturn dataReaders[5]
-        }
-        WebViewLogsFeature.persistenceStrategy= mock<PersistenceStrategy<JsonObject>>().apply {
+        WebViewInternalLogsFeature.persistenceStrategy =
+            mock<PersistenceStrategy<JsonObject>>().apply {
+                whenever(getReader()) doReturn dataReaders[5]
+            }
+        WebViewLogsFeature.persistenceStrategy = mock<PersistenceStrategy<JsonObject>>().apply {
             whenever(getReader()) doReturn dataReaders[6]
         }
         WebViewRumFeature.persistenceStrategy = mock<PersistenceStrategy<Any>>().apply {
