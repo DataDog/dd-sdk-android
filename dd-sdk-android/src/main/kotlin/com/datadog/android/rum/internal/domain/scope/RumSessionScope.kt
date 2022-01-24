@@ -23,6 +23,7 @@ import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import java.security.SecureRandom
@@ -40,6 +41,7 @@ internal class RumSessionScope(
     private val frameRateVitalMonitor: VitalMonitor,
     private val timeProvider: TimeProvider,
     internal val sessionListener: RumSessionListener?,
+    private val rumEventSourceProvider: RumEventSourceProvider,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
@@ -95,7 +97,8 @@ internal class RumSessionScope(
                 cpuVitalMonitor,
                 memoryVitalMonitor,
                 frameRateVitalMonitor,
-                timeProvider
+                timeProvider,
+                rumEventSourceProvider
             )
             onViewDisplayed(event, viewScope, actualWriter)
             activeChildrenScopes.add(viewScope)
@@ -176,7 +179,8 @@ internal class RumSessionScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
-            timeProvider
+            timeProvider,
+            rumEventSourceProvider
         )
     }
 
@@ -191,7 +195,8 @@ internal class RumSessionScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
-            timeProvider
+            timeProvider,
+            rumEventSourceProvider
         )
     }
 

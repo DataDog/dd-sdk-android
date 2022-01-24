@@ -96,6 +96,7 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
                 type = ViewEvent.Type.USER,
                 hasReplay = forge.aNullable { aBool() }
             ),
+            source = forge.aNullable { aValueFrom(ViewEvent.Source::class.java) },
             context = forge.aNullable {
                 ViewEvent.Context(
                     additionalProperties = exhaustiveAttributes()

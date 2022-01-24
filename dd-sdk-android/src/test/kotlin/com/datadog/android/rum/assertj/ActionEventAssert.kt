@@ -276,6 +276,17 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
+    fun hasSource(source: ActionEvent.Source?): ActionEventAssert {
+        assertThat(actual.source)
+            .overridingErrorMessage(
+                "Expected event to have a source %s" +
+                    " instead it was %s",
+                source ?: "null", actual.source ?: "null"
+            )
+            .isEqualTo(source)
+        return this
+    }
+
     companion object {
         internal const val TIMESTAMP_THRESHOLD_MS = 50L
         internal fun assertThat(actual: ActionEvent): ActionEventAssert =

@@ -396,6 +396,17 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasSource(source: ViewEvent.Source?): ViewEventAssert {
+        assertThat(actual.source)
+            .overridingErrorMessage(
+                "Expected event to have a source %s" +
+                    " instead it was %s",
+                actual.source ?: "null", source ?: "null"
+            )
+            .isEqualTo(source)
+        return this
+    }
+
     companion object {
 
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)

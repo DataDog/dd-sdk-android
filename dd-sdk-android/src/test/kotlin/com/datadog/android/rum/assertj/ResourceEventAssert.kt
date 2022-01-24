@@ -439,6 +439,17 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
+    fun hasSource(source: ResourceEvent.Source?): ResourceEventAssert {
+        assertThat(actual.source)
+            .overridingErrorMessage(
+                "Expected event to have a source %s" +
+                    " instead it was %s",
+                source ?: "null", actual.source ?: "null"
+            )
+            .isEqualTo(source)
+        return this
+    }
+
     companion object {
 
         internal const val TIMESTAMP_THRESHOLD_MS = 50L

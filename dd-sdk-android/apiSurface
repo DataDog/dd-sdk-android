@@ -78,6 +78,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun build(): Configuration
     fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
     fun setFirstPartyHosts(List<String>): Builder
+    fun setWebViewTrackingHosts(List<String>): Builder
     fun useSite(com.datadog.android.DatadogSite): Builder
     DEPRECATED fun useEUEndpoints(): Builder
     DEPRECATED fun useUSEndpoints(): Builder
@@ -109,6 +110,8 @@ data class com.datadog.android.core.configuration.Credentials
   constructor(String, String, String, String?, String? = null)
   companion object 
     const val NO_VARIANT: String
+object com.datadog.android.core.configuration.private
+const val VALID_IP_REGEX: String
 enum com.datadog.android.core.configuration.UploadFrequency
   constructor(Long)
   - FREQUENT
@@ -262,6 +265,23 @@ data class com.datadog.android.log.model.LogEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): SimCarrier
+  enum Status
+    constructor(kotlin.String)
+    - CRITICAL
+    - ERROR
+    - WARN
+    - INFO
+    - DEBUG
+    - TRACE
+    - EMERGENCY
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Status
+data class com.datadog.android.log.model.WebViewLogEvent
+  constructor(Status? = null, kotlin.String, kotlin.String, kotlin.Long, kotlin.String, kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): WebViewLogEvent
   enum Status
     constructor(kotlin.String)
     - CRITICAL
@@ -1302,11 +1322,11 @@ interface com.datadog.android.rum.tracking.TrackingStrategy
 interface com.datadog.android.rum.tracking.ViewAttributesProvider
   fun extractAttributes(android.view.View, MutableMap<String, Any?>)
 interface com.datadog.android.rum.tracking.ViewTrackingStrategy : TrackingStrategy
-open class com.datadog.android.rum.webview.RumWebChromeClient : android.webkit.WebChromeClient
+DEPRECATED open class com.datadog.android.rum.webview.RumWebChromeClient : android.webkit.WebChromeClient
   constructor()
   override fun onConsoleMessage(android.webkit.ConsoleMessage?): Boolean
   companion object 
-open class com.datadog.android.rum.webview.RumWebViewClient : android.webkit.WebViewClient
+DEPRECATED open class com.datadog.android.rum.webview.RumWebViewClient : android.webkit.WebViewClient
   override fun onPageStarted(android.webkit.WebView?, String?, android.graphics.Bitmap?)
   override fun onPageFinished(android.webkit.WebView?, String?)
   override fun onReceivedError(android.webkit.WebView?, Int, String?, String?)
@@ -1388,4 +1408,7 @@ data class com.datadog.android.tracing.model.SpanEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): SimCarrier
+class com.datadog.android.webview.DatadogEventBridge
+  fun send(String)
+  fun getAllowedWebViewHosts(): String
 class com.datadog.tools.annotation.NoOpImplementation

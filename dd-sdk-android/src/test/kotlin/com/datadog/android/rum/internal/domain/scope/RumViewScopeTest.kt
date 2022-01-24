@@ -32,6 +32,7 @@ import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -156,8 +157,32 @@ internal class RumViewScopeTest {
     @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
+    var fakeSourceViewEvent: ViewEvent.Source? = null
+    var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
+    var fakeSourceActionEvent: ActionEvent.Source? = null
+    var fakeSourceLongTaskEvent: LongTaskEvent.Source? = null
+
+    @Mock
+    lateinit var mockRumEventSourceProvider: RumEventSourceProvider
+
     @BeforeEach
     fun `set up`(forge: Forge) {
+
+        fakeSourceViewEvent = forge.aNullable { aValueFrom(ViewEvent.Source::class.java) }
+        fakeSourceErrorEvent = forge.aNullable {
+            aValueFrom(ErrorEvent.ErrorEventSource::class.java)
+        }
+        fakeSourceActionEvent = forge.aNullable { aValueFrom(ActionEvent.Source::class.java) }
+        fakeSourceLongTaskEvent = forge.aNullable { aValueFrom(LongTaskEvent.Source::class.java) }
+
+        whenever(mockRumEventSourceProvider.viewEventSource)
+            .thenReturn(fakeSourceViewEvent)
+        whenever(mockRumEventSourceProvider.errorEventSource)
+            .thenReturn(fakeSourceErrorEvent)
+        whenever(mockRumEventSourceProvider.actionEventSource)
+            .thenReturn(fakeSourceActionEvent)
+        whenever(mockRumEventSourceProvider.longTaskEventSource)
+            .thenReturn(fakeSourceLongTaskEvent)
 
         val fakeOffset = -forge.aLong(1000, 50000)
         val fakeTimestamp = System.currentTimeMillis() + fakeOffset
@@ -197,6 +222,7 @@ internal class RumViewScopeTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider
         )
 
@@ -325,6 +351,7 @@ internal class RumViewScopeTest {
                 hasApplicationId(fakeParentContext.applicationId)
                 hasSessionId(fakeParentContext.sessionId)
                 hasLiteSessionPlan()
+                hasSource(fakeSourceViewEvent)
                 containsExactlyContextAttributes(fakeAttributes)
             }
         }
@@ -377,6 +404,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasLiteSessionPlan()
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -428,6 +456,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasLiteSessionPlan()
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -485,6 +514,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -539,6 +569,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -593,6 +624,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -634,6 +666,7 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -665,7 +698,8 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider
+            mockTimeProvider,
+            rumEventSourceProvider = mockRumEventSourceProvider
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
 
@@ -703,6 +737,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -756,6 +791,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -785,7 +821,8 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider
+            mockTimeProvider,
+            rumEventSourceProvider = mockRumEventSourceProvider
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -826,6 +863,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -857,7 +895,8 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider
+            mockTimeProvider,
+            rumEventSourceProvider = mockRumEventSourceProvider,
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -898,6 +937,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -952,6 +992,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1005,6 +1046,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1051,6 +1093,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1140,6 +1183,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1206,6 +1250,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1272,6 +1317,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1340,6 +1386,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1389,6 +1436,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1450,6 +1498,7 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1494,6 +1543,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1560,6 +1610,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1626,6 +1677,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1692,6 +1744,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1753,6 +1806,7 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1792,6 +1846,7 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1850,6 +1905,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2101,6 +2157,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2525,7 +2582,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasUserInfo(fakeUserInfo)
@@ -2536,6 +2593,7 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
+                    hasSource(fakeSourceErrorEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2573,7 +2631,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasUserInfo(fakeUserInfo)
@@ -2584,6 +2642,7 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
+                    hasSource(fakeSourceErrorEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2622,7 +2681,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasUserInfo(fakeUserInfo)
@@ -2633,6 +2692,7 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
+                    hasSource(fakeSourceErrorEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2673,7 +2733,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(throwableMessage)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasUserInfo(fakeUserInfo)
@@ -2684,6 +2744,7 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
+                    hasSource(fakeSourceErrorEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2717,7 +2778,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
                     hasUserInfo(fakeUserInfo)
@@ -2728,6 +2789,7 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
+                    hasSource(fakeSourceErrorEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2766,7 +2828,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
                     hasUserInfo(fakeUserInfo)
@@ -2779,6 +2841,7 @@ internal class RumViewScopeTest {
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
+                    hasSource(fakeSourceErrorEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2810,7 +2873,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(null)
                     isCrash(false)
                     hasUserInfo(fakeUserInfo)
@@ -2823,6 +2886,7 @@ internal class RumViewScopeTest {
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
+                    hasSource(fakeSourceErrorEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2854,7 +2918,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(message)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(null)
                     isCrash(true)
                     hasUserInfo(fakeUserInfo)
@@ -2867,6 +2931,7 @@ internal class RumViewScopeTest {
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
+                    hasSource(fakeSourceErrorEvent)
                 }
             assertThat(lastValue as ViewEvent)
                 .apply {
@@ -2895,6 +2960,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2935,7 +3001,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
                     hasUserInfo(fakeUserInfo)
@@ -2948,6 +3014,7 @@ internal class RumViewScopeTest {
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
+                    hasSource(fakeSourceErrorEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2986,7 +3053,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(true)
                     hasUserInfo(fakeUserInfo)
@@ -2999,6 +3066,7 @@ internal class RumViewScopeTest {
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
+                    hasSource(fakeSourceErrorEvent)
                 }
             assertThat(lastValue as ViewEvent)
                 .apply {
@@ -3027,6 +3095,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3067,7 +3136,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(true)
                     hasUserInfo(fakeUserInfo)
@@ -3080,6 +3149,7 @@ internal class RumViewScopeTest {
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
+                    hasSource(fakeSourceErrorEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3120,7 +3190,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
                     hasUserInfo(fakeUserInfo)
@@ -3133,6 +3203,7 @@ internal class RumViewScopeTest {
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
+                    hasSource(fakeSourceErrorEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3174,7 +3245,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
                     hasUserInfo(fakeUserInfo)
@@ -3187,6 +3258,7 @@ internal class RumViewScopeTest {
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
+                    hasSource(fakeSourceErrorEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3226,7 +3298,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasMessage(expectedMessage)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(true)
                     hasUserInfo(fakeUserInfo)
@@ -3239,6 +3311,7 @@ internal class RumViewScopeTest {
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
+                    hasSource(fakeSourceErrorEvent)
                 }
             assertThat(lastValue as ViewEvent)
                 .apply {
@@ -3267,6 +3340,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes + attributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3443,6 +3517,7 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    hasSource(fakeSourceLongTaskEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3477,6 +3552,7 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    hasSource(fakeSourceLongTaskEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3521,6 +3597,7 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceLongTaskEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3565,6 +3642,7 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceLongTaskEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3781,6 +3859,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3832,6 +3911,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3901,6 +3981,7 @@ internal class RumViewScopeTest {
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3955,6 +4036,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
             assertThat(lastValue)
                 .apply {
@@ -3987,6 +4069,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4051,6 +4134,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4103,6 +4187,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4165,6 +4250,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4227,6 +4313,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4261,6 +4348,7 @@ internal class RumViewScopeTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
@@ -4301,6 +4389,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4335,6 +4424,7 @@ internal class RumViewScopeTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
@@ -4375,6 +4465,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4411,6 +4502,7 @@ internal class RumViewScopeTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
@@ -4451,6 +4543,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4487,6 +4580,7 @@ internal class RumViewScopeTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
@@ -4527,6 +4621,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4564,6 +4659,7 @@ internal class RumViewScopeTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
@@ -4604,6 +4700,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4641,6 +4738,7 @@ internal class RumViewScopeTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
@@ -4681,6 +4779,7 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceViewEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)

@@ -6,6 +6,7 @@
 package com.datadog.android.sample.webview
 
 import androidx.lifecycle.ViewModel
+import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.server.LocalServer
 
 class WebViewModel : ViewModel() {
@@ -14,7 +15,12 @@ class WebViewModel : ViewModel() {
     val url: String = localServer.getUrl()
 
     fun onResume() {
-        localServer.start("https://www.datadoghq.com/")
+        localServer.start(
+            "https://datadoghq.dev/browser-sdk-test-playground/" +
+                "?client_token=${BuildConfig.DD_CLIENT_TOKEN}" +
+                "&application_id=${BuildConfig.DD_RUM_APPLICATION_ID}" +
+                "&site=datadoghq.com"
+        )
     }
 
     fun onPause() {

@@ -59,6 +59,8 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
         return "rum"
     }
 
+    override fun doesFeatureNeedMigration(): Boolean = true
+
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
         // When

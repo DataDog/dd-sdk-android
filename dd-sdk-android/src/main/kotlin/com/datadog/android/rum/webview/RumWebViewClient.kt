@@ -26,7 +26,25 @@ import com.datadog.android.rum.RumResourceKind
  *
  * This will map the page loading, and webview errors into RUM Resource and
  * Error events respectively.
+ *
+ * This class is deprecated and you should use the new
+ * [com.datadog.android.webview.DatadogEventBridge] to track your WebViews:
+
+ * ```kotlin
+ * val configuration = Configuration.Builder().setWebViewTrackingHosts(listOf(<YOUR_HOSTS>))
+ * Datadog.initialize(this, credentials, configuration, trackingConsent)
+ *
+ * // By default, link navigation will be delegated to a third party app.
+ * // If you want all navigation to happen inside of the webview, uncomment the following line.
+ *
+ * // webView.webViewClient = WebViewClient()
+ * webView.settings.javaScriptEnabled = true
+ * webView.addJavascriptInterface(DatadogEventBridge(), "DatadogEventBridge")
+ * ```
+ * [See more](https://developer.android.com/guide/webapps/webview#HandlingNavigation)
+ *
  */
+@Deprecated("You should use the DatadogEventBridge JavaScript interface instead.")
 open class RumWebViewClient : WebViewClient() {
 
     // region WebViewClient

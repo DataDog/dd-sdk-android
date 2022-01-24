@@ -35,7 +35,7 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
-    fun hasSource(expected: RumErrorSource): ErrorEventAssert {
+    fun hasErrorSource(expected: RumErrorSource): ErrorEventAssert {
         assertThat(actual.error.source)
             .overridingErrorMessage(
                 "Expected event data to have error.source $expected but was ${actual.error.source}"
@@ -348,6 +348,17 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
                 actual.dd.session?.plan ?: "null"
             )
             .isEqualTo(ErrorEvent.Plan.PLAN_1)
+        return this
+    }
+
+    fun hasSource(source: ErrorEvent.ErrorEventSource?): ErrorEventAssert {
+        assertThat(actual.source)
+            .overridingErrorMessage(
+                "Expected event to have a source %s" +
+                    " instead it was %s",
+                source ?: "null", actual.source ?: "null"
+            )
+            .isEqualTo(source)
         return this
     }
 
