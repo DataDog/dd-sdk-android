@@ -74,7 +74,8 @@ internal class RumActionScope(
             event is RumRawEvent.StartResource -> onStartResource(event, now)
             event is RumRawEvent.StopResource -> onStopResource(event, now)
             event is RumRawEvent.AddError -> onError(event, now, writer)
-            event is RumRawEvent.StopResourceWithError -> onResourceError(event, now)
+            event is RumRawEvent.StopResourceWithError -> onResourceError(event.key, now)
+            event is RumRawEvent.StopResourceWithStackTrace -> onResourceError(event.key, now)
             event is RumRawEvent.AddLongTask -> onLongTask(now)
         }
 
@@ -152,8 +153,8 @@ internal class RumActionScope(
         }
     }
 
-    private fun onResourceError(event: RumRawEvent.StopResourceWithError, now: Long) {
-        val keyRef = ongoingResourceKeys.firstOrNull { it.get() == event.key }
+    private fun onResourceError(eventKey: String, now: Long) {
+        val keyRef = ongoingResourceKeys.firstOrNull { it.get() == eventKey }
         if (keyRef != null) {
             ongoingResourceKeys.remove(keyRef)
             lastInteractionNanos = now

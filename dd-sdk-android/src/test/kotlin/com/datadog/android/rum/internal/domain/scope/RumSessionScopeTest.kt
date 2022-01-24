@@ -975,6 +975,16 @@ internal class RumSessionScopeTest {
                     attributes = emptyMap(),
                     eventTime = fakeEventTime
                 ),
+                RumRawEvent.StopResourceWithStackTrace(
+                    fakeKey,
+                    message = this.aString(),
+                    statusCode = null,
+                    source = this.aValueFrom(RumErrorSource::class.java),
+                    stackTrace = this.anAlphaNumericalString(),
+                    errorType = aNullable { anAlphabeticalString() },
+                    attributes = emptyMap(),
+                    eventTime = fakeEventTime
+                ),
                 RumRawEvent.StopView(
                     fakeKey,
                     emptyMap(),
@@ -1010,6 +1020,16 @@ internal class RumSessionScopeTest {
                     statusCode = null,
                     source = this.aValueFrom(RumErrorSource::class.java),
                     throwable = this.getForgery(),
+                    attributes = emptyMap(),
+                    eventTime = fakeEventTime
+                ),
+                RumRawEvent.StopResourceWithStackTrace(
+                    fakeKey,
+                    message = this.aString(),
+                    statusCode = null,
+                    source = this.aValueFrom(RumErrorSource::class.java),
+                    stackTrace = this.anAlphaNumericalString(),
+                    errorType = aNullable { anAlphabeticalString() },
                     attributes = emptyMap(),
                     eventTime = fakeEventTime
                 ),
