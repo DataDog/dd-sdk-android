@@ -846,7 +846,7 @@ internal class RumResourceScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(stackTrace)
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
@@ -954,7 +954,8 @@ internal class RumResourceScopeTest {
             fakeEventTime,
             fakeAttributes,
             fakeServerOffset,
-            mockDetector
+            mockDetector,
+            mockRumEventSourceProvider
         )
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -982,7 +983,7 @@ internal class RumResourceScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(stackTrace)
                     isCrash(false)
                     hasResource(brokenUrl, fakeMethod, 0L)
@@ -1098,7 +1099,7 @@ internal class RumResourceScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(stackTrace)
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
@@ -1214,7 +1215,7 @@ internal class RumResourceScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(stackTrace)
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
@@ -1341,7 +1342,7 @@ internal class RumResourceScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(stackTrace)
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, statusCode)
