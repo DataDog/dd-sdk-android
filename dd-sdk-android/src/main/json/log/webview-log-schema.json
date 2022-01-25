@@ -42,7 +42,6 @@
   },
   "required": [
     "date",
-    "service",
     "message",
     "ddtags"
   ],

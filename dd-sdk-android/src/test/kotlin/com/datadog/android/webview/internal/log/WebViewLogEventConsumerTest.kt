@@ -128,6 +128,58 @@ internal class WebViewLogEventConsumerTest {
     }
 
     @Test
+    fun `M write the user event W consume { user event type, no service }`() {
+
+        // Given
+        val fakeNoServiceLogEvent = fakeLogEvent.copy(service = null)
+        val fakeLogEventAsJson = fakeNoServiceLogEvent.toJson().asJsonObject
+
+        // When
+        testedLogEventConsumer.consume(
+            fakeLogEventAsJson,
+            WebViewLogEventConsumer.USER_LOG_EVENT_TYPE
+        )
+
+        // Then
+        val argumentCaptor = argumentCaptor<WebViewLogEvent>()
+        verify(mockUserLogsWriter).write(argumentCaptor.capture())
+        DeserializedWebViewLogEventAssert.assertThat(argumentCaptor.firstValue).isEqualTo(
+            fakeNoServiceLogEvent.copy(
+                ddtags = mobileSdkDdtags() +
+                    WebViewLogEventConsumer.DDTAGS_SEPARATOR +
+                    fakeLogEvent.ddtags,
+                date = fakeTimeOffset + fakeLogEvent.date
+            )
+        )
+    }
+
+    @Test
+    fun `M write the user event W consume { user event type, no status }`() {
+
+        // Given
+        val fakeNoStatusLogEvent = fakeLogEvent.copy(status = null)
+        val fakeLogEventAsJson = fakeNoStatusLogEvent.toJson().asJsonObject
+
+        // When
+        testedLogEventConsumer.consume(
+            fakeLogEventAsJson,
+            WebViewLogEventConsumer.USER_LOG_EVENT_TYPE
+        )
+
+        // Then
+        val argumentCaptor = argumentCaptor<WebViewLogEvent>()
+        verify(mockUserLogsWriter).write(argumentCaptor.capture())
+        DeserializedWebViewLogEventAssert.assertThat(argumentCaptor.firstValue).isEqualTo(
+            fakeNoStatusLogEvent.copy(
+                ddtags = mobileSdkDdtags() +
+                    WebViewLogEventConsumer.DDTAGS_SEPARATOR +
+                    fakeLogEvent.ddtags,
+                date = fakeTimeOffset + fakeLogEvent.date
+            )
+        )
+    }
+
+    @Test
     fun `M write the user event W consume { internal log event type }`() {
 
         // Given
@@ -144,6 +196,60 @@ internal class WebViewLogEventConsumerTest {
         verify(mockInternalLogsWriter).write(argumentCaptor.capture())
         DeserializedWebViewLogEventAssert.assertThat(argumentCaptor.firstValue).isEqualTo(
             fakeLogEvent.copy(
+                ddtags = mobileSdkDdtags() +
+                    WebViewLogEventConsumer.DDTAGS_SEPARATOR +
+                    fakeLogEvent.ddtags,
+                date = fakeTimeOffset + fakeLogEvent.date
+
+            )
+        )
+    }
+
+    @Test
+    fun `M write the user event W consume { internal log event type, no service }`() {
+
+        // Given
+        val fakeNoServiceLogEvent = fakeLogEvent.copy(service = null)
+        val fakeLogEventAsJson = fakeNoServiceLogEvent.toJson().asJsonObject
+
+        // When
+        testedLogEventConsumer.consume(
+            fakeLogEventAsJson,
+            WebViewLogEventConsumer.INTERNAL_LOG_EVENT_TYPE
+        )
+
+        // Then
+        val argumentCaptor = argumentCaptor<WebViewLogEvent>()
+        verify(mockInternalLogsWriter).write(argumentCaptor.capture())
+        DeserializedWebViewLogEventAssert.assertThat(argumentCaptor.firstValue).isEqualTo(
+            fakeNoServiceLogEvent.copy(
+                ddtags = mobileSdkDdtags() +
+                    WebViewLogEventConsumer.DDTAGS_SEPARATOR +
+                    fakeLogEvent.ddtags,
+                date = fakeTimeOffset + fakeLogEvent.date
+
+            )
+        )
+    }
+
+    @Test
+    fun `M write the user event W consume { internal log event type, no status }`() {
+
+        // Given
+        val fakeNoStatusLogEvent = fakeLogEvent.copy(status = null)
+        val fakeLogEventAsJson = fakeNoStatusLogEvent.toJson().asJsonObject
+
+        // When
+        testedLogEventConsumer.consume(
+            fakeLogEventAsJson,
+            WebViewLogEventConsumer.INTERNAL_LOG_EVENT_TYPE
+        )
+
+        // Then
+        val argumentCaptor = argumentCaptor<WebViewLogEvent>()
+        verify(mockInternalLogsWriter).write(argumentCaptor.capture())
+        DeserializedWebViewLogEventAssert.assertThat(argumentCaptor.firstValue).isEqualTo(
+            fakeNoStatusLogEvent.copy(
                 ddtags = mobileSdkDdtags() +
                     WebViewLogEventConsumer.DDTAGS_SEPARATOR +
                     fakeLogEvent.ddtags,

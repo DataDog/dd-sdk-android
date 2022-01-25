@@ -278,7 +278,7 @@ data class com.datadog.android.log.model.LogEvent
     companion object 
       fun fromJson(kotlin.String): Status
 data class com.datadog.android.log.model.WebViewLogEvent
-  constructor(Status? = null, kotlin.String, kotlin.String, kotlin.Long, kotlin.String, kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+  constructor(Status? = null, kotlin.String? = null, kotlin.String, kotlin.Long, kotlin.String, kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
   fun toJson(): com.google.gson.JsonElement
   companion object 
     fun fromJson(kotlin.String): WebViewLogEvent

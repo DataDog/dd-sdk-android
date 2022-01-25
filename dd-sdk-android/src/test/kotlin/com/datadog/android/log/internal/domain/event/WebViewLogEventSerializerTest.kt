@@ -85,7 +85,8 @@ internal class WebViewLogEventSerializerTest {
         val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
         assertThat(jsonObject)
             .hasField(KEY_MESSAGE, log.message)
-            .hasField(KEY_SERVICE_NAME, log.service)
+            .hasNullableField(KEY_SERVICE_NAME, log.service)
+            .hasNullableField(KEY_STATUS, log.status?.toJson()?.asString)
             .hasField(KEY_DATE, log.date)
             .hasField(KEY_TAGS, log.ddtags)
     }
@@ -98,5 +99,6 @@ internal class WebViewLogEventSerializerTest {
         private const val KEY_DATE = "date"
         private const val KEY_MESSAGE = "message"
         private const val KEY_TAGS = "ddtags"
+        private const val KEY_STATUS = "status"
     }
 }

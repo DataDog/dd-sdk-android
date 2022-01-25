@@ -20,8 +20,8 @@ internal class WebViewLogEventForgeryFactory : ForgeryFactory<WebViewLogEvent> {
         }
 
         return WebViewLogEvent(
-            service = forge.anAlphabeticalString(),
-            status = forge.aValueFrom(WebViewLogEvent.Status::class.java),
+            service = forge.aNullable { forge.anAlphabeticalString() },
+            status = forge.aNullable { forge.aValueFrom(WebViewLogEvent.Status::class.java) },
             message = forge.anAlphabeticalString(),
             date = forge.aLong(min = 0),
             additionalProperties = forge.exhaustiveAttributes(
