@@ -29,14 +29,14 @@ REPOSITORIES = {
 }
 
 FILE_PATH = {
-    TARGET_APP: os.path.join("dd-build", "dependencies", "src", "main", "java", "com", "datadog", "build", "dependency", "android", "Datadog.kt"),
+    TARGET_APP: os.path.join("gradle", "libs.versions.toml"),
     TARGET_DEMO: os.path.join("gradle", "libs.versions.toml"),
     TARGET_BRIDGE: os.path.join("gradle", "libs.versions.toml"),
     TARGET_GRADLE_PLUGIN: os.path.join("gradle", "libs.versions.toml")
 }
 
 PREFIX = {
-    TARGET_APP: "val version",
+    TARGET_APP: "datadog",
     TARGET_DEMO: "datadogSdk",
     TARGET_BRIDGE: "datadogSdk",
     TARGET_GRADLE_PLUGIN: "datadogSdk"
