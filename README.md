@@ -87,7 +87,7 @@ When you open your console in Datadog, navigate to the RUM Explorer section. In 
 ## Troubleshooting
 
 If you encounter any issue when using the Datadog SDK for Android, please take a look at 
-the [troubleshooting checklist](docs/TROUBLESHOOTING.md), or at 
+the [troubleshooting checklist](docs/troubleshooting_android.md), [common problems](docs/advanced_troubleshooting.md), or at
 the existing [issues](https://github.com/DataDog/dd-sdk-android/issues?q=is%3Aissue).
 
 ## Warning
