@@ -14,6 +14,7 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.google.gson.JsonObject
 import java.lang.IllegalStateException
 import java.lang.NumberFormatException
+import java.lang.UnsupportedOperationException
 import kotlin.collections.LinkedHashMap
 
 internal class WebViewRumEventConsumer(
@@ -29,29 +30,27 @@ internal class WebViewRumEventConsumer(
         GlobalRum.notifyIngestedWebViewEvent()
         val rumContext = contextProvider.getRumContext()
         val mappedEvent = map(event, rumContext)
-        if (mappedEvent != null) {
-            dataWriter.write(mappedEvent)
-        }
+        dataWriter.write(mappedEvent)
     }
 
     private fun map(
         event: JsonObject,
         rumContext: RumContext?
-    ): JsonObject? {
-        return try {
+    ): JsonObject {
+        try {
             val timeOffset = event.get(VIEW_KEY_NAME)?.asJsonObject?.get(VIEW_ID_KEY_NAME)
                 ?.asString?.let { getOffset(it) } ?: 0L
-            webViewRumEventMapper.mapEvent(event, rumContext, timeOffset)
+            return webViewRumEventMapper.mapEvent(event, rumContext, timeOffset)
         } catch (e: ClassCastException) {
             sdkLogger.e(JSON_PARSING_ERROR_MESSAGE, e)
-            null
         } catch (e: NumberFormatException) {
             sdkLogger.e(JSON_PARSING_ERROR_MESSAGE, e)
-            null
         } catch (e: IllegalStateException) {
             sdkLogger.e(JSON_PARSING_ERROR_MESSAGE, e)
-            null
+        } catch (e: UnsupportedOperationException) {
+            sdkLogger.e(JSON_PARSING_ERROR_MESSAGE, e)
         }
+        return event
     }
 
     private fun getOffset(viewId: String): Long {

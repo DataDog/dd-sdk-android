@@ -14,7 +14,7 @@ import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.event.WebViewLogEventSerializer
-import com.datadog.android.log.model.WebViewLogEvent
+import com.google.gson.JsonObject
 import java.util.concurrent.ExecutorService
 
 internal class WebViewLogFilePersistenceStrategy(
@@ -23,7 +23,7 @@ internal class WebViewLogFilePersistenceStrategy(
     executorService: ExecutorService,
     internalLogger: Logger
 ) :
-    BatchFilePersistenceStrategy<WebViewLogEvent>(
+    BatchFilePersistenceStrategy<JsonObject>(
         FeatureFileOrchestrator(
             consentProvider,
             context,

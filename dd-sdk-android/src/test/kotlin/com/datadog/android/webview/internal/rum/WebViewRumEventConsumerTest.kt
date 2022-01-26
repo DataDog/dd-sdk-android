@@ -32,7 +32,6 @@ import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -464,7 +463,10 @@ internal class WebViewRumEventConsumerTest {
 
     @ParameterizedTest
     @MethodSource("mapperThrowsException")
-    fun `M do nothing W consume { mapper throws }`(fakeException: Throwable, forge: Forge) {
+    fun `M send original event W consume { mapper throws }`(
+        fakeException: Throwable,
+        forge: Forge
+    ) {
         // Given
         val fakeRumEvent = forge.aRumEventAsJson()
         whenever(
@@ -479,7 +481,7 @@ internal class WebViewRumEventConsumerTest {
         testedRumEventConsumer.consume(fakeRumEvent)
 
         // Then
-        verifyZeroInteractions(mockDataWriter)
+        verify(mockDataWriter).write(fakeRumEvent)
     }
 
     @ParameterizedTest
@@ -528,7 +530,7 @@ internal class WebViewRumEventConsumerTest {
     }
 
     @Test
-    fun `M do nothing W consume { viewId has a wrong format }`(forge: Forge) {
+    fun `M send original event W consume { viewId has a wrong format }`(forge: Forge) {
         // Given
         val fakeRumEvent = forge.aRumEventAsJson()
         val fakeMappedRumEvent = forge.aRumEventAsJson()
@@ -546,7 +548,7 @@ internal class WebViewRumEventConsumerTest {
         testedRumEventConsumer.consume(fakeRumEvent)
 
         // Then
-        verifyZeroInteractions(mockDataWriter)
+        verify(mockDataWriter).write(fakeRumEvent)
     }
 
     @Test
@@ -707,7 +709,12 @@ internal class WebViewRumEventConsumerTest {
 
         @JvmStatic
         fun mapperThrowsException(): List<Throwable> {
-            return listOf(ClassCastException(), NumberFormatException(), IllegalStateException())
+            return listOf(
+                ClassCastException(),
+                NumberFormatException(),
+                IllegalStateException(),
+                UnsupportedOperationException()
+            )
         }
     }
 }

@@ -15,9 +15,9 @@ import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
-import com.datadog.android.log.model.WebViewLogEvent
+import com.google.gson.JsonObject
 
-internal object WebViewInternalLogsFeature : SdkFeature<WebViewLogEvent,
+internal object WebViewInternalLogsFeature : SdkFeature<JsonObject,
     Configuration.Feature.InternalLogs>() {
 
     internal const val WEB_INTERNAL_LOGS_FEATURE_NAME = "web-internal-logs"
@@ -27,7 +27,7 @@ internal object WebViewInternalLogsFeature : SdkFeature<WebViewLogEvent,
     override fun createPersistenceStrategy(
         context: Context,
         configuration: Configuration.Feature.InternalLogs
-    ): PersistenceStrategy<WebViewLogEvent> {
+    ): PersistenceStrategy<JsonObject> {
         return WebViewInternalLogFilePersistenceStrategy(
             CoreFeature.trackingConsentProvider,
             context,
