@@ -35,7 +35,7 @@ internal class WebViewEventConsumer(
                     logsEventConsumer.consume(wrappedEvent, eventType)
                 }
                 in (WebViewRumEventConsumer.RUM_EVENT_TYPES) -> {
-                    rumEventConsumer.consume(wrappedEvent, eventType)
+                    rumEventConsumer.consume(wrappedEvent)
                 }
                 else -> {
                     sdkLogger.e(WRONG_EVENT_TYPE_ERROR_MESSAGE.format(US, eventType))

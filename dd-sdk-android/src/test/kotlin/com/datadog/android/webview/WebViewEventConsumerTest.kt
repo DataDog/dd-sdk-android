@@ -87,7 +87,7 @@ internal class WebViewEventConsumerTest {
 
         // Then
         argumentCaptor<JsonObject> {
-            verify(mockRumEventConsumer).consume(capture(), eq(fakeRumEventType))
+            verify(mockRumEventConsumer).consume(capture())
             assertThat(firstValue).isEqualTo(fakeBundledEvent)
         }
     }

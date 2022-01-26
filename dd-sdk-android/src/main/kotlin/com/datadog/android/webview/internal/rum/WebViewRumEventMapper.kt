@@ -7,81 +7,53 @@
 package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.model.ActionEvent
-import com.datadog.android.rum.model.ErrorEvent
-import com.datadog.android.rum.model.LongTaskEvent
-import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.google.gson.JsonObject
+import java.lang.ClassCastException
+import java.lang.IllegalStateException
+import java.lang.NumberFormatException
 
 internal class WebViewRumEventMapper {
 
-    fun mapViewEvent(
-        event: ViewEvent,
-        context: RumContext,
+    @Throws(
+        ClassCastException::class,
+        IllegalStateException::class,
+        NumberFormatException::class
+    )
+    fun mapEvent(
+        event: JsonObject,
+        context: RumContext?,
         timeOffset: Long
-    ): ViewEvent {
+    ): JsonObject {
 
-        return event.copy(
-            application = event.application.copy(id = context.applicationId),
-            session = event.session.copy(id = context.sessionId),
-            date = event.date + timeOffset,
-            dd = event.dd.copy(session = ViewEvent.DdSession(ViewEvent.Plan.PLAN_1))
-        )
+        event.get(DATE_KEY_NAME)?.asLong?.let {
+            event.addProperty(DATE_KEY_NAME, it + timeOffset)
+        }
+        val dd = event.get(DD_KEY_NAME)?.asJsonObject
+        if (dd != null) {
+            val ddSession = dd.get(DD_SESSION_KEY_NAME)?.asJsonObject ?: JsonObject()
+            ddSession.addProperty(SESSION_PLAN_KEY_NAME, ViewEvent.Plan.PLAN_1.toJson().asInt)
+            dd.add(DD_SESSION_KEY_NAME, ddSession)
+        }
+        if (context != null) {
+            val application = event.getAsJsonObject(APPLICATION_KEY_NAME)?.asJsonObject
+                ?: JsonObject()
+            val session = event.getAsJsonObject(SESSION_KEY_NAME)?.asJsonObject ?: JsonObject()
+            application.addProperty(ID_KEY_NAME, context.applicationId)
+            session.addProperty(ID_KEY_NAME, context.sessionId)
+            event.add(APPLICATION_KEY_NAME, application)
+            event.add(SESSION_KEY_NAME, session)
+        }
+        return event
     }
 
-    fun mapActionEvent(
-        event: ActionEvent,
-        context: RumContext,
-        timeOffset: Long
-    ): ActionEvent {
-
-        return event.copy(
-            application = event.application.copy(id = context.applicationId),
-            session = event.session.copy(id = context.sessionId),
-            date = event.date + timeOffset,
-            dd = event.dd.copy(session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1))
-        )
-    }
-
-    fun mapResourceEvent(
-        event: ResourceEvent,
-        context: RumContext,
-        timeOffset: Long
-    ): ResourceEvent {
-        return event.copy(
-            application = event.application.copy(id = context.applicationId),
-            session = event.session.copy(id = context.sessionId),
-            date = event.date + timeOffset,
-            dd = event.dd.copy(
-                session = ResourceEvent.DdSession(plan = ResourceEvent.Plan.PLAN_1)
-            )
-        )
-    }
-
-    fun mapLongTaskEvent(
-        event: LongTaskEvent,
-        context: RumContext,
-        timeOffset: Long
-    ): LongTaskEvent {
-        return event.copy(
-            application = event.application.copy(id = context.applicationId),
-            session = event.session.copy(id = context.sessionId),
-            date = event.date + timeOffset,
-            dd = event.dd.copy(session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1))
-
-        )
-    }
-
-    fun mapErrorEvent(
-        event: ErrorEvent,
-        context: RumContext,
-        timeOffset: Long
-    ): ErrorEvent {
-        return event.copy(
-            application = event.application.copy(id = context.applicationId),
-            session = event.session.copy(id = context.sessionId),
-            date = event.date + timeOffset,
-            dd = event.dd.copy(session = ErrorEvent.DdSession(ErrorEvent.Plan.PLAN_1))
-        )
+    companion object {
+        internal const val APPLICATION_KEY_NAME = "application"
+        internal const val SESSION_KEY_NAME = "session"
+        internal const val DD_KEY_NAME = "_dd"
+        internal const val DD_SESSION_KEY_NAME = "session"
+        internal const val SESSION_PLAN_KEY_NAME = "plan"
+        internal const val DATE_KEY_NAME = "date"
+        internal const val ID_KEY_NAME = "id"
     }
 }
