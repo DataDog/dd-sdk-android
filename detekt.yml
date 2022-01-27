@@ -594,7 +594,7 @@ datadog:
       - "android.view.Choreographer.getInstance():java.lang.IllegalStateException"
       - "android.view.Choreographer.postFrameCallback():java.lang.IllegalArgumentException"
       - "android.view.MotionEvent.obtain(android.view.MotionEvent):java.lang.IllegalArgumentException"
-      - "android.view.View.getLocationOnScreen(kotlin.IntArray):java.lang.IllegalArgumentException"
+      - "android.view.View.getLocationInWindow(kotlin.IntArray):java.lang.IllegalArgumentException"
       - "androidx.work.WorkManager.enqueueUniqueWork(kotlin.String, androidx.work.ExistingWorkPolicy, androidx.work.OneTimeWorkRequest):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       - "android.content.res.Resources.getResourceName(kotlin.Int):android.content.res.Resources.NotFoundException"
       - "android.content.res.Resources.openRawResource(kotlin.Int):android.content.res.Resources.NotFoundException"
