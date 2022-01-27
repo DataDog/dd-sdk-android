@@ -10,12 +10,14 @@ import android.content.Context
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.security.Encryption
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.tracing.internal.domain.event.DdSpanToSpanEventMapper
 import com.datadog.android.tracing.internal.domain.event.SpanEventMapperWrapper
@@ -33,7 +35,8 @@ internal class TracesFilePersistenceStrategy(
     userInfoProvider: UserInfoProvider,
     envName: String,
     internalLogger: Logger,
-    spanEventMapper: SpanEventMapper
+    spanEventMapper: SpanEventMapper,
+    localDataEncryption: Encryption?
 ) : BatchFilePersistenceStrategy<DDSpan>(
     FeatureFileOrchestrator(
         consentProvider,
@@ -53,5 +56,6 @@ internal class TracesFilePersistenceStrategy(
         SpanEventSerializer(envName)
     ),
     PayloadDecoration.NEW_LINE_DECORATION,
-    internalLogger
+    internalLogger,
+    BatchFileHandler.create(internalLogger, localDataEncryption)
 )

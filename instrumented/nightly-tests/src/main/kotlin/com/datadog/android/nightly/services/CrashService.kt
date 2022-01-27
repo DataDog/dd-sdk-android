@@ -38,5 +38,6 @@ internal abstract class CrashService : Service() {
         const val CRASH_HANDLER_DISABLED_SCENARIO = "crash_handler_disabled_scenario"
         const val RUM_DISABLED_SCENARIO = "rum_disabled_scenario"
         const val RUM_ENABLED_SCENARIO = "rum_enabled_scenario"
+        const val ENCRYPTION_ENABLED_SCENARIO = "rum_encryption_enabled_scenario"
     }
 }

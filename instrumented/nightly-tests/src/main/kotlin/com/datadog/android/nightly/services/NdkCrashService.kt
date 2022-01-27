@@ -13,7 +13,9 @@ import android.os.Looper
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.SecurityConfig
 import com.datadog.android.ndk.NdkCrashReportsPlugin
+import com.datadog.android.nightly.utils.NeverUseThatEncryption
 import com.datadog.android.plugin.Feature
 import com.datadog.android.privacy.TrackingConsent
 
@@ -37,6 +39,11 @@ internal open class NdkCrashService : CrashService() {
                 // NoOp for now as we could not find a way yet to assert the NDK error log
                 // in the monitors
             }
+            ENCRYPTION_ENABLED_SCENARIO -> {
+                startSdk(encryptionEnabled = true)
+                initRum(intent.extras)
+                scheduleNdkCrash()
+            }
             else -> {
                 startSdk()
                 initRum(intent.extras)
@@ -57,6 +64,7 @@ internal open class NdkCrashService : CrashService() {
 
     private fun startSdk(
         ndkCrashReportsEnabled: Boolean = true,
+        encryptionEnabled: Boolean = false,
         rumEnabled: Boolean = true
     ) {
         Datadog.setVerbosity(Log.VERBOSE)
@@ -68,6 +76,11 @@ internal open class NdkCrashService : CrashService() {
         )
         if (ndkCrashReportsEnabled) {
             configBuilder.addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
+        }
+        if (encryptionEnabled) {
+            configBuilder.setSecurityConfig(
+                SecurityConfig(localDataEncryption = NeverUseThatEncryption())
+            )
         }
         Datadog.initialize(
             this,

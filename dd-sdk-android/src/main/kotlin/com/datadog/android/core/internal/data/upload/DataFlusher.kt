@@ -20,7 +20,12 @@ internal class DataFlusher(
     override fun flush(uploader: DataUploader) {
         val toUploadFiles = fileOrchestrator.getFlushableFiles()
         toUploadFiles.forEach {
-            val batch = handler.readData(it, decoration.prefixBytes, decoration.suffixBytes)
+            val batch = handler.readData(
+                it,
+                decoration.prefixBytes,
+                decoration.suffixBytes,
+                decoration.separatorBytes
+            )
             uploader.upload(batch)
             handler.delete(it)
         }

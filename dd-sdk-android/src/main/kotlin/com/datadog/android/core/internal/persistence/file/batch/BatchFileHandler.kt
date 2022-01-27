@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
+import com.datadog.android.core.internal.persistence.file.EncryptedFileHandler
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.isDirectorySafe
@@ -16,6 +17,7 @@ import com.datadog.android.core.internal.persistence.file.renameToSafe
 import com.datadog.android.core.internal.utils.copyTo
 import com.datadog.android.core.internal.utils.use
 import com.datadog.android.log.Logger
+import com.datadog.android.security.Encryption
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
@@ -50,7 +52,8 @@ internal class BatchFileHandler(
     override fun readData(
         file: File,
         prefix: ByteArray?,
-        suffix: ByteArray?
+        suffix: ByteArray?,
+        separator: ByteArray?
     ): ByteArray {
         return try {
             readFileData(file, prefix ?: EMPTY_BYTE_ARRAY, suffix ?: EMPTY_BYTE_ARRAY)
@@ -178,5 +181,17 @@ internal class BatchFileHandler(
             "file is not a directory: %s"
         internal const val ERROR_MOVE_NO_DST = "Unable to move files; " +
             "could not create directory: %s"
+
+        /**
+         * Creates either plain [BatchFileHandler] or [BatchFileHandler] wrapped in
+         * [EncryptedFileHandler] if encryption is provided.
+         */
+        fun create(internalLogger: Logger, encryption: Encryption?): FileHandler {
+            return if (encryption == null) {
+                BatchFileHandler(internalLogger)
+            } else {
+                EncryptedFileHandler(encryption, BatchFileHandler(internalLogger), internalLogger)
+            }
+        }
     }
 }

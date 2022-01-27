@@ -33,12 +33,15 @@ internal interface FileHandler {
      *  @param file the file to read from
      *  @param prefix an (optional) prefix to embed before the file content
      *  @param suffix an (optional) suffix to embed after the file content
+     *  @param separator an (optional) separator used to write the data in append mode, is needed
+     *  only in the case of using encryption for data storage
      *  @return the [ByteArray] data or an empty array if the file can't be read (e.g.: exception)
      */
     fun readData(
         file: File,
         prefix: ByteArray?,
-        suffix: ByteArray?
+        suffix: ByteArray?,
+        separator: ByteArray?
     ): ByteArray
 
     /**

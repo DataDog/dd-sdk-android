@@ -49,7 +49,8 @@ internal object InternalLogsFeature : SdkFeature<LogEvent, Configuration.Feature
             CoreFeature.trackingConsentProvider,
             context,
             CoreFeature.persistenceExecutorService,
-            Logger(NoOpLogHandler())
+            Logger(NoOpLogHandler()),
+            CoreFeature.localDataEncryption
         )
     }
 
