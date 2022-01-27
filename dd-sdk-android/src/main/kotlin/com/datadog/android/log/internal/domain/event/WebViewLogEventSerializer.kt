@@ -6,30 +6,13 @@
 
 package com.datadog.android.log.internal.domain.event
 
-import com.datadog.android.core.internal.constraints.DataConstraints
-import com.datadog.android.core.internal.constraints.DatadogDataConstraints
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.log.model.WebViewLogEvent
+import com.google.gson.JsonObject
 
-internal class WebViewLogEventSerializer(
-    private val dataConstraints: DataConstraints = DatadogDataConstraints()
-) :
-    Serializer<WebViewLogEvent> {
+internal class WebViewLogEventSerializer :
+    Serializer<JsonObject> {
 
-    override fun serialize(model: WebViewLogEvent): String {
-        return sanitizeTagsAndAttributes(model).toJson().toString()
-    }
-
-    private fun sanitizeTagsAndAttributes(log: WebViewLogEvent): WebViewLogEvent {
-        val sanitizedTags = dataConstraints
-            .validateTags(log.ddtags.split(","))
-            .joinToString(",")
-        val sanitizedAttributes = dataConstraints
-            .validateAttributes(log.additionalProperties)
-            .filterKeys { it.isNotBlank() }
-        return log.copy(
-            ddtags = sanitizedTags,
-            additionalProperties = sanitizedAttributes
-        )
+    override fun serialize(model: JsonObject): String {
+        return model.toString()
     }
 }
