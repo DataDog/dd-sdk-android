@@ -315,5 +315,11 @@ fun $EXP$(){
 
 Because of our crash handling [test cases](instrumented/nightly-tests/src/androidTest/kotlin/com/datadog/android/nightly/crash), when running the nightly tests through gradle,  
 the process does not finish properly so it may happen that will keep hanging until it will eventually timeout.To avoid this issue you should run the tests through adb shell directly 
-using the instrumentation tool: `adb shell am instrumentation -w -e package com.datadog.android.nightly.[package] com.datadog.android.nightly.test/androidx.test.runner.AndroidJUnitRunner`
-or through your IDE (AndroidStudio, IntelliJ).
+using the instrumentation tool: 
+```
+./gradlew :instrumented:nightly-tests:installDebug
+./gradlew :instrumented:nightly-tests:installDebugAndroidTest
+adb shell am instrument -w -e package com.datadog.android.nightly.[feature] com.datadog.android.nightly.test/androidx.test.runner.AndroidJUnitRunner
+```
+where `feature` refers to the specific collection of tests (feature to test) and can take one of the following values: `rum`, `crash`, `log`, `trace`. If you want to run
+all the nightly tests just omit the feature in the `package` definition.
