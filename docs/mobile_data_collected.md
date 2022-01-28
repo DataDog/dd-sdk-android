@@ -1,5 +1,7 @@
 # Mobile Data Collected
 
+## Overview
+
 The Datadog Real User Monitoring SDK generates six types of events:
 
 | Event Type     | Retention | Description                                                                                                                                                                                                                                                   |
@@ -230,15 +232,12 @@ Network errors include information about failing HTTP requests. The following fa
 {{% /tab %}}
 {{< /tabs >}}
 
-
-
 ## Further Reading
 
 {{< partial name="whats-next/whats-next.html" >}}
 
-
-[1]: /real_user_monitoring/android/advanced_configuration/#automatically-track-views
-[2]: /real_user_monitoring/android/advanced_configuration/#enrich-user-sessions
-[3]: /real_user_monitoring/android/advanced_configuration/#track-custom-global-attributes
-[4]: /getting_started/tagging/unified_service_tagging/
-[5]: /real_user_monitoring/android/advanced_configuration/#track-user-sessions
+[1]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#automatically-track-views
+[2]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#enrich-user-sessions
+[3]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#track-custom-global-attributes
+[4]: https://docs.datadoghq.com/getting_started/tagging/unified_service_tagging/
+[5]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#track-user-sessions
