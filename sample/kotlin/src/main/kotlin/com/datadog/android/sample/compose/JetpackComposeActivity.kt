@@ -112,7 +112,6 @@ class JetpackComposeActivity : AppCompatActivity() {
                         }
                     }
                 }
-
             }
         }
     }

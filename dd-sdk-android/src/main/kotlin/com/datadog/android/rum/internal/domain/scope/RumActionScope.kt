@@ -12,6 +12,7 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ActionEvent
 import java.lang.ref.WeakReference
 import java.util.UUID
@@ -27,7 +28,8 @@ internal class RumActionScope(
     initialAttributes: Map<String, Any?>,
     serverTimeOffsetInMs: Long,
     inactivityThresholdMs: Long = ACTION_INACTIVITY_MS,
-    maxDurationMs: Long = ACTION_MAX_DURATION_MS
+    maxDurationMs: Long = ACTION_MAX_DURATION_MS,
+    private val rumEventSourceProvider: RumEventSourceProvider
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
@@ -74,7 +76,8 @@ internal class RumActionScope(
             event is RumRawEvent.StartResource -> onStartResource(event, now)
             event is RumRawEvent.StopResource -> onStopResource(event, now)
             event is RumRawEvent.AddError -> onError(event, now, writer)
-            event is RumRawEvent.StopResourceWithError -> onResourceError(event, now)
+            event is RumRawEvent.StopResourceWithError -> onResourceError(event.key, now)
+            event is RumRawEvent.StopResourceWithStackTrace -> onResourceError(event.key, now)
             event is RumRawEvent.AddLongTask -> onLongTask(now)
         }
 
@@ -152,8 +155,8 @@ internal class RumActionScope(
         }
     }
 
-    private fun onResourceError(event: RumRawEvent.StopResourceWithError, now: Long) {
-        val keyRef = ongoingResourceKeys.firstOrNull { it.get() == event.key }
+    private fun onResourceError(eventKey: String, now: Long) {
+        val keyRef = ongoingResourceKeys.firstOrNull { it.get() == eventKey }
         if (keyRef != null) {
             ongoingResourceKeys.remove(keyRef)
             lastInteractionNanos = now
@@ -201,6 +204,7 @@ internal class RumActionScope(
                 id = context.sessionId,
                 type = ActionEvent.ActionEventSessionType.USER
             ),
+            source = rumEventSourceProvider.actionEventSource,
             usr = ActionEvent.Usr(
                 id = user.id,
                 name = user.name,
@@ -224,7 +228,8 @@ internal class RumActionScope(
         fun fromEvent(
             parentScope: RumScope,
             event: RumRawEvent.StartAction,
-            timestampOffset: Long
+            timestampOffset: Long,
+            eventSourceProvider: RumEventSourceProvider
         ): RumScope {
             return RumActionScope(
                 parentScope,
@@ -233,7 +238,8 @@ internal class RumActionScope(
                 event.type,
                 event.name,
                 event.attributes,
-                timestampOffset
+                timestampOffset,
+                rumEventSourceProvider = eventSourceProvider
             )
         }
     }

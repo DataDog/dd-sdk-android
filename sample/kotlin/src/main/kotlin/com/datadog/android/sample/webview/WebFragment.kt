@@ -10,11 +10,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
-import com.datadog.android.rum.webview.RumWebChromeClient
-import com.datadog.android.rum.webview.RumWebViewClient
 import com.datadog.android.sample.R
+import com.datadog.android.webview.DatadogEventBridge
 
 class WebFragment : Fragment() {
 
@@ -30,13 +30,14 @@ class WebFragment : Fragment() {
     ): View? {
         val rootView = inflater.inflate(R.layout.fragment_web, container, false)
         webView = rootView.findViewById(R.id.webview)
-        webView.webViewClient = RumWebViewClient()
-        webView.webChromeClient = RumWebChromeClient()
+        webView.webViewClient = WebViewClient()
+        webView.settings.javaScriptEnabled = true
+        webView.addJavascriptInterface(DatadogEventBridge(), "DatadogEventBridge")
         return rootView
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(WebViewModel::class.java)
     }
 

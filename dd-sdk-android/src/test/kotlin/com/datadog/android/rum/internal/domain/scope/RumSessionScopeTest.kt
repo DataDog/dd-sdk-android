@@ -27,6 +27,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -113,6 +114,9 @@ internal class RumSessionScopeTest {
     @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
+    @Mock
+    lateinit var mockRumEventSourceProvider: RumEventSourceProvider
+
     lateinit var mockDevLogHandler: LogHandler
 
     @Forgery
@@ -153,6 +157,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -186,6 +191,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -286,6 +292,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -374,6 +381,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -594,6 +602,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -622,6 +631,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -673,6 +683,7 @@ internal class RumSessionScopeTest {
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
             timeProvider = mockTimeProvider,
             sessionListener = mockSessionListener,
+            rumEventSourceProvider = mockRumEventSourceProvider,
             sessionInactivityNanos = TEST_INACTIVITY_NS,
             sessionMaxDurationNanos = TEST_MAX_DURATION_NS
         )
@@ -746,6 +757,7 @@ internal class RumSessionScopeTest {
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
             timeProvider = mockTimeProvider,
+            rumEventSourceProvider = mockRumEventSourceProvider,
             sessionListener = mockSessionListener,
             sessionInactivityNanos = TEST_INACTIVITY_NS,
             sessionMaxDurationNanos = TEST_MAX_DURATION_NS
@@ -775,6 +787,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -803,6 +816,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -975,6 +989,16 @@ internal class RumSessionScopeTest {
                     attributes = emptyMap(),
                     eventTime = fakeEventTime
                 ),
+                RumRawEvent.StopResourceWithStackTrace(
+                    fakeKey,
+                    message = this.aString(),
+                    statusCode = null,
+                    source = this.aValueFrom(RumErrorSource::class.java),
+                    stackTrace = this.anAlphaNumericalString(),
+                    errorType = aNullable { anAlphabeticalString() },
+                    attributes = emptyMap(),
+                    eventTime = fakeEventTime
+                ),
                 RumRawEvent.StopView(
                     fakeKey,
                     emptyMap(),
@@ -1010,6 +1034,16 @@ internal class RumSessionScopeTest {
                     statusCode = null,
                     source = this.aValueFrom(RumErrorSource::class.java),
                     throwable = this.getForgery(),
+                    attributes = emptyMap(),
+                    eventTime = fakeEventTime
+                ),
+                RumRawEvent.StopResourceWithStackTrace(
+                    fakeKey,
+                    message = this.aString(),
+                    statusCode = null,
+                    source = this.aValueFrom(RumErrorSource::class.java),
+                    stackTrace = this.anAlphaNumericalString(),
+                    errorType = aNullable { anAlphabeticalString() },
                     attributes = emptyMap(),
                     eventTime = fakeEventTime
                 ),

@@ -625,6 +625,41 @@ class RumMonitorE2ETests {
     }
 
     /**
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun stopResourceWithError(String, Int?, String, RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
+     */
+    @Test
+    fun rum_rummonitor_stop_resource_with_error_stacktrace() {
+        val testMethodName = "rum_rummonitor_stop_resource_with_error_stacktrace"
+        val viewKey = forge.aViewKey()
+        val viewName = forge.aViewName()
+        val resourceKey = forge.aResourceKey()
+        val statusCode = forge.anInt(min = 400, max = 511)
+        val message = forge.aResourceErrorMessage()
+        val source = forge.aValueFrom(RumErrorSource::class.java)
+        val stackTrace = forge.aString()
+        val errorType = forge.aNullable { forge.anAlphabeticalString() }
+        executeInsideView(viewKey, viewName, testMethodName) {
+            GlobalRum.get().startResource(
+                resourceKey,
+                forge.aResourceMethod(),
+                resourceKey,
+                attributes = defaultTestAttributes(testMethodName)
+            )
+            measure(testMethodName) {
+                GlobalRum.get().stopResourceWithError(
+                    resourceKey,
+                    statusCode,
+                    message,
+                    source,
+                    stackTrace,
+                    errorType,
+                    defaultTestAttributes(testMethodName)
+                )
+            }
+        }
+    }
+
+    /**
      * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun stopResourceWithError(String, Int?, String, RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
      */
     @Test
@@ -647,6 +682,41 @@ class RumMonitorE2ETests {
                     forge.aResourceErrorMessage(),
                     forge.aValueFrom(RumErrorSource::class.java),
                     forge.aThrowable(),
+                    defaultTestAttributes(testMethodName)
+                )
+            }
+        }
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun stopResourceWithError(String, Int?, String, RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
+     */
+    @Test
+    fun rum_rummonitor_stop_resource_with_error_stacktrace_without_status_code() {
+        val testMethodName =
+            "rum_rummonitor_stop_resource_with_error_stacktrace_without_status_code"
+        val viewKey = forge.aViewKey()
+        val viewName = forge.aViewName()
+        val resourceKey = forge.aResourceKey()
+        val message = forge.aResourceErrorMessage()
+        val source = forge.aValueFrom(RumErrorSource::class.java)
+        val stackTrace = forge.aString()
+        val errorType = forge.aNullable { forge.anAlphabeticalString() }
+        executeInsideView(viewKey, viewName, testMethodName) {
+            GlobalRum.get().startResource(
+                resourceKey,
+                forge.aResourceMethod(),
+                resourceKey,
+                attributes = defaultTestAttributes(testMethodName)
+            )
+            measure(testMethodName) {
+                GlobalRum.get().stopResourceWithError(
+                    resourceKey,
+                    null,
+                    message,
+                    source,
+                    stackTrace,
+                    errorType,
                     defaultTestAttributes(testMethodName)
                 )
             }
@@ -701,6 +771,37 @@ class RumMonitorE2ETests {
                 forge.aResourceErrorMessage(),
                 forge.aValueFrom(RumErrorSource::class.java),
                 forge.aThrowable(),
+                defaultTestAttributes(testMethodName)
+            )
+        }
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun stopResourceWithError(String, Int?, String, RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
+     */
+    @Test
+    fun rum_rummonitor_ignore_stop_background_resource_with_error_stacktrace() {
+        val testMethodName = "rum_rummonitor_ignore_stop_background_resource_with_error"
+        val resourceKey = forge.aResourceKey()
+        val statusCode = forge.anInt(min = 400, max = 511)
+        val message = forge.aResourceErrorMessage()
+        val source = forge.aValueFrom(RumErrorSource::class.java)
+        val stackTrace = forge.aString()
+        val errorType = forge.aNullable { forge.anAlphabeticalString() }
+        GlobalRum.get().startResource(
+            resourceKey,
+            forge.aResourceMethod(),
+            resourceKey,
+            attributes = defaultTestAttributes(testMethodName)
+        )
+        measure(testMethodName) {
+            GlobalRum.get().stopResourceWithError(
+                resourceKey,
+                statusCode,
+                message,
+                source,
+                stackTrace,
+                errorType,
                 defaultTestAttributes(testMethodName)
             )
         }

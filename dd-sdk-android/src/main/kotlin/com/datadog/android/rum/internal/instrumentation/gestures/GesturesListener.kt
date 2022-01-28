@@ -268,7 +268,7 @@ internal class GesturesListener(
         container: IntArray
     ): Boolean {
         @Suppress("UnsafeThirdPartyFunctionCall") // container always have the correct size
-        view.getLocationOnScreen(container)
+        view.getLocationInWindow(container)
         val vx = container[0]
         val vy = container[1]
         val w = view.width

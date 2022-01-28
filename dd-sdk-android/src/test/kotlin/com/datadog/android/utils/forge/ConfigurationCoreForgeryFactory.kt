@@ -31,7 +31,8 @@ internal class ConfigurationCoreForgeryFactory :
             uploadFrequency = forge.getForgery(),
             proxy = proxy,
             proxyAuth = auth,
-            securityConfig = forge.getForgery()
+            securityConfig = forge.getForgery(),
+            webViewTrackingHosts = forge.aList { getForgery<URL>().host }
         )
     }
 }

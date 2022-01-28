@@ -244,20 +244,21 @@ tasks.register("buildNdkIntegrationTestsArtifacts") {
     dependsOn(":instrumented:integration:assembleDebug")
 }
 
-nightlyTestsCoverageConfig(threshold = 0.9f)
+nightlyTestsCoverageConfig(threshold = 0.88f)
 kover {
     isDisabled = false
     disabledProjects = setOf(
-        "instrumented",
-        "sample",
-        "tools",
-        "integration",
-        "nightly-tests",
-        "kotlin",
-        "detekt",
-        "javabackport",
-        "noopfactory",
-        "unit"
+            "instrumented",
+            "sample",
+            "tools",
+            "integration",
+            "nightly-tests",
+            "kotlin",
+            "detekt",
+            "javabackport",
+            "noopfactory",
+            "unit"
     )
     instrumentAndroidPackage = false
 }
+

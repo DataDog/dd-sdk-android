@@ -118,7 +118,7 @@ internal abstract class AbstractGesturesListenerTest {
             whenever(it.isClickable).thenReturn(clickable)
             whenever(it.visibility).thenReturn(if (visible) View.VISIBLE else View.GONE)
 
-            whenever(it.getLocationOnScreen(any())).doAnswer {
+            whenever(it.getLocationInWindow(any())).doAnswer {
                 val array = it.arguments[0] as IntArray
                 array[0] = locationOnScreenArray[0]
                 array[1] = locationOnScreenArray[1]

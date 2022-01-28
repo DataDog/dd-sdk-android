@@ -165,6 +165,28 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun stopResourceWithError(
+        key: String,
+        statusCode: Int?,
+        message: String,
+        source: RumErrorSource,
+        stackTrace: String,
+        errorType: String?,
+        attributes: Map<String, Any?>
+    ) {
+        handleEvent(
+            RumRawEvent.StopResourceWithStackTrace(
+                key,
+                statusCode?.toLong(),
+                message,
+                source,
+                stackTrace,
+                errorType,
+                attributes
+            )
+        )
+    }
+
     override fun addError(
         message: String,
         source: RumErrorSource,
@@ -214,6 +236,10 @@ internal class DatadogRumMonitor(
     // endregion
 
     // region AdvancedRumMonitor
+
+    override fun sendWebViewEvent() {
+        handleEvent(RumRawEvent.WebViewEvent())
+    }
 
     override fun resetSession() {
         handleEvent(

@@ -4,14 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum
+package com.datadog.android.rum.webview
 
 import android.util.Log
 import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.rum.webview.RumWebChromeClient
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -42,6 +42,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
+@Suppress("DEPRECATION")
 internal class RumWebChromeClientTest {
 
     private lateinit var testedClient: WebChromeClient

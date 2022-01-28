@@ -271,14 +271,22 @@ internal class ActivityViewTrackingStrategyTest :
         @MapForgery(
             key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
             value = AdvancedForgery(string = [StringForgery(StringForgeryType.ASCII)])
-        ) attributes: Map<String, String>
+        ) extras: Map<String, String>,
+        @StringForgery action: String,
+        @StringForgery uri: String
     ) {
         // Given
-        val arguments = Bundle(attributes.size)
-        attributes.forEach { (k, v) -> arguments.putString(k, v) }
+        val arguments = Bundle(extras.size)
+        extras.forEach { (k, v) -> arguments.putString(k, v) }
         whenever(mockIntent.extras).thenReturn(arguments)
+        whenever(mockIntent.action).thenReturn(action)
+        whenever(mockIntent.dataString).thenReturn(uri)
         whenever(mockActivity.intent).thenReturn(mockIntent)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
+        val expectedAttributes = extras.map { (k, v) -> "view.arguments.$k" to v }
+            .toMap().toMutableMap()
+        expectedAttributes["view.intent.action"] = action
+        expectedAttributes["view.intent.uri"] = uri
 
         // When
         testedStrategy.onActivityResumed(mockActivity)
@@ -287,7 +295,7 @@ internal class ActivityViewTrackingStrategyTest :
         verify(rumMonitor.mockInstance).startView(
             mockActivity,
             mockActivity.resolveViewName(),
-            attributes.map { (k, v) -> "view.arguments.$k" to v }.toMap()
+            expectedAttributes
         )
     }
 

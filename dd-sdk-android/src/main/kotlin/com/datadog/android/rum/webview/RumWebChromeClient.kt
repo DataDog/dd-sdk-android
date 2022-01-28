@@ -19,7 +19,24 @@ import com.datadog.android.rum.RumErrorSource
  *
  * Any console message will be forwarded to an internal [Logger], and errors
  * will be sent to the [GlobalRum] monitor as RUM Errors.
+ *
+ * This class is deprecated and you should use the new
+ * [com.datadog.android.webview.DatadogEventBridge] to track your WebViews:
+
+ * ```kotlin
+ * val configuration = Configuration.Builder().setWebViewTrackingHosts(listOf(<YOUR_HOSTS>))
+ * Datadog.initialize(this, credentials, configuration, trackingConsent)
+ *
+ * // By default, link navigation will be delegated to a third party app.
+ * // If you want all navigation to happen inside of the webview, uncomment the following line.
+ *
+ * // webView.webViewClient = WebViewClient()
+ * webView.settings.javaScriptEnabled = true
+ * webView.addJavascriptInterface(DatadogEventBridge(), "DatadogEventBridge")
+ * ```
+ * [See more](https://developer.android.com/guide/webapps/webview#HandlingNavigation)
  */
+@Deprecated("You should use the DatadogEventBridge JavaScript interface instead.")
 open class RumWebChromeClient
 internal constructor(private val logger: Logger) : WebChromeClient() {
 

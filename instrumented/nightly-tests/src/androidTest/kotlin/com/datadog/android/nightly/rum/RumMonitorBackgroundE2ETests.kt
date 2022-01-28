@@ -236,6 +236,37 @@ class RumMonitorBackgroundE2ETests {
         }
     }
 
+    /**
+     * apiMethodSignature: com.datadog.android.rum.RumMonitor#fun stopResourceWithError(String, Int?, String, RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
+     */
+    @Test
+    fun rum_rummonitor_stop_background_resource_with_error_stacktrace() {
+        val testMethodName = "rum_rummonitor_stop_background_resource_with_error_stacktrace"
+        val resourceKey = forge.aResourceKey()
+        GlobalRum.get().startResource(
+            resourceKey,
+            forge.aResourceMethod(),
+            resourceKey,
+            attributes = defaultTestAttributes(testMethodName)
+        )
+        val anInt = forge.anInt(min = 400, max = 511)
+        val aResourceErrorMessage = forge.aResourceErrorMessage()
+        val stackTrace = forge.aString()
+        val errorType = forge.aNullable { forge.anAlphabeticalString() }
+        val source = forge.aValueFrom(RumErrorSource::class.java)
+        measure(testMethodName) {
+            GlobalRum.get().stopResourceWithError(
+                resourceKey,
+                anInt,
+                aResourceErrorMessage,
+                source,
+                stackTrace,
+                errorType,
+                defaultTestAttributes(testMethodName)
+            )
+        }
+    }
+
     // endregion
 
     // region Background Error

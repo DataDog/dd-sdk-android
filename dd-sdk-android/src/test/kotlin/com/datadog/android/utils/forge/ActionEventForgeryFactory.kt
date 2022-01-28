@@ -68,6 +68,7 @@ internal class ActionEventForgeryFactory :
                 type = ActionEvent.ActionEventSessionType.USER,
                 hasReplay = forge.aNullable { aBool() }
             ),
+            source = forge.aNullable { aValueFrom(ActionEvent.Source::class.java) },
             context = forge.aNullable {
                 ActionEvent.Context(additionalProperties = forge.exhaustiveAttributes())
             },
