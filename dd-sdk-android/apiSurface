@@ -1392,6 +1392,9 @@ data class com.datadog.android.tracing.model.SpanEvent
     companion object 
       fun fromJson(kotlin.String): SimCarrier
 class com.datadog.android.webview.DatadogEventBridge
+  constructor()
+  constructor(List<String>)
   fun send(String)
   fun getAllowedWebViewHosts(): String
+  companion object 
 class com.datadog.tools.annotation.NoOpImplementation

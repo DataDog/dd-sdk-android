@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.google.gson.JsonObject
 import java.lang.IllegalStateException
 import java.lang.NumberFormatException
@@ -22,10 +23,11 @@ internal class WebViewRumEventConsumer(
     private val timeProvider: TimeProvider,
     private val webViewRumEventMapper: WebViewRumEventMapper = WebViewRumEventMapper(),
     private val contextProvider: WebViewRumEventContextProvider = WebViewRumEventContextProvider()
-) {
+) : WebViewEventConsumer<JsonObject> {
 
     internal val offsets: LinkedHashMap<String, Long> = LinkedHashMap()
-    fun consume(event: JsonObject) {
+
+    override fun consume(event: JsonObject) {
         // make sure we send a noop event to the RumSessionScope to refresh the session if needed
         GlobalRum.notifyIngestedWebViewEvent()
         val rumContext = contextProvider.getRumContext()
