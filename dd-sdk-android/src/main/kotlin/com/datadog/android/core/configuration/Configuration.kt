@@ -188,10 +188,11 @@ internal constructor(
         }
 
         /**
-         * Sets the list of web view tracking hosts.
-         * WebViews that will load content from any of these hosts (or any subdomain) will
-         * will be automatically tracked.
-         * @param hosts a list of all the hosts that you want to be tracked when loaded in the
+         * Sets the list of WebView tracked hosts.
+         * When a WebView loads a URL from any of these hosts, and the page has Datadog's
+         * Browser SDK setup, then the Logs and RUM Events from the webview will be tracked in
+         * the same session..
+         * @param hosts a list of all the hosts that you want to track when loaded in the
          * WebView.
          */
         fun setWebViewTrackingHosts(hosts: List<String>): Builder {

@@ -12,15 +12,18 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.utils.extension.getString
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.forge.aRumEventAsJson
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -57,147 +60,151 @@ internal class WebViewRumEventMapperTest {
     }
 
     @Test
-    fun `M map the event W mapViewEvent()`(forge: Forge) {
+    fun `M map the event W mapEvent { ViewEvent }()`(forge: Forge) {
         // Given
         val fakeViewEvent = forge.getForgery<ViewEvent>()
+        val fakeRumJsonObject = fakeViewEvent.toJson().asJsonObject
 
         // When
-        val mappedEvent = testedWebViewRumEventMapper.mapViewEvent(
-            fakeViewEvent,
+        val mappedEvent = testedWebViewRumEventMapper.mapEvent(
+            fakeRumJsonObject,
             rumMonitor.context,
             fakeServerTimeOffset
         )
 
         // Then
-        assertThat(mappedEvent)
-            .usingRecursiveComparison()
-            .ignoringFields(
-                CONTEXT_KEY,
-                APPLICATION_KEY,
-                SESSION_KEY,
-                DATE_KEY,
-                DD_KEY
-            )
-            .isEqualTo(fakeViewEvent)
-
-        assertThat(mappedEvent.application.id).isEqualTo(rumMonitor.context.applicationId)
-        assertThat(mappedEvent.session.id).isEqualTo(rumMonitor.context.sessionId)
-        assertThat(mappedEvent.date).isEqualTo(fakeViewEvent.date + fakeServerTimeOffset)
-        assertThat(mappedEvent.dd).isEqualTo(
-            fakeViewEvent.dd.copy(
-                session = ViewEvent.DdSession(plan = ViewEvent.Plan.PLAN_1)
-            )
+        assertMappedEvent(
+            fakeRumJsonObject,
+            fakeViewEvent.date + fakeServerTimeOffset,
+            mappedEvent
         )
     }
 
     @Test
-    fun `M map the event W mapActionEvent()`(forge: Forge) {
+    fun `M map the event W mapEvent { ActionEvent }`(forge: Forge) {
         // Given
         val fakeActionEvent = forge.getForgery<ActionEvent>()
+        val fakeRumJsonObject = fakeActionEvent.toJson().asJsonObject
 
         // When
-        val mappedEvent = testedWebViewRumEventMapper.mapActionEvent(
-            fakeActionEvent,
+        val mappedEvent = testedWebViewRumEventMapper.mapEvent(
+            fakeRumJsonObject,
             rumMonitor.context,
             fakeServerTimeOffset
         )
 
         // Then
-        assertThat(mappedEvent)
-            .usingRecursiveComparison()
-            .ignoringFields(
-                CONTEXT_KEY,
-                APPLICATION_KEY,
-                SESSION_KEY,
-                DATE_KEY,
-                DD_KEY
-            )
-            .isEqualTo(fakeActionEvent)
-        assertThat(mappedEvent.application.id).isEqualTo(rumMonitor.context.applicationId)
-        assertThat(mappedEvent.session.id).isEqualTo(rumMonitor.context.sessionId)
-        assertThat(mappedEvent.date).isEqualTo(fakeActionEvent.date + fakeServerTimeOffset)
-        assertThat(mappedEvent.dd).isEqualTo(
-            fakeActionEvent.dd.copy(
-                session = ActionEvent.DdSession(plan = ActionEvent.Plan.PLAN_1)
-            )
+        assertMappedEvent(
+            fakeRumJsonObject,
+            fakeActionEvent.date + fakeServerTimeOffset,
+            mappedEvent
         )
     }
 
     @Test
-    fun `M map the event W mapErrorEvent()`(forge: Forge) {
+    fun `M map the event W mapEvent { ErrorEvent }`(forge: Forge) {
         // Given
         val fakeErrorEvent = forge.getForgery<ErrorEvent>()
+        val fakeRumJsonObject = fakeErrorEvent.toJson().asJsonObject
 
         // When
-        val mappedEvent = testedWebViewRumEventMapper.mapErrorEvent(
-            fakeErrorEvent,
+        val mappedEvent = testedWebViewRumEventMapper.mapEvent(
+            fakeRumJsonObject,
             rumMonitor.context,
             fakeServerTimeOffset
         )
 
         // Then
-        assertThat(mappedEvent)
-            .usingRecursiveComparison()
-            .ignoringFields(
-                CONTEXT_KEY,
-                APPLICATION_KEY,
-                SESSION_KEY,
-                DATE_KEY,
-                DD_KEY
-            )
-            .isEqualTo(fakeErrorEvent)
-        assertThat(mappedEvent.application.id).isEqualTo(rumMonitor.context.applicationId)
-        assertThat(mappedEvent.session.id).isEqualTo(rumMonitor.context.sessionId)
-        assertThat(mappedEvent.date).isEqualTo(fakeErrorEvent.date + fakeServerTimeOffset)
-        assertThat(mappedEvent.dd).isEqualTo(
-            fakeErrorEvent.dd.copy(
-                session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1)
-            )
+        assertMappedEvent(
+            fakeRumJsonObject,
+            fakeErrorEvent.date + fakeServerTimeOffset,
+            mappedEvent
         )
     }
 
     @Test
-    fun `M map the event W mapResourceEvent()`(forge: Forge) {
+    fun `M map the event W mapEvent { ResourceEvent }`(forge: Forge) {
         // Given
         val fakeResourceEvent = forge.getForgery<ResourceEvent>()
+        val fakeRumJsonObject = fakeResourceEvent.toJson().asJsonObject
 
         // When
-        val mappedEvent = testedWebViewRumEventMapper.mapResourceEvent(
-            fakeResourceEvent,
+        val mappedEvent = testedWebViewRumEventMapper.mapEvent(
+            fakeRumJsonObject,
             rumMonitor.context,
             fakeServerTimeOffset
         )
 
         // Then
-        assertThat(mappedEvent)
-            .usingRecursiveComparison()
-            .ignoringFields(
-                CONTEXT_KEY,
-                APPLICATION_KEY,
-                SESSION_KEY,
-                DATE_KEY,
-                DD_KEY
-            )
-            .isEqualTo(fakeResourceEvent)
-        assertThat(mappedEvent.application.id).isEqualTo(rumMonitor.context.applicationId)
-        assertThat(mappedEvent.session.id).isEqualTo(rumMonitor.context.sessionId)
-        assertThat(mappedEvent.date).isEqualTo(fakeResourceEvent.date + fakeServerTimeOffset)
-        assertThat(mappedEvent.dd).isEqualTo(
-            fakeResourceEvent.dd.copy(
-                session = ResourceEvent.DdSession(plan = ResourceEvent.Plan.PLAN_1)
-            )
+        assertMappedEvent(
+            fakeRumJsonObject,
+            fakeResourceEvent.date + fakeServerTimeOffset,
+            mappedEvent
         )
     }
 
     @Test
-    fun `M map the event W mapLongTaskEvent()`(forge: Forge) {
+    fun `M map the event W mapEvent { LongTaskEvent }()`(forge: Forge) {
         // Given
         val fakeLongTaskEvent = forge.getForgery<LongTaskEvent>()
+        val fakeRumJsonObject = fakeLongTaskEvent.toJson().asJsonObject
 
         // When
-        val mappedEvent = testedWebViewRumEventMapper.mapLongTaskEvent(
-            fakeLongTaskEvent,
+        val mappedEvent = testedWebViewRumEventMapper.mapEvent(
+            fakeRumJsonObject,
             rumMonitor.context,
+            fakeServerTimeOffset
+        )
+
+        // Then
+        assertMappedEvent(
+            fakeRumJsonObject,
+            fakeLongTaskEvent.date + fakeServerTimeOffset,
+            mappedEvent
+        )
+    }
+
+    @Test
+    fun `M map the event W mapEvent { missing application and session fields  }()`(forge: Forge) {
+        // Given
+        val fakeLongTaskEvent = forge.getForgery<LongTaskEvent>()
+        val fakeRumJsonObject = fakeLongTaskEvent.toJson().asJsonObject.apply {
+            remove(WebViewRumEventMapper.APPLICATION_KEY_NAME)
+            remove(WebViewRumEventMapper.SESSION_KEY_NAME)
+        }
+
+        // When
+        val mappedEvent = testedWebViewRumEventMapper.mapEvent(
+            fakeRumJsonObject,
+            rumMonitor.context,
+            fakeServerTimeOffset
+        )
+
+        // Then
+        assertMappedEvent(
+            fakeRumJsonObject,
+            fakeLongTaskEvent.date + fakeServerTimeOffset,
+            mappedEvent
+        )
+    }
+
+    @Test
+    fun `M map the event W mapEvent { RumContext is missing }`(forge: Forge) {
+        // Given
+        val fakeRumJsonObject = forge.aRumEventAsJson()
+        val expectedDate = fakeRumJsonObject.get(WebViewRumEventMapper.DATE_KEY_NAME).asLong +
+            fakeServerTimeOffset
+        val expectedApplicationId = fakeRumJsonObject
+            .getAsJsonObject(WebViewRumEventMapper.APPLICATION_KEY_NAME)
+            .getString(WebViewRumEventMapper.ID_KEY_NAME)
+        val expectedSessionId = fakeRumJsonObject
+            .getAsJsonObject(WebViewRumEventMapper.SESSION_KEY_NAME)
+            .getString(WebViewRumEventMapper.ID_KEY_NAME)
+
+        // When
+        val mappedEvent = testedWebViewRumEventMapper.mapEvent(
+            fakeRumJsonObject,
+            null,
             fakeServerTimeOffset
         )
 
@@ -205,20 +212,58 @@ internal class WebViewRumEventMapperTest {
         assertThat(mappedEvent)
             .usingRecursiveComparison()
             .ignoringFields(
-                CONTEXT_KEY,
-                APPLICATION_KEY,
-                SESSION_KEY,
-                DATE_KEY,
-                DD_KEY
+                WebViewRumEventMapper.APPLICATION_KEY_NAME,
+                WebViewRumEventMapper.SESSION_KEY_NAME,
+                WebViewRumEventMapper.DATE_KEY_NAME,
+                WebViewRumEventMapper.DD_KEY_NAME
             )
-            .isEqualTo(fakeLongTaskEvent)
-        assertThat(mappedEvent.application.id).isEqualTo(rumMonitor.context.applicationId)
-        assertThat(mappedEvent.session.id).isEqualTo(rumMonitor.context.sessionId)
-        assertThat(mappedEvent.date).isEqualTo(fakeLongTaskEvent.date + fakeServerTimeOffset)
-        assertThat(mappedEvent.dd).isEqualTo(
-            fakeLongTaskEvent.dd.copy(
-                session = LongTaskEvent.DdSession(plan = LongTaskEvent.Plan.PLAN_1)
+            .isEqualTo(fakeRumJsonObject)
+        assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.APPLICATION_KEY_NAME))
+            .hasField(WebViewRumEventMapper.ID_KEY_NAME, expectedApplicationId)
+        assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.SESSION_KEY_NAME))
+            .hasField(WebViewRumEventMapper.ID_KEY_NAME, expectedSessionId)
+        assertThat(mappedEvent).hasField(
+            WebViewRumEventMapper.DATE_KEY_NAME,
+            expectedDate
+        )
+        val ddSession = mappedEvent
+            .getAsJsonObject(WebViewRumEventMapper.DD_KEY_NAME)
+            .get(WebViewRumEventMapper.DD_SESSION_KEY_NAME).asJsonObject
+        assertThat(ddSession).hasField(
+            WebViewRumEventMapper.SESSION_PLAN_KEY_NAME,
+            ViewEvent.Plan.PLAN_1.toJson().asLong
+        )
+    }
+
+    private fun assertMappedEvent(
+        expectedEvent: JsonObject,
+        expectedDate: Long,
+        mappedEvent: JsonObject
+    ) {
+        assertThat(mappedEvent)
+            .usingRecursiveComparison()
+            .ignoringFields(
+                WebViewRumEventMapper.APPLICATION_KEY_NAME,
+                WebViewRumEventMapper.SESSION_KEY_NAME,
+                WebViewRumEventMapper.DATE_KEY_NAME,
+                WebViewRumEventMapper.DD_KEY_NAME
             )
+            .isEqualTo(expectedEvent)
+
+        assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.APPLICATION_KEY_NAME))
+            .hasField(WebViewRumEventMapper.ID_KEY_NAME, rumMonitor.context.applicationId)
+        assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.SESSION_KEY_NAME))
+            .hasField(WebViewRumEventMapper.ID_KEY_NAME, rumMonitor.context.sessionId)
+        assertThat(mappedEvent).hasField(
+            WebViewRumEventMapper.DATE_KEY_NAME,
+            expectedDate
+        )
+        val ddSession = mappedEvent
+            .getAsJsonObject(WebViewRumEventMapper.DD_KEY_NAME)
+            .get(WebViewRumEventMapper.DD_SESSION_KEY_NAME).asJsonObject
+        assertThat(ddSession).hasField(
+            WebViewRumEventMapper.SESSION_PLAN_KEY_NAME,
+            ViewEvent.Plan.PLAN_1.toJson().asLong
         )
     }
 
@@ -230,11 +275,5 @@ internal class WebViewRumEventMapperTest {
         fun getTestConfigurations(): List<TestConfiguration> {
             return listOf(rumMonitor)
         }
-
-        private const val CONTEXT_KEY = "context"
-        private const val APPLICATION_KEY = "application"
-        private const val SESSION_KEY = "session"
-        private const val DATE_KEY = "date"
-        private const val DD_KEY = "dd"
     }
 }

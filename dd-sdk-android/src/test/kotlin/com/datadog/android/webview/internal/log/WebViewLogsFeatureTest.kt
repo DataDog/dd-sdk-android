@@ -10,10 +10,10 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
-import com.datadog.android.log.model.WebViewLogEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -34,7 +34,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class WebViewLogsFeatureTest :
-    SdkFeatureTest<WebViewLogEvent, Configuration.Feature.Logs, WebViewLogsFeature>() {
+    SdkFeatureTest<JsonObject, Configuration.Feature.Logs, WebViewLogsFeature>() {
 
     override fun createTestedFeature(): WebViewLogsFeature {
         return WebViewLogsFeature

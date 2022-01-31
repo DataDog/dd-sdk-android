@@ -12,7 +12,7 @@ import com.datadog.android.utils.assertj.JsonElementAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockSdkLogHandler
 import com.datadog.android.utils.restoreSdkLogHandler
-import com.datadog.android.webview.internal.WebViewEventConsumer
+import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
 import com.google.gson.JsonObject
@@ -28,6 +28,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Locale.US
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -44,9 +45,9 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class WebViewEventConsumerTest {
+internal class MixedWebViewEventConsumerTest {
 
-    lateinit var testedWebViewEventConsumer: WebViewEventConsumer
+    lateinit var testedWebViewEventConsumer: MixedWebViewEventConsumer
 
     @Mock
     lateinit var mockRumEventConsumer: WebViewRumEventConsumer
@@ -62,7 +63,7 @@ internal class WebViewEventConsumerTest {
     @BeforeEach
     fun `set up`() {
         originalSdkLogHandler = mockSdkLogHandler(mockedSdkLogHandler)
-        testedWebViewEventConsumer = WebViewEventConsumer(
+        testedWebViewEventConsumer = MixedWebViewEventConsumer(
             mockRumEventConsumer,
             mockLogsEventConsumer
         )
@@ -87,7 +88,7 @@ internal class WebViewEventConsumerTest {
 
         // Then
         argumentCaptor<JsonObject> {
-            verify(mockRumEventConsumer).consume(capture(), eq(fakeRumEventType))
+            verify(mockRumEventConsumer).consume(capture())
             assertThat(firstValue).isEqualTo(fakeBundledEvent)
         }
     }
@@ -103,9 +104,10 @@ internal class WebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
-        argumentCaptor<JsonObject> {
-            verify(mockLogsEventConsumer).consume(capture(), eq(fakeLogEventType))
-            assertThat(firstValue).isEqualTo(fakeBundledEvent)
+        argumentCaptor<Pair<JsonObject, String>> {
+            verify(mockLogsEventConsumer).consume(capture())
+            assertThat(firstValue.first).isEqualTo(fakeBundledEvent)
+            assertThat(firstValue.second).isEqualTo(fakeLogEventType)
         }
     }
 
@@ -147,7 +149,7 @@ internal class WebViewEventConsumerTest {
         // Then
         verify(mockedSdkLogHandler).handleLog(
             Log.ERROR,
-            WebViewEventConsumer.WRONG_EVENT_TYPE_ERROR_MESSAGE.format(
+            MixedWebViewEventConsumer.WRONG_EVENT_TYPE_ERROR_MESSAGE.format(
                 US,
                 fakeUnknownEventType
             )
@@ -180,7 +182,7 @@ internal class WebViewEventConsumerTest {
         // Then
         verify(mockedSdkLogHandler).handleLog(
             Log.ERROR,
-            WebViewEventConsumer.WEB_EVENT_MISSING_TYPE_ERROR_MESSAGE.format(
+            MixedWebViewEventConsumer.WEB_EVENT_MISSING_TYPE_ERROR_MESSAGE.format(
                 US,
                 fakeWebEvent
             )
@@ -213,7 +215,7 @@ internal class WebViewEventConsumerTest {
         // Then
         verify(mockedSdkLogHandler).handleLog(
             Log.ERROR,
-            WebViewEventConsumer.WEB_EVENT_MISSING_WRAPPED_EVENT.format(US, fakeWebEvent)
+            MixedWebViewEventConsumer.WEB_EVENT_MISSING_WRAPPED_EVENT.format(US, fakeWebEvent)
         )
     }
 
@@ -222,7 +224,7 @@ internal class WebViewEventConsumerTest {
         // Given
         val fakeBundledEvent = forge.getForgery<JsonObject>()
         var fakeEventType = forge.anAlphabeticalString()
-        while (fakeEventType == WebViewEventConsumer.LOG_EVENT_TYPE) {
+        while (fakeEventType == MixedWebViewEventConsumer.LOG_EVENT_TYPE) {
             fakeEventType = forge.anAlphabeticalString()
         }
         val fakeWebEvent = bundleWebEvent(fakeBundledEvent, fakeEventType)
@@ -241,7 +243,7 @@ internal class WebViewEventConsumerTest {
         // Given
         val fakeBundledEvent = forge.getForgery<JsonObject>()
         var fakeEventType = forge.anAlphabeticalString()
-        while (fakeEventType == WebViewEventConsumer.LOG_EVENT_TYPE) {
+        while (fakeEventType == MixedWebViewEventConsumer.LOG_EVENT_TYPE) {
             fakeEventType = forge.anAlphabeticalString()
         }
         val fakeWebEvent = bundleWebEvent(fakeBundledEvent, fakeEventType)
@@ -254,7 +256,7 @@ internal class WebViewEventConsumerTest {
         verify(mockedSdkLogHandler).handleLog(
             eq(Log.ERROR),
             eq(
-                WebViewEventConsumer.WEB_EVENT_PARSING_ERROR_MESSAGE.format(
+                MixedWebViewEventConsumer.WEB_EVENT_PARSING_ERROR_MESSAGE.format(
                     US,
                     fakeBadJsonFormatEvent
                 )
@@ -276,10 +278,10 @@ internal class WebViewEventConsumerTest {
     ): JsonObject {
         val fakeWebEvent = JsonObject()
         fakeBundledEvent?.let {
-            fakeWebEvent.add(WebViewEventConsumer.EVENT_KEY, it)
+            fakeWebEvent.add(MixedWebViewEventConsumer.EVENT_KEY, it)
         }
         eventType?.let {
-            fakeWebEvent.addProperty(WebViewEventConsumer.EVENT_TYPE_KEY, it)
+            fakeWebEvent.addProperty(MixedWebViewEventConsumer.EVENT_TYPE_KEY, it)
         }
         return fakeWebEvent
     }

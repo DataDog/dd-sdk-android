@@ -8,11 +8,11 @@ package com.datadog.android.webview
 
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.webview.internal.WebViewEventConsumer
-import com.datadog.tools.unit.setFieldValue
-import com.google.gson.JsonArray
+import com.datadog.android.webview.internal.MixedWebViewEventConsumer
+import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
+import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
 import com.nhaarman.mockitokotlin2.verify
-import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -38,15 +38,26 @@ internal class DatadogEventBridgeTest {
     lateinit var testedDatadogEventBridge: DatadogEventBridge
 
     @Mock
-    lateinit var mockWebViewEventConsumer: WebViewEventConsumer
+    lateinit var mockWebViewEventConsumer: MixedWebViewEventConsumer
 
     @BeforeEach
     fun `set up`() {
-        testedDatadogEventBridge = DatadogEventBridge()
-        testedDatadogEventBridge.setFieldValue(
-            "webViewEventConsumer",
-            mockWebViewEventConsumer
-        )
+        testedDatadogEventBridge = DatadogEventBridge(mockWebViewEventConsumer, emptyList())
+    }
+
+    @Test
+    fun `M create a default WebEventConsumer W init()`() {
+        // When
+        val bridge = DatadogEventBridge()
+
+        // Then
+        val consumer = bridge.webViewEventConsumer
+        assertThat(consumer).isInstanceOf(MixedWebViewEventConsumer::class.java)
+        val mixedConsumer = consumer as MixedWebViewEventConsumer
+        assertThat(mixedConsumer.logsEventConsumer)
+            .isInstanceOf(WebViewLogEventConsumer::class.java)
+        assertThat(mixedConsumer.rumEventConsumer)
+            .isInstanceOf(WebViewRumEventConsumer::class.java)
     }
 
     @Test
@@ -59,18 +70,55 @@ internal class DatadogEventBridgeTest {
     }
 
     @Test
-    fun `M return the webViewTrackingHosts as JsonArray W getAllowedWebViewHosts()`(forge: Forge) {
+    fun `M return the webViewTrackingHosts as JsonArray W getAllowedWebViewHosts() { global }`(
+        @Forgery fakeUrls: List<URL>
+    ) {
         // Given
-        val fakeHosts = forge.aList { getForgery<URL>().host }
+        val fakeHosts = fakeUrls.map { it.host }
+        val expectedHosts = fakeHosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
         CoreFeature.webViewTrackingHosts = fakeHosts
-        val expectedHosts = JsonArray()
-        fakeHosts.forEach {
-            expectedHosts.add(it)
-        }
+
         // When
         val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
 
         // Then
-        assertThat(allowedWebViewHosts).isEqualTo(expectedHosts.toString())
+        assertThat(allowedWebViewHosts).isEqualTo(expectedHosts)
+    }
+
+    @Test
+    fun `M return the webViewTrackingHosts as JsonArray W getAllowedWebViewHosts() { local }`(
+        @Forgery fakeUrls: List<URL>
+    ) {
+        // Given
+        val fakeHosts = fakeUrls.map { it.host }
+        val expectedHosts = fakeHosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
+        CoreFeature.webViewTrackingHosts = emptyList()
+        testedDatadogEventBridge = DatadogEventBridge(fakeHosts)
+
+        // When
+        val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
+
+        // Then
+        assertThat(allowedWebViewHosts).isEqualTo(expectedHosts)
+    }
+
+    @Test
+    fun `M return the webViewTrackingHosts as JsonArray W getAllowedWebViewHosts() { mixed }`(
+        @Forgery fakeGlobalUrls: List<URL>,
+        @Forgery fakeLocalUrls: List<URL>
+    ) {
+        // Given
+        val fakeLocalHosts = fakeLocalUrls.map { it.host }
+        val fakeGlobalHosts = fakeGlobalUrls.map { it.host }
+        val expectedHosts = (fakeLocalHosts + fakeGlobalHosts)
+            .joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
+        CoreFeature.webViewTrackingHosts = fakeGlobalHosts
+        testedDatadogEventBridge = DatadogEventBridge(fakeLocalHosts)
+
+        // When
+        val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
+
+        // Then
+        assertThat(allowedWebViewHosts).isEqualTo(expectedHosts)
     }
 }
