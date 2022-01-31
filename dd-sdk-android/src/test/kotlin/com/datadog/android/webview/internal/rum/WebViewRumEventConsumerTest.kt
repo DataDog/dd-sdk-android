@@ -22,6 +22,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aRumEventAsJson
 import com.datadog.android.utils.mockSdkLogHandler
 import com.datadog.android.utils.restoreSdkLogHandler
+import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -60,7 +61,8 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class WebViewRumEventConsumerTest {
-    lateinit var testedRumEventConsumer: WebViewRumEventConsumer
+
+    lateinit var testedConsumer: WebViewEventConsumer<JsonObject>
 
     @Mock
     lateinit var mockDataWriter: DataWriter<Any>
@@ -107,7 +109,7 @@ internal class WebViewRumEventConsumerTest {
             emptyMap()
         }
         whenever(mockTimeProvider.getServerOffsetMillis()).thenReturn(fakeServerTimeOffsetInMillis)
-        testedRumEventConsumer = WebViewRumEventConsumer(
+        testedConsumer = WebViewRumEventConsumer(
             mockDataWriter,
             mockTimeProvider,
             mockWebViewRumEventMapper,
@@ -142,7 +144,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenReturn(fakeMappedViewEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeViewEventAsJson)
+        testedConsumer.consume(fakeViewEventAsJson)
 
         // Then
         val mockedMonitor = GlobalRum.monitor as AdvancedRumMonitor
@@ -164,7 +166,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenReturn(fakeMappedViewEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeViewEventAsJson)
+        testedConsumer.consume(fakeViewEventAsJson)
 
         // Then
         verify(mockDataWriter).write(fakeMappedViewEvent)
@@ -185,7 +187,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenReturn(fakeMappedViewEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeViewEventAsJson)
+        testedConsumer.consume(fakeViewEventAsJson)
 
         // Then
         verify(mockDataWriter).write(fakeMappedViewEvent)
@@ -210,7 +212,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenReturn(fakeMappedActionEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeActionEventAsJson)
+        testedConsumer.consume(fakeActionEventAsJson)
 
         // Then
         val mockedMonitor = GlobalRum.monitor as AdvancedRumMonitor
@@ -231,7 +233,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenReturn(fakeMappedActionEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeActionEventAsJson)
+        testedConsumer.consume(fakeActionEventAsJson)
 
         // Then
         verify(mockDataWriter).write(fakeMappedActionEvent)
@@ -252,7 +254,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenReturn(fakeMappedActionEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeActionEventAsJson)
+        testedConsumer.consume(fakeActionEventAsJson)
 
         // Then
         verify(mockDataWriter).write(fakeMappedActionEvent)
@@ -276,7 +278,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenReturn(fakeMappedResourceEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeResourceEventAsJson)
+        testedConsumer.consume(fakeResourceEventAsJson)
 
         // Then
         val mockedMonitor = GlobalRum.monitor as AdvancedRumMonitor
@@ -297,7 +299,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenReturn(fakeMappedResourceEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeResourceEventAsJson)
+        testedConsumer.consume(fakeResourceEventAsJson)
 
         // Then
         verify(mockDataWriter).write(fakeMappedResourceEvent)
@@ -318,7 +320,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenReturn(fakeMappedResourceEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeResourceEventAsJson)
+        testedConsumer.consume(fakeResourceEventAsJson)
 
         // Then
         verify(mockDataWriter).write(fakeMappedResourceEvent)
@@ -342,7 +344,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenReturn(fakeMappedErrorEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeErrorEventAsJson)
+        testedConsumer.consume(fakeErrorEventAsJson)
 
         // Then
         val mockedMonitor = GlobalRum.monitor as AdvancedRumMonitor
@@ -363,7 +365,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenReturn(fakeMappedErrorEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeErrorEventAsJson)
+        testedConsumer.consume(fakeErrorEventAsJson)
 
         // Then
         verify(mockDataWriter).write(fakeMappedErrorEvent)
@@ -384,7 +386,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenReturn(fakeMappedErrorEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeErrorEventAsJson)
+        testedConsumer.consume(fakeErrorEventAsJson)
 
         // Then
         verify(mockDataWriter).write(fakeMappedErrorEvent)
@@ -408,7 +410,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenReturn(fakeMappedLongTaskEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeLongTaskEventAsJson)
+        testedConsumer.consume(fakeLongTaskEventAsJson)
 
         // Then
         val mockedMonitor = GlobalRum.monitor as AdvancedRumMonitor
@@ -430,7 +432,7 @@ internal class WebViewRumEventConsumerTest {
             .thenReturn(fakeMappedLongTaskEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeLongTaskEventAsJson)
+        testedConsumer.consume(fakeLongTaskEventAsJson)
 
         // Then
         verify(mockDataWriter).write(fakeMappedLongTaskEvent)
@@ -451,7 +453,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenReturn(fakeMappedLongTaskEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeLongTaskEventAsJson)
+        testedConsumer.consume(fakeLongTaskEventAsJson)
 
         // Then
         verify(mockDataWriter).write(fakeMappedLongTaskEvent)
@@ -478,7 +480,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenThrow(fakeException)
 
         // When
-        testedRumEventConsumer.consume(fakeRumEvent)
+        testedConsumer.consume(fakeRumEvent)
 
         // Then
         verify(mockDataWriter).write(fakeRumEvent)
@@ -498,7 +500,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenThrow(fakeException)
 
         // When
-        testedRumEventConsumer.consume(fakeRumEvent)
+        testedConsumer.consume(fakeRumEvent)
 
         // Then
         verify(mockSdkLogHandler).handleLog(
@@ -523,7 +525,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenReturn(fakeMappedRumEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeRumEvent)
+        testedConsumer.consume(fakeRumEvent)
 
         // Then
         verify(mockDataWriter).write(fakeMappedRumEvent)
@@ -545,7 +547,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenReturn(fakeMappedRumEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeRumEvent)
+        testedConsumer.consume(fakeRumEvent)
 
         // Then
         verify(mockDataWriter).write(fakeRumEvent)
@@ -567,7 +569,7 @@ internal class WebViewRumEventConsumerTest {
         ).thenReturn(fakeMappedRumEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeRumEvent)
+        testedConsumer.consume(fakeRumEvent)
 
         // Then
         verify(mockSdkLogHandler).handleLog(
@@ -600,9 +602,9 @@ internal class WebViewRumEventConsumerTest {
         ).thenReturn(fakeMappedViewEvent)
 
         // When
-        testedRumEventConsumer.consume(fakeEvent)
-        testedRumEventConsumer.consume(fakeEvent)
-        testedRumEventConsumer.consume(fakeEvent)
+        testedConsumer.consume(fakeEvent)
+        testedConsumer.consume(fakeEvent)
+        testedConsumer.consume(fakeEvent)
 
         // Then
         verify(mockWebViewRumEventMapper, times(3)).mapEvent(
@@ -640,8 +642,8 @@ internal class WebViewRumEventConsumerTest {
             .thenReturn(fakeEvent2)
 
         // When
-        testedRumEventConsumer.consume(fakeEvent)
-        testedRumEventConsumer.consume(fakeEvent2)
+        testedConsumer.consume(fakeEvent)
+        testedConsumer.consume(fakeEvent2)
 
         // Then
         verify(mockWebViewRumEventMapper).mapEvent(
@@ -688,11 +690,12 @@ internal class WebViewRumEventConsumerTest {
 
         // When
         fakeViewEvents.forEach {
-            testedRumEventConsumer.consume(it.toJson().asJsonObject)
+            testedConsumer.consume(it.toJson().asJsonObject)
         }
 
         // Then
-        assertThat(testedRumEventConsumer.offsets.entries)
+        val rumEventConsumer = testedConsumer as WebViewRumEventConsumer
+        assertThat(rumEventConsumer.offsets.entries)
             .containsExactlyElementsOf(expectedOffsets.entries)
     }
 

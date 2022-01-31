@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.LogAttributes
+import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
 import com.google.gson.JsonObject
 import kotlin.ClassCastException
@@ -21,16 +22,16 @@ internal class WebViewLogEventConsumer(
     private val internalLogsWriter: DataWriter<JsonObject>,
     private val rumContextProvider: WebViewRumEventContextProvider,
     private val timeProvider: TimeProvider
-) {
+) : WebViewEventConsumer<Pair<JsonObject, String>> {
 
     private val ddTags: String by lazy {
         "${LogAttributes.APPLICATION_VERSION}:${CoreFeature.packageVersion}" +
             ",${LogAttributes.ENV}:${CoreFeature.envName}"
     }
 
-    fun consume(event: JsonObject, eventType: String) {
-        map(event).let {
-            if (eventType == INTERNAL_LOG_EVENT_TYPE) {
+    override fun consume(event: Pair<JsonObject, String>) {
+        map(event.first).let {
+            if (event.second == INTERNAL_LOG_EVENT_TYPE) {
                 internalLogsWriter.write(it)
             } else {
                 userLogsWriter.write(it)

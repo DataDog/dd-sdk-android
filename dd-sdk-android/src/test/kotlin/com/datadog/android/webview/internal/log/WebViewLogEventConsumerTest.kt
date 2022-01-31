@@ -16,6 +16,7 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.mockSdkLogHandler
 import com.datadog.android.utils.restoreSdkLogHandler
+import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonArray
@@ -52,7 +53,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class WebViewLogEventConsumerTest {
 
-    lateinit var testedLogEventConsumer: WebViewLogEventConsumer
+    lateinit var testedConsumer: WebViewEventConsumer<Pair<JsonObject, String>>
 
     @Mock
     lateinit var mockUserLogsWriter: DataWriter<JsonObject>
@@ -90,7 +91,7 @@ internal class WebViewLogEventConsumerTest {
         CoreFeature.envName = fakeEnvName
         CoreFeature.packageVersion = fakePackageVersion
 
-        testedLogEventConsumer = WebViewLogEventConsumer(
+        testedConsumer = WebViewLogEventConsumer(
             mockUserLogsWriter,
             mockInternalLogsWriter,
             mockRumContextProvider,
@@ -116,9 +117,8 @@ internal class WebViewLogEventConsumerTest {
         }
 
         // When
-        testedLogEventConsumer.consume(
-            fakeWebLogEvent,
-            WebViewLogEventConsumer.USER_LOG_EVENT_TYPE
+        testedConsumer.consume(
+            fakeWebLogEvent to WebViewLogEventConsumer.USER_LOG_EVENT_TYPE
         )
 
         // Then
@@ -143,9 +143,8 @@ internal class WebViewLogEventConsumerTest {
         }
 
         // When
-        testedLogEventConsumer.consume(
-            fakeWebLogEvent,
-            WebViewLogEventConsumer.INTERNAL_LOG_EVENT_TYPE
+        testedConsumer.consume(
+            fakeWebLogEvent to WebViewLogEventConsumer.INTERNAL_LOG_EVENT_TYPE
         )
 
         // Then
@@ -173,9 +172,8 @@ internal class WebViewLogEventConsumerTest {
         }
 
         // When
-        testedLogEventConsumer.consume(
-            fakeWebLogEvent,
-            WebViewLogEventConsumer.USER_LOG_EVENT_TYPE
+        testedConsumer.consume(
+            fakeWebLogEvent to WebViewLogEventConsumer.USER_LOG_EVENT_TYPE
         )
 
         // Then
@@ -211,9 +209,8 @@ internal class WebViewLogEventConsumerTest {
         }
 
         // When
-        testedLogEventConsumer.consume(
-            fakeWebLogEvent,
-            WebViewLogEventConsumer.INTERNAL_LOG_EVENT_TYPE
+        testedConsumer.consume(
+            fakeWebLogEvent to WebViewLogEventConsumer.INTERNAL_LOG_EVENT_TYPE
         )
 
         // Then
@@ -245,9 +242,8 @@ internal class WebViewLogEventConsumerTest {
         }
 
         // When
-        testedLogEventConsumer.consume(
-            fakeWebLogEvent,
-            WebViewLogEventConsumer.USER_LOG_EVENT_TYPE
+        testedConsumer.consume(
+            fakeWebLogEvent to WebViewLogEventConsumer.USER_LOG_EVENT_TYPE
         )
 
         // Then
@@ -271,9 +267,8 @@ internal class WebViewLogEventConsumerTest {
         }
 
         // When
-        testedLogEventConsumer.consume(
-            fakeWebLogEvent,
-            WebViewLogEventConsumer.INTERNAL_LOG_EVENT_TYPE
+        testedConsumer.consume(
+            fakeWebLogEvent to WebViewLogEventConsumer.INTERNAL_LOG_EVENT_TYPE
         )
 
         // Then
@@ -293,9 +288,8 @@ internal class WebViewLogEventConsumerTest {
         fakeBrokenJsonObject: JsonObject
     ) {
         // When
-        testedLogEventConsumer.consume(
-            fakeBrokenJsonObject,
-            WebViewLogEventConsumer.USER_LOG_EVENT_TYPE
+        testedConsumer.consume(
+            fakeBrokenJsonObject to WebViewLogEventConsumer.USER_LOG_EVENT_TYPE
         )
 
         // Then
@@ -307,11 +301,9 @@ internal class WebViewLogEventConsumerTest {
     fun `M send original event W consume { internal log, bad format json object }`(
         fakeBrokenJsonObject: JsonObject
     ) {
-
         // When
-        testedLogEventConsumer.consume(
-            fakeBrokenJsonObject,
-            WebViewLogEventConsumer.INTERNAL_LOG_EVENT_TYPE
+        testedConsumer.consume(
+            fakeBrokenJsonObject to WebViewLogEventConsumer.INTERNAL_LOG_EVENT_TYPE
         )
 
         // Then
@@ -326,9 +318,8 @@ internal class WebViewLogEventConsumerTest {
         forge: Forge
     ) {
         // When
-        testedLogEventConsumer.consume(
-            fakeBrokenJsonObject,
-            forge.anElementFrom(WebViewLogEventConsumer.LOG_EVENT_TYPES)
+        testedConsumer.consume(
+            fakeBrokenJsonObject to forge.anElementFrom(WebViewLogEventConsumer.LOG_EVENT_TYPES)
         )
 
         // Then
@@ -353,9 +344,8 @@ internal class WebViewLogEventConsumerTest {
         val expectedTags = mobileSdkDdtags()
 
         // When
-        testedLogEventConsumer.consume(
-            fakeWebLogEvent,
-            WebViewLogEventConsumer.USER_LOG_EVENT_TYPE
+        testedConsumer.consume(
+            fakeWebLogEvent to WebViewLogEventConsumer.USER_LOG_EVENT_TYPE
         )
 
         // Then
@@ -378,9 +368,8 @@ internal class WebViewLogEventConsumerTest {
         val expectedTags = mobileSdkDdtags()
 
         // When
-        testedLogEventConsumer.consume(
-            fakeWebLogEvent,
-            WebViewLogEventConsumer.INTERNAL_LOG_EVENT_TYPE
+        testedConsumer.consume(
+            fakeWebLogEvent to WebViewLogEventConsumer.INTERNAL_LOG_EVENT_TYPE
         )
 
         // Then

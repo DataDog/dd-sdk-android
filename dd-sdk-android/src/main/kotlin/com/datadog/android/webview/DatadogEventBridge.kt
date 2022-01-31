@@ -7,7 +7,9 @@
 package com.datadog.android.webview
 
 import android.webkit.JavascriptInterface
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.log.WebViewInternalLogsFeature
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
@@ -19,28 +21,46 @@ import com.google.gson.JsonArray
 
 /**
  * This [JavascriptInterface] is used to intercept all the Datadog events produced by
- * the displayed web content when there is already a Datadog browser-sdk attached.
- * The goal is to make those events part of the mobile session.
- * Please note that the WebView will not be tracked unless you add the host name in the hosts
- * lists in the SDK configuration.
- * @see [com.datadog.android.core.configuration.Configuration.Builder]
+ * the displayed web page (if Datadog's browser-sdk is enabled).
+ * The goal is to make those events part of a unique mobile session.
+ * Please note that the WebView events will not be tracked unless the web page's URL Host is part of
+ * the list defined in the global [Configuration], or in this constructor.
+ * @param allowedHosts a list of all the hosts that you want to track when loaded in the
+ * WebView.
+ * @see [Configuration.Builder.setWebViewTrackingHosts]
  */
-class DatadogEventBridge {
+class DatadogEventBridge
+internal constructor(
+    internal val webViewEventConsumer: WebViewEventConsumer<String>,
+    private val allowedHosts: List<String>
+) {
 
-    private val contextProvider = WebViewRumEventContextProvider()
-    private val webViewEventConsumer: WebViewEventConsumer = WebViewEventConsumer(
-        WebViewRumEventConsumer(
-            WebViewRumFeature.persistenceStrategy.getWriter(),
-            CoreFeature.timeProvider,
-            contextProvider = contextProvider
-        ),
-        WebViewLogEventConsumer(
-            WebViewLogsFeature.persistenceStrategy.getWriter(),
-            WebViewInternalLogsFeature.persistenceStrategy.getWriter(),
-            contextProvider,
-            CoreFeature.timeProvider
+    /**
+     * This [JavascriptInterface] is used to intercept all the Datadog events produced by
+     * the displayed web page (if Datadog's browser-sdk is enabled).
+     * The goal is to make those events part of a unique mobile session.
+     * Please note that the WebView events will not be tracked unless the web page's URL Host is part of
+     * the list defined in the global [Configuration], or in the constructor.
+     * @see [Configuration.Builder.setWebViewTrackingHosts]
+     */
+    constructor() : this(
+        buildWebViewEventConsumer(),
+        emptyList()
+    )
 
-        )
+    /**
+     * This [JavascriptInterface] is used to intercept all the Datadog events produced by
+     * the displayed web page (if Datadog's browser-sdk is enabled).
+     * The goal is to make those events part of a unique mobile session.
+     * Please note that the WebView events will not be tracked unless the web page's URL Host is part of
+     * the list defined in the global [Configuration], or in the constructor.
+     * @param allowedHosts a list of all the hosts that you want to track when loaded in the
+     * WebView (e.g.: `listOf("example.com", "example.net")`).
+     * @see [Configuration.Builder.setWebViewTrackingHosts]
+     */
+    constructor(allowedHosts: List<String>) : this(
+        buildWebViewEventConsumer(),
+        allowedHosts
     )
 
     // region Bridge
@@ -64,6 +84,9 @@ class DatadogEventBridge {
     fun getAllowedWebViewHosts(): String {
         // We need to use a JsonArray here otherwise it cannot be parsed on the JS side
         val origins = JsonArray()
+        allowedHosts.forEach {
+            origins.add(it)
+        }
         CoreFeature.webViewTrackingHosts.forEach {
             origins.add(it)
         }
@@ -71,4 +94,23 @@ class DatadogEventBridge {
     }
 
     // endregion
+
+    companion object {
+        private fun buildWebViewEventConsumer(): WebViewEventConsumer<String> {
+            val contextProvider = WebViewRumEventContextProvider()
+            return MixedWebViewEventConsumer(
+                WebViewRumEventConsumer(
+                    dataWriter = WebViewRumFeature.persistenceStrategy.getWriter(),
+                    timeProvider = CoreFeature.timeProvider,
+                    contextProvider = contextProvider
+                ),
+                WebViewLogEventConsumer(
+                    userLogsWriter = WebViewLogsFeature.persistenceStrategy.getWriter(),
+                    internalLogsWriter = WebViewInternalLogsFeature.persistenceStrategy.getWriter(),
+                    rumContextProvider = contextProvider,
+                    timeProvider = CoreFeature.timeProvider
+                )
+            )
+        }
+    }
 }
