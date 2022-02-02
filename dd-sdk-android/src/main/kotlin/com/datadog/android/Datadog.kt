@@ -198,6 +198,9 @@ object Datadog {
             TracingFeature.flushStoredData()
             RumFeature.flushStoredData()
             CrashReportsFeature.flushStoredData()
+            WebViewInternalLogsFeature.flushStoredData()
+            WebViewLogsFeature.flushStoredData()
+            WebViewRumFeature.flushStoredData()
         }
     }
 
