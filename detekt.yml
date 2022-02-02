@@ -754,6 +754,7 @@ datadog:
       - "android.webkit.ConsoleMessage.message()"
       - "android.webkit.ConsoleMessage.messageLevel()"
       - "android.webkit.ConsoleMessage.sourceId()"
+      - "android.webkit.WebView.addJavascriptInterface(kotlin.Any, kotlin.String)"
       - "android.webkit.WebViewClient.onPageFinished(android.webkit.WebView, kotlin.String)"
       - "android.webkit.WebViewClient.onPageStarted(android.webkit.WebView, kotlin.String, android.graphics.Bitmap)"
       - "android.webkit.WebViewClient.onReceivedError(android.webkit.WebView, android.webkit.WebResourceRequest, android.webkit.WebResourceError)"

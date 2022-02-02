@@ -6,12 +6,21 @@
 
 package com.datadog.android.webview
 
+import android.util.Log
+import android.webkit.WebSettings
+import android.webkit.WebView
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
+import com.nhaarman.mockitokotlin2.argThat
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -40,8 +49,11 @@ internal class DatadogEventBridgeTest {
     @Mock
     lateinit var mockWebViewEventConsumer: MixedWebViewEventConsumer
 
+    lateinit var mockDevLogHandler: LogHandler
+
     @BeforeEach
     fun `set up`() {
+        mockDevLogHandler = mockDevLogHandler()
         testedDatadogEventBridge = DatadogEventBridge(mockWebViewEventConsumer, emptyList())
     }
 
@@ -120,5 +132,51 @@ internal class DatadogEventBridgeTest {
 
         // Then
         assertThat(allowedWebViewHosts).isEqualTo(expectedHosts)
+    }
+
+    @Test
+    fun `M attach the bridge W setup`() {
+        // Given
+
+        val mockSettings: WebSettings = mock {
+            whenever(it.javaScriptEnabled).thenReturn(true)
+        }
+        val mockWebView: WebView = mock {
+            whenever(it.settings).thenReturn(mockSettings)
+        }
+
+        // When
+        DatadogEventBridge.setup(mockWebView)
+
+        // Then
+        verify(mockWebView).addJavascriptInterface(
+            argThat { this is DatadogEventBridge },
+            eq(DatadogEventBridge.DATADOG_EVENT_BRIDGE_NAME)
+        )
+    }
+
+    @Test
+    fun `M attach the bridge and send a warn log W setup { javascript not enabled }`() {
+        // Given
+
+        val mockSettings: WebSettings = mock {
+            whenever(it.javaScriptEnabled).thenReturn(false)
+        }
+        val mockWebView: WebView = mock {
+            whenever(it.settings).thenReturn(mockSettings)
+        }
+
+        // When
+        DatadogEventBridge.setup(mockWebView)
+
+        // Then
+        verify(mockWebView).addJavascriptInterface(
+            argThat { this is DatadogEventBridge },
+            eq(DatadogEventBridge.DATADOG_EVENT_BRIDGE_NAME)
+        )
+        verify(mockDevLogHandler).handleLog(
+            Log.WARN,
+            DatadogEventBridge.JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE
+        )
     }
 }
