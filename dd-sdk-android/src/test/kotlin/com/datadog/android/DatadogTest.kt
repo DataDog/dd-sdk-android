@@ -17,12 +17,15 @@ import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploaderV2
+import com.datadog.android.core.internal.persistence.DataReader
+import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
@@ -35,10 +38,12 @@ import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.android.webview.internal.log.WebViewInternalLogsFeature
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
+import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.invokeMethod
+import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
@@ -134,7 +139,7 @@ internal class DatadogTest {
     fun `𝕄 update userInfoProvider 𝕎 setUserInfo()`(
         @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
         @StringForgery name: String,
-        @StringForgery(regex = "\\w+@\\w+") email: String
+        @StringForgery(regex = "\\w+@\\w+") email: String,
     ) {
         // Given
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
@@ -157,7 +162,7 @@ internal class DatadogTest {
     fun `𝕄 clears userInfoProvider 𝕎 setUserInfo() with defaults`(
         @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
         @StringForgery name: String,
-        @StringForgery(regex = "\\w+@\\w+") email: String
+        @StringForgery(regex = "\\w+@\\w+") email: String,
     ) {
         // Given
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
@@ -201,6 +206,25 @@ internal class DatadogTest {
 
         // Then
         assertThat(initialized).isTrue()
+    }
+
+    @Test
+    fun `𝕄 warn 𝕎 initialize() + initialize()`() {
+        // Given
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
+        val configuration = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        ).build()
+
+        // When
+        Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
+        Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
+
+        // Then
+        verify(mockDevLogHandler).handleLog(AndroidLog.WARN, Datadog.MESSAGE_ALREADY_INITIALIZED)
     }
 
     @Test
@@ -290,7 +314,7 @@ internal class DatadogTest {
 
     @Test
     fun `M return false and log an error W initialize() {envName not valid, isDebug=false}`(
-        forge: Forge
+        forge: Forge,
     ) {
         // Given
         stubApplicationInfo(appContext.mockInstance, isDebuggable = false)
@@ -320,7 +344,7 @@ internal class DatadogTest {
 
     @Test
     fun `M throw an exception W initialize() {envName not valid, isDebug=true}`(
-        forge: Forge
+        forge: Forge,
     ) {
         // Given
         stubApplicationInfo(appContext.mockInstance, isDebuggable = true)
@@ -379,7 +403,7 @@ internal class DatadogTest {
         @BoolForgery logsEnabled: Boolean,
         @BoolForgery tracesEnabled: Boolean,
         @BoolForgery crashReportEnabled: Boolean,
-        @BoolForgery rumEnabled: Boolean
+        @BoolForgery rumEnabled: Boolean,
     ) {
         // Given
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
@@ -468,7 +492,7 @@ internal class DatadogTest {
     @Test
     fun `𝕄 initialize InternalLogs 𝕎 initialize() { Internal logs configured }`(
         @StringForgery(StringForgeryType.HEXADECIMAL) clientToken: String,
-        @StringForgery(regex = "https://[a-z]+\\.com") url: String
+        @StringForgery(regex = "https://[a-z]+\\.com") url: String,
     ) {
         // Given
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
@@ -498,7 +522,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 apply source name 𝕎 applyAdditionalConfig(config) { with source name }`(
-        @StringForgery source: String
+        @StringForgery source: String,
     ) {
         // Given
         val config = Configuration.Builder(
@@ -532,7 +556,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 use default source name 𝕎 applyAdditionalConfig(config) { with empty source name }`(
-        forge: Forge
+        forge: Forge,
     ) {
         // Given
         val config = Configuration.Builder(
@@ -566,7 +590,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 use default source name 𝕎 applyAdditionalConfig(config) { with source name !string }`(
-        forge: Forge
+        forge: Forge,
     ) {
         // Given
         val config = Configuration.Builder(
@@ -598,7 +622,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 use default source name 𝕎 applyAdditionalConfig(config) { without source name }`(
-        forge: Forge
+        forge: Forge,
     ) {
         // Given
         val config = Configuration.Builder(
@@ -630,7 +654,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 apply sdk version 𝕎 applyAdditionalConfig(config) { with sdk version }`(
-        @StringForgery sdkVersion: String
+        @StringForgery sdkVersion: String,
     ) {
         // Given
         val config = Configuration.Builder(
@@ -664,7 +688,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 use default sdk version 𝕎 applyAdditionalConfig(config) { with empty sdk version }`(
-        forge: Forge
+        forge: Forge,
     ) {
         // Given
         val config = Configuration.Builder(
@@ -700,7 +724,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 use default sdk version 𝕎 applyAdditionalConfig(config) { with sdk version !string }`(
-        forge: Forge
+        forge: Forge,
     ) {
         // Given
         val config = Configuration.Builder(
@@ -734,7 +758,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 use default sdk version 𝕎 applyAdditionalConfig(config) { without sdk version }`(
-        forge: Forge
+        forge: Forge,
     ) {
         // Given
         val config = Configuration.Builder(
@@ -804,6 +828,52 @@ internal class DatadogTest {
 
         // Then
         assertThat(RumFeature.debugActivityLifecycleListener).isNull()
+    }
+
+    @Test
+    fun `𝕄 clear data in all features 𝕎 clearAllData()`() {
+        val config = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .build()
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+        val dataReaders: Array<DataReader> = Array(8) { mock() }
+
+        // When
+        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
+        LogsFeature.persistenceStrategy = mock<PersistenceStrategy<LogEvent>>().apply {
+            whenever(getReader()) doReturn dataReaders[0]
+        }
+        CrashReportsFeature.persistenceStrategy = mock<PersistenceStrategy<LogEvent>>().apply {
+            whenever(getReader()) doReturn dataReaders[1]
+        }
+        RumFeature.persistenceStrategy = mock<PersistenceStrategy<Any>>().apply {
+            whenever(getReader()) doReturn dataReaders[2]
+        }
+        TracingFeature.persistenceStrategy = mock<PersistenceStrategy<DDSpan>>().apply {
+            whenever(getReader()) doReturn dataReaders[3]
+        }
+        InternalLogsFeature.persistenceStrategy = mock<PersistenceStrategy<LogEvent>>().apply {
+            whenever(getReader()) doReturn dataReaders[4]
+        }
+        WebViewInternalLogsFeature.persistenceStrategy = mock<PersistenceStrategy<JsonObject>>().apply {
+            whenever(getReader()) doReturn dataReaders[5]
+        }
+        WebViewLogsFeature.persistenceStrategy= mock<PersistenceStrategy<JsonObject>>().apply {
+            whenever(getReader()) doReturn dataReaders[6]
+        }
+        WebViewRumFeature.persistenceStrategy = mock<PersistenceStrategy<Any>>().apply {
+            whenever(getReader()) doReturn dataReaders[7]
+        }
+        Datadog.clearAllData()
+
+        // Then
+        dataReaders.forEach {
+            verify(it).dropAll()
+        }
     }
 
     // region Internal

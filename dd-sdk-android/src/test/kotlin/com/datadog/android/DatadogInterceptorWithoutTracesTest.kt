@@ -158,10 +158,10 @@ internal class DatadogInterceptorWithoutTracesTest {
         fakeMediaType = MediaType.parse(mediaType)
         fakeRequest = forgeRequest(forge)
         testedInterceptor = DatadogInterceptor(
-            emptyList(),
-            mockRequestListener,
-            mockDetector,
-            mockRumAttributesProvider
+            tracedHosts = emptyList(),
+            tracedRequestListener = mockRequestListener,
+            firstPartyHostDetector = mockDetector,
+            rumResourceAttributesProvider = mockRumAttributesProvider
         ) { mockLocalTracer }
         TracingFeature.initialize(
             appContext.mockInstance,

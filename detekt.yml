@@ -733,6 +733,7 @@ datadog:
       - "android.os.Process.getStartElapsedRealtime()"
       - "android.os.Process.myPid()"
       - "android.os.SystemClock.elapsedRealtime()"
+      - "android.util.Log.i(kotlin.String?, kotlin.String)"
       - "android.util.Log.e(kotlin.String?, kotlin.String)"
       - "android.util.Log.e(kotlin.String?, kotlin.String?, kotlin.Throwable?)"
       - "android.util.Log.getStackTraceString(kotlin.Throwable?)"

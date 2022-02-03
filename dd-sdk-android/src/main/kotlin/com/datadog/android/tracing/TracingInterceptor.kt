@@ -292,10 +292,10 @@ internal constructor(
     private fun handleResponse(
         request: Request,
         response: Response,
-        span: Span?
+        span: Span
     ) {
         val statusCode = response.code()
-        span?.setTag(Tags.HTTP_STATUS.key, statusCode)
+        span.setTag(Tags.HTTP_STATUS.key, statusCode)
         if (statusCode in 400..499) {
             (span as? MutableSpan)?.isError = true
         }
@@ -304,9 +304,9 @@ internal constructor(
         }
         onRequestIntercepted(request, span, response, null)
         if (canSendSpan()) {
-            span?.finish()
+            span.finish()
         } else {
-            (span as? DDSpan)?.drop()
+            (span as? MutableSpan)?.drop()
         }
     }
 
@@ -323,7 +323,7 @@ internal constructor(
         if (canSendSpan()) {
             span.finish()
         } else {
-            (span as? DDSpan)?.drop()
+            (span as? MutableSpan)?.drop()
         }
     }
 

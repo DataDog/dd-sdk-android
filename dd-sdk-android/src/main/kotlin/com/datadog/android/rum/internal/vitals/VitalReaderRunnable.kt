@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.vitals
 
+import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.internal.RumFeature
 import java.util.concurrent.RejectedExecutionException
@@ -25,11 +26,6 @@ internal class VitalReaderRunnable(
             observer.onNewSample(data)
         }
 
-        try {
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            executor.schedule(this, periodMs, TimeUnit.MILLISECONDS)
-        } catch (e: RejectedExecutionException) {
-            sdkLogger.e(RumFeature.ERROR_VITAL_TASK_REJECTED, e)
-        }
+        executor.scheduleSafe("Vitals monitoring", periodMs, TimeUnit.MILLISECONDS, this)
     }
 }

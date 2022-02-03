@@ -52,11 +52,11 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         factory: () -> Tracer
     ): TracingInterceptor {
         return DatadogInterceptor(
-            tracedHosts,
-            mockRequestListener,
-            mockDetector,
-            mockRumAttributesProvider,
-            factory
+            tracedHosts = tracedHosts,
+            tracedRequestListener = mockRequestListener,
+            firstPartyHostDetector = mockDetector,
+            rumResourceAttributesProvider = mockRumAttributesProvider,
+            localTracerFactory = factory
         )
     }
 

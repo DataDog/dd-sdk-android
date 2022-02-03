@@ -9,10 +9,12 @@ package com.datadog.android.tracing
 import android.content.Context
 import android.util.Log
 import com.datadog.android.Datadog
+import com.datadog.android.DatadogInterceptor
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
@@ -200,6 +202,31 @@ internal open class TracingInterceptorTest {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
     }
 
+
+    @Test
+    fun `M instantiate with default callbacks W init()`() {
+        // When
+        val interceptor = TracingInterceptor()
+
+        // Then
+        assertThat(interceptor.tracedHosts).isEmpty()
+        assertThat(interceptor.tracedRequestListener)
+            .isInstanceOf(NoOpTracedRequestListener::class.java)
+    }
+
+    @Test
+    fun `M instantiate with default callbacks W init()`(
+        @StringForgery(regex = "[a-z]+\\.[a-z]{3}") hosts: List<String>
+    ) {
+        // When
+        val interceptor = TracingInterceptor(hosts)
+
+        // Then
+        assertThat(interceptor.tracedHosts).containsAll(hosts)
+        assertThat(interceptor.tracedRequestListener)
+            .isInstanceOf(NoOpTracedRequestListener::class.java)
+    }
+
     @Test
     fun `𝕄 inject tracing header 𝕎 intercept() {global known host}`(
         @StringForgery key: String,
@@ -324,6 +351,27 @@ internal open class TracingInterceptorTest {
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
             assertThat(firstValue.headers(key)).containsOnly(value)
+        }
+    }
+
+    @Test
+    fun `𝕄 ignore inject exception 𝕎 intercept() {IllegalStateException}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int,
+        @StringForgery message: String,
+        forge: Forge
+    ) {
+        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts))
+        fakeRequest = forgeRequest(forge)
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
+        stubChain(mockChain, statusCode)
+        doThrow(IllegalStateException(message)).whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+
+        val response = testedInterceptor.intercept(mockChain)
+
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers().size()).isZero()
         }
     }
 
