@@ -11,14 +11,15 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockSdkLogHandler
-import com.datadog.android.utils.restoreSdkLogHandler
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.argThat
@@ -32,7 +33,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.stream.Stream
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -48,6 +48,7 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -63,11 +64,6 @@ internal class WebViewLogEventConsumerTest {
 
     @Mock
     lateinit var mockRumContextProvider: WebViewRumEventContextProvider
-
-    lateinit var originalSdkLogHandler: LogHandler
-
-    @Mock
-    lateinit var mockSdkLogHandler: LogHandler
 
     @StringForgery(regex = "[0-9]\\.[0-9]\\.[0-9]")
     lateinit var fakePackageVersion: String
@@ -98,12 +94,6 @@ internal class WebViewLogEventConsumerTest {
             mockTimeProvider
         )
         whenever(mockTimeProvider.getServerOffsetMillis()).thenReturn(fakeTimeOffset)
-        originalSdkLogHandler = mockSdkLogHandler(mockSdkLogHandler)
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        restoreSdkLogHandler(originalSdkLogHandler)
     }
 
     @Test
@@ -323,7 +313,7 @@ internal class WebViewLogEventConsumerTest {
         )
 
         // Then
-        verify(mockSdkLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             eq(Log.ERROR),
             eq(WebViewLogEventConsumer.JSON_PARSING_ERROR_MESSAGE),
             argThat {
@@ -404,6 +394,13 @@ internal class WebViewLogEventConsumerTest {
     // endregion
 
     companion object {
+        val logger = LoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
 
         @JvmStatic
         fun brokenJsonTestData(): Stream<Arguments> {

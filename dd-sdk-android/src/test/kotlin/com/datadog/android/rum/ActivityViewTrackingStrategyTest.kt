@@ -14,7 +14,6 @@ import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.tracking.StubComponentPredicate
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.verify
@@ -56,7 +55,7 @@ internal class ActivityViewTrackingStrategyTest :
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
         testedStrategy = ActivityViewTrackingStrategy(true, mockPredicate)
-        testedStrategy.setFieldValue("viewLoadingTimer", mockViewLoadingTimer)
+        testedStrategy.viewLoadingTimer = mockViewLoadingTimer
     }
 
     override fun createInstance(forge: Forge): ActivityViewTrackingStrategy {

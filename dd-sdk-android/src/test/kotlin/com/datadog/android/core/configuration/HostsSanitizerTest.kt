@@ -7,8 +7,10 @@
 package com.datadog.android.core.configuration
 
 import android.util.Log
-import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.eq
@@ -29,13 +31,12 @@ import org.mockito.junit.jupiter.MockitoExtension
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 internal class HostsSanitizerTest {
 
     lateinit var testedSanitizer: HostsSanitizer
-
-    lateinit var mockDevLogHandler: LogHandler
 
     @StringForgery(type = StringForgeryType.ALPHABETICAL)
     lateinit var fakeFeature: String
@@ -43,7 +44,6 @@ internal class HostsSanitizerTest {
     @BeforeEach
     fun `set up`() {
         testedSanitizer = HostsSanitizer()
-        mockDevLogHandler = mockDevLogHandler()
     }
 
     @Test
@@ -123,7 +123,7 @@ internal class HostsSanitizerTest {
 
         // Then
         hosts.forEach {
-            verify(mockDevLogHandler).handleLog(
+            verify(logger.mockDevLogHandler).handleLog(
                 Log.ERROR,
                 HostsSanitizer.ERROR_MALFORMED_HOST_IP_ADDRESS.format(
                     Locale.US,
@@ -151,7 +151,7 @@ internal class HostsSanitizerTest {
 
         // THEN
         hosts.forEach {
-            verify(mockDevLogHandler).handleLog(
+            verify(logger.mockDevLogHandler).handleLog(
                 Log.ERROR,
                 HostsSanitizer.ERROR_MALFORMED_HOST_IP_ADDRESS.format(
                     Locale.US,
@@ -229,7 +229,7 @@ internal class HostsSanitizerTest {
 
         // THEN
         hosts.forEach {
-            verify(mockDevLogHandler).handleLog(
+            verify(logger.mockDevLogHandler).handleLog(
                 Log.WARN,
                 HostsSanitizer.WARNING_USING_URL.format(
                     Locale.US,
@@ -256,7 +256,7 @@ internal class HostsSanitizerTest {
 
         // Then
         hosts.forEach {
-            verify(mockDevLogHandler).handleLog(
+            verify(logger.mockDevLogHandler).handleLog(
                 eq(Log.ERROR),
                 eq(
                     HostsSanitizer.ERROR_MALFORMED_URL.format(
@@ -287,5 +287,15 @@ internal class HostsSanitizerTest {
 
         // Then
         assertThat(sanitizedHosts).isEmpty()
+    }
+
+    companion object {
+        val logger = LoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
     }
 }

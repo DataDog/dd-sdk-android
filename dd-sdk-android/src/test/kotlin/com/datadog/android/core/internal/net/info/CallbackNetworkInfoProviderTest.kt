@@ -16,9 +16,11 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.assertj.NetworkInfoAssert.Companion.assertThat
-import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
@@ -40,7 +42,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -55,9 +58,6 @@ internal class CallbackNetworkInfoProviderTest {
     lateinit var mockCapabilities: NetworkCapabilities
 
     @Mock
-    lateinit var mockDevLogHandler: LogHandler
-
-    @Mock
     lateinit var mockWriter: DataWriter<NetworkInfo>
 
     @Mock
@@ -70,7 +70,6 @@ internal class CallbackNetworkInfoProviderTest {
         whenever(mockCapabilities.linkDownstreamBandwidthKbps) doReturn 0
         whenever(mockCapabilities.signalStrength) doReturn
             NetworkCapabilities.SIGNAL_STRENGTH_UNSPECIFIED
-        mockDevLogHandler = mockDevLogHandler()
         whenever(mockCapabilities.hasTransport(any())) doReturn false
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
 
@@ -426,7 +425,7 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.register(context)
 
-        verify(mockDevLogHandler)
+        verify(logger.mockDevLogHandler)
             .handleLog(
                 Log.ERROR,
                 CallbackNetworkInfoProvider.ERROR_REGISTER
@@ -446,7 +445,7 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.register(context)
 
-        verify(mockDevLogHandler)
+        verify(logger.mockDevLogHandler)
             .handleLog(
                 Log.ERROR,
                 CallbackNetworkInfoProvider.ERROR_REGISTER,
@@ -469,7 +468,7 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.register(context)
 
-        verify(mockDevLogHandler)
+        verify(logger.mockDevLogHandler)
             .handleLog(
                 Log.ERROR,
                 CallbackNetworkInfoProvider.ERROR_REGISTER,
@@ -596,7 +595,7 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.unregister(context)
 
-        verify(mockDevLogHandler)
+        verify(logger.mockDevLogHandler)
             .handleLog(
                 Log.ERROR,
                 CallbackNetworkInfoProvider.ERROR_UNREGISTER,
@@ -611,7 +610,7 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.unregister(context)
 
-        verify(mockDevLogHandler)
+        verify(logger.mockDevLogHandler)
             .handleLog(
                 Log.ERROR,
                 CallbackNetworkInfoProvider.ERROR_UNREGISTER
@@ -632,7 +631,7 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.unregister(context)
 
-        verify(mockDevLogHandler)
+        verify(logger.mockDevLogHandler)
             .handleLog(
                 Log.ERROR,
                 CallbackNetworkInfoProvider.ERROR_UNREGISTER,
@@ -647,5 +646,15 @@ internal class CallbackNetworkInfoProviderTest {
 
         // THEN
         verify(mockWriter).write(testedProvider.getLatestNetworkInfo())
+    }
+
+    companion object {
+        val logger = LoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
     }
 }

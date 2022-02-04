@@ -43,10 +43,10 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aFilteredMap
 import com.datadog.android.utils.forge.exhaustiveAttributes
-import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -70,7 +70,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.lang.RuntimeException
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -2059,7 +2058,6 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        val mockDevLogHandler = mockDevLogHandler()
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         testedScope.activeActionScope = mockChildScope
         fakeEvent = RumRawEvent.StartAction(actionType, name, waitForStop, attributes)
@@ -2074,7 +2072,7 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isSameAs(mockChildScope)
 
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             RumViewScope.ACTION_DROPPED_WARNING.format(
                 Locale.US,
@@ -2083,7 +2081,7 @@ internal class RumViewScopeTest {
             )
         )
 
-        verifyNoMoreInteractions(mockDevLogHandler)
+        verifyNoMoreInteractions(logger.mockDevLogHandler)
     }
 
     @Test
@@ -2093,7 +2091,6 @@ internal class RumViewScopeTest {
     ) {
 
         // Given
-        val mockDevLogHandler = mockDevLogHandler()
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         testedScope.activeActionScope = mockChildScope
         fakeEvent =
@@ -2109,7 +2106,7 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isSameAs(mockChildScope)
 
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             RumViewScope.ACTION_DROPPED_WARNING.format(
                 Locale.US,
@@ -2118,7 +2115,7 @@ internal class RumViewScopeTest {
             )
         )
 
-        verifyNoMoreInteractions(mockDevLogHandler)
+        verifyNoMoreInteractions(logger.mockDevLogHandler)
     }
 
     @Test
@@ -2127,7 +2124,6 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        val mockDevLogHandler = mockDevLogHandler()
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         testedScope.activeActionScope = mockChildScope
         fakeEvent =
@@ -2161,7 +2157,7 @@ internal class RumViewScopeTest {
                 }
         }
         verifyNoMoreInteractions(mockWriter)
-        verifyZeroInteractions(mockDevLogHandler)
+        verifyZeroInteractions(logger.mockDevLogHandler)
 
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isSameAs(mockChildScope)
@@ -4816,11 +4812,12 @@ internal class RumViewScopeTest {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
+        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, coreFeature, rumMonitor)
+            return listOf(logger, appContext, coreFeature, rumMonitor)
         }
     }
 }

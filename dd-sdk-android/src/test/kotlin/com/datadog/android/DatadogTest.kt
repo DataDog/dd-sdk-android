@@ -23,7 +23,6 @@ import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.monitoring.internal.InternalLogsFeature
@@ -31,10 +30,10 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.android.webview.internal.log.WebViewInternalLogsFeature
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
@@ -80,8 +79,6 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class DatadogTest {
 
-    lateinit var mockDevLogHandler: LogHandler
-
     @Mock
     lateinit var mockConnectivityMgr: ConnectivityManager
 
@@ -102,7 +99,6 @@ internal class DatadogTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
-        mockDevLogHandler = mockDevLogHandler()
 
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
@@ -224,7 +220,10 @@ internal class DatadogTest {
         Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
 
         // Then
-        verify(mockDevLogHandler).handleLog(AndroidLog.WARN, Datadog.MESSAGE_ALREADY_INITIALIZED)
+        verify(logger.mockDevLogHandler).handleLog(
+            AndroidLog.WARN,
+            Datadog.MESSAGE_ALREADY_INITIALIZED
+        )
     }
 
     @Test
@@ -338,7 +337,10 @@ internal class DatadogTest {
         val initialized = Datadog.isInitialized()
 
         // Then
-        verify(mockDevLogHandler).handleLog(AndroidLog.ERROR, Datadog.MESSAGE_ENV_NAME_NOT_VALID)
+        verify(logger.mockDevLogHandler).handleLog(
+            AndroidLog.ERROR,
+            Datadog.MESSAGE_ENV_NAME_NOT_VALID
+        )
         assertThat(initialized).isFalse()
     }
 
@@ -453,7 +455,7 @@ internal class DatadogTest {
         assertThat(WebViewInternalLogsFeature.initialized.get()).isFalse()
         assertThat(WebViewLogsFeature.initialized.get()).isTrue()
         assertThat(WebViewRumFeature.initialized.get()).isTrue()
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             android.util.Log.WARN,
             Datadog.WARNING_MESSAGE_APPLICATION_ID_IS_NULL
         )
@@ -483,7 +485,7 @@ internal class DatadogTest {
         assertThat(WebViewInternalLogsFeature.initialized.get()).isFalse()
         assertThat(WebViewLogsFeature.initialized.get()).isTrue()
         assertThat(WebViewRumFeature.initialized.get()).isFalse()
-        verify(mockDevLogHandler, never()).handleLog(
+        verify(logger.mockDevLogHandler, never()).handleLog(
             android.util.Log.WARN,
             Datadog.WARNING_MESSAGE_APPLICATION_ID_IS_NULL
         )
@@ -889,11 +891,12 @@ internal class DatadogTest {
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val mainLooper = MainLooperTestConfiguration()
+        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, mainLooper)
+            return listOf(logger, appContext, mainLooper)
         }
     }
 }

@@ -30,7 +30,6 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
-import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -138,7 +137,7 @@ internal class DatadogRumMonitorTest {
             mockTimeProvider,
             mockSessionListener
         )
-        testedMonitor.setFieldValue("rootScope", mockScope)
+        testedMonitor.rootScope = mockScope
     }
 
     @Test
@@ -1267,7 +1266,7 @@ internal class DatadogRumMonitorTest {
     ) {
         // Given
         val mockRumApplicationScope = mock<RumApplicationScope>()
-        testedMonitor.setFieldValue("rootScope", mockRumApplicationScope)
+        testedMonitor.rootScope = mockRumApplicationScope
 
         val mockSessionScope = mock<RumSessionScope>()
 
@@ -1304,7 +1303,7 @@ internal class DatadogRumMonitorTest {
     ) {
         // Given
         val mockRumApplicationScope = mock<RumApplicationScope>()
-        testedMonitor.setFieldValue("rootScope", mockRumApplicationScope)
+        testedMonitor.rootScope = mockRumApplicationScope
 
         val listener = mock<RumDebugListener>()
         testedMonitor.debugListener = listener
@@ -1325,12 +1324,9 @@ internal class DatadogRumMonitorTest {
         forge: Forge
     ) {
         // Given
-        testedMonitor.setFieldValue(
-            "rootScope",
-            forge.anElementFrom(
-                mock(), mock<RumViewScope>(), mock<RumActionScope>(),
-                mock<RumResourceScope>(), mock<RumSessionScope>()
-            )
+        testedMonitor.rootScope = forge.anElementFrom(
+            mock(), mock<RumViewScope>(), mock<RumActionScope>(),
+            mock<RumResourceScope>(), mock<RumSessionScope>()
         )
 
         val listener = mock<RumDebugListener>()

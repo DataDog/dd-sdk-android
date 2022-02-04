@@ -7,11 +7,11 @@
 package com.datadog.android.core.internal.utils
 
 import android.util.Log
-import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockSdkLogHandler
-import com.datadog.android.utils.restoreSdkLogHandler
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.doNothing
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
@@ -29,12 +29,9 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -47,21 +44,6 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class ConcurrencyExtTest {
-
-    lateinit var originalSdkLogHandler: LogHandler
-
-    @Mock
-    lateinit var sdkLogHandler: LogHandler
-
-    @BeforeEach
-    fun `set up`() {
-        originalSdkLogHandler = mockSdkLogHandler(sdkLogHandler)
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        restoreSdkLogHandler(originalSdkLogHandler)
-    }
 
     @Test
     fun `M execute task W executeSafe()`(
@@ -95,7 +77,7 @@ internal class ConcurrencyExtTest {
 
         // Then
         verify(service).execute(runnable)
-        verify(sdkLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             Log.ERROR,
             "Unable to schedule $name task on the executor",
             exception
@@ -141,10 +123,20 @@ internal class ConcurrencyExtTest {
         // Then
         assertThat(result).isNull()
         verify(service).schedule(runnable, delay, unit)
-        verify(sdkLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             Log.ERROR,
             "Unable to schedule $name task on the executor",
             exception
         )
+    }
+
+    companion object {
+        val logger = LoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
     }
 }

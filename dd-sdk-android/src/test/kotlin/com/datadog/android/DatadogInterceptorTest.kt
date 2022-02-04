@@ -363,7 +363,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, coreFeature, rumMonitor)
+            return listOf(logger, appContext, coreFeature, rumMonitor)
         }
     }
 }

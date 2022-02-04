@@ -12,12 +12,11 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -107,8 +106,6 @@ internal open class TracingInterceptorTest {
     @Mock
     lateinit var mockRequestListener: TracedRequestListener
 
-    lateinit var mockDevLogHandler: LogHandler
-
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
 
@@ -149,7 +146,6 @@ internal open class TracingInterceptorTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        mockDevLogHandler = mockDevLogHandler()
         Datadog.setVerbosity(Log.VERBOSE)
 
         whenever(mockTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
@@ -530,7 +526,7 @@ internal open class TracingInterceptorTest {
 
         verifyZeroInteractions(mockLocalTracer)
         verifyZeroInteractions(mockTracer)
-        verify(mockDevLogHandler)
+        verify(logger.mockDevLogHandler)
             .handleLog(
                 Log.WARN,
                 TracingInterceptor.WARNING_TRACING_DISABLED
@@ -563,7 +559,7 @@ internal open class TracingInterceptorTest {
         verify(localSpan as MutableSpan).resourceName = fakeBaseUrl
         verify(localSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
-        verify(mockDevLogHandler)
+        verify(logger.mockDevLogHandler)
             .handleLog(
                 Log.WARN,
                 TracingInterceptor.WARNING_DEFAULT_TRACER
@@ -608,7 +604,7 @@ internal open class TracingInterceptorTest {
         verify(mockSpan).finish()
         assertThat(response1).isSameAs(expectedResponse1)
         assertThat(response2).isSameAs(expectedResponse2)
-        verify(mockDevLogHandler)
+        verify(logger.mockDevLogHandler)
             .handleLog(
                 Log.WARN,
                 TracingInterceptor.WARNING_DEFAULT_TRACER
@@ -735,7 +731,7 @@ internal open class TracingInterceptorTest {
         testedInterceptor = instantiateTestedInterceptor { mockLocalTracer }
 
         verifyZeroInteractions(mockTracer, mockLocalTracer)
-        verify(mockDevLogHandler)
+        verify(logger.mockDevLogHandler)
             .handleLog(
                 Log.WARN,
                 TracingInterceptor.WARNING_TRACING_NO_HOSTS
@@ -834,11 +830,12 @@ internal open class TracingInterceptorTest {
 
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
+        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, coreFeature)
+            return listOf(logger, appContext, coreFeature)
         }
     }
 }

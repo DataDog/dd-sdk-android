@@ -19,7 +19,6 @@ import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
@@ -32,9 +31,9 @@ import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
-import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -117,8 +116,6 @@ internal class RumSessionScopeTest {
     @Mock
     lateinit var mockRumEventSourceProvider: RumEventSourceProvider
 
-    lateinit var mockDevLogHandler: LogHandler
-
     @Forgery
     lateinit var fakeParentContext: RumContext
 
@@ -136,8 +133,6 @@ internal class RumSessionScopeTest {
 
     @BeforeEach
     fun `set up`() {
-        mockDevLogHandler = mockDevLogHandler()
-
         whenever(coreFeature.mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(coreFeature.mockNetworkInfoProvider.getLatestNetworkInfo())
             .thenReturn(fakeNetworkInfo)
@@ -353,8 +348,8 @@ internal class RumSessionScopeTest {
         // Then
         assertThat(testedScope.activeChildrenScopes).isEmpty()
         assertThat(result).isSameAs(testedScope)
-        verify(mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
-        verifyNoMoreInteractions(mockDevLogHandler, mockWriter)
+        verify(logger.mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
+        verifyNoMoreInteractions(logger.mockDevLogHandler, mockWriter)
     }
 
     @Test
@@ -366,7 +361,7 @@ internal class RumSessionScopeTest {
         verify(mockChildScope).handleEvent(mockEvent, mockWriter)
         assertThat(testedScope.activeChildrenScopes).containsExactly(mockChildScope)
         assertThat(result).isSameAs(testedScope)
-        verifyZeroInteractions(mockWriter, mockDevLogHandler)
+        verifyZeroInteractions(mockWriter, logger.mockDevLogHandler)
     }
 
     @Test
@@ -399,7 +394,7 @@ internal class RumSessionScopeTest {
         }
         assertThat(testedScope.activeChildrenScopes).containsExactly(mockChildScope)
         assertThat(result).isSameAs(testedScope)
-        verifyZeroInteractions(mockWriter, mockDevLogHandler)
+        verifyZeroInteractions(mockWriter, logger.mockDevLogHandler)
     }
 
     @Test
@@ -828,7 +823,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // THEN
-        verify(mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
+        verify(logger.mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
     }
 
     @Test
@@ -873,7 +868,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // THEN
-        verify(mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
+        verify(logger.mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
     }
 
     @Test
@@ -888,7 +883,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // THEN
-        verify(mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
+        verify(logger.mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
     }
 
     private fun Forge.forgeValidBackgroundEvent(): RumRawEvent {
@@ -1067,11 +1062,12 @@ internal class RumSessionScopeTest {
 
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
+        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, coreFeature)
+            return listOf(logger, appContext, coreFeature)
         }
     }
 }

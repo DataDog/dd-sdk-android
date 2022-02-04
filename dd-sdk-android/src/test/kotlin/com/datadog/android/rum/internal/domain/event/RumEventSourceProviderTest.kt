@@ -7,15 +7,17 @@
 package com.datadog.android.rum.internal.domain.event
 
 import android.util.Log
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aStringNotMatchingSet
-import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
@@ -34,15 +36,14 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class RumEventSourceProviderTest {
 
     lateinit var testedRumEventSourceProvider: RumEventSourceProvider
-
-    lateinit var mockDevLoggerHandler: LogHandler
 
     lateinit var fakeInvalidSource: String
     lateinit var fakeValidSource: String
@@ -58,7 +59,6 @@ internal class RumEventSourceProviderTest {
                 }.toSet()
         )
         fakeValidSource = forge.aValueFrom(ViewEvent.Source::class.java).toJson().asString
-        mockDevLoggerHandler = mockDevLogHandler()
     }
 
     // region ViewEvent
@@ -91,7 +91,7 @@ internal class RumEventSourceProviderTest {
         testedRumEventSourceProvider.viewEventSource
 
         // Then
-        verify(mockDevLoggerHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             eq(Log.ERROR),
             eq(
                 RumEventSourceProvider.UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
@@ -136,7 +136,7 @@ internal class RumEventSourceProviderTest {
         testedRumEventSourceProvider.actionEventSource
 
         // Then
-        verify(mockDevLoggerHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             eq(Log.ERROR),
             eq(
                 RumEventSourceProvider.UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
@@ -179,7 +179,7 @@ internal class RumEventSourceProviderTest {
         testedRumEventSourceProvider.errorEventSource
 
         // Then
-        verify(mockDevLoggerHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             eq(Log.ERROR),
             eq(
                 RumEventSourceProvider.UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
@@ -224,7 +224,7 @@ internal class RumEventSourceProviderTest {
         testedRumEventSourceProvider.resourceEventSource
 
         // Then
-        verify(mockDevLoggerHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             eq(Log.ERROR),
             eq(
                 RumEventSourceProvider.UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
@@ -269,7 +269,7 @@ internal class RumEventSourceProviderTest {
         testedRumEventSourceProvider.longTaskEventSource
 
         // Then
-        verify(mockDevLoggerHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             eq(Log.ERROR),
             eq(
                 RumEventSourceProvider.UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
@@ -283,4 +283,14 @@ internal class RumEventSourceProviderTest {
     }
 
     // endregion
+
+    companion object {
+        val logger = LoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
+    }
 }

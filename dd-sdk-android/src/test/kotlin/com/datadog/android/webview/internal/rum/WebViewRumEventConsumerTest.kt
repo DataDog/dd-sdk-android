@@ -9,7 +9,6 @@ package com.datadog.android.webview.internal.rum
 import android.util.Log
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.model.ActionEvent
@@ -17,11 +16,10 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.config.SessionScopeTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aRumEventAsJson
-import com.datadog.android.utils.mockSdkLogHandler
-import com.datadog.android.utils.restoreSdkLogHandler
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -38,10 +36,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.lang.ClassCastException
-import kotlin.collections.LinkedHashMap
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -89,16 +84,10 @@ internal class WebViewRumEventConsumerTest {
     lateinit var mockWebViewRumEventMapper: WebViewRumEventMapper
 
     @Mock
-    lateinit var mockSdkLogHandler: LogHandler
-
-    lateinit var originalSdkLogHandler: LogHandler
-
-    @Mock
     lateinit var mockRumContextProvider: WebViewRumEventContextProvider
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        originalSdkLogHandler = mockSdkLogHandler(mockSdkLogHandler)
         whenever(mockRumContextProvider.getRumContext())
             .thenReturn(sessionScopeTestConfiguration.fakeRumContext)
         fakeTags = if (forge.aBool()) {
@@ -120,11 +109,6 @@ internal class WebViewRumEventConsumerTest {
         fakeMappedLongTaskEvent = forge.getForgery(LongTaskEvent::class.java).toJson().asJsonObject
         fakeMappedErrorEvent = forge.getForgery(ErrorEvent::class.java).toJson().asJsonObject
         fakeMappedActionEvent = forge.getForgery(ActionEvent::class.java).toJson().asJsonObject
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        restoreSdkLogHandler(originalSdkLogHandler)
     }
 
     // region View
@@ -503,7 +487,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeRumEvent)
 
         // Then
-        verify(mockSdkLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             Log.ERROR,
             WebViewRumEventConsumer.JSON_PARSING_ERROR_MESSAGE,
             fakeException
@@ -572,7 +556,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeRumEvent)
 
         // Then
-        verify(mockSdkLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             eq(Log.ERROR),
             eq(WebViewRumEventConsumer.JSON_PARSING_ERROR_MESSAGE),
             any(),
@@ -703,11 +687,12 @@ internal class WebViewRumEventConsumerTest {
 
     companion object {
         val sessionScopeTestConfiguration = SessionScopeTestConfiguration()
+        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(sessionScopeTestConfiguration)
+            return listOf(logger, sessionScopeTestConfiguration)
         }
 
         @JvmStatic

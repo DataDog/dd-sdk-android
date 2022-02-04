@@ -7,15 +7,16 @@
 package com.datadog.android.rum.internal.vitals
 
 import android.util.Log
-import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockSdkLogHandler
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -36,7 +37,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -102,14 +104,11 @@ internal class VitalReaderRunnableTest {
         val exception = RejectedExecutionException()
         whenever(mockExecutor.schedule(eq(testedRunnable), any(), any())) doThrow exception
 
-        val sdkLogHandler = mock<LogHandler>()
-        mockSdkLogHandler(sdkLogHandler)
-
         // When
         testedRunnable.run()
 
         // Then
-        verify(sdkLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             Log.ERROR,
             "Unable to schedule Vitals monitoring task on the executor",
             exception
@@ -118,5 +117,13 @@ internal class VitalReaderRunnableTest {
 
     companion object {
         private const val TEST_PERIOD_MS = 50L
+
+        val logger = LoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
     }
 }

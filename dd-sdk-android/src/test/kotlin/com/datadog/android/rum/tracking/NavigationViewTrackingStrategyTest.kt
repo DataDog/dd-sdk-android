@@ -28,7 +28,6 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
@@ -456,7 +455,7 @@ internal class NavigationViewTrackingStrategyTest {
         // Then
         return argumentCaptor<NavLifecycleCallbacks> {
             verify(mockFragmentManager).registerFragmentLifecycleCallbacks(capture(), eq(true))
-            firstValue.setFieldValue("viewLoadingTimer", mockViewLoadingTimer)
+            firstValue.viewLoadingTimer = mockViewLoadingTimer
         }.firstValue
     }
 
