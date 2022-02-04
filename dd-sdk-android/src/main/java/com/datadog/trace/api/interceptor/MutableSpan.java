@@ -70,4 +70,13 @@ public interface MutableSpan {
    * @return The root span for the current trace fragment.
    */
   MutableSpan getLocalRootSpan();
+
+  /**
+   * By calling this method the span will be removed from the current active Trace without
+   * actually being persisted.
+   *
+   * Note: This method is meant for internal SDK usage. Be aware that if used this Span will
+   * be removed from the Trace and lost.
+   */
+  public void drop();
 }

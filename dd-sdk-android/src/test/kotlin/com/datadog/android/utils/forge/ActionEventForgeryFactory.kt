@@ -20,7 +20,7 @@ internal class ActionEventForgeryFactory :
             date = forge.aTimestamp(),
             action = ActionEvent.Action(
                 type = forge.getForgery(),
-                id = forge.getForgery<UUID>().toString(),
+                id = forge.aNullable { getForgery<UUID>().toString() },
                 target = forge.aNullable { ActionEvent.Target(anAlphabeticalString()) },
                 error = forge.aNullable { ActionEvent.Error(aLong(0, 512)) },
                 crash = forge.aNullable { ActionEvent.Crash(aLong(0, 512)) },
@@ -69,11 +69,15 @@ internal class ActionEventForgeryFactory :
                 hasReplay = forge.aNullable { aBool() }
             ),
             source = forge.aNullable { aValueFrom(ActionEvent.Source::class.java) },
+            ciTest = forge.aNullable {
+                ActionEvent.CiTest(anHexadecimalString())
+            },
             context = forge.aNullable {
                 ActionEvent.Context(additionalProperties = forge.exhaustiveAttributes())
             },
             dd = ActionEvent.Dd(
-                session = forge.aNullable { ActionEvent.DdSession(getForgery()) }
+                session = forge.aNullable { ActionEvent.DdSession(getForgery()) },
+                browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") }
             )
         )
     }

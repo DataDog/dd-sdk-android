@@ -16,7 +16,7 @@ import java.io.File
  * cf. documentation https://man7.org/linux/man-pages/man5/procfs.5.html
  */
 internal class CPUVitalReader(
-    private val statFile: File = STAT_FILE
+    internal val statFile: File = STAT_FILE
 ) : VitalReader {
 
     override fun readVitalData(): Double? {
@@ -36,7 +36,7 @@ internal class CPUVitalReader(
     companion object {
 
         private const val STAT_PATH = "/proc/self/stat"
-        private val STAT_FILE = File(STAT_PATH)
+        internal val STAT_FILE = File(STAT_PATH)
 
         private const val UTIME_IDX = 13
     }

@@ -8,18 +8,13 @@ package com.datadog.android.core.internal.utils
 
 import android.util.Log
 import com.datadog.android.Datadog
-import com.datadog.android.log.internal.logger.CombinedLogHandler
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.ConditionalLogHandler
-import com.datadog.android.log.internal.logger.DatadogLogHandler
-import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.log.internal.logger.LogcatLogHandler
-import com.datadog.android.log.internal.logger.NoOpLogHandler
-import com.datadog.android.log.internal.user.NoOpUserInfoProvider
 import com.datadog.android.monitoring.internal.InternalLogsFeature
-import com.datadog.android.utils.extension.EnableLogcat
-import com.datadog.android.utils.extension.EnableLogcatExtension
-import com.datadog.android.utils.mockDevLogHandler
-import com.datadog.tools.unit.setFieldValue
+import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -35,96 +30,24 @@ import org.mockito.junit.jupiter.MockitoExtension
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(EnableLogcatExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
-class RuntimeUtilsTest {
+internal class RuntimeUtilsTest {
 
     @BeforeEach
     fun `set up`() {
-        devLogger.setFieldValue("handler", buildDevLogHandler())
+        Datadog.initialized.set(true)
+        LogsFeature.initialized.set(true)
     }
 
     @AfterEach
     fun `tear down`() {
-        Datadog.setFieldValue("isDebug", false)
+        Datadog.initialized.set(false)
+        LogsFeature.initialized.set(false)
+        Datadog.isDebug = false
         InternalLogsFeature.stop()
-
-        devLogger.setFieldValue("handler", buildDevLogHandler())
-        rebuildSdkLogger()
     }
-
-    // region sdkLogger
-
-    @Test
-    @EnableLogcat(isEnabled = false)
-    fun `M build noop sdkLogger W buildSdkLogger() {LOGCAT_ENABLED=false, InternalLogs off}`() {
-        // When
-        val logger = buildSdkLogger()
-
-        // Then
-        val handler: LogHandler = logger.handler
-        assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
-    }
-
-    @Test
-    @EnableLogcat(isEnabled = true)
-    fun `M build LogCat sdkLogger W buildSdkLogger() {LOGCAT_ENABLED=true, InternalLogs off}`() {
-        // When
-        val logger = buildSdkLogger()
-
-        // Then
-        val handler: LogHandler = logger.handler
-        assertThat(handler).isInstanceOf(CombinedLogHandler::class.java)
-        val handlers = (handler as CombinedLogHandler).handlers.toList()
-        assertThat(handlers.filterIsInstance<LogcatLogHandler>())
-            .hasSize(1)
-            .allMatch { it.serviceName == SDK_LOG_PREFIX }
-        assertThat(handlers.filterIsInstance<DatadogLogHandler>())
-            .hasSize(0)
-        assertThat(handlers.filterIsInstance<NoOpLogHandler>())
-            .hasSize(1)
-    }
-
-    @Test
-    @EnableLogcat(isEnabled = false)
-    fun `M build internal sdkLogger W buildSdkLogger() {LOGCAT_ENABLED=false, InternalLogs on}`() {
-        // Given
-        InternalLogsFeature.initialized.set(true)
-
-        // When
-        val logger = buildSdkLogger()
-
-        // Then
-        val handler: LogHandler = logger.handler
-        assertThat(handler).isInstanceOf(DatadogLogHandler::class.java)
-    }
-
-    @Test
-    @EnableLogcat(isEnabled = true)
-    fun `M build combined sdkLogger W buildSdkLogger() {LOGCAT_ENABLED=true, InternalLogs on}`() {
-        // Given
-        InternalLogsFeature.initialized.set(true)
-
-        // When
-        val logger = buildSdkLogger()
-
-        // Then
-        val handler: LogHandler = logger.handler
-        assertThat(handler).isInstanceOf(CombinedLogHandler::class.java)
-        val handlers = (handler as CombinedLogHandler).handlers.toList()
-        assertThat(handlers.filterIsInstance<LogcatLogHandler>())
-            .hasSize(1)
-            .allMatch { it.serviceName == SDK_LOG_PREFIX }
-        assertThat(handlers.filterIsInstance<DatadogLogHandler>())
-            .hasSize(1)
-            .allMatch { it.logGenerator.serviceName == InternalLogsFeature.SERVICE_NAME }
-            .allMatch { it.logGenerator.envTag == "env:prod" }
-            .allMatch { it.logGenerator.loggerName == SDK_LOGGER_NAME }
-            .allMatch { it.logGenerator.userInfoProvider is NoOpUserInfoProvider }
-    }
-
-    // endregion
 
     // region devLogger
 
@@ -162,14 +85,11 @@ class RuntimeUtilsTest {
         @StringForgery since: String,
         @StringForgery until: String
     ) {
-        // Given
-        val handler = mockDevLogHandler()
-
         // When
         warnDeprecated(target, since, until)
 
         // Then
-        verify(handler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             WARN_DEPRECATED.format(
                 Locale.US,
@@ -187,14 +107,11 @@ class RuntimeUtilsTest {
         @StringForgery until: String,
         @StringForgery alternative: String
     ) {
-        // Given
-        val handler = mockDevLogHandler()
-
         // When
         warnDeprecated(target, since, until, alternative)
 
         // Then
-        verify(handler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             WARN_DEPRECATED_WITH_ALT.format(
                 Locale.US,
@@ -207,4 +124,14 @@ class RuntimeUtilsTest {
     }
 
     // endregion
+
+    companion object {
+        val logger = LoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
+    }
 }

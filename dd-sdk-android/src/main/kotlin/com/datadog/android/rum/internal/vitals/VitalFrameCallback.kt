@@ -18,7 +18,7 @@ internal class VitalFrameCallback(
     private val keepRunning: () -> Boolean
 ) : Choreographer.FrameCallback {
 
-    private var lastFrameTimestampNs: Long = 0L
+    internal var lastFrameTimestampNs: Long = 0L
 
     // region Choreographer.FrameCallback
 

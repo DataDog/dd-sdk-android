@@ -27,7 +27,6 @@ import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
 import com.datadog.android.log.internal.domain.LogGenerator
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
@@ -36,10 +35,10 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -64,7 +63,6 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.util.GlobalTracer
 import java.io.FileNotFoundException
 import java.io.IOException
-import java.lang.RuntimeException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -126,11 +124,8 @@ internal class DatadogExceptionHandlerTest {
     @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
     lateinit var fakeEnvName: String
 
-    lateinit var mockDevLogHandler: LogHandler
-
     @BeforeEach
     fun `set up`() {
-        mockDevLogHandler = mockDevLogHandler()
         mockChoreographerInstance()
 
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
@@ -224,7 +219,7 @@ internal class DatadogExceptionHandlerTest {
 
         verify(mockScheduledThreadExecutor)
             .waitToIdle(DatadogExceptionHandler.MAX_WAIT_FOR_IDLE_TIME_IN_MS)
-        verify(mockDevLogHandler, never()).handleLog(
+        verify(logger.mockDevLogHandler, never()).handleLog(
             Log.WARN,
             DatadogExceptionHandler.EXECUTOR_NOT_IDLED_WARNING_MESSAGE
         )
@@ -243,7 +238,7 @@ internal class DatadogExceptionHandlerTest {
 
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             DatadogExceptionHandler.EXECUTOR_NOT_IDLED_WARNING_MESSAGE
         )
@@ -557,11 +552,12 @@ internal class DatadogExceptionHandlerTest {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
         val mainLooper = MainLooperTestConfiguration()
+        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, rumMonitor, mainLooper)
+            return listOf(logger, appContext, rumMonitor, mainLooper)
         }
     }
 }

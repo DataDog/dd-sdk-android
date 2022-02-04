@@ -23,7 +23,7 @@ import com.datadog.android.rum.tracking.ComponentPredicate
 internal open class AndroidXFragmentLifecycleCallbacks(
     internal val argumentsProvider: (Fragment) -> Map<String, Any?>,
     private val componentPredicate: ComponentPredicate<Fragment>,
-    private val viewLoadingTimer: ViewLoadingTimer = ViewLoadingTimer(),
+    internal var viewLoadingTimer: ViewLoadingTimer = ViewLoadingTimer(),
     private val rumMonitor: RumMonitor,
     private val advancedRumMonitor: AdvancedRumMonitor
 ) : FragmentLifecycleCallbacks<FragmentActivity>, FragmentManager.FragmentLifecycleCallbacks() {

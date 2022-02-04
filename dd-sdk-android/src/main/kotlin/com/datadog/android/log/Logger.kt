@@ -42,7 +42,7 @@ import org.json.JSONObject
  */
 @Suppress("TooManyFunctions", "MethodOverloading")
 class Logger
-internal constructor(internal val handler: LogHandler) {
+internal constructor(internal var handler: LogHandler) {
 
     private val attributes = ConcurrentHashMap<String, Any?>()
     private val tags = CopyOnWriteArraySet<String>()

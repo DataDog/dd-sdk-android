@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
+import com.datadog.android.core.internal.data.upload.DataFlusher
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.persistence.Serializer
@@ -100,6 +101,18 @@ internal class BatchFilePersistenceStrategyTest {
 
         // Then
         assertThat(reader).isInstanceOf(BatchFileDataReader::class.java)
+    }
+
+    @Test
+    fun `𝕄 return batch file flusher 𝕎 getFlusher()`() {
+        // When
+        val flusher = testedStrategy.getFlusher()
+
+        // Then
+        check(flusher is DataFlusher)
+        assertThat(flusher.fileOrchestrator).isSameAs(mockFileOrchestrator)
+        assertThat(flusher.decoration).isSameAs(fakePayloadDecoration)
+        assertThat(flusher.handler).isInstanceOf(BatchFileHandler::class.java)
     }
 
     @Test

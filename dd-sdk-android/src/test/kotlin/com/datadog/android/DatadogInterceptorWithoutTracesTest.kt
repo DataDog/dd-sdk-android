@@ -11,7 +11,6 @@ import android.util.Log
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.identifyRequest
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
@@ -23,9 +22,9 @@ import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
-import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
@@ -94,8 +93,6 @@ internal class DatadogInterceptorWithoutTracesTest {
     @Mock
     lateinit var mockRumAttributesProvider: RumResourceAttributesProvider
 
-    lateinit var mockDevLogHandler: LogHandler
-
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
 
@@ -142,7 +139,6 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        mockDevLogHandler = mockDevLogHandler()
         Datadog.setVerbosity(Log.VERBOSE)
 
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
@@ -158,10 +154,10 @@ internal class DatadogInterceptorWithoutTracesTest {
         fakeMediaType = MediaType.parse(mediaType)
         fakeRequest = forgeRequest(forge)
         testedInterceptor = DatadogInterceptor(
-            emptyList(),
-            mockRequestListener,
-            mockDetector,
-            mockRumAttributesProvider
+            tracedHosts = emptyList(),
+            tracedRequestListener = mockRequestListener,
+            firstPartyHostDetector = mockDetector,
+            rumResourceAttributesProvider = mockRumAttributesProvider
         ) { mockLocalTracer }
         TracingFeature.initialize(
             appContext.mockInstance,
@@ -376,11 +372,12 @@ internal class DatadogInterceptorWithoutTracesTest {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
+        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, coreFeature, rumMonitor)
+            return listOf(logger, appContext, coreFeature, rumMonitor)
         }
     }
 }

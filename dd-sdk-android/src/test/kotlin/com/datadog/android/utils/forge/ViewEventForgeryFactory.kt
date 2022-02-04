@@ -97,6 +97,9 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
                 hasReplay = forge.aNullable { aBool() }
             ),
             source = forge.aNullable { aValueFrom(ViewEvent.Source::class.java) },
+            ciTest = forge.aNullable {
+                ViewEvent.CiTest(anHexadecimalString())
+            },
             context = forge.aNullable {
                 ViewEvent.Context(
                     additionalProperties = exhaustiveAttributes()
@@ -104,6 +107,7 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
             },
             dd = ViewEvent.Dd(
                 session = forge.aNullable { ViewEvent.DdSession(getForgery()) },
+                browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") },
                 documentVersion = forge.aPositiveLong(strict = true)
             )
         )

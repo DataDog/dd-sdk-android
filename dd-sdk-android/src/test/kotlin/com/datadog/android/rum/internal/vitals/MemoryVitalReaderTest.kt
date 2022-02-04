@@ -65,6 +65,15 @@ internal class MemoryVitalReaderTest {
     }
 
     @Test
+    fun `𝕄 read unix stats file 𝕎 init()`() {
+        // When
+        val testedReader = MemoryVitalReader()
+
+        // Then
+        assertThat(testedReader.statusFile).isEqualTo(MemoryVitalReader.STATUS_FILE)
+    }
+
+    @Test
     fun `𝕄 read correct data 𝕎 readVitalData()`() {
         // Given
         fakeFile.writeText(fakeStatusContent)
@@ -108,6 +117,20 @@ internal class MemoryVitalReaderTest {
         val restrictedFile = mock<File>()
         whenever(restrictedFile.exists()) doReturn true
         whenever(restrictedFile.canRead()) doReturn false
+
+        // When
+        val result = testedReader.readVitalData()
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 return null 𝕎 readVitalData() {file has invalid data}`(
+        @StringForgery content: String
+    ) {
+        // Given
+        fakeFile.writeText(content)
 
         // When
         val result = testedReader.readVitalData()

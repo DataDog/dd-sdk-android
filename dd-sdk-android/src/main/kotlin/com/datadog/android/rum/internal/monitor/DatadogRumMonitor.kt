@@ -51,7 +51,7 @@ internal class DatadogRumMonitor(
     private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 ) : RumMonitor, AdvancedRumMonitor {
 
-    internal val rootScope: RumScope = RumApplicationScope(
+    internal var rootScope: RumScope = RumApplicationScope(
         applicationId,
         samplingRate,
         backgroundTrackingEnabled,

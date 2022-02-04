@@ -31,7 +31,7 @@ class ActivityViewTrackingStrategy @JvmOverloads constructor(
     ActivityLifecycleTrackingStrategy(),
     ViewTrackingStrategy {
 
-    private val viewLoadingTimer = ViewLoadingTimer()
+    internal var viewLoadingTimer = ViewLoadingTimer()
 
     // region ActivityLifecycleTrackingStrategy
 

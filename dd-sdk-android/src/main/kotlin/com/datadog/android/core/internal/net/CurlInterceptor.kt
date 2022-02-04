@@ -21,7 +21,8 @@ import okio.Buffer
  * This interceptor logs the request as a valid CURL command line.
  */
 internal class CurlInterceptor(
-    val printBody: Boolean = false
+    private val printBody: Boolean = false,
+    private val output: (String) -> Unit = { Log.i("Curl", it) }
 ) : Interceptor {
 
     // region Interceptor
@@ -37,7 +38,7 @@ internal class CurlInterceptor(
 
         val copy = request.newBuilder().build()
         val curl: String = CurlBuilder(copy, printBody).toCommand()
-        Log.i("Curl", curl)
+        output(curl)
 
         return chain.proceed(request)
     }

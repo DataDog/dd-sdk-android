@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal
 
 import android.app.Application
+import android.view.Choreographer
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
@@ -17,23 +18,33 @@ import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
+import com.datadog.android.rum.internal.vitals.VitalFrameCallback
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doNothing
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.lang.ref.WeakReference
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -46,6 +57,9 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, RumFeature>() {
+
+    @Mock
+    lateinit var mockChoreographer: Choreographer
 
     override fun createTestedFeature(): RumFeature {
         return RumFeature
@@ -60,6 +74,12 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
     }
 
     override fun doesFeatureNeedMigration(): Boolean = true
+
+    @BeforeEach
+    fun `set up RUM`() {
+        doNothing().whenever(mockChoreographer).postFrameCallback(any())
+        mockChoreographerInstance(mockChoreographer)
+    }
 
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
@@ -198,6 +218,27 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
             .isInstanceOf(AggregatingVitalMonitor::class.java)
         assertThat(testedFeature.frameRateVitalMonitor)
             .isInstanceOf(AggregatingVitalMonitor::class.java)
+        argumentCaptor<Choreographer.FrameCallback> {
+            verify(mockChoreographer).postFrameCallback(capture())
+            assertThat(firstValue).isInstanceOf(VitalFrameCallback::class.java)
+        }
+    }
+
+    @Test
+    fun `𝕄 register choreographer callback safely 𝕎 initialize()`(
+        @StringForgery message: String
+    ) {
+        // Given
+        doThrow(IllegalStateException(message)).whenever(mockChoreographer).postFrameCallback(any())
+
+        // When
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+
+        // Then
+        argumentCaptor<Choreographer.FrameCallback> {
+            verify(mockChoreographer).postFrameCallback(capture())
+            assertThat(firstValue).isInstanceOf(VitalFrameCallback::class.java)
+        }
     }
 
     @Test

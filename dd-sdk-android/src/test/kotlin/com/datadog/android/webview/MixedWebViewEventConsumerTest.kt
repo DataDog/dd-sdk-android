@@ -7,14 +7,15 @@
 package com.datadog.android.webview
 
 import android.util.Log
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.assertj.JsonElementAssert.Companion.assertThat
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockSdkLogHandler
-import com.datadog.android.utils.restoreSdkLogHandler
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.nhaarman.mockitokotlin2.any
@@ -29,7 +30,6 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Locale.US
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -42,6 +42,7 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -55,23 +56,12 @@ internal class MixedWebViewEventConsumerTest {
     @Mock
     lateinit var mockLogsEventConsumer: WebViewLogEventConsumer
 
-    @Mock
-    lateinit var mockedSdkLogHandler: LogHandler
-
-    lateinit var originalSdkLogHandler: LogHandler
-
     @BeforeEach
     fun `set up`() {
-        originalSdkLogHandler = mockSdkLogHandler(mockedSdkLogHandler)
         testedWebViewEventConsumer = MixedWebViewEventConsumer(
             mockRumEventConsumer,
             mockLogsEventConsumer
         )
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        restoreSdkLogHandler(originalSdkLogHandler)
     }
 
     // region Unit Tests
@@ -147,7 +137,7 @@ internal class MixedWebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
-        verify(mockedSdkLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             Log.ERROR,
             MixedWebViewEventConsumer.WRONG_EVENT_TYPE_ERROR_MESSAGE.format(
                 US,
@@ -180,7 +170,7 @@ internal class MixedWebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
-        verify(mockedSdkLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             Log.ERROR,
             MixedWebViewEventConsumer.WEB_EVENT_MISSING_TYPE_ERROR_MESSAGE.format(
                 US,
@@ -213,7 +203,7 @@ internal class MixedWebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeWebEvent.toString())
 
         // Then
-        verify(mockedSdkLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             Log.ERROR,
             MixedWebViewEventConsumer.WEB_EVENT_MISSING_WRAPPED_EVENT.format(US, fakeWebEvent)
         )
@@ -253,7 +243,7 @@ internal class MixedWebViewEventConsumerTest {
         testedWebViewEventConsumer.consume(fakeBadJsonFormatEvent)
 
         // Then
-        verify(mockedSdkLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             eq(Log.ERROR),
             eq(
                 MixedWebViewEventConsumer.WEB_EVENT_PARSING_ERROR_MESSAGE.format(
@@ -287,4 +277,14 @@ internal class MixedWebViewEventConsumerTest {
     }
 
     // endregion
+
+    companion object {
+        val logger = LoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
+    }
 }

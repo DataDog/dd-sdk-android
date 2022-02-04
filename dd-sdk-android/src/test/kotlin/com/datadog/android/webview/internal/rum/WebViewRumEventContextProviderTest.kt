@@ -7,14 +7,11 @@
 package com.datadog.android.webview.internal.rum
 
 import android.util.Log
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
-import com.datadog.android.utils.mockSdkLogHandler
-import com.datadog.android.utils.restoreSdkLogHandler
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -24,12 +21,10 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -45,23 +40,9 @@ internal class WebViewRumEventContextProviderTest {
 
     lateinit var testedContextProvider: WebViewRumEventContextProvider
 
-    @Mock
-    lateinit var mockSdkLogHandler: LogHandler
-
-    lateinit var mockDevLogHandler: LogHandler
-
-    lateinit var originalSdkLogHandler: LogHandler
-
     @BeforeEach
     fun `set up`() {
-        originalSdkLogHandler = mockSdkLogHandler(mockSdkLogHandler)
-        mockDevLogHandler = mockDevLogHandler()
         testedContextProvider = WebViewRumEventContextProvider()
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        restoreSdkLogHandler(originalSdkLogHandler)
     }
 
     @Test
@@ -106,7 +87,7 @@ internal class WebViewRumEventContextProviderTest {
         testedContextProvider.getRumContext()
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
         )
@@ -124,7 +105,7 @@ internal class WebViewRumEventContextProviderTest {
         testedContextProvider.getRumContext()
 
         // Then
-        verify(mockSdkLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             Log.ERROR,
             WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_ERROR_MESSAGE
         )
@@ -142,7 +123,7 @@ internal class WebViewRumEventContextProviderTest {
         testedContextProvider.getRumContext()
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
         )
@@ -160,7 +141,7 @@ internal class WebViewRumEventContextProviderTest {
         testedContextProvider.getRumContext()
 
         // Then
-        verify(mockSdkLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             Log.ERROR,
             WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_ERROR_MESSAGE
         )
@@ -182,11 +163,11 @@ internal class WebViewRumEventContextProviderTest {
         }
 
         // Then
-        verify(mockSdkLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             Log.ERROR,
             WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_ERROR_MESSAGE
         )
-        verifyNoMoreInteractions(mockSdkLogHandler)
+        verifyNoMoreInteractions(logger.mockSdkLogHandler)
     }
 
     @Test
@@ -205,11 +186,11 @@ internal class WebViewRumEventContextProviderTest {
         }
 
         // Then
-        verify(mockSdkLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             Log.ERROR,
             WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_ERROR_MESSAGE
         )
-        verifyNoMoreInteractions(mockSdkLogHandler)
+        verifyNoMoreInteractions(logger.mockSdkLogHandler)
     }
 
     @Test
@@ -228,11 +209,11 @@ internal class WebViewRumEventContextProviderTest {
         }
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
         )
-        verifyNoMoreInteractions(mockDevLogHandler)
+        verifyNoMoreInteractions(logger.mockDevLogHandler)
     }
 
     @Test
@@ -251,20 +232,21 @@ internal class WebViewRumEventContextProviderTest {
         }
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             WebViewRumEventContextProvider.RUM_NOT_INITIALIZED_WARNING_MESSAGE
         )
-        verifyNoMoreInteractions(mockDevLogHandler)
+        verifyNoMoreInteractions(logger.mockDevLogHandler)
     }
 
     companion object {
         val globalRumMonitorTestConfiguration = GlobalRumMonitorTestConfiguration()
+        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(globalRumMonitorTestConfiguration)
+            return listOf(logger, globalRumMonitorTestConfiguration)
         }
     }
 }

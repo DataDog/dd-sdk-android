@@ -15,7 +15,6 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpSpanEventMapper
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.event.ViewEventMapper
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
@@ -34,10 +33,13 @@ import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
@@ -65,7 +67,8 @@ import org.mockito.junit.jupiter.MockitoSettings
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ApiLevelExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings()
 @ForgeConfiguration(value = Configurator::class)
@@ -76,11 +79,8 @@ internal class ConfigurationBuilderTest {
     @StringForgery
     lateinit var fakeEnvName: String
 
-    lateinit var mockDevLogHandler: LogHandler
-
     @BeforeEach
     fun `set up`() {
-        mockDevLogHandler = mockDevLogHandler()
         testedBuilder = Configuration.Builder(
             logsEnabled = true,
             tracesEnabled = true,
@@ -822,7 +822,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.trackInteractions()
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -848,7 +848,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.trackLongTasks(durationMs)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -873,7 +873,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.useViewTrackingStrategy(viewStrategy)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -899,7 +899,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.sampleRumSessions(samplingRate)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -924,7 +924,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.setRumViewEventMapper(eventMapper)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -949,7 +949,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.setRumResourceEventMapper(eventMapper)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -974,7 +974,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.setRumActionEventMapper(eventMapper)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -999,7 +999,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.setRumErrorEventMapper(eventMapper)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1024,7 +1024,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.setRumLongTaskEventMapper(eventMapper)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1049,7 +1049,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.addPlugin(logsPlugin, Feature.LOG)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1074,7 +1074,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.addPlugin(tracesPlugin, Feature.TRACE)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1099,7 +1099,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.addPlugin(crashPlugin, Feature.CRASH)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1124,7 +1124,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.addPlugin(rumPlugin, Feature.RUM)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1150,7 +1150,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.useCustomLogsEndpoint(url)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1176,7 +1176,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.useCustomTracesEndpoint(url)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1202,7 +1202,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.useCustomCrashReportsEndpoint(url)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1228,7 +1228,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.useCustomRumEndpoint(url)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1635,5 +1635,15 @@ internal class ConfigurationBuilderTest {
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.internalLogsConfig).isNull()
+    }
+
+    companion object {
+        val logger = LoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
     }
 }

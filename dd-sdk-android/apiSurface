@@ -395,6 +395,11 @@ enum com.datadog.android.rum.RumResourceKind
   companion object 
 interface com.datadog.android.rum.RumSessionListener
   fun onSessionStarted(String, Boolean)
+override fun onInitialize(android.content.Context, com.datadog.android.core.configuration.Configuration.Feature.RUM)
+override fun onStop()
+override fun createPersistenceStrategy(android.content.Context, com.datadog.android.core.configuration.Configuration.Feature.RUM): com.datadog.android.core.internal.persistence.PersistenceStrategy<Any>
+override fun createUploader(com.datadog.android.core.configuration.Configuration.Feature.RUM): com.datadog.android.core.internal.net.DataUploader
+override fun onPostInitialized(android.content.Context)
 data class com.datadog.android.rum.model.ActionEvent
   constructor(kotlin.Long, Application, kotlin.String? = null, ActionEventSession, Source? = null, View, Usr? = null, Connectivity? = null, Synthetics? = null, CiTest? = null, Dd, Context? = null, Action)
   val type: kotlin.String
