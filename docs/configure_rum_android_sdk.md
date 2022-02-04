@@ -378,12 +378,12 @@ To modify some attributes in your RUM events, or to drop some of the events enti
 {{< partial name="whats-next/whats-next.html" >}}
 
 [1]: https://app.datadoghq.com/rum/application/create
-[2]: /real_user_monitoring/android
-[3]: /real_user_monitoring/android/data_collected
-[4]: /real_user_monitoring/android/advanced_configuration/#automatically-track-views
-[5]: /real_user_monitoring/android/advanced_configuration/#initialization-parameters
-[6]: /real_user_monitoring/android/advanced_configuration/#automatically-track-network-requests
+[2]: https://docs.datadoghq.com/real_user_monitoring/android
+[3]: https://docs.datadoghq.com/real_user_monitoring/android/data_collected
+[4]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#automatically-track-views
+[5]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#initialization-parameters
+[6]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#automatically-track-network-requests
 [7]: https://github.com/DataDog/dd-sdk-android/tree/master/sample/kotlin/src/main/kotlin/com/datadog/android/sample/widget
 [8]: https://square.github.io/okhttp/events/
-[9]: /real_user_monitoring/android/data_collected/?tab=error#event-specific-attributes
+[9]: https://docs.datadoghq.com/real_user_monitoring/android/data_collected/?tab=error#event-specific-attributes
  

@@ -124,7 +124,7 @@ If you use Apollo, let it use your `OkHttpClient` for RUM and APM information ab
 {{% /tab %}}
 {{< /tabs >}}
 
-## Further reading
+## Further Reading
 
 {{< partial name="whats-next/whats-next.html" >}}
 
