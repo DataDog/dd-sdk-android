@@ -24,11 +24,11 @@
 static const char *LOG_TAG = "DatadogNdkCrashReporter";
 static stack_t signal_stack;
 
-/* the datadog sigaction which overrides the original signal handler */
-static volatile struct sigaction *volatile datadog_sigaction;
-
 /* the original sigaction array which will hold the original handlers for each overridden signal */
-volatile struct sigaction *volatile original_sigaction;
+volatile struct sigaction *volatile original_sigactions = NULL;
+
+/* pre-allocated memory for working with the backtrace */
+char* backtrace_scratch = NULL;
 
 volatile bool handlers_installed = false;
 
@@ -74,13 +74,13 @@ size_t handled_signals_size() { return sizeof(handled_signals) / sizeof(handled_
 
 
 void free_up_memory() {
-    if (datadog_sigaction != NULL) {
-        free((void *) datadog_sigaction);
-        datadog_sigaction = NULL;
+    if (backtrace_scratch != NULL) {
+        free((void*) backtrace_scratch);
+        backtrace_scratch = NULL;
     }
-    if (original_sigaction != NULL) {
-        free((void *) original_sigaction);
-        original_sigaction = NULL;
+    if (original_sigactions != NULL) {
+        free((void *) original_sigactions);
+        original_sigactions = NULL;
     }
     if (signal_stack.ss_sp != NULL) {
         free(signal_stack.ss_sp);
@@ -98,7 +98,7 @@ void invoke_previous_handler(int signum, siginfo_t *info, void *user_context) {
     for (int i = 0; i < signals_array_size; ++i) {
         const int signal = handled_signals[i].signal_value;
         if (signal == signum) {
-            struct sigaction previous = original_sigaction[i];
+            struct sigaction previous = original_sigactions[i];
             // From sigaction(2):
             //  > If act is non-zero, it specifies an action (SIG_DFL, SIG_IGN, or a
             //  handler routine)
@@ -131,7 +131,7 @@ void uninstall_handlers() {
     }
     const size_t signals_array_size = handled_signals_size();
     for (int i = 0; i < signals_array_size; i++) {
-        volatile struct sigaction *volatile original_action = &original_sigaction[i];
+        volatile struct sigaction *volatile original_action = &original_sigactions[i];
         if (original_action) {
             const int signal = handled_signals[i].signal_value;
             sigaction(signal, (struct sigaction *) original_action, 0);
@@ -146,20 +146,20 @@ void handle_signal(int signum, siginfo_t *info, void *user_context) {
     for (int i = 0; i < signals_array_size; i++) {
         const int signal = handled_signals[i].signal_value;
         if (signal == signum) {
-            char backtrace[max_stack_size];
+
             // in case the stacktrace is bigger than the required size it will be truncated
             // because we are unwinding the stack strace at this level we are always going to
             // to have for the top 3 levels at the top of the trace the executed lines from our
             // library: handle_signal, generate_backtrace and capture_backtrace.
             // If you are changing this code make sure to start from the new frame
             // index when generating the backtrace.
-            generate_backtrace(backtrace, stack_frames_start_index, max_stack_size);
+            generate_backtrace(backtrace_scratch, stack_frames_start_index, max_stack_size);
 
 
             write_crash_report(signal,
                                handled_signals[i].signal_name,
                                handled_signals[i].signal_error_message,
-                               backtrace);
+                               backtrace_scratch);
 
             break;
         }
@@ -180,8 +180,8 @@ bool configure_signal_stack() {
     // Art is already allocating memory for the signal stack here:
     // https://android.googlesource.com/platform/art/+/master/runtime/thread_linux.cc#35) but
     // because we need a bit more than that we will re - allocate it on our end.
-
-    static size_t stack_size = max_stack_size < MINSIGSTKSZ ? MINSIGSTKSZ : max_stack_size;
+    size_t expected_stack_size = 32 * 1024; // 32K -- same as the ART but on  our own dedicated stack
+    size_t stack_size = expected_stack_size < MINSIGSTKSZ ? MINSIGSTKSZ : expected_stack_size;
     if ((signal_stack.ss_sp = calloc(1, stack_size)) == NULL) {
         return false;
     }
@@ -192,41 +192,35 @@ bool configure_signal_stack() {
         signal_stack.ss_sp=NULL;
         return false;
     }
-    return true;
-}
 
-bool init_datadog_signal_handler() {
-    datadog_sigaction = malloc(sizeof(struct sigaction));
-    if (datadog_sigaction == NULL) {
-        return false;
-    }
-    if (sigemptyset((sigset_t *) &datadog_sigaction->sa_mask) != 0) {
-        return false;
-    }
-    datadog_sigaction->sa_sigaction = handle_signal;
-    // we will use the SA_ONSTACK mask here to handle the signal in a freshly new signal stack.
-    datadog_sigaction->sa_flags = SA_SIGINFO | SA_ONSTACK;
-
+    // Create a scratch area for grabbing the backtrace
+    backtrace_scratch = malloc(max_stack_size * sizeof(char));
     return true;
 }
 
 bool override_native_signal_handlers() {
-    if (!init_datadog_signal_handler()) {
+    struct sigaction datadog_sigaction = {};
+
+    if (sigemptyset((sigset_t *) &datadog_sigaction.sa_mask) != 0) {
         __android_log_write(ANDROID_LOG_ERROR, LOG_TAG,
                             "Not able to initialize the Datadog signal handler");
         return false;
     }
+    datadog_sigaction.sa_sigaction = handle_signal;
+    // we will use the SA_ONSTACK mask here to handle the signal in a freshly new signal stack.
+    datadog_sigaction.sa_flags = SA_SIGINFO | SA_ONSTACK;
+
     const size_t signals_array_size = handled_signals_size();
-    original_sigaction = calloc(signals_array_size, sizeof(struct sigaction));
-    if (original_sigaction == NULL) {
+    original_sigactions = calloc(signals_array_size, sizeof(struct sigaction));
+    if (original_sigactions == NULL) {
         __android_log_write(ANDROID_LOG_ERROR, LOG_TAG,
                             "Not able to allocate the memory to persist the original handlers");
         return false;
     }
     for (int i = 0; i < signals_array_size; i++) {
         const int signal = handled_signals[i].signal_value;
-        int success = sigaction(signal, (struct sigaction *) datadog_sigaction,
-                                (struct sigaction *) &original_sigaction[i]);
+        int success = sigaction(signal, &datadog_sigaction,
+                                (struct sigaction *) &original_sigactions[i]);
         if (success != 0) {
             __android_log_print(ANDROID_LOG_ERROR,
                                 LOG_TAG,
