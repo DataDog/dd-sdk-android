@@ -65,7 +65,8 @@ static const struct signal handled_signals[] = {
         {SIGBUS,  "SIGBUS",  "Bus error (bad memory access)"},
         {SIGFPE,  "SIGFPE",  "Floating-point exception"},
         {SIGABRT, "SIGABRT", "The process was terminated"},
-        {SIGSEGV, "SIGSEGV", "Segmentation violation (invalid memory reference)"}
+        {SIGSEGV, "SIGSEGV", "Segmentation violation (invalid memory reference)"},
+        {SIGTRAP, "SIGTRAP", "Signal trap"}
 };
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -142,6 +143,8 @@ void uninstall_handlers() {
 }
 
 void handle_signal(int signum, siginfo_t *info, void *user_context) {
+    __android_log_write(ANDROID_LOG_INFO, LOG_TAG, "Handling signal in Datadog Crash Handler");
+
     const size_t signals_array_size = handled_signals_size();
     for (int i = 0; i < signals_array_size; i++) {
         const int signal = handled_signals[i].signal_value;
@@ -243,6 +246,13 @@ bool try_to_install_handlers() {
 bool start_monitoring() {
     pthread_mutex_lock(&mutex);
     bool installed = try_to_install_handlers();
+    if (installed) {
+        __android_log_write(ANDROID_LOG_ERROR, LOG_TAG,
+                            "Successfully installed Datadog signal handlers");
+    } else {
+        __android_log_write(ANDROID_LOG_ERROR, LOG_TAG,
+                            "Unable to install signal handlers");
+    }
     pthread_mutex_unlock(&mutex);
     return installed;
 }
