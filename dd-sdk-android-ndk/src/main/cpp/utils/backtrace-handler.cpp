@@ -81,10 +81,12 @@ namespace {
                 backtrace->append(" ");
                 backtrace->append("+");
                 backtrace->append(" ");
-                auto address_offset = reinterpret_cast<uintptr_t>(info.dli_fbase);
+                auto address_offset = address - reinterpret_cast<uintptr_t>(info.dli_fbase);
                 backtrace->append(std::to_string(address_offset));
             }
-
+        } else {
+            backtrace->append(" ");
+            backtrace->append(address_to_hexa(address));
         }
 
         backtrace->append("\\n");
