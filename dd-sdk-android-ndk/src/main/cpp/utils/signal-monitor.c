@@ -143,8 +143,6 @@ void uninstall_handlers() {
 }
 
 void handle_signal(int signum, siginfo_t *info, void *user_context) {
-    __android_log_write(ANDROID_LOG_INFO, LOG_TAG, "Handling signal in Datadog Crash Handler");
-
     const size_t signals_array_size = handled_signals_size();
     for (int i = 0; i < signals_array_size; i++) {
         const int signal = handled_signals[i].signal_value;
@@ -198,6 +196,10 @@ bool configure_signal_stack() {
 
     // Create a scratch area for grabbing the backtrace
     backtrace_scratch = malloc(max_stack_size * sizeof(char));
+    if (backtrace_scratch == NULL) {
+        return false;
+    }
+
     return true;
 }
 
@@ -247,11 +249,11 @@ bool start_monitoring() {
     pthread_mutex_lock(&mutex);
     bool installed = try_to_install_handlers();
     if (installed) {
-        __android_log_write(ANDROID_LOG_ERROR, LOG_TAG,
-                            "Successfully installed Datadog signal handlers");
+        __android_log_write(ANDROID_LOG_INFO, LOG_TAG,
+                            "Successfully installed Datadog NDK signal handlers");
     } else {
         __android_log_write(ANDROID_LOG_ERROR, LOG_TAG,
-                            "Unable to install signal handlers");
+                            "Unable to install Datadog NDK signal handlers");
     }
     pthread_mutex_unlock(&mutex);
     return installed;
