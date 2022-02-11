@@ -20,26 +20,30 @@ TARGET_APP = "app"
 TARGET_DEMO = "demo"
 TARGET_BRIDGE = "bridge"
 TARGET_GRADLE_PLUGIN = "gradle-plugin"
+TARGET_FLUTTER = "flutter"
 
 REPOSITORIES = {
     TARGET_APP: "datadog-android",
     TARGET_DEMO: "shopist-android",
     TARGET_BRIDGE: "dd-bridge-android",
-    TARGET_GRADLE_PLUGIN: "dd-sdk-android-gradle-plugin"
+    TARGET_GRADLE_PLUGIN: "dd-sdk-android-gradle-plugin",
+    TARGET_FLUTTER: "dd-sdk-flutter"
 }
 
 FILE_PATH = {
     TARGET_APP: os.path.join("gradle", "libs.versions.toml"),
     TARGET_DEMO: os.path.join("gradle", "libs.versions.toml"),
     TARGET_BRIDGE: os.path.join("gradle", "libs.versions.toml"),
-    TARGET_GRADLE_PLUGIN: os.path.join("gradle", "libs.versions.toml")
+    TARGET_GRADLE_PLUGIN: os.path.join("gradle", "libs.versions.toml"),
+    TARGET_FLUTTER: os.path.join("android", "build.gradle")
 }
 
 PREFIX = {
     TARGET_APP: "datadog",
     TARGET_DEMO: "datadogSdk",
     TARGET_BRIDGE: "datadogSdk",
-    TARGET_GRADLE_PLUGIN: "datadogSdk"
+    TARGET_GRADLE_PLUGIN: "datadogSdk",
+    TARGET_FLUTTER: "ext.datadog_sdk_version"
 }
 
 
@@ -48,7 +52,7 @@ def parse_arguments(args: list) -> Namespace:
 
     parser.add_argument("-v", "--version", required=True, help="the version of the SDK")
     parser.add_argument("-t", "--target", required=True,
-                        choices=[TARGET_APP, TARGET_DEMO, TARGET_BRIDGE, TARGET_GRADLE_PLUGIN],
+                        choices=[TARGET_APP, TARGET_DEMO, TARGET_BRIDGE, TARGET_GRADLE_PLUGIN, TARGET_FLUTTER],
                         help="the target repository")
 
     return parser.parse_args(args)
