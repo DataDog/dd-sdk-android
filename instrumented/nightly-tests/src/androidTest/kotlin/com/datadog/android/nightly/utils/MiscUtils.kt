@@ -72,7 +72,7 @@ fun sendRandomActionOutcomeEvent(forge: Forge) {
 }
 
 fun stopSdk() {
-    Datadog.invokeMethod("stop")
+    Datadog.stop()
     GlobalTracer::class.java.setStaticValue("isRegistered", false)
     val isRumRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
     isRumRegistered.set(false)

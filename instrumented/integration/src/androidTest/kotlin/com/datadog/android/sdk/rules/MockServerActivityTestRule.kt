@@ -19,7 +19,6 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.addTrackingConsent
 import com.datadog.tools.unit.getFieldValue
-import com.datadog.tools.unit.invokeMethod
 import com.google.gson.JsonParser
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -91,7 +90,14 @@ internal open class MockServerActivityTestRule<T : Activity>(
 
     override fun afterActivityFinished() {
         mockWebServer.shutdown()
-        Datadog.invokeMethod("stop")
+
+        val instance = Datadog.javaClass.getDeclaredField("INSTANCE")
+        instance.isAccessible = true
+
+        val method = Datadog.javaClass.declaredMethods.first { it.name.contains("stop") }
+        method.isAccessible = true
+        method.invoke(instance.get(null))
+
         InstrumentationRegistry
             .getInstrumentation()
             .targetContext

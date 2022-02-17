@@ -1330,6 +1330,7 @@ class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.
 class com.datadog.android.tracing.AndroidTracer : com.datadog.opentracing.DDTracer
   override fun buildSpan(String): DDSpanBuilder
   class Builder
+    constructor()
     fun build(): AndroidTracer
     fun setServiceName(String): Builder
     fun setPartialFlushThreshold(Int): Builder

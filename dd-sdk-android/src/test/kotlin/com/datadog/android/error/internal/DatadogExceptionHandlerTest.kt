@@ -42,7 +42,6 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
@@ -166,7 +165,7 @@ internal class DatadogExceptionHandlerTest {
     fun `tear down`() {
         Thread.setDefaultUncaughtExceptionHandler(originalHandler)
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", null)
-        Datadog.invokeMethod("stop")
+        Datadog.stop()
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
     }
 
@@ -453,7 +452,7 @@ internal class DatadogExceptionHandlerTest {
                     )
                 )
         }
-        Datadog.invokeMethod("stop")
+        Datadog.stop()
     }
 
     @Test

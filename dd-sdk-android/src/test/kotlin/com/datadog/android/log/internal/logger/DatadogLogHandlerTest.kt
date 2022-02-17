@@ -37,7 +37,6 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setFieldValue
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -543,7 +542,7 @@ internal class DatadogLogHandlerTest {
                 .containsEntry(LogAttributes.DD_TRACE_ID, tracer.traceId)
                 .containsEntry(LogAttributes.DD_SPAN_ID, tracer.spanId)
         }
-        Datadog.invokeMethod("stop")
+        Datadog.stop()
     }
 
     @Test
@@ -609,7 +608,7 @@ internal class DatadogLogHandlerTest {
                 .containsEntry(LogAttributes.RUM_VIEW_ID, rumMonitor.context.viewId)
                 .containsEntry(LogAttributes.RUM_ACTION_ID, rumMonitor.context.actionId)
         }
-        Datadog.invokeMethod("stop")
+        Datadog.stop()
     }
 
     @Test

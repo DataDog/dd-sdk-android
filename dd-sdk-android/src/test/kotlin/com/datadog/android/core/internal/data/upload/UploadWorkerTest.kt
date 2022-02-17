@@ -32,7 +32,6 @@ import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.datadog.tools.unit.invokeMethod
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.never
@@ -144,7 +143,7 @@ internal class UploadWorkerTest {
 
     @AfterEach
     fun `tear down`() {
-        Datadog.invokeMethod("stop")
+        Datadog.stop()
     }
 
     @Test

@@ -6,9 +6,9 @@
 
 package com.datadog.android.core.internal.net
 
-import android.os.Build
 import com.datadog.android.BuildConfig
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import okhttp3.Call
 import okhttp3.Request
@@ -17,6 +17,7 @@ import okhttp3.RequestBody
 internal abstract class DataOkHttpUploader(
     internal var url: String,
     internal val callFactory: Call.Factory,
+    internal val androidInfoProvider: AndroidInfoProvider,
     internal val contentType: String = CONTENT_TYPE_JSON
 ) : DataUploader {
 
@@ -65,8 +66,9 @@ internal abstract class DataOkHttpUploader(
         System.getProperty(SYSTEM_UA).let {
             if (it.isNullOrBlank()) {
                 "Datadog/${BuildConfig.SDK_VERSION_NAME} " +
-                    "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
-                    "${Build.MODEL} Build/${Build.ID})"
+                    "(Linux; U; Android ${androidInfoProvider.getDeviceVersion()}; " +
+                    "${androidInfoProvider.getDeviceModel()} " +
+                    "Build/${androidInfoProvider.getDeviceBuildId()})"
             } else {
                 it
             }

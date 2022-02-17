@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.internal.net
 
-import android.os.Build
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.Logger
 import java.util.Locale
@@ -22,6 +22,7 @@ internal abstract class DataOkHttpUploaderV2(
     internal val sdkVersion: String,
     internal val callFactory: Call.Factory,
     internal val contentType: String,
+    internal val androidInfoProvider: AndroidInfoProvider,
     internal val internalLogger: Logger
 ) : DataUploader {
 
@@ -37,8 +38,9 @@ internal abstract class DataOkHttpUploaderV2(
         System.getProperty(DataOkHttpUploader.SYSTEM_UA).let {
             if (it.isNullOrBlank()) {
                 "Datadog/$sdkVersion " +
-                    "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
-                    "${Build.MODEL} Build/${Build.ID})"
+                    "(Linux; U; Android ${androidInfoProvider.getDeviceVersion()}; " +
+                    "${androidInfoProvider.getDeviceModel()} " +
+                    "Build/${androidInfoProvider.getDeviceBuildId()})"
             } else {
                 it
             }

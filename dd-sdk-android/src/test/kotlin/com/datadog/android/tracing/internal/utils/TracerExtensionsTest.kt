@@ -9,8 +9,7 @@ package com.datadog.android.tracing.internal.utils
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentracing.DDSpan
-import com.datadog.opentracing.scopemanager.ContextualScopeManager
-import com.datadog.tools.unit.getStaticValue
+import com.datadog.opentracing.scopemanager.ScopeTestHelper
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -48,8 +47,7 @@ class TracerExtensionsTest {
         activeSpan?.finish()
         activeScope?.close()
 
-        val tlsScope: ThreadLocal<*> = ContextualScopeManager::class.java.getStaticValue("tlsScope")
-        tlsScope.remove()
+        ScopeTestHelper.removeThreadLocalScope()
     }
 
     @Test

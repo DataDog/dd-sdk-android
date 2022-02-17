@@ -41,7 +41,6 @@ import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.datadog.tools.unit.invokeMethod
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
@@ -115,17 +114,13 @@ internal class DatadogTest {
         Datadog.isDebug = false
         Datadog.setVerbosity(Int.MAX_VALUE)
 
-        try {
-            Datadog.invokeMethod("stop")
-        } catch (e: IllegalStateException) {
-            // nevermind
-        }
+        Datadog.stop()
     }
 
     @Test
     fun `𝕄 do nothing 𝕎 stop() without initialize`() {
         // When
-        Datadog.invokeMethod("stop")
+        Datadog.stop()
 
         // Then
         verifyZeroInteractions(appContext.mockInstance)
