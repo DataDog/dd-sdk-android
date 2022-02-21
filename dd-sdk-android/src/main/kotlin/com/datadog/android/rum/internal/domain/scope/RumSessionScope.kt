@@ -140,12 +140,13 @@ internal class RumSessionScope(
         actualWriter: DataWriter<Any>
     ) {
         val isValidAppLaunchEvent = event.javaClass in validAppLaunchEventTypes
+        val isSilentOrphanEvent = event.javaClass in silentOrphanEventTypes
 
         if (isValidAppLaunchEvent) {
             val viewScope = createAppLaunchViewScope(event)
             viewScope.handleEvent(event, actualWriter)
             activeChildrenScopes.add(viewScope)
-        } else {
+        } else if (!isSilentOrphanEvent) {
             devLogger.w(MESSAGE_MISSING_VIEW)
         }
     }
@@ -155,6 +156,7 @@ internal class RumSessionScope(
         writer: DataWriter<Any>
     ) {
         val isValidBackgroundEvent = event.javaClass in validBackgroundEventTypes
+        val isSilentOrphanEvent = event.javaClass in silentOrphanEventTypes
 
         if (isValidBackgroundEvent && backgroundTrackingEnabled) {
             // there is no active ViewScope to handle this event. We will assume the application
@@ -163,7 +165,7 @@ internal class RumSessionScope(
             val viewScope = createBackgroundViewScope(event)
             viewScope.handleEvent(event, writer)
             activeChildrenScopes.add(viewScope)
-        } else {
+        } else if (!isSilentOrphanEvent) {
             devLogger.w(MESSAGE_MISSING_VIEW)
         }
     }
@@ -265,6 +267,21 @@ internal class RumSessionScope(
             RumRawEvent.AddLongTask::class.java,
             RumRawEvent.StartAction::class.java,
             RumRawEvent.StartResource::class.java
+        )
+
+        internal val silentOrphanEventTypes = arrayOf<Class<*>>(
+            RumRawEvent.ApplicationStarted::class.java,
+            RumRawEvent.KeepAlive::class.java,
+            RumRawEvent.ResetSession::class.java,
+            RumRawEvent.StopView::class.java,
+            RumRawEvent.ActionDropped::class.java,
+            RumRawEvent.ActionSent::class.java,
+            RumRawEvent.ErrorDropped::class.java,
+            RumRawEvent.ErrorSent::class.java,
+            RumRawEvent.LongTaskDropped::class.java,
+            RumRawEvent.LongTaskSent::class.java,
+            RumRawEvent.ResourceDropped::class.java,
+            RumRawEvent.ResourceSent::class.java
         )
 
         internal val DEFAULT_SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)
