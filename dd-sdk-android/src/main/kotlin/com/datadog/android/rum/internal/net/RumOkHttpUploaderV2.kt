@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.net
 
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploaderV2
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.RumAttributes
 import okhttp3.Call
@@ -17,7 +18,8 @@ internal open class RumOkHttpUploaderV2(
     clientToken: String,
     source: String,
     sdkVersion: String,
-    callFactory: Call.Factory
+    callFactory: Call.Factory,
+    androidInfoProvider: AndroidInfoProvider
 ) : DataOkHttpUploaderV2(
     buildUrl(endpoint, TrackType.RUM),
     clientToken,
@@ -25,6 +27,7 @@ internal open class RumOkHttpUploaderV2(
     sdkVersion,
     callFactory,
     CONTENT_TYPE_TEXT_UTF8,
+    androidInfoProvider,
     sdkLogger
 ) {
 

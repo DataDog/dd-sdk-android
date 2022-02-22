@@ -158,8 +158,7 @@ object Datadog {
     }
 
     // Stop all Datadog work (for test purposes).
-    @Suppress("unused")
-    private fun stop() {
+    internal fun stop() {
         if (initialized.get()) {
             LogsFeature.stop()
             TracingFeature.stop()

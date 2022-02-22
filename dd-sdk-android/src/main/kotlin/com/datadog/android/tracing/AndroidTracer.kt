@@ -54,20 +54,21 @@ class AndroidTracer internal constructor(
      * Builds a [AndroidTracer] instance.
      *
      */
-    class Builder {
+    class Builder
+    internal constructor(private val logsHandler: LogHandler) {
 
         private var bundleWithRumEnabled: Boolean = true
         private var serviceName: String = CoreFeature.serviceName
         private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
         private var random: Random = SecureRandom()
-        private val logsHandler: LogHandler
 
         private val globalTags: MutableMap<String, String> = mutableMapOf()
 
-        init {
-            val logger = Logger.Builder().setLoggerName(TRACE_LOGGER_NAME).build()
-            logsHandler = AndroidSpanLogsHandler(logger)
-        }
+        constructor() : this(
+            AndroidSpanLogsHandler(
+                Logger.Builder().setLoggerName(TRACE_LOGGER_NAME).build()
+            )
+        )
 
         // region Public API
 

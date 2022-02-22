@@ -24,13 +24,10 @@ import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
-import com.datadog.opentracing.scopemanager.ContextualScopeManager
+import com.datadog.opentracing.scopemanager.ScopeTestHelper
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.datadog.tools.unit.getStaticValue
-import com.datadog.tools.unit.invokeMethod
-import com.datadog.tools.unit.setFieldValue
 import com.datadog.trace.api.Config
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.inOrder
@@ -90,13 +87,12 @@ internal class AndroidTracerTest {
         fakeToken = forge.anHexadecimalString()
         TracingFeature.initialize(appContext.mockInstance, Configuration.DEFAULT_TRACING_CONFIG)
         RumFeature.initialize(appContext.mockInstance, Configuration.DEFAULT_RUM_CONFIG)
-        testedTracerBuilder = AndroidTracer.Builder()
-        testedTracerBuilder.setFieldValue("logsHandler", mockLogsHandler)
+        testedTracerBuilder = AndroidTracer.Builder(mockLogsHandler)
     }
 
     @AfterEach
     fun `tear down`() {
-        Datadog.invokeMethod("stop")
+        Datadog.stop()
 
         val tracer = GlobalTracer.get()
         val activeSpan = tracer?.activeSpan()
@@ -106,9 +102,7 @@ internal class AndroidTracerTest {
         activeSpan?.finish()
         activeScope?.close()
 
-        val tlsScope: ThreadLocal<*> =
-            ContextualScopeManager::class.java.getStaticValue("tlsScope")
-        tlsScope.remove()
+        ScopeTestHelper.removeThreadLocalScope()
         RumFeature.stop()
     }
 
