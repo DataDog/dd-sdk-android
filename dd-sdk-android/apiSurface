@@ -280,23 +280,6 @@ data class com.datadog.android.log.model.LogEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Status
-data class com.datadog.android.log.model.WebViewLogEvent
-  constructor(Status? = null, kotlin.String, kotlin.String, kotlin.Long, kotlin.String, kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
-  fun toJson(): com.google.gson.JsonElement
-  companion object 
-    fun fromJson(kotlin.String): WebViewLogEvent
-  enum Status
-    constructor(kotlin.String)
-    - CRITICAL
-    - ERROR
-    - WARN
-    - INFO
-    - DEBUG
-    - TRACE
-    - EMERGENCY
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Status
 data class com.datadog.android.plugin.DatadogContext
   constructor(DatadogRumContext? = null)
 interface com.datadog.android.plugin.DatadogPlugin : com.datadog.android.privacy.TrackingConsentProviderCallback
