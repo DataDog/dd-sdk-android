@@ -11,8 +11,9 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.log.model.LogEvent
 import java.util.Locale
 
-internal class LogEventMapperWrapper(private val wrappedEventMapper: EventMapper<LogEvent>) :
-    EventMapper<LogEvent> {
+internal class LogEventMapperWrapper(
+    internal val wrappedEventMapper: EventMapper<LogEvent>
+) : EventMapper<LogEvent> {
     override fun map(event: LogEvent): LogEvent? {
         val mappedEvent = wrappedEventMapper.map(event)
         if (mappedEvent == null) {

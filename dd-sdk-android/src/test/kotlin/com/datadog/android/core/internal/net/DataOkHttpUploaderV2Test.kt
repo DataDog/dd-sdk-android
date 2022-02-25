@@ -6,9 +6,8 @@
 
 package com.datadog.android.core.internal.net
 
-import android.os.Build
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
@@ -32,7 +31,6 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
@@ -59,6 +57,9 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
     @Mock
     lateinit var mockCall: Call
 
+    @Mock
+    lateinit var mockAndroidInfoProvider: AndroidInfoProvider
+
     @StringForgery(regex = "https://[a-z]+\\.com")
     lateinit var fakeEndpoint: String
 
@@ -78,26 +79,28 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
 
     lateinit var fakeResponse: Response
 
+    @StringForgery
+    lateinit var fakeDeviceModel: String
+
+    @StringForgery
+    lateinit var fakeDeviceBuildId: String
+
+    @StringForgery
+    lateinit var fakeDeviceVersion: String
+
     @BeforeEach
     open fun `set up`(forge: Forge) {
 
         whenever(mockCallFactory.newCall(any())) doReturn mockCall
 
-        Build.VERSION::class.java.setStaticValue("RELEASE", forge.anAlphaNumericalString())
-        Build::class.java.setStaticValue("MODEL", forge.anAlphabeticalString())
-        Build::class.java.setStaticValue("ID", forge.anAlphabeticalString())
+        whenever(mockAndroidInfoProvider.getDeviceVersion()) doReturn fakeDeviceVersion
+        whenever(mockAndroidInfoProvider.getDeviceModel()) doReturn fakeDeviceModel
+        whenever(mockAndroidInfoProvider.getDeviceBuildId()) doReturn fakeDeviceBuildId
 
         fakeUserAgent = if (forge.aBool()) forge.anAlphaNumericalString() else ""
         System.setProperty("http.agent", fakeUserAgent)
 
         testedUploader = buildTestedInstance(mockCallFactory)
-    }
-
-    @AfterEach
-    open fun `tear down`() {
-        Build.VERSION::class.java.setStaticValue("RELEASE", null)
-        Build::class.java.setStaticValue("MODEL", null)
-        Build::class.java.setStaticValue("ID", null)
     }
 
     abstract fun buildTestedInstance(callFactory: Call.Factory): T
@@ -370,8 +373,8 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
 
         val expectedUserAgent = if (fakeUserAgent.isBlank()) {
             "Datadog/$fakeSdkVersion " +
-                "(Linux; U; Android ${Build.VERSION.RELEASE}; " +
-                "${Build.MODEL} Build/${Build.ID})"
+                "(Linux; U; Android $fakeDeviceVersion; " +
+                "$fakeDeviceModel Build/$fakeDeviceBuildId)"
         } else {
             fakeUserAgent
         }

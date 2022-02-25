@@ -149,6 +149,7 @@ androidXTestJUnitExt = { module = "androidx.test.ext:junit", version.ref = "andr
 androidXEspressoCore = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
 androidXEspressoContrib = { module = "androidx.test.espresso:espresso-contrib", version.ref = "espresso" }
 androidXEspressoIntents = { module = "androidx.test.espresso:espresso-intents", version.ref = "espresso" }
+androidXEspressoWeb = { module = "androidx.test.espresso:espresso-web", version.ref = "espresso" }
 
 # Test tools
 elmyr = { module = "com.github.xgouchet.Elmyr:core", version.ref = "elmyr" }
@@ -245,6 +246,7 @@ integrationTests = [
     "androidXEspressoCore",
     "androidXEspressoContrib",
     "androidXEspressoIntents",
+    "androidXEspressoWeb",
     "elmyr",
     "elmyrInject",
     "elmyrJUnit4"

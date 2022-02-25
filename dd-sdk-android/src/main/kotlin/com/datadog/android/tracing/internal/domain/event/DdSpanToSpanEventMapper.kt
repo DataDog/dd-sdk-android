@@ -72,7 +72,7 @@ internal class DdSpanToSpanEventMapper(
         )
         return SpanEvent.Meta(
             version = CoreFeature.packageVersion,
-            dd = SpanEvent.Dd(),
+            dd = SpanEvent.Dd(source = CoreFeature.sourceName),
             span = SpanEvent.Span(),
             tracer = SpanEvent.Tracer(
                 version = CoreFeature.sdkVersion

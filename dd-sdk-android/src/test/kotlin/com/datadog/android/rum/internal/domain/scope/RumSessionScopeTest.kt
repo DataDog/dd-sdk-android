@@ -19,7 +19,6 @@ import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
@@ -27,13 +26,14 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
-import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -113,7 +113,8 @@ internal class RumSessionScopeTest {
     @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
-    lateinit var mockDevLogHandler: LogHandler
+    @Mock
+    lateinit var mockRumEventSourceProvider: RumEventSourceProvider
 
     @Forgery
     lateinit var fakeParentContext: RumContext
@@ -132,8 +133,6 @@ internal class RumSessionScopeTest {
 
     @BeforeEach
     fun `set up`() {
-        mockDevLogHandler = mockDevLogHandler()
-
         whenever(coreFeature.mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(coreFeature.mockNetworkInfoProvider.getLatestNetworkInfo())
             .thenReturn(fakeNetworkInfo)
@@ -153,6 +152,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -186,6 +186,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -286,6 +287,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -346,8 +348,8 @@ internal class RumSessionScopeTest {
         // Then
         assertThat(testedScope.activeChildrenScopes).isEmpty()
         assertThat(result).isSameAs(testedScope)
-        verify(mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
-        verifyNoMoreInteractions(mockDevLogHandler, mockWriter)
+        verify(logger.mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
+        verifyNoMoreInteractions(logger.mockDevLogHandler, mockWriter)
     }
 
     @Test
@@ -359,7 +361,7 @@ internal class RumSessionScopeTest {
         verify(mockChildScope).handleEvent(mockEvent, mockWriter)
         assertThat(testedScope.activeChildrenScopes).containsExactly(mockChildScope)
         assertThat(result).isSameAs(testedScope)
-        verifyZeroInteractions(mockWriter, mockDevLogHandler)
+        verifyZeroInteractions(mockWriter, logger.mockDevLogHandler)
     }
 
     @Test
@@ -374,6 +376,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -391,7 +394,7 @@ internal class RumSessionScopeTest {
         }
         assertThat(testedScope.activeChildrenScopes).containsExactly(mockChildScope)
         assertThat(result).isSameAs(testedScope)
-        verifyZeroInteractions(mockWriter, mockDevLogHandler)
+        verifyZeroInteractions(mockWriter, logger.mockDevLogHandler)
     }
 
     @Test
@@ -594,6 +597,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -622,6 +626,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -673,6 +678,7 @@ internal class RumSessionScopeTest {
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
             timeProvider = mockTimeProvider,
             sessionListener = mockSessionListener,
+            rumEventSourceProvider = mockRumEventSourceProvider,
             sessionInactivityNanos = TEST_INACTIVITY_NS,
             sessionMaxDurationNanos = TEST_MAX_DURATION_NS
         )
@@ -746,6 +752,7 @@ internal class RumSessionScopeTest {
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
             timeProvider = mockTimeProvider,
+            rumEventSourceProvider = mockRumEventSourceProvider,
             sessionListener = mockSessionListener,
             sessionInactivityNanos = TEST_INACTIVITY_NS,
             sessionMaxDurationNanos = TEST_MAX_DURATION_NS
@@ -775,6 +782,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -803,6 +811,7 @@ internal class RumSessionScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -814,7 +823,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // THEN
-        verify(mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
+        verify(logger.mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
     }
 
     @Test
@@ -859,7 +868,22 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // THEN
-        verify(mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
+        verify(logger.mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
+    }
+
+    @Test
+    fun `M not send warn dev log W handleEvent { app displayed, bg event silent}`(
+        forge: Forge
+    ) {
+        // GIVEN
+        testedScope.applicationDisplayed = true
+        val fakeEvent = forge.forgeSilentOrphanEvent()
+
+        // WHEN
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        verifyZeroInteractions(logger.mockDevLogHandler)
     }
 
     @Test
@@ -874,7 +898,22 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // THEN
-        verify(mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
+        verify(logger.mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
+    }
+
+    @Test
+    fun `M not send warn dev log W handleEvent { app not displayed, bg event silent}`(
+        forge: Forge
+    ) {
+        // GIVEN
+        testedScope.applicationDisplayed = false
+        val fakeEvent = forge.forgeSilentOrphanEvent()
+
+        // WHEN
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        verifyZeroInteractions(logger.mockDevLogHandler)
     }
 
     private fun Forge.forgeValidBackgroundEvent(): RumRawEvent {
@@ -975,10 +1014,15 @@ internal class RumSessionScopeTest {
                     attributes = emptyMap(),
                     eventTime = fakeEventTime
                 ),
-                RumRawEvent.StopView(
+                RumRawEvent.StopResourceWithStackTrace(
                     fakeKey,
-                    emptyMap(),
-                    fakeEventTime
+                    message = this.aString(),
+                    statusCode = null,
+                    source = this.aValueFrom(RumErrorSource::class.java),
+                    stackTrace = this.anAlphaNumericalString(),
+                    errorType = aNullable { anAlphabeticalString() },
+                    attributes = emptyMap(),
+                    eventTime = fakeEventTime
                 )
             )
         )
@@ -1013,11 +1057,43 @@ internal class RumSessionScopeTest {
                     attributes = emptyMap(),
                     eventTime = fakeEventTime
                 ),
+                RumRawEvent.StopResourceWithStackTrace(
+                    fakeKey,
+                    message = this.aString(),
+                    statusCode = null,
+                    source = this.aValueFrom(RumErrorSource::class.java),
+                    stackTrace = this.anAlphaNumericalString(),
+                    errorType = aNullable { anAlphabeticalString() },
+                    attributes = emptyMap(),
+                    eventTime = fakeEventTime
+                )
+            )
+        )
+    }
+
+    private fun Forge.forgeSilentOrphanEvent(): RumRawEvent {
+        val fakeEventTime = Time()
+        val fakeKey = anAlphabeticalString()
+        val fakeId = getForgery<UUID>().toString()
+
+        return this.anElementFrom(
+            listOf(
+                RumRawEvent.ApplicationStarted(fakeEventTime, aLong()),
+                RumRawEvent.ResetSession(),
+                RumRawEvent.KeepAlive(),
                 RumRawEvent.StopView(
                     fakeKey,
                     emptyMap(),
                     fakeEventTime
-                )
+                ),
+                RumRawEvent.ActionSent(fakeId),
+                RumRawEvent.ErrorSent(fakeId),
+                RumRawEvent.LongTaskSent(fakeId),
+                RumRawEvent.ResourceSent(fakeId),
+                RumRawEvent.ActionDropped(fakeId),
+                RumRawEvent.ErrorDropped(fakeId),
+                RumRawEvent.LongTaskDropped(fakeId),
+                RumRawEvent.ResourceDropped(fakeId),
             )
         )
     }
@@ -1033,11 +1109,12 @@ internal class RumSessionScopeTest {
 
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
+        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, coreFeature)
+            return listOf(logger, appContext, coreFeature)
         }
     }
 }

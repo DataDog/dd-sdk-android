@@ -11,7 +11,6 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileDataWriter
-import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.internal.domain.LogFilePersistenceStrategy
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
@@ -19,7 +18,6 @@ import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.getFieldValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -52,6 +50,8 @@ internal class LogsFeatureTest :
     override fun featureDirName(): String {
         return "logs"
     }
+
+    override fun doesFeatureNeedMigration(): Boolean = true
 
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
@@ -86,14 +86,8 @@ internal class LogsFeatureTest :
             (testedFeature.persistenceStrategy.getWriter() as? ScheduledWriter)
                 ?.delegateWriter as? BatchFileDataWriter
         val logMapperSerializer = batchFileDataWriter?.serializer as? MapperSerializer<LogEvent>
-        val logEventMapperWrapper =
-            logMapperSerializer?.getFieldValue<LogEventMapperWrapper, MapperSerializer<LogEvent>>(
-                "eventMapper"
-            )
-        val logEventMapper =
-            logEventMapperWrapper?.getFieldValue<EventMapper<LogEvent>, LogEventMapperWrapper>(
-                "wrappedEventMapper"
-            )
+        val logEventMapperWrapper = logMapperSerializer?.eventMapper as? LogEventMapperWrapper
+        val logEventMapper = logEventMapperWrapper?.wrappedEventMapper
         assertThat(
             logEventMapper
         ).isSameAs(

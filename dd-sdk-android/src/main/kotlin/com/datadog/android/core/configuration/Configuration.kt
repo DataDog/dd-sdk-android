@@ -41,9 +41,7 @@ import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
-import java.net.MalformedURLException
 import java.net.Proxy
-import java.net.URL
 import java.util.Locale
 import okhttp3.Authenticator
 
@@ -71,7 +69,8 @@ internal constructor(
         val uploadFrequency: UploadFrequency,
         val proxy: Proxy?,
         val proxyAuth: Authenticator,
-        val securityConfig: SecurityConfig
+        val securityConfig: SecurityConfig,
+        val webViewTrackingHosts: List<String>
     )
 
     internal sealed class Feature {
@@ -138,6 +137,8 @@ internal constructor(
 
         private var coreConfig = DEFAULT_CORE_CONFIG
 
+        internal var hostsSanitizer = HostsSanitizer()
+
         /**
          * Builds a [Configuration] based on the current state of this Builder.
          */
@@ -178,7 +179,30 @@ internal constructor(
          * See [DatadogInterceptor]
          */
         fun setFirstPartyHosts(hosts: List<String>): Builder {
-            coreConfig = coreConfig.copy(firstPartyHosts = sanitizeHosts(hosts))
+            coreConfig = coreConfig.copy(
+                firstPartyHosts = hostsSanitizer.sanitizeHosts(
+                    hosts,
+                    NETWORK_REQUESTS_TRACKING_FEATURE_NAME
+                )
+            )
+            return this
+        }
+
+        /**
+         * Sets the list of WebView tracked hosts.
+         * When a WebView loads a URL from any of these hosts, and the page has Datadog's
+         * Browser SDK setup, then the Logs and RUM Events from the webview will be tracked in
+         * the same session..
+         * @param hosts a list of all the hosts that you want to track when loaded in the
+         * WebView.
+         */
+        fun setWebViewTrackingHosts(hosts: List<String>): Builder {
+            coreConfig = coreConfig.copy(
+                webViewTrackingHosts = hostsSanitizer.sanitizeHosts(
+                    hosts,
+                    WEB_VIEW_TRACKING_FEATURE_NAME
+                )
+            )
             return this
         }
 
@@ -669,7 +693,8 @@ internal constructor(
             uploadFrequency = UploadFrequency.AVERAGE,
             proxy = null,
             proxyAuth = Authenticator.NONE,
-            securityConfig = SecurityConfig.DEFAULT
+            securityConfig = SecurityConfig.DEFAULT,
+            webViewTrackingHosts = emptyList()
         )
         internal val DEFAULT_LOGS_CONFIG = Feature.Logs(
             endpointUrl = DatadogEndpoint.LOGS_US1,
@@ -703,58 +728,8 @@ internal constructor(
             "Configuration.Builder, but you're trying to edit the RUM configuration with the " +
             "%s() method."
 
-        private const val URL_REGEX = "^(http|https)://(.*)"
-
-        private const val VALID_IP_REGEX =
-            "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}" +
-                "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"
-        private const val VALID_DOMAIN_REGEX =
-            "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)+" +
-                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])$"
-        private const val VALID_HOSTNAME_REGEX = "$VALID_IP_REGEX|$VALID_DOMAIN_REGEX"
-
-        internal const val WARNING_USING_URL_FOR_HOST =
-            "You are using an url: %s for declaring the first " +
-                "party hosts. You should use instead a valid" +
-                " host name: %s."
-
-        internal const val ERROR_MALFORMED_URL =
-            "The url: %s is malformed. It will be dropped"
-
-        internal const val ERROR_MALFORMED_HOST_IP_ADDRESS =
-            "The host name or ip address used for first party " +
-                "hosts: %s was malformed. It will be dropped."
-
-        internal fun sanitizeHosts(hosts: List<String>): List<String> {
-            val validHostNameRegEx = Regex(VALID_HOSTNAME_REGEX)
-            val validUrlRegex = Regex(URL_REGEX)
-            return hosts.mapNotNull {
-                if (it.matches(validUrlRegex)) {
-                    try {
-                        val parsedUrl = URL(it)
-                        devLogger.w(
-                            WARNING_USING_URL_FOR_HOST.format(
-                                Locale.US,
-                                it,
-                                parsedUrl.host
-                            )
-                        )
-                        parsedUrl.host
-                    } catch (e: MalformedURLException) {
-                        devLogger.e(ERROR_MALFORMED_URL.format(Locale.US, it), e)
-                        null
-                    }
-                } else if (it.matches(validHostNameRegEx)) {
-                    it
-                } else if (it.lowercase(Locale.ENGLISH) == "localhost") {
-                    // special rule exception to accept `localhost` as a valid domain name
-                    it
-                } else {
-                    devLogger.e(ERROR_MALFORMED_HOST_IP_ADDRESS.format(Locale.US, it))
-                    null
-                }
-            }
-        }
+        internal const val WEB_VIEW_TRACKING_FEATURE_NAME = "WebView"
+        internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network requests"
 
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,

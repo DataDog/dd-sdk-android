@@ -28,7 +28,7 @@ internal class InternalLogFilePersistenceStrategy(
     FeatureFileOrchestrator(
         consentProvider,
         context,
-        "internal-logs",
+        InternalLogsFeature.INTERNAL_LOGS_FEATURE_NAME,
         executorService,
         internalLogger
     ),

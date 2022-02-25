@@ -17,11 +17,11 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import java.net.MalformedURLException
 import java.net.URL
-import java.util.Locale
 import java.util.UUID
 
 internal class RumResourceScope(
@@ -32,7 +32,8 @@ internal class RumResourceScope(
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
     serverTimeOffsetInMs: Long,
-    internal val firstPartyHostDetector: FirstPartyHostDetector
+    internal val firstPartyHostDetector: FirstPartyHostDetector,
+    private val rumEventSourceProvider: RumEventSourceProvider
 ) : RumScope {
 
     internal val resourceId: String = UUID.randomUUID().toString()
@@ -61,6 +62,7 @@ internal class RumResourceScope(
             is RumRawEvent.AddResourceTiming -> onAddResourceTiming(event, writer)
             is RumRawEvent.StopResource -> onStopResource(event, writer)
             is RumRawEvent.StopResourceWithError -> onStopResourceWithError(event, writer)
+            is RumRawEvent.StopResourceWithStackTrace -> onStopResourceWithStackTrace(event, writer)
             else -> {
                 // Other events are not relevant for RumResourceScope
             }
@@ -118,7 +120,26 @@ internal class RumResourceScope(
             event.message,
             event.source,
             event.statusCode,
-            event.throwable,
+            event.throwable.loggableStackTrace(),
+            event.throwable.javaClass.canonicalName,
+            writer
+        )
+    }
+
+    private fun onStopResourceWithStackTrace(
+        event: RumRawEvent.StopResourceWithStackTrace,
+        writer: DataWriter<Any>
+    ) {
+        if (key != event.key) return
+
+        attributes.putAll(event.attributes)
+
+        sendError(
+            event.message,
+            event.source,
+            event.statusCode,
+            event.stackTrace,
+            event.errorType,
             writer
         )
     }
@@ -178,6 +199,7 @@ internal class RumResourceScope(
                 id = context.sessionId,
                 type = ResourceEvent.ResourceEventSessionType.USER
             ),
+            source = rumEventSourceProvider.resourceEventSource,
             context = ResourceEvent.Context(additionalProperties = attributes),
             dd = ResourceEvent.Dd(
                 traceId = traceId,
@@ -200,11 +222,13 @@ internal class RumResourceScope(
         }
     }
 
+    @SuppressWarnings("LongParameterList")
     private fun sendError(
         message: String,
         source: RumErrorSource,
         statusCode: Long?,
-        throwable: Throwable?,
+        stackTrace: String?,
+        errorType: String?,
         writer: DataWriter<Any>
     ) {
         attributes.putAll(GlobalRum.globalAttributes)
@@ -216,7 +240,7 @@ internal class RumResourceScope(
             error = ErrorEvent.Error(
                 message = message,
                 source = source.toSchemaSource(),
-                stack = throwable?.loggableStackTrace(),
+                stack = stackTrace,
                 isCrash = false,
                 resource = ErrorEvent.Resource(
                     url = url,
@@ -224,7 +248,7 @@ internal class RumResourceScope(
                     statusCode = statusCode ?: 0,
                     provider = resolveErrorProvider()
                 ),
-                type = resolveErrorType(statusCode, throwable),
+                type = errorType,
                 sourceType = ErrorEvent.SourceType.ANDROID
             ),
             action = context.actionId?.let { ErrorEvent.Action(it) },
@@ -245,6 +269,7 @@ internal class RumResourceScope(
                 id = context.sessionId,
                 type = ErrorEvent.ErrorEventSessionType.USER
             ),
+            source = rumEventSourceProvider.errorEventSource,
             context = ErrorEvent.Context(additionalProperties = attributes),
             dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
         )
@@ -271,26 +296,17 @@ internal class RumResourceScope(
         }
     }
 
-    private fun resolveErrorType(statusCode: Long?, throwable: Throwable?): String? {
-        return if (throwable != null) {
-            throwable.javaClass.canonicalName
-        } else if (statusCode != null) {
-            ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT.format(Locale.US, statusCode)
-        } else {
-            null
-        }
-    }
-
     // endregion
 
     companion object {
-        internal const val ERROR_TYPE_BASED_ON_STATUS_CODE_FORMAT = "HTTP %d"
 
         fun fromEvent(
             parentScope: RumScope,
             event: RumRawEvent.StartResource,
             firstPartyHostDetector: FirstPartyHostDetector,
-            timestampOffset: Long
+            timestampOffset: Long,
+            rumEventSourceProvider: RumEventSourceProvider
+
         ): RumScope {
             return RumResourceScope(
                 parentScope,
@@ -300,7 +316,8 @@ internal class RumResourceScope(
                 event.eventTime,
                 event.attributes,
                 timestampOffset,
-                firstPartyHostDetector
+                firstPartyHostDetector,
+                rumEventSourceProvider
             )
         }
     }

@@ -40,6 +40,9 @@ internal class RumEventSerializer(
             is LongTaskEvent -> {
                 serializeLongTaskEvent(model)
             }
+            is JsonObject -> {
+                model.toString()
+            }
             else -> {
                 JsonObject().toString()
             }

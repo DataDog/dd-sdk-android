@@ -36,7 +36,8 @@ internal class TracesOkHttpUploaderTest : DataOkHttpUploaderTest<TracesOkHttpUpl
         return TracesOkHttpUploader(
             fakeEndpoint,
             fakeToken,
-            callFactory
+            callFactory,
+            mockAndroidInfoProvider
         )
     }
 

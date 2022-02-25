@@ -25,8 +25,8 @@ import com.datadog.android.log.model.LogEvent
 import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -73,15 +73,13 @@ internal class LoggerBuilderTest {
 
     @Test
     fun `builder returns no op if SDK is not initialized`() {
-        val mockDevLogHandler = mockDevLogHandler()
         LogsFeature.stop()
-        val logger = Logger.Builder()
-            .build()
+        val testedLogger = Logger.Builder().build()
 
-        val handler: LogHandler = logger.handler
+        val handler: LogHandler = testedLogger.handler
 
         assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
-        verify(mockDevLogHandler)
+        verify(logger.mockDevLogHandler)
             .handleLog(AndroidLog.ERROR, Datadog.MESSAGE_NOT_INITIALIZED)
     }
 
@@ -245,11 +243,12 @@ internal class LoggerBuilderTest {
     companion object {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
+        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, coreFeature)
+            return listOf(logger, appContext, coreFeature)
         }
     }
 }

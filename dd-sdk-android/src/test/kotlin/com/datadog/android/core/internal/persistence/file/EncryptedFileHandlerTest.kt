@@ -8,10 +8,12 @@ package com.datadog.android.core.internal.persistence.file
 
 import android.util.Log
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.security.Encryption
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doAnswer
@@ -43,7 +45,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -61,14 +64,10 @@ internal class EncryptedFileHandlerTest {
     @Mock
     lateinit var mockInternalLogger: Logger
 
-    private lateinit var mockDevLogger: LogHandler
-
     private lateinit var testedFileHandler: EncryptedFileHandler
 
     @BeforeEach
     fun setUp() {
-
-        mockDevLogger = mockDevLogHandler()
 
         whenever(mockFileHandlerDelegate.writeData(any(), any(), any(), anyOrNull())) doReturn true
 
@@ -116,7 +115,7 @@ internal class EncryptedFileHandlerTest {
             )
 
         verifyZeroInteractions(mockInternalLogger)
-        verifyZeroInteractions(mockDevLogger)
+        verifyZeroInteractions(logger.mockDevLogHandler)
     }
 
     @Test
@@ -186,7 +185,7 @@ internal class EncryptedFileHandlerTest {
         // Then
         assertThat(result).isFalse()
 
-        verify(mockDevLogger).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             EncryptedFileHandler.BAD_ENCRYPTION_RESULT_MESSAGE
         )
@@ -477,7 +476,7 @@ internal class EncryptedFileHandlerTest {
         verify(mockInternalLogger).e(
             EncryptedFileHandler.BASE64_DECODING_ERROR_MESSAGE, decodingException
         )
-        verify(mockDevLogger).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR, EncryptedFileHandler.BASE64_DECODING_ERROR_MESSAGE, decodingException
         )
 
@@ -543,7 +542,7 @@ internal class EncryptedFileHandlerTest {
         verify(mockInternalLogger, times(failCounter)).e(
             EncryptedFileHandler.BASE64_DECODING_ERROR_MESSAGE, decodingException
         )
-        verify(mockDevLogger, times(failCounter)).handleLog(
+        verify(logger.mockDevLogHandler, times(failCounter)).handleLog(
             Log.ERROR, EncryptedFileHandler.BASE64_DECODING_ERROR_MESSAGE, decodingException
         )
     }
@@ -583,7 +582,8 @@ internal class EncryptedFileHandlerTest {
         assertThat(result).isEqualTo(decorate(EMPTY_BYTE_ARRAY, prefixBytes, suffixBytes))
 
         verify(mockInternalLogger).e(EncryptedFileHandler.BAD_DATA_READ_MESSAGE)
-        verify(mockDevLogger).handleLog(Log.ERROR, EncryptedFileHandler.BAD_DATA_READ_MESSAGE)
+        verify(logger.mockDevLogHandler)
+            .handleLog(Log.ERROR, EncryptedFileHandler.BAD_DATA_READ_MESSAGE)
 
         verifyZeroInteractions(mockEncryption)
     }
@@ -658,7 +658,7 @@ internal class EncryptedFileHandlerTest {
         assertThat(readResult).isEqualTo(decorate(data.toByteArray(), prefixBytes, suffixBytes))
 
         verifyZeroInteractions(mockInternalLogger)
-        verifyZeroInteractions(mockDevLogger)
+        verifyZeroInteractions(logger.mockDevLogHandler)
     }
 
     @RepeatedTest(4)
@@ -720,7 +720,7 @@ internal class EncryptedFileHandlerTest {
         )
 
         verifyZeroInteractions(mockInternalLogger)
-        verifyZeroInteractions(mockDevLogger)
+        verifyZeroInteractions(logger.mockDevLogHandler)
     }
 
     // region private
@@ -786,5 +786,13 @@ internal class EncryptedFileHandlerTest {
         private val EMPTY_BYTE_ARRAY = ByteArray(0)
         private val BASE_64_CHARS =
             (('A'..'Z') + ('a'..'z') + ('0'..'9') + arrayOf('+', '/', '=')).toSet()
+
+        val logger = LoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
     }
 }

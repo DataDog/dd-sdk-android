@@ -8,8 +8,7 @@
 
 # Required because we need access to Datadog.stop() by reflection
 -keepnames class com.datadog.android.Datadog {
-    private void stop();
-    private void flushAndShutdownExecutors();
+    *;
 }
 # Required because we need access to GlobalRum.activeContext and GlobalRum.isRegistered by reflection
 -keepnames class com.datadog.android.rum.GlobalRum {

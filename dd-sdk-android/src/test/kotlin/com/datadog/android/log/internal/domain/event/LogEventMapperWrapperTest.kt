@@ -8,10 +8,12 @@ package com.datadog.android.log.internal.domain.event
 
 import android.util.Log
 import com.datadog.android.event.EventMapper
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.model.LogEvent
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -30,7 +32,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 @ForgeConfiguration(Configurator::class)
@@ -44,11 +47,8 @@ internal class LogEventMapperWrapperTest {
     @Mock
     lateinit var mockLogEvent: LogEvent
 
-    lateinit var mockDevLogHandler: LogHandler
-
     @BeforeEach
     fun `set up`() {
-        mockDevLogHandler = mockDevLogHandler()
         testedEventMapper = LogEventMapperWrapper(mockWrappedEventMapper)
     }
 
@@ -87,7 +87,7 @@ internal class LogEventMapperWrapperTest {
         testedEventMapper.map(mockLogEvent)
 
         // THEN
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             LogEventMapperWrapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(
                 Locale.US,
@@ -118,12 +118,22 @@ internal class LogEventMapperWrapperTest {
         testedEventMapper.map(mockLogEvent)
 
         // THEN
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             LogEventMapperWrapper.EVENT_NULL_WARNING_MESSAGE.format(
                 Locale.US,
                 mockLogEvent.toString()
             )
         )
+    }
+
+    companion object {
+        val logger = LoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
     }
 }

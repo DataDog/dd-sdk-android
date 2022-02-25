@@ -23,6 +23,7 @@ import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import java.security.SecureRandom
@@ -40,6 +41,7 @@ internal class RumSessionScope(
     private val frameRateVitalMonitor: VitalMonitor,
     private val timeProvider: TimeProvider,
     internal val sessionListener: RumSessionListener?,
+    private val rumEventSourceProvider: RumEventSourceProvider,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
@@ -95,7 +97,8 @@ internal class RumSessionScope(
                 cpuVitalMonitor,
                 memoryVitalMonitor,
                 frameRateVitalMonitor,
-                timeProvider
+                timeProvider,
+                rumEventSourceProvider
             )
             onViewDisplayed(event, viewScope, actualWriter)
             activeChildrenScopes.add(viewScope)
@@ -137,12 +140,13 @@ internal class RumSessionScope(
         actualWriter: DataWriter<Any>
     ) {
         val isValidAppLaunchEvent = event.javaClass in validAppLaunchEventTypes
+        val isSilentOrphanEvent = event.javaClass in silentOrphanEventTypes
 
         if (isValidAppLaunchEvent) {
             val viewScope = createAppLaunchViewScope(event)
             viewScope.handleEvent(event, actualWriter)
             activeChildrenScopes.add(viewScope)
-        } else {
+        } else if (!isSilentOrphanEvent) {
             devLogger.w(MESSAGE_MISSING_VIEW)
         }
     }
@@ -152,6 +156,7 @@ internal class RumSessionScope(
         writer: DataWriter<Any>
     ) {
         val isValidBackgroundEvent = event.javaClass in validBackgroundEventTypes
+        val isSilentOrphanEvent = event.javaClass in silentOrphanEventTypes
 
         if (isValidBackgroundEvent && backgroundTrackingEnabled) {
             // there is no active ViewScope to handle this event. We will assume the application
@@ -160,7 +165,7 @@ internal class RumSessionScope(
             val viewScope = createBackgroundViewScope(event)
             viewScope.handleEvent(event, writer)
             activeChildrenScopes.add(viewScope)
-        } else {
+        } else if (!isSilentOrphanEvent) {
             devLogger.w(MESSAGE_MISSING_VIEW)
         }
     }
@@ -176,7 +181,8 @@ internal class RumSessionScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
-            timeProvider
+            timeProvider,
+            rumEventSourceProvider
         )
     }
 
@@ -191,7 +197,8 @@ internal class RumSessionScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
-            timeProvider
+            timeProvider,
+            rumEventSourceProvider
         )
     }
 
@@ -260,6 +267,21 @@ internal class RumSessionScope(
             RumRawEvent.AddLongTask::class.java,
             RumRawEvent.StartAction::class.java,
             RumRawEvent.StartResource::class.java
+        )
+
+        internal val silentOrphanEventTypes = arrayOf<Class<*>>(
+            RumRawEvent.ApplicationStarted::class.java,
+            RumRawEvent.KeepAlive::class.java,
+            RumRawEvent.ResetSession::class.java,
+            RumRawEvent.StopView::class.java,
+            RumRawEvent.ActionDropped::class.java,
+            RumRawEvent.ActionSent::class.java,
+            RumRawEvent.ErrorDropped::class.java,
+            RumRawEvent.ErrorSent::class.java,
+            RumRawEvent.LongTaskDropped::class.java,
+            RumRawEvent.LongTaskSent::class.java,
+            RumRawEvent.ResourceDropped::class.java,
+            RumRawEvent.ResourceSent::class.java
         )
 
         internal val DEFAULT_SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)

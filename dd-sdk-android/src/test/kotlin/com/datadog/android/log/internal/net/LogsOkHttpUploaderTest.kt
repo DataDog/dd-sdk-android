@@ -38,7 +38,8 @@ internal class LogsOkHttpUploaderTest : DataOkHttpUploaderTest<LogsOkHttpUploade
         return LogsOkHttpUploader(
             fakeEndpoint,
             fakeToken,
-            callFactory
+            callFactory,
+            mockAndroidInfoProvider
         )
     }
 

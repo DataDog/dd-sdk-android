@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.utils.cancelUploadWorker
 import com.datadog.android.core.internal.utils.triggerUploadWorker
 import com.datadog.android.core.model.NetworkInfo
+import java.lang.ref.Reference
 import java.lang.ref.WeakReference
 
 internal class ProcessLifecycleCallback(
@@ -19,7 +20,7 @@ internal class ProcessLifecycleCallback(
 ) :
     ProcessLifecycleMonitor.Callback {
 
-    private val contextWeakRef = WeakReference<Context>(appContext)
+    internal val contextWeakRef: Reference<Context> = WeakReference(appContext)
 
     override fun onStarted() {
         contextWeakRef.get()?.let {

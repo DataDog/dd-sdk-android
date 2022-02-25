@@ -78,6 +78,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun build(): Configuration
     fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
     fun setFirstPartyHosts(List<String>): Builder
+    fun setWebViewTrackingHosts(List<String>): Builder
     fun useSite(com.datadog.android.DatadogSite): Builder
     DEPRECATED fun useEUEndpoints(): Builder
     DEPRECATED fun useUSEndpoints(): Builder
@@ -110,6 +111,8 @@ data class com.datadog.android.core.configuration.Credentials
   constructor(String, String, String, String?, String? = null)
   companion object 
     const val NO_VARIANT: String
+object com.datadog.android.core.configuration.private
+const val VALID_IP_REGEX: String
 data class com.datadog.android.core.configuration.SecurityConfig
   constructor(com.datadog.android.security.Encryption?)
 enum com.datadog.android.core.configuration.UploadFrequency
@@ -277,6 +280,23 @@ data class com.datadog.android.log.model.LogEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Status
+data class com.datadog.android.log.model.WebViewLogEvent
+  constructor(Status? = null, kotlin.String, kotlin.String, kotlin.Long, kotlin.String, kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): WebViewLogEvent
+  enum Status
+    constructor(kotlin.String)
+    - CRITICAL
+    - ERROR
+    - WARN
+    - INFO
+    - DEBUG
+    - TRACE
+    - EMERGENCY
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Status
 data class com.datadog.android.plugin.DatadogContext
   constructor(DatadogRumContext? = null)
 interface com.datadog.android.plugin.DatadogPlugin : com.datadog.android.privacy.TrackingConsentProviderCallback
@@ -367,6 +387,7 @@ interface com.datadog.android.rum.RumMonitor
   fun startResource(String, String, String, Map<String, Any?> = emptyMap())
   fun stopResource(String, Int?, Long?, RumResourceKind, Map<String, Any?>)
   fun stopResourceWithError(String, Int?, String, RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
+  fun stopResourceWithError(String, Int?, String, RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
   fun addError(String, RumErrorSource, Throwable?, Map<String, Any?>)
   fun addErrorWithStacktrace(String, RumErrorSource, String?, Map<String, Any?>)
   fun addTiming(String)
@@ -394,6 +415,11 @@ enum com.datadog.android.rum.RumResourceKind
   companion object 
 interface com.datadog.android.rum.RumSessionListener
   fun onSessionStarted(String, Boolean)
+override fun onInitialize(android.content.Context, com.datadog.android.core.configuration.Configuration.Feature.RUM)
+override fun onStop()
+override fun createPersistenceStrategy(android.content.Context, com.datadog.android.core.configuration.Configuration.Feature.RUM): com.datadog.android.core.internal.persistence.PersistenceStrategy<Any>
+override fun createUploader(com.datadog.android.core.configuration.Configuration.Feature.RUM): com.datadog.android.core.internal.net.DataUploader
+override fun onPostInitialized(android.content.Context)
 data class com.datadog.android.rum.model.ActionEvent
   constructor(kotlin.Long, Application, kotlin.String? = null, ActionEventSession, Source? = null, View, Usr? = null, Connectivity? = null, Synthetics? = null, CiTest? = null, Dd, Context? = null, Action)
   val type: kotlin.String
@@ -1256,6 +1282,7 @@ abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrateg
   override fun onActivityStopped(android.app.Activity)
   override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
   override fun onActivityResumed(android.app.Activity)
+  protected fun convertToRumAttributes(android.content.Intent?): Map<String, Any?>
   protected fun convertToRumAttributes(android.os.Bundle?): Map<String, Any?>
   companion object 
 class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
@@ -1303,11 +1330,11 @@ interface com.datadog.android.rum.tracking.TrackingStrategy
 interface com.datadog.android.rum.tracking.ViewAttributesProvider
   fun extractAttributes(android.view.View, MutableMap<String, Any?>)
 interface com.datadog.android.rum.tracking.ViewTrackingStrategy : TrackingStrategy
-open class com.datadog.android.rum.webview.RumWebChromeClient : android.webkit.WebChromeClient
+DEPRECATED open class com.datadog.android.rum.webview.RumWebChromeClient : android.webkit.WebChromeClient
   constructor()
   override fun onConsoleMessage(android.webkit.ConsoleMessage?): Boolean
   companion object 
-open class com.datadog.android.rum.webview.RumWebViewClient : android.webkit.WebViewClient
+DEPRECATED open class com.datadog.android.rum.webview.RumWebViewClient : android.webkit.WebViewClient
   override fun onPageStarted(android.webkit.WebView?, String?, android.graphics.Bitmap?)
   override fun onPageFinished(android.webkit.WebView?, String?)
   override fun onReceivedError(android.webkit.WebView?, Int, String?, String?)
@@ -1326,6 +1353,7 @@ class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.
 class com.datadog.android.tracing.AndroidTracer : com.datadog.opentracing.DDTracer
   override fun buildSpan(String): DDSpanBuilder
   class Builder
+    constructor()
     fun build(): AndroidTracer
     fun setServiceName(String): Builder
     fun setPartialFlushThreshold(Int): Builder
@@ -1392,4 +1420,10 @@ data class com.datadog.android.tracing.model.SpanEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): SimCarrier
+class com.datadog.android.webview.DatadogEventBridge
+  constructor()
+  constructor(List<String>)
+  fun send(String)
+  fun getAllowedWebViewHosts(): String
+  companion object 
 class com.datadog.tools.annotation.NoOpImplementation

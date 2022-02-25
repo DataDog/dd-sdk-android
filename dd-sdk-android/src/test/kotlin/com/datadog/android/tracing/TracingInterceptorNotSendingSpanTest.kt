@@ -12,18 +12,16 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setStaticValue
 import com.datadog.trace.api.interceptor.MutableSpan
 import com.nhaarman.mockitokotlin2.any
@@ -107,8 +105,6 @@ internal open class TracingInterceptorNotSendingSpanTest {
     @Mock
     lateinit var mockRequestListener: TracedRequestListener
 
-    lateinit var mockDevLogHandler: LogHandler
-
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
 
@@ -153,7 +149,6 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
     @BeforeEach
     open fun `set up`(forge: Forge) {
-        mockDevLogHandler = mockDevLogHandler()
         Datadog.setVerbosity(Log.VERBOSE)
 
         whenever(mockTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
@@ -332,6 +327,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan, never()).finish()
+        verify(mockSpan as MutableSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -351,6 +347,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan as MutableSpan).setError(true)
         verify(mockSpan, never()).finish()
+        verify(mockSpan as MutableSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -370,6 +367,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan as MutableSpan, never()).setError(true)
         verify(mockSpan, never()).finish()
+        verify(mockSpan as MutableSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -387,6 +385,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan as MutableSpan).setError(true)
         verify(mockSpan as MutableSpan).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
         verify(mockSpan, never()).finish()
+        verify(mockSpan as MutableSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -409,6 +408,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag("error.msg", throwable.message)
         verify(mockSpan).setTag("error.stack", throwable.loggableStackTrace())
         verify(mockSpan, never()).finish()
+        verify(mockSpan as MutableSpan).drop()
     }
 
     @Test
@@ -416,14 +416,14 @@ internal open class TracingInterceptorNotSendingSpanTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        TracingFeature.invokeMethod("stop")
+        TracingFeature.stop()
         stubChain(mockChain, statusCode)
 
         testedInterceptor.intercept(mockChain)
 
         verifyZeroInteractions(mockLocalTracer)
         verifyZeroInteractions(mockTracer)
-        verify(mockDevLogHandler)
+        verify(logger.mockDevLogHandler)
             .handleLog(
                 Log.WARN,
                 TracingInterceptor.WARNING_TRACING_DISABLED
@@ -453,8 +453,9 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
         verify(localSpan, never()).finish()
+        verify(localSpan as MutableSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
-        verify(mockDevLogHandler)
+        verify(logger.mockDevLogHandler)
             .handleLog(
                 Log.WARN,
                 TracingInterceptor.WARNING_DEFAULT_TRACER
@@ -489,14 +490,16 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
         verify(localSpan, never()).finish()
+        verify(localSpan as MutableSpan).drop()
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan, never()).finish()
+        verify(mockSpan as MutableSpan).drop()
         assertThat(response1).isSameAs(expectedResponse1)
         assertThat(response2).isSameAs(expectedResponse2)
-        verify(mockDevLogHandler)
+        verify(logger.mockDevLogHandler)
             .handleLog(
                 Log.WARN,
                 TracingInterceptor.WARNING_DEFAULT_TRACER
@@ -527,6 +530,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(tagKey, tagValue)
         verify(mockSpan, never()).finish()
+        verify(mockSpan as MutableSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -554,6 +558,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(tagKey, tagValue)
         verify(mockSpan, never()).finish()
+        verify(mockSpan as MutableSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -586,6 +591,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag("error.stack", throwable.loggableStackTrace())
         verify(mockSpan).setTag(tagKey, tagValue)
         verify(mockSpan, never()).finish()
+        verify(mockSpan as MutableSpan).drop()
     }
 
     @Test
@@ -622,7 +628,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         testedInterceptor = instantiateTestedInterceptor(emptyList()) { mockLocalTracer }
 
         verifyZeroInteractions(mockTracer, mockLocalTracer)
-        verify(mockDevLogHandler)
+        verify(logger.mockDevLogHandler)
             .handleLog(
                 Log.WARN,
                 TracingInterceptor.WARNING_TRACING_NO_HOSTS
@@ -662,7 +668,14 @@ internal open class TracingInterceptorNotSendingSpanTest {
     // region Internal
 
     internal fun stubChain(chain: Interceptor.Chain, statusCode: Int) {
-        fakeResponse = forgeResponse(statusCode)
+        return stubChain(chain) { forgeResponse(statusCode) }
+    }
+
+    internal fun stubChain(
+        chain: Interceptor.Chain,
+        responseBuilder: () -> Response
+    ) {
+        fakeResponse = responseBuilder()
 
         whenever(chain.request()) doReturn fakeRequest
         whenever(chain.proceed(any())) doReturn fakeResponse
@@ -718,11 +731,12 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
+        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, coreFeature)
+            return listOf(logger, appContext, coreFeature)
         }
     }
 }

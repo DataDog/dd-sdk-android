@@ -4,10 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.utils.extension
+package com.datadog.android.core.internal.system
 
-@Target(AnnotationTarget.FUNCTION)
-@Retention(AnnotationRetention.RUNTIME)
-annotation class EnableLogcat(
-    val isEnabled: Boolean = false
-)
+internal interface AndroidInfoProvider {
+
+    fun getDeviceModel(): String
+
+    fun getDeviceBuildId(): String
+
+    fun getDeviceVersion(): String
+}

@@ -14,7 +14,7 @@ import com.datadog.opentracing.DDSpan
 
 internal class SpanMapperSerializer(
     private val legacyMapper: Mapper<DDSpan, SpanEvent>,
-    private val spanEventMapper: EventMapper<SpanEvent>,
+    internal val spanEventMapper: EventMapper<SpanEvent>,
     private val spanSerializer: Serializer<SpanEvent>
 ) : Serializer<DDSpan> {
 

@@ -14,13 +14,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import androidx.compose.ui.platform.ComposeView
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
@@ -33,7 +31,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.lang.ref.WeakReference
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -49,14 +46,6 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
-
-    lateinit var mockDevLogHandler: LogHandler
-
-    @BeforeEach
-    override fun `set up`() {
-        super.`set up`()
-        mockDevLogHandler = mockDevLogHandler()
-    }
 
     @Test
     fun `onTap sends the right target when the ViewGroup and its child are both clickable`(
@@ -267,7 +256,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verify(mockDevLogHandler)
+        verify(logger.mockDevLogHandler)
             .handleLog(
                 Log.INFO,
                 GesturesListener.MSG_NO_TARGET_TAP
@@ -304,7 +293,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         testedListener.onSingleTapUp(mockEvent)
 
         // Then
-        verifyZeroInteractions(mockDevLogHandler)
+        verifyZeroInteractions(logger.mockDevLogHandler)
         verifyZeroInteractions(rumMonitor.mockInstance)
     }
 

@@ -10,15 +10,14 @@ import android.content.Context
 import android.os.Looper
 import android.util.Log
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -52,11 +51,8 @@ internal class RumMonitorBuilderTest {
     @Forgery
     lateinit var fakeConfig: Configuration.Feature.RUM
 
-    lateinit var mockDevLogHandler: LogHandler
-
     @BeforeEach
     fun `set up`() {
-        mockDevLogHandler = mockDevLogHandler()
         RumFeature.initialize(appContext.mockInstance, fakeConfig)
 
         testedBuilder = RumMonitor.Builder()
@@ -154,7 +150,7 @@ internal class RumMonitorBuilderTest {
         val monitor = testedBuilder.build()
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             RumMonitor.Builder.RUM_NOT_ENABLED_ERROR_MESSAGE
         )
@@ -164,11 +160,12 @@ internal class RumMonitorBuilderTest {
     companion object {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
+        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, coreFeature)
+            return listOf(logger, appContext, coreFeature)
         }
     }
 }

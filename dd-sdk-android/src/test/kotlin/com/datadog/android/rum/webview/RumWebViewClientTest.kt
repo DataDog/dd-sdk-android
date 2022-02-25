@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum
+package com.datadog.android.rum.webview
 
 import android.graphics.Bitmap
 import android.net.Uri
@@ -15,7 +15,9 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import com.datadog.android.rum.webview.RumWebViewClient
+import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -49,6 +51,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
+@Suppress("DEPRECATION")
 internal class RumWebViewClientTest {
 
     private lateinit var testedClient: WebViewClient

@@ -30,7 +30,6 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
-import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -138,7 +137,7 @@ internal class DatadogRumMonitorTest {
             mockTimeProvider,
             mockSessionListener
         )
-        testedMonitor.setFieldValue("rootScope", mockScope)
+        testedMonitor.rootScope = mockScope
     }
 
     @Test
@@ -341,7 +340,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W stopResourceWithError()`(
+    fun `M delegate event to rootScope W stopResourceWithError() {throwable}`(
         @StringForgery key: String,
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
@@ -367,6 +366,41 @@ internal class DatadogRumMonitorTest {
             assertThat(event.message).isEqualTo(message)
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
+            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W stopResourceWithError() {stacktrace}`(
+        @StringForgery key: String,
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @IntForgery(200, 600) statusCode: Int,
+        @StringForgery(type = StringForgeryType.ASCII_EXTENDED) stackTrace: String,
+        @StringForgery errorType: String
+    ) {
+        testedMonitor.stopResourceWithError(
+            key,
+            statusCode,
+            message,
+            source,
+            stackTrace,
+            errorType,
+            fakeAttributes
+        )
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+
+            val event = firstValue as RumRawEvent.StopResourceWithStackTrace
+            assertThat(event.key).isEqualTo(key)
+            assertThat(event.statusCode).isEqualTo(statusCode.toLong())
+            assertThat(event.message).isEqualTo(message)
+            assertThat(event.source).isEqualTo(source)
+            assertThat(event.stackTrace).isEqualTo(stackTrace)
+            assertThat(event.errorType).isEqualTo(errorType)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -851,6 +885,7 @@ internal class DatadogRumMonitorTest {
             "android" to RumErrorSourceType.ANDROID,
             "browser" to RumErrorSourceType.BROWSER,
             "react-native" to RumErrorSourceType.REACT_NATIVE,
+            "flutter" to RumErrorSourceType.FLUTTER,
             nonSupportedValue to RumErrorSourceType.ANDROID,
             null to RumErrorSourceType.ANDROID
         )
@@ -1144,6 +1179,20 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M delegate event to rootScope W sendWebViewEvent()`() {
+        // When
+        testedMonitor.sendWebViewEvent()
+        Thread.sleep(PROCESSING_DELAY)
+
+        // Then
+        verify(mockScope).handleEvent(
+            argThat { this is RumRawEvent.WebViewEvent },
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
     fun `M shutdown with wait the persistence executor W drainAndShutdownExecutors()`() {
         // Given
         val mockExecutorService: ExecutorService = mock()
@@ -1217,7 +1266,7 @@ internal class DatadogRumMonitorTest {
     ) {
         // Given
         val mockRumApplicationScope = mock<RumApplicationScope>()
-        testedMonitor.setFieldValue("rootScope", mockRumApplicationScope)
+        testedMonitor.rootScope = mockRumApplicationScope
 
         val mockSessionScope = mock<RumSessionScope>()
 
@@ -1254,7 +1303,7 @@ internal class DatadogRumMonitorTest {
     ) {
         // Given
         val mockRumApplicationScope = mock<RumApplicationScope>()
-        testedMonitor.setFieldValue("rootScope", mockRumApplicationScope)
+        testedMonitor.rootScope = mockRumApplicationScope
 
         val listener = mock<RumDebugListener>()
         testedMonitor.debugListener = listener
@@ -1275,12 +1324,9 @@ internal class DatadogRumMonitorTest {
         forge: Forge
     ) {
         // Given
-        testedMonitor.setFieldValue(
-            "rootScope",
-            forge.anElementFrom(
-                mock(), mock<RumViewScope>(), mock<RumActionScope>(),
-                mock<RumResourceScope>(), mock<RumSessionScope>()
-            )
+        testedMonitor.rootScope = forge.anElementFrom(
+            mock(), mock<RumViewScope>(), mock<RumActionScope>(),
+            mock<RumResourceScope>(), mock<RumSessionScope>()
         )
 
         val listener = mock<RumDebugListener>()

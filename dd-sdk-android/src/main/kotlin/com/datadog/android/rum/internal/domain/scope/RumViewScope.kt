@@ -26,6 +26,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -51,6 +52,7 @@ internal open class RumViewScope(
     internal val memoryVitalMonitor: VitalMonitor,
     internal val frameRateVitalMonitor: VitalMonitor,
     internal val timeProvider: TimeProvider,
+    private val rumEventSourceProvider: RumEventSourceProvider,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
 ) : RumScope {
 
@@ -230,7 +232,12 @@ internal open class RumViewScope(
         if (activeActionScope != null) {
             if (event.type == RumActionType.CUSTOM && !event.waitForStop) {
                 // deliver it anyway, even if there is active action ongoing
-                val customActionScope = RumActionScope.fromEvent(this, event, serverTimeOffsetInMs)
+                val customActionScope = RumActionScope.fromEvent(
+                    this,
+                    event,
+                    serverTimeOffsetInMs,
+                    rumEventSourceProvider
+                )
                 pendingActionCount++
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), writer)
                 return
@@ -240,7 +247,14 @@ internal open class RumViewScope(
             }
         }
 
-        updateActiveActionScope(RumActionScope.fromEvent(this, event, serverTimeOffsetInMs))
+        updateActiveActionScope(
+            RumActionScope.fromEvent(
+                this,
+                event,
+                serverTimeOffsetInMs,
+                rumEventSourceProvider
+            )
+        )
         pendingActionCount++
     }
 
@@ -258,7 +272,8 @@ internal open class RumViewScope(
             this,
             updatedEvent,
             firstPartyHostDetector,
-            serverTimeOffsetInMs
+            serverTimeOffsetInMs,
+            rumEventSourceProvider
         )
         pendingResourceCount++
     }
@@ -311,6 +326,7 @@ internal open class RumViewScope(
                 id = context.sessionId,
                 type = ErrorEvent.ErrorEventSessionType.USER
             ),
+            source = rumEventSourceProvider.errorEventSource,
             context = ErrorEvent.Context(additionalProperties = updatedAttributes),
             dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
         )
@@ -516,6 +532,7 @@ internal open class RumViewScope(
                 id = context.sessionId,
                 type = ViewEvent.Type.USER
             ),
+            source = rumEventSourceProvider.viewEventSource,
             context = ViewEvent.Context(additionalProperties = attributes),
             dd = ViewEvent.Dd(
                 documentVersion = version,
@@ -577,6 +594,7 @@ internal open class RumViewScope(
                 id = context.sessionId,
                 type = ActionEvent.ActionEventSessionType.USER
             ),
+            source = rumEventSourceProvider.actionEventSource,
             context = ActionEvent.Context(additionalProperties = GlobalRum.globalAttributes),
             dd = ActionEvent.Dd(session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1))
         )
@@ -625,6 +643,7 @@ internal open class RumViewScope(
                 id = context.sessionId,
                 type = LongTaskEvent.Type.USER
             ),
+            source = rumEventSourceProvider.longTaskEventSource,
             context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
             dd = LongTaskEvent.Dd(session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1))
         )
@@ -685,7 +704,8 @@ internal open class RumViewScope(
             cpuVitalMonitor: VitalMonitor,
             memoryVitalMonitor: VitalMonitor,
             frameRateVitalMonitor: VitalMonitor,
-            timeProvider: TimeProvider
+            timeProvider: TimeProvider,
+            rumEventSourceProvider: RumEventSourceProvider
         ): RumViewScope {
             return RumViewScope(
                 parentScope,
@@ -697,7 +717,8 @@ internal open class RumViewScope(
                 cpuVitalMonitor,
                 memoryVitalMonitor,
                 frameRateVitalMonitor,
-                timeProvider
+                timeProvider,
+                rumEventSourceProvider
             )
         }
     }

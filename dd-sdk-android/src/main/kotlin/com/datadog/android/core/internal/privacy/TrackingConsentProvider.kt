@@ -10,7 +10,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import java.util.LinkedList
 
-internal class TrackingConsentProvider(consent: TrackingConsent = TrackingConsent.PENDING) :
+internal class TrackingConsentProvider(consent: TrackingConsent) :
     ConsentProvider {
 
     private val callbacks: LinkedList<TrackingConsentProviderCallback> = LinkedList()

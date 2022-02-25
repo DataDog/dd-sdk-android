@@ -7,14 +7,21 @@
 package com.datadog.android.tracing.internal.net
 
 import com.datadog.android.core.internal.net.DataOkHttpUploader
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import java.util.Locale
 import okhttp3.Call
 
 internal open class TracesOkHttpUploader(
     endpoint: String,
     token: String,
-    callFactory: Call.Factory
-) : DataOkHttpUploader(buildUrl(endpoint, token), callFactory, CONTENT_TYPE_TEXT_UTF8) {
+    callFactory: Call.Factory,
+    androidInfoProvider: AndroidInfoProvider
+) : DataOkHttpUploader(
+    buildUrl(endpoint, token),
+    callFactory,
+    androidInfoProvider,
+    CONTENT_TYPE_TEXT_UTF8
+) {
 
     // region DataOkHttpUploader
 

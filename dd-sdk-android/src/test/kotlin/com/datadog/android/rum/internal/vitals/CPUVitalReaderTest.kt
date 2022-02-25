@@ -104,6 +104,15 @@ internal class CPUVitalReaderTest {
     }
 
     @Test
+    fun `𝕄 read unix stats file 𝕎 init()`() {
+        // When
+        val testedReader = CPUVitalReader()
+
+        // Then
+        assertThat(testedReader.statFile).isEqualTo(CPUVitalReader.STAT_FILE)
+    }
+
+    @Test
     fun `𝕄 read correct data 𝕎 readVitalData()`() {
         // Given
         fakeFile.writeText(fakeStatContent)
@@ -121,6 +130,7 @@ internal class CPUVitalReaderTest {
     ) {
         // Given
         val results = mutableListOf<Double>()
+
         // When
         utimes.forEach { utime ->
             fakeUtime = utime
@@ -148,6 +158,20 @@ internal class CPUVitalReaderTest {
         val restrictedFile = mock<File>()
         whenever(restrictedFile.exists()) doReturn true
         whenever(restrictedFile.canRead()) doReturn false
+
+        // When
+        val result = testedReader.readVitalData()
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 return null 𝕎 readVitalData() {file has invalid data}`(
+        @StringForgery content: String
+    ) {
+        // Given
+        fakeFile.writeText(content)
 
         // When
         val result = testedReader.readVitalData()

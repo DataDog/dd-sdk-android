@@ -11,8 +11,7 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.system.SystemInfoProvider
-import com.datadog.android.core.internal.utils.sdkLogger
-import java.util.concurrent.RejectedExecutionException
+import com.datadog.android.core.internal.utils.scheduleSafe
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -22,7 +21,7 @@ internal class DataUploadScheduler(
     networkInfoProvider: NetworkInfoProvider,
     systemInfoProvider: SystemInfoProvider,
     uploadFrequency: UploadFrequency,
-    private val scheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
+    private val scheduledThreadPoolExecutor: ScheduledThreadPoolExecutor,
 ) : UploadScheduler {
 
     private val runnable = DataUploadRunnable(
@@ -35,16 +34,12 @@ internal class DataUploadScheduler(
     )
 
     override fun startScheduling() {
-        try {
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            scheduledThreadPoolExecutor.schedule(
-                runnable,
-                runnable.currentDelayIntervalMs,
-                TimeUnit.MILLISECONDS
-            )
-        } catch (e: RejectedExecutionException) {
-            sdkLogger.e(DataUploadRunnable.ERROR_REJECTED, e)
-        }
+        scheduledThreadPoolExecutor.scheduleSafe(
+            "Data upload",
+            runnable.currentDelayIntervalMs,
+            TimeUnit.MILLISECONDS,
+            runnable
+        )
     }
 
     override fun stopScheduling() {
