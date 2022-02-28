@@ -35,6 +35,8 @@ import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -61,6 +63,9 @@ internal class BroadcastReceiverSystemInfoProviderTest {
 
     @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
+    @IntForgery
+    var fakePluggedStatus: Int = 0
 
     @BeforeEach
     fun `set up`() {
@@ -108,8 +113,9 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         // Then
         assertThat(systemInfo)
             .hasBatteryLevel(-1)
-            .hasBatteryStatus(SystemInfo.BatteryStatus.UNKNOWN)
+            .hasBatteryFullOrCharging(false)
             .hasPowerSaveMode(false)
+            .hasOnExternalPowerSource(false)
     }
 
     @RepeatedTest(10)
@@ -126,6 +132,8 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         val scaledLevel = (level * scale) / 100
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_STATUS), any()))
             .doReturn(status.androidStatus())
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_PLUGGED), any()))
+            .doReturn(fakePluggedStatus)
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_LEVEL), any()))
             .doReturn(scaledLevel)
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_SCALE), any())) doReturn scale
@@ -143,8 +151,8 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         // Then
         assertThat(systemInfo)
             .hasBatteryLevel(level, scale)
-            .hasBatteryStatus(status)
             .hasPowerSaveMode(powerSaveMode)
+            .hasOnExternalPowerSource(false)
     }
 
     @Test
@@ -161,6 +169,8 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         val scaledLevel = (level * scale) / 100
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_STATUS), any()))
             .doReturn(status.androidStatus())
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_PLUGGED), any()))
+            .doReturn(fakePluggedStatus)
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_LEVEL), any()))
             .doReturn(scaledLevel)
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_SCALE), any())) doReturn scale
@@ -180,8 +190,8 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         // Then
         assertThat(systemInfo)
             .hasBatteryLevel(level, scale)
-            .hasBatteryStatus(status)
             .hasPowerSaveMode(false)
+            .hasOnExternalPowerSource(false)
     }
 
     @Test
@@ -199,7 +209,9 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         // Then
         assertThat(systemInfo)
             .hasBatteryLevel(-1)
-            .hasBatteryStatus(SystemInfo.BatteryStatus.UNKNOWN)
+            .hasBatteryFullOrCharging(false)
+            .hasOnExternalPowerSource(false)
+            .hasPowerSaveMode(false)
     }
 
     @Test
@@ -223,7 +235,8 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         // Then
         assertThat(systemInfo)
             .hasBatteryLevel(level, scale)
-            .hasBatteryStatus(status)
+            .hasOnExternalPowerSource(false)
+            .hasPowerSaveMode(false)
     }
 
     @Test
@@ -291,8 +304,9 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         // Then
         assertThat(systemInfo)
             .hasBatteryLevel(-1)
-            .hasBatteryStatus(SystemInfo.BatteryStatus.UNKNOWN)
+            .hasBatteryFullOrCharging(false)
             .hasPowerSaveMode(false)
+            .hasOnExternalPowerSource(false)
     }
 
     @Test
@@ -304,8 +318,138 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         // Then
         assertThat(systemInfo)
             .hasBatteryLevel(-1)
-            .hasBatteryStatus(SystemInfo.BatteryStatus.UNKNOWN)
+            .hasBatteryFullOrCharging(false)
             .hasPowerSaveMode(false)
+            .hasOnExternalPowerSource(false)
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        ints = [
+            BatteryManager.BATTERY_STATUS_DISCHARGING,
+            BatteryManager.BATTERY_STATUS_UNKNOWN,
+            BatteryManager.BATTERY_STATUS_NOT_CHARGING
+        ]
+    )
+    fun `M set batteryFullOrCharging to false W onReceive { battery status not charging or full }`(
+        status: Int,
+        @IntForgery(min = 0, max = 100) level: Int,
+        @IntForgery(min = 50, max = 10000) scale: Int
+    ) {
+        // Given
+        val scaledLevel = (level * scale) / 100
+        val batteryIntent: Intent = mock()
+        whenever(
+            batteryIntent.getIntExtra(
+                BatteryManager.EXTRA_STATUS,
+                BatteryManager.BATTERY_STATUS_UNKNOWN
+            )
+        ).thenReturn(status)
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_SCALE), any())) doReturn scale
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_LEVEL), any())) doReturn
+            scaledLevel
+        whenever(batteryIntent.action) doReturn Intent.ACTION_BATTERY_CHANGED
+
+        // When
+        testedProvider.onReceive(mockContext, batteryIntent)
+        val systemInfo = testedProvider.getLatestSystemInfo()
+
+        // Then
+        assertThat(systemInfo).hasBatteryFullOrCharging(false)
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        ints = [
+            BatteryManager.BATTERY_STATUS_CHARGING,
+            BatteryManager.BATTERY_STATUS_FULL
+        ]
+    )
+    fun `M set batteryFullOrCharging to true W onReceive { battery status charging or full }`(
+        status: Int,
+        @IntForgery(min = 0, max = 100) level: Int,
+        @IntForgery(min = 50, max = 10000) scale: Int
+    ) {
+        // Given
+        val scaledLevel = (level * scale) / 100
+        val batteryIntent: Intent = mock()
+        whenever(
+            batteryIntent.getIntExtra(
+                BatteryManager.EXTRA_STATUS,
+                BatteryManager.BATTERY_STATUS_UNKNOWN
+            )
+        ).thenReturn(status)
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_SCALE), any())) doReturn scale
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_LEVEL), any())) doReturn
+            scaledLevel
+        whenever(batteryIntent.action) doReturn Intent.ACTION_BATTERY_CHANGED
+
+        // When
+        testedProvider.onReceive(mockContext, batteryIntent)
+        val systemInfo = testedProvider.getLatestSystemInfo()
+
+        // Then
+        assertThat(systemInfo).hasBatteryFullOrCharging(true)
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+        ints = [
+            BatteryManager.BATTERY_PLUGGED_AC,
+            BatteryManager.BATTERY_PLUGGED_WIRELESS,
+            BatteryManager.BATTERY_PLUGGED_USB
+        ]
+    )
+    fun `M set onExternalPowerSource to true W onReceive { on external power source }`(
+        pluggedInStatus: Int,
+        @IntForgery(
+            min = 0,
+            max = 100
+        ) level: Int,
+        @IntForgery(min = 50, max = 10000) scale: Int
+    ) {
+        // Given
+        val scaledLevel = (level * scale) / 100
+        val batteryIntent: Intent = mock()
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_SCALE), any())) doReturn scale
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_LEVEL), any())) doReturn
+            scaledLevel
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_PLUGGED), any()))
+            .doReturn(pluggedInStatus)
+        whenever(batteryIntent.action) doReturn Intent.ACTION_BATTERY_CHANGED
+
+        // When
+        testedProvider.onReceive(mockContext, batteryIntent)
+        val systemInfo = testedProvider.getLatestSystemInfo()
+
+        // Then
+        assertThat(systemInfo).hasOnExternalPowerSource(true)
+    }
+
+    @Test
+    fun `M set onExternalPowerSource to false W onReceive { not on external power source }`(
+        @IntForgery(
+            min = 0,
+            max = 100
+        ) level: Int,
+        @IntForgery(min = 50, max = 10000) scale: Int
+    ) {
+        // Given
+        val scaledLevel = (level * scale) / 100
+        val batteryIntent: Intent = mock()
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_SCALE), any())) doReturn scale
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_LEVEL), any())) doReturn
+            scaledLevel
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_PLUGGED), any()))
+            .doReturn(0)
+        whenever(batteryIntent.action) doReturn Intent.ACTION_BATTERY_CHANGED
+
+        // When
+        testedProvider.onReceive(mockContext, batteryIntent)
+        val systemInfo = testedProvider.getLatestSystemInfo()
+
+        // Then
+        assertThat(systemInfo).hasOnExternalPowerSource(false)
     }
 
     // endregion

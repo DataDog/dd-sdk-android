@@ -86,8 +86,10 @@ internal class DataUploadRunnableTest {
             )
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         val fakeSystemInfo = SystemInfo(
-            batteryStatus = forge.aValueFrom(SystemInfo.BatteryStatus::class.java),
-            batteryLevel = forge.anInt(20, 100)
+            batteryFullOrCharging = true,
+            batteryLevel = forge.anInt(min = 20, max = 100),
+            powerSaveMode = false,
+            onExternalPowerSource = true,
         )
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
 
@@ -108,6 +110,8 @@ internal class DataUploadRunnableTest {
                 NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
             )
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn networkInfo
+        whenever(mockReader.lockAndReadNext()) doReturn batch
+        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
 
         testedRunnable.run()
 
@@ -121,60 +125,26 @@ internal class DataUploadRunnableTest {
         )
     }
 
-    @ParameterizedTest
-    @EnumSource(
-        SystemInfo.BatteryStatus::class,
-        names = ["DISCHARGING", "NOT_CHARGING"],
-        mode = EnumSource.Mode.INCLUDE
-    )
-    fun `doesn't send batch when battery is low and unplugged`(
-        batteryStatus: SystemInfo.BatteryStatus,
+    @Test
+    fun `M send batch W run() { batteryFullOrCharging }`(
         @Forgery batch: Batch,
-        forge: Forge
+        @IntForgery(min = 0, max = DataUploadRunnable.LOW_BATTERY_THRESHOLD) batteryLevel: Int
     ) {
-        val systemInfo = SystemInfo(
-            batteryStatus,
-            forge.anInt(1, 10)
+        val fakeSystemInfo = SystemInfo(
+            batteryFullOrCharging = true,
+            batteryLevel = batteryLevel,
+            onExternalPowerSource = false,
+            powerSaveMode = false
         )
-        whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn systemInfo
         whenever(mockReader.lockAndReadNext()) doReturn batch
+        whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
+        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
 
         testedRunnable.run()
 
-        verify(mockReader, never()).drop(anyOrNull())
+        verify(mockReader).drop(batch)
         verify(mockReader, never()).release(batch)
-        verify(mockDataUploader, never()).upload(anyOrNull())
-        verify(mockThreadPoolExecutor).schedule(
-            same(testedRunnable),
-            any(),
-            eq(TimeUnit.MILLISECONDS)
-        )
-    }
-
-    @ParameterizedTest
-    @EnumSource(
-        SystemInfo.BatteryStatus::class,
-        names = ["DISCHARGING", "NOT_CHARGING"],
-        mode = EnumSource.Mode.INCLUDE
-    )
-    fun `doesn't send batch when power save mode is enabled`(
-        batteryStatus: SystemInfo.BatteryStatus,
-        @Forgery batch: Batch,
-        forge: Forge
-    ) {
-        val systemInfo = SystemInfo(
-            batteryStatus = batteryStatus,
-            batteryLevel = forge.anInt(50, 100),
-            powerSaveMode = true
-        )
-        whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn systemInfo
-        whenever(mockReader.lockAndReadNext()) doReturn batch
-
-        testedRunnable.run()
-
-        verify(mockReader, never()).drop(anyOrNull())
-        verify(mockReader, never()).release(batch)
-        verify(mockDataUploader, never()).upload(anyOrNull())
+        verify(mockDataUploader).upload(batch.data)
         verify(mockThreadPoolExecutor).schedule(
             same(testedRunnable),
             any(),
@@ -183,16 +153,18 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `batch sent when battery is low and charging`(
+    fun `M send batch W run() { battery level high }`(
         @Forgery batch: Batch,
-        forge: Forge
+        @IntForgery(min = DataUploadRunnable.LOW_BATTERY_THRESHOLD + 1) batteryLevel: Int
     ) {
-        val systemInfo = SystemInfo(
-            SystemInfo.BatteryStatus.CHARGING,
-            forge.anInt(1, 10)
+        val fakeSystemInfo = SystemInfo(
+            batteryLevel = batteryLevel,
+            batteryFullOrCharging = false,
+            onExternalPowerSource = false,
+            powerSaveMode = false
         )
-        whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn systemInfo
         whenever(mockReader.lockAndReadNext()) doReturn batch
+        whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
         whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
 
         testedRunnable.run()
@@ -200,6 +172,141 @@ internal class DataUploadRunnableTest {
         verify(mockReader).drop(batch)
         verify(mockReader, never()).release(batch)
         verify(mockDataUploader).upload(batch.data)
+        verify(mockThreadPoolExecutor).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
+    fun `M send batch W run() { onExternalPower }`(
+        @Forgery batch: Batch,
+        @IntForgery(min = 0, max = DataUploadRunnable.LOW_BATTERY_THRESHOLD) batteryLevel: Int
+    ) {
+        val fakeSystemInfo = SystemInfo(
+            onExternalPowerSource = true,
+            batteryLevel = batteryLevel,
+            batteryFullOrCharging = false,
+            powerSaveMode = false
+        )
+        whenever(mockReader.lockAndReadNext()) doReturn batch
+        whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
+        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
+
+        testedRunnable.run()
+
+        verify(mockReader).drop(batch)
+        verify(mockReader, never()).release(batch)
+        verify(mockDataUploader).upload(batch.data)
+        verify(mockThreadPoolExecutor).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
+    fun `M not send batch W run() { not enough battery }`(
+        @Forgery batch: Batch,
+        @IntForgery(min = 0, max = DataUploadRunnable.LOW_BATTERY_THRESHOLD) batteryLevel: Int
+    ) {
+        val fakeSystemInfo = SystemInfo(
+            batteryLevel = batteryLevel,
+            batteryFullOrCharging = false,
+            onExternalPowerSource = false,
+            powerSaveMode = false
+        )
+        whenever(mockReader.lockAndReadNext()) doReturn batch
+        whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
+        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
+
+        testedRunnable.run()
+
+        verify(mockReader, never()).drop(batch)
+        verify(mockReader, never()).release(batch)
+        verify(mockDataUploader, never()).upload(batch.data)
+        verify(mockThreadPoolExecutor).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
+    fun `M not send batch W run() { batteryFullOrCharging, powerSaveMode}`(
+        @Forgery batch: Batch,
+        @IntForgery(min = 0, max = 100) batteryLevel: Int
+    ) {
+        val fakeSystemInfo = SystemInfo(
+            batteryFullOrCharging = true,
+            powerSaveMode = true,
+            batteryLevel = batteryLevel,
+            onExternalPowerSource = false
+        )
+        whenever(mockReader.lockAndReadNext()) doReturn batch
+        whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
+        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
+
+        testedRunnable.run()
+
+        verify(mockReader, never()).drop(batch)
+        verify(mockReader, never()).release(batch)
+        verify(mockDataUploader, never()).upload(batch.data)
+        verify(mockThreadPoolExecutor).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
+    fun `M not send batch W run() { batteryLeveHigh, powerSaveMode}`(
+        @Forgery batch: Batch,
+        @IntForgery(min = DataUploadRunnable.LOW_BATTERY_THRESHOLD + 1) batteryLevel: Int
+    ) {
+        val fakeSystemInfo = SystemInfo(
+            batteryLevel = batteryLevel,
+            powerSaveMode = true,
+            batteryFullOrCharging = false,
+            onExternalPowerSource = false
+        )
+        whenever(mockReader.lockAndReadNext()) doReturn batch
+        whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
+        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
+
+        testedRunnable.run()
+
+        verify(mockReader, never()).drop(batch)
+        verify(mockReader, never()).release(batch)
+        verify(mockDataUploader, never()).upload(batch.data)
+        verify(mockThreadPoolExecutor).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
+    fun `M not send batch W run() { onExternalPower, powerSaveMode}`(
+        @Forgery batch: Batch,
+        @IntForgery(min = 0, max = DataUploadRunnable.LOW_BATTERY_THRESHOLD) batteryLevel: Int
+    ) {
+        val fakeSystemInfo = SystemInfo(
+            onExternalPowerSource = true,
+            powerSaveMode = true,
+            batteryLevel = batteryLevel,
+            batteryFullOrCharging = false
+        )
+        whenever(mockReader.lockAndReadNext()) doReturn batch
+        whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
+        whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.SUCCESS
+
+        testedRunnable.run()
+
+        verify(mockReader, never()).drop(batch)
+        verify(mockReader, never()).release(batch)
+        verify(mockDataUploader, never()).upload(batch.data)
         verify(mockThreadPoolExecutor).schedule(
             same(testedRunnable),
             any(),
