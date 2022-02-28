@@ -282,9 +282,8 @@ class LoggerE2ETests {
     @Test
     fun logs_logger_add_boolean_attribute() {
         val testMethodName = "logs_logger_add_boolean_attribute"
-        measure(testMethodName) {
-            logger.addAttribute(SPECIAL_BOOL_ATTRIBUTE_NAME, forge.aBool())
-        }
+        val value = forge.aBool()
+        measure(testMethodName) { logger.addAttribute(SPECIAL_BOOL_ATTRIBUTE_NAME, value) }
         logger.sendRandomLog(testMethodName, forge)
     }
 
@@ -294,9 +293,8 @@ class LoggerE2ETests {
     @Test
     fun logs_logger_add_int_attribute() {
         val testMethodName = "logs_logger_add_int_attribute"
-        measure(testMethodName) {
-            logger.addAttribute(SPECIAL_INT_ATTRIBUTE_NAME, forge.anInt(min = 11))
-        }
+        val value = forge.anInt(min = 11)
+        measure(testMethodName) { logger.addAttribute(SPECIAL_INT_ATTRIBUTE_NAME, value) }
         logger.sendRandomLog(testMethodName, forge)
     }
 
@@ -306,10 +304,11 @@ class LoggerE2ETests {
     @Test
     fun logs_logger_add_long_attribute() {
         val testMethodName = "logs_logger_add_long_attribute"
+        val value = forge.anInt(min = 11).toLong()
         measure(testMethodName) {
             // we need to use wrapped Int here as DD facets only supports Integers for facets types
             // and to avoid overflows at conversion
-            logger.addAttribute(SPECIAL_LONG_ATTRIBUTE_NAME, forge.anInt(min = 11).toLong())
+            logger.addAttribute(SPECIAL_LONG_ATTRIBUTE_NAME, value)
         }
         logger.sendRandomLog(testMethodName, forge)
     }
@@ -346,9 +345,8 @@ class LoggerE2ETests {
     @Test
     fun logs_logger_add_float_attribute() {
         val testMethodName = "logs_logger_add_float_attribute"
-        measure(testMethodName) {
-            logger.addAttribute(SPECIAL_FLOAT_ATTRIBUTE_NAME, forge.aFloat(min = 11f))
-        }
+        val value = forge.aFloat(min = 11f)
+        measure(testMethodName) { logger.addAttribute(SPECIAL_FLOAT_ATTRIBUTE_NAME, value) }
         logger.sendRandomLog(testMethodName, forge)
     }
 
@@ -358,9 +356,8 @@ class LoggerE2ETests {
     @Test
     fun logs_logger_add_double_attribute() {
         val testMethodName = "logs_logger_add_double_attribute"
-        measure(testMethodName) {
-            logger.addAttribute(SPECIAL_DOUBLE_ATTRIBUTE_NAME, forge.aDouble(min = 11.0))
-        }
+        val value = forge.aDouble(min = 11.0)
+        measure(testMethodName) { logger.addAttribute(SPECIAL_DOUBLE_ATTRIBUTE_NAME, value) }
         logger.sendRandomLog(testMethodName, forge)
     }
 
@@ -631,6 +628,7 @@ class LoggerE2ETests {
         val CUSTOM_ORG_JSON_JSON_OBJECT_ATTRIBUTE: JSONObject = JSONObject().apply {
             put(CUSTOM_JSON_OBJECT_PROPERTY, CUSTOM_INT_ATTRIBUTE)
         }
+        @SuppressWarnings("UnsafeCallOnNullableType")
         val CUSTOM_DATE_ATTRIBUTE: Date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
             .apply { timeZone = TimeZone.getTimeZone("UTC") }
             .parse("2021-01-01 00:00:00.000")!!
