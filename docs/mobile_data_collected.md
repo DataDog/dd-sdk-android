@@ -234,7 +234,7 @@ Network errors include information about failing HTTP requests. The following fa
 
 ## Data Storage
 
-Before data is uploaded to Datadog, it is stored in cleartext in your application's cache directory. This cache folder is protected by [Android's Application Sandbox](6), meaning that on most devices this data can't be read by other applications. However, if the mobile device is rooted, or someone tempers with the linux kernel, the stored data might become readable.
+Before data is uploaded to Datadog, it is stored in cleartext in your application's cache directory. This cache folder is protected by [Android's Application Sandbox][6], meaning that on most devices this data can't be read by other applications. However, if the mobile device is rooted, or someone tempers with the linux kernel, the stored data might become readable.
 
 ## Further Reading
 
