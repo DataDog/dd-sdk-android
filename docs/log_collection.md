@@ -449,7 +449,7 @@ This means that even if users open your application while being offline, no data
 
 The data on disk will automatically be discarded if it gets too old to ensure the SDK doesn't use too much disk space.
 
-**Note**: Before data is uploaded to Datadog, it is stored in cleartext in your application's cache directory. This cache folder is protected by [Android's Application Sandbox](8), meaning that on most devices this data can't be read by other applications. However, if the mobile device is rooted, or someone tempers with the linux kernel, the stored data might become readable.
+**Note**: Before data is uploaded to Datadog, it is stored in cleartext in your application's cache directory. This cache folder is protected by [Android's Application Sandbox][8], meaning that on most devices this data can't be read by other applications. However, if the mobile device is rooted, or someone tempers with the Linux kernel, the stored data might become readable.
 
 ## Extensions
 
