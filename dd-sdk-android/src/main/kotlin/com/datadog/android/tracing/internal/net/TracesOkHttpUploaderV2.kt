@@ -7,6 +7,7 @@
 package com.datadog.android.tracing.internal.net
 
 import com.datadog.android.core.internal.net.DataOkHttpUploaderV2
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import okhttp3.Call
 
@@ -15,7 +16,8 @@ internal open class TracesOkHttpUploaderV2(
     clientToken: String,
     source: String,
     sdkVersion: String,
-    callFactory: Call.Factory
+    callFactory: Call.Factory,
+    androidInfoProvider: AndroidInfoProvider
 ) : DataOkHttpUploaderV2(
     buildUrl(endpoint, TrackType.SPANS),
     clientToken,
@@ -23,5 +25,6 @@ internal open class TracesOkHttpUploaderV2(
     sdkVersion,
     callFactory,
     CONTENT_TYPE_TEXT_UTF8,
+    androidInfoProvider,
     sdkLogger
 )

@@ -14,7 +14,6 @@ import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.tracking.StubComponentPredicate
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.verify
@@ -56,7 +55,7 @@ internal class ActivityViewTrackingStrategyTest :
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
         testedStrategy = ActivityViewTrackingStrategy(true, mockPredicate)
-        testedStrategy.setFieldValue("viewLoadingTimer", mockViewLoadingTimer)
+        testedStrategy.viewLoadingTimer = mockViewLoadingTimer
     }
 
     override fun createInstance(forge: Forge): ActivityViewTrackingStrategy {
@@ -271,14 +270,22 @@ internal class ActivityViewTrackingStrategyTest :
         @MapForgery(
             key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
             value = AdvancedForgery(string = [StringForgery(StringForgeryType.ASCII)])
-        ) attributes: Map<String, String>
+        ) extras: Map<String, String>,
+        @StringForgery action: String,
+        @StringForgery uri: String
     ) {
         // Given
-        val arguments = Bundle(attributes.size)
-        attributes.forEach { (k, v) -> arguments.putString(k, v) }
+        val arguments = Bundle(extras.size)
+        extras.forEach { (k, v) -> arguments.putString(k, v) }
         whenever(mockIntent.extras).thenReturn(arguments)
+        whenever(mockIntent.action).thenReturn(action)
+        whenever(mockIntent.dataString).thenReturn(uri)
         whenever(mockActivity.intent).thenReturn(mockIntent)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
+        val expectedAttributes = extras.map { (k, v) -> "view.arguments.$k" to v }
+            .toMap().toMutableMap()
+        expectedAttributes["view.intent.action"] = action
+        expectedAttributes["view.intent.uri"] = uri
 
         // When
         testedStrategy.onActivityResumed(mockActivity)
@@ -287,7 +294,7 @@ internal class ActivityViewTrackingStrategyTest :
         verify(rumMonitor.mockInstance).startView(
             mockActivity,
             mockActivity.resolveViewName(),
-            attributes.map { (k, v) -> "view.arguments.$k" to v }.toMap()
+            expectedAttributes
         )
     }
 

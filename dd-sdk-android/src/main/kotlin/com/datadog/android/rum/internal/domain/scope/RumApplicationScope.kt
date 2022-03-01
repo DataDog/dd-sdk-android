@@ -6,11 +6,13 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 
 internal class RumApplicationScope(
@@ -25,6 +27,7 @@ internal class RumApplicationScope(
     sessionListener: RumSessionListener?
 ) : RumScope {
 
+    private val rumEventSourceProvider = RumEventSourceProvider(CoreFeature.sourceName)
     private val rumContext = RumContext(applicationId = applicationId)
     internal val childScope: RumScope = RumSessionScope(
         this,
@@ -35,7 +38,8 @@ internal class RumApplicationScope(
         memoryVitalMonitor,
         frameRateVitalMonitor,
         timeProvider,
-        sessionListener
+        sessionListener,
+        rumEventSourceProvider
     )
 
     // region RumScope

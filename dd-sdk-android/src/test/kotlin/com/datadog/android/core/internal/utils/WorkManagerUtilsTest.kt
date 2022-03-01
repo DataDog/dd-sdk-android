@@ -22,7 +22,6 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
@@ -91,7 +90,7 @@ internal class WorkManagerUtilsTest {
 
     @AfterEach
     fun `tear down`() {
-        Datadog.invokeMethod("stop")
+        Datadog.stop()
         WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", null)
     }
 

@@ -71,6 +71,7 @@ def fetch_already_covered_apis(tests_directory_path: str) -> set:
         Feature(f'{tests_directory_path}/{NIGHTLY_TESTS_PACKAGE}/logs'),
         Feature(f'{tests_directory_path}/{NIGHTLY_TESTS_PACKAGE}/rum'),
         Feature(f'{tests_directory_path}/{NIGHTLY_TESTS_PACKAGE}/trace'),
+        Feature(f'{tests_directory_path}/{NIGHTLY_TESTS_PACKAGE}/webview'),
         Feature(f'{tests_directory_path}/{NIGHTLY_TESTS_PACKAGE}/main')
     ]
     for feature in features:

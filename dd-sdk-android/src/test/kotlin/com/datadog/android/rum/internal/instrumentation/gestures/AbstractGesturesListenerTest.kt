@@ -15,6 +15,7 @@ import android.view.Window
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -118,7 +119,7 @@ internal abstract class AbstractGesturesListenerTest {
             whenever(it.isClickable).thenReturn(clickable)
             whenever(it.visibility).thenReturn(if (visible) View.VISIBLE else View.GONE)
 
-            whenever(it.getLocationOnScreen(any())).doAnswer {
+            whenever(it.getLocationInWindow(any())).doAnswer {
                 val array = it.arguments[0] as IntArray
                 array[0] = locationOnScreenArray[0]
                 array[1] = locationOnScreenArray[1]
@@ -149,11 +150,12 @@ internal abstract class AbstractGesturesListenerTest {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
+        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
+            return listOf(logger, rumMonitor)
         }
     }
 }

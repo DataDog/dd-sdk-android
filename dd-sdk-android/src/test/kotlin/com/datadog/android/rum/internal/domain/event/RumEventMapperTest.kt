@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.domain.event
 
 import android.util.Log
 import com.datadog.android.event.EventMapper
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.internal.monitor.EventType
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -16,11 +15,9 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aRumEvent
-import com.datadog.android.utils.mockDevLogHandler
-import com.datadog.android.utils.mockSdkLogHandler
-import com.datadog.android.utils.restoreSdkLogHandler
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -34,7 +31,6 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Locale
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -70,18 +66,8 @@ internal class RumEventMapperTest {
     @Mock
     lateinit var mockLongTaskEventMapper: EventMapper<LongTaskEvent>
 
-    @Mock
-    lateinit var mockSdkLogHandler: LogHandler
-
-    lateinit var mockDevLogHandler: LogHandler
-
-    lateinit var originalLogHandler: LogHandler
-
     @BeforeEach
     fun `set up`() {
-        originalLogHandler = mockSdkLogHandler(mockSdkLogHandler)
-        mockDevLogHandler = mockDevLogHandler()
-
         whenever(mockViewEventMapper.map(any())).thenAnswer { it.arguments[0] }
 
         testedRumEventMapper = RumEventMapper(
@@ -91,11 +77,6 @@ internal class RumEventMapperTest {
             errorEventMapper = mockErrorEventMapper,
             longTaskEventMapper = mockLongTaskEventMapper
         )
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        restoreSdkLogHandler(originalLogHandler)
     }
 
     @Test
@@ -192,7 +173,7 @@ internal class RumEventMapperTest {
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
 
         // THEN
-        verify(mockSdkLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             Log.WARN,
             RumEventMapper.NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE
                 .format(Locale.US, fakeRumEvent.javaClass.simpleName)
@@ -212,7 +193,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             RumEventMapper.VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
         )
@@ -230,7 +211,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
 
@@ -252,7 +233,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeNoCrashEvent)
 
@@ -290,7 +271,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
 
@@ -309,7 +290,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             RumEventMapper.EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
 
@@ -328,7 +309,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             RumEventMapper.VIEW_EVENT_NULL_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
         )
@@ -346,7 +327,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
 
@@ -370,7 +351,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE
                 .format(Locale.US, fakeNoCrashEvent)
@@ -389,7 +370,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
 
@@ -408,7 +389,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             RumEventMapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, fakeRumEvent)
 
@@ -507,11 +488,12 @@ internal class RumEventMapperTest {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
+        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
+            return listOf(logger, rumMonitor)
         }
     }
 }

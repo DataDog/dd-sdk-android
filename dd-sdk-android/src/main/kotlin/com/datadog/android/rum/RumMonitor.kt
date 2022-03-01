@@ -185,6 +185,34 @@ interface RumMonitor {
     )
 
     /**
+     * Stops a previously started Resource that failed loading, linked with the [key] instance by
+     * providing the intercepted stacktrace.
+     * Note: This method should only be used from hybrid application.
+     * @param key the instance that represents the active view (usually your
+     * request or network call instance).
+     * @param statusCode the status code of the resource (if any)
+     * @param message a message explaining the error
+     * @param source the source of the error
+     * @param stackTrace the error stacktrace
+     * @param errorType the type of the error. Usually it should be the canonical name of the
+     * of the Exception class.
+     * @param attributes additional custom attributes to attach to the error. Attributes can be
+     * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
+     * @see [startResource]
+     * @see [stopResource]
+     */
+    @SuppressWarnings("LongParameterList")
+    fun stopResourceWithError(
+        key: String,
+        statusCode: Int?,
+        message: String,
+        source: RumErrorSource,
+        stackTrace: String,
+        errorType: String?,
+        attributes: Map<String, Any?> = emptyMap()
+    )
+
+    /**
      * Notifies that an error occurred in the active View.
      * @param message a message explaining the error
      * @param source the source of the error

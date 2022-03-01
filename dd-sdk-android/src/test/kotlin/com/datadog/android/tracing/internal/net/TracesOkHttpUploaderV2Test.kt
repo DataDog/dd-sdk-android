@@ -31,7 +31,8 @@ internal class TracesOkHttpUploaderV2Test : DataOkHttpUploaderV2Test<TracesOkHtt
             fakeClientToken,
             fakeSource,
             fakeSdkVersion,
-            callFactory
+            callFactory,
+            mockAndroidInfoProvider
         )
     }
 

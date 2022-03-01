@@ -208,7 +208,7 @@ internal class EncryptedFileHandler(
         var chunkStart = 0
         var current = 0
 
-        while (current < this.size - separator.size) {
+        while (current < this.size) {
             var separatorFound = true
             for (separatorIndex in separator.indices) {
                 if (this[separatorIndex + current] != separator[separatorIndex]) {

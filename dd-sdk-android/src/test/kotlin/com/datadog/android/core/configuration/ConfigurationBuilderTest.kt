@@ -15,7 +15,6 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpSpanEventMapper
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.event.ViewEventMapper
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature
@@ -34,13 +33,13 @@ import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.anyOrNull
-import com.nhaarman.mockitokotlin2.eq
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
@@ -53,7 +52,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.net.MalformedURLException
 import java.net.Proxy
 import java.net.URL
 import java.util.Locale
@@ -69,7 +67,8 @@ import org.mockito.junit.jupiter.MockitoSettings
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ApiLevelExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings()
 @ForgeConfiguration(value = Configurator::class)
@@ -80,11 +79,8 @@ internal class ConfigurationBuilderTest {
     @StringForgery
     lateinit var fakeEnvName: String
 
-    lateinit var mockDevLogHandler: LogHandler
-
     @BeforeEach
     fun `set up`() {
-        mockDevLogHandler = mockDevLogHandler()
         testedBuilder = Configuration.Builder(
             logsEnabled = true,
             tracesEnabled = true,
@@ -108,7 +104,8 @@ internal class ConfigurationBuilderTest {
                 uploadFrequency = UploadFrequency.AVERAGE,
                 proxy = null,
                 proxyAuth = Authenticator.NONE,
-                securityConfig = SecurityConfig.DEFAULT
+                securityConfig = SecurityConfig.DEFAULT,
+                webViewTrackingHosts = emptyList()
             )
         )
         assertThat(config.logsConfig).isEqualTo(
@@ -826,7 +823,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.trackInteractions()
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -852,7 +849,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.trackLongTasks(durationMs)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -877,7 +874,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.useViewTrackingStrategy(viewStrategy)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -903,7 +900,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.sampleRumSessions(samplingRate)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -928,7 +925,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.setRumViewEventMapper(eventMapper)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -953,7 +950,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.setRumResourceEventMapper(eventMapper)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -978,7 +975,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.setRumActionEventMapper(eventMapper)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1003,7 +1000,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.setRumErrorEventMapper(eventMapper)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1028,7 +1025,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.setRumLongTaskEventMapper(eventMapper)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1053,7 +1050,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.addPlugin(logsPlugin, Feature.LOG)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1078,7 +1075,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.addPlugin(tracesPlugin, Feature.TRACE)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1103,7 +1100,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.addPlugin(crashPlugin, Feature.CRASH)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1128,7 +1125,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.addPlugin(rumPlugin, Feature.RUM)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1154,7 +1151,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.useCustomLogsEndpoint(url)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1180,7 +1177,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.useCustomTracesEndpoint(url)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1206,7 +1203,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.useCustomCrashReportsEndpoint(url)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1232,7 +1229,7 @@ internal class ConfigurationBuilderTest {
         testedBuilder.useCustomRumEndpoint(url)
 
         // Then
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
@@ -1300,162 +1297,6 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 drop everything 𝕎 setFirstPartyHosts { using top level domain hosts only}`(
-        @StringForgery(
-            regex = "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
-        ) hosts: List<String>
-    ) {
-        // When
-        val config = testedBuilder
-            .setFirstPartyHosts(hosts)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-    }
-
-    @Test
-    fun `𝕄 only accept the localhost 𝕎 setFirstPartyHosts { using top level domain hosts only}`(
-        @StringForgery(
-            regex = "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
-        ) hosts: List<String>,
-        forge: Forge
-    ) {
-        // When
-        val fakeLocalHost = forge.aStringMatching("localhost|LOCALHOST")
-        val hostsWithLocalHost =
-            hosts.toMutableList().apply { add(fakeLocalHost) }
-        val config = testedBuilder
-            .setFirstPartyHosts(hostsWithLocalHost)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = listOf(fakeLocalHost))
-        )
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
-        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
-        assertThat(config.internalLogsConfig).isNull()
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `M log error W setFirstPartyHosts() { malformed hostname }`(
-        @StringForgery(
-            regex = "(([-+=~><?][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+([-+=~><?][A-Za-z0-9]*)" +
-                "|(([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+([A-Za-z0-9]*[-+=~><?])"
-        ) hosts: List<String>
-    ) {
-
-        // WHEN
-        testedBuilder
-            .setFirstPartyHosts(hosts)
-            .build()
-
-        // THEN
-        hosts.forEach {
-            verify(mockDevLogHandler).handleLog(
-                Log.ERROR,
-                Configuration.ERROR_MALFORMED_HOST_IP_ADDRESS.format(Locale.US, it)
-            )
-        }
-    }
-
-    @Test
-    fun `M log error W setFirstPartyHosts() { malformed ip address }`(
-        @StringForgery(
-            regex = "(([0-9]{3}\\.){3}[0.9]{4})" +
-                "|(([0-9]{4,9}\\.)[0.9]{4})" +
-                "|(25[6-9]\\.([0-9]{3}\\.){2}[0.9]{3})"
-        ) hosts: List<String>
-    ) {
-
-        // WHEN
-        testedBuilder
-            .setFirstPartyHosts(hosts)
-            .build()
-
-        // THEN
-        hosts.forEach {
-            verify(mockDevLogHandler).handleLog(
-                Log.ERROR,
-                Configuration.ERROR_MALFORMED_HOST_IP_ADDRESS.format(Locale.US, it)
-            )
-        }
-    }
-
-    @Test
-    fun `M drop all malformed hosts W setFirstPartyHosts() { malformed hostname }`(
-        @StringForgery(
-            regex = "(([-+=~><?][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+([-+=~><?][A-Za-z0-9]*) " +
-                "| (([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+([A-Za-z0-9]*[-+=~><?])"
-        ) hosts: List<String>
-    ) {
-
-        // WHEN
-        val config = testedBuilder
-            .setFirstPartyHosts(hosts)
-            .build()
-
-        // THEN
-        assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = emptyList())
-        )
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
-        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(
-                userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
-                    DatadogGesturesTracker(
-                        arrayOf(JetpackViewAttributesProvider()),
-                        NoOpInteractionPredicate()
-                    )
-                )
-            )
-        )
-        assertThat(config.internalLogsConfig).isNull()
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
-    fun `M drop all malformed ip addresses W setFirstPartyHosts() { malformed ip address }`(
-        @StringForgery(
-            regex = "(([0-9]{3}\\.){3}[0.9]{4})" +
-                "|(([0-9]{4,9}\\.)[0.9]{4})" +
-                "|(25[6-9]\\.([0-9]{3}\\.){2}[0.9]{3})"
-        ) hosts: List<String>
-    ) {
-
-        // WHEN
-        val config = testedBuilder
-            .setFirstPartyHosts(hosts)
-            .build()
-
-        // THEN
-        assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = emptyList())
-        )
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
-        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(
-                userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
-                    DatadogGesturesTracker(
-                        arrayOf(JetpackViewAttributesProvider()),
-                        NoOpInteractionPredicate()
-                    )
-                )
-            )
-        )
-        assertThat(config.internalLogsConfig).isNull()
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Test
     fun `M use url host name W setFirstPartyHosts() { url }`(
         @StringForgery(
             regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
@@ -1479,64 +1320,42 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `M warn W setFirstPartyHosts() { url }`(
+    fun `𝕄 sanitize hosts 𝕎 setFirstPartyHosts()`(
         @StringForgery(
-            regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
+            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
         ) hosts: List<String>
     ) {
-        // WHEN
+        // When
+        val mockSanitizer: HostsSanitizer = mock()
+        testedBuilder.hostsSanitizer = mockSanitizer
         testedBuilder
             .setFirstPartyHosts(hosts)
             .build()
 
-        // THEN
-        hosts.forEach {
-            verify(mockDevLogHandler).handleLog(
-                Log.WARN,
-                Configuration.WARNING_USING_URL_FOR_HOST.format(Locale.US, it, URL(it).host)
+        // Then
+        verify(mockSanitizer)
+            .sanitizeHosts(
+                hosts,
+                Configuration.NETWORK_REQUESTS_TRACKING_FEATURE_NAME
             )
-        }
     }
 
     @Test
-    fun `M warn W setFirstPartyHosts() { malformed url }`(
+    fun `𝕄 build config with web tracking hosts 𝕎 setWebViewTrackingHosts() { ip addresses }`(
         @StringForgery(
-            regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}:-8[0-9]{1}"
+            regex = "(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}" +
+                "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"
         ) hosts: List<String>
     ) {
-
-        // WHEN
-        testedBuilder
-            .setFirstPartyHosts(hosts)
-            .build()
-
-        // THEN
-        hosts.forEach {
-            verify(mockDevLogHandler).handleLog(
-                eq(Log.ERROR),
-                eq(Configuration.ERROR_MALFORMED_URL.format(Locale.US, it)),
-                any<MalformedURLException>(),
-                anyOrNull(),
-                anyOrNull(),
-                anyOrNull()
-            )
-        }
-    }
-
-    @Test
-    fun `M drop all malformed urls W setFirstPartyHosts() { malformed url }`(
-        @StringForgery(
-            regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}:-8[0-9]{1}"
-        ) hosts: List<String>
-    ) {
-        // WHEN
+        // When
         val config = testedBuilder
-            .setFirstPartyHosts(hosts)
+            .setWebViewTrackingHosts(hosts)
             .build()
 
-        // THEN
+        // Then
         assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = emptyList())
+            Configuration.DEFAULT_CORE_CONFIG.copy(webViewTrackingHosts = hosts)
         )
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
@@ -1553,6 +1372,76 @@ internal class ConfigurationBuilderTest {
         )
         assertThat(config.internalLogsConfig).isNull()
         assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 build config with web tracking hosts 𝕎 setWebViewTrackingHosts() { host names }`(
+        @StringForgery(
+            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+        ) hosts: List<String>
+    ) {
+        // When
+        val config = testedBuilder
+            .setWebViewTrackingHosts(hosts)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(webViewTrackingHosts = hosts)
+        )
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.internalLogsConfig).isNull()
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `M use url host name W setWebViewTrackingHosts() { url }`(
+        @StringForgery(
+            regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
+        ) hosts: List<String>
+    ) {
+        // WHEN
+        val config = testedBuilder
+            .setWebViewTrackingHosts(hosts)
+            .build()
+
+        // THEN
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG
+                .copy(webViewTrackingHosts = hosts.map { URL(it).host })
+        )
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.internalLogsConfig).isNull()
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 sanitize hosts 𝕎 setWebViewTrackingHosts()`(
+        @StringForgery(
+            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+        ) hosts: List<String>
+    ) {
+        // When
+        val mockSanitizer: HostsSanitizer = mock()
+        testedBuilder.hostsSanitizer = mockSanitizer
+        testedBuilder
+            .setWebViewTrackingHosts(hosts)
+            .build()
+
+        // Then
+        verify(mockSanitizer)
+            .sanitizeHosts(
+                hosts,
+                Configuration.WEB_VIEW_TRACKING_FEATURE_NAME
+            )
     }
 
     @Test
@@ -1769,5 +1658,15 @@ internal class ConfigurationBuilderTest {
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.internalLogsConfig).isNull()
+    }
+
+    companion object {
+        val logger = LoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
     }
 }

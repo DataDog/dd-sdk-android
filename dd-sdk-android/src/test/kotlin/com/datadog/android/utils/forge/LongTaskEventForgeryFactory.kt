@@ -63,13 +63,18 @@ internal class LongTaskEventForgeryFactory :
                 type = LongTaskEvent.Type.USER,
                 hasReplay = forge.aNullable { aBool() }
             ),
+            source = forge.aNullable { aValueFrom(LongTaskEvent.Source::class.java) },
+            ciTest = forge.aNullable {
+                LongTaskEvent.CiTest(anHexadecimalString())
+            },
             context = forge.aNullable {
                 LongTaskEvent.Context(
                     additionalProperties = forge.exhaustiveAttributes()
                 )
             },
             dd = LongTaskEvent.Dd(
-                session = forge.aNullable { LongTaskEvent.DdSession(getForgery()) }
+                session = forge.aNullable { LongTaskEvent.DdSession(getForgery()) },
+                browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") }
             )
         )
     }

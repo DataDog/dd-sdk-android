@@ -79,8 +79,7 @@ internal constructor(
     tracedHosts: List<String>,
     tracedRequestListener: TracedRequestListener,
     firstPartyHostDetector: FirstPartyHostDetector,
-    private val rumResourceAttributesProvider: RumResourceAttributesProvider =
-        NoOpRumResourceAttributesProvider(),
+    internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
     localTracerFactory: () -> Tracer
 ) : TracingInterceptor(
     tracedHosts,
@@ -112,11 +111,11 @@ internal constructor(
         rumResourceAttributesProvider: RumResourceAttributesProvider =
             NoOpRumResourceAttributesProvider()
     ) : this(
-        firstPartyHosts,
-        tracedRequestListener,
-        CoreFeature.firstPartyHostDetector,
-        rumResourceAttributesProvider,
-        { AndroidTracer.Builder().build() }
+        tracedHosts = firstPartyHosts,
+        tracedRequestListener = tracedRequestListener,
+        firstPartyHostDetector = CoreFeature.firstPartyHostDetector,
+        rumResourceAttributesProvider = rumResourceAttributesProvider,
+        localTracerFactory = { AndroidTracer.Builder().build() }
     )
 
     /**
@@ -134,11 +133,11 @@ internal constructor(
         rumResourceAttributesProvider: RumResourceAttributesProvider =
             NoOpRumResourceAttributesProvider()
     ) : this(
-        emptyList(),
-        tracedRequestListener,
-        CoreFeature.firstPartyHostDetector,
-        rumResourceAttributesProvider,
-        { AndroidTracer.Builder().build() }
+        tracedHosts = emptyList(),
+        tracedRequestListener = tracedRequestListener,
+        firstPartyHostDetector = CoreFeature.firstPartyHostDetector,
+        rumResourceAttributesProvider = rumResourceAttributesProvider,
+        localTracerFactory = { AndroidTracer.Builder().build() }
     )
 
     // region Interceptor
@@ -172,10 +171,10 @@ internal constructor(
         super.onRequestIntercepted(request, span, response, throwable)
 
         if (RumFeature.isInitialized()) {
-            if (throwable != null) {
-                handleThrowable(request, throwable)
-            } else {
+            if (response != null) {
                 handleResponse(request, response, span)
+            } else {
+                handleThrowable(request, throwable ?: IllegalStateException(ERROR_NO_RESPONSE))
             }
         }
     }
@@ -191,12 +190,12 @@ internal constructor(
 
     private fun handleResponse(
         request: Request,
-        response: Response?,
+        response: Response,
         span: Span?
     ) {
         val requestId = identifyRequest(request)
-        val statusCode = response?.code()
-        val mimeType = response?.header(HEADER_CT)
+        val statusCode = response.code()
+        val mimeType = response.header(HEADER_CT)
         val kind = when {
             mimeType == null -> RumResourceKind.NATIVE
             else -> RumResourceKind.fromMimeType(mimeType)
@@ -235,10 +234,10 @@ internal constructor(
         )
     }
 
-    private fun getBodyLength(response: Response?): Long? {
+    private fun getBodyLength(response: Response): Long? {
         return try {
-            val body = response?.peekBody(MAX_BODY_PEEK)
-            val contentLength = body?.contentLength()
+            val body = response.peekBody(MAX_BODY_PEEK)
+            val contentLength = body.contentLength()
             if (contentLength == 0L) null else contentLength
         } catch (e: IOException) {
             sdkLogger.e("Unable to peek response body", e)
@@ -254,6 +253,9 @@ internal constructor(
             "You set up a DatadogInterceptor, but RUM features are disabled." +
                 "Make sure you initialized the Datadog SDK with a valid Application Id, " +
                 "and that RUM features are enabled."
+
+        internal const val ERROR_NO_RESPONSE =
+            "The request ended with no response nor any exception."
 
         internal const val ERROR_MSG_FORMAT = "OkHttp request error %s %s"
 

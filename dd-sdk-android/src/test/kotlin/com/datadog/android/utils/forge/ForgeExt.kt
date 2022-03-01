@@ -6,8 +6,10 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.log.internal.utils.ISO_8601
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.google.gson.JsonArray
@@ -22,6 +24,17 @@ import java.util.TimeZone
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.jupiter.api.Assumptions.assumeTrue
+
+/**
+ * Will generate an alphaNumericalString which is not matching any values provided in the set.
+ */
+internal fun Forge.aStringNotMatchingSet(set: Set<String>): String {
+    var aString = anAlphaNumericalString()
+    while (set.contains(aString)) {
+        aString = anAlphaNumericalString()
+    }
+    return aString
+}
 
 /**
  * Will generate a map with different value types with a possibility to filter out given keys,
@@ -70,7 +83,7 @@ internal fun <K, V> Forge.aFilteredMap(
     return filtered
 }
 
-internal fun Forge.aFormattedTimestamp(format: String = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"): String {
+internal fun Forge.aFormattedTimestamp(format: String = ISO_8601): String {
     val simpleDateFormat = SimpleDateFormat(format, Locale.US).apply {
         timeZone = TimeZone.getTimeZone("UTC")
     }
@@ -82,7 +95,18 @@ internal fun Forge.aRumEvent(): Any {
         this.getForgery<ViewEvent>(),
         this.getForgery<ActionEvent>(),
         this.getForgery<ResourceEvent>(),
-        this.getForgery<ErrorEvent>()
+        this.getForgery<ErrorEvent>(),
+        this.getForgery<LongTaskEvent>()
+    )
+}
+
+internal fun Forge.aRumEventAsJson(): JsonObject {
+    return anElementFrom(
+        this.getForgery<ViewEvent>().toJson().asJsonObject,
+        this.getForgery<LongTaskEvent>().toJson().asJsonObject,
+        this.getForgery<ActionEvent>().toJson().asJsonObject,
+        this.getForgery<ResourceEvent>().toJson().asJsonObject,
+        this.getForgery<ErrorEvent>().toJson().asJsonObject
     )
 }
 

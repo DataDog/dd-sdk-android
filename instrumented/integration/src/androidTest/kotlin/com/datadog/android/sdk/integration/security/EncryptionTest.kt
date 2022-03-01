@@ -22,7 +22,6 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.security.Encryption
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.tools.unit.getStaticValue
-import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import io.opentracing.Tracer
@@ -209,14 +208,22 @@ internal class EncryptionTest {
     }
 
     private fun stopSdk() {
-        Datadog.invokeMethod("stop")
+        invokeDatadogMethod("stop")
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
         val isRumRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
         isRumRegistered.set(false)
     }
 
     private fun flushAndShutdownExecutors() {
-        Datadog.invokeMethod("flushAndShutdownExecutors")
+        invokeDatadogMethod("flushAndShutdownExecutors")
+    }
+
+    private fun invokeDatadogMethod(method: String) {
+        val instance = Datadog.javaClass.getDeclaredField("INSTANCE")
+        instance.isAccessible = true
+        val callMethod = Datadog.javaClass.declaredMethods.first { it.name.startsWith(method) }
+        callMethod.isAccessible = true
+        callMethod.invoke(instance.get(null))
     }
 
     // endregion

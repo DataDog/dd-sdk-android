@@ -17,12 +17,11 @@ import android.view.Window
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -71,15 +70,11 @@ internal class UiRumDebugListenerTest {
     @Mock
     lateinit var mockContentView: FrameLayout
 
-    private lateinit var mockDevLogHandler: LogHandler
-
     private lateinit var testedListener: UiRumDebugListener
 
     @BeforeEach
     fun setUp() {
         testedListener = UiRumDebugListener()
-
-        mockDevLogHandler = mockDevLogHandler()
 
         whenever(mockDecorView.findViewById<View>(android.R.id.content)) doReturn mockContentView
         whenever(mockWindow.decorView) doReturn mockDecorView
@@ -97,7 +92,7 @@ internal class UiRumDebugListenerTest {
         testedListener.onActivityResumed(mockActivity)
 
         // THEN
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             UiRumDebugListener.CANNOT_FIND_CONTENT_VIEW_MESSAGE
         )
@@ -114,7 +109,7 @@ internal class UiRumDebugListenerTest {
         testedListener.onActivityResumed(mockActivity)
 
         // THEN
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             UiRumDebugListener.CANNOT_FIND_CONTENT_VIEW_MESSAGE
         )
@@ -131,7 +126,7 @@ internal class UiRumDebugListenerTest {
         testedListener.onActivityResumed(mockActivity)
 
         // THEN
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             UiRumDebugListener.CANNOT_FIND_CONTENT_VIEW_MESSAGE
         )
@@ -149,7 +144,7 @@ internal class UiRumDebugListenerTest {
         testedListener.onActivityResumed(mockActivity)
 
         // THEN
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             UiRumDebugListener.MISSING_RUM_MONITOR_TYPE.format(
                 Locale.US,
@@ -170,7 +165,7 @@ internal class UiRumDebugListenerTest {
 
         assertThat(testedListener.rumViewsContainer).isNotNull
 
-        verifyZeroInteractions(mockDevLogHandler)
+        verifyZeroInteractions(logger.mockDevLogHandler)
     }
 
     @Test
@@ -180,7 +175,7 @@ internal class UiRumDebugListenerTest {
 
         // THEN
         verify(rumMonitor.mockInstance).setDebugListener(testedListener)
-        verifyZeroInteractions(mockDevLogHandler)
+        verifyZeroInteractions(logger.mockDevLogHandler)
     }
 
     @Test
@@ -215,7 +210,7 @@ internal class UiRumDebugListenerTest {
         testedListener.onActivityStopped(mockActivity)
 
         // THEN
-        verifyZeroInteractions(mockActivity, mockDevLogHandler, rumMonitor.mockInstance)
+        verifyZeroInteractions(mockActivity, logger.mockDevLogHandler, rumMonitor.mockInstance)
     }
 
     // endregion
@@ -340,11 +335,12 @@ internal class UiRumDebugListenerTest {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
+        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
+            return listOf(logger, rumMonitor)
         }
     }
 }

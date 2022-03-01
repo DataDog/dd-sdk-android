@@ -13,7 +13,6 @@ import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.tracing.internal.TracingFeature
-import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDTracer
 import com.datadog.trace.api.DDTags
 import com.datadog.trace.api.interceptor.MutableSpan
@@ -292,10 +291,10 @@ internal constructor(
     private fun handleResponse(
         request: Request,
         response: Response,
-        span: Span?
+        span: Span
     ) {
         val statusCode = response.code()
-        span?.setTag(Tags.HTTP_STATUS.key, statusCode)
+        span.setTag(Tags.HTTP_STATUS.key, statusCode)
         if (statusCode in 400..499) {
             (span as? MutableSpan)?.isError = true
         }
@@ -304,9 +303,9 @@ internal constructor(
         }
         onRequestIntercepted(request, span, response, null)
         if (canSendSpan()) {
-            span?.finish()
+            span.finish()
         } else {
-            (span as? DDSpan)?.drop()
+            (span as? MutableSpan)?.drop()
         }
     }
 
@@ -323,7 +322,7 @@ internal constructor(
         if (canSendSpan()) {
             span.finish()
         } else {
-            (span as? DDSpan)?.drop()
+            (span as? MutableSpan)?.drop()
         }
     }
 

@@ -12,8 +12,9 @@ import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.tracing.model.SpanEvent
 import java.util.Locale
 
-internal class SpanEventMapperWrapper(private val wrappedEventMapper: SpanEventMapper) :
-    EventMapper<SpanEvent> {
+internal class SpanEventMapperWrapper(
+    internal val wrappedEventMapper: SpanEventMapper
+) : EventMapper<SpanEvent> {
     override fun map(event: SpanEvent): SpanEvent? {
         val mappedEvent = wrappedEventMapper.map(event)
         if (mappedEvent !== event) {

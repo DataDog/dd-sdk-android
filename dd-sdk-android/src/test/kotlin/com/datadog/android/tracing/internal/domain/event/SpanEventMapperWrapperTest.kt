@@ -8,10 +8,12 @@ package com.datadog.android.tracing.internal.domain.event
 
 import android.util.Log
 import com.datadog.android.event.SpanEventMapper
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.tracing.model.SpanEvent
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -30,7 +32,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 @ForgeConfiguration(Configurator::class)
@@ -44,11 +47,8 @@ internal class SpanEventMapperWrapperTest {
     @Mock
     lateinit var mockSpanEvent: SpanEvent
 
-    lateinit var mockDevLogHandler: LogHandler
-
     @BeforeEach
     fun `set up`() {
-        mockDevLogHandler = mockDevLogHandler()
         testedEventMapper = SpanEventMapperWrapper(mockWrappedEventMapper)
     }
 
@@ -87,12 +87,22 @@ internal class SpanEventMapperWrapperTest {
         testedEventMapper.map(mockSpanEvent)
 
         // THEN
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             SpanEventMapperWrapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(
                 Locale.US,
                 mockSpanEvent.toString()
             )
         )
+    }
+
+    companion object {
+        val logger = LoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
     }
 }

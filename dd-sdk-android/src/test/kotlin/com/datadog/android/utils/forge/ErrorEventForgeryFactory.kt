@@ -86,11 +86,16 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
                 type = ErrorEvent.ErrorEventSessionType.USER,
                 hasReplay = forge.aNullable { aBool() }
             ),
+            source = forge.aNullable { aValueFrom(ErrorEvent.ErrorEventSource::class.java) },
+            ciTest = forge.aNullable {
+                ErrorEvent.CiTest(anHexadecimalString())
+            },
             context = forge.aNullable {
                 ErrorEvent.Context(additionalProperties = forge.exhaustiveAttributes())
             },
             dd = ErrorEvent.Dd(
-                session = forge.aNullable { ErrorEvent.DdSession(getForgery()) }
+                session = forge.aNullable { ErrorEvent.DdSession(getForgery()) },
+                browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") }
             )
         )
     }

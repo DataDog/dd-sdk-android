@@ -21,6 +21,7 @@ import com.datadog.android.rum.assertj.ResourceEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.utils.asTimingsPayload
@@ -103,9 +104,22 @@ internal class RumResourceScopeTest {
     var fakeServerOffset: Long = 0L
 
     private lateinit var fakeEventTime: Time
+    var fakeSourceResourceEvent: ResourceEvent.Source? = null
+    var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
+
+    @Mock
+    lateinit var mockRumEventSourceProvider: RumEventSourceProvider
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeSourceResourceEvent = forge.aNullable { aValueFrom(ResourceEvent.Source::class.java) }
+        fakeSourceErrorEvent = forge.aNullable {
+            aValueFrom(ErrorEvent.ErrorEventSource::class.java)
+        }
+        whenever(mockRumEventSourceProvider.resourceEventSource)
+            .thenReturn(fakeSourceResourceEvent)
+        whenever(mockRumEventSourceProvider.errorEventSource)
+            .thenReturn(fakeSourceErrorEvent)
         fakeEventTime = Time()
         val maxLimit = Long.MAX_VALUE - fakeEventTime.timestamp
         val minLimit = -fakeEventTime.timestamp
@@ -130,7 +144,8 @@ internal class RumResourceScopeTest {
             fakeEventTime,
             fakeAttributes,
             fakeServerOffset,
-            mockDetector
+            mockDetector,
+            mockRumEventSourceProvider
         )
     }
 
@@ -175,6 +190,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceResourceEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -225,6 +241,7 @@ internal class RumResourceScopeTest {
                     hasProviderDomain(URL(fakeUrl).host)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceResourceEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -249,7 +266,8 @@ internal class RumResourceScopeTest {
             fakeEventTime,
             fakeAttributes,
             fakeServerOffset,
-            mockDetector
+            mockDetector,
+            mockRumEventSourceProvider
         )
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -286,6 +304,7 @@ internal class RumResourceScopeTest {
                     hasProviderDomain(brokenUrl)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceResourceEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -339,6 +358,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceResourceEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -389,6 +409,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceResourceEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -430,6 +451,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceResourceEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -463,6 +485,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceResourceEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -534,7 +557,8 @@ internal class RumResourceScopeTest {
             fakeEventTime,
             fakeAttributes,
             fakeServerOffset,
-            mockDetector
+            mockDetector,
+            mockRumEventSourceProvider
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
 
@@ -566,6 +590,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceResourceEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -617,6 +642,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceResourceEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -669,6 +695,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceResourceEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -722,6 +749,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceResourceEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -762,7 +790,7 @@ internal class RumResourceScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
@@ -776,6 +804,7 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceErrorEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -784,7 +813,62 @@ internal class RumResourceScopeTest {
     }
 
     @Test
-    fun `𝕄 use the url for provider domain 𝕎 handleEvent(StopResourceWithError) { broken url }`(
+    fun `𝕄 send Error 𝕎 handleEvent(StopResourceWithStackTrace)`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stackTrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val errorType = forge.aNullable { anAlphabeticalString() }
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+
+        mockEvent = RumRawEvent.StopResourceWithStackTrace(
+            fakeKey,
+            null,
+            message,
+            source,
+            stackTrace,
+            errorType,
+            attributes
+        )
+
+        // When
+        Thread.sleep(RESOURCE_DURATION_MS)
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasMessage(message)
+                    hasErrorSource(source)
+                    hasStackTrace(stackTrace)
+                    isCrash(false)
+                    hasResource(fakeUrl, fakeMethod, 0L)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
+                    hasErrorType(errorType)
+                    hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isEqualTo(null)
+    }
+
+    @Test
+    fun `𝕄 use the url for domain 𝕎 handleEvent(StopResourceWithError) { broken url }`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
@@ -800,7 +884,8 @@ internal class RumResourceScopeTest {
             fakeEventTime,
             fakeAttributes,
             fakeServerOffset,
-            mockDetector
+            mockDetector,
+            mockRumEventSourceProvider
         )
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -827,7 +912,7 @@ internal class RumResourceScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
                     hasResource(brokenUrl, fakeMethod, 0L)
@@ -840,6 +925,77 @@ internal class RumResourceScopeTest {
                     hasProviderDomain(brokenUrl)
                     hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceErrorEvent)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isEqualTo(null)
+    }
+
+    @Test
+    fun `𝕄 use the url for domain 𝕎 handleEvent(StopResourceWithStacktrace){ broken url }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stackTrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val errorType = forge.aNullable { anAlphabeticalString() }
+        val brokenUrl = forge.aStringMatching("[a-z]+.com/[a-z]+")
+        testedScope = RumResourceScope(
+            mockParentScope,
+            brokenUrl,
+            fakeMethod,
+            fakeKey,
+            fakeEventTime,
+            fakeAttributes,
+            fakeServerOffset,
+            mockDetector,
+            mockRumEventSourceProvider
+        )
+        doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+
+        mockEvent = RumRawEvent.StopResourceWithStackTrace(
+            fakeKey,
+            null,
+            message,
+            source,
+            stackTrace,
+            errorType,
+            attributes
+        )
+
+        // When
+        Thread.sleep(RESOURCE_DURATION_MS)
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasMessage(message)
+                    hasErrorSource(source)
+                    hasStackTrace(stackTrace)
+                    isCrash(false)
+                    hasResource(brokenUrl, fakeMethod, 0L)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
+                    hasProviderDomain(brokenUrl)
+                    hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
+                    hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
@@ -884,7 +1040,7 @@ internal class RumResourceScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
@@ -897,6 +1053,65 @@ internal class RumResourceScopeTest {
                     hasProviderDomain(URL(fakeUrl).host)
                     hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceErrorEvent)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isEqualTo(null)
+    }
+
+    @Test
+    fun `𝕄 add first party type provider to Error 𝕎 handleEvent(StopResourceWithStackTrace)`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stackTrace: String,
+        forge: Forge
+    ) {
+        // Given
+        doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(fakeUrl)
+        val errorType = forge.aNullable { anAlphabeticalString() }
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+
+        mockEvent = RumRawEvent.StopResourceWithStackTrace(
+            fakeKey,
+            null,
+            message,
+            source,
+            stackTrace,
+            errorType,
+            attributes
+        )
+
+        // When
+        Thread.sleep(RESOURCE_DURATION_MS)
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasMessage(message)
+                    hasErrorSource(source)
+                    hasStackTrace(stackTrace)
+                    isCrash(false)
+                    hasResource(fakeUrl, fakeMethod, 0L)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
+                    hasProviderDomain(URL(fakeUrl).host)
+                    hasProviderType(ErrorEvent.ProviderType.FIRST_PARTY)
+                    hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
@@ -941,7 +1156,7 @@ internal class RumResourceScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
@@ -952,6 +1167,65 @@ internal class RumResourceScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
+                    doesNotHaveAResourceProvider()
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceErrorEvent)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isEqualTo(null)
+    }
+
+    @Test
+    fun `𝕄 send Error with initial context 𝕎 handleEvent(StopResourceWithStackTrace)`(
+        @Forgery context: RumContext,
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stackTrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val errorType = forge.aNullable { anAlphabeticalString() }
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+
+        mockEvent = RumRawEvent.StopResourceWithStackTrace(
+            fakeKey,
+            null,
+            message,
+            source,
+            stackTrace,
+            errorType,
+            attributes
+        )
+        whenever(mockParentScope.getRumContext()) doReturn context
+
+        // When
+        Thread.sleep(RESOURCE_DURATION_MS)
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasMessage(message)
+                    hasErrorSource(source)
+                    hasStackTrace(stackTrace)
+                    isCrash(false)
+                    hasResource(fakeUrl, fakeMethod, 0L)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
+                    hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
@@ -1003,7 +1277,7 @@ internal class RumResourceScopeTest {
             assertThat(lastValue)
                 .apply {
                     hasMessage(message)
-                    hasSource(source)
+                    hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, statusCode)
@@ -1014,6 +1288,71 @@ internal class RumResourceScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(throwable.javaClass.canonicalName)
+                    hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
+                    doesNotHaveAResourceProvider()
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceErrorEvent)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isEqualTo(null)
+    }
+
+    @Test
+    fun `𝕄 send Error with global attributes 𝕎 handleEvent(StopResourceWithStackTrace)`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @LongForgery(200, 600) statusCode: Long,
+        @StringForgery stackTrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val errorType = forge.aNullable { anAlphabeticalString() }
+        val attributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+            anHexadecimalString() to anAsciiString()
+        }
+        val errorAttributes = forge.exhaustiveAttributes(
+            excludedKeys = fakeAttributes.keys + attributes.keys
+        )
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+        expectedAttributes.putAll(errorAttributes)
+
+        GlobalRum.globalAttributes.putAll(attributes)
+        mockEvent = RumRawEvent.StopResourceWithStackTrace(
+            fakeKey,
+            statusCode,
+            message,
+            source,
+            stackTrace,
+            errorType,
+            errorAttributes
+        )
+
+        // When
+        Thread.sleep(RESOURCE_DURATION_MS)
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasMessage(message)
+                    hasErrorSource(source)
+                    hasStackTrace(stackTrace)
+                    isCrash(false)
+                    hasResource(fakeUrl, fakeMethod, statusCode)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
+                    hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
@@ -1059,6 +1398,33 @@ internal class RumResourceScopeTest {
             message,
             source,
             throwable,
+            emptyMap()
+        )
+
+        Thread.sleep(RESOURCE_DURATION_MS)
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        verify(mockParentScope, atMost(1)).getRumContext()
+        verifyNoMoreInteractions(mockWriter, mockParentScope)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 handleEvent(StopResourceWithStackTrace) with different key`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @LongForgery(200, 600) statusCode: Long,
+        @StringForgery stackTrace: String,
+        forge: Forge
+    ) {
+        val errorType = forge.aNullable { anAlphabeticalString() }
+        mockEvent = RumRawEvent.StopResourceWithStackTrace(
+            "not_the_$fakeKey",
+            statusCode,
+            message,
+            source,
+            stackTrace,
+            errorType,
             emptyMap()
         )
 
@@ -1131,6 +1497,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceResourceEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1179,6 +1546,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceResourceEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1229,6 +1597,7 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceResourceEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)

@@ -228,6 +228,17 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
+    fun hasSource(source: LongTaskEvent.Source?): LongTaskEventAssert {
+        assertThat(actual.source)
+            .overridingErrorMessage(
+                "Expected event to have a source %s" +
+                    " instead it was %s",
+                source ?: "null", actual.source ?: "null"
+            )
+            .isEqualTo(source)
+        return this
+    }
+
     companion object {
         internal const val TIMESTAMP_THRESHOLD_MS = 50L
         internal fun assertThat(actual: LongTaskEvent): LongTaskEventAssert =

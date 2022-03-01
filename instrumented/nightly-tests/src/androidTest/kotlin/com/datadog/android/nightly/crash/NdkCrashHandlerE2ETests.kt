@@ -142,9 +142,6 @@ class NdkCrashHandlerE2ETests {
         )
     }
 
-    /**
-     * Wait for the other process to handle the exception.
-     */
     private fun waitForProcessToIdle() {
         Thread.sleep(WAIT_FOR_IDLE_TIME_IN_MS)
     }

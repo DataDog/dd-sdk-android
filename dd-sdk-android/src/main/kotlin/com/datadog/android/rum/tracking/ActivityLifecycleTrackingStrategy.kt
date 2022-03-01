@@ -9,6 +9,7 @@ package com.datadog.android.rum.tracking
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import com.datadog.android.core.internal.utils.devLogger
 
@@ -79,6 +80,31 @@ abstract class ActivityLifecycleTrackingStrategy :
      * Maps the Bundle key - value properties into compatible attributes for the Rum Events.
      * @param bundle the Bundle we need to transform. Returns an empty Map if this is null.
      */
+    protected fun convertToRumAttributes(intent: Intent?): Map<String, Any?> {
+        if (intent == null) return emptyMap()
+
+        val attributes = mutableMapOf<String, Any?>()
+
+        intent.action?.let {
+            attributes[INTENT_ACTION_TAG] = it
+        }
+        intent.dataString?.let {
+            attributes[INTENT_URI_TAG] = it
+        }
+
+        intent.extras?.let { bundle ->
+            bundle.keySet().forEach {
+                attributes["$ARGUMENT_TAG.$it"] = bundle.get(it)
+            }
+        }
+
+        return attributes
+    }
+
+    /**
+     * Maps the Bundle key - value properties into compatible attributes for the Rum Events.
+     * @param bundle the Bundle we need to transform. Returns an empty Map if this is null.
+     */
     protected fun convertToRumAttributes(bundle: Bundle?): Map<String, Any?> {
         if (bundle == null) return emptyMap()
 
@@ -95,5 +121,7 @@ abstract class ActivityLifecycleTrackingStrategy :
 
     companion object {
         internal const val ARGUMENT_TAG = "view.arguments"
+        internal const val INTENT_ACTION_TAG = "view.intent.action"
+        internal const val INTENT_URI_TAG = "view.intent.uri"
     }
 }

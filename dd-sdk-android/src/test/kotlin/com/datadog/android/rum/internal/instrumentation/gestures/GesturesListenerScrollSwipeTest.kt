@@ -14,12 +14,10 @@ import android.widget.AbsListView
 import android.widget.ListAdapter
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.view.ScrollingView
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -37,7 +35,6 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.lang.ref.WeakReference
 import java.util.stream.Stream
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -57,14 +54,6 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() {
-
-    lateinit var mockDevLogHandler: LogHandler
-
-    @BeforeEach
-    override fun `set up`() {
-        super.`set up`()
-        mockDevLogHandler = mockDevLogHandler()
-    }
 
     // region Tests
 
@@ -334,7 +323,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(endUpEvent)
 
         // Then
-        verify(mockDevLogHandler, times(intermediaryEvents.size))
+        verify(logger.mockDevLogHandler, times(intermediaryEvents.size))
             .handleLog(
                 Log.INFO,
                 GesturesListener.MSG_NO_TARGET_SCROLL_SWIPE
@@ -379,7 +368,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(endUpEvent)
 
         // Then
-        verifyZeroInteractions(mockDevLogHandler)
+        verifyZeroInteractions(logger.mockDevLogHandler)
         verifyZeroInteractions(rumMonitor.mockInstance)
     }
 

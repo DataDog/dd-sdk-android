@@ -6,14 +6,14 @@
 
 package com.datadog.android.core.internal.constraints
 
-import android.os.Build
 import android.util.Log
 import com.datadog.android.Datadog
-import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.android.utils.times
-import com.datadog.tools.unit.setStaticValue
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.isNull
@@ -35,7 +35,8 @@ import org.mockito.junit.jupiter.MockitoSettings
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings()
 @ForgeConfiguration(Configurator::class)
@@ -43,16 +44,9 @@ internal class DatadogDataConstraintsTest {
 
     lateinit var testedConstraints: DataConstraints
 
-    lateinit var mockDevLogHandler: LogHandler
-
     @BeforeEach
     fun `set up`() {
         Datadog.setVerbosity(Log.VERBOSE)
-        // we need to set the Build.MODEL to null, to override the setup
-        Build::class.java.setStaticValue("MODEL", null)
-
-        mockDevLogHandler = mockDevLogHandler()
-
         testedConstraints = DatadogDataConstraints()
     }
 
@@ -65,7 +59,7 @@ internal class DatadogDataConstraintsTest {
         val result = testedConstraints.validateTags(listOf(tag))
 
         assertThat(result).containsOnly(tag)
-        verifyZeroInteractions(mockDevLogHandler)
+        verifyZeroInteractions(logger.mockDevLogHandler)
     }
 
     @Test
@@ -77,7 +71,7 @@ internal class DatadogDataConstraintsTest {
         val result = testedConstraints.validateTags(listOf(tag))
 
         assertThat(result).isEmpty()
-        verify(mockDevLogHandler)
+        verify(logger.mockDevLogHandler)
             .handleLog(Log.ERROR, "\"$tag\" is an invalid tag, and was ignored.")
     }
 
@@ -96,7 +90,7 @@ internal class DatadogDataConstraintsTest {
         val expectedCorrectedTag = "$validPart$converted:$value"
         assertThat(result)
             .containsOnly(expectedCorrectedTag)
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
         )
@@ -113,7 +107,7 @@ internal class DatadogDataConstraintsTest {
         val expectedCorrectedTag = "${key.lowercase(Locale.US)}:$value"
         assertThat(result)
             .containsOnly(expectedCorrectedTag)
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
         )
@@ -128,7 +122,7 @@ internal class DatadogDataConstraintsTest {
         val expectedCorrectedTag = tag.substring(0, 200)
         assertThat(result)
             .containsOnly(expectedCorrectedTag)
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             "tag \"$tag\" was modified to \"$expectedCorrectedTag\" to match our constraints."
         )
@@ -142,7 +136,7 @@ internal class DatadogDataConstraintsTest {
 
         assertThat(result)
             .containsOnly(expectedCorrectedTag)
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             "tag \"$expectedCorrectedTag:\" was modified to " +
                 "\"$expectedCorrectedTag\" to match our constraints."
@@ -159,7 +153,7 @@ internal class DatadogDataConstraintsTest {
 
         assertThat(result)
             .isEmpty()
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             "\"$invalidTag\" is an invalid tag, and was ignored."
         )
@@ -175,7 +169,7 @@ internal class DatadogDataConstraintsTest {
 
         assertThat(result)
             .isEmpty()
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
             "\"$invalidTag\" is an invalid tag, and was ignored."
         )
@@ -191,7 +185,7 @@ internal class DatadogDataConstraintsTest {
         val discardedCount = tags.size - 100
         assertThat(result)
             .containsExactlyElementsOf(firstTags)
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             "too many tags were added, $discardedCount had to be discarded."
         )
@@ -212,7 +206,7 @@ internal class DatadogDataConstraintsTest {
 
         assertThat(result)
             .containsEntry(key, value)
-        verifyZeroInteractions(mockDevLogHandler)
+        verifyZeroInteractions(logger.mockDevLogHandler)
     }
 
     @Test
@@ -227,7 +221,7 @@ internal class DatadogDataConstraintsTest {
         val expectedKey = topLevels.joinToString(".") + "_" + lowerLevels.joinToString("_")
         assertThat(result)
             .containsEntry(expectedKey, value)
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             "Key \"$key\" was modified to \"$expectedKey\" to match our constraints."
         )
@@ -251,7 +245,7 @@ internal class DatadogDataConstraintsTest {
         val expectedKey = topLevels.joinToString(".") + "_" + lowerLevels.joinToString("_")
         assertThat(result)
             .containsEntry(expectedKey, value)
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             "Key \"$key\" was modified to \"$expectedKey\" to match our constraints."
         )
@@ -268,7 +262,7 @@ internal class DatadogDataConstraintsTest {
         assertThat(result)
             .hasSize(128)
             .containsAllEntriesOf(firstAttributes)
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             "Too many attributes were added, $discardedCount had to be discarded."
         )
@@ -290,7 +284,7 @@ internal class DatadogDataConstraintsTest {
         assertThat(result)
             .hasSize(128)
             .containsAllEntriesOf(firstAttributes)
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             "Too many attributes were added for [$fakeAttributesGroup]," +
                 " $discardedCount had to be discarded."
@@ -359,7 +353,7 @@ internal class DatadogDataConstraintsTest {
 
         val logArgumentCaptor = argumentCaptor<String>()
 
-        verify(mockDevLogHandler, times(badToSanitizedKeys.size)).handleLog(
+        verify(logger.mockDevLogHandler, times(badToSanitizedKeys.size)).handleLog(
             eq(Log.WARN),
             logArgumentCaptor.capture(),
             isNull(),
@@ -380,4 +374,14 @@ internal class DatadogDataConstraintsTest {
     }
 
     // endregion
+
+    companion object {
+        val logger = LoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
+    }
 }

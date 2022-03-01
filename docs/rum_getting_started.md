@@ -1,6 +1,10 @@
 # Getting Started with Android RUM Collection
 
+## Overview
+
 Datadog Real User Monitoring (RUM) enables you to visualize and analyze the real-time performance and user journeys of your application's individual users.
+
+The Datadog Android SDK supports Android 4.4 (API level 19)+.
 
 ## Setup
 
@@ -9,12 +13,9 @@ Datadog Real User Monitoring (RUM) enables you to visualize and analyze the real
 3. Initialize the library with application context.
 4. Initialize RUM Monitor, Interceptor and start sending data.
 
-**Minimum Android OS version**: The Datadog Android SDK supports Android 4.4 (API level 19)+.
-
-
 ### Declare SDK as dependency
 
-Declare [dd-sdk-android][1] and the [gradle plugin][13] as a dependency in your `build.gradle` file:
+Declare [dd-sdk-android][1] and the [gradle plugin][12] as a dependency in your `build.gradle` file.
 
 ```
 plugins {
@@ -30,16 +31,20 @@ buildscript {
 }
 ```
 
-### Specify application details in UI
+### Specify application details in the UI
 
-1. Select UX Monitoring -> RUM Applications -> New Application
-2. Choose `android` as your Application Type in [Datadog UI][2] and provide a new application name to generate a unique Datadog application ID and client token.
+1. Navigate to [**UX Monitoring** > **RUM Applications** > **New Application**][2].
+2. Select `android` as the application type and enter an application name to generate a unique Datadog application ID and client token.
 
-![image][12]
+{{< img src="real_user_monitoring/android/create_rum_application.png" alt="Create a RUM application in Datadog workflow" style="width:90%;">}}
 
-To ensure the safety of your data, you must use a client token. You cannot use only [Datadog API keys][3] to configure the `dd-sdk-android` library, as they would be exposed client-side in the Android application APK byte code. For more information about setting up a client token, see the [Client Token documentation][4].
+To ensure the safety of your data, you must use a client token. If you used only [Datadog API keys][3] to configure the `dd-sdk-android` library, they would be exposed client-side in the Android application's APK byte code. 
+
+For more information about setting up a client token, see the [Client Token documentation][4].
 
 ### Initialize the library with application context
+
+See [`ViewTrackingStrategy`][5] to enable automatic tracking of all your views (activities, fragments, and more), [`trackingConsent`][6] to add GDPR compliance for your EU users, and [other configuration options][7] to initialize the library.
 
 {{< site-region region="us" >}}
 {{< tabs >}}
@@ -270,13 +275,11 @@ To ensure the safety of your data, you must use a client token. You cannot use o
 {{< /tabs >}}
 {{< /site-region >}}
 
-Learn more about [`ViewTrackingStrategy`][5] to enable automatic tracking of all your views (activities, fragments, etc.), [`trackingConsent`][6] to add GDPR compliance for your EU users, and [other configuration options][7] to initialize the library.
-
-**Note**: In the credentials required for initialization, your application variant name is also required, and should use your `BuildConfig.FLAVOR` value (or an empty string if you don't have variants). This is important because it enables the right ProGuard `mapping.txt` file to be automatically uploaded at build time to be able to view de-obfuscated RUM error stack traces. For more information see the [guide to uploading Android source mapping files][8].
+The credentials for initialization require your application's variant name and uses the value of `BuildConfig.FLAVOR` or an empty string if you don't have variants. This enables the correct ProGuard `mapping.txt` file to automatically upload at build time so you can view de-obfuscated RUM error stack traces. For more information, see the [guide to uploading Android source mapping files][8].
 
 ### Initialize RUM Monitor and Interceptor
 
-Configure and register the RUM Monitor. You only need to do it once, usually in your application's `onCreate()` method:
+Configure and register the RUM Monitor. You only need to do it once in your application's `onCreate()` method.
 
 {{< tabs >}}
 {{% tab "Kotlin" %}}
@@ -312,12 +315,11 @@ To track your OkHttp requests as resources, add the provided [Interceptor][9]:
 {{% /tab %}}
 {{< /tabs >}}
 
-This records each request processed by the `OkHttpClient` as a resource in RUM, with all the relevant information automatically filled (URL, method, status code, error). Note that only network requests started when a view is active are tracked. If you want to track requests when your application is in the background, you can [create a view manually][10].
+This records each request processed by the `OkHttpClient` as a resource in RUM, with all the relevant information automatically filled (URL, method, status code, and error). Only the network requests that started when a view is active are tracked. To track requests when your application is in the background, [create a view manually][10].
 
-**Note**: If you also use multiple Interceptors, `DatadogInterceptor` must be called first.
+**Note**: If you also use multiple Interceptors, call `DatadogInterceptor` first.
 
-You can further add an `EventListener` for the `OkHttpClient` to [automatically track resource timing][11] (third-party providers, network requests). 
-
+You can also add an `EventListener` for the `OkHttpClient` to [automatically track resource timing][11] for third-party providers and network requests. 
 
 ## Further Reading
 
@@ -327,12 +329,11 @@ You can further add an `EventListener` for the `OkHttpClient` to [automatically 
 [2]: https://app.datadoghq.com/rum/application/create
 [3]: https://docs.datadoghq.com/account_management/api-app-keys/#api-keys
 [4]: https://docs.datadoghq.com/account_management/api-app-keys/#client-tokens
-[5]: /real_user_monitoring/android/advanced_configuration/#automatically-track-views
-[6]: /real_user_monitoring/android/troubleshooting/#set-tracking-consent-gdpr-compliance
-[7]: /real_user_monitoring/android/advanced_configuration/#initialization-parameters
-[8]: /real_user_monitoring/error_tracking/android/#upload-your-mapping-file
+[5]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#automatically-track-views
+[6]: https://docs.datadoghq.com/real_user_monitoring/android/troubleshooting/#set-tracking-consent-gdpr-compliance
+[7]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#initialization-parameters
+[8]: https://docs.datadoghq.com/real_user_monitoring/error_tracking/android/#upload-your-mapping-file
 [9]: https://square.github.io/okhttp/interceptors/
-[10]: /real_user_monitoring/android/advanced_configuration/#custom-views
-[11]: /real_user_monitoring/android/advanced_configuration/#automatically-track-network-requests
-[12]: https://raw.githubusercontent.com/DataDog/dd-sdk-android/master/docs/images/create_rum_application.png
-[13]: https://github.com/DataDog/dd-sdk-android-gradle-plugin
+[10]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#custom-views
+[11]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#automatically-track-network-requests
+[12]: https://github.com/DataDog/dd-sdk-android-gradle-plugin

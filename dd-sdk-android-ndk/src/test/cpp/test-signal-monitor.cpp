@@ -6,7 +6,7 @@
 #include "utils/signal-monitor.h"
 
 extern bool handlers_installed;
-extern struct sigaction *original_sigaction;
+extern struct sigaction *original_sigactions;
 
 
 #ifndef NDEBUG
@@ -108,8 +108,8 @@ TEST calling_start_monitor_from_different_threads_will_not_corrupt_the_memory(vo
     sleep(5);
     int sigactions_size = 0;
     const int handled_signals = 6;
-    struct sigaction *end_pointer = original_sigaction + handled_signals;
-    struct sigaction *pointer = original_sigaction;
+    struct sigaction *end_pointer = original_sigactions + handled_signals;
+    struct sigaction *pointer = original_sigactions;
     while (pointer != end_pointer && pointer != nullptr) {
         sigactions_size++;
         pointer++;

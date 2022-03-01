@@ -16,6 +16,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
@@ -89,8 +90,16 @@ internal class RumActionScopeTest {
 
     var fakeServerOffset: Long = 0L
 
+    var fakeSourceActionEvent: ActionEvent.Source? = null
+
+    @Mock
+    lateinit var mockRumEventSourceProvider: RumEventSourceProvider
+
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeSourceActionEvent = forge.aNullable { aValueFrom(ActionEvent.Source::class.java) }
+        whenever(mockRumEventSourceProvider.actionEventSource)
+            .thenReturn(fakeSourceActionEvent)
         fakeEventTime = Time()
         val maxLimit = Long.MAX_VALUE - fakeEventTime.timestamp
         val minLimit = -fakeEventTime.timestamp
@@ -116,7 +125,8 @@ internal class RumActionScopeTest {
             fakeAttributes,
             fakeServerOffset,
             TEST_INACTIVITY_MS,
-            TEST_MAX_DURATION_MS
+            TEST_MAX_DURATION_MS,
+            mockRumEventSourceProvider
         )
     }
 
@@ -158,6 +168,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -240,6 +251,67 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isSameAs(testedScope)
+        assertThat(result3).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action after threshold 𝕎 handleEvent(StartResource+StopResourceWithStackTrace)`(
+        @StringForgery key: String,
+        @StringForgery method: String,
+        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
+        @LongForgery(200, 600) statusCode: Long,
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stackTrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val errorType = forge.aNullable { anAlphabeticalString() }
+
+        // When
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
+        fakeEvent = RumRawEvent.StopResourceWithStackTrace(
+            key,
+            statusCode,
+            message,
+            source,
+            stackTrace,
+            errorType,
+            emptyMap()
+        )
+        val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
+        val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS * 2))
+                    hasDurationLowerThan(TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS * 4))
+                    hasResourceCount(0)
+                    hasErrorCount(1)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -270,6 +342,45 @@ internal class RumActionScopeTest {
             message,
             source,
             throwable,
+            emptyMap()
+        )
+        val result2 = testedScope.handleEvent(fakeEvent2, mockWriter)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
+        val result3 = testedScope.handleEvent(mockEvent(), mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isSameAs(testedScope)
+        assertThat(result3).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send Action 𝕎 handleEvent(StartResource+StopResourceWithStackTrace+any) {unknown key}`(
+        @StringForgery key: String,
+        @StringForgery key2: String,
+        @StringForgery method: String,
+        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
+        @LongForgery(200, 600) statusCode: Long,
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @StringForgery stackTrace: String,
+        forge: Forge
+    ) {
+        // Given
+        val errorType = forge.aNullable { anAlphabeticalString() }
+
+        // When
+        fakeEvent = RumRawEvent.StartResource(key, url, method, emptyMap())
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
+        val fakeEvent2 = RumRawEvent.StopResourceWithStackTrace(
+            key2,
+            statusCode,
+            message,
+            source,
+            stackTrace,
+            errorType,
             emptyMap()
         )
         val result2 = testedScope.handleEvent(fakeEvent2, mockWriter)
@@ -319,6 +430,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -366,6 +478,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -404,6 +517,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -448,6 +562,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -486,6 +601,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -525,6 +641,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -563,6 +680,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -602,6 +720,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -643,6 +762,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -680,6 +800,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -717,6 +838,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -755,6 +877,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -795,6 +918,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -823,7 +947,8 @@ internal class RumActionScopeTest {
             fakeAttributes,
             fakeServerOffset,
             TEST_INACTIVITY_MS,
-            TEST_MAX_DURATION_MS
+            TEST_MAX_DURATION_MS,
+            mockRumEventSourceProvider
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.globalAttributes.remove(it) }
 
@@ -851,6 +976,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -895,6 +1021,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -930,6 +1057,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -968,6 +1096,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1006,6 +1135,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1045,6 +1175,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1079,6 +1210,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1120,6 +1252,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         assertThat(result).isNull()
@@ -1159,6 +1292,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1196,6 +1330,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         assertThat(result).isNull()
@@ -1233,6 +1368,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1272,6 +1408,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1341,6 +1478,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1375,6 +1513,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1409,6 +1548,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1443,6 +1583,7 @@ internal class RumActionScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())

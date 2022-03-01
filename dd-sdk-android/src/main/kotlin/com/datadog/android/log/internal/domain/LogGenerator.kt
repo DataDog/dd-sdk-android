@@ -12,13 +12,11 @@ import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.log.internal.utils.buildLogDateFormat
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.GlobalRum
 import io.opentracing.util.GlobalTracer
-import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 
 internal class LogGenerator(
     internal val serviceName: String,
@@ -30,10 +28,8 @@ internal class LogGenerator(
     envName: String,
     appVersion: String
 ) {
-    @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here, ISO_8601 pattern is valid
-    private val simpleDateFormat = SimpleDateFormat(ISO_8601, Locale.US).apply {
-        timeZone = TimeZone.getTimeZone("UTC")
-    }
+
+    private val simpleDateFormat = buildLogDateFormat()
 
     internal val envTag: String? = if (envName.isNotEmpty()) {
         "${LogAttributes.ENV}:$envName"
