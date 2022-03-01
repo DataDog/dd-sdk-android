@@ -36,6 +36,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
+@SuppressWarnings("LargeClass")
 class RumMonitorE2ETests {
     @get:Rule
     val forge = ForgeRule()

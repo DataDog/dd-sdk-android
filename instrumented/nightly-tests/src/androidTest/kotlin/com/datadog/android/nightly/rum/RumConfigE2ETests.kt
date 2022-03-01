@@ -28,6 +28,7 @@ import com.datadog.android.nightly.utils.anErrorMessage
 import com.datadog.android.nightly.utils.defaultTestAttributes
 import com.datadog.android.nightly.utils.executeInsideView
 import com.datadog.android.nightly.utils.initializeSdk
+import com.datadog.android.nightly.utils.invokeMethod
 import com.datadog.android.nightly.utils.measureSdkInitialize
 import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
 import com.datadog.android.privacy.TrackingConsent
@@ -41,7 +42,6 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.tools.unit.forge.aThrowable
-import com.datadog.tools.unit.invokeMethod
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.Rule
 import org.junit.Test
