@@ -11,6 +11,7 @@ import android.content.res.Resources
 import android.view.KeyEvent
 import android.view.MenuItem
 import android.view.MotionEvent
+import android.view.View
 import android.view.Window
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.rum.RumActionType
@@ -75,9 +76,13 @@ internal class WindowCallbackWrapperTest {
     @Mock
     lateinit var mockCopiedMotionEvent: MotionEvent
 
+    @Mock
+    lateinit var mockWindow: Window
+
     @BeforeEach
     fun `set up`() {
         testedWrapper = WindowCallbackWrapper(
+            mockWindow,
             mockCallback,
             mockGestureDetector,
             copyEvent = { mockCopiedMotionEvent }
@@ -165,6 +170,7 @@ internal class WindowCallbackWrapperTest {
             whenever(it.getTargetName(menuItem)).thenReturn(customTargetName)
         }
         testedWrapper = WindowCallbackWrapper(
+            mockWindow,
             mockCallback,
             mockGestureDetector,
             mockInteractionPredicate
@@ -206,6 +212,7 @@ internal class WindowCallbackWrapperTest {
             whenever(it.getTargetName(menuItem)).thenReturn("")
         }
         testedWrapper = WindowCallbackWrapper(
+            mockWindow,
             mockCallback,
             mockGestureDetector,
             mockInteractionPredicate
@@ -247,6 +254,7 @@ internal class WindowCallbackWrapperTest {
             whenever(it.getTargetName(menuItem)).thenReturn(null)
         }
         testedWrapper = WindowCallbackWrapper(
+            mockWindow,
             mockCallback,
             mockGestureDetector,
             mockInteractionPredicate
@@ -377,6 +385,7 @@ internal class WindowCallbackWrapperTest {
         }
 
         testedWrapper = WindowCallbackWrapper(
+            mockWindow,
             mockCallback,
             mockGestureDetector,
             mockInteractionPredicate
@@ -402,6 +411,7 @@ internal class WindowCallbackWrapperTest {
         }
 
         testedWrapper = WindowCallbackWrapper(
+            mockWindow,
             mockCallback,
             mockGestureDetector,
             mockInteractionPredicate
@@ -428,6 +438,7 @@ internal class WindowCallbackWrapperTest {
             whenever(it.getTargetName(keyEvent)).thenReturn(customTargetName)
         }
         testedWrapper = WindowCallbackWrapper(
+            mockWindow,
             mockCallback,
             mockGestureDetector,
             mockInteractionPredicate
@@ -493,6 +504,105 @@ internal class WindowCallbackWrapperTest {
         // Then
         assertThat(returnedValue).isTrue()
         verify(mockCallback).dispatchKeyEvent(keyEvent)
+    }
+
+    @Test
+    fun `M send CLICK event W dispatchKeyEvent() {  KEYCODE_DPAD_CENTER }`() {
+        // Given
+        val mockKeyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_CENTER)
+        val fakeFocusedView = View(mock())
+        whenever(mockWindow.currentFocus).thenReturn(fakeFocusedView)
+
+        // When
+        testedWrapper.dispatchKeyEvent(mockKeyEvent)
+
+        // Then
+        verify(rumMonitor.mockInstance).addUserAction(
+            RumActionType.CLICK,
+            "",
+            mapOf(
+                RumAttributes.ACTION_TARGET_CLASS_NAME to
+                    fakeFocusedView.targetClassName(),
+                RumAttributes.ACTION_TARGET_RESOURCE_ID to
+                    resourceIdName(fakeFocusedView.id)
+            )
+        )
+    }
+
+    @Test
+    fun `M send CLICK event W dispatchKeyEvent() {KEYCODE_DPAD_CENTER, custom target name }`(
+        @StringForgery fakeCustomTargetName: String
+    ) {
+        // Given
+        val mockKeyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_CENTER)
+        val fakeFocusedView = View(mock())
+        whenever(mockWindow.currentFocus).thenReturn(fakeFocusedView)
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(fakeFocusedView)).thenReturn(fakeCustomTargetName)
+        }
+        testedWrapper = WindowCallbackWrapper(
+            mockWindow,
+            mockCallback,
+            mockGestureDetector,
+            mockInteractionPredicate
+        )
+
+        // When
+        testedWrapper.dispatchKeyEvent(mockKeyEvent)
+
+        // Then
+        verify(rumMonitor.mockInstance).addUserAction(
+            RumActionType.CLICK,
+            fakeCustomTargetName,
+            mapOf(
+                RumAttributes.ACTION_TARGET_CLASS_NAME to
+                    fakeFocusedView.targetClassName(),
+                RumAttributes.ACTION_TARGET_RESOURCE_ID to
+                    resourceIdName(fakeFocusedView.id)
+            )
+        )
+    }
+
+    @Test
+    fun `M do nothing W dispatchKeyEvent() {  KEYCODE_DPAD_CENTER, ACTION_DOWN }`() {
+        // Given
+        val mockKeyEvent = mockKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER)
+        val fakeFocusedView = View(mock())
+        whenever(mockWindow.currentFocus).thenReturn(fakeFocusedView)
+
+        // When
+        testedWrapper.dispatchKeyEvent(mockKeyEvent)
+
+        // Then
+        verifyZeroInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
+    fun `M do nothing W dispatchKeyEvent() {  KEYCODE_DPAD_CENTER, window reference is null }`() {
+        // Given
+        val mockKeyEvent = mockKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER)
+        val fakeFocusedView = View(mock())
+        whenever(mockWindow.currentFocus).thenReturn(fakeFocusedView)
+        testedWrapper.windowReference.clear()
+
+        // When
+        testedWrapper.dispatchKeyEvent(mockKeyEvent)
+
+        // Then
+        verifyZeroInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
+    fun `M do nothing W dispatchKeyEvent() {  KEYCODE_DPAD_CENTER, no focused view }`() {
+        // Given
+        val mockKeyEvent = mockKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER)
+        whenever(mockWindow.currentFocus).thenReturn(null)
+
+        // When
+        testedWrapper.dispatchKeyEvent(mockKeyEvent)
+
+        // Then
+        verifyZeroInteractions(rumMonitor.mockInstance)
     }
 
     // endregion
