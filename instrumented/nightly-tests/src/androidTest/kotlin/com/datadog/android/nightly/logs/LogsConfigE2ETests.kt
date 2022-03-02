@@ -21,6 +21,7 @@ import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measure
 import com.datadog.android.nightly.utils.measureLoggerInitialize
 import com.datadog.android.nightly.utils.measureSdkInitialize
+import com.datadog.android.nightly.utils.setSecurityConfig
 import com.datadog.android.privacy.TrackingConsent
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.Rule

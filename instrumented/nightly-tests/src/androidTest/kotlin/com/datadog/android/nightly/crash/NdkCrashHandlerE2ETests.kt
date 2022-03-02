@@ -20,6 +20,7 @@ import com.datadog.android.nightly.services.RumEnabledNdkCrashService
 import com.datadog.android.nightly.services.RumEncryptionEnabledNdkCrashService
 import com.datadog.android.nightly.utils.NeverUseThatEncryption
 import com.datadog.android.nightly.utils.initializeSdk
+import com.datadog.android.nightly.utils.setSecurityConfig
 import com.datadog.android.nightly.utils.stopSdk
 import org.junit.Rule
 import org.junit.Test

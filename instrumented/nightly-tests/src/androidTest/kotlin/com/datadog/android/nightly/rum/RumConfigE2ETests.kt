@@ -31,6 +31,7 @@ import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.invokeMethod
 import com.datadog.android.nightly.utils.measureSdkInitialize
 import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
+import com.datadog.android.nightly.utils.setSecurityConfig
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
