@@ -12,6 +12,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.core.configuration.SecurityConfig
 import com.datadog.android.nightly.BuildConfig
 import com.datadog.android.nightly.ENV_NAME
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
@@ -116,6 +117,14 @@ fun cleanStorageFiles() {
 
 fun cleanGlobalAttributes() {
     GlobalRum.removeAttribute(TEST_METHOD_NAME_KEY)
+}
+
+fun Configuration.Builder.setSecurityConfig(
+    securityConfig: SecurityConfig
+): Configuration.Builder {
+    val method = this.javaClass.declaredMethods.find { it.name == "setSecurityConfig" }
+    method!!.isAccessible = true
+    return method.invoke(this, securityConfig) as Configuration.Builder
 }
 
 private fun createDatadogCredentials(): Credentials {

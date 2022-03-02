@@ -1660,6 +1660,14 @@ internal class ConfigurationBuilderTest {
         assertThat(config.internalLogsConfig).isNull()
     }
 
+    private fun Configuration.Builder.setSecurityConfig(
+        securityConfig: SecurityConfig
+    ): Configuration.Builder {
+        val method = this.javaClass.declaredMethods.find { it.name == "setSecurityConfig" }
+        method!!.isAccessible = true
+        return method.invoke(this, securityConfig) as Configuration.Builder
+    }
+
     companion object {
         val logger = LoggerTestConfiguration()
 
