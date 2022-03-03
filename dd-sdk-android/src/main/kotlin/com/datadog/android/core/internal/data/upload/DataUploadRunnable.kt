@@ -8,11 +8,9 @@ package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.net.DataUploader
-import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.Batch
 import com.datadog.android.core.internal.persistence.DataReader
-import com.datadog.android.core.internal.system.SystemInfo
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.model.NetworkInfo
@@ -61,10 +59,10 @@ internal class DataUploadRunnable(
 
     private fun isSystemReady(): Boolean {
         val systemInfo = systemInfoProvider.getLatestSystemInfo()
-        val batteryFullOrCharging = systemInfo.batteryStatus in batteryFullOrChargingStatus
-        val batteryLevel = systemInfo.batteryLevel
-        val powerSaveMode = systemInfo.powerSaveMode
-        return (batteryFullOrCharging || batteryLevel > LOW_BATTERY_THRESHOLD) && !powerSaveMode
+        val hasEnoughPower = systemInfo.batteryFullOrCharging ||
+            systemInfo.onExternalPowerSource ||
+            systemInfo.batteryLevel > LOW_BATTERY_THRESHOLD
+        return hasEnoughPower && !systemInfo.powerSaveMode
     }
 
     private fun scheduleNextUpload() {
@@ -100,21 +98,7 @@ internal class DataUploadRunnable(
     // endregion
 
     companion object {
-
-        private val droppableBatchStatus = setOf(
-            UploadStatus.SUCCESS,
-            UploadStatus.HTTP_REDIRECTION,
-            UploadStatus.HTTP_CLIENT_ERROR,
-            UploadStatus.UNKNOWN_ERROR,
-            UploadStatus.INVALID_TOKEN_ERROR
-        )
-
-        private val batteryFullOrChargingStatus = setOf(
-            SystemInfo.BatteryStatus.CHARGING,
-            SystemInfo.BatteryStatus.FULL
-        )
-
-        private const val LOW_BATTERY_THRESHOLD = 10
+        internal const val LOW_BATTERY_THRESHOLD = 10
 
         internal const val MIN_DELAY_FACTOR = 1
         internal const val DEFAULT_DELAY_FACTOR = 5

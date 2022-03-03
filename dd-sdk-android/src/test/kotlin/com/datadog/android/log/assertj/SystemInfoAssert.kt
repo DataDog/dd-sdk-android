@@ -15,16 +15,6 @@ import org.assertj.core.data.Offset
 internal class SystemInfoAssert(actual: SystemInfo) :
     AbstractObjectAssert<SystemInfoAssert, SystemInfo>(actual, SystemInfoAssert::class.java) {
 
-    fun hasBatteryStatus(expected: SystemInfo.BatteryStatus): SystemInfoAssert {
-        assertThat(actual.batteryStatus)
-            .overridingErrorMessage(
-                "Expected systemInfo to have batteryStatus $expected " +
-                    "but was ${actual.batteryStatus}"
-            )
-            .isEqualTo(expected)
-        return this
-    }
-
     fun hasPowerSaveMode(expected: Boolean): SystemInfoAssert {
         assertThat(actual.powerSaveMode)
             .overridingErrorMessage(
@@ -43,6 +33,22 @@ internal class SystemInfoAssert(actual: SystemInfo) :
             )
             .isCloseTo(expected, Offset.offset(max(100 / scale, 1)))
 
+        return this
+    }
+
+    fun hasBatteryFullOrCharging(expected: Boolean): SystemInfoAssert {
+        assertThat(actual.batteryFullOrCharging).overridingErrorMessage(
+            "Expected systemInfo to have batteryFullOrCharging flag $expected " +
+                "but was ${actual.batteryFullOrCharging}"
+        ).isEqualTo(expected)
+        return this
+    }
+
+    fun hasOnExternalPowerSource(expected: Boolean): SystemInfoAssert {
+        assertThat(actual.onExternalPowerSource).overridingErrorMessage(
+            "Expected systemInfo to have onExternalPowerSource flag $expected " +
+                "but was ${actual.onExternalPowerSource}"
+        ).isEqualTo(expected)
         return this
     }
 

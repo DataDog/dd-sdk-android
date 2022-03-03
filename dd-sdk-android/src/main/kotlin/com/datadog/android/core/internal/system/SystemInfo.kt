@@ -9,9 +9,10 @@ package com.datadog.android.core.internal.system
 import android.os.BatteryManager
 
 internal data class SystemInfo(
-    val batteryStatus: BatteryStatus = BatteryStatus.UNKNOWN,
+    val batteryFullOrCharging: Boolean = false,
     val batteryLevel: Int = -1,
-    val powerSaveMode: Boolean = false
+    val powerSaveMode: Boolean = false,
+    val onExternalPowerSource: Boolean = false
 ) {
 
     internal enum class BatteryStatus {
