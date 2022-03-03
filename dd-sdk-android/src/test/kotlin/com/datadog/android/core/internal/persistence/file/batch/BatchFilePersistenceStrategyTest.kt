@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.data.upload.DataFlusher
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.persistence.Serializer
+import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.log.Logger
@@ -54,6 +55,9 @@ internal class BatchFilePersistenceStrategyTest {
     @Mock
     lateinit var mockExecutorService: ExecutorService
 
+    @Mock
+    lateinit var mockFileHandler: FileHandler
+
     @Forgery
     lateinit var fakePayloadDecoration: PayloadDecoration
 
@@ -68,7 +72,8 @@ internal class BatchFilePersistenceStrategyTest {
             mockExecutorService,
             mockSerializer,
             fakePayloadDecoration,
-            Logger(mockLogHandler)
+            Logger(mockLogHandler),
+            mockFileHandler
         )
     }
 
@@ -112,7 +117,7 @@ internal class BatchFilePersistenceStrategyTest {
         check(flusher is DataFlusher)
         assertThat(flusher.fileOrchestrator).isSameAs(mockFileOrchestrator)
         assertThat(flusher.decoration).isSameAs(fakePayloadDecoration)
-        assertThat(flusher.handler).isInstanceOf(BatchFileHandler::class.java)
+        assertThat(flusher.handler).isSameAs(mockFileHandler)
     }
 
     @Test

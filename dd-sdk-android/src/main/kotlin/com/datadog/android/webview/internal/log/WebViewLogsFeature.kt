@@ -31,7 +31,8 @@ internal object WebViewLogsFeature : SdkFeature<JsonObject, Configuration.Featur
             CoreFeature.trackingConsentProvider,
             context,
             CoreFeature.persistenceExecutorService,
-            sdkLogger
+            sdkLogger,
+            CoreFeature.localDataEncryption
         )
     }
 

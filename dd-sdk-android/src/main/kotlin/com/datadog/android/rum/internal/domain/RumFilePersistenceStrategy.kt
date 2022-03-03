@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.event.EventMapper
@@ -20,6 +21,7 @@ import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.Logger
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
+import com.datadog.android.security.Encryption
 import java.io.File
 import java.util.concurrent.ExecutorService
 
@@ -29,6 +31,7 @@ internal class RumFilePersistenceStrategy(
     eventMapper: EventMapper<Any>,
     executorService: ExecutorService,
     internalLogger: Logger,
+    localDataEncryption: Encryption?,
     private val lastViewEventFile: File
 ) : BatchFilePersistenceStrategy<Any>(
     FeatureFileOrchestrator(
@@ -44,7 +47,8 @@ internal class RumFilePersistenceStrategy(
         RumEventSerializer()
     ),
     PayloadDecoration.NEW_LINE_DECORATION,
-    internalLogger
+    internalLogger,
+    BatchFileHandler.create(internalLogger, localDataEncryption)
 ) {
 
     override fun createWriter(

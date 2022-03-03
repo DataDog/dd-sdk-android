@@ -17,6 +17,7 @@ internal class Configurator :
 
         // Datadog Core
         forge.addFactory(ConfigurationCoreForgeryFactory())
+        forge.addFactory(SecurityConfigForgeryFactory())
         forge.addFactory(ConfigurationFeatureForgeryFactory())
         forge.addFactory(ConfigurationLogForgeryFactory())
         forge.addFactory(ConfigurationInternalLogsForgeryFactory())

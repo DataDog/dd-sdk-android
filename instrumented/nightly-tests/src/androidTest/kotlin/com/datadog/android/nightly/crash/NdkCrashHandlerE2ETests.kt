@@ -10,12 +10,17 @@ import android.content.Intent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.SecurityConfig
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.services.NdkCrashService
 import com.datadog.android.nightly.services.NdkHandlerDisabledNdkCrashService
 import com.datadog.android.nightly.services.RumEnabledNdkCrashService
+import com.datadog.android.nightly.services.RumEncryptionEnabledNdkCrashService
+import com.datadog.android.nightly.utils.NeverUseThatEncryption
 import com.datadog.android.nightly.utils.initializeSdk
+import com.datadog.android.nightly.utils.setSecurityConfig
 import com.datadog.android.nightly.utils.stopSdk
 import org.junit.Rule
 import org.junit.Test
@@ -52,6 +57,42 @@ class NdkCrashHandlerE2ETests {
         // we stop and initialize the SDK again to handle the preserved ndk crash
         stopSdk()
         initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
+        waitForProcessToIdle()
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun build(): Configuration
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
+     * apiMethodSignature: com.datadog.android.core.configuration.SecurityConfig#constructor(com.datadog.android.security.Encryption?)
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setSecurityConfig(SecurityConfig): Builder
+     * apiMethodSignature: com.datadog.android.security.Encryption#fun encrypt(ByteArray): ByteArray
+     * apiMethodSignature: com.datadog.android.security.Encryption#fun decrypt(ByteArray): ByteArray
+     */
+    @Test
+    fun ndk_crash_reports_rum_enabled_with_encryption() {
+        val testMethodName = "ndk_crash_reports_rum_enabled_with_encryption"
+        initializeSdk(InstrumentationRegistry.getInstrumentation().targetContext)
+        startService(
+            testMethodName,
+            RumEncryptionEnabledNdkCrashService::class.java
+        )
+        waitForProcessToIdle()
+        stopService(RumEncryptionEnabledNdkCrashService::class.java)
+        // we stop and initialize the SDK again to handle the preserved ndk crash
+        stopSdk()
+        initializeSdk(
+            InstrumentationRegistry.getInstrumentation().targetContext,
+            // need that to be able to read encrypted data written by NDK crash service
+            config = Configuration
+                .Builder(
+                    logsEnabled = true,
+                    tracesEnabled = true,
+                    crashReportsEnabled = true,
+                    rumEnabled = true
+                )
+                .setSecurityConfig(SecurityConfig(localDataEncryption = NeverUseThatEncryption()))
+                .build()
+        )
         waitForProcessToIdle()
     }
 

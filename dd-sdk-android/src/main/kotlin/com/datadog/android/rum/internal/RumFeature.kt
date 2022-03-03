@@ -119,6 +119,7 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
             configuration.rumEventMapper,
             CoreFeature.persistenceExecutorService,
             sdkLogger,
+            CoreFeature.localDataEncryption,
             DatadogNdkCrashHandler.getLastViewEventFile(context)
         )
     }

@@ -37,7 +37,8 @@ internal object TracingFeature : SdkFeature<DDSpan, Configuration.Feature.Tracin
             CoreFeature.userInfoProvider,
             CoreFeature.envName,
             sdkLogger,
-            configuration.spanEventMapper
+            configuration.spanEventMapper,
+            CoreFeature.localDataEncryption
         )
     }
 

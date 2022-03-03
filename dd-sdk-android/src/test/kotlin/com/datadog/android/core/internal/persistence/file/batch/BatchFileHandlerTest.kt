@@ -7,14 +7,18 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import android.util.Log
+import com.datadog.android.core.internal.persistence.file.EncryptedFileHandler
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.security.Encryption
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.isNull
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -323,7 +327,9 @@ internal class BatchFileHandlerTest {
     fun `𝕄 return empty ByteArray and warn 𝕎 readData() {file does not exist}`(
         @StringForgery fileName: String,
         @StringForgery prefix: String,
-        @StringForgery suffix: String
+        @StringForgery suffix: String,
+        @StringForgery separator: String,
+        forge: Forge
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
@@ -333,7 +339,8 @@ internal class BatchFileHandlerTest {
         val result = testedFileHandler.readData(
             file,
             prefix.toByteArray(),
-            suffix.toByteArray()
+            suffix.toByteArray(),
+            forge.aNullable { separator.toByteArray() }
         )
 
         // Then
@@ -353,7 +360,9 @@ internal class BatchFileHandlerTest {
     fun `𝕄 return empty ByteArray and warn 𝕎 readData() {file is not file}`(
         @StringForgery fileName: String,
         @StringForgery prefix: String,
-        @StringForgery suffix: String
+        @StringForgery suffix: String,
+        @StringForgery separator: String,
+        forge: Forge
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
@@ -363,7 +372,8 @@ internal class BatchFileHandlerTest {
         val result = testedFileHandler.readData(
             file,
             prefix.toByteArray(),
-            suffix.toByteArray()
+            suffix.toByteArray(),
+            forge.aNullable { separator.toByteArray() }
         )
 
         // Then
@@ -381,7 +391,9 @@ internal class BatchFileHandlerTest {
     @Test
     fun `𝕄 return file content 𝕎 readData() {postfix and suffix are null}`(
         @StringForgery fileName: String,
-        @StringForgery content: String
+        @StringForgery content: String,
+        @StringForgery separator: String,
+        forge: Forge
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
@@ -391,7 +403,8 @@ internal class BatchFileHandlerTest {
         val result = testedFileHandler.readData(
             file,
             null,
-            null
+            null,
+            forge.aNullable { separator.toByteArray() }
         )
 
         // Then
@@ -403,7 +416,9 @@ internal class BatchFileHandlerTest {
         @StringForgery fileName: String,
         @StringForgery content: String,
         @StringForgery prefix: String,
-        @StringForgery suffix: String
+        @StringForgery suffix: String,
+        @StringForgery separator: String,
+        forge: Forge
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
@@ -413,7 +428,8 @@ internal class BatchFileHandlerTest {
         val result = testedFileHandler.readData(
             file,
             prefix.toByteArray(),
-            suffix.toByteArray()
+            suffix.toByteArray(),
+            forge.aNullable { separator.toByteArray() }
         )
 
         // Then
@@ -426,7 +442,9 @@ internal class BatchFileHandlerTest {
     fun `𝕄 return decoration only 𝕎 readData() {empty file, postfix and suffix are not null}`(
         @StringForgery fileName: String,
         @StringForgery prefix: String,
-        @StringForgery suffix: String
+        @StringForgery suffix: String,
+        @StringForgery separator: String,
+        forge: Forge
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
@@ -436,7 +454,8 @@ internal class BatchFileHandlerTest {
         val result = testedFileHandler.readData(
             file,
             prefix.toByteArray(),
-            suffix.toByteArray()
+            suffix.toByteArray(),
+            forge.aNullable { separator.toByteArray() }
         )
 
         // Then
@@ -609,7 +628,7 @@ internal class BatchFileHandlerTest {
     }
 
     @Test
-    fun `𝕄 create dest, move all files and return true 𝕎 moveFiles() {dest dir does not exist)`(
+    fun `𝕄 create dest, move all files and return true 𝕎 moveFiles() {dest dir does not exist}`(
         @StringForgery fileNamesInput: List<String>
     ) {
         // Given
@@ -634,6 +653,37 @@ internal class BatchFileHandlerTest {
         expectedFiles.forEach {
             assertThat(it).exists()
                 .hasContent(it.name.reversed())
+        }
+    }
+
+    // endregion
+
+    // region Creation method
+
+    @Test
+    fun `𝕄 create BatchFileHandler 𝕎 create() { without encryption }`() {
+
+        // When
+        val fileHandler = BatchFileHandler.create(Logger(mockLogHandler), null)
+        // Then
+        assertThat(fileHandler)
+            .isInstanceOf(BatchFileHandler::class.java)
+    }
+
+    @Test
+    fun `𝕄 create BatchFileHandler 𝕎 create() { with encryption }`() {
+
+        // When
+        val mockEncryption = mock<Encryption>()
+        val fileHandler = BatchFileHandler.create(Logger(mockLogHandler), mockEncryption)
+
+        // Then
+        assertThat(fileHandler)
+            .isInstanceOf(EncryptedFileHandler::class.java)
+
+        (fileHandler as EncryptedFileHandler).let {
+            assertThat(it.delegate).isInstanceOf(BatchFileHandler::class.java)
+            assertThat(it.encryption).isEqualTo(mockEncryption)
         }
     }
 

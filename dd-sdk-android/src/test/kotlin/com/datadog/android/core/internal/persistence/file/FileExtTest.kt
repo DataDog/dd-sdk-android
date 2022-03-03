@@ -452,6 +452,88 @@ internal class FileExtTest {
     }
 
     @Test
+    fun `M return result W readBytesSafe()`(
+        @StringForgery result: String
+    ) {
+        // Given
+        fakeFile.writeText(result)
+
+        // When
+        val readBytes = fakeFile.readBytesSafe()
+
+        // Then
+        assertThat(readBytes).isEqualTo(result.toByteArray())
+    }
+
+    @Test
+    fun `M return result W readBytesSafe() {custom charset}`(
+        @StringForgery result: String,
+        @Forgery charset: Charset
+    ) {
+        // Given
+        fakeFile.writeText(result, charset)
+
+        // When
+        val readBytes = fakeFile.readBytesSafe()
+
+        // Then
+        assertThat(readBytes).isEqualTo(result.toByteArray(charset))
+    }
+
+    @Test
+    fun `M return null W readBytesSafe() {file doesn't exist}`() {
+        // Given
+        whenever(mockFile.exists()) doReturn false
+
+        // When
+        val readBytes = mockFile.readBytesSafe()
+
+        // Then
+        assertThat(readBytes).isNull()
+    }
+
+    @Test
+    fun `M return null W readBytesSafe() {file can't be read}`() {
+        // Given
+        whenever(mockFile.exists()) doReturn true
+        whenever(mockFile.canRead()) doReturn false
+
+        // When
+        val readBytes = mockFile.readBytesSafe()
+
+        // Then
+        assertThat(readBytes).isNull()
+    }
+
+    @Test
+    fun `M catch exception W readBytesSafe() {SecurityException}`(
+        @StringForgery message: String
+    ) {
+        // Given
+        whenever(mockFile.name) doThrow SecurityException(message)
+
+        // When
+        val readBytes = mockFile.readBytesSafe()
+
+        // Then
+        assertThat(readBytes).isNull()
+    }
+
+    @Test
+    fun `M catch exception W readBytesSafe() {FileNotFoundException}`() {
+        // Given
+        whenever(mockFile.exists()) doReturn true
+        whenever(mockFile.canRead()) doReturn true
+        whenever(mockFile.name) doReturn fakeFileName
+
+        // When
+        val readBytes = mockFile.readBytesSafe()
+
+        // Then
+        assertThat(readBytes).isNull()
+    }
+
+    @Test
     fun `M return result W readLinesSafe()`(
         @StringForgery result: List<String>
     ) {

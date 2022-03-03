@@ -32,6 +32,7 @@ internal object WebViewRumFeature : SdkFeature<Any, Configuration.Feature.RUM>()
             context,
             CoreFeature.persistenceExecutorService,
             sdkLogger,
+            CoreFeature.localDataEncryption,
             DatadogNdkCrashHandler.getLastViewEventFile(context)
         )
     }

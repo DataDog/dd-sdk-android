@@ -36,7 +36,7 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature> {
     internal var persistenceStrategy: PersistenceStrategy<T> = NoOpPersistenceStrategy()
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var uploadScheduler: UploadScheduler = NoOpUploadScheduler()
-    internal val featurePlugins: MutableList<DatadogPlugin> = mutableListOf()
+    private val featurePlugins: MutableList<DatadogPlugin> = mutableListOf()
 
     // region SDK Feature
 

@@ -33,7 +33,8 @@ internal object WebViewInternalLogsFeature : SdkFeature<JsonObject,
             CoreFeature.trackingConsentProvider,
             context,
             CoreFeature.persistenceExecutorService,
-            Logger(NoOpLogHandler())
+            Logger(NoOpLogHandler()),
+            CoreFeature.localDataEncryption
         )
     }
 

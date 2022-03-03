@@ -104,6 +104,7 @@ internal class ConfigurationBuilderTest {
                 uploadFrequency = UploadFrequency.AVERAGE,
                 proxy = null,
                 proxyAuth = Authenticator.NONE,
+                securityConfig = SecurityConfig.DEFAULT,
                 webViewTrackingHosts = emptyList()
             )
         )
@@ -1635,6 +1636,36 @@ internal class ConfigurationBuilderTest {
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.internalLogsConfig).isNull()
+    }
+
+    @Test
+    fun `𝕄 build config with security configuration 𝕎 setSecurityConfig() and build()`() {
+        // Given
+        val mockSecurityConfig = mock<SecurityConfig>()
+
+        // When
+        val config = testedBuilder
+            .setSecurityConfig(mockSecurityConfig)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(
+                securityConfig = mockSecurityConfig
+            )
+        )
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.internalLogsConfig).isNull()
+    }
+
+    private fun Configuration.Builder.setSecurityConfig(
+        securityConfig: SecurityConfig
+    ): Configuration.Builder {
+        val method = this.javaClass.declaredMethods.find { it.name == "setSecurityConfig" }
+        method!!.isAccessible = true
+        return method.invoke(this, securityConfig) as Configuration.Builder
     }
 
     companion object {
