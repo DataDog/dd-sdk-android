@@ -77,6 +77,9 @@ coroutines = "1.4.2"
 # Local Server
 ktor = "1.6.0"
 
+# Android TV
+androidXLeanback = "1.0.0"
+
 [libraries]
 
 # Classpaths
@@ -201,6 +204,9 @@ coroutinesAndroid = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android
 ktorCore = { module = "io.ktor:ktor", version.ref = "ktor" }
 ktorNetty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
 ktorGson = { module = "io.ktor:ktor-gson", version.ref = "ktor" }
+
+# Android TV
+androidXLeanback = { module = "androidx.leanback:leanback", version.ref = "androidXLeanback" }
 
 [bundles]
 

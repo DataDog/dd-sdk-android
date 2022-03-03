@@ -141,6 +141,7 @@ dependencies {
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttpMock)
+    testImplementation(libs.androidXLeanback)
     unmock(libs.robolectric)
 
     // Static Analysis
@@ -161,6 +162,7 @@ unMock {
     keep("android.view.Choreographer")
     keep("android.view.DisplayEventReceiver")
     keepStartingWith("org.json")
+    keep("android.database.Observable")
 }
 
 apply(from = "clone_dd_trace.gradle.kts")

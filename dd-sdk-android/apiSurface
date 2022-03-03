@@ -1275,6 +1275,11 @@ class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLi
   override fun onActivityDestroyed(android.app.Activity)
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
+class com.datadog.android.rum.tracking.AndroidTvFragmentPredicate : ComponentPredicate<androidx.fragment.app.Fragment>
+  constructor(ComponentPredicate<androidx.fragment.app.Fragment>)
+  constructor()
+  override fun accept(androidx.fragment.app.Fragment): Boolean
+  companion object 
 interface com.datadog.android.rum.tracking.ComponentPredicate<T>
   fun accept(T): Boolean
   fun getViewName(T): String?

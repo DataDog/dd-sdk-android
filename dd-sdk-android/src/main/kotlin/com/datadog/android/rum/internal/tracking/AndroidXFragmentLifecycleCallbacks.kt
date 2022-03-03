@@ -62,7 +62,6 @@ internal open class AndroidXFragmentLifecycleCallbacks(
         savedInstanceState: Bundle?
     ) {
         super.onFragmentActivityCreated(fm, f, savedInstanceState)
-
         val context = f.context
 
         if (f is DialogFragment && context != null) {

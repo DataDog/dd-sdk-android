@@ -124,6 +124,28 @@ If you use Apollo, let it use your `OkHttpClient` for RUM and APM information ab
 {{% /tab %}}
 {{< /tabs >}}
 
+### Android TV Leanback support package
+
+If you are building your application for Android TV devices, you will usually have to use the `androidx.leanback:leanback` support module. The special Fragment classes
+provided by this module create extra RUM View events which come from additional helper fragments `androidx.leanback.app.HeadersSupportFragment` and
+`androidx.leanback.app.RowsSupportFragment`. The included `AndroidTvComponentPredicate` filters out these extra views by default:
+{{< tabs >}}
+{{% tab "Kotlin" %}}
+   ```kotlin
+        val componentPredicate =  AndroidTvComponentPredicate()
+        // or if you want to also use your own predicate implementation you can wrap it inside
+        val componentPredicate = AndroidTvComponentPredicate(<YOUR_OWN_PREDICATE>)
+   ```
+{{% /tab %}}
+{{% tab "Java" %}}
+   ```java
+        final ComponentPredicate<Fragment> componentPredicate =  new AndroidTvComponentPredicate();
+        // or if you want to also use your own predicate implementation you can wrap it inside
+        final ComponentPredicate<Fragment> componentPredicate =  new AndroidTvComponentPredicate(<YOUR_OWN_PREDICATE>);
+   ```
+{{% /tab %}}
+{{< /tabs >}}
+
 ## Further Reading
 
 {{< partial name="whats-next/whats-next.html" >}}
