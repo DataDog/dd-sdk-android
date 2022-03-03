@@ -114,6 +114,7 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
         whenever(mockWindow.callback)
             .thenReturn(
                 WindowCallbackWrapper(
+                    mockWindow,
                     NoOpWindowCallback(),
                     mockGestureDetector
                 )
@@ -133,6 +134,7 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
         whenever(mockWindow.callback)
             .thenReturn(
                 WindowCallbackWrapper(
+                    mockWindow,
                     previousCallback,
                     mockGestureDetector
                 )

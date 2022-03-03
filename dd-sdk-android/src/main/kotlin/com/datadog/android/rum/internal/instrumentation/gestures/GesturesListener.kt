@@ -295,10 +295,6 @@ internal class GesturesListener(
         }
     }
 
-    private fun View.targetClassName(): String {
-        return this.javaClass.canonicalName ?: this.javaClass.simpleName
-    }
-
     private fun isJetpackComposeView(view: View): Boolean {
         // startsWith here is to make testing easier: mocks don't have name exactly
         // like this, and writing manual stub is not possible, because some necessary

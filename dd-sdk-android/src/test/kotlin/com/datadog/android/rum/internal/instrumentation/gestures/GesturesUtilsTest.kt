@@ -8,13 +8,14 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.app.Application
 import android.content.res.Resources
+import android.view.View
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.utils.forge.Configurator
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.lang.ref.WeakReference
@@ -50,9 +51,6 @@ class GesturesUtilsTest {
 
     @Mock
     lateinit var mockTarget: Any
-
-    @StringForgery(StringForgeryType.ALPHA_NUMERICAL)
-    lateinit var fakeTargetId: String
 
     @BeforeEach
     fun `set up`() {
@@ -145,5 +143,24 @@ class GesturesUtilsTest {
         // When
         assertThat(resourceIdName(resourceId))
             .isEqualTo("0x${resourceId.toString(16)}")
+    }
+
+    @Test
+    fun `M return the canonicalName W targetClassName() { canonicalName not null }`() {
+        // Given
+        val fakeView = View(mock())
+
+        // Then
+        assertThat(fakeView.targetClassName()).isEqualTo(fakeView.javaClass.canonicalName)
+    }
+
+    @Test
+    fun `M return the simpleName W targetClassName() { canonicalName is null }`() {
+        // Given
+        // Inner classes have null canonicalName
+        val fakeView = object : View(mock()) {}
+
+        // Then
+        assertThat(fakeView.targetClassName()).isEqualTo(fakeView.javaClass.simpleName)
     }
 }
