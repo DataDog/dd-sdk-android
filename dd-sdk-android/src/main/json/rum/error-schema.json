@@ -42,7 +42,7 @@
             "source": {
               "type": "string",
               "description": "Source of the error",
-              "enum": ["network", "source", "console", "logger", "agent", "webview", "custom"],
+              "enum": ["network", "source", "console", "logger", "agent", "webview", "custom", "report"],
               "readOnly": true
             },
             "stack": {

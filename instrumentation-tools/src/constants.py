@@ -9,5 +9,7 @@ IGNORED_TYPES = [
     "com.datadog.android.tracing.model.SpanEvent$Span",
     "com.datadog.android.rum.model.ActionEvent$Dd",
     "com.datadog.android.rum.model.ErrorEvent$Dd",
-    "com.datadog.android.rum.model.LongTaskEvent$Dd"
+    "com.datadog.android.rum.model.LongTaskEvent$Dd",
+    "com.datadog.android.telemetry.model.DebugEvent$Dd",
+    "com.datadog.android.telemetry.model.ErrorEvent$Dd"
 ]
