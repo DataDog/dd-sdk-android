@@ -5,12 +5,12 @@
  */
 import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesTask
 
-tasks.register<GitCloneDependenciesTask>("cloneRumSchema") {
+tasks.register<GitCloneDependenciesTask>("cloneTelemetrySchema") {
     extension.apply {
         clone(
             "https://github.com/DataDog/rum-events-format.git",
-            "schemas/rum",
-            destinationFolder = "src/main/json/rum",
+            "schemas/telemetry",
+            destinationFolder = "src/main/json/telemetry",
             ref = "master"
         )
     }

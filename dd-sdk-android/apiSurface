@@ -684,6 +684,7 @@ data class com.datadog.android.rum.model.ErrorEvent
     - AGENT
     - WEBVIEW
     - CUSTOM
+    - REPORT
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ErrorSource
@@ -1332,6 +1333,71 @@ class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.
   constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
   override fun onCorruption(android.database.sqlite.SQLiteDatabase)
   companion object 
+data class com.datadog.android.telemetry.model.DebugEvent
+  constructor(Dd, kotlin.Long, kotlin.String, kotlin.String, Application? = null, Session? = null, View? = null, Action? = null, kotlin.String)
+  val status: kotlin.String
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): DebugEvent
+  class Dd
+    constructor()
+    val eventType: kotlin.String
+    fun toJson(): com.google.gson.JsonElement
+  data class Application
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
+  data class Session
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Session
+  data class View
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): View
+  data class Action
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Action
+data class com.datadog.android.telemetry.model.ErrorEvent
+  constructor(Dd, kotlin.Long, kotlin.String, kotlin.String, Application? = null, Session? = null, View? = null, Action? = null, kotlin.String, Error? = null)
+  val status: kotlin.String
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): ErrorEvent
+  class Dd
+    constructor()
+    val eventType: kotlin.String
+    fun toJson(): com.google.gson.JsonElement
+  data class Application
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
+  data class Session
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Session
+  data class View
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): View
+  data class Action
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Action
+  data class Error
+    constructor(kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Error
 class com.datadog.android.tracing.AndroidTracer : com.datadog.opentracing.DDTracer
   override fun buildSpan(String): DDSpanBuilder
   class Builder

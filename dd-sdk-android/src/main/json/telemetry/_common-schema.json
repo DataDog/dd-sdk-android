@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "_common-schema.json",
+  "title": "CommonTelemetryProperties",
+  "type": "object",
+  "description": "Schema of common properties of Telemetry events",
+  "required": ["_dd", "date", "service", "version"],
+  "properties": {
+    "_dd": {
+      "type": "object",
+      "description": "Internal properties",
+      "required": ["event_type"],
+      "properties": {
+        "event_type": {
+          "type": "string",
+          "const": "internal_telemetry",
+          "description": "Event type"
+        }
+      }
+    },
+    "date": {
+      "type": "integer",
+      "description": "Start of the event in ms from epoch",
+      "minimum": 0
+    },
+    "service": {
+      "type": "string",
+      "description": "The SDK generating the telemetry event"
+    },
+    "version": {
+      "type": "string",
+      "description": "The version of the SDK generating the telemetry event"
+    },
+    "application": {
+      "type": "object",
+      "description": "Application properties",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "UUID of the application",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+        }
+      },
+      "readOnly": true
+    },
+    "session": {
+      "type": "object",
+      "description": "Session properties",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "UUID of the session",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+        }
+      }
+    },
+    "view": {
+      "type": "object",
+      "description": "View properties",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "UUID of the view",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+        }
+      }
+    },
+    "action": {
+      "type": "object",
+      "description": "Action properties",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "UUID of the action",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+        }
+      }
+    }
+  }
+}
