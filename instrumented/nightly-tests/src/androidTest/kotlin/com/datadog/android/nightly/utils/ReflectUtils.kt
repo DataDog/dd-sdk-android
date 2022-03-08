@@ -6,6 +6,8 @@
 
 package com.datadog.android.nightly.utils
 
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.SecurityConfig
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 
@@ -124,4 +126,16 @@ private fun <T : Any> T.getDeclaredMethodRecursively(
     }
 
     return method
+}
+
+/**
+ * Helper method to access security config while it's still private.
+ * @param securityConfig the [SecurityConfig] to use
+ */
+fun Configuration.Builder.setSecurityConfig(
+    securityConfig: SecurityConfig
+): Configuration.Builder {
+    val method = this.javaClass.declaredMethods.find { it.name == "setSecurityConfig" }
+    method?.isAccessible = true
+    return method?.invoke(this, securityConfig) as? Configuration.Builder ?: this
 }
