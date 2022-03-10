@@ -74,7 +74,7 @@ The following attributes are related to the geo-location of IP addresses:
 | `geo.country_subdivision_iso_code` | string | ISO Code of the first subdivision level of the country (for example, `CA` in the United States or the `SA` department in France).    |
 | `geo.continent_code`       | string | ISO code of the continent (`EU`, `AS`, `NA`, `AF`, `AN`, `SA`, `OC`).                                                                 |
 | `geo.continent`       | string | Name of the continent (`Europe`, `Australia`, `North America`, `Africa`, `Antarctica`, `South America`, `Oceania`).                    |
-| `geo.city`            | string | The name of the city (for example. `San Francisco`, `Paris`, or `New York`).                                                                                   |
+| `geo.city`            | string | The name of the city (for example, `San Francisco`, `Paris`, or `New York`).                                                                                   |
 
 
 ### Global user attributes
