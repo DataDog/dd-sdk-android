@@ -12,6 +12,7 @@ import org.gradle.api.tasks.Exec
 fun Project.nightlyTestsCoverageConfig(threshold: Float) {
 
     tasks.create("checkNightlyTestsCoverage", Exec::class.java) {
+        this.group = "datadog"
         val generateApiTasks = allprojects.mapNotNull { it.tasks.findByName("generateApiSurface") }
         setDependsOn(generateApiTasks)
         setCommandLine(

@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.internal.constraints
 
-import android.os.Build
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.utils.config.LoggerTestConfiguration
@@ -15,7 +14,6 @@ import com.datadog.android.utils.times
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.isNull
@@ -49,9 +47,6 @@ internal class DatadogDataConstraintsTest {
     @BeforeEach
     fun `set up`() {
         Datadog.setVerbosity(Log.VERBOSE)
-        // we need to set the Build.MODEL to null, to override the setup
-        Build::class.java.setStaticValue("MODEL", null)
-
         testedConstraints = DatadogDataConstraints()
     }
 

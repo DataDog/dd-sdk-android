@@ -62,6 +62,11 @@ class CrashFragment :
         viewModel = ViewModelProviders.of(this).get(CrashViewModel::class.java)
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        triggerCrash()
+    }
+
     // endregion
 
     // region View.OnClickListener

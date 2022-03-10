@@ -28,7 +28,12 @@ internal class DatadogGesturesTracker(
         val toWrap = window.callback ?: NoOpWindowCallback()
         val gesturesDetector = generateGestureDetector(context, window)
 
-        window.callback = WindowCallbackWrapper(toWrap, gesturesDetector, interactionPredicate)
+        window.callback = WindowCallbackWrapper(
+            window,
+            toWrap,
+            gesturesDetector,
+            interactionPredicate
+        )
     }
 
     override fun stopTracking(window: Window?, context: Context) {

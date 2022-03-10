@@ -35,6 +35,7 @@ internal class LogsOkHttpUploaderV2Test : DataOkHttpUploaderV2Test<LogsOkHttpUpl
             fakeSource,
             fakeSdkVersion,
             callFactory,
+            mockAndroidInfoProvider,
             Logger(mock())
         )
     }

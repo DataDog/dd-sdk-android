@@ -85,7 +85,8 @@ internal class DataFlusherTest {
                 mockFileHandler.readData(
                     file,
                     payloadDecoration.prefixBytes,
-                    payloadDecoration.suffixBytes
+                    payloadDecoration.suffixBytes,
+                    payloadDecoration.separatorBytes
                 )
             ).thenReturn(fakeBatchesAsByteArray[index])
         }
@@ -116,7 +117,8 @@ internal class DataFlusherTest {
                 mockFileHandler.readData(
                     file,
                     payloadDecoration.prefixBytes,
-                    payloadDecoration.suffixBytes
+                    payloadDecoration.suffixBytes,
+                    payloadDecoration.separatorBytes
                 )
             ).thenReturn(fakeBatchesAsByteArray[index])
         }

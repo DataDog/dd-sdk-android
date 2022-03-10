@@ -126,9 +126,8 @@ class SpanE2ETests {
             .buildSpan(testMethodName)
             .start()
         val tagValue = "str${forge.anAlphaNumericalString()}"
-        measure(testMethodName) {
-            span.setTag(StringTag(SPECIAL_GENERIC_TAG_NAME), tagValue)
-        }
+        val stringTag = StringTag(SPECIAL_GENERIC_TAG_NAME)
+        measure(testMethodName) { span.setTag(stringTag, tagValue) }
         span.finish()
     }
 

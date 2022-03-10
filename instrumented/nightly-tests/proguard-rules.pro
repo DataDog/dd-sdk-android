@@ -12,8 +12,11 @@
 
 # Required because we need access to Datadog by reflection
 -keepnames class com.datadog.android.Datadog {
-    private void stop();
-    private void flushAndShutdownExecutors();
+    *;
+}
+# Required because we need access to Configuration.Builder.setSecurityConfig()
+-keepnames class com.datadog.android.core.configuration.Configuration$Builder {
+    private com.datadog.android.core.configuration.Configuration$Builder setSecurityConfig(com.datadog.android.core.configuration.SecurityConfig);
 }
 # Required because we need access to GlobalRum.activeContext and GlobalRum.isRegistered by reflection
 -keepnames class com.datadog.android.rum.GlobalRum {

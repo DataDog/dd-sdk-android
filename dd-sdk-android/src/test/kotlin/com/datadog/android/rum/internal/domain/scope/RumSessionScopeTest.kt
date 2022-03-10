@@ -872,6 +872,21 @@ internal class RumSessionScopeTest {
     }
 
     @Test
+    fun `M not send warn dev log W handleEvent { app displayed, bg event silent}`(
+        forge: Forge
+    ) {
+        // GIVEN
+        testedScope.applicationDisplayed = true
+        val fakeEvent = forge.forgeSilentOrphanEvent()
+
+        // WHEN
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        verifyZeroInteractions(logger.mockDevLogHandler)
+    }
+
+    @Test
     fun `M send warn dev log W handleEvent { app not displayed, app launch event not relevant}`(
         forge: Forge
     ) {
@@ -884,6 +899,21 @@ internal class RumSessionScopeTest {
 
         // THEN
         verify(logger.mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
+    }
+
+    @Test
+    fun `M not send warn dev log W handleEvent { app not displayed, bg event silent}`(
+        forge: Forge
+    ) {
+        // GIVEN
+        testedScope.applicationDisplayed = false
+        val fakeEvent = forge.forgeSilentOrphanEvent()
+
+        // WHEN
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        verifyZeroInteractions(logger.mockDevLogHandler)
     }
 
     private fun Forge.forgeValidBackgroundEvent(): RumRawEvent {
@@ -993,11 +1023,6 @@ internal class RumSessionScopeTest {
                     errorType = aNullable { anAlphabeticalString() },
                     attributes = emptyMap(),
                     eventTime = fakeEventTime
-                ),
-                RumRawEvent.StopView(
-                    fakeKey,
-                    emptyMap(),
-                    fakeEventTime
                 )
             )
         )
@@ -1041,12 +1066,34 @@ internal class RumSessionScopeTest {
                     errorType = aNullable { anAlphabeticalString() },
                     attributes = emptyMap(),
                     eventTime = fakeEventTime
-                ),
+                )
+            )
+        )
+    }
+
+    private fun Forge.forgeSilentOrphanEvent(): RumRawEvent {
+        val fakeEventTime = Time()
+        val fakeKey = anAlphabeticalString()
+        val fakeId = getForgery<UUID>().toString()
+
+        return this.anElementFrom(
+            listOf(
+                RumRawEvent.ApplicationStarted(fakeEventTime, aLong()),
+                RumRawEvent.ResetSession(),
+                RumRawEvent.KeepAlive(),
                 RumRawEvent.StopView(
                     fakeKey,
                     emptyMap(),
                     fakeEventTime
-                )
+                ),
+                RumRawEvent.ActionSent(fakeId),
+                RumRawEvent.ErrorSent(fakeId),
+                RumRawEvent.LongTaskSent(fakeId),
+                RumRawEvent.ResourceSent(fakeId),
+                RumRawEvent.ActionDropped(fakeId),
+                RumRawEvent.ErrorDropped(fakeId),
+                RumRawEvent.LongTaskDropped(fakeId),
+                RumRawEvent.ResourceDropped(fakeId),
             )
         )
     }

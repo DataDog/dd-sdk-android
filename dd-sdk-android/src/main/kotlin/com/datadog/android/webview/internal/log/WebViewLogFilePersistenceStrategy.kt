@@ -9,11 +9,13 @@ package com.datadog.android.webview.internal.log
 import android.content.Context
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.event.WebViewLogEventSerializer
+import com.datadog.android.security.Encryption
 import com.google.gson.JsonObject
 import java.util.concurrent.ExecutorService
 
@@ -21,7 +23,8 @@ internal class WebViewLogFilePersistenceStrategy(
     consentProvider: ConsentProvider,
     context: Context,
     executorService: ExecutorService,
-    internalLogger: Logger
+    internalLogger: Logger,
+    localDataEncryption: Encryption?
 ) :
     BatchFilePersistenceStrategy<JsonObject>(
         FeatureFileOrchestrator(
@@ -34,5 +37,6 @@ internal class WebViewLogFilePersistenceStrategy(
         executorService,
         WebViewLogEventSerializer(),
         PayloadDecoration.JSON_ARRAY_DECORATION,
-        sdkLogger
+        sdkLogger,
+        BatchFileHandler.create(internalLogger, localDataEncryption)
     )

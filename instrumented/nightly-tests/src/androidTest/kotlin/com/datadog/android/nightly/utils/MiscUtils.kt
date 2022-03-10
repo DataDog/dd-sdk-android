@@ -23,7 +23,6 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.getStaticValue
-import com.datadog.tools.unit.invokeMethod
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import io.opentracing.Tracer
@@ -72,7 +71,15 @@ fun sendRandomActionOutcomeEvent(forge: Forge) {
 }
 
 fun stopSdk() {
-    Datadog.invokeMethod("stop")
+
+    // Call Datadog.stop()
+    val instance = Datadog.javaClass.getDeclaredField("INSTANCE")
+    instance.isAccessible = true
+    val method = Datadog.javaClass.declaredMethods.first { it.name.contains("stop") }
+    method.isAccessible = true
+    method.invoke(instance.get(null))
+
+    // Reset Global states
     GlobalTracer::class.java.setStaticValue("isRegistered", false)
     val isRumRegistered: AtomicBoolean = GlobalRum::class.java.getStaticValue("isRegistered")
     isRumRegistered.set(false)

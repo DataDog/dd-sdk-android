@@ -211,6 +211,10 @@ Network errors include information about failing HTTP requests. The following fa
 | `action.name` | string | Name of the user action. |
 | `action.target.name` | string | Element that the user interacted with. Only for automatically collected actions. |
 
+## Data Storage
+
+Before data is uploaded to Datadog, it is stored in cleartext in your application's cache directory. This cache folder is protected by [Android's Application Sandbox][6], meaning that on most devices this data can't be read by other applications. However, if the mobile device is rooted, or someone tempers with the linux kernel, the stored data might become readable.
+
 ## Further Reading
 
 {{< partial name="whats-next/whats-next.html" >}}
@@ -220,3 +224,4 @@ Network errors include information about failing HTTP requests. The following fa
 [3]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#track-custom-global-attributes
 [4]: https://docs.datadoghq.com/getting_started/tagging/unified_service_tagging/
 [5]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#track-user-sessions
+[6]: https://source.android.com/security/app-sandbox

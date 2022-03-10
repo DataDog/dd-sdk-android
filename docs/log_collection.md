@@ -244,6 +244,7 @@ Send logs to Datadog from your Android applications with [Datadog's `dd-sdk-andr
         // your code here
     }
    ```
+
    When writing your application, you can enable development logs by calling the `setVerbosity` method. All internal messages in the library with a priority equal to or higher than the provided level are then logged to Android's Logcat:
    ```kotlin
    Datadog.setVerbosity(Log.INFO)
@@ -448,6 +449,8 @@ This means that even if users open your application while being offline, no data
 
 The data on disk will automatically be discarded if it gets too old to ensure the SDK doesn't use too much disk space.
 
+**Note**: Before data is uploaded to Datadog, it is stored in cleartext in your application's cache directory. This cache folder is protected by [Android's Application Sandbox][8], meaning that on most devices this data can't be read by other applications. However, if the mobile device is rooted, or someone tempers with the Linux kernel, the stored data might become readable.
+
 ## Extensions
 
 ### Timber
@@ -465,3 +468,4 @@ If your existing codebase is using Timber, you can forward all those logs to  Da
 [5]: https://docs.datadoghq.com/tagging/
 [6]: https://docs.datadoghq.com/real_user_monitoring/android/?tab=us
 [7]: https://docs.datadoghq.com/real_user_monitoring/error_tracking/android/#upload-your-mapping-file
+[8]: https://source.android.com/security/app-sandbox

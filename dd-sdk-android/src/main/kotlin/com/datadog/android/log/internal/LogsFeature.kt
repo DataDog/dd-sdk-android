@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
+import com.datadog.android.core.internal.system.StaticAndroidInfoProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.domain.LogFilePersistenceStrategy
 import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
@@ -32,7 +33,8 @@ internal object LogsFeature : SdkFeature<LogEvent, Configuration.Feature.Logs>()
             context,
             CoreFeature.persistenceExecutorService,
             sdkLogger,
-            configuration.logsEventMapper
+            configuration.logsEventMapper,
+            CoreFeature.localDataEncryption
         )
     }
 
@@ -43,6 +45,7 @@ internal object LogsFeature : SdkFeature<LogEvent, Configuration.Feature.Logs>()
             CoreFeature.sourceName,
             CoreFeature.sdkVersion,
             CoreFeature.okHttpClient,
+            StaticAndroidInfoProvider,
             sdkLogger
         )
     }

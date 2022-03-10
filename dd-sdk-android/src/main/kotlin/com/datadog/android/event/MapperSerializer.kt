@@ -9,7 +9,7 @@ package com.datadog.android.event
 import com.datadog.android.core.internal.persistence.Serializer
 
 internal class MapperSerializer<T : Any>(
-    private val eventMapper: EventMapper<T>,
+    internal val eventMapper: EventMapper<T>,
     private val serializer: Serializer<T>
 ) : Serializer<T> {
 

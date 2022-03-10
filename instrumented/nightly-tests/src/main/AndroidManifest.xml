@@ -47,6 +47,9 @@
         <service
             android:name=".services.RumEnabledNdkCrashService"
             android:process=":ndkcrashhandler.rumenabled" />
+        <service
+            android:name=".services.RumEncryptionEnabledNdkCrashService"
+            android:process=":ndkcrashhandler.encryptionenabled" />
     </application>
 
 </manifest>

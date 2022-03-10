@@ -160,12 +160,15 @@ unMock {
     keep("android.os.SystemProperties")
     keep("android.view.Choreographer")
     keep("android.view.DisplayEventReceiver")
+    keep("android.util.Base64")
     keepStartingWith("org.json")
 }
 
 apply(from = "clone_dd_trace.gradle.kts")
 apply(from = "clone_rum_schema.gradle.kts")
+apply(from = "clone_telemetry_schema.gradle.kts")
 apply(from = "generate_rum_models.gradle.kts")
+apply(from = "generate_telemetry_models.gradle.kts")
 apply(from = "generate_core_models.gradle.kts")
 apply(from = "generate_trace_models.gradle.kts")
 apply(from = "generate_log_models.gradle.kts")
@@ -174,6 +177,7 @@ kotlinConfig()
 detektConfig(
     excludes = listOf(
         "**/com/datadog/android/rum/model/**",
+        "**/com/datadog/android/telemetry/model/**",
         "**/com/datadog/android/core/model/**",
         "**/com/datadog/android/tracing/model/**",
         "**/com/datadog/android/log/model/**"

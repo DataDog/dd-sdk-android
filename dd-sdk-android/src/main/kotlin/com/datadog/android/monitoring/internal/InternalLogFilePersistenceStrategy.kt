@@ -9,18 +9,21 @@ package com.datadog.android.monitoring.internal
 import android.content.Context
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.event.LogEventSerializer
 import com.datadog.android.log.model.LogEvent
+import com.datadog.android.security.Encryption
 import java.util.concurrent.ExecutorService
 
 internal class InternalLogFilePersistenceStrategy(
     consentProvider: ConsentProvider,
     context: Context,
     executorService: ExecutorService,
-    internalLogger: Logger
+    internalLogger: Logger,
+    localDataEncryption: Encryption?
 ) : BatchFilePersistenceStrategy<LogEvent>(
     FeatureFileOrchestrator(
         consentProvider,
@@ -32,5 +35,6 @@ internal class InternalLogFilePersistenceStrategy(
     executorService,
     LogEventSerializer(),
     PayloadDecoration.JSON_ARRAY_DECORATION,
-    internalLogger
+    internalLogger,
+    BatchFileHandler.create(internalLogger, localDataEncryption)
 )

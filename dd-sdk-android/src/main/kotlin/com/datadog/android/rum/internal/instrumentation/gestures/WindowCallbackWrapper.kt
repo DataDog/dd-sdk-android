@@ -16,10 +16,12 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
+import java.lang.ref.WeakReference
 import kotlin.Exception
 
 @Suppress("TooGenericExceptionCaught")
 internal class WindowCallbackWrapper(
+    window: Window,
     val wrappedCallback: Window.Callback,
     val gesturesDetector: GesturesDetectorWrapper,
     val interactionPredicate: InteractionPredicate = NoOpInteractionPredicate(),
@@ -28,6 +30,8 @@ internal class WindowCallbackWrapper(
         MotionEvent.obtain(it)
     }
 ) : Window.Callback by wrappedCallback {
+
+    internal val windowReference = WeakReference(window)
 
     // region Window.Callback
 
@@ -78,26 +82,49 @@ internal class WindowCallbackWrapper(
     override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
         if (event == null) {
             sdkLogger.e("Received KeyEvent=null")
-        } else if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
-            // TODO RUMM-495 add a BACK action to the json schema
-            val customTargetName = interactionPredicate.getTargetName(event)
-            val targetName = if (customTargetName.isNullOrEmpty()) {
-                // We will keep using the default target name as we are not
-                // sending the ACTION_TARGET_CLASSNAME attribute in this case and backend will not
-                // be able to resolve the targetName.
-                BACK_DEFAULT_TARGET_NAME
-            } else {
-                customTargetName
-            }
-            GlobalRum.get().addUserAction(RumActionType.CUSTOM, targetName, emptyMap())
+        } else if (event.keyCode == KeyEvent.KEYCODE_BACK &&
+            event.action == KeyEvent.ACTION_UP
+        ) {
+            handleBackEvent(event)
+        } else if (event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER &&
+            event.action == KeyEvent.ACTION_UP
+        ) {
+            handleRemoteControlActionEvent()
         }
-
         return try {
             wrappedCallback.dispatchKeyEvent(event)
         } catch (e: Exception) {
             sdkLogger.e("Wrapped callback failed processing KeyEvent", e)
             EVENT_CONSUMED
         }
+    }
+
+    // endregion
+
+    // region Internal
+
+    private fun handleRemoteControlActionEvent() {
+        windowReference.get()?.currentFocus?.let {
+            val attributes = mutableMapOf<String, Any?>(
+                RumAttributes.ACTION_TARGET_CLASS_NAME to it.targetClassName(),
+                RumAttributes.ACTION_TARGET_RESOURCE_ID to resourceIdName(it.id)
+            )
+            val targetName = resolveTargetName(interactionPredicate, it)
+            GlobalRum.get().addUserAction(RumActionType.CLICK, targetName, attributes)
+        }
+    }
+
+    private fun handleBackEvent(event: KeyEvent) {
+        val customTargetName = interactionPredicate.getTargetName(event)
+        val targetName = if (customTargetName.isNullOrEmpty()) {
+            // We will keep using the default target name as we are not
+            // sending the ACTION_TARGET_CLASSNAME attribute in this case and backend will not
+            // be able to resolve the targetName.
+            BACK_DEFAULT_TARGET_NAME
+        } else {
+            customTargetName
+        }
+        GlobalRum.get().addUserAction(RumActionType.CUSTOM, targetName, emptyMap())
     }
 
     // endregion

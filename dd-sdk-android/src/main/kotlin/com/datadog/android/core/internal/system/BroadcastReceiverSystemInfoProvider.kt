@@ -76,12 +76,15 @@ internal class BroadcastReceiverSystemInfoProvider(
         )
         val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
         val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100)
-
-        val resolvedBatteryStatus = SystemInfo.BatteryStatus.fromAndroidStatus(status)
-        val resolvedBatteryLevel = (level * 100) / scale
+        val pluggedStatus = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)
+        val batteryStatus = SystemInfo.BatteryStatus.fromAndroidStatus(status)
+        val batteryLevel = (level * 100) / scale
+        val onExternalPowerSource = pluggedStatus in PLUGGED_IN_STATUS_VALUES
+        val batteryFullOrCharging = batteryStatus in batteryFullOrChargingStatus
         systemInfo = systemInfo.copy(
-            batteryStatus = resolvedBatteryStatus,
-            batteryLevel = resolvedBatteryLevel
+            batteryFullOrCharging = batteryFullOrCharging,
+            batteryLevel = batteryLevel,
+            onExternalPowerSource = onExternalPowerSource
         )
     }
 
@@ -97,4 +100,18 @@ internal class BroadcastReceiverSystemInfoProvider(
     }
 
     // endregion
+
+    companion object {
+
+        private val batteryFullOrChargingStatus = setOf(
+            SystemInfo.BatteryStatus.CHARGING,
+            SystemInfo.BatteryStatus.FULL
+        )
+
+        private val PLUGGED_IN_STATUS_VALUES = setOf(
+            BatteryManager.BATTERY_PLUGGED_AC,
+            BatteryManager.BATTERY_PLUGGED_WIRELESS,
+            BatteryManager.BATTERY_PLUGGED_USB
+        )
+    }
 }

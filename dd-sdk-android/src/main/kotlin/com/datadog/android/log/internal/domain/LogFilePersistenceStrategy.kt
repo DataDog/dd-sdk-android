@@ -9,6 +9,7 @@ package com.datadog.android.log.internal.domain
 import android.content.Context
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.utils.sdkLogger
@@ -19,6 +20,7 @@ import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.internal.domain.event.LogEventSerializer
 import com.datadog.android.log.model.LogEvent
+import com.datadog.android.security.Encryption
 import java.util.concurrent.ExecutorService
 
 internal class LogFilePersistenceStrategy(
@@ -26,7 +28,8 @@ internal class LogFilePersistenceStrategy(
     context: Context,
     executorService: ExecutorService,
     internalLogger: Logger,
-    logEventMapper: EventMapper<LogEvent>
+    logEventMapper: EventMapper<LogEvent>,
+    localDataEncryption: Encryption?
 ) :
     BatchFilePersistenceStrategy<LogEvent>(
         FeatureFileOrchestrator(
@@ -39,5 +42,6 @@ internal class LogFilePersistenceStrategy(
         executorService,
         MapperSerializer(LogEventMapperWrapper(logEventMapper), LogEventSerializer()),
         PayloadDecoration.JSON_ARRAY_DECORATION,
-        sdkLogger
+        sdkLogger,
+        BatchFileHandler.create(sdkLogger, localDataEncryption)
     )

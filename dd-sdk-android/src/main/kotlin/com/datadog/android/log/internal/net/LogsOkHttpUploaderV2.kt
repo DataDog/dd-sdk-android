@@ -7,6 +7,7 @@
 package com.datadog.android.log.internal.net
 
 import com.datadog.android.core.internal.net.DataOkHttpUploaderV2
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.log.Logger
 import okhttp3.Call
 
@@ -16,6 +17,7 @@ internal open class LogsOkHttpUploaderV2(
     source: String,
     sdkVersion: String,
     callFactory: Call.Factory,
+    androidInfoProvider: AndroidInfoProvider,
     internalLogger: Logger
 ) : DataOkHttpUploaderV2(
     buildUrl(endpoint, TrackType.LOGS),
@@ -24,6 +26,7 @@ internal open class LogsOkHttpUploaderV2(
     sdkVersion,
     callFactory,
     CONTENT_TYPE_JSON,
+    androidInfoProvider,
     internalLogger
 ) {
 

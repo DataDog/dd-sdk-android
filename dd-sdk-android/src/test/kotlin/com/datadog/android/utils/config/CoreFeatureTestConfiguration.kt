@@ -21,6 +21,7 @@ import fr.xgouchet.elmyr.Forge
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
+import okhttp3.OkHttpClient
 
 internal class CoreFeatureTestConfiguration<T : Context>(
     val appContext: ApplicationContextTestConfiguration<T>
@@ -32,6 +33,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var fakeSourceName: String
 
     lateinit var mockUploadExecutor: ScheduledThreadPoolExecutor
+    lateinit var mockOkHttpClient: OkHttpClient
     lateinit var mockPersistenceExecutor: ExecutorService
 
     lateinit var mockTimeProvider: TimeProvider
@@ -66,6 +68,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     private fun createMocks() {
         mockPersistenceExecutor = mock()
         mockUploadExecutor = mock()
+        mockOkHttpClient = mock()
 
         mockTimeProvider = mock()
         mockNetworkInfoProvider = mock()
@@ -86,6 +89,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
 
         CoreFeature.persistenceExecutorService = mockPersistenceExecutor
         CoreFeature.uploadExecutorService = mockUploadExecutor
+        CoreFeature.okHttpClient = mockOkHttpClient
 
         CoreFeature.timeProvider = mockTimeProvider
         CoreFeature.networkInfoProvider = mockNetworkInfoProvider

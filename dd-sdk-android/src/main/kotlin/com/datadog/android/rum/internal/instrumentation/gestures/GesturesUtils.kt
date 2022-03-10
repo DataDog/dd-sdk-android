@@ -1,6 +1,7 @@
 package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.content.res.Resources
+import android.view.View
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.rum.tracking.InteractionPredicate
 
@@ -24,6 +25,10 @@ internal fun resourceIdName(id: Int): String {
     } catch (e: Resources.NotFoundException) {
         idAsStringHexa(id)
     }
+}
+
+internal fun View.targetClassName(): String {
+    return this.javaClass.canonicalName ?: this.javaClass.simpleName
 }
 
 private fun idAsStringHexa(id: Int) = "0x${id.toString(16)}"

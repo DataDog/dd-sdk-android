@@ -112,6 +112,8 @@ data class com.datadog.android.core.configuration.Credentials
     const val NO_VARIANT: String
 object com.datadog.android.core.configuration.private
 const val VALID_IP_REGEX: String
+data class com.datadog.android.core.configuration.SecurityConfig
+  constructor(com.datadog.android.security.Encryption?)
 enum com.datadog.android.core.configuration.UploadFrequency
   constructor(Long)
   - FREQUENT
@@ -682,6 +684,7 @@ data class com.datadog.android.rum.model.ErrorEvent
     - AGENT
     - WEBVIEW
     - CUSTOM
+    - REPORT
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ErrorSource
@@ -1323,13 +1326,82 @@ DEPRECATED open class com.datadog.android.rum.webview.RumWebViewClient : android
   override fun onReceivedSslError(android.webkit.WebView?, android.webkit.SslErrorHandler?, android.net.http.SslError?)
   open fun onProvideRumResourceAttributes(android.webkit.WebView?, String?): Map<String, Any?>
   companion object 
+interface com.datadog.android.security.Encryption
+  fun encrypt(ByteArray): ByteArray
+  fun decrypt(ByteArray): ByteArray
 class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
   constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
   override fun onCorruption(android.database.sqlite.SQLiteDatabase)
   companion object 
+data class com.datadog.android.telemetry.model.DebugEvent
+  constructor(Dd, kotlin.Long, kotlin.String, kotlin.String, Application? = null, Session? = null, View? = null, Action? = null, kotlin.String)
+  val status: kotlin.String
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): DebugEvent
+  class Dd
+    constructor()
+    val eventType: kotlin.String
+    fun toJson(): com.google.gson.JsonElement
+  data class Application
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
+  data class Session
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Session
+  data class View
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): View
+  data class Action
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Action
+data class com.datadog.android.telemetry.model.ErrorEvent
+  constructor(Dd, kotlin.Long, kotlin.String, kotlin.String, Application? = null, Session? = null, View? = null, Action? = null, kotlin.String, Error? = null)
+  val status: kotlin.String
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): ErrorEvent
+  class Dd
+    constructor()
+    val eventType: kotlin.String
+    fun toJson(): com.google.gson.JsonElement
+  data class Application
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
+  data class Session
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Session
+  data class View
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): View
+  data class Action
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Action
+  data class Error
+    constructor(kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Error
 class com.datadog.android.tracing.AndroidTracer : com.datadog.opentracing.DDTracer
   override fun buildSpan(String): DDSpanBuilder
   class Builder
+    constructor()
     fun build(): AndroidTracer
     fun setServiceName(String): Builder
     fun setPartialFlushThreshold(Int): Builder
