@@ -11,12 +11,15 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.model.TelemetryDebugEvent
+import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.utils.assertj.DeserializedActionEventAssert.Companion.assertThat
 import com.datadog.android.utils.assertj.DeserializedErrorEventAssert.Companion.assertThat
 import com.datadog.android.utils.assertj.DeserializedLongTaskEventAssert.Companion.assertThat
 import com.datadog.android.utils.assertj.DeserializedResourceEventAssert.Companion.assertThat
 import com.datadog.android.utils.assertj.DeserializedViewEventAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
+import com.google.gson.JsonParser
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.mock
@@ -148,6 +151,42 @@ internal class RumEventDeserializerTest {
     }
 
     @Test
+    fun `𝕄 deserialize a serialized RUM TelemetryDebugEvent 𝕎 deserialize()`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeTelemetryDebugEvent = forge.getForgery(TelemetryDebugEvent::class.java)
+        val serializedEvent = serializer.serialize(fakeTelemetryDebugEvent)
+
+        // WHEN
+        val deserializedEvent = testedDeserializer.deserialize(serializedEvent)
+            as TelemetryDebugEvent
+
+        // THEN
+        assertThat(deserializedEvent)
+            .usingRecursiveComparison()
+            .isEqualTo(fakeTelemetryDebugEvent)
+    }
+
+    @Test
+    fun `𝕄 deserialize a serialized RUM TelemetryErrorEvent 𝕎 deserialize()`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeTelemetryErrorEvent = forge.getForgery(TelemetryErrorEvent::class.java)
+        val serializedEvent = serializer.serialize(fakeTelemetryErrorEvent)
+
+        // WHEN
+        val deserializedEvent = testedDeserializer.deserialize(serializedEvent)
+            as TelemetryErrorEvent
+
+        // THEN
+        assertThat(deserializedEvent)
+            .usingRecursiveComparison()
+            .isEqualTo(fakeTelemetryErrorEvent)
+    }
+
+    @Test
     fun `𝕄 return null W deserialize { wrong Json format }`() {
         // WHEN
         val deserializedEvent = testedDeserializer.deserialize("{]}")
@@ -164,6 +203,32 @@ internal class RumEventDeserializerTest {
 
         // WHEN
         val deserializedEvent = testedDeserializer.deserialize(serializedEvent)
+
+        // THEN
+        assertThat(deserializedEvent).isNull()
+    }
+
+    @Test
+    fun `𝕄 return null W deserialize { wrong status for telemetry type }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeTelemetryEvent = forge.anElementFrom(
+            forge.getForgery(TelemetryErrorEvent::class.java),
+            forge.getForgery(TelemetryDebugEvent::class.java)
+        )
+        val serializedEvent = serializer.serialize(fakeTelemetryEvent)
+
+        val eventWithWrongStatus = JsonParser.parseString(serializedEvent)
+            .asJsonObject
+            .apply {
+                val telemetry = getAsJsonObject("telemetry")
+                telemetry.addProperty("status", forge.anAlphabeticalString())
+            }
+            .toString()
+
+        // WHEN
+        val deserializedEvent = testedDeserializer.deserialize(eventWithWrongStatus)
 
         // THEN
         assertThat(deserializedEvent).isNull()

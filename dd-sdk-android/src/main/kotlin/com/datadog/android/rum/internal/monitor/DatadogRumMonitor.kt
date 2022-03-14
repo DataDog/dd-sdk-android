@@ -29,6 +29,8 @@ import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.internal.TelemetryEventHandler
+import com.datadog.android.telemetry.internal.TelemetryType
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -36,12 +38,14 @@ import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
+@Suppress("LongParameterList")
 internal class DatadogRumMonitor(
     applicationId: String,
     internal val samplingRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     private val writer: DataWriter<Any>,
     internal val handler: Handler,
+    private val telemetryEventHandler: TelemetryEventHandler,
     firstPartyHostDetector: FirstPartyHostDetector,
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
@@ -317,6 +321,14 @@ internal class DatadogRumMonitor(
         debugListener = listener
     }
 
+    override fun sendDebugTelemetryEvent(message: String) {
+        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.DEBUG, message, null))
+    }
+
+    override fun sendErrorTelemetryEvent(message: String, throwable: Throwable?) {
+        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, throwable))
+    }
+
     // endregion
 
     // region Internal
@@ -338,6 +350,8 @@ internal class DatadogRumMonitor(
     internal fun handleEvent(event: RumRawEvent) {
         if (event is RumRawEvent.AddError && event.isFatal) {
             rootScope.handleEvent(event, writer)
+        } else if (event is RumRawEvent.SendTelemetry) {
+            telemetryEventHandler.handleEvent(event, writer)
         } else {
             handler.removeCallbacks(keepAliveRunnable)
             // avoid trowing a RejectedExecutionException

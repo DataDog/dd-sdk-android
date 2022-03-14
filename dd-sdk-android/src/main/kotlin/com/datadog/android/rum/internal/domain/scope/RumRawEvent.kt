@@ -13,6 +13,7 @@ import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.internal.TelemetryType
 
 internal sealed class RumRawEvent {
 
@@ -185,4 +186,11 @@ internal sealed class RumRawEvent {
     ) : RumRawEvent()
 
     internal data class WebViewEvent(override val eventTime: Time = Time()) : RumRawEvent()
+
+    internal data class SendTelemetry(
+        val type: TelemetryType,
+        val message: String,
+        val throwable: Throwable?,
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
 }

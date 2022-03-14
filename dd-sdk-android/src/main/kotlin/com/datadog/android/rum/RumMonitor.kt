@@ -14,7 +14,9 @@ import androidx.fragment.app.Fragment
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
+import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -298,6 +300,12 @@ interface RumMonitor {
                     samplingRate = samplingRate,
                     writer = RumFeature.persistenceStrategy.getWriter(),
                     handler = Handler(Looper.getMainLooper()),
+                    telemetryEventHandler = TelemetryEventHandler(
+                        CoreFeature.serviceName,
+                        CoreFeature.sdkVersion,
+                        RumEventSourceProvider(CoreFeature.sourceName),
+                        CoreFeature.timeProvider
+                    ),
                     firstPartyHostDetector = CoreFeature.firstPartyHostDetector,
                     cpuVitalMonitor = RumFeature.cpuVitalMonitor,
                     memoryVitalMonitor = RumFeature.memoryVitalMonitor,

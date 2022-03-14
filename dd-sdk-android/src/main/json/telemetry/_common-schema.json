@@ -4,19 +4,26 @@
   "title": "CommonTelemetryProperties",
   "type": "object",
   "description": "Schema of common properties of Telemetry events",
-  "required": ["_dd", "date", "service", "version"],
+  "required": ["_dd", "type", "date", "service", "source", "version"],
   "properties": {
     "_dd": {
       "type": "object",
       "description": "Internal properties",
-      "required": ["event_type"],
+      "required": ["format_version"],
       "properties": {
-        "event_type": {
-          "type": "string",
-          "const": "internal_telemetry",
-          "description": "Event type"
+        "format_version": {
+          "type": "integer",
+          "const": 2,
+          "description": "Version of the RUM event format",
+          "readOnly": true
         }
       }
+    },
+    "type": {
+      "type": "string",
+      "description": "Telemetry event type. Should specify telemetry only.",
+      "const": "telemetry",
+      "readOnly": true
     },
     "date": {
       "type": "integer",
@@ -26,6 +33,12 @@
     "service": {
       "type": "string",
       "description": "The SDK generating the telemetry event"
+    },
+    "source": {
+      "type": "string",
+      "description": "The source of this event",
+      "enum": ["android", "ios", "browser", "flutter", "react-native"],
+      "readOnly": true
     },
     "version": {
       "type": "string",

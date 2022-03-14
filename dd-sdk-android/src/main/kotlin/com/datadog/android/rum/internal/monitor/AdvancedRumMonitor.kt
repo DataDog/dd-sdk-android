@@ -13,7 +13,7 @@ import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.tools.annotation.NoOpImplementation
 
-@SuppressWarnings("ComplexInterface")
+@SuppressWarnings("ComplexInterface", "TooManyFunctions")
 @NoOpImplementation
 internal interface AdvancedRumMonitor : RumMonitor {
 
@@ -40,4 +40,8 @@ internal interface AdvancedRumMonitor : RumMonitor {
     fun eventDropped(viewId: String, type: EventType)
 
     fun setDebugListener(listener: RumDebugListener?)
+
+    fun sendDebugTelemetryEvent(message: String)
+
+    fun sendErrorTelemetryEvent(message: String, throwable: Throwable?)
 }

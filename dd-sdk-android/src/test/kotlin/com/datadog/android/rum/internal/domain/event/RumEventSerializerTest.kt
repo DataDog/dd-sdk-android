@@ -14,6 +14,8 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.model.TelemetryDebugEvent
+import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonObject
@@ -386,6 +388,137 @@ internal class RumEventSerializerTest {
             assertThat(jsonObject).hasField("context") {
                 containsAttributes(it)
             }
+        }
+    }
+
+    @RepeatedTest(8)
+    fun `𝕄 serialize RUM event 𝕎 serialize() with TelemetryDebugEvent`(
+        @Forgery event: TelemetryDebugEvent
+    ) {
+        val serialized = testedSerializer.serialize(event)
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        assertThat(jsonObject)
+            .hasField("type", "telemetry")
+            .hasField("_dd") {
+                hasField("format_version", 2L)
+            }
+            .hasField("date", event.date)
+            .hasField("source", event.source.name.lowercase(Locale.US).replace('_', '-'))
+            .hasField("service", event.service)
+            .hasField("version", event.version)
+            .hasField("telemetry") {
+                hasField("message", event.telemetry.message)
+                hasField("status", "debug")
+            }
+
+        val application = event.application
+        if (application != null) {
+            assertThat(jsonObject)
+                .hasField("application") {
+                    hasField("id", application.id)
+                }
+        } else {
+            assertThat(jsonObject).doesNotHaveField("application")
+        }
+
+        val session = event.session
+        if (session != null) {
+            assertThat(jsonObject)
+                .hasField("session") {
+                    hasField("id", session.id)
+                }
+        } else {
+            assertThat(jsonObject).doesNotHaveField("session")
+        }
+
+        val view = event.view
+        if (view != null) {
+            assertThat(jsonObject)
+                .hasField("view") {
+                    hasField("id", view.id)
+                }
+        } else {
+            assertThat(jsonObject).doesNotHaveField("view")
+        }
+
+        val action = event.action
+        if (action != null) {
+            assertThat(jsonObject)
+                .hasField("action") {
+                    hasField("id", action.id)
+                }
+        } else {
+            assertThat(jsonObject).doesNotHaveField("action")
+        }
+    }
+
+    @RepeatedTest(8)
+    fun `𝕄 serialize RUM event 𝕎 serialize() with TelemetryErrorEvent`(
+        @Forgery event: TelemetryErrorEvent
+    ) {
+        val serialized = testedSerializer.serialize(event)
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        assertThat(jsonObject)
+            .hasField("type", "telemetry")
+            .hasField("_dd") {
+                hasField("format_version", 2L)
+            }
+            .hasField("date", event.date)
+            .hasField("source", event.source.name.lowercase(Locale.US).replace('_', '-'))
+            .hasField("service", event.service)
+            .hasField("version", event.version)
+            .hasField("telemetry") {
+                hasField("status", "error")
+                hasField("message", event.telemetry.message)
+                val error = event.telemetry.error
+                if (error != null) {
+                    hasField("error") {
+                        hasNullableField("stack", error.stack)
+                        hasNullableField("kind", error.kind)
+                    }
+                } else {
+                    doesNotHaveField("error")
+                }
+            }
+
+        val application = event.application
+        if (application != null) {
+            assertThat(jsonObject)
+                .hasField("application") {
+                    hasField("id", application.id)
+                }
+        } else {
+            assertThat(jsonObject).doesNotHaveField("application")
+        }
+
+        val session = event.session
+        if (session != null) {
+            assertThat(jsonObject)
+                .hasField("session") {
+                    hasField("id", session.id)
+                }
+        } else {
+            assertThat(jsonObject).doesNotHaveField("session")
+        }
+
+        val view = event.view
+        if (view != null) {
+            assertThat(jsonObject)
+                .hasField("view") {
+                    hasField("id", view.id)
+                }
+        } else {
+            assertThat(jsonObject).doesNotHaveField("view")
+        }
+
+        val action = event.action
+        if (action != null) {
+            assertThat(jsonObject)
+                .hasField("action") {
+                    hasField("id", action.id)
+                }
+        } else {
+            assertThat(jsonObject).doesNotHaveField("action")
         }
     }
 

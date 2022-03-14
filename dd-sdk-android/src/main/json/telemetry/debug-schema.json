@@ -9,19 +9,23 @@
       "$ref": "_common-schema.json"
     },
     {
-      "required": [
-        "status",
-        "message"
-      ],
+      "required": ["telemetry"],
       "properties": {
-        "status": {
-          "type": "string",
-          "description": "Level/severity of the log",
-          "const": "debug"
-        },
-        "message": {
-          "type": "string",
-          "description": "Body of the log"
+        "telemetry": {
+          "type": "object",
+          "description": "The telemetry information",
+          "required": ["status", "message"],
+          "properties": {
+            "status": {
+              "type": "string",
+              "description": "Level/severity of the log",
+              "const": "debug"
+            },
+            "message": {
+              "type": "string",
+              "description": "Body of the log"
+            }
+          }
         }
       }
     }
