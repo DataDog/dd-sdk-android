@@ -835,7 +835,7 @@ class RumMonitorE2ETests {
      */
     @Test
     fun rum_rummonitor_ignore_stop_background_resource_with_error_stacktrace() {
-        val testMethodName = "rum_rummonitor_ignore_stop_background_resource_with_error"
+        val testMethodName = "rum_rummonitor_ignore_stop_background_resource_with_error_stacktrace"
         val resourceKey = forge.aResourceKey()
         val statusCode = forge.anInt(min = 400, max = 511)
         val message = forge.aResourceErrorMessage()
