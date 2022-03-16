@@ -1,0 +1,8 @@
+class com.datadog.android.tv.LeanbackViewAttributesProvider : com.datadog.android.rum.tracking.ViewAttributesProvider
+  override fun extractAttributes(android.view.View, MutableMap<String, Any?>)
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
+  companion object 
+    const val ACTION_TARGET_ACTION_ID: String
+    const val ACTION_TARGET_LABEL1: String
+    const val ACTION_TARGET_LABEL2: String

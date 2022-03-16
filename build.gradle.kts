@@ -77,7 +77,8 @@ tasks.register("assembleAll") {
         ":dd-sdk-android-ndk:assemble",
         ":dd-sdk-android-rx:assemble",
         ":dd-sdk-android-sqldelight:assemble",
-        ":dd-sdk-android-timber:assemble"
+        ":dd-sdk-android-timber:assemble",
+        ":dd-sdk-android-tv:assemble"
     )
 }
 
@@ -92,7 +93,8 @@ tasks.register("unitTestRelease") {
         ":dd-sdk-android-ndk:testReleaseUnitTest",
         ":dd-sdk-android-rx:testReleaseUnitTest",
         ":dd-sdk-android-sqldelight:testReleaseUnitTest",
-        ":dd-sdk-android-timber:testReleaseUnitTest"
+        ":dd-sdk-android-timber:testReleaseUnitTest",
+        ":dd-sdk-android-tv:testReleaseUnitTest"
     )
 }
 
@@ -108,6 +110,7 @@ tasks.register("unitTestDebug") {
         ":dd-sdk-android-rx:testDebugUnitTest",
         ":dd-sdk-android-sqldelight:testDebugUnitTest",
         ":dd-sdk-android-timber:testDebugUnitTest",
+        ":dd-sdk-android-tv:testDebugUnitTest"
     )
 }
 
@@ -139,6 +142,7 @@ tasks.register("ktlintCheckAll") {
         ":dd-sdk-android-rx:ktlintCheck",
         ":dd-sdk-android-sqldelight:ktlintCheck",
         ":dd-sdk-android-timber:ktlintCheck",
+        ":dd-sdk-android-tv:ktlintCheck",
         ":instrumented:integration:ktlintCheck",
         ":instrumented:nightly-tests:ktlintCheck",
         ":tools:detekt:ktlintCheck",
@@ -157,7 +161,8 @@ tasks.register("lintCheckAll") {
         ":dd-sdk-android-ndk:lintRelease",
         ":dd-sdk-android-rx:lintRelease",
         ":dd-sdk-android-sqldelight:lintRelease",
-        ":dd-sdk-android-timber:lintRelease"
+        ":dd-sdk-android-timber:lintRelease",
+        ":dd-sdk-android-tv:lintRelease"
     )
 }
 
@@ -172,7 +177,8 @@ tasks.register("checkThirdPartyLicensesAll") {
         ":dd-sdk-android-ndk:checkThirdPartyLicences",
         ":dd-sdk-android-rx:checkThirdPartyLicences",
         ":dd-sdk-android-sqldelight:checkThirdPartyLicences",
-        ":dd-sdk-android-timber:checkThirdPartyLicences"
+        ":dd-sdk-android-timber:checkThirdPartyLicences",
+        ":dd-sdk-android-tv:checkThirdPartyLicences"
     )
 }
 
@@ -187,7 +193,8 @@ tasks.register("checkApiSurfaceChangesAll") {
         ":dd-sdk-android-ndk:checkApiSurfaceChanges",
         ":dd-sdk-android-rx:checkApiSurfaceChanges",
         ":dd-sdk-android-sqldelight:checkApiSurfaceChanges",
-        ":dd-sdk-android-timber:checkApiSurfaceChanges"
+        ":dd-sdk-android-timber:checkApiSurfaceChanges",
+        ":dd-sdk-android-tv:checkApiSurfaceChanges"
     )
 }
 
@@ -203,6 +210,7 @@ tasks.register("detektAll") {
         ":dd-sdk-android-rx:detektMain",
         ":dd-sdk-android-sqldelight:detektMain",
         ":dd-sdk-android-timber:detektMain",
+        ":dd-sdk-android-tv:detektMain",
         ":instrumented:integration:detekt",
         ":instrumented:nightly-tests:detekt",
         ":tools:unit:detekt"
@@ -220,7 +228,8 @@ tasks.register("koverReportAll") {
         ":dd-sdk-android-ndk:koverXmlProjectReport",
         ":dd-sdk-android-rx:koverXmlProjectReport",
         ":dd-sdk-android-sqldelight:koverXmlProjectReport",
-        ":dd-sdk-android-timber:koverXmlProjectReport"
+        ":dd-sdk-android-timber:koverXmlProjectReport",
+        ":dd-sdk-android-tv:koverXmlProjectReport"
     )
 }
 
