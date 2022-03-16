@@ -35,7 +35,7 @@ FILE_PATH = {
     TARGET_DEMO: os.path.join("gradle", "libs.versions.toml"),
     TARGET_BRIDGE: os.path.join("gradle", "libs.versions.toml"),
     TARGET_GRADLE_PLUGIN: os.path.join("gradle", "libs.versions.toml"),
-    TARGET_FLUTTER: os.path.join("android", "build.gradle")
+    TARGET_FLUTTER: os.path.join("packages", "datadog_flutter_plugin", "android", "build.gradle")
 }
 
 PREFIX = {
