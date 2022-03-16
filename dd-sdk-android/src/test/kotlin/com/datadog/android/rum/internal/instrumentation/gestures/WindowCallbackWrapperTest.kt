@@ -17,6 +17,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
+import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -29,6 +30,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -603,6 +605,38 @@ internal class WindowCallbackWrapperTest {
 
         // Then
         verifyZeroInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
+    fun `M apply the custom attributes providers W dispatchKeyEvent()`(forge: Forge) {
+        // Given
+        val mockKeyEvent = mockKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_CENTER)
+        val fakeFocusedView = View(mock())
+        val mockAttributesProviders = forge.aList(size = 10) {
+            mock<ViewAttributesProvider>()
+        }.toTypedArray()
+        whenever(mockWindow.currentFocus).thenReturn(fakeFocusedView)
+
+        // When
+        testedWrapper = WindowCallbackWrapper(
+            mockWindow,
+            mockCallback,
+            mockGestureDetector,
+            copyEvent = { mockCopiedMotionEvent },
+            targetAttributesProviders = mockAttributesProviders
+        )
+        testedWrapper.dispatchKeyEvent(mockKeyEvent)
+
+        // Then
+        mockAttributesProviders.forEach {
+            verify(it).extractAttributes(
+                eq(fakeFocusedView),
+                argThat {
+                    this.containsKey(RumAttributes.ACTION_TARGET_CLASS_NAME) &&
+                        this.containsKey(RumAttributes.ACTION_TARGET_RESOURCE_ID)
+                }
+            )
+        }
     }
 
     // endregion

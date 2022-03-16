@@ -32,7 +32,8 @@ internal class DatadogGesturesTracker(
             window,
             toWrap,
             gesturesDetector,
-            interactionPredicate
+            interactionPredicate,
+            targetAttributesProviders = targetAttributesProviders
         )
     }
 
