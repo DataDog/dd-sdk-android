@@ -124,6 +124,10 @@ If you use Apollo, let it use your `OkHttpClient` for RUM and APM information ab
 {{% /tab %}}
 {{< /tabs >}}
 
+### Android TV (Leanback)
+
+If you use the Leanback API to add actions into your Android TV application, take a look at Datadog's [dedicated Android TV library][6].
+
 ## Further Reading
 
 {{< partial name="whats-next/whats-next.html" >}}
@@ -133,3 +137,4 @@ If you use Apollo, let it use your `OkHttpClient` for RUM and APM information ab
 [3]: https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-glide
 [4]: https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-sqldelight
 [5]: https://developer.android.com/reference/android/database/sqlite/SQLiteOpenHelper
+[6]: https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-tv

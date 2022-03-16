@@ -87,5 +87,5 @@ junitConfig()
 javadocConfig()
 dependencyUpdateConfig()
 publishingConfig(
-    "A RxJava integration to use with the Datadog monitoring library for Android applications."
+    "An Android TV integration to use with the Datadog monitoring library for Android applications."
 )
