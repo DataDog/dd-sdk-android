@@ -978,6 +978,7 @@ datadog:
       - "kotlin.collections.MutableList.add(kotlin.String)"
       - "kotlin.collections.MutableList.addAll(kotlin.collections.Collection)"
       - "kotlin.collections.MutableList.clear()"
+      - "kotlin.collections.MutableList.count(kotlin.Function1)"
       - "kotlin.collections.MutableList.filterIsInstance()"
       - "kotlin.collections.MutableList.firstOrNull(kotlin.Function1)"
       - "kotlin.collections.MutableList.forEach(kotlin.Function1)"

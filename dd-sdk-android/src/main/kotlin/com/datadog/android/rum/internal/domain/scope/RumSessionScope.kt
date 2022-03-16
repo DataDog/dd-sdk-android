@@ -102,7 +102,7 @@ internal class RumSessionScope(
             )
             onViewDisplayed(event, viewScope, actualWriter)
             activeChildrenScopes.add(viewScope)
-        } else if (activeChildrenScopes.size == 0) {
+        } else if (activeChildrenScopes.count { it.isActive() } == 0) {
             handleOrphanEvent(event, actualWriter)
         }
 
@@ -116,6 +116,10 @@ internal class RumSessionScope(
         } else {
             RumContext()
         }
+    }
+
+    override fun isActive(): Boolean {
+        return true
     }
 
     // endregion

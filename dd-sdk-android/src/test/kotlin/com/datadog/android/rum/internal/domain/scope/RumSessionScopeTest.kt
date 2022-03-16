@@ -143,6 +143,7 @@ internal class RumSessionScopeTest {
             .thenReturn(fakeNetworkInfo)
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
+        whenever(mockChildScope.isActive()) doReturn true
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
 
         CoreFeature.processImportance = RunningAppProcessInfo.IMPORTANCE_FOREGROUND
@@ -341,6 +342,13 @@ internal class RumSessionScopeTest {
     }
 
     // endregion
+
+    @Test
+    fun `M return true W isActive()`() {
+        val isActive = testedScope.isActive()
+
+        assertThat(isActive).isTrue()
+    }
 
     @Test
     fun `M log warning W handleEvent() without child scope`() {
@@ -656,6 +664,49 @@ internal class RumSessionScopeTest {
     }
 
     @Test
+    fun `M start a background ViewScope W handleEvent { stopped view, event is relevant }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        testedScope = RumSessionScope(
+            mockParentScope,
+            100f,
+            true,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockTimeProvider,
+            mockSessionListener,
+            mockRumEventSourceProvider,
+            mockBuildSdkVersionProvider,
+            TEST_INACTIVITY_NS,
+            TEST_MAX_DURATION_NS
+        )
+        testedScope.applicationDisplayed = true
+        testedScope.activeChildrenScopes.add(mockChildScope)
+        whenever(mockChildScope.isActive()) doReturn false
+        whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
+        val fakeEvent = forge.forgeValidBackgroundEvent()
+
+        // WHEN
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        assertThat(testedScope.activeChildrenScopes).hasSize(2)
+        assertThat(testedScope.activeChildrenScopes[0]).isSameAs(mockChildScope)
+        assertThat(testedScope.activeChildrenScopes[1])
+            .isInstanceOfSatisfying(RumViewScope::class.java) {
+                assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
+                assertThat(it.keyRef.get()).isEqualTo(RumSessionScope.RUM_BACKGROUND_VIEW_URL)
+                assertThat(it.name).isEqualTo(RumSessionScope.RUM_BACKGROUND_VIEW_NAME)
+                assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+                assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+                assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+            }
+    }
+
+    @Test
     fun `M start a Background ViewScope W handleEvent { event is relevant, not foreground }`(
         forge: Forge
     ) {
@@ -799,6 +850,39 @@ internal class RumSessionScopeTest {
 
         // THEN
         assertThat(testedScope.activeChildrenScopes).hasSize(0)
+    }
+
+    @Test
+    fun `M ignore event W handleEvent { app displayed, event is relevant, active view }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        testedScope = RumSessionScope(
+            mockParentScope,
+            100f,
+            false,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockTimeProvider,
+            mockSessionListener,
+            mockRumEventSourceProvider,
+            mockBuildSdkVersionProvider,
+            TEST_INACTIVITY_NS,
+            TEST_MAX_DURATION_NS
+        )
+        testedScope.activeChildrenScopes.add(mockChildScope)
+        whenever(mockChildScope.isActive()) doReturn true
+        whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
+        val fakeEvent = forge.forgeInvalidAppLaunchEvent()
+
+        // WHEN
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        assertThat(testedScope.activeChildrenScopes).hasSize(1)
+        assertThat(testedScope.activeChildrenScopes[0]).isSameAs(mockChildScope)
     }
 
     @Test
