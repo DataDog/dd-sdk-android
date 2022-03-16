@@ -52,6 +52,10 @@ internal class RumApplicationScope(
         return this
     }
 
+    override fun isActive(): Boolean {
+        return true
+    }
+
     override fun getRumContext(): RumContext {
         return rumContext
     }
