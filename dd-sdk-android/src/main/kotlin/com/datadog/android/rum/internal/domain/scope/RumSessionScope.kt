@@ -47,7 +47,7 @@ internal class RumSessionScope(
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
 ) : RumScope {
 
-    internal val activeChildrenScopes = mutableListOf<RumScope>()
+    internal val childrenScopes = mutableListOf<RumScope>()
 
     internal var keepSession: Boolean = false
     internal var sessionId = RumContext.NULL_UUID
@@ -80,7 +80,7 @@ internal class RumSessionScope(
 
         val actualWriter = if (keepSession) writer else noOpWriter
 
-        val iterator = activeChildrenScopes.iterator()
+        val iterator = childrenScopes.iterator()
         @Suppress("UnsafeThirdPartyFunctionCall") // next/remove can't fail: we checked hasNext
         while (iterator.hasNext()) {
             val scope = iterator.next().handleEvent(event, actualWriter)
@@ -101,8 +101,8 @@ internal class RumSessionScope(
                 rumEventSourceProvider
             )
             onViewDisplayed(event, viewScope, actualWriter)
-            activeChildrenScopes.add(viewScope)
-        } else if (activeChildrenScopes.count { it.isActive() } == 0) {
+            childrenScopes.add(viewScope)
+        } else if (childrenScopes.count { it.isActive() } == 0) {
             handleOrphanEvent(event, actualWriter)
         }
 
@@ -148,7 +148,7 @@ internal class RumSessionScope(
         if (isValidAppLaunchEvent) {
             val viewScope = createAppLaunchViewScope(event)
             viewScope.handleEvent(event, actualWriter)
-            activeChildrenScopes.add(viewScope)
+            childrenScopes.add(viewScope)
         } else {
             devLogger.w(MESSAGE_MISSING_VIEW)
         }
@@ -166,7 +166,7 @@ internal class RumSessionScope(
             // to handle all the events.
             val viewScope = createBackgroundViewScope(event)
             viewScope.handleEvent(event, writer)
-            activeChildrenScopes.add(viewScope)
+            childrenScopes.add(viewScope)
         } else {
             devLogger.w(MESSAGE_MISSING_VIEW)
         }

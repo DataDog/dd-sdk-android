@@ -28,7 +28,7 @@ internal interface RumScope {
      * @return whether the current scope is active. Note that an inactive scope can still process
      * events (to handle ongoing event started while it was active).
      */
-    fun isActive() : Boolean
+    fun isActive(): Boolean
 
     /**
      * @return the context related to this scope

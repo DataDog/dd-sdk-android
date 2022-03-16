@@ -130,8 +130,6 @@ internal class RumActionScopeTest {
         )
     }
 
-
-
     @Test
     fun `M return true W isActive() {not stopped}`() {
         // Given
@@ -143,7 +141,6 @@ internal class RumActionScopeTest {
         // Then
         assertThat(isActive).isTrue()
     }
-
 
     @Test
     fun `M return false W isActive() {stopped}`() {
