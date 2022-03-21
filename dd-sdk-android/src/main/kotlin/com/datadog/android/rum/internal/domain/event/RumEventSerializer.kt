@@ -134,7 +134,9 @@ internal class RumEventSerializer(
 
     private fun validateContextAttributes(attributes: Map<String, Any?>): Map<String, Any?> {
         return dataConstraints.validateAttributes(
-            attributes,
+            attributes.filterKeys {
+                it !in crossPlatformTransitAttributes
+            },
             keyPrefix = GLOBAL_ATTRIBUTE_PREFIX,
             reservedKeys = ignoredAttributes
         )
@@ -180,6 +182,15 @@ internal class RumEventSerializer(
         )
 
         internal val ignoredAttributes = setOf(
+            RumAttributes.INTERNAL_TIMESTAMP,
+            RumAttributes.INTERNAL_ERROR_TYPE,
+            RumAttributes.INTERNAL_ERROR_SOURCE_TYPE,
+            RumAttributes.INTERNAL_ERROR_IS_CRASH
+        )
+
+        // this are attributes which may come after the calls made by cross-platform SDKs (they are
+        // needed only for the SDK internals) and we may silently drop them
+        internal val crossPlatformTransitAttributes = setOf(
             RumAttributes.INTERNAL_TIMESTAMP,
             RumAttributes.INTERNAL_ERROR_TYPE,
             RumAttributes.INTERNAL_ERROR_SOURCE_TYPE,
