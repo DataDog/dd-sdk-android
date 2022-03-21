@@ -166,7 +166,6 @@ internal class RumViewScopeTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-
         fakeSourceViewEvent = forge.aNullable { aValueFrom(ViewEvent.Source::class.java) }
         fakeSourceErrorEvent = forge.aNullable {
             aValueFrom(ErrorEvent.ErrorEventSource::class.java)
@@ -895,7 +894,7 @@ internal class RumViewScopeTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
-            rumEventSourceProvider = mockRumEventSourceProvider,
+            rumEventSourceProvider = mockRumEventSourceProvider
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -2089,7 +2088,6 @@ internal class RumViewScopeTest {
         @StringForgery name: String,
         forge: Forge
     ) {
-
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         testedScope.activeActionScope = mockChildScope
@@ -2855,7 +2853,13 @@ internal class RumViewScopeTest {
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         fakeEvent = RumRawEvent.AddError(
-            message, source, null, null, false, attributes, sourceType = sourceType
+            message,
+            source,
+            null,
+            null,
+            false,
+            attributes,
+            sourceType = sourceType
         )
 
         // When
@@ -2900,7 +2904,12 @@ internal class RumViewScopeTest {
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         fakeEvent = RumRawEvent.AddError(
-            message, source, null, null, true, attributes,
+            message,
+            source,
+            null,
+            null,
+            true,
+            attributes,
             sourceType = sourceType
         )
 

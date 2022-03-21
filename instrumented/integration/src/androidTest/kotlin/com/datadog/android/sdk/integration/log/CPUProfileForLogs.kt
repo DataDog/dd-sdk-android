@@ -26,8 +26,10 @@ internal class CPUProfileForLogs {
 
     @get:Rule
     val mockServerRule = MockServerActivityTestRule(ActivityProfiling::class.java)
+
     @get:Rule
     val cpuProfilingRule = CPUProfilingRule()
+
     @get:Rule
     val forge = ForgeRule().withFactory(ThrowableForgeryFactory())
 
@@ -59,7 +61,6 @@ internal class CPUProfileForLogs {
     @Test
     @Ignore("Not ran on CI, run locally whenever we build a new release.")
     fun profileLoggingWithThrowable() {
-
         cpuProfilingRule.profile(
             runThreshold = 15.0, // allow up to 15% usage above normal
             runConfig = AbstractProfilingRule.ProfilingConfig(

@@ -26,7 +26,6 @@ private const val START_TIME_KEY = "startTime"
 private const val DURATION_KEY = "duration"
 
 internal fun extractResourceTiming(timingsPayload: Map<String, Any?>?): ResourceTiming? {
-
     if (timingsPayload == null) {
         return null
     }
@@ -59,7 +58,6 @@ private fun createResourceTiming(timings: Map<String, Timing?>): ResourceTiming 
 }
 
 private fun extractTiming(name: String, source: Map<String, Any?>): Timing? {
-
     val timing = source[name]
 
     return if (timing != null && timing is Map<*, *>) {

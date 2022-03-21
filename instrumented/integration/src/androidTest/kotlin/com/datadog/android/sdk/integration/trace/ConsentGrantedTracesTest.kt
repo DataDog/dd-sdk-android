@@ -29,7 +29,6 @@ internal class ConsentGrantedTracesTest : TracesTest() {
 
     @Test
     fun verifyExpectedActivitySpansAndLogs() {
-
         runInstrumentationScenario(mockServerRule)
 
         // Wait to make sure all batches are consumed

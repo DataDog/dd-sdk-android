@@ -184,7 +184,7 @@ internal class CurlInterceptorTest {
     fun `M output curl command W intercept() {POST, content type}`(
         @IntForgery(200, 600) statusCode: Int,
         @StringForgery type: String,
-        @StringForgery subtype: String,
+        @StringForgery subtype: String
     ) {
         // Given
         testedInterceptor = CurlInterceptor(true, mockOutput)

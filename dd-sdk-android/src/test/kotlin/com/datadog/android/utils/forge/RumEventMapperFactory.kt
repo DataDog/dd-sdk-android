@@ -14,7 +14,6 @@ import fr.xgouchet.elmyr.ForgeryFactory
 internal class RumEventMapperFactory : ForgeryFactory<RumEventMapper> {
 
     override fun getForgery(forge: Forge): RumEventMapper {
-
         return RumEventMapper(
             viewEventMapper = mock(),
             actionEventMapper = mock(),

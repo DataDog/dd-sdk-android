@@ -335,7 +335,6 @@ internal class NavigationViewTrackingStrategyTest {
         forge: Forge,
         @StringForgery newDestinationName: String
     ) {
-
         val newDestination = mockNavDestination(forge, newDestinationName)
         whenever(mockPredicate.accept(mockNavDestination)) doReturn true
         whenever(mockPredicate.accept(newDestination)) doReturn true

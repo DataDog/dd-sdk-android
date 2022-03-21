@@ -68,7 +68,6 @@ internal class EncryptedFileHandlerTest {
 
     @BeforeEach
     fun setUp() {
-
         whenever(mockFileHandlerDelegate.writeData(any(), any(), any(), anyOrNull())) doReturn true
 
         whenever(mockEncryption.encrypt(any())) doAnswer {
@@ -276,7 +275,7 @@ internal class EncryptedFileHandlerTest {
     fun `𝕄 decrypt data 𝕎 readData() { single item in a file with suffix and prefix }`(
         @StringForgery data: String,
         @StringForgery prefix: String,
-        @StringForgery suffix: String,
+        @StringForgery suffix: String
     ) {
         // Given
         val prefixBytes = prefix.toByteArray()
@@ -474,10 +473,13 @@ internal class EncryptedFileHandlerTest {
         )
 
         verify(mockInternalLogger).e(
-            EncryptedFileHandler.BASE64_DECODING_ERROR_MESSAGE, decodingException
+            EncryptedFileHandler.BASE64_DECODING_ERROR_MESSAGE,
+            decodingException
         )
         verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR, EncryptedFileHandler.BASE64_DECODING_ERROR_MESSAGE, decodingException
+            Log.ERROR,
+            EncryptedFileHandler.BASE64_DECODING_ERROR_MESSAGE,
+            decodingException
         )
 
         verifyZeroInteractions(mockEncryption)
@@ -540,10 +542,13 @@ internal class EncryptedFileHandlerTest {
         assertThat(result).isEqualTo(decorate(expected, prefixBytes, suffixBytes))
 
         verify(mockInternalLogger, times(failCounter)).e(
-            EncryptedFileHandler.BASE64_DECODING_ERROR_MESSAGE, decodingException
+            EncryptedFileHandler.BASE64_DECODING_ERROR_MESSAGE,
+            decodingException
         )
         verify(logger.mockDevLogHandler, times(failCounter)).handleLog(
-            Log.ERROR, EncryptedFileHandler.BASE64_DECODING_ERROR_MESSAGE, decodingException
+            Log.ERROR,
+            EncryptedFileHandler.BASE64_DECODING_ERROR_MESSAGE,
+            decodingException
         )
     }
 

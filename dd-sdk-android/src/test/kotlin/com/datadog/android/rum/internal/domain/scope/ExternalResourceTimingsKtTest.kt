@@ -27,7 +27,6 @@ internal class ExternalResourceTimingsKtTest {
 
     @Test
     fun `𝕄 create timings 𝕎 extractResourceTiming`(@Forgery reference: ResourceTiming) {
-
         // Given
         val timingsPayload = reference.asTimingsPayload()
 
@@ -57,7 +56,6 @@ internal class ExternalResourceTimingsKtTest {
         missingTiming: String,
         @Forgery timing: ResourceTiming
     ) {
-
         // Given
         val timingsPayload = timing.asTimingsPayload()
         timingsPayload.remove(missingTiming)
@@ -88,7 +86,6 @@ internal class ExternalResourceTimingsKtTest {
         timingPartToRemove: String,
         @Forgery reference: ResourceTiming
     ) {
-
         // Given
         val timingsPayload = reference.asTimingsPayload()
 
@@ -129,7 +126,6 @@ internal class ExternalResourceTimingsKtTest {
         timingPartToRemove: String,
         @Forgery reference: ResourceTiming
     ) {
-
         // Given
         val timingsPayload = reference.asTimingsPayload()
 
@@ -147,7 +143,6 @@ internal class ExternalResourceTimingsKtTest {
         assertThat(timings).isNotNull
 
         timings!!.let {
-
             assertThat(it.sslStart).isEqualTo(timingsPayload.startTimeOf("ssl"))
             assertThat(it.sslDuration).isEqualTo(timingsPayload.durationOf("ssl"))
 
@@ -171,7 +166,6 @@ internal class ExternalResourceTimingsKtTest {
         timingPartToRemove: String,
         @Forgery reference: ResourceTiming
     ) {
-
         // Given
         val timingsPayload = reference.asTimingsPayload()
 
@@ -212,7 +206,6 @@ internal class ExternalResourceTimingsKtTest {
         timingPartToRemove: String,
         @Forgery reference: ResourceTiming
     ) {
-
         // Given
         val timingsPayload = reference.asTimingsPayload()
 
@@ -253,7 +246,6 @@ internal class ExternalResourceTimingsKtTest {
         timingPartToRemove: String,
         @Forgery reference: ResourceTiming
     ) {
-
         // Given
         val timingsPayload = reference.asTimingsPayload()
 
@@ -294,7 +286,6 @@ internal class ExternalResourceTimingsKtTest {
         timingPartWithWrongType: String,
         @Forgery reference: ResourceTiming
     ) {
-
         // Given
         val timingsPayload = reference.asTimingsPayload()
 
@@ -334,7 +325,6 @@ internal class ExternalResourceTimingsKtTest {
         timingPartWithWrongType: String,
         @Forgery reference: ResourceTiming
     ) {
-
         // Given
         val timingsPayload = reference.asTimingsPayload()
 
@@ -374,7 +364,6 @@ internal class ExternalResourceTimingsKtTest {
         timingPartWithWrongType: String,
         @Forgery reference: ResourceTiming
     ) {
-
         // Given
         val timingsPayload = reference.asTimingsPayload()
 
@@ -414,7 +403,6 @@ internal class ExternalResourceTimingsKtTest {
         timingPartWithWrongType: String,
         @Forgery reference: ResourceTiming
     ) {
-
         // Given
         val timingsPayload = reference.asTimingsPayload()
 
@@ -454,7 +442,6 @@ internal class ExternalResourceTimingsKtTest {
         timingPartWithWrongType: String,
         @Forgery reference: ResourceTiming
     ) {
-
         // Given
         val timingsPayload = reference.asTimingsPayload()
 
@@ -490,7 +477,6 @@ internal class ExternalResourceTimingsKtTest {
 
     @Test
     fun `𝕄 not create timings 𝕎 extractResourceTiming { payload is null }`() {
-
         // When
         val timings = extractResourceTiming(null)
 
@@ -500,7 +486,6 @@ internal class ExternalResourceTimingsKtTest {
 
     @Test
     fun `𝕄 not create timings 𝕎 extractResourceTiming { payload is empty }`() {
-
         // When
         val timings = extractResourceTiming(emptyMap())
 

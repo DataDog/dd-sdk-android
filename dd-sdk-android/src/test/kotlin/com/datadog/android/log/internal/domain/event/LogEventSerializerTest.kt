@@ -210,7 +210,6 @@ internal class LogEventSerializerTest {
     private fun JsonObjectAssert.hasUserInfo(
         userInfo: LogEvent.Usr
     ) {
-
         val userName = userInfo.name
         val userEmail = userInfo.email
         val userId = userInfo.id

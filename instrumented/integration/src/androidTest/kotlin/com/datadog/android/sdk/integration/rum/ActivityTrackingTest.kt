@@ -19,7 +19,6 @@ internal abstract class ActivityTrackingTest :
     override fun runInstrumentationScenario(
         mockServerRule: RumMockServerActivityTestRule<ActivityTrackingPlaygroundActivity>
     ): MutableList<ExpectedEvent> {
-
         val expectedEvents = mutableListOf<ExpectedEvent>()
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val activity = mockServerRule.activity

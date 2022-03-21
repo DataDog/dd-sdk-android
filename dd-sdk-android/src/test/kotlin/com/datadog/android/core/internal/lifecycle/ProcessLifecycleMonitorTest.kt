@@ -186,7 +186,6 @@ internal class ProcessLifecycleMonitorTest {
 
     @Test
     fun `when starting activities from 2 different threads will only call onResumed once`() {
-
         // Given
         val countDownLatch = CountDownLatch(2)
 
@@ -212,7 +211,6 @@ internal class ProcessLifecycleMonitorTest {
 
     @Test
     fun `when stopped from 2 different threads will only call onStooped once`() {
-
         // Given
         testedMonitor.onActivityStarted(mockActivity1)
         testedMonitor.onActivityResumed(mockActivity1)

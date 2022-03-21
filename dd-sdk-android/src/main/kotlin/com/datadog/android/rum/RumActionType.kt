@@ -13,12 +13,16 @@ package com.datadog.android.rum
 enum class RumActionType {
     /** User tapped on a widget. */
     TAP,
+
     /** User scrolled a view. */
     SCROLL,
+
     /** User swiped on a view. */
     SWIPE,
+
     /** User clicked on a widget (not used on Mobile). */
     CLICK,
+
     /** A custom action. */
     CUSTOM
 }

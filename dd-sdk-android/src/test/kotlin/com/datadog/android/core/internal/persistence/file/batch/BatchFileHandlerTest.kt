@@ -662,7 +662,6 @@ internal class BatchFileHandlerTest {
 
     @Test
     fun `𝕄 create BatchFileHandler 𝕎 create() { without encryption }`() {
-
         // When
         val fileHandler = BatchFileHandler.create(Logger(mockLogHandler), null)
         // Then
@@ -672,7 +671,6 @@ internal class BatchFileHandlerTest {
 
     @Test
     fun `𝕄 create BatchFileHandler 𝕎 create() { with encryption }`() {
-
         // When
         val mockEncryption = mock<Encryption>()
         val fileHandler = BatchFileHandler.create(Logger(mockLogHandler), mockEncryption)

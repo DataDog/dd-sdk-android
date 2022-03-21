@@ -38,7 +38,6 @@ internal class DatadogDataConstraints : DataConstraints {
         attributesGroupName: String?,
         reservedKeys: Set<String>
     ): Map<String, T> {
-
         // prefix = "a.b" => dotCount = 1+1 ("a.b." + key)
         val prefixDotCount = keyPrefix?.let { it.count { character -> character == '.' } + 1 } ?: 0
         val convertedAttributes = attributes.mapNotNull {

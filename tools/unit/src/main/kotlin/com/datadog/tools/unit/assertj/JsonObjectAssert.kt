@@ -64,7 +64,6 @@ class JsonObjectAssert(actual: JsonObject) :
      *  @param expectedValue the expected value of the field
      */
     fun hasNullableField(name: String, expectedValue: Any?): JsonObjectAssert {
-
         when (expectedValue) {
             null -> hasNullField(name)
             is String -> hasField(name, expectedValue)

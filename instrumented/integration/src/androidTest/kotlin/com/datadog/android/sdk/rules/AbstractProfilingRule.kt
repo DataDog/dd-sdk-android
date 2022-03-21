@@ -53,7 +53,6 @@ internal abstract class AbstractProfilingRule(
         warmupConfig: ProfilingConfig,
         action: () -> Unit
     ) {
-
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
         // Warmup

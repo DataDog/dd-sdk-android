@@ -162,7 +162,6 @@ internal constructor(val key: String) : EventListener() {
     }
 
     private fun sendTiming() {
-
         val timing = buildTiming()
         (GlobalRum.get() as? AdvancedRumMonitor)?.addResourceTiming(key, timing)
     }

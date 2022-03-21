@@ -194,7 +194,6 @@ internal constructor(internal var handler: LogHandler) {
          * Builds a [Logger] based on the current state of this Builder.
          */
         fun build(): Logger {
-
             val handler = when {
                 datadogLogsEnabled && logcatLogsEnabled -> {
                     CombinedLogHandler(

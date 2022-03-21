@@ -333,8 +333,8 @@ internal class DatadogRumMonitor(
 
     // region Internal
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // Used in Nightly tests only
     @Throws(UnsupportedOperationException::class, InterruptedException::class)
+    @Suppress("UnsafeThirdPartyFunctionCall") // Used in Nightly tests only
     internal fun drainExecutorService() {
         val tasks = arrayListOf<Runnable>()
         (executorService as? ThreadPoolExecutor)

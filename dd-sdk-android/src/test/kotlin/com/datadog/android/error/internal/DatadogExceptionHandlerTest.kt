@@ -245,7 +245,6 @@ internal class DatadogExceptionHandlerTest {
 
     @Test
     fun `M schedule the worker W logging an exception`() {
-
         whenever(
             mockWorkManager.enqueueUniqueWork(
                 ArgumentMatchers.anyString(),

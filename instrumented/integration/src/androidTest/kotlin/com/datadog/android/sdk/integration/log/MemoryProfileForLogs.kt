@@ -26,8 +26,10 @@ internal class MemoryProfileForLogs {
 
     @get:Rule
     val mockServerRule = MockServerActivityTestRule(ActivityProfiling::class.java)
+
     @get:Rule
     val memoryProfilingRule = MemoryProfilingRule()
+
     @get:Rule
     val forge = ForgeRule().withFactory(ThrowableForgeryFactory())
 
@@ -59,7 +61,6 @@ internal class MemoryProfileForLogs {
     @Test
     @Ignore("Not ran on CI, run locally whenever we build a new release.")
     fun profileLoggingWithThrowable() {
-
         memoryProfilingRule.profile(
             runThreshold = 1536.0, // 1.5 Mb during processing of large batches
             runConfig = AbstractProfilingRule.ProfilingConfig(

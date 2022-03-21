@@ -1093,7 +1093,7 @@ internal class RumSessionScopeTest {
                 RumRawEvent.ActionDropped(fakeId),
                 RumRawEvent.ErrorDropped(fakeId),
                 RumRawEvent.LongTaskDropped(fakeId),
-                RumRawEvent.ResourceDropped(fakeId),
+                RumRawEvent.ResourceDropped(fakeId)
             )
         )
     }

@@ -16,7 +16,7 @@ internal class LogsOkHttpUploader(
     endpoint: String,
     token: String,
     callFactory: Call.Factory,
-    androidInfoProvider: AndroidInfoProvider,
+    androidInfoProvider: AndroidInfoProvider
 ) : DataOkHttpUploader(buildUrl(endpoint, token), callFactory, androidInfoProvider) {
 
     // region DataOkHttpUploader

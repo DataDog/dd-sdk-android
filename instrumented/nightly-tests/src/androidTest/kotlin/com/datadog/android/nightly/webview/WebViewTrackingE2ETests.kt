@@ -159,7 +159,6 @@ internal class WebViewTrackingE2ETests {
             rumEnabled = true
         ).setWebViewTrackingHosts(listOf("datadoghq.dev")).build()
     ) {
-
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,

@@ -52,7 +52,6 @@ internal fun ByteArray.indexOf(b: Byte, startIndex: Int = 0): Int {
  * @return true if the copy was successful.
  */
 internal fun ByteArray.copyTo(srcPos: Int, dest: ByteArray, destPos: Int, length: Int): Boolean {
-
     if (destPos + length > dest.size) {
         sdkLogger.w("Cannot copy ByteArray, dest doesn't have enough space")
         return false

@@ -187,7 +187,6 @@ internal class DatadogNdkCrashHandlerTest {
     fun `𝕄 read last RUM View event 𝕎 prepareData() { with encryption }`(
         @StringForgery viewEvent: String
     ) {
-
         testedHandler = DatadogNdkCrashHandler(
             mockContext,
             mockExecutorService,
@@ -240,7 +239,6 @@ internal class DatadogNdkCrashHandlerTest {
     fun `𝕄 read network info 𝕎 prepareData() { with encryption }`(
         @StringForgery networkInfo: String
     ) {
-
         testedHandler = DatadogNdkCrashHandler(
             mockContext,
             mockExecutorService,
@@ -293,7 +291,6 @@ internal class DatadogNdkCrashHandlerTest {
     fun `𝕄 read user info 𝕎 prepareData() { with encryption }`(
         @StringForgery userInfo: String
     ) {
-
         testedHandler = DatadogNdkCrashHandler(
             mockContext,
             mockExecutorService,

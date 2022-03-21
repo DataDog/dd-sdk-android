@@ -38,7 +38,6 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 @ForgeConfiguration(Configurator::class)
 internal class SpanEventSerializerTest {
@@ -276,7 +275,6 @@ internal class SpanEventSerializerTest {
     private fun JsonObjectAssert.hasUserInfo(
         spanEvent: SpanEvent
     ) {
-
         val userName = spanEvent.meta.usr.name
         val userEmail = spanEvent.meta.usr.email
         val userId = spanEvent.meta.usr.id

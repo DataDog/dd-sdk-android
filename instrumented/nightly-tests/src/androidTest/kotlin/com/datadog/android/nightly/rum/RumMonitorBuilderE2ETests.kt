@@ -33,7 +33,6 @@ class RumMonitorBuilderE2ETests {
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun sampleRumSessions(Float): Builder
      * apiMethodSignature: com.datadog.android.rum.RumMonitor$Builder#fun build(): RumMonitor
      * apiMethodSignature: com.datadog.android.rum.GlobalRum#fun registerIfAbsent(java.util.concurrent.Callable<RumMonitor>): Boolean
-
      */
     @Test
     fun rum_rummonitor_builder_sample_all_in() {

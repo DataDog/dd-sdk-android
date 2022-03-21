@@ -593,7 +593,6 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W resetSession()`() {
-
         testedMonitor.resetSession()
         Thread.sleep(PROCESSING_DELAY)
 
@@ -1320,7 +1319,10 @@ internal class DatadogRumMonitorTest {
         testedMonitor.debugListener = listener
 
         whenever(mockRumApplicationScope.childScope) doReturn forge.anElementFrom(
-            mock(), mock<RumViewScope>(), mock<RumActionScope>(), mock<RumResourceScope>()
+            mock(),
+            mock<RumViewScope>(),
+            mock<RumActionScope>(),
+            mock<RumResourceScope>()
         )
 
         // When
@@ -1336,8 +1338,11 @@ internal class DatadogRumMonitorTest {
     ) {
         // Given
         testedMonitor.rootScope = forge.anElementFrom(
-            mock(), mock<RumViewScope>(), mock<RumActionScope>(),
-            mock<RumResourceScope>(), mock<RumSessionScope>()
+            mock(),
+            mock<RumViewScope>(),
+            mock<RumActionScope>(),
+            mock<RumResourceScope>(),
+            mock<RumSessionScope>()
         )
 
         val listener = mock<RumDebugListener>()

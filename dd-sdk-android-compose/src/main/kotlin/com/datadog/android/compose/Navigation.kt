@@ -5,6 +5,7 @@
  */
 
 @file:Suppress("MatchingDeclarationName")
+
 package com.datadog.android.compose
 
 import android.os.Bundle
@@ -113,7 +114,6 @@ fun NavigationViewTrackingEffect(
     trackArguments: Boolean = true,
     destinationPredicate: ComponentPredicate<NavDestination> = AcceptAllNavDestinations()
 ) {
-
     val currentTrackArguments by rememberUpdatedState(newValue = trackArguments)
     val currentDestinationPredicate by rememberUpdatedState(newValue = destinationPredicate)
 

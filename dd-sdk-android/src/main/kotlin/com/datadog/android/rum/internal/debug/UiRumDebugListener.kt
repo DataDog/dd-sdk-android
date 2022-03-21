@@ -62,7 +62,6 @@ internal class UiRumDebugListener :
     }
 
     override fun onActivityResumed(activity: Activity) {
-
         if (advancedRumMonitor is NoOpAdvancedRumMonitor) {
             return
         }

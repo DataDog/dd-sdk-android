@@ -5,6 +5,7 @@
  */
 
 @file:Suppress("DEPRECATION")
+
 package com.datadog.android.sdk.integration.rum
 
 import android.os.Bundle

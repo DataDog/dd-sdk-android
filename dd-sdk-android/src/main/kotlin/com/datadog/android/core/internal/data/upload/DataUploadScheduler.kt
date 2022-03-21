@@ -21,7 +21,7 @@ internal class DataUploadScheduler(
     networkInfoProvider: NetworkInfoProvider,
     systemInfoProvider: SystemInfoProvider,
     uploadFrequency: UploadFrequency,
-    private val scheduledThreadPoolExecutor: ScheduledThreadPoolExecutor,
+    private val scheduledThreadPoolExecutor: ScheduledThreadPoolExecutor
 ) : UploadScheduler {
 
     private val runnable = DataUploadRunnable(

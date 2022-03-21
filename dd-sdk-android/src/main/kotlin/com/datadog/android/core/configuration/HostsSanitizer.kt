@@ -15,7 +15,7 @@ internal class HostsSanitizer {
 
     internal fun sanitizeHosts(
         hosts: List<String>,
-        feature: String,
+        feature: String
     ): List<String> {
         val validHostNameRegEx = Regex(VALID_HOSTNAME_REGEX)
         val validUrlRegex = Regex(URL_REGEX)

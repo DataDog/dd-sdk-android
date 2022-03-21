@@ -40,7 +40,6 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 @ForgeConfiguration(Configurator::class)
 internal class DdSpanToSpanEventMapperTest {

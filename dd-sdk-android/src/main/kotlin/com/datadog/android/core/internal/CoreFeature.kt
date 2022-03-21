@@ -155,7 +155,6 @@ internal object CoreFeature {
         configuration: Configuration.Core,
         consent: TrackingConsent
     ) {
-
         if (initialized.get()) {
             return
         }
@@ -205,8 +204,8 @@ internal object CoreFeature {
         )
     }
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // Used in Nightly tests only
     @Throws(UnsupportedOperationException::class, InterruptedException::class)
+    @Suppress("UnsafeThirdPartyFunctionCall") // Used in Nightly tests only
     fun drainAndShutdownExecutors() {
         val tasks = arrayListOf<Runnable>()
         (persistenceExecutorService as? ThreadPoolExecutor)

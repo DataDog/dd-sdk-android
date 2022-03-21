@@ -93,7 +93,6 @@ internal class RumDataWriterTest {
     fun `𝕄 do not notify the RumMonitor 𝕎 onDataWritten() { ViewEvent }`(
         @Forgery viewEvent: ViewEvent
     ) {
-
         // When
         testedWriter.onDataWritten(viewEvent, fakeSerializedData)
 

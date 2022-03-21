@@ -28,7 +28,7 @@ internal fun ScheduledExecutorService.scheduleSafe(
     operationName: String,
     delay: Long,
     unit: TimeUnit,
-    runnable: Runnable,
+    runnable: Runnable
 ): ScheduledFuture<*>? {
     return try {
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here

@@ -15,8 +15,10 @@ enum class UploadFrequency(
 
     /** Try to upload batch data frequently. */
     FREQUENT(1000L),
+
     /** Try to upload batch data with a medium frequency. */
     AVERAGE(5000L),
+
     /** Try to upload batch data rarely. */
     RARE(10000L)
 }

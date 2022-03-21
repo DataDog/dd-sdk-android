@@ -94,7 +94,6 @@ fun sendAllRumEvents(
     forge: Forge,
     testMethodName: String
 ) {
-
     val aViewKey = forge.aViewKey()
     GlobalRum.get().startView(
         aViewKey,
@@ -112,7 +111,6 @@ fun sendAllRumEvents(
 }
 
 private fun sendResourceEvent(forge: Forge, testMethodName: String) {
-
     val aResourceKey = forge.aResourceKey()
     GlobalRum.get().startResource(
         aResourceKey,

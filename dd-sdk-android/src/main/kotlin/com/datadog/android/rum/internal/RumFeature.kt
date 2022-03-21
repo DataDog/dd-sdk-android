@@ -111,7 +111,7 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
 
     override fun createPersistenceStrategy(
         context: Context,
-        configuration: Configuration.Feature.RUM,
+        configuration: Configuration.Feature.RUM
     ): PersistenceStrategy<Any> {
         return RumFilePersistenceStrategy(
             CoreFeature.trackingConsentProvider,
@@ -197,7 +197,7 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
 
     private fun initializeVitalMonitor(
         vitalReader: VitalReader,
-        vitalObserver: VitalObserver,
+        vitalObserver: VitalObserver
     ) {
         val readerRunnable = VitalReaderRunnable(
             vitalReader,

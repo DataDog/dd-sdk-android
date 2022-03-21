@@ -30,7 +30,6 @@ internal class ConsentPendingGrantedTracesTest : TracesTest() {
 
     @Test
     fun verifyExpectedActivitySpansAndLogs() {
-
         runInstrumentationScenario(mockServerRule)
 
         // update the tracking consent

@@ -26,7 +26,6 @@ internal class ANRDetectorRunnable(
     // region Runnable
 
     override fun run() {
-
         while (!Thread.interrupted()) {
             if (shouldStop) return
 

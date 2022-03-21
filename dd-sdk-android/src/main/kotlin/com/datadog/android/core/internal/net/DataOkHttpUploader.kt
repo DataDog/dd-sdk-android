@@ -25,7 +25,6 @@ internal abstract class DataOkHttpUploader(
 
     @Suppress("TooGenericExceptionCaught")
     override fun upload(data: ByteArray): UploadStatus {
-
         return try {
             val request = buildRequest(data)
             val call = callFactory.newCall(request)

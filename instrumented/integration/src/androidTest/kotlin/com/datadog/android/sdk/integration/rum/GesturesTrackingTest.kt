@@ -27,7 +27,6 @@ internal abstract class GesturesTrackingTest :
     override fun runInstrumentationScenario(
         mockServerRule: GesturesTrackingActivityTestRule<GesturesTrackingPlaygroundActivity>
     ): List<ExpectedEvent> {
-
         val activity = mockServerRule.activity
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.waitForIdleSync()

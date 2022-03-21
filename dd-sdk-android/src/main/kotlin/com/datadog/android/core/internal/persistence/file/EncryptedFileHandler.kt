@@ -33,7 +33,6 @@ internal class EncryptedFileHandler(
         append: Boolean,
         separator: ByteArray?
     ): Boolean {
-
         if (separator != null && !checkSeparator(separator)) {
             internalLogger.e(INVALID_SEPARATOR_MESSAGE)
             return false
@@ -68,7 +67,6 @@ internal class EncryptedFileHandler(
         suffix: ByteArray?,
         separator: ByteArray?
     ): ByteArray {
-
         if (separator != null && !checkSeparator(separator)) {
             internalLogger.e(INVALID_SEPARATOR_MESSAGE)
             return EMPTY_BYTE_ARRAY
@@ -202,7 +200,6 @@ internal class EncryptedFileHandler(
     }
 
     private fun ByteArray.splitBy(separator: ByteArray): List<ByteArray> {
-
         val result = mutableListOf<ByteArray>()
 
         var chunkStart = 0

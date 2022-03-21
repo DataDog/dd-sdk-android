@@ -57,7 +57,6 @@ internal class MixedViewTrackingStrategyTest :
 
     @Test
     fun `when created will delegate to the bundled strategies`() {
-
         // Whenever
         testedStrategy.onActivityCreated(mockActivity, mockBundle)
 
@@ -82,7 +81,6 @@ internal class MixedViewTrackingStrategyTest :
 
     @Test
     fun `when started will delegate to the bundled strategies`() {
-
         // Whenever
         testedStrategy.onActivityStarted(mockActivity)
 
@@ -107,7 +105,6 @@ internal class MixedViewTrackingStrategyTest :
 
     @Test
     fun `when resumed will delegate to the bundled strategies`() {
-
         // Whenever
         testedStrategy.onActivityResumed(mockActivity)
 

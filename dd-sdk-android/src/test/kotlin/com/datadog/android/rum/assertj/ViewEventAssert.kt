@@ -401,7 +401,8 @@ internal class ViewEventAssert(actual: ViewEvent) :
             .overridingErrorMessage(
                 "Expected event to have a source %s" +
                     " instead it was %s",
-                actual.source ?: "null", source ?: "null"
+                actual.source ?: "null",
+                source ?: "null"
             )
             .isEqualTo(source)
         return this

@@ -25,7 +25,6 @@ internal class WebViewRumEventMapper {
         context: RumContext?,
         timeOffset: Long
     ): JsonObject {
-
         event.get(DATE_KEY_NAME)?.asLong?.let {
             event.addProperty(DATE_KEY_NAME, it + timeOffset)
         }
