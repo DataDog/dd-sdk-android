@@ -12,11 +12,12 @@ import org.jlleitschuh.gradle.ktlint.KtlintExtension
 fun Project.ktLintConfig() {
 
     extensionConfig<KtlintExtension> {
+        version.set("0.44.0")
         debug.set(false)
         android.set(true)
         outputToConsole.set(true)
         ignoreFailures.set(false)
-        enableExperimentalRules.set(false)
+        enableExperimentalRules.set(true)
         additionalEditorconfigFile.set(file("${project.rootDir}/script/config/.editorconfig"))
         filter {
             exclude("**/generated/**")
