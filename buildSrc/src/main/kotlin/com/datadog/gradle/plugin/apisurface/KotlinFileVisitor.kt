@@ -24,7 +24,7 @@ class KotlinFileVisitor {
 
     fun visitFile(file: File, printAst: Boolean = false) {
         val code = file.readText()
-        val source = AstSource.String(code)
+        val source = AstSource.String(description = "Content of file ${file.path}", content = code)
         val ast = KotlinGrammarAntlrKotlinParser.parseKotlinFile(source)
 
         if (printAst) ast.print()

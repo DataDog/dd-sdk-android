@@ -28,8 +28,11 @@ import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.internal.TelemetryEventHandler
+import com.datadog.android.telemetry.internal.TelemetryType
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
+import com.datadog.tools.unit.forge.aThrowable
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -107,6 +110,9 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockSessionListener: RumSessionListener
 
+    @Mock
+    lateinit var mockTelemetryEventHandler: TelemetryEventHandler
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -130,6 +136,7 @@ internal class DatadogRumMonitorTest {
             fakeBackgroundTrackingEnabled,
             mockWriter,
             mockHandler,
+            mockTelemetryEventHandler,
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -148,6 +155,7 @@ internal class DatadogRumMonitorTest {
             fakeBackgroundTrackingEnabled,
             mockWriter,
             mockHandler,
+            mockTelemetryEventHandler,
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1160,6 +1168,7 @@ internal class DatadogRumMonitorTest {
             fakeBackgroundTrackingEnabled,
             mockWriter,
             mockHandler,
+            mockTelemetryEventHandler,
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1202,6 +1211,7 @@ internal class DatadogRumMonitorTest {
             fakeBackgroundTrackingEnabled,
             mockWriter,
             mockHandler,
+            mockTelemetryEventHandler,
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1231,6 +1241,7 @@ internal class DatadogRumMonitorTest {
             fakeBackgroundTrackingEnabled,
             mockWriter,
             mockHandler,
+            mockTelemetryEventHandler,
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -1337,6 +1348,46 @@ internal class DatadogRumMonitorTest {
 
         // Then
         verifyZeroInteractions(listener)
+    }
+
+    @Test
+    fun `M handle debug telemetry event W sendDebugTelemetryEvent()`(
+        @StringForgery message: String
+    ) {
+        // When
+        testedMonitor.sendDebugTelemetryEvent(message)
+
+        // Then
+        argumentCaptor<RumRawEvent.SendTelemetry> {
+            verify(mockTelemetryEventHandler).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            assertThat(lastValue.message).isEqualTo(message)
+            assertThat(lastValue.type).isEqualTo(TelemetryType.DEBUG)
+            assertThat(lastValue.throwable).isNull()
+        }
+    }
+
+    @Test
+    fun `M handle error telemetry event W sendErrorTelemetryEvent()`(
+        @StringForgery message: String,
+        forge: Forge
+    ) {
+        // When
+        val throwable = forge.aNullable { forge.aThrowable() }
+        testedMonitor.sendErrorTelemetryEvent(message, throwable)
+
+        // Then
+        argumentCaptor<RumRawEvent.SendTelemetry> {
+            verify(mockTelemetryEventHandler).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            assertThat(lastValue.message).isEqualTo(message)
+            assertThat(lastValue.type).isEqualTo(TelemetryType.ERROR)
+            assertThat(lastValue.throwable).isEqualTo(throwable)
+        }
     }
 
     companion object {

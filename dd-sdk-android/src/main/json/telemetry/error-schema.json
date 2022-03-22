@@ -9,31 +9,35 @@
       "$ref": "_common-schema.json"
     },
     {
-      "required": [
-        "status",
-        "message"
-      ],
+      "required": ["telemetry"],
       "properties": {
-        "status": {
-          "type": "string",
-          "description": "Level/severity of the log",
-          "const": "error"
-        },
-        "message": {
-          "type": "string",
-          "description": "Body of the log"
-        },
-        "error": {
+        "telemetry": {
           "type": "object",
-          "description": "Error properties",
+          "description": "The telemetry information",
+          "required": ["status", "message"],
           "properties": {
-            "stack": {
+            "status": {
               "type": "string",
-              "description": "The stack trace or the complementary information about the error"
+              "description": "Level/severity of the log",
+              "const": "error"
             },
-            "kind": {
+            "message": {
               "type": "string",
-              "description": "The error type or kind (or code in some cases)"
+              "description": "Body of the log"
+            },
+            "error": {
+              "type": "object",
+              "description": "Error properties",
+              "properties": {
+                "stack": {
+                  "type": "string",
+                  "description": "The stack trace or the complementary information about the error"
+                },
+                "kind": {
+                  "type": "string",
+                  "description": "The error type or kind (or code in some cases)"
+                }
+              }
             }
           }
         }

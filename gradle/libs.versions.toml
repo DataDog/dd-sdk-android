@@ -59,7 +59,7 @@ versionsPluginGradle = "0.27.0"
 nexusPublishPluginGradle = "1.1.0"
 
 kotlinPoet = "1.9.0"
-kotlinGrammarParser = "c35b50fa44"
+kotlinGrammarParser = "9b264ee"
 jsonSchemaValidator = "1.12.1"
 
 # Integrations

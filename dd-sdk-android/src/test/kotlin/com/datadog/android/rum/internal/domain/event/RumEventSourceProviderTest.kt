@@ -12,6 +12,8 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.model.TelemetryDebugEvent
+import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aStringNotMatchingSet
@@ -267,6 +269,96 @@ internal class RumEventSourceProviderTest {
 
         // When
         testedRumEventSourceProvider.longTaskEventSource
+
+        // Then
+        verify(logger.mockDevLogHandler).handleLog(
+            eq(Log.ERROR),
+            eq(
+                RumEventSourceProvider.UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
+                    .format(Locale.US, fakeInvalidSource)
+            ),
+            argThat { this is NoSuchElementException },
+            eq(emptyMap()),
+            eq(emptySet()),
+            eq(null)
+        )
+    }
+
+    // endregion
+
+    // region TelemetryDebugEvent
+
+    @Test
+    fun `M resolve the TelemetryDebugEvent source W telemetryDebugEventSource`() {
+        // Given
+        testedRumEventSourceProvider = RumEventSourceProvider(fakeValidSource)
+
+        // Then
+        assertThat(testedRumEventSourceProvider.telemetryDebugEventSource)
+            .isEqualTo(TelemetryDebugEvent.Source.fromJson(fakeValidSource))
+    }
+
+    @Test
+    fun `M return null W telemetryDebugEventSource { unknown source }`() {
+        // Given
+        testedRumEventSourceProvider = RumEventSourceProvider(fakeInvalidSource)
+
+        // Then
+        assertThat(testedRumEventSourceProvider.telemetryDebugEventSource).isNull()
+    }
+
+    @Test
+    fun `M send an error dev log W telemetryDebugEventSource { unknown source }`() {
+        // Given
+        testedRumEventSourceProvider = RumEventSourceProvider(fakeInvalidSource)
+
+        // When
+        testedRumEventSourceProvider.telemetryDebugEventSource
+
+        // Then
+        verify(logger.mockDevLogHandler).handleLog(
+            eq(Log.ERROR),
+            eq(
+                RumEventSourceProvider.UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
+                    .format(Locale.US, fakeInvalidSource)
+            ),
+            argThat { this is NoSuchElementException },
+            eq(emptyMap()),
+            eq(emptySet()),
+            eq(null)
+        )
+    }
+
+    // endregion
+
+    // region TelemetryErrorEvent
+
+    @Test
+    fun `M resolve the TelemetryErrorEvent source W telemetryErrorEventSource`() {
+        // Given
+        testedRumEventSourceProvider = RumEventSourceProvider(fakeValidSource)
+
+        // Then
+        assertThat(testedRumEventSourceProvider.telemetryErrorEventSource)
+            .isEqualTo(TelemetryErrorEvent.Source.fromJson(fakeValidSource))
+    }
+
+    @Test
+    fun `M return null W telemetryErrorEventSource { unknown source }`() {
+        // Given
+        testedRumEventSourceProvider = RumEventSourceProvider(fakeInvalidSource)
+
+        // Then
+        assertThat(testedRumEventSourceProvider.telemetryErrorEventSource).isNull()
+    }
+
+    @Test
+    fun `M send an error dev log W telemetryErrorEventSource { unknown source }`() {
+        // Given
+        testedRumEventSourceProvider = RumEventSourceProvider(fakeInvalidSource)
+
+        // When
+        testedRumEventSourceProvider.telemetryErrorEventSource
 
         // Then
         verify(logger.mockDevLogHandler).handleLog(

@@ -11,8 +11,8 @@ tasks.register(
     targetPackageName = "com.datadog.android.telemetry.model"
     ignoredFiles = arrayOf("_common-schema.json")
     inputNameMapping = mapOf(
-        "debug-schema.json" to "DebugEvent",
-        "error-schema.json" to "ErrorEvent"
+        "debug-schema.json" to "TelemetryDebugEvent",
+        "error-schema.json" to "TelemetryErrorEvent"
     )
 }
 

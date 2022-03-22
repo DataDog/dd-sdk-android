@@ -53,6 +53,10 @@ internal class Configurator :
         forge.addFactory(ViewEventForgeryFactory())
         forge.addFactory(VitalInfoForgeryFactory())
 
+        // Telemetry
+        forge.addFactory(TelemetryDebugEventForgeryFactory())
+        forge.addFactory(TelemetryErrorEventForgeryFactory())
+
         // NDK Crash
         forge.addFactory(NdkCrashLogForgeryFactory())
 
