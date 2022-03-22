@@ -31,7 +31,7 @@ internal abstract class FragmentTrackingTest :
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.waitForIdleSync()
         val fragmentAViewUrl = currentFragmentViewUrl(activity)
-        // one for application start update
+        // one for view start
         expectedEvents.add(
             ExpectedViewEvent(
                 fragmentAViewUrl,
@@ -40,28 +40,11 @@ internal abstract class FragmentTrackingTest :
             )
         )
 
-        // for update view time
-        expectedEvents.add(
-            ExpectedViewEvent(
-                fragmentAViewUrl,
-                3,
-                currentFragmentExtras(activity),
-                extraViewAttributes = mapOf(
-                    "loading_type" to "fragment_display"
-                ),
-                extraViewAttributesWithPredicate = mapOf(
-                    "loading_time" to { time ->
-                        time.asLong >= 0
-                    }
-                )
-            )
-        )
-
         // view stopped
         expectedEvents.add(
             ExpectedViewEvent(
                 fragmentAViewUrl,
-                4,
+                3,
                 currentFragmentExtras(activity),
                 extraViewAttributes = mapOf(
                     "loading_type" to "fragment_display"

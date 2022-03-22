@@ -13,8 +13,13 @@ internal class DefaultViewUpdatePredicate(
 ) : ViewUpdatePredicate {
     private var lastViewUpdateTimestamp = System.nanoTime() - VIEW_UPDATE_THRESHOLD_IN_NS
 
-    override fun canUpdateView(isViewComplete: Boolean): Boolean {
-        if (isViewComplete || System.nanoTime() - lastViewUpdateTimestamp > viewUpdateThreshold) {
+    override fun canUpdateView(isViewComplete: Boolean, event: RumRawEvent): Boolean {
+        val isFatalError = event is RumRawEvent.AddError && event.isFatal
+        val isThresholdReached = System.nanoTime() - lastViewUpdateTimestamp > viewUpdateThreshold
+        if (isViewComplete ||
+            isFatalError ||
+            isThresholdReached
+        ) {
             lastViewUpdateTimestamp = System.nanoTime()
             return true
         }

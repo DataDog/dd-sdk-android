@@ -7,5 +7,5 @@
 package com.datadog.android.rum.internal.domain.scope
 
 internal interface ViewUpdatePredicate {
-    fun canUpdateView(isViewComplete: Boolean): Boolean
+    fun canUpdateView(isViewComplete: Boolean, event: RumRawEvent): Boolean
 }

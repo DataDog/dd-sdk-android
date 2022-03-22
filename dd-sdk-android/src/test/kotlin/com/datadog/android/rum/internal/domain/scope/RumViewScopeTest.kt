@@ -212,7 +212,7 @@ internal class RumViewScopeTest {
         whenever(mockActionScope.handleEvent(any(), any())) doReturn mockActionScope
         whenever(mockActionScope.actionId) doReturn fakeActionId
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
-        whenever(mockViewUpdatePredicate.canUpdateView(any())).thenReturn(true)
+        whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(true)
 
         testedScope = RumViewScope(
             mockParentScope,
@@ -4858,7 +4858,7 @@ internal class RumViewScopeTest {
             RumRawEvent.AddCustomTiming(forge.anAlphabeticalString()),
             RumRawEvent.KeepAlive()
         )
-        whenever(mockViewUpdatePredicate.canUpdateView(any())).thenReturn(false)
+        whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(false)
 
         // When
         rawEvents.forEach {
@@ -4868,6 +4868,10 @@ internal class RumViewScopeTest {
         // Then
         verifyZeroInteractions(mockWriter)
     }
+
+    // endregion
+
+    // region ViewUpdatePredicate
 
     @Test
     fun `𝕄 send event 𝕎 handleEvent { ApplicationStarted, viewUpdatePredicate returns false }`(
@@ -4880,7 +4884,7 @@ internal class RumViewScopeTest {
         fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
         val attributes = forgeGlobalAttributes(forge, fakeAttributes)
         GlobalRum.globalAttributes.putAll(attributes)
-        whenever(mockViewUpdatePredicate.canUpdateView(any())).thenReturn(false)
+        whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(false)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -4904,6 +4908,93 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceActionEvent)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent { LongTask, viewUpdatePredicate returns false }`(
+        @LongForgery(0L, 700_000_000L) durationNs: Long,
+        @StringForgery target: String
+    ) {
+        // Given
+        testedScope.activeActionScope = null
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+        val durationMs = TimeUnit.NANOSECONDS.toMillis(durationNs)
+        whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(false)
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        argumentCaptor<LongTaskEvent> {
+            verify(mockWriter).write(capture())
+
+            assertThat(firstValue)
+                .apply {
+                    hasTimestamp(
+                        resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) - durationMs
+                    )
+                    hasDuration(durationNs)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(testedScope.viewId, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    hasSource(fakeSourceLongTaskEvent)
+                }
+        }
+
+        // Then
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent { Error, viewUpdatePredicate returns false }`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery sourceType: RumErrorSourceType,
+        @BoolForgery isFatal: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        testedScope.activeActionScope = mockActionScope
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            forge.aNullable { forge.aThrowable() },
+            forge.aNullable { forge.anAlphabeticalString() },
+            isFatal,
+            attributes,
+            sourceType = sourceType
+        )
+        whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(false)
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ErrorEvent> {
+            verify(mockWriter).write(capture())
+
+            assertThat(firstValue)
+                .apply {
+                    hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
+                    hasErrorSource(source)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeActionId)
+                    hasErrorSourceType(sourceType.toSchemaSourceType())
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(attributes)
+                    hasSource(fakeSourceErrorEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)

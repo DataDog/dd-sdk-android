@@ -95,10 +95,6 @@ internal abstract class GesturesTrackingTest :
                         "recyclerView"
                 )
             ),
-            ExpectedViewEvent(
-                viewUrl,
-                3
-            ),
             ExpectedGestureEvent(
                 Gesture.SWIPE,
                 activity.recyclerView.targetName(),
@@ -106,10 +102,6 @@ internal abstract class GesturesTrackingTest :
                 extraAttributes = mapOf(
                     RumAttributes.ACTION_GESTURE_DIRECTION to "down"
                 )
-            ),
-            ExpectedViewEvent(
-                viewUrl,
-                4
             )
         )
     }

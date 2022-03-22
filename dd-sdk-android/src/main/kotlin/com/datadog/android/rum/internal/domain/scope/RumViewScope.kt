@@ -480,7 +480,7 @@ internal open class RumViewScope(
     @Suppress("LongMethod")
     private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<Any>) {
         val viewComplete = isViewComplete()
-        if (!viewUpdatePredicate.canUpdateView(viewComplete)) {
+        if (!viewUpdatePredicate.canUpdateView(viewComplete, event)) {
             return
         }
         attributes.putAll(GlobalRum.globalAttributes)

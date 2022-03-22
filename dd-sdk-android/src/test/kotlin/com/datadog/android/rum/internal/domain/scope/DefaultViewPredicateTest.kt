@@ -6,6 +6,8 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.whenever
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -15,15 +17,18 @@ internal class DefaultViewPredicateTest {
 
     lateinit var testedViewPredicate: DefaultViewUpdatePredicate
 
+    lateinit var mockEvent: RumRawEvent
+
     @Before
     fun `set up`() {
+        mockEvent = mock()
         testedViewPredicate = DefaultViewUpdatePredicate()
     }
 
     @Test
     fun `M return true W canUpdateView { first call, isViewComplete false }`() {
         // When
-        val canUpdateView = testedViewPredicate.canUpdateView(false)
+        val canUpdateView = testedViewPredicate.canUpdateView(false, mockEvent)
 
         // Then
         assertThat(canUpdateView).isTrue
@@ -32,7 +37,33 @@ internal class DefaultViewPredicateTest {
     @Test
     fun `M return true W canUpdateView { first call, isViewComplete true }`() {
         // When
-        val canUpdateView = testedViewPredicate.canUpdateView(true)
+        val canUpdateView = testedViewPredicate.canUpdateView(true, mockEvent)
+
+        // Then
+        assertThat(canUpdateView).isTrue
+    }
+
+    @Test
+    fun `M return true W canUpdateView { first call, non fatal error }`() {
+        // Given
+        mockEvent = mock<RumRawEvent.AddError> {
+            whenever(it.isFatal).thenReturn(false)
+        }
+        // When
+        val canUpdateView = testedViewPredicate.canUpdateView(true, mockEvent)
+
+        // Then
+        assertThat(canUpdateView).isTrue
+    }
+
+    @Test
+    fun `M return true W canUpdateView { first call, fatal error }`() {
+        // Given
+        mockEvent = mock<RumRawEvent.AddError> {
+            whenever(it.isFatal).thenReturn(true)
+        }
+        // When
+        val canUpdateView = testedViewPredicate.canUpdateView(true, mockEvent)
 
         // Then
         assertThat(canUpdateView).isTrue
@@ -42,11 +73,26 @@ internal class DefaultViewPredicateTest {
     fun `M return true W canUpdateView { second call after threshold, isViewComplete false }`() {
         // Given
         testedViewPredicate = DefaultViewUpdatePredicate(TimeUnit.MILLISECONDS.toNanos(300))
-        val canUpdateViewFirst = testedViewPredicate.canUpdateView(false)
+        val canUpdateViewFirst = testedViewPredicate.canUpdateView(false, mockEvent)
 
         // When
         Thread.sleep(400)
-        val canUpdateViewSecond = testedViewPredicate.canUpdateView(false)
+        val canUpdateViewSecond = testedViewPredicate.canUpdateView(false, mockEvent)
+
+        // Then
+        assertThat(canUpdateViewFirst).isTrue
+        assertThat(canUpdateViewSecond).isTrue
+    }
+
+    @Test
+    fun `M return true W canUpdateView { second call after threshold, isViewComplete true }`() {
+        // Given
+        testedViewPredicate = DefaultViewUpdatePredicate(TimeUnit.MILLISECONDS.toNanos(300))
+        val canUpdateViewFirst = testedViewPredicate.canUpdateView(false, mockEvent)
+
+        // When
+        Thread.sleep(400)
+        val canUpdateViewSecond = testedViewPredicate.canUpdateView(true, mockEvent)
 
         // Then
         assertThat(canUpdateViewFirst).isTrue
@@ -56,10 +102,10 @@ internal class DefaultViewPredicateTest {
     @Test
     fun `M return true W canUpdateView { second call before threshold, isViewComplete true }`() {
         // Given
-        val canUpdateViewFirst = testedViewPredicate.canUpdateView(false)
+        val canUpdateViewFirst = testedViewPredicate.canUpdateView(false, mockEvent)
 
         // When
-        val canUpdateViewSecond = testedViewPredicate.canUpdateView(true)
+        val canUpdateViewSecond = testedViewPredicate.canUpdateView(true, mockEvent)
 
         // Then
         assertThat(canUpdateViewFirst).isTrue
@@ -69,11 +115,42 @@ internal class DefaultViewPredicateTest {
     @Test
     fun `M return false W canUpdateView { second call before threshold, isViewComplete false }`() {
         // Given
-        testedViewPredicate = DefaultViewUpdatePredicate(TimeUnit.MILLISECONDS.toNanos(300))
-        val canUpdateViewFirst = testedViewPredicate.canUpdateView(false)
+        val canUpdateViewFirst = testedViewPredicate.canUpdateView(false, mockEvent)
 
         // When
-        val canUpdateViewSecond = testedViewPredicate.canUpdateView(false)
+        val canUpdateViewSecond = testedViewPredicate.canUpdateView(false, mockEvent)
+
+        // Then
+        assertThat(canUpdateViewFirst).isTrue
+        assertThat(canUpdateViewSecond).isFalse
+    }
+
+    @Test
+    fun `M return true W canUpdateView { second call before threshold, fatal error }`() {
+        // Given
+        mockEvent = mock<RumRawEvent.AddError> {
+            whenever(it.isFatal).thenReturn(true)
+        }
+        val canUpdateViewFirst = testedViewPredicate.canUpdateView(false, mockEvent)
+
+        // When
+        val canUpdateViewSecond = testedViewPredicate.canUpdateView(false, mockEvent)
+
+        // Then
+        assertThat(canUpdateViewFirst).isTrue
+        assertThat(canUpdateViewSecond).isTrue
+    }
+
+    @Test
+    fun `M return false W canUpdateView { second call before threshold, non fatal error }`() {
+        // Given
+        mockEvent = mock<RumRawEvent.AddError> {
+            whenever(it.isFatal).thenReturn(false)
+        }
+        val canUpdateViewFirst = testedViewPredicate.canUpdateView(false, mockEvent)
+
+        // When
+        val canUpdateViewSecond = testedViewPredicate.canUpdateView(false, mockEvent)
 
         // Then
         assertThat(canUpdateViewFirst).isTrue
