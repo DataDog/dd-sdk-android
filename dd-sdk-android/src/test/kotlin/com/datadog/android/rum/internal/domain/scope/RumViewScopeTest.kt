@@ -50,6 +50,7 @@ import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.tools.unit.forge.aThrowable
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
@@ -164,6 +165,9 @@ internal class RumViewScopeTest {
     @Mock
     lateinit var mockRumEventSourceProvider: RumEventSourceProvider
 
+    @Mock
+    lateinit var mockViewUpdatePredicate: ViewUpdatePredicate
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeSourceViewEvent = forge.aNullable { aValueFrom(ViewEvent.Source::class.java) }
@@ -208,6 +212,7 @@ internal class RumViewScopeTest {
         whenever(mockActionScope.handleEvent(any(), any())) doReturn mockActionScope
         whenever(mockActionScope.actionId) doReturn fakeActionId
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
+        whenever(mockViewUpdatePredicate.canUpdateView(any())).thenReturn(true)
 
         testedScope = RumViewScope(
             mockParentScope,
@@ -221,7 +226,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
-            mockBuildSdkVersionProvider
+            mockBuildSdkVersionProvider,
+            mockViewUpdatePredicate
         )
 
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
@@ -697,7 +703,8 @@ internal class RumViewScopeTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
-            rumEventSourceProvider = mockRumEventSourceProvider
+            rumEventSourceProvider = mockRumEventSourceProvider,
+            viewUpdatePredicate = mockViewUpdatePredicate
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
 
@@ -820,7 +827,8 @@ internal class RumViewScopeTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
-            rumEventSourceProvider = mockRumEventSourceProvider
+            rumEventSourceProvider = mockRumEventSourceProvider,
+            viewUpdatePredicate = mockViewUpdatePredicate
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -894,7 +902,8 @@ internal class RumViewScopeTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
-            rumEventSourceProvider = mockRumEventSourceProvider
+            rumEventSourceProvider = mockRumEventSourceProvider,
+            viewUpdatePredicate = mockViewUpdatePredicate
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -4354,7 +4363,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
-            mockBuildSdkVersionProvider
+            mockBuildSdkVersionProvider,
+            viewUpdatePredicate = mockViewUpdatePredicate
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -4430,7 +4440,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
-            mockBuildSdkVersionProvider
+            mockBuildSdkVersionProvider,
+            viewUpdatePredicate = mockViewUpdatePredicate
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -4508,7 +4519,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
-            mockBuildSdkVersionProvider
+            mockBuildSdkVersionProvider,
+            viewUpdatePredicate = mockViewUpdatePredicate
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -4586,7 +4598,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
-            mockBuildSdkVersionProvider
+            mockBuildSdkVersionProvider,
+            viewUpdatePredicate = mockViewUpdatePredicate
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -4665,7 +4678,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
-            mockBuildSdkVersionProvider
+            mockBuildSdkVersionProvider,
+            viewUpdatePredicate = mockViewUpdatePredicate
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -4744,7 +4758,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
-            mockBuildSdkVersionProvider
+            mockBuildSdkVersionProvider,
+            viewUpdatePredicate = mockViewUpdatePredicate
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -4785,6 +4800,110 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 not send event 𝕎 handleEvent { viewUpdatePredicate returns false }`(forge: Forge) {
+        // Given
+        val rawEvents = listOf(
+            RumRawEvent.StartView(
+                forge.anAlphabeticalString(),
+                forge.anAlphabeticalString(),
+                emptyMap()
+            ),
+            RumRawEvent.StopView(
+                forge.anAlphabeticalString(),
+                emptyMap()
+            ),
+            RumRawEvent.StartAction(
+                forge.aValueFrom(RumActionType::class.java),
+                forge.anAlphabeticalString(),
+                forge.aBool(),
+                emptyMap()
+            ),
+            RumRawEvent.ActionSent(forge.anAlphabeticalString()),
+            RumRawEvent.StartResource(
+                forge.anAlphabeticalString(),
+                forge.anAlphabeticalString(),
+                forge.anAlphabeticalString(),
+                emptyMap()
+            ),
+            RumRawEvent.ResourceSent(
+                forge.anAlphabeticalString()
+            ),
+            RumRawEvent.AddError(
+                forge.anAlphabeticalString(),
+                forge.aValueFrom(RumErrorSource::class.java),
+                stacktrace = forge.aNullable { forge.aString() },
+                throwable = forge.aNullable { forge.aThrowable() },
+                isFatal = forge.aBool(),
+                attributes = emptyMap()
+            ),
+            RumRawEvent.ErrorSent(forge.anAlphabeticalString()),
+            RumRawEvent.AddLongTask(forge.aLong(), forge.anAlphabeticalString()),
+            RumRawEvent.LongTaskSent(forge.anAlphabeticalString()),
+            RumRawEvent.ResourceDropped(forge.anAlphabeticalString()),
+            RumRawEvent.LongTaskDropped(forge.anAlphabeticalString()),
+            RumRawEvent.ErrorDropped(forge.anAlphabeticalString()),
+            RumRawEvent.ActionDropped(forge.anAlphabeticalString()),
+            RumRawEvent.UpdateViewLoadingTime(
+                forge.anAlphabeticalString(),
+                forge.aLong(),
+                forge.aValueFrom(ViewEvent.LoadingType::class.java)
+            ),
+            RumRawEvent.AddCustomTiming(forge.anAlphabeticalString()),
+            RumRawEvent.KeepAlive()
+        )
+        whenever(mockViewUpdatePredicate.canUpdateView(any())).thenReturn(false)
+
+        // When
+        rawEvents.forEach {
+            testedScope.handleEvent(it, mockWriter)
+        }
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+    }
+
+    @Test
+    fun `𝕄 send event 𝕎 handleEvent { ApplicationStarted, viewUpdatePredicate returns false }`(
+        @LongForgery(0) duration: Long,
+        forge: Forge
+    ) {
+        // Given
+        val eventTime = Time()
+        val startedNanos = eventTime.nanoTime - duration
+        fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
+        val attributes = forgeGlobalAttributes(forge, fakeAttributes)
+        GlobalRum.globalAttributes.putAll(attributes)
+        whenever(mockViewUpdatePredicate.canUpdateView(any())).thenReturn(false)
+
+        // When
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(firstValue)
+                .apply {
+                    hasNonNullId()
+                    hasTimestamp(testedScope.eventTimestamp)
+                    hasType(ActionEvent.ActionType.APPLICATION_START)
+                    hasNoTarget()
+                    hasDuration(duration)
+                    hasResourceCount(0)
+                    hasErrorCount(0)
+                    hasCrashCount(0)
+                    hasUserInfo(fakeUserInfo)
+                    hasView(testedScope.viewId, testedScope.name, testedScope.url)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    hasSource(fakeSourceActionEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
