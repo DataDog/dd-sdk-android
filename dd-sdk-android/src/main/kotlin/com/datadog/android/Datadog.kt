@@ -22,13 +22,11 @@ import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.tracing.internal.TracingFeature
-import com.datadog.android.webview.internal.log.WebViewInternalLogsFeature
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import java.lang.IllegalArgumentException
@@ -97,7 +95,6 @@ object Datadog {
         initializeTracingFeature(mutableConfig.tracesConfig, appContext)
         initializeRumFeature(mutableConfig.rumConfig, appContext)
         initializeCrashReportFeature(mutableConfig.crashReportConfig, appContext)
-        initializeInternalLogsFeature(mutableConfig.internalLogsConfig, appContext)
 
         CoreFeature.ndkCrashHandler.handleNdkCrash(
             LogsFeature.persistenceStrategy.getWriter(),
@@ -151,8 +148,6 @@ object Datadog {
         CrashReportsFeature.clearAllData()
         RumFeature.clearAllData()
         TracingFeature.clearAllData()
-        InternalLogsFeature.clearAllData()
-        WebViewInternalLogsFeature.clearAllData()
         WebViewLogsFeature.clearAllData()
         WebViewRumFeature.clearAllData()
     }
@@ -165,9 +160,7 @@ object Datadog {
             RumFeature.stop()
             CrashReportsFeature.stop()
             CoreFeature.stop()
-            InternalLogsFeature.stop()
             WebViewLogsFeature.stop()
-            WebViewInternalLogsFeature.stop()
             WebViewRumFeature.stop()
             isDebug = false
             initialized.set(false)
@@ -197,7 +190,6 @@ object Datadog {
             TracingFeature.flushStoredData()
             RumFeature.flushStoredData()
             CrashReportsFeature.flushStoredData()
-            WebViewInternalLogsFeature.flushStoredData()
             WebViewLogsFeature.flushStoredData()
             WebViewRumFeature.flushStoredData()
         }
@@ -314,16 +306,6 @@ object Datadog {
             }
             RumFeature.initialize(appContext, configuration)
             WebViewRumFeature.initialize(appContext, configuration)
-        }
-    }
-
-    private fun initializeInternalLogsFeature(
-        configuration: Configuration.Feature.InternalLogs?,
-        appContext: Context
-    ) {
-        if (configuration != null) {
-            InternalLogsFeature.initialize(appContext, configuration)
-            WebViewInternalLogsFeature.initialize(appContext, configuration)
         }
     }
 

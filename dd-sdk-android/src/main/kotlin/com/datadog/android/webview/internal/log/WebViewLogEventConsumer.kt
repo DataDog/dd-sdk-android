@@ -19,7 +19,6 @@ import kotlin.NumberFormatException
 
 internal class WebViewLogEventConsumer(
     private val userLogsWriter: DataWriter<JsonObject>,
-    private val internalLogsWriter: DataWriter<JsonObject>,
     private val rumContextProvider: WebViewRumEventContextProvider,
     private val timeProvider: TimeProvider
 ) : WebViewEventConsumer<Pair<JsonObject, String>> {
@@ -31,9 +30,7 @@ internal class WebViewLogEventConsumer(
 
     override fun consume(event: Pair<JsonObject, String>) {
         map(event.first).let {
-            if (event.second == INTERNAL_LOG_EVENT_TYPE) {
-                internalLogsWriter.write(it)
-            } else {
+            if (event.second == USER_LOG_EVENT_TYPE) {
                 userLogsWriter.write(it)
             }
         }

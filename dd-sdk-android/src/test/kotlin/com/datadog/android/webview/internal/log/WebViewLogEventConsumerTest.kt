@@ -26,6 +26,7 @@ import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -60,9 +61,6 @@ internal class WebViewLogEventConsumerTest {
     lateinit var mockUserLogsWriter: DataWriter<JsonObject>
 
     @Mock
-    lateinit var mockInternalLogsWriter: DataWriter<JsonObject>
-
-    @Mock
     lateinit var mockRumContextProvider: WebViewRumEventContextProvider
 
     @StringForgery(regex = "[0-9]\\.[0-9]\\.[0-9]")
@@ -89,7 +87,6 @@ internal class WebViewLogEventConsumerTest {
 
         testedConsumer = WebViewLogEventConsumer(
             mockUserLogsWriter,
-            mockInternalLogsWriter,
             mockRumContextProvider,
             mockTimeProvider
         )
@@ -123,29 +120,18 @@ internal class WebViewLogEventConsumerTest {
     }
 
     @Test
-    fun `M write the user event W consume { internal log event type }`() {
-        // Given
-        val expectedDate = fakeTimeOffset +
-            fakeWebLogEvent.get(WebViewLogEventConsumer.DATE_KEY_NAME).asLong
-        var expectedTags = mobileSdkDdtags()
-        fakeWebLogEvent.get(WebViewLogEventConsumer.DDTAGS_KEY_NAME)?.asString?.let {
-            expectedTags += WebViewLogEventConsumer.DDTAGS_SEPARATOR + it
-        }
-
+    fun `M not write the user event W consume { unknown event type }`(forge: Forge) {
         // When
         testedConsumer.consume(
-            fakeWebLogEvent to WebViewLogEventConsumer.INTERNAL_LOG_EVENT_TYPE
+            fakeWebLogEvent to
+                forge.anElementFrom(
+                    WebViewLogEventConsumer.INTERNAL_LOG_EVENT_TYPE,
+                    forge.anAlphabeticalString()
+                )
         )
 
         // Then
-        argumentCaptor<JsonObject> {
-            verify(mockInternalLogsWriter).write(capture())
-            assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
-            assertThat(firstValue).hasField(
-                WebViewLogEventConsumer.DDTAGS_KEY_NAME,
-                expectedTags
-            )
-        }
+        verifyZeroInteractions(mockUserLogsWriter)
     }
 
     @Test
@@ -169,43 +155,6 @@ internal class WebViewLogEventConsumerTest {
         // Then
         argumentCaptor<JsonObject> {
             verify(mockUserLogsWriter).write(capture())
-            assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
-            assertThat(firstValue).hasField(
-                WebViewLogEventConsumer.DDTAGS_KEY_NAME,
-                expectedTags
-            )
-            assertThat(firstValue).hasField(
-                LogAttributes.RUM_APPLICATION_ID,
-                fakeRumContext.applicationId
-            )
-            assertThat(firstValue).hasField(
-                LogAttributes.RUM_SESSION_ID,
-                fakeRumContext.sessionId
-            )
-        }
-    }
-
-    @Test
-    fun `M write a mapped event W consume { internal log event type, rum context }`(
-        @Forgery fakeRumContext: RumContext
-    ) {
-        // Given
-        whenever(mockRumContextProvider.getRumContext()).thenReturn(fakeRumContext)
-        val expectedDate = fakeTimeOffset +
-            fakeWebLogEvent.get(WebViewLogEventConsumer.DATE_KEY_NAME).asLong
-        var expectedTags = mobileSdkDdtags()
-        fakeWebLogEvent.get(WebViewLogEventConsumer.DDTAGS_KEY_NAME)?.asString?.let {
-            expectedTags += WebViewLogEventConsumer.DDTAGS_SEPARATOR + it
-        }
-
-        // When
-        testedConsumer.consume(
-            fakeWebLogEvent to WebViewLogEventConsumer.INTERNAL_LOG_EVENT_TYPE
-        )
-
-        // Then
-        argumentCaptor<JsonObject> {
-            verify(mockInternalLogsWriter).write(capture())
             assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
             assertThat(firstValue).hasField(
                 WebViewLogEventConsumer.DDTAGS_KEY_NAME,
@@ -247,31 +196,6 @@ internal class WebViewLogEventConsumerTest {
         }
     }
 
-    @Test
-    fun `M skip date correction W consume { internal log, date field does not exist }`() {
-        // Given
-        fakeWebLogEvent.remove(WebViewLogEventConsumer.DATE_KEY_NAME)
-        var expectedTags = mobileSdkDdtags()
-        fakeWebLogEvent.get(WebViewLogEventConsumer.DDTAGS_KEY_NAME)?.asString?.let {
-            expectedTags += WebViewLogEventConsumer.DDTAGS_SEPARATOR + it
-        }
-
-        // When
-        testedConsumer.consume(
-            fakeWebLogEvent to WebViewLogEventConsumer.INTERNAL_LOG_EVENT_TYPE
-        )
-
-        // Then
-        argumentCaptor<JsonObject> {
-            verify(mockInternalLogsWriter).write(capture())
-            assertThat(firstValue).doesNotHaveField(WebViewLogEventConsumer.DATE_KEY_NAME)
-            assertThat(firstValue).hasField(
-                WebViewLogEventConsumer.DDTAGS_KEY_NAME,
-                expectedTags
-            )
-        }
-    }
-
     @ParameterizedTest
     @MethodSource("brokenJsonTestData")
     fun `M send original event W consume { user log, bad format json object }`(
@@ -284,20 +208,6 @@ internal class WebViewLogEventConsumerTest {
 
         // Then
         verify(mockUserLogsWriter).write(fakeBrokenJsonObject)
-    }
-
-    @ParameterizedTest
-    @MethodSource("brokenJsonTestData")
-    fun `M send original event W consume { internal log, bad format json object }`(
-        fakeBrokenJsonObject: JsonObject
-    ) {
-        // When
-        testedConsumer.consume(
-            fakeBrokenJsonObject to WebViewLogEventConsumer.INTERNAL_LOG_EVENT_TYPE
-        )
-
-        // Then
-        verify(mockInternalLogsWriter).write(fakeBrokenJsonObject)
     }
 
     @ParameterizedTest
@@ -349,30 +259,6 @@ internal class WebViewLogEventConsumerTest {
         }
     }
 
-    @Test
-    fun `M add local ddtags W consume { internal log, no extra ddtags }`() {
-        // Given
-        fakeWebLogEvent.remove(WebViewLogEventConsumer.DDTAGS_KEY_NAME)
-        val expectedDate = fakeTimeOffset +
-            fakeWebLogEvent.get(WebViewLogEventConsumer.DATE_KEY_NAME).asLong
-        val expectedTags = mobileSdkDdtags()
-
-        // When
-        testedConsumer.consume(
-            fakeWebLogEvent to WebViewLogEventConsumer.INTERNAL_LOG_EVENT_TYPE
-        )
-
-        // Then
-        argumentCaptor<JsonObject> {
-            verify(mockInternalLogsWriter).write(capture())
-            assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
-            assertThat(firstValue).hasField(
-                WebViewLogEventConsumer.DDTAGS_KEY_NAME,
-                expectedTags
-            )
-        }
-    }
-
     // endregion
 
     // region Internal
@@ -402,6 +288,7 @@ internal class WebViewLogEventConsumerTest {
             return listOf(logger)
         }
 
+        @Suppress("unused")
         @JvmStatic
         fun brokenJsonTestData(): Stream<Arguments> {
             val fakeJsonObject1 = JsonObject().apply {

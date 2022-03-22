@@ -10,9 +10,6 @@ import android.content.Context
 import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.CombinedLogHandler
@@ -20,9 +17,6 @@ import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
-import com.datadog.android.log.internal.user.NoOpUserInfoProvider
-import com.datadog.android.log.model.LogEvent
-import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
@@ -30,10 +24,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -68,7 +59,6 @@ internal class LoggerBuilderTest {
     @AfterEach
     fun `tear down`() {
         LogsFeature.stop()
-        InternalLogsFeature.stop()
     }
 
     @Test
@@ -204,40 +194,6 @@ internal class LoggerBuilderTest {
         val sampler = handler.sampler
         assertThat(sampler).isInstanceOf(RateBasedSampler::class.java)
         assertThat((sampler as RateBasedSampler).sampleRate).isEqualTo(expectedSampleRate)
-    }
-
-    @Test
-    fun `M use an InternalLogs writer W setInternal() + build()`() {
-        // Given
-        val mockPersistenceStrategy: PersistenceStrategy<LogEvent> = mock()
-        val mockWriter: DataWriter<LogEvent> = mock()
-        whenever(mockPersistenceStrategy.getWriter()) doReturn mockWriter
-        InternalLogsFeature.initialized.set(true)
-        InternalLogsFeature.persistenceStrategy = mockPersistenceStrategy
-
-        // When
-        val logger = Logger.Builder().setInternal(true).build()
-
-        // Then
-        val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
-        assertThat(handler.writer).isSameAs(mockWriter)
-        assertThat(handler.logGenerator.envTag)
-            .isEqualTo(LogAttributes.ENV + ':' + InternalLogsFeature.ENV_NAME)
-        assertThat(handler.logGenerator.serviceName).isEqualTo(InternalLogsFeature.SERVICE_NAME)
-        assertThat(handler.logGenerator.userInfoProvider)
-            .isInstanceOf(NoOpUserInfoProvider::class.java)
-        assertThat(handler.logGenerator.timeProvider).isEqualTo(CoreFeature.timeProvider)
-    }
-
-    @Test
-    fun `M use noop handler W setInternal() + build() {internal logs disabled)`() {
-        // Given
-        InternalLogsFeature.initialized.set(false)
-
-        val logger = Logger.Builder().setInternal(true).build()
-
-        val handler: LogHandler = logger.handler
-        assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
     }
 
     companion object {

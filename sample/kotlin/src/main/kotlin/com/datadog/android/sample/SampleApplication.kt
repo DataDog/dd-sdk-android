@@ -12,7 +12,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.Datadog.setUserInfo
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogEventListener
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
@@ -142,10 +141,6 @@ class SampleApplication : Application() {
             )
             .trackInteractions()
             .trackLongTasks(250L)
-            .setInternalLogsEnabled(
-                BuildConfig.DD_INTERNAL_MONITORING_CLIENT_TOKEN,
-                DatadogEndpoint.LOGS_US
-            )
 
         try {
             configBuilder.useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))

@@ -57,7 +57,6 @@ internal constructor(
     internal val tracesConfig: Feature.Tracing?,
     internal val crashReportConfig: Feature.CrashReport?,
     internal val rumConfig: Feature.RUM?,
-    internal val internalLogsConfig: Feature.InternalLogs?,
     internal val additionalConfig: Map<String, Any>
 ) {
 
@@ -81,12 +80,6 @@ internal constructor(
             override val endpointUrl: String,
             override val plugins: List<DatadogPlugin>,
             val logsEventMapper: EventMapper<LogEvent>
-        ) : Feature()
-
-        internal data class InternalLogs(
-            val internalClientToken: String,
-            override val endpointUrl: String,
-            override val plugins: List<DatadogPlugin>
         ) : Feature()
 
         internal data class CrashReport(
@@ -132,7 +125,6 @@ internal constructor(
         private var tracesConfig: Feature.Tracing = DEFAULT_TRACING_CONFIG
         private var crashReportConfig: Feature.CrashReport = DEFAULT_CRASH_CONFIG
         private var rumConfig: Feature.RUM = DEFAULT_RUM_CONFIG
-        private var internalLogsConfig: Feature.InternalLogs? = null
         private var additionalConfig: Map<String, Any> = emptyMap()
 
         private var coreConfig = DEFAULT_CORE_CONFIG
@@ -149,7 +141,6 @@ internal constructor(
                 tracesConfig = if (tracesEnabled) tracesConfig else null,
                 crashReportConfig = if (crashReportsEnabled) crashReportConfig else null,
                 rumConfig = if (rumEnabled) rumConfig else null,
-                internalLogsConfig = internalLogsConfig,
                 additionalConfig = additionalConfig
             )
         }
@@ -595,15 +586,21 @@ internal constructor(
          * @param clientToken the client token to use for internal logs
          * @param endpointUrl the endpoint url to sent the internal logs to
          * (one of [DatadogEndpoint.LOGS_US], [DatadogEndpoint.LOGS_EU], [DatadogEndpoint.LOGS_GOV])
+         *
+         * @deprecated This method has no effect and will be removed in the next version.
          */
+        @Suppress("UNUSED_PARAMETER")
+        @Deprecated(
+            message = "This method has no effect and will be removed in the next version."
+        )
         fun setInternalLogsEnabled(
             clientToken: String,
             endpointUrl: String
         ): Builder {
-            internalLogsConfig = Feature.InternalLogs(
-                clientToken,
-                endpointUrl,
-                emptyList()
+            warnDeprecated(
+                target = "Configuration.Builder.setInternalLogsEnabled()",
+                deprecatedSince = "1.13.0",
+                removedInVersion = "1.14.0"
             )
             return this
         }

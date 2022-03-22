@@ -21,9 +21,7 @@ import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
-import com.datadog.android.log.internal.user.NoOpUserInfoProvider
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Date
@@ -188,7 +186,6 @@ internal constructor(internal var handler: LogHandler) {
         private var bundleWithRumEnabled: Boolean = true
         private var loggerName: String = CoreFeature.packageName
         private var sampleRate: Float = 1.0f
-        private var isInternalLogger: Boolean = false
 
         /**
          * Builds a [Logger] based on the current state of this Builder.
@@ -290,32 +287,15 @@ internal constructor(internal var handler: LogHandler) {
 
         // region Internal
 
-        /**
-         * Declare this logger as internal: logs will be sent to the [InternalLogsFeature]
-         * configured endpoint (if any).
-         * @param isInternal whether this logger should be considered internal (default is false)
-         */
-        internal fun setInternal(isInternal: Boolean): Builder {
-            isInternalLogger = isInternal
-            return this
-        }
-
         private fun buildLogcatHandler(): LogHandler {
             return LogcatLogHandler(serviceName, true)
         }
 
         private fun buildDatadogHandler(): LogHandler {
-            val writer = if (isInternalLogger) {
-                buildInternalLogWriter()
-            } else {
-                buildLogWriter()
-            } ?: return NoOpLogHandler()
+            val writer = buildLogWriter() ?: return NoOpLogHandler()
 
-            val logGenerator = if (isInternalLogger) {
-                buildInternalLogGenerator()
-            } else {
-                buildLogGenerator()
-            }
+            val logGenerator = buildLogGenerator()
+
             return DatadogLogHandler(
                 logGenerator = logGenerator,
                 writer = writer,
@@ -323,14 +303,6 @@ internal constructor(internal var handler: LogHandler) {
                 bundleWithRum = bundleWithRumEnabled,
                 sampler = RateBasedSampler(sampleRate)
             )
-        }
-
-        private fun buildInternalLogWriter(): DataWriter<LogEvent>? {
-            return if (InternalLogsFeature.isInitialized()) {
-                InternalLogsFeature.persistenceStrategy.getWriter()
-            } else {
-                null
-            }
         }
 
         private fun buildLogWriter(): DataWriter<LogEvent>? {
@@ -356,24 +328,6 @@ internal constructor(internal var handler: LogHandler) {
                 CoreFeature.timeProvider,
                 CoreFeature.sdkVersion,
                 CoreFeature.envName,
-                CoreFeature.packageVersion
-            )
-        }
-
-        private fun buildInternalLogGenerator(): LogGenerator {
-            val netInfoProvider = if (networkInfoEnabled) {
-                CoreFeature.networkInfoProvider
-            } else {
-                null
-            }
-            return LogGenerator(
-                InternalLogsFeature.SERVICE_NAME,
-                loggerName,
-                netInfoProvider,
-                NoOpUserInfoProvider(), // we don't want to track our customer's users
-                CoreFeature.timeProvider,
-                CoreFeature.sdkVersion,
-                InternalLogsFeature.ENV_NAME,
                 CoreFeature.packageVersion
             )
         }

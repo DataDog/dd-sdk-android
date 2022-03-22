@@ -11,7 +11,6 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.WebViewEventConsumer
-import com.datadog.android.webview.internal.log.WebViewInternalLogsFeature
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
@@ -106,7 +105,6 @@ internal constructor(
                 ),
                 WebViewLogEventConsumer(
                     userLogsWriter = WebViewLogsFeature.persistenceStrategy.getWriter(),
-                    internalLogsWriter = WebViewInternalLogsFeature.persistenceStrategy.getWriter(),
                     rumContextProvider = contextProvider,
                     timeProvider = CoreFeature.timeProvider
                 )
