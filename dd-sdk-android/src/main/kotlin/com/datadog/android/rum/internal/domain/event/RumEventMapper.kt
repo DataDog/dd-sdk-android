@@ -18,6 +18,8 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.model.TelemetryDebugEvent
+import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import java.util.Locale
 
 internal data class RumEventMapper(
@@ -51,6 +53,7 @@ internal data class RumEventMapper(
             }
             is ResourceEvent -> resourceEventMapper.map(event)
             is LongTaskEvent -> longTaskEventMapper.map(event)
+            is TelemetryDebugEvent, is TelemetryErrorEvent -> event
             else -> {
                 sdkLogger.w(
                     NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE
