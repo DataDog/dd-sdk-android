@@ -200,7 +200,6 @@ class GlobalRumE2ETests {
         val intAttrValue = forge.anInt()
 
         executeInsideView(viewKey, viewName, testMethodName) {
-
             addAttributes(strAttrValue, intAttrValue)
             removeAttributesMeasured()
             GlobalRum.get().startResource(
@@ -262,7 +261,6 @@ class GlobalRumE2ETests {
         val intAttrValue = forge.anInt()
 
         executeInsideView(viewKey, viewName, testMethodName) {
-
             addAttributes(strAttrValue, intAttrValue)
             removeAttributesMeasured()
             GlobalRum.get().addError(

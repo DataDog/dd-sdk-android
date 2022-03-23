@@ -15,7 +15,6 @@ import fr.xgouchet.elmyr.ForgeryFactory
 internal class MotionEventForgeryFactory : ForgeryFactory<MotionEvent> {
 
     override fun getForgery(forge: Forge): MotionEvent {
-
         return mock {
             whenever(it.x).thenReturn(
                 forge.aFloat(

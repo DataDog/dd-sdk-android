@@ -103,7 +103,6 @@ internal abstract class AbstractGesturesListenerTest {
         forge: Forge,
         applyOthers: (T) -> Unit = {}
     ): T {
-
         val failHitTestBecauseOfXY = forge.aBool()
         val failHitTestBecauseOfWidthHeight = !failHitTestBecauseOfXY
         val locationOnScreenArray = IntArray(2)

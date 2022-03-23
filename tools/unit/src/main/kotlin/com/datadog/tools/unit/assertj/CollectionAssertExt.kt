@@ -15,7 +15,6 @@ import org.assertj.core.api.ListAssert
  *  @param clazz the class object
  */
 fun <T> ListAssert<T>.containsInstanceOf(clazz: Class<*>): ListAssert<T> {
-
     overridingErrorMessage(
         "Expected list to have at least one instance of ${clazz.simpleName} " +
             "but found none."

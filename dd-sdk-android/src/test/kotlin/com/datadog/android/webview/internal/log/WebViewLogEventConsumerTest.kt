@@ -112,7 +112,7 @@ internal class WebViewLogEventConsumerTest {
         )
 
         // Then
-        argumentCaptor<JsonObject>() {
+        argumentCaptor<JsonObject> {
             verify(mockUserLogsWriter).write(capture())
             assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
             assertThat(firstValue).hasField(
@@ -138,7 +138,7 @@ internal class WebViewLogEventConsumerTest {
         )
 
         // Then
-        argumentCaptor<JsonObject>() {
+        argumentCaptor<JsonObject> {
             verify(mockInternalLogsWriter).write(capture())
             assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
             assertThat(firstValue).hasField(
@@ -167,7 +167,7 @@ internal class WebViewLogEventConsumerTest {
         )
 
         // Then
-        argumentCaptor<JsonObject>() {
+        argumentCaptor<JsonObject> {
             verify(mockUserLogsWriter).write(capture())
             assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
             assertThat(firstValue).hasField(
@@ -204,7 +204,7 @@ internal class WebViewLogEventConsumerTest {
         )
 
         // Then
-        argumentCaptor<JsonObject>() {
+        argumentCaptor<JsonObject> {
             verify(mockInternalLogsWriter).write(capture())
             assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
             assertThat(firstValue).hasField(
@@ -237,7 +237,7 @@ internal class WebViewLogEventConsumerTest {
         )
 
         // Then
-        argumentCaptor<JsonObject>() {
+        argumentCaptor<JsonObject> {
             verify(mockUserLogsWriter).write(capture())
             assertThat(firstValue).doesNotHaveField(WebViewLogEventConsumer.DATE_KEY_NAME)
             assertThat(firstValue).hasField(
@@ -262,7 +262,7 @@ internal class WebViewLogEventConsumerTest {
         )
 
         // Then
-        argumentCaptor<JsonObject>() {
+        argumentCaptor<JsonObject> {
             verify(mockInternalLogsWriter).write(capture())
             assertThat(firstValue).doesNotHaveField(WebViewLogEventConsumer.DATE_KEY_NAME)
             assertThat(firstValue).hasField(
@@ -339,7 +339,7 @@ internal class WebViewLogEventConsumerTest {
         )
 
         // Then
-        argumentCaptor<JsonObject>() {
+        argumentCaptor<JsonObject> {
             verify(mockUserLogsWriter).write(capture())
             assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
             assertThat(firstValue).hasField(
@@ -363,7 +363,7 @@ internal class WebViewLogEventConsumerTest {
         )
 
         // Then
-        argumentCaptor<JsonObject>() {
+        argumentCaptor<JsonObject> {
             verify(mockInternalLogsWriter).write(capture())
             assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
             assertThat(firstValue).hasField(

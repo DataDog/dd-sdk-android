@@ -130,7 +130,7 @@ internal class DatadogTest {
     fun `𝕄 update userInfoProvider 𝕎 setUserInfo()`(
         @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
         @StringForgery name: String,
-        @StringForgery(regex = "\\w+@\\w+") email: String,
+        @StringForgery(regex = "\\w+@\\w+") email: String
     ) {
         // Given
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
@@ -153,7 +153,7 @@ internal class DatadogTest {
     fun `𝕄 clears userInfoProvider 𝕎 setUserInfo() with defaults`(
         @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
         @StringForgery name: String,
-        @StringForgery(regex = "\\w+@\\w+") email: String,
+        @StringForgery(regex = "\\w+@\\w+") email: String
     ) {
         // Given
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
@@ -308,7 +308,7 @@ internal class DatadogTest {
 
     @Test
     fun `M return false and log an error W initialize() {envName not valid, isDebug=false}`(
-        forge: Forge,
+        forge: Forge
     ) {
         // Given
         stubApplicationInfo(appContext.mockInstance, isDebuggable = false)
@@ -341,7 +341,7 @@ internal class DatadogTest {
 
     @Test
     fun `M throw an exception W initialize() {envName not valid, isDebug=true}`(
-        forge: Forge,
+        forge: Forge
     ) {
         // Given
         stubApplicationInfo(appContext.mockInstance, isDebuggable = true)
@@ -400,7 +400,7 @@ internal class DatadogTest {
         @BoolForgery logsEnabled: Boolean,
         @BoolForgery tracesEnabled: Boolean,
         @BoolForgery crashReportEnabled: Boolean,
-        @BoolForgery rumEnabled: Boolean,
+        @BoolForgery rumEnabled: Boolean
     ) {
         // Given
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
@@ -489,7 +489,7 @@ internal class DatadogTest {
     @Test
     fun `𝕄 initialize InternalLogs 𝕎 initialize() { Internal logs configured }`(
         @StringForgery(StringForgeryType.HEXADECIMAL) clientToken: String,
-        @StringForgery(regex = "https://[a-z]+\\.com") url: String,
+        @StringForgery(regex = "https://[a-z]+\\.com") url: String
     ) {
         // Given
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
@@ -519,7 +519,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 apply source name 𝕎 applyAdditionalConfig(config) { with source name }`(
-        @StringForgery source: String,
+        @StringForgery source: String
     ) {
         // Given
         val config = Configuration.Builder(
@@ -544,7 +544,7 @@ internal class DatadogTest {
                 TracingFeature.uploader,
                 CrashReportsFeature.uploader,
                 WebViewRumFeature.uploader,
-                WebViewLogsFeature.uploader,
+                WebViewLogsFeature.uploader
             )
                 .map { (it as DataOkHttpUploaderV2).source }
         )
@@ -553,7 +553,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 use default source name 𝕎 applyAdditionalConfig(config) { with empty source name }`(
-        forge: Forge,
+        forge: Forge
     ) {
         // Given
         val config = Configuration.Builder(
@@ -587,7 +587,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 use default source name 𝕎 applyAdditionalConfig(config) { with source name !string }`(
-        forge: Forge,
+        forge: Forge
     ) {
         // Given
         val config = Configuration.Builder(
@@ -619,7 +619,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 use default source name 𝕎 applyAdditionalConfig(config) { without source name }`(
-        forge: Forge,
+        forge: Forge
     ) {
         // Given
         val config = Configuration.Builder(
@@ -651,7 +651,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 apply sdk version 𝕎 applyAdditionalConfig(config) { with sdk version }`(
-        @StringForgery sdkVersion: String,
+        @StringForgery sdkVersion: String
     ) {
         // Given
         val config = Configuration.Builder(
@@ -685,7 +685,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 use default sdk version 𝕎 applyAdditionalConfig(config) { with empty sdk version }`(
-        forge: Forge,
+        forge: Forge
     ) {
         // Given
         val config = Configuration.Builder(
@@ -721,7 +721,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 use default sdk version 𝕎 applyAdditionalConfig(config) { with sdk version !string }`(
-        forge: Forge,
+        forge: Forge
     ) {
         // Given
         val config = Configuration.Builder(
@@ -755,7 +755,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 use default sdk version 𝕎 applyAdditionalConfig(config) { without sdk version }`(
-        forge: Forge,
+        forge: Forge
     ) {
         // Given
         val config = Configuration.Builder(

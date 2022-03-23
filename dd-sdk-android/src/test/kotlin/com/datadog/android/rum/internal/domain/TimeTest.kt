@@ -22,7 +22,6 @@ internal class TimeTest {
 
     @Test
     fun `creates Time with current millis and nanos`() {
-
         val startMs = System.currentTimeMillis()
         val startNs = System.nanoTime()
 

@@ -27,7 +27,6 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 class TracerExtensionsTest {
@@ -42,6 +41,7 @@ class TracerExtensionsTest {
     @AfterEach
     fun `tear down`() {
         val activeSpan = tracer.activeSpan()
+
         @Suppress("DEPRECATION")
         val activeScope = tracer.scopeManager().active()
         activeSpan?.finish()
@@ -52,7 +52,6 @@ class TracerExtensionsTest {
 
     @Test
     fun `it will return the trace id and span id if there is an active span`(forge: Forge) {
-
         // When
         val span = tracer.buildSpan(forge.anAlphabeticalString()).start() as DDSpan
         tracer.activateSpan(span)

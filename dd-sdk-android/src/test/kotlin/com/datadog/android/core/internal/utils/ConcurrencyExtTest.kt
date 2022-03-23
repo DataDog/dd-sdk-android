@@ -47,7 +47,7 @@ internal class ConcurrencyExtTest {
 
     @Test
     fun `M execute task W executeSafe()`(
-        @StringForgery name: String,
+        @StringForgery name: String
     ) {
         // Given
         val service: ExecutorService = mock()
@@ -64,7 +64,7 @@ internal class ConcurrencyExtTest {
     @Test
     fun `M not throw W executeSafe() {rejected exception}`(
         @StringForgery name: String,
-        @StringForgery message: String,
+        @StringForgery message: String
     ) {
         // Given
         val service: ExecutorService = mock()
@@ -88,7 +88,7 @@ internal class ConcurrencyExtTest {
     fun `M schedule task W scheduleSafe()`(
         @StringForgery name: String,
         @LongForgery delay: Long,
-        @Forgery unit: TimeUnit,
+        @Forgery unit: TimeUnit
     ) {
         // Given
         val service: ScheduledExecutorService = mock()
@@ -109,7 +109,7 @@ internal class ConcurrencyExtTest {
         @StringForgery name: String,
         @LongForgery delay: Long,
         @Forgery unit: TimeUnit,
-        @StringForgery message: String,
+        @StringForgery message: String
     ) {
         // Given
         val service: ScheduledExecutorService = mock()

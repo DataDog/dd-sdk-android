@@ -22,7 +22,7 @@ import com.datadog.android.rum.RumErrorSource
  *
  * This class is deprecated and you should use the new
  * [com.datadog.android.webview.DatadogEventBridge] to track your WebViews:
-
+ *
  * ```kotlin
  * val configuration = Configuration.Builder().setWebViewTrackingHosts(listOf(<YOUR_HOSTS>))
  * Datadog.initialize(this, credentials, configuration, trackingConsent)

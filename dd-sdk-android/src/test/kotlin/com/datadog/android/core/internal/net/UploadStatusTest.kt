@@ -119,6 +119,7 @@ internal class UploadStatusTest {
         // Then
         verifyZeroInteractions(mockLogHandler)
     }
+
     @Test
     fun `𝕄 log INVALID_TOKEN_ERROR 𝕎 logStatus()`() {
         // When

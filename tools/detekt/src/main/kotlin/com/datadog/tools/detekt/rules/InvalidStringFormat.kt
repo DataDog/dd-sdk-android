@@ -255,16 +255,34 @@ class InvalidStringFormat : Rule() {
         private const val SPECIFIER_HEXADECIMAL_FLOAT = 'a'
 
         private val INTEGER_TYPES = arrayOf(
-            "kotlin.Byte", "kotlin.Short", "kotlin.Int", "kotlin.Long", "java.math.BigInteger",
-            "kotlin.Byte?", "kotlin.Short?", "kotlin.Int?", "kotlin.Long?", "java.math.BigInteger?"
+            "kotlin.Byte",
+            "kotlin.Short",
+            "kotlin.Int",
+            "kotlin.Long",
+            "java.math.BigInteger",
+            "kotlin.Byte?",
+            "kotlin.Short?",
+            "kotlin.Int?",
+            "kotlin.Long?",
+            "java.math.BigInteger?"
         )
         private val FLOAT_TYPES = arrayOf(
-            "kotlin.Float", "kotlin.Double", "java.math.BigDecimal",
-            "kotlin.Float?", "kotlin.Double?", "java.math.BigDecimal?"
+            "kotlin.Float",
+            "kotlin.Double",
+            "java.math.BigDecimal",
+            "kotlin.Float?",
+            "kotlin.Double?",
+            "java.math.BigDecimal?"
         )
         private val CHAR_TYPES = arrayOf(
-            "kotlin.Byte", "kotlin.Short", "kotlin.Int", "kotlin.Char",
-            "kotlin.Byte?", "kotlin.Short?", "kotlin.Int?", "kotlin.Char?"
+            "kotlin.Byte",
+            "kotlin.Short",
+            "kotlin.Int",
+            "kotlin.Char",
+            "kotlin.Byte?",
+            "kotlin.Short?",
+            "kotlin.Int?",
+            "kotlin.Char?"
         )
         private val ANY_TYPES = emptyArray<String>()
 

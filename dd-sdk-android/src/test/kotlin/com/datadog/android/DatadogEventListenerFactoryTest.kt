@@ -45,7 +45,6 @@ class DatadogEventListenerFactoryTest {
 
     @BeforeEach
     fun `set up`() {
-
         fakeRequest = Request.Builder()
             .get().url("https://$fakeDomain/")
             .build()

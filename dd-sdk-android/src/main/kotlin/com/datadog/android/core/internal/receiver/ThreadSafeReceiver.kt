@@ -20,7 +20,6 @@ internal abstract class ThreadSafeReceiver : BroadcastReceiver() {
         context: Context,
         filter: IntentFilter
     ): Intent? {
-
         val intent = context.registerReceiver(this, filter)
         isRegistered.set(true)
         return intent

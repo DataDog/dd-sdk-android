@@ -114,7 +114,6 @@ internal class HostsSanitizerTest {
                 "|(([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+([A-Za-z0-9]*[-+=~><?])"
         ) hosts: List<String>
     ) {
-
         // When
         testedSanitizer.sanitizeHosts(
             hosts,
@@ -142,7 +141,6 @@ internal class HostsSanitizerTest {
                 "|(25[6-9]\\.([0-9]{3}\\.){2}[0.9]{3})"
         ) hosts: List<String>
     ) {
-
         // When
         testedSanitizer.sanitizeHosts(
             hosts,
@@ -169,7 +167,6 @@ internal class HostsSanitizerTest {
                 "| (([a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+([A-Za-z0-9]*[-+=~><?])"
         ) hosts: List<String>
     ) {
-
         // When
         val sanitizedHosts = testedSanitizer.sanitizeHosts(
             hosts,
@@ -188,7 +185,6 @@ internal class HostsSanitizerTest {
                 "|(25[6-9]\\.([0-9]{3}\\.){2}[0.9]{3})"
         ) hosts: List<String>
     ) {
-
         // When
         val sanitizedHosts = testedSanitizer.sanitizeHosts(
             hosts,
@@ -247,7 +243,6 @@ internal class HostsSanitizerTest {
             regex = "(https|http)://([a-z][a-z0-9-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}:-8[0-9]{1}"
         ) hosts: List<String>
     ) {
-
         // When
         testedSanitizer.sanitizeHosts(
             hosts,

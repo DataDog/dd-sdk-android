@@ -70,7 +70,6 @@ internal abstract class DataOkHttpUploaderTest<T : DataOkHttpUploader> {
 
     @BeforeEach
     open fun `set up`(forge: Forge) {
-
         whenever(mockCallFactory.newCall(any())) doReturn mockCall
 
         whenever(mockAndroidInfoProvider.getDeviceVersion()) doReturn fakeDeviceVersion

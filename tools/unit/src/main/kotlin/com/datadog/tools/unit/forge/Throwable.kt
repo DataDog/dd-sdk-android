@@ -27,6 +27,7 @@ fun Forge.aThrowable(): Throwable {
         anException()
     )
 }
+
 /**
  * @return a random [Error] instance with a forged message.
  */

@@ -47,7 +47,7 @@ kover="0.5.0-RC"
 
 # Tools
 detekt = "1.18.0"
-ktLint = "10.2.0"
+ktLint = "10.2.1"
 dokka = "1.5.30"
 unmock = "0.7.9"
 robolectric = "4.4_r1-robolectric-r2"

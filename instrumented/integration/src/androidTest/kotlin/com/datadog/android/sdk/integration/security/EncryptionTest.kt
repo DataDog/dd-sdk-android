@@ -49,7 +49,6 @@ internal class EncryptionTest {
 
     @Test
     fun must_encrypt_all_data() {
-
         val targetContext = InstrumentationRegistry.getInstrumentation().targetContext
 
         val configuration = createSdkConfiguration()
@@ -134,7 +133,6 @@ internal class EncryptionTest {
     }
 
     private fun createSdkConfiguration(): Configuration {
-
         val encryption = object : Encryption {
             override fun encrypt(data: ByteArray): ByteArray {
                 return ENCRYPTION_MARKER.toByteArray() + data
@@ -183,7 +181,9 @@ internal class EncryptionTest {
         )
 
         rumMonitor.addUserAction(
-            RumActionType.CUSTOM, "rumAction-${forge.aString()}", emptyMap()
+            RumActionType.CUSTOM,
+            "rumAction-${forge.aString()}",
+            emptyMap()
         )
         logger.w("Action added")
 

@@ -29,7 +29,6 @@ internal class ConsentGrantedLogsTest : LogsTest() {
 
     @Test
     fun verifyActivityLogs() {
-
         // Wait to make sure all batches are consumed
         InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 

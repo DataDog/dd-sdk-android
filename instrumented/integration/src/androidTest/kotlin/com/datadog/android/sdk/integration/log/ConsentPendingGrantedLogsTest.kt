@@ -30,7 +30,6 @@ internal class ConsentPendingGrantedLogsTest : LogsTest() {
 
     @Test
     fun verifyActivityLogs() {
-
         // update the tracking consent
         Datadog.setTrackingConsent(TrackingConsent.GRANTED)
 

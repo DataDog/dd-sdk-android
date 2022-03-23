@@ -71,7 +71,6 @@ internal fun <K, V> Forge.aFilteredMap(
     filterThreshold: Float = 0.5f,
     forging: Forge.() -> Pair<K, V>
 ): Map<K, V> {
-
     val base = aMap(size, forging)
 
     val filtered = base.filterKeys { it !in excludedKeys }
@@ -111,7 +110,6 @@ internal fun Forge.aRumEventAsJson(): JsonObject {
 }
 
 private fun assumeDifferenceIsNoMore(result: Int, base: Int, maxDifference: Float) {
-
     check(result <= base) {
         "Number of elements after filtering cannot exceed the number of original elements."
     }

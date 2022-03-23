@@ -628,6 +628,7 @@ class LoggerE2ETests {
         val CUSTOM_ORG_JSON_JSON_OBJECT_ATTRIBUTE: JSONObject = JSONObject().apply {
             put(CUSTOM_JSON_OBJECT_PROPERTY, CUSTOM_INT_ATTRIBUTE)
         }
+
         @SuppressWarnings("UnsafeCallOnNullableType")
         val CUSTOM_DATE_ATTRIBUTE: Date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
             .apply { timeZone = TimeZone.getTimeZone("UTC") }

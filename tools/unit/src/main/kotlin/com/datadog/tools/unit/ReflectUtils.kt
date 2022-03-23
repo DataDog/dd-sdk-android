@@ -33,7 +33,6 @@ fun <T, R> Class<T>.setStaticValue(
  * @param fieldName the name of the field
  */
 inline fun <reified T, reified R> Class<T>.getStaticValue(fieldName: String): R {
-
     val field = getDeclaredField(fieldName)
 
     // make it accessible

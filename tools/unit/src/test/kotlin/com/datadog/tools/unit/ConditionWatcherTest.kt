@@ -20,7 +20,6 @@ internal class ConditionWatcherTest {
 
     @Test
     fun `M timeout W condition is never satisfied`(forge: Forge) {
-
         // Given + When + Then
         assertThrows<ConditionWatcher.TimeoutException> {
             ConditionWatcher(pollingIntervalMs = TEST_POLLING_MS) { false }.doWait(
@@ -31,7 +30,6 @@ internal class ConditionWatcherTest {
 
     @Test
     fun `M instantly fail W condition throws non-assertion throwable`(forge: Forge) {
-
         val fakeThrowable = forge.aThrowable()
 
         // just a coherence check that we have a good throwable in case if underlying aThrowable
@@ -61,7 +59,6 @@ internal class ConditionWatcherTest {
 
     @Test
     fun `M not instantly fail W condition throws assertion throwable`(forge: Forge) {
-
         // Given
         val condition = object : Function0<Boolean> {
 
@@ -89,7 +86,6 @@ internal class ConditionWatcherTest {
 
     @Test
     fun `M passes W condition is satisfied after some time`(forge: Forge) {
-
         // Given
         val invocationsWhenSatisfied = forge.anInt(min = 3, max = 5)
 

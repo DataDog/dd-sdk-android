@@ -891,7 +891,6 @@ internal class CoreFeatureTest {
 
     @Test
     fun `M initialize webViewTrackingHosts W initialize()`() {
-
         // When
         CoreFeature.initialize(
             appContext.mockInstance,

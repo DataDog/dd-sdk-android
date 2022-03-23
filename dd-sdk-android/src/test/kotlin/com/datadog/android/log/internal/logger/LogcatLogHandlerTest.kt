@@ -78,7 +78,8 @@ internal class LogcatLogHandlerTest {
 
         // Don't convert it to lambda, because Kotlin won't create wrapper class,
         // read more https://kotlinlang.org/docs/whatsnew15.html#sam-adapters-via-invokedynamic
-        @Suppress("ObjectLiteralToLambda") val runnable = object : Runnable {
+        @Suppress("ObjectLiteralToLambda")
+        val runnable = object : Runnable {
             override fun run() {
                 element = testedHandler.getCallerStackElement()
             }
@@ -95,14 +96,12 @@ internal class LogcatLogHandlerTest {
 
     @RepeatedTest(4)
     fun `resolves valid stack trace element when wrapped in timber`(forge: Forge) {
-
         // Given
         val forgeFileName: Forge.() -> String = {
             "${this.anAlphabeticalString(Case.ANY)}.${this.aStringMatching("(kt|java)")}"
         }
 
         val ignoredElements = forge.aList {
-
             val className = if (aBool()) {
                 // generate from ignored class names pattern
                 LogcatLogHandler.IGNORED_CLASS_NAMES.random()
@@ -125,7 +124,6 @@ internal class LogcatLogHandlerTest {
         }
 
         val validElements = forge.aList {
-
             val className = "com.${anAlphabeticalString(Case.LOWER, 5)}" +
                 ".${anAlphabeticalString(Case.LOWER, 6)}" +
                 ".${anAlphabeticalString(Case.LOWER, 7)}" +

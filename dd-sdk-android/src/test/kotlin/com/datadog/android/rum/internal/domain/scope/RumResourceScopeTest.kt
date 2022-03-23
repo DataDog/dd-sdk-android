@@ -1615,7 +1615,6 @@ internal class RumResourceScopeTest {
         @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
-
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys) +
             mapOf(
@@ -1645,7 +1644,6 @@ internal class RumResourceScopeTest {
         @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
-
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys) +
             mapOf("_dd.resource_timings" to timing.asTimingsPayload())

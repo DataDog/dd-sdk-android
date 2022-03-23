@@ -35,7 +35,8 @@ class TestEncryption : Encryption {
                 return (keyStore.getEntry(KEY_ALIAS, null) as KeyStore.SecretKeyEntry).secretKey
             } else {
                 val keyGenerator = KeyGenerator.getInstance(
-                    KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore"
+                    KeyProperties.KEY_ALGORITHM_AES,
+                    "AndroidKeyStore"
                 )
 
                 val keySpec = KeyGenParameterSpec

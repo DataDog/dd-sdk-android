@@ -69,7 +69,6 @@ internal class TapActionTrackerTest {
 
     @Test
     fun `M call addAction W invoke`() {
-
         // When
         testedTracker.invoke()
 

@@ -626,7 +626,6 @@ internal class RumEventSerializerTest {
     fun `M use the attributes group verbose name W validateAttributes { ViewEvent }`(
         @Forgery fakeEvent: ViewEvent
     ) {
-
         // GIVEN
         val mockedDataConstrains: DataConstraints = mock()
         testedSerializer = RumEventSerializer(mockedDataConstrains)
@@ -649,7 +648,6 @@ internal class RumEventSerializerTest {
     fun `M use the attributes group verbose name W validateAttributes { ActionEvent }`(
         @Forgery fakeEvent: ActionEvent
     ) {
-
         // GIVEN
         val mockedDataConstrains: DataConstraints = mock()
         testedSerializer = RumEventSerializer(mockedDataConstrains)
@@ -672,7 +670,6 @@ internal class RumEventSerializerTest {
     fun `M use the attributes group verbose name W validateAttributes { ResourceEvent }`(
         @Forgery fakeEvent: ResourceEvent
     ) {
-
         // GIVEN
         val mockedDataConstrains: DataConstraints = mock()
         testedSerializer = RumEventSerializer(mockedDataConstrains)
@@ -695,7 +692,6 @@ internal class RumEventSerializerTest {
     fun `M use the attributes group verbose name W validateAttributes { ErrorEvent }`(
         @Forgery fakeEvent: ErrorEvent
     ) {
-
         // GIVEN
         val mockedDataConstrains: DataConstraints = mock()
         testedSerializer = RumEventSerializer(mockedDataConstrains)
@@ -718,7 +714,6 @@ internal class RumEventSerializerTest {
     fun `M use the attributes group verbose name W validateAttributes { LongTaskEvent }`(
         @Forgery fakeEvent: LongTaskEvent
     ) {
-
         // GIVEN
         val mockedDataConstrains: DataConstraints = mock()
         testedSerializer = RumEventSerializer(mockedDataConstrains)

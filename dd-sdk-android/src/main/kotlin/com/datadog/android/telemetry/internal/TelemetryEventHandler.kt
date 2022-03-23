@@ -24,16 +24,13 @@ internal class TelemetryEventHandler(
 ) {
 
     fun handleEvent(event: RumRawEvent.SendTelemetry, writer: DataWriter<Any>) {
-
         val timestamp = event.eventTime.timestamp + timeProvider.getServerOffsetMillis()
 
         val rumContext = GlobalRum.getRumContext()
 
         val telemetryEvent: Any = when (event.type) {
             TelemetryType.DEBUG -> {
-                createDebugEvent(
-                    timestamp, rumContext, event.message
-                )
+                createDebugEvent(timestamp, rumContext, event.message)
             }
             TelemetryType.ERROR -> {
                 createErrorEvent(
@@ -92,7 +89,7 @@ internal class TelemetryEventHandler(
                 error = throwable?.let {
                     TelemetryErrorEvent.Error(
                         stack = it.loggableStackTrace(),
-                        kind = it.javaClass.canonicalName ?: it.javaClass.simpleName,
+                        kind = it.javaClass.canonicalName ?: it.javaClass.simpleName
                     )
                 }
             )

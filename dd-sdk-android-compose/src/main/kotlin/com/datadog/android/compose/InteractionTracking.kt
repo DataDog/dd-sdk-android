@@ -307,7 +307,6 @@ private fun resolveSwipeChangeAttributes(
     reverseDirection: Boolean,
     isRtl: Boolean
 ): Map<String, Any?> {
-
     // normally should use .direction property of SwipeableState, but it is affected by the
     // same bug as described below
     // roundToInt can throw exception for Float.NaN, but we won't get such value
@@ -337,7 +336,6 @@ private fun resolveScrollChangeAttributes(
     reverseDirection: Boolean,
     isRtl: Boolean
 ): Map<String, Any?> {
-
     val startOffset = scrollStartProps.position
     val endOffset = scrollableState.currentPosition
 
@@ -361,7 +359,6 @@ private fun resolveDragDirection(
     orientation: Orientation,
     isRtl: Boolean
 ): String {
-
     val isDirectionPositive = directionSign > 0
 
     return when (orientation) {

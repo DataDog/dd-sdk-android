@@ -147,13 +147,17 @@ internal class TelemetryEventHandlerTest {
 
     private fun Forge.createRumRawTelemetryDebugEvent(): RumRawEvent.SendTelemetry {
         return RumRawEvent.SendTelemetry(
-            TelemetryType.DEBUG, aString(), null
+            TelemetryType.DEBUG,
+            aString(),
+            null
         )
     }
 
     private fun Forge.createRumRawTelemetryErrorEvent(): RumRawEvent.SendTelemetry {
         return RumRawEvent.SendTelemetry(
-            TelemetryType.ERROR, aString(), aNullable { aThrowable() }
+            TelemetryType.ERROR,
+            aString(),
+            aNullable { aThrowable() }
         )
     }
 

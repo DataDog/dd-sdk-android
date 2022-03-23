@@ -49,7 +49,6 @@ internal class ResourceTrackingTest {
 
     @Before
     fun setUp() {
-
         extraAttributes = forge.exhaustiveAttributes()
 
         okHttpClient = OkHttpClient.Builder()
@@ -69,7 +68,6 @@ internal class ResourceTrackingTest {
 
     @Test
     fun verifyAttributesAreSentWhenRequestIsSuccessful() {
-
         val resourceUrl = "${mockServerRule.getConnectionUrl()}/nyan-cat.gif"
 
         okHttpClient.newCall(
@@ -98,7 +96,6 @@ internal class ResourceTrackingTest {
 
     @Test
     fun verifyAttributesAreSentWhenRequestHasException() {
-
         val resourceUrl = mockServerRule.getConnectionUrl() +
             MockServerActivityTestRule.CONNECTION_ISSUE_PATH
 

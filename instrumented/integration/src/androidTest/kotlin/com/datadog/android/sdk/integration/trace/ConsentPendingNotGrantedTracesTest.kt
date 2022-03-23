@@ -32,7 +32,6 @@ internal class ConsentPendingNotGrantedTracesTest : TracesTest() {
 
     @Test
     fun verifyAllTracesAreDropped() {
-
         runInstrumentationScenario(mockServerRule)
 
         // update the tracking consent

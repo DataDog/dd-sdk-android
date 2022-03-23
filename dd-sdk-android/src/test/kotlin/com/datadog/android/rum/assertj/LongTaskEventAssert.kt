@@ -233,7 +233,8 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
             .overridingErrorMessage(
                 "Expected event to have a source %s" +
                     " instead it was %s",
-                source ?: "null", actual.source ?: "null"
+                source ?: "null",
+                actual.source ?: "null"
             )
             .isEqualTo(source)
         return this

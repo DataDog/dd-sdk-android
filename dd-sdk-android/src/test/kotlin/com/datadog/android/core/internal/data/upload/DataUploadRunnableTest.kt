@@ -89,7 +89,7 @@ internal class DataUploadRunnableTest {
             batteryFullOrCharging = true,
             batteryLevel = forge.anInt(min = 20, max = 100),
             powerSaveMode = false,
-            onExternalPowerSource = true,
+            onExternalPowerSource = true
         )
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
 

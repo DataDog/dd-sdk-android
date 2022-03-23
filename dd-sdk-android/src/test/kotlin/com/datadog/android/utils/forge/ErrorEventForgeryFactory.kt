@@ -43,7 +43,7 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
                 isCrash = forge.aNullable { aBool() },
                 type = forge.aNullable { anAlphabeticalString() },
                 handling = forge.aNullable { getForgery() },
-                handlingStack = forge.aNullable { aThrowable().loggableStackTrace() },
+                handlingStack = forge.aNullable { aThrowable().loggableStackTrace() }
             ),
             view = ErrorEvent.View(
                 id = forge.getForgery<UUID>().toString(),

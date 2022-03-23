@@ -622,7 +622,6 @@ internal class LoggerTest {
 
     @Test
     fun `log message with local attributes`(forge: Forge) {
-
         val key = forge.anAlphabeticalString()
         val value = forge.anInt()
 
@@ -660,7 +659,6 @@ internal class LoggerTest {
 
     @Test
     fun `log message with local attributes (null value)`(forge: Forge) {
-
         val key = forge.anAlphabeticalString()
         val value: Any? = null
 
@@ -678,7 +676,6 @@ internal class LoggerTest {
 
     @Test
     fun `log message with local attributes override logger value`(forge: Forge) {
-
         val key = forge.anAlphabeticalString()
         val loggerValue = forge.aFloat()
         val localValue = forge.anAlphabeticalString()
@@ -698,7 +695,6 @@ internal class LoggerTest {
 
     @Test
     fun `log message without local attributes after message with local attributes`(forge: Forge) {
-
         val key = forge.anAlphabeticalString()
         val value = forge.anInt()
         val message1 = forge.anAlphabeticalString()
@@ -869,7 +865,6 @@ internal class LoggerTest {
         val countDownLatch = CountDownLatch(asyncOperations)
         var logDebugExecutionCalls = 0
         repeat(asyncOperations) {
-
             val closure = when (forge.anInt(min = 0, max = 3)) {
                 0 -> {
                     {
@@ -940,7 +935,6 @@ internal class LoggerTest {
         val countDownLatch = CountDownLatch(asyncOperations)
         var logDebugExecutionCalls = 0
         repeat(asyncOperations) {
-
             val closure = when (forge.anInt(min = 0, max = 2)) {
                 0 -> {
                     {

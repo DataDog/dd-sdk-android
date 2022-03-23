@@ -25,7 +25,7 @@ internal class DataUploadRunnable(
     private val dataUploader: DataUploader,
     private val networkInfoProvider: NetworkInfoProvider,
     private val systemInfoProvider: SystemInfoProvider,
-    uploadFrequency: UploadFrequency,
+    uploadFrequency: UploadFrequency
 ) : UploadRunnable {
 
     internal var currentDelayIntervalMs = DEFAULT_DELAY_FACTOR * uploadFrequency.baseStepMs

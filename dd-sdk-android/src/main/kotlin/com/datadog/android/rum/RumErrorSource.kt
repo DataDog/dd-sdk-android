@@ -13,14 +13,19 @@ package com.datadog.android.rum
 enum class RumErrorSource {
     /** Error originated in the Network layer. */
     NETWORK,
+
     /** Error originated in the source code (usually a crash). */
     SOURCE,
+
     /** Error originated in a console (e.g.: in a webview). */
     CONSOLE,
+
     /** Error extracted from a logged error. */
     LOGGER,
+
     /** Error originated in an Agent. */
     AGENT,
+
     /** Error originated in a WebView. */
     WEBVIEW
 }

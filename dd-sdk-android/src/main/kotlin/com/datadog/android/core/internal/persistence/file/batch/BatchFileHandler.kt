@@ -36,7 +36,6 @@ internal class BatchFileHandler(
         append: Boolean,
         separator: ByteArray?
     ): Boolean {
-
         return try {
             lockFileAndWriteData(file, append, separator, data)
             true
@@ -105,8 +104,8 @@ internal class BatchFileHandler(
 
     // region Internal
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
     @Throws(IOException::class)
+    @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
     private fun lockFileAndWriteData(
         file: File,
         append: Boolean,
@@ -123,8 +122,8 @@ internal class BatchFileHandler(
         }
     }
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
     @Throws(IOException::class)
+    @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
     private fun readFileData(
         file: File,
         prefix: ByteArray,

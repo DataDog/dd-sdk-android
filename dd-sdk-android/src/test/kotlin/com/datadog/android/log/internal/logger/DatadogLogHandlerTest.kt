@@ -270,7 +270,6 @@ internal class DatadogLogHandlerTest {
     @ParameterizedTest
     @ValueSource(ints = [AndroidLog.ERROR, AndroidLog.ASSERT])
     fun `forward error log to RumMonitor`(logLevel: Int) {
-
         testedHandler.handleLog(
             logLevel,
             fakeMessage,
@@ -290,7 +289,6 @@ internal class DatadogLogHandlerTest {
     @ParameterizedTest
     @ValueSource(ints = [AndroidLog.ERROR, AndroidLog.ASSERT])
     fun `forward error log to RumMonitor with throwable`(logLevel: Int) {
-
         testedHandler.handleLog(
             logLevel,
             fakeMessage,

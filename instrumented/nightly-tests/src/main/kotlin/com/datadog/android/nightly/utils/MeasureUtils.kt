@@ -23,7 +23,6 @@ internal inline fun <reified R> measure(methodName: String, codeBlock: () -> R):
 }
 
 internal fun measureSdkInitialize(codeBlock: () -> Unit) {
-
     val start = TimeUnit.MILLISECONDS.toMicros(System.currentTimeMillis())
     codeBlock()
     val stop = TimeUnit.MILLISECONDS.toMicros(System.currentTimeMillis())

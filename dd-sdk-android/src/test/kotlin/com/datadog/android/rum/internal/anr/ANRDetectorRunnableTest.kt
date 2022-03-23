@@ -74,7 +74,6 @@ internal class ANRDetectorRunnableTest {
 
     @Test
     fun `𝕄 report RUM error 𝕎 run() {ANR detected}`() {
-
         // When
         Thread(testedRunnable).start()
         Thread.sleep(TEST_ANR_TEST_DELAY_MS)

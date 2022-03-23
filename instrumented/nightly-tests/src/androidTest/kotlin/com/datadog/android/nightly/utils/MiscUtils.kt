@@ -71,7 +71,6 @@ fun sendRandomActionOutcomeEvent(forge: Forge) {
 }
 
 fun stopSdk() {
-
     // Call Datadog.stop()
     val instance = Datadog.javaClass.getDeclaredField("INSTANCE")
     instance.isAccessible = true
