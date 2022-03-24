@@ -53,7 +53,8 @@ internal open class RumViewScope(
     internal val frameRateVitalMonitor: VitalMonitor,
     internal val timeProvider: TimeProvider,
     private val rumEventSourceProvider: RumEventSourceProvider,
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
+    private val viewUpdatePredicate: ViewUpdatePredicate = DefaultViewUpdatePredicate()
 ) : RumScope {
 
     internal val url = key.resolveViewUrl().replace('.', '/')
@@ -478,24 +479,19 @@ internal open class RumViewScope(
 
     @Suppress("LongMethod")
     private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<Any>) {
+        val viewComplete = isViewComplete()
+        if (!viewUpdatePredicate.canUpdateView(viewComplete, event)) {
+            return
+        }
         attributes.putAll(GlobalRum.globalAttributes)
         version++
         val updatedDurationNs = event.eventTime.nanoTime - startedNanos
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
-        val timings = if (customTimings.isNotEmpty()) {
-            ViewEvent.CustomTimings(LinkedHashMap(customTimings))
-        } else {
-            null
-        }
-
+        val timings = resolveCustomTimings()
         val memoryInfo = lastMemoryInfo
         val refreshRateInfo = lastFrameRateInfo
-        val isSlowRendered = if (refreshRateInfo == null) {
-            null
-        } else {
-            refreshRateInfo.meanValue < SLOW_RENDERED_THRESHOLD_FPS
-        }
+        val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo)
         val viewEvent = ViewEvent(
             date = eventTimestamp,
             view = ViewEvent.View(
@@ -512,7 +508,7 @@ internal open class RumViewScope(
                 longTask = ViewEvent.LongTask(longTaskCount),
                 frozenFrame = ViewEvent.FrozenFrame(frozenFrameCount),
                 customTimings = timings,
-                isActive = !isViewComplete(),
+                isActive = !viewComplete,
                 cpuTicksCount = cpuTicks,
                 cpuTicksPerSecond = cpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs },
                 memoryAverage = memoryInfo?.meanValue,
@@ -541,6 +537,19 @@ internal open class RumViewScope(
         )
 
         writer.write(viewEvent)
+    }
+
+    private fun resolveRefreshRateInfo(refreshRateInfo: VitalInfo?) =
+        if (refreshRateInfo == null) {
+            null
+        } else {
+            refreshRateInfo.meanValue < SLOW_RENDERED_THRESHOLD_FPS
+        }
+
+    private fun resolveCustomTimings() = if (customTimings.isNotEmpty()) {
+        ViewEvent.CustomTimings(LinkedHashMap(customTimings))
+    } else {
+        null
     }
 
     private fun addExtraAttributes(

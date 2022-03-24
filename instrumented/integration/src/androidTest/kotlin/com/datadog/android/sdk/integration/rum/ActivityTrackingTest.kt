@@ -34,7 +34,7 @@ internal abstract class ActivityTrackingTest :
             ExpectedApplicationStart()
         )
 
-        // one for application start update
+        // one for view start
         expectedEvents.add(
             ExpectedViewEvent(
                 viewUrl,
@@ -43,28 +43,11 @@ internal abstract class ActivityTrackingTest :
             )
         )
 
-        // one for view loading time update
-        expectedEvents.add(
-            ExpectedViewEvent(
-                viewUrl,
-                docVersion = 3,
-                viewArguments = expectedViewArguments,
-                extraViewAttributes = mapOf(
-                    "loading_type" to "activity_display"
-                ),
-                extraViewAttributesWithPredicate = mapOf(
-                    "loading_time" to { time ->
-                        time.asLong >= 0
-                    }
-                )
-            )
-        )
-
         // one for view stopped
         expectedEvents.add(
             ExpectedViewEvent(
                 viewUrl,
-                docVersion = 4,
+                docVersion = 3,
                 viewArguments = expectedViewArguments
             )
         )
