@@ -59,7 +59,7 @@ See [`ViewTrackingStrategy`][5] to enable automatic tracking of all your views (
                     crashReportsEnabled = true,
                     rumEnabled = true
                 )
-                .useSite(DatadogSite.US3)
+                .useSite(DatadogSite.US1)
                 .trackInteractions()
                 .trackLongTasks(durationThreshold)
                 .useViewTrackingStrategy(strategy)
@@ -81,6 +81,7 @@ See [`ViewTrackingStrategy`][5] to enable automatic tracking of all your views (
                             .trackInteractions()
                             .trackLongTasks(durationThreshold)
                             .useViewTrackingStrategy(strategy)
+                            .useSite(DatadogSite.US1)
                             .build();
                final Credentials credentials = new Credentials(<CLIENT_TOKEN>, <ENV_NAME>, <APP_VARIANT_NAME>, <APPLICATION_ID>);
                Datadog.initialize(this, credentials, configuration, trackingConsent); 

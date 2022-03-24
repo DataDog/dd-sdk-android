@@ -16,6 +16,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
+import com.datadog.android.rum.tracking.ViewAttributesProvider
 import java.lang.ref.WeakReference
 import kotlin.Exception
 
@@ -28,7 +29,8 @@ internal class WindowCallbackWrapper(
     val copyEvent: (MotionEvent) -> MotionEvent = {
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         MotionEvent.obtain(it)
-    }
+    },
+    val targetAttributesProviders: Array<ViewAttributesProvider> = emptyArray()
 ) : Window.Callback by wrappedCallback {
 
     internal val windowReference = WeakReference(window)
@@ -109,6 +111,9 @@ internal class WindowCallbackWrapper(
                 RumAttributes.ACTION_TARGET_CLASS_NAME to it.targetClassName(),
                 RumAttributes.ACTION_TARGET_RESOURCE_ID to resourceIdName(it.id)
             )
+            targetAttributesProviders.forEach { provider ->
+                provider.extractAttributes(it, attributes)
+            }
             val targetName = resolveTargetName(interactionPredicate, it)
             GlobalRum.get().addUserAction(RumActionType.CLICK, targetName, attributes)
         }

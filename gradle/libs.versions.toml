@@ -21,6 +21,7 @@ androidXComposeUi = "1.0.5"
 androidXComposeMaterial = "1.0.5"
 googleAccompanist = "0.20.2"
 googleMaterial = "1.3.0"
+androidXLeanback = "1.0.0"
 
 # DD-TRACE-OT
 openTracing = "0.32.0"
@@ -124,6 +125,7 @@ googleAccompanistAppCompatTheme = { module = "com.google.accompanist:accompanist
 googleAccompanistPager = { module = "com.google.accompanist:accompanist-pager", version.ref = "googleAccompanist" }
 googleAccompanistPagerIndicators = { module = "com.google.accompanist:accompanist-pager-indicators", version.ref = "googleAccompanist" }
 googleMaterial = { module = "com.google.android.material:material", version.ref = "googleMaterial" }
+androidXLeanback = { module = "androidx.leanback:leanback", version.ref = "androidXLeanback" }
 
 # DD-TRACE-OT
 openTracingApi = { module = "io.opentracing:opentracing-api", version.ref = "openTracing" }
