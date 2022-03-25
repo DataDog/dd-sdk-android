@@ -6,11 +6,11 @@
 
 package com.datadog.android.webview.internal.log
 
-import android.util.Log
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.LogAttributes
+import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -224,7 +224,7 @@ internal class WebViewLogEventConsumerTest {
 
         // Then
         verify(logger.mockSdkLogHandler).handleLog(
-            eq(Log.ERROR),
+            eq(ERROR_WITH_TELEMETRY_LEVEL),
             eq(WebViewLogEventConsumer.JSON_PARSING_ERROR_MESSAGE),
             argThat {
                 expectedThrowable.isAssignableFrom(this::class.java)

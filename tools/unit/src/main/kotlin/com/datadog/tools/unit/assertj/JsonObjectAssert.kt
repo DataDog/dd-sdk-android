@@ -59,6 +59,29 @@ class JsonObjectAssert(actual: JsonObject) :
     }
 
     /**
+     *  Verifies that the actual jsonObject contains a string field with the given name and
+     *  non-empty value.
+     *  @param name the field name
+     */
+    fun hasNonEmptyField(name: String): JsonObjectAssert {
+        val element = actual.get(name)
+        assertThat(element is JsonPrimitive)
+            .overridingErrorMessage(
+                "Expected json object to have field $name with primitive value " +
+                    "but was ${element?.javaClass?.simpleName}"
+            )
+            .isTrue()
+
+        assertThat(element.asString)
+            .overridingErrorMessage(
+                "Expected json object to have field $name with non-empty value"
+            )
+            .isNotEmpty
+
+        return this
+    }
+
+    /**
      * Verifies that the actual jsonObject contains a field with the given name and nullable value.
      *  @param name the field name
      *  @param expectedValue the expected value of the field

@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain.event
 
 import android.util.Log
 import com.datadog.android.event.EventMapper
+import com.datadog.android.log.internal.utils.WARN_WITH_TELEMETRY_LEVEL
 import com.datadog.android.rum.internal.monitor.EventType
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -177,7 +178,7 @@ internal class RumEventMapperTest {
 
         // THEN
         verify(logger.mockSdkLogHandler).handleLog(
-            Log.WARN,
+            WARN_WITH_TELEMETRY_LEVEL,
             RumEventMapper.NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE
                 .format(Locale.US, fakeRumEvent.javaClass.simpleName)
         )

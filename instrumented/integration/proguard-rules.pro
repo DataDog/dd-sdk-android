@@ -29,3 +29,8 @@
 -keepnames class com.datadog.android.rum.internal.domain.RumContext {
     *;
 }
+
+# Required because we need access to telemetry methods by reflection
+-keepnames class com.datadog.android.rum.internal.monitor.DatadogRumMonitor {
+    *;
+}

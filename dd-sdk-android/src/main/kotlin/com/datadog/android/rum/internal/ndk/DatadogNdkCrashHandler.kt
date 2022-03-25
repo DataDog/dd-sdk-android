@@ -23,6 +23,7 @@ import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.LogGenerator
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ErrorEvent
@@ -65,7 +66,7 @@ internal class DatadogNdkCrashHandler(
                 readCrashData()
             }
         } catch (e: RejectedExecutionException) {
-            internalLogger.e(ERROR_TASK_REJECTED, e)
+            internalLogger.errorWithTelemetry(ERROR_TASK_REJECTED, e)
         }
     }
 
@@ -79,7 +80,7 @@ internal class DatadogNdkCrashHandler(
                 checkAndHandleNdkCrashReport(logWriter, rumWriter)
             }
         } catch (e: RejectedExecutionException) {
-            internalLogger.e(ERROR_TASK_REJECTED, e)
+            internalLogger.errorWithTelemetry(ERROR_TASK_REJECTED, e)
         }
     }
 
@@ -108,7 +109,7 @@ internal class DatadogNdkCrashHandler(
                 }
             }
         } catch (e: SecurityException) {
-            internalLogger.e(ERROR_READ_NDK_DIR, e)
+            internalLogger.errorWithTelemetry(ERROR_READ_NDK_DIR, e)
         } finally {
             clearCrashLog()
         }
@@ -339,7 +340,7 @@ internal class DatadogNdkCrashHandler(
             try {
                 ndkCrashDataDirectory.listFilesSafe()?.forEach { it.deleteRecursively() }
             } catch (e: Throwable) {
-                internalLogger.e(
+                internalLogger.errorWithTelemetry(
                     "Unable to clear the NDK crash report file:" +
                         " ${ndkCrashDataDirectory.absolutePath}",
                     e

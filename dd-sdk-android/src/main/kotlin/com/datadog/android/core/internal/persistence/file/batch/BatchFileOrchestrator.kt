@@ -16,6 +16,7 @@ import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.mkdirsSafe
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 import java.io.File
 import java.io.FileFilter
 import java.util.Locale
@@ -45,7 +46,13 @@ internal class BatchFileOrchestrator(
         }
 
         if (dataSize > config.maxItemSize) {
-            internalLogger.e(ERROR_LARGE_DATA.format(Locale.US, dataSize, config.maxItemSize))
+            internalLogger.errorWithTelemetry(
+                ERROR_LARGE_DATA.format(
+                    Locale.US,
+                    dataSize,
+                    config.maxItemSize
+                )
+            )
             return null
         }
 
@@ -102,18 +109,24 @@ internal class BatchFileOrchestrator(
                 if (rootDir.canWriteSafe()) {
                     return true
                 } else {
-                    internalLogger.e(ERROR_ROOT_NOT_WRITABLE.format(Locale.US, rootDir.path))
+                    internalLogger.errorWithTelemetry(
+                        ERROR_ROOT_NOT_WRITABLE.format(Locale.US, rootDir.path)
+                    )
                     return false
                 }
             } else {
-                internalLogger.e(ERROR_ROOT_NOT_DIR.format(Locale.US, rootDir.path))
+                internalLogger.errorWithTelemetry(
+                    ERROR_ROOT_NOT_DIR.format(Locale.US, rootDir.path)
+                )
                 return false
             }
         } else {
             if (rootDir.mkdirsSafe()) {
                 return true
             } else {
-                internalLogger.e(ERROR_CANT_CREATE_ROOT.format(Locale.US, rootDir.path))
+                internalLogger.errorWithTelemetry(
+                    ERROR_CANT_CREATE_ROOT.format(Locale.US, rootDir.path)
+                )
                 return false
             }
         }
@@ -175,7 +188,7 @@ internal class BatchFileOrchestrator(
         val maxDiskSpace = config.maxDiskSpace
         val sizeToFree = sizeOnDisk - maxDiskSpace
         if (sizeToFree > 0) {
-            internalLogger.e(
+            internalLogger.errorWithTelemetry(
                 ERROR_DISK_FULL.format(Locale.US, sizeOnDisk, maxDiskSpace, sizeToFree)
             )
             files.fold(sizeToFree) { remainingSizeToFree, file ->

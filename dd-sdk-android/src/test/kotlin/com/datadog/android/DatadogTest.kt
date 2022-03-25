@@ -103,6 +103,7 @@ internal class DatadogTest {
         // Prevent crash when initializing RumFeature
         mockChoreographerInstance()
 
+        CoreFeature.disableKronosBackgroundSync = true
         CoreFeature.sdkVersion = CoreFeature.DEFAULT_SDK_VERSION
         CoreFeature.sourceName = CoreFeature.DEFAULT_SOURCE_NAME
     }

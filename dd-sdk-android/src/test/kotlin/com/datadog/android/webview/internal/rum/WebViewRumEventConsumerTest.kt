@@ -6,9 +6,9 @@
 
 package com.datadog.android.webview.internal.rum
 
-import android.util.Log
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.model.ActionEvent
@@ -488,7 +488,7 @@ internal class WebViewRumEventConsumerTest {
 
         // Then
         verify(logger.mockSdkLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             WebViewRumEventConsumer.JSON_PARSING_ERROR_MESSAGE,
             fakeException
         )
@@ -557,7 +557,7 @@ internal class WebViewRumEventConsumerTest {
 
         // Then
         verify(logger.mockSdkLogHandler).handleLog(
-            eq(Log.ERROR),
+            eq(ERROR_WITH_TELEMETRY_LEVEL),
             eq(WebViewRumEventConsumer.JSON_PARSING_ERROR_MESSAGE),
             any(),
             anyOrNull(),

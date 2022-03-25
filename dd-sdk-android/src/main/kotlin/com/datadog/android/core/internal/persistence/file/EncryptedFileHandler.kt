@@ -10,6 +10,7 @@ import android.util.Base64
 import com.datadog.android.core.internal.utils.copyTo
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.security.Encryption
 import java.io.File
 
@@ -34,12 +35,12 @@ internal class EncryptedFileHandler(
         separator: ByteArray?
     ): Boolean {
         if (separator != null && !checkSeparator(separator)) {
-            internalLogger.e(INVALID_SEPARATOR_MESSAGE)
+            internalLogger.errorWithTelemetry(INVALID_SEPARATOR_MESSAGE)
             return false
         }
 
         if (append && separator == null) {
-            internalLogger.e(MISSING_SEPARATOR_MESSAGE)
+            internalLogger.errorWithTelemetry(MISSING_SEPARATOR_MESSAGE)
             return false
         }
 
@@ -68,7 +69,7 @@ internal class EncryptedFileHandler(
         separator: ByteArray?
     ): ByteArray {
         if (separator != null && !checkSeparator(separator)) {
-            internalLogger.e(INVALID_SEPARATOR_MESSAGE)
+            internalLogger.errorWithTelemetry(INVALID_SEPARATOR_MESSAGE)
             return EMPTY_BYTE_ARRAY
         }
 

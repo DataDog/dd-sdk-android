@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.persistence
 
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 import java.util.Locale
 
 /**
@@ -33,12 +34,12 @@ internal interface Serializer<T : Any> {
 internal fun <T : Any> Serializer<T>.serializeToByteArray(
     model: T,
     internalLogger: Logger
-): ByteArray ? {
+): ByteArray? {
     return try {
         val serialized = serialize(model)
         serialized?.toByteArray(Charsets.UTF_8)
     } catch (e: Throwable) {
-        internalLogger.e(
+        internalLogger.errorWithTelemetry(
             Serializer.ERROR_SERIALIZING.format(Locale.US, model.javaClass.simpleName),
             e
         )

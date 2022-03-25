@@ -6,8 +6,10 @@
 
 package com.datadog.android.core.internal.utils
 
+import com.datadog.android.log.internal.logger.InternalLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
+import com.datadog.android.log.internal.logger.TelemetryLogHandler
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -29,15 +31,22 @@ internal class RuntimeUtilsDebugTest {
     // region sdkLogger
 
     @Test
-    fun `M build LogCat sdkLogger W buildSdkLogger()`() {
+    fun `M build LogCat+Telemetry sdkLogger W buildSdkLogger()`() {
         // When
         val logger = buildSdkLogger()
 
         // Then
         val handler: LogHandler = logger.handler
-        assertThat(handler).isInstanceOf(LogcatLogHandler::class.java)
-        assertThat((handler as LogcatLogHandler).serviceName)
+        assertThat(handler).isInstanceOf(InternalLogHandler::class.java)
+
+        val logcatLogHandler = (handler as InternalLogHandler).logcatLogHandler
+        val telemetryLogHandler = handler.telemetryLogHandler
+
+        assertThat(logcatLogHandler).isInstanceOf(LogcatLogHandler::class.java)
+        assertThat((logcatLogHandler as LogcatLogHandler).serviceName)
             .isEqualTo(SDK_LOG_PREFIX)
+
+        assertThat(telemetryLogHandler).isInstanceOf(TelemetryLogHandler::class.java)
     }
 
     // endregion

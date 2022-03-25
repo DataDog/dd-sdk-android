@@ -6,7 +6,7 @@
 
 package com.datadog.android.webview
 
-import android.util.Log
+import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.utils.assertj.JsonElementAssert.Companion.assertThat
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -138,7 +138,7 @@ internal class MixedWebViewEventConsumerTest {
 
         // Then
         verify(logger.mockSdkLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             MixedWebViewEventConsumer.WRONG_EVENT_TYPE_ERROR_MESSAGE.format(
                 US,
                 fakeUnknownEventType
@@ -171,7 +171,7 @@ internal class MixedWebViewEventConsumerTest {
 
         // Then
         verify(logger.mockSdkLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             MixedWebViewEventConsumer.WEB_EVENT_MISSING_TYPE_ERROR_MESSAGE.format(
                 US,
                 fakeWebEvent
@@ -204,7 +204,7 @@ internal class MixedWebViewEventConsumerTest {
 
         // Then
         verify(logger.mockSdkLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             MixedWebViewEventConsumer.WEB_EVENT_MISSING_WRAPPED_EVENT.format(US, fakeWebEvent)
         )
     }
@@ -244,7 +244,7 @@ internal class MixedWebViewEventConsumerTest {
 
         // Then
         verify(logger.mockSdkLogHandler).handleLog(
-            eq(Log.ERROR),
+            eq(ERROR_WITH_TELEMETRY_LEVEL),
             eq(
                 MixedWebViewEventConsumer.WEB_EVENT_PARSING_ERROR_MESSAGE.format(
                     US,

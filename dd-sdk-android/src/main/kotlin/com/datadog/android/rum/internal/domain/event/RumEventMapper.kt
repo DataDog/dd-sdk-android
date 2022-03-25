@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.event.EventMapper
+import com.datadog.android.log.internal.utils.warningWithTelemetry
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.EventType
@@ -55,7 +56,7 @@ internal data class RumEventMapper(
             is LongTaskEvent -> longTaskEventMapper.map(event)
             is TelemetryDebugEvent, is TelemetryErrorEvent -> event
             else -> {
-                sdkLogger.w(
+                sdkLogger.warningWithTelemetry(
                     NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE
                         .format(Locale.US, event.javaClass.simpleName)
                 )

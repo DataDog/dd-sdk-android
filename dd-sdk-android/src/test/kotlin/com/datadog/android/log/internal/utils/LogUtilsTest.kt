@@ -6,10 +6,26 @@
 
 package com.datadog.android.log.internal.utils
 
+import com.datadog.android.log.Logger
+import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.forge.exhaustiveAttributes
+import com.datadog.tools.unit.forge.aThrowable
+import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.verify
+import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.TimeZone
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
 
+@Extensions(
+    ExtendWith(ForgeExtension::class)
+)
+@ForgeConfiguration(Configurator::class)
 internal class LogUtilsTest {
 
     @Test
@@ -20,5 +36,71 @@ internal class LogUtilsTest {
         // Then
         assertThat(simpleDateFormat.toPattern()).isEqualTo(ISO_8601)
         assertThat(simpleDateFormat.timeZone).isEqualTo(TimeZone.getTimeZone("UTC"))
+    }
+
+    @Test
+    fun `M log with ERROR + TELEMETRY level W errorWithTelemetry()`(
+        @StringForgery message: String,
+        forge: Forge
+    ) {
+        // Given
+        val logger = mock<Logger>()
+        val throwable = forge.aNullable { forge.aThrowable() }
+        val attributes = forge.exhaustiveAttributes()
+
+        // When
+        logger.errorWithTelemetry(message, throwable, attributes)
+
+        // Then
+        verify(logger).log(
+            ERROR_WITH_TELEMETRY_LEVEL,
+            message,
+            throwable,
+            attributes
+        )
+    }
+
+    @Test
+    fun `M log with WARN + TELEMETRY level W warningWithTelemetry()`(
+        @StringForgery message: String,
+        forge: Forge
+    ) {
+        // Given
+        val logger = mock<Logger>()
+        val throwable = forge.aNullable { forge.aThrowable() }
+        val attributes = forge.exhaustiveAttributes()
+
+        // When
+        logger.warningWithTelemetry(message, throwable, attributes)
+
+        // Then
+        verify(logger).log(
+            WARN_WITH_TELEMETRY_LEVEL,
+            message,
+            throwable,
+            attributes
+        )
+    }
+
+    @Test
+    fun `M log with DEBUG + TELEMETRY level W debugWithTelemetry()`(
+        @StringForgery message: String,
+        forge: Forge
+    ) {
+        // Given
+        val logger = mock<Logger>()
+        val throwable = forge.aNullable { forge.aThrowable() }
+        val attributes = forge.exhaustiveAttributes()
+
+        // When
+        logger.debugWithTelemetry(message, throwable, attributes)
+
+        // Then
+        verify(logger).log(
+            DEBUG_WITH_TELEMETRY_LEVEL,
+            message,
+            throwable,
+            attributes
+        )
     }
 }

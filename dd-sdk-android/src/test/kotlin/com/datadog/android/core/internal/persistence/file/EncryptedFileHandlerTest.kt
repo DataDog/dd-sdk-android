@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.persistence.file
 
 import android.util.Log
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -137,7 +138,10 @@ internal class EncryptedFileHandlerTest {
         // Then
         assertThat(result).isFalse()
 
-        verify(mockInternalLogger).e(EncryptedFileHandler.INVALID_SEPARATOR_MESSAGE)
+        verify(mockInternalLogger).log(
+            ERROR_WITH_TELEMETRY_LEVEL,
+            EncryptedFileHandler.INVALID_SEPARATOR_MESSAGE
+        )
         verifyZeroInteractions(mockEncryption)
         verifyZeroInteractions(mockFileHandlerDelegate)
     }
@@ -157,7 +161,10 @@ internal class EncryptedFileHandlerTest {
         // Then
         assertThat(result).isFalse()
 
-        verify(mockInternalLogger).e(EncryptedFileHandler.MISSING_SEPARATOR_MESSAGE)
+        verify(mockInternalLogger).log(
+            ERROR_WITH_TELEMETRY_LEVEL,
+            EncryptedFileHandler.MISSING_SEPARATOR_MESSAGE
+        )
         verifyZeroInteractions(mockEncryption)
         verifyZeroInteractions(mockFileHandlerDelegate)
     }
@@ -610,7 +617,10 @@ internal class EncryptedFileHandlerTest {
         // Then
         assertThat(result).isEqualTo(EMPTY_BYTE_ARRAY)
 
-        verify(mockInternalLogger).e(EncryptedFileHandler.INVALID_SEPARATOR_MESSAGE)
+        verify(mockInternalLogger).log(
+            ERROR_WITH_TELEMETRY_LEVEL,
+            EncryptedFileHandler.INVALID_SEPARATOR_MESSAGE
+        )
         verifyZeroInteractions(mockEncryption)
         verifyZeroInteractions(mockFileHandlerDelegate)
     }

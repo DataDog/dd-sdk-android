@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.net
 
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 
 @Suppress("StringLiteralDuplication")
 internal enum class UploadStatus(val shouldRetry: Boolean) {
@@ -24,6 +25,7 @@ internal enum class UploadStatus(val shouldRetry: Boolean) {
         byteSize: Int,
         logger: Logger,
         ignoreInfo: Boolean,
+        sendToTelemetry: Boolean,
         requestId: String? = null
     ) {
         val batchInfo = if (requestId == null) {
@@ -33,7 +35,6 @@ internal enum class UploadStatus(val shouldRetry: Boolean) {
         }
         when (this) {
             NETWORK_ERROR -> logger.e(
-
                 "$batchInfo failed because of a network error; we will retry later."
             )
             INVALID_TOKEN_ERROR -> if (!ignoreInfo) {
@@ -45,13 +46,23 @@ internal enum class UploadStatus(val shouldRetry: Boolean) {
             HTTP_REDIRECTION -> logger.w(
                 "$batchInfo failed because of a network redirection; the batch was dropped."
             )
-            HTTP_CLIENT_ERROR -> logger.e(
-                "$batchInfo failed because of a processing error or invalid data; " +
+            HTTP_CLIENT_ERROR -> {
+                val message = "$batchInfo failed because of a processing error or invalid data; " +
                     "the batch was dropped."
-            )
-            HTTP_CLIENT_RATE_LIMITING -> logger.e(
-                "$batchInfo failed because of a request error; we will retry later."
-            )
+                if (sendToTelemetry) {
+                    logger.errorWithTelemetry(message)
+                } else {
+                    logger.e(message)
+                }
+            }
+            HTTP_CLIENT_RATE_LIMITING -> {
+                val message = "$batchInfo failed because of a request error; we will retry later."
+                if (sendToTelemetry) {
+                    logger.errorWithTelemetry(message)
+                } else {
+                    logger.e(message)
+                }
+            }
             HTTP_SERVER_ERROR -> logger.e(
                 "$batchInfo failed because of a server processing error; we will retry later."
             )

@@ -6,8 +6,10 @@
 
 package com.datadog.android.core.internal.utils
 
+import com.datadog.android.log.internal.logger.InternalLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
+import com.datadog.android.log.internal.logger.TelemetryLogHandler
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -29,13 +31,19 @@ internal class RuntimeUtilsReleaseTest {
     // region sdkLogger
 
     @Test
-    fun `M build noop sdkLogger W buildSdkLogger() {InternalLogs off}`() {
+    fun `M build NoOp + Telemetry sdkLogger W buildSdkLogger()`() {
         // When
         val logger = buildSdkLogger()
 
         // Then
         val handler: LogHandler = logger.handler
-        assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
+        assertThat(handler).isInstanceOf(InternalLogHandler::class.java)
+
+        val logcatLogHandler = (handler as InternalLogHandler).logcatLogHandler
+        assertThat(logcatLogHandler).isInstanceOf(NoOpLogHandler::class.java)
+
+        val telemetryLogHandler = handler.telemetryLogHandler
+        assertThat(telemetryLogHandler).isInstanceOf(TelemetryLogHandler::class.java)
     }
 
     // endregion

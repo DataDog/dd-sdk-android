@@ -9,6 +9,7 @@ package com.datadog.android.webview.internal.rum
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.webview.internal.WebViewEventConsumer
@@ -44,13 +45,13 @@ internal class WebViewRumEventConsumer(
                 ?.asString?.let { getOffset(it) } ?: 0L
             return webViewRumEventMapper.mapEvent(event, rumContext, timeOffset)
         } catch (e: ClassCastException) {
-            sdkLogger.e(JSON_PARSING_ERROR_MESSAGE, e)
+            sdkLogger.errorWithTelemetry(JSON_PARSING_ERROR_MESSAGE, e)
         } catch (e: NumberFormatException) {
-            sdkLogger.e(JSON_PARSING_ERROR_MESSAGE, e)
+            sdkLogger.errorWithTelemetry(JSON_PARSING_ERROR_MESSAGE, e)
         } catch (e: IllegalStateException) {
-            sdkLogger.e(JSON_PARSING_ERROR_MESSAGE, e)
+            sdkLogger.errorWithTelemetry(JSON_PARSING_ERROR_MESSAGE, e)
         } catch (e: UnsupportedOperationException) {
-            sdkLogger.e(JSON_PARSING_ERROR_MESSAGE, e)
+            sdkLogger.errorWithTelemetry(JSON_PARSING_ERROR_MESSAGE, e)
         }
         return event
     }
@@ -72,7 +73,7 @@ internal class WebViewRumEventConsumer(
                 offsets.remove(viewId.key)
             } catch (e: NoSuchElementException) {
                 // it should not happen but just in case.
-                sdkLogger.e("Trying to remove from an empty map.", e)
+                sdkLogger.errorWithTelemetry("Trying to remove from an empty map.", e)
                 break
             }
         }

@@ -8,6 +8,7 @@
 package com.datadog.android.core.internal.persistence.file
 
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 import java.io.File
 import java.io.FileFilter
 import java.nio.charset.Charset
@@ -34,10 +35,10 @@ private fun <T> File.safeCall(
     return try {
         lambda()
     } catch (e: SecurityException) {
-        sdkLogger.e("Security exception was thrown for file ${this.path}", e)
+        sdkLogger.errorWithTelemetry("Security exception was thrown for file ${this.path}", e)
         default
     } catch (e: Exception) {
-        sdkLogger.e("Unexpected exception was thrown for file ${this.path}", e)
+        sdkLogger.errorWithTelemetry("Unexpected exception was thrown for file ${this.path}", e)
         default
     }
 }

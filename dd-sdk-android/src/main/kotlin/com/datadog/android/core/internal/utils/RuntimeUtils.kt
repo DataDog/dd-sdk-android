@@ -10,28 +10,34 @@ import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.ConditionalLogHandler
+import com.datadog.android.log.internal.logger.InternalLogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
+import com.datadog.android.log.internal.logger.TelemetryLogHandler
+import com.datadog.android.telemetry.internal.Telemetry
 import java.util.Locale
 
 internal const val SDK_LOG_PREFIX = "DD_LOG"
 internal const val DEV_LOG_PREFIX = "Datadog"
 
+internal val telemetry: Telemetry = Telemetry()
+
 /**
  * Global SDK Logger. This logger is meant for internal debugging purposes.
- * Should not post logs to Datadog endpoint.
  * Logcat logs are conditioned by a BuildConfig flag (set to false for releases).
  */
 internal var sdkLogger: Logger = buildSdkLogger()
     private set
 
 internal fun buildSdkLogger(): Logger {
-    val handler = if (BuildConfig.LOGCAT_ENABLED) {
+    val logcatLogHandler = if (BuildConfig.LOGCAT_ENABLED) {
         LogcatLogHandler(SDK_LOG_PREFIX, true)
     } else {
         NoOpLogHandler()
     }
-    return Logger(handler)
+    return Logger(
+        InternalLogHandler(logcatLogHandler, TelemetryLogHandler(telemetry))
+    )
 }
 
 /**

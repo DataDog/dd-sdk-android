@@ -15,6 +15,7 @@ import android.os.Build
 import android.os.PowerManager
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.log.internal.utils.debugWithTelemetry
 
 internal class BroadcastReceiverSystemInfoProvider(
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
@@ -33,9 +34,9 @@ internal class BroadcastReceiverSystemInfoProvider(
             PowerManager.ACTION_POWER_SAVE_MODE_CHANGED -> {
                 handlePowerSaveIntent(context)
             }
-            else -> sdkLogger.d(
-                "Received unknown broadcast intent: [$action]"
-            )
+            else -> {
+                sdkLogger.debugWithTelemetry("Received unknown broadcast intent: [$action]")
+            }
         }
     }
 

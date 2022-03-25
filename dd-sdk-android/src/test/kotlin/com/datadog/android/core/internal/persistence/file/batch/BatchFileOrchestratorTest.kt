@@ -6,11 +6,11 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
-import android.util.Log
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
@@ -91,7 +91,7 @@ internal class BatchFileOrchestratorTest {
         // Then
         assertThat(result).isNull()
         verify(mockLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
         )
     }
@@ -117,7 +117,7 @@ internal class BatchFileOrchestratorTest {
         // Then
         assertThat(result).isNull()
         verify(mockLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -144,7 +144,7 @@ internal class BatchFileOrchestratorTest {
         // Then
         assertThat(result).isNull()
         verify(mockLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -159,7 +159,7 @@ internal class BatchFileOrchestratorTest {
         // Then
         assertThat(result).isNull()
         verify(mockLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileOrchestrator.ERROR_LARGE_DATA.format(Locale.US, dataSize, MAX_ITEM_SIZE)
         )
     }
@@ -431,7 +431,7 @@ internal class BatchFileOrchestratorTest {
             .isBetween(start, end)
         assertThat(files.first()).doesNotExist()
         verify(mockLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileOrchestrator.ERROR_DISK_FULL.format(
                 Locale.US,
                 files.size * previousData.length,
@@ -464,7 +464,7 @@ internal class BatchFileOrchestratorTest {
         // Then
         assertThat(result).isNull()
         verify(mockLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
         )
     }
@@ -488,7 +488,7 @@ internal class BatchFileOrchestratorTest {
         // Then
         assertThat(result).isNull()
         verify(mockLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -513,7 +513,7 @@ internal class BatchFileOrchestratorTest {
         // Then
         assertThat(result).isNull()
         verify(mockLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -635,7 +635,7 @@ internal class BatchFileOrchestratorTest {
         // Then
         assertThat(result).isEmpty()
         verify(mockLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
         )
     }
@@ -659,7 +659,7 @@ internal class BatchFileOrchestratorTest {
         // Then
         assertThat(result).isEmpty()
         verify(mockLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -684,7 +684,7 @@ internal class BatchFileOrchestratorTest {
         // Then
         assertThat(result).isEmpty()
         verify(mockLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -821,7 +821,7 @@ internal class BatchFileOrchestratorTest {
         // Then
         assertThat(result).isNull()
         verify(mockLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileOrchestrator.ERROR_ROOT_NOT_DIR.format(Locale.US, notADir.path)
         )
     }
@@ -845,7 +845,7 @@ internal class BatchFileOrchestratorTest {
         // Then
         assertThat(result).isNull()
         verify(mockLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileOrchestrator.ERROR_CANT_CREATE_ROOT.format(Locale.US, fakeRootDir.path)
         )
     }
@@ -870,7 +870,7 @@ internal class BatchFileOrchestratorTest {
         // Then
         assertThat(result).isNull()
         verify(mockLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileOrchestrator.ERROR_ROOT_NOT_WRITABLE.format(Locale.US, fakeRootDir.path)
         )
     }

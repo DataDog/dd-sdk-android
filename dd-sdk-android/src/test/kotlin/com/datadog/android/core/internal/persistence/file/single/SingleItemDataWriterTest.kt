@@ -6,13 +6,13 @@
 
 package com.datadog.android.core.internal.persistence.file.single
 
-import android.util.Log
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
@@ -158,7 +158,7 @@ internal class SingleItemDataWriterTest {
         // Then
         verifyZeroInteractions(mockFileHandler)
         verify(mockLogHandler).handleLog(
-            eq(Log.ERROR),
+            eq(ERROR_WITH_TELEMETRY_LEVEL),
             eq(Serializer.ERROR_SERIALIZING.format(Locale.US, data.javaClass.simpleName)),
             same(fakeThrowable),
             eq(emptyMap()),

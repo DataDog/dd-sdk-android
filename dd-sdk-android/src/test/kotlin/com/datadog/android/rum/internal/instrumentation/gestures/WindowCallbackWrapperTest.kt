@@ -28,6 +28,7 @@ import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -375,7 +376,11 @@ internal class WindowCallbackWrapperTest {
         testedWrapper.dispatchKeyEvent(null)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verify(rumMonitor.mockInstance).sendErrorTelemetryEvent(
+            "Received KeyEvent=null",
+            null
+        )
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
     }
 
     @Test

@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.persistence.file.EncryptedFileHandler
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.any
@@ -279,7 +280,7 @@ internal class BatchFileHandlerTest {
         assertThat(result).isFalse()
         assertThat(file).doesNotExist()
         verify(mockLogHandler).handleLog(
-            eq(Log.ERROR),
+            eq(ERROR_WITH_TELEMETRY_LEVEL),
             eq(BatchFileHandler.ERROR_WRITE.format(Locale.US, file.path)),
             any(),
             eq(emptyMap()),
@@ -310,7 +311,7 @@ internal class BatchFileHandlerTest {
         // Then
         assertThat(result).isFalse()
         verify(mockLogHandler).handleLog(
-            eq(Log.ERROR),
+            eq(ERROR_WITH_TELEMETRY_LEVEL),
             eq(BatchFileHandler.ERROR_WRITE.format(Locale.US, file.path)),
             any(),
             eq(emptyMap()),
@@ -347,7 +348,7 @@ internal class BatchFileHandlerTest {
         assertThat(result).isEmpty()
         assertThat(file).doesNotExist()
         verify(mockLogHandler).handleLog(
-            eq(Log.ERROR),
+            eq(ERROR_WITH_TELEMETRY_LEVEL),
             eq(BatchFileHandler.ERROR_READ.format(Locale.US, file.path)),
             any(),
             eq(emptyMap()),
@@ -379,7 +380,7 @@ internal class BatchFileHandlerTest {
         // Then
         assertThat(result).isEmpty()
         verify(mockLogHandler).handleLog(
-            eq(Log.ERROR),
+            eq(ERROR_WITH_TELEMETRY_LEVEL),
             eq(BatchFileHandler.ERROR_READ.format(Locale.US, file.path)),
             any(),
             eq(emptyMap()),
@@ -564,7 +565,7 @@ internal class BatchFileHandlerTest {
         // Then
         assertThat(result).isFalse()
         verify(mockLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileHandler.ERROR_MOVE_NOT_DIR.format(Locale.US, fakeSrcDir.path)
         )
     }
@@ -581,7 +582,7 @@ internal class BatchFileHandlerTest {
         // Then
         assertThat(result).isFalse()
         verify(mockLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileHandler.ERROR_MOVE_NOT_DIR.format(Locale.US, fakeDstDir.path)
         )
     }

@@ -78,6 +78,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     }
 
     private fun configureCoreFeature() {
+        CoreFeature.disableKronosBackgroundSync = true
         CoreFeature.isMainProcess = true
         CoreFeature.envName = fakeEnvName
         CoreFeature.serviceName = fakeServiceName
