@@ -102,7 +102,7 @@ internal class LeanbackViewAttributesProviderTest : ObjectTest<LeanbackViewAttri
             mapOf(
                 LeanbackViewAttributesProvider.ACTION_TARGET_ACTION_ID to fakeAction.id,
                 LeanbackViewAttributesProvider.ACTION_TARGET_LABEL1 to fakeAction.label1,
-                LeanbackViewAttributesProvider.ACTION_TARGET_LABEL2 to fakeAction.label2,
+                LeanbackViewAttributesProvider.ACTION_TARGET_LABEL2 to fakeAction.label2
             )
         )
     }
@@ -174,7 +174,7 @@ internal class LeanbackViewAttributesProviderTest : ObjectTest<LeanbackViewAttri
         assertThat(fakeAttributes).containsAllEntriesOf(fakeAttributes)
         assertThat(fakeAttributes).containsAllEntriesOf(
             mapOf(
-                LeanbackViewAttributesProvider.ACTION_TARGET_ACTION_ID to fakeAction.id,
+                LeanbackViewAttributesProvider.ACTION_TARGET_ACTION_ID to fakeAction.id
             )
         )
         assertThat(fakeAttributes).doesNotContainKeys(
@@ -203,7 +203,7 @@ internal class LeanbackViewAttributesProviderTest : ObjectTest<LeanbackViewAttri
             mapOf(
                 LeanbackViewAttributesProvider.ACTION_TARGET_ACTION_ID to fakeAction.id,
                 LeanbackViewAttributesProvider.ACTION_TARGET_LABEL1 to fakeAction.label1,
-                LeanbackViewAttributesProvider.ACTION_TARGET_LABEL2 to fakeAction.label2,
+                LeanbackViewAttributesProvider.ACTION_TARGET_LABEL2 to fakeAction.label2
             )
         )
     }

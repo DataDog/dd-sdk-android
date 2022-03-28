@@ -295,9 +295,165 @@ internal class RumViewScopeTest {
         assertThat(updatedContext.applicationId).isEqualTo(fakeParentContext.applicationId)
     }
 
+    @Test
+    fun `M update the context with the viewType W initializing`(forge: Forge) {
+        // Given
+        val fakeViewEventType = forge.aValueFrom(RumViewScope.RumViewType::class.java)
+
+        // When
+        testedScope = RumViewScope(
+            mockParentScope,
+            fakeKey,
+            fakeName,
+            fakeEventTime,
+            fakeAttributes,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockTimeProvider,
+            mockRumEventSourceProvider,
+            mockBuildSdkVersionProvider,
+            mockViewUpdatePredicate,
+            type = fakeViewEventType
+        )
+
+        // Then
+        assertThat(GlobalRum.getRumContext().viewType).isEqualTo(fakeViewEventType)
+    }
+
+    @Test
+    fun `𝕄 update the context with viewType NONE W handleEvent(StopView)`(
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, attributes),
+            mockWriter
+        )
+
+        // Then
+        assertThat(GlobalRum.getRumContext().viewType).isEqualTo(RumViewScope.RumViewType.NONE)
+    }
+
+    @Test
+    fun `𝕄 not update the context with viewType NONE W handleEvent(StopView) { unknown key }`(
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(attributes)
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(forge.anAlphabeticalString() + fakeKey, attributes),
+            mockWriter
+        )
+
+        // Then
+        assertThat(GlobalRum.getRumContext().viewType)
+            .isEqualTo(RumViewScope.RumViewType.FOREGROUND)
+    }
+
     // endregion
 
     // region View
+
+    @ParameterizedTest
+    @EnumSource(
+        value = RumViewScope.RumViewType::class,
+        names = ["NONE"],
+        mode = EnumSource.Mode.EXCLUDE
+    )
+    fun `𝕄 not update the viewType to NONE W handleEvent(StartView) { on active view }`(
+        viewType: RumViewScope.RumViewType,
+        @StringForgery key: String,
+        @StringForgery name: String
+    ) {
+        // Given
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
+            mockWriter
+        )
+        RumViewScope(
+            mockParentScope,
+            key,
+            name,
+            fakeEventTime,
+            fakeAttributes,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockTimeProvider,
+            mockRumEventSourceProvider,
+            mockBuildSdkVersionProvider,
+            mockViewUpdatePredicate,
+            type = viewType
+        )
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StartView(key, name, emptyMap()),
+            mockWriter
+        )
+
+        // Then
+        assertThat(GlobalRum.getRumContext().viewType)
+            .isEqualTo(viewType)
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = RumViewScope.RumViewType::class,
+        names = ["NONE"],
+        mode = EnumSource.Mode.EXCLUDE
+    )
+    fun `𝕄 not update the viewType to NONE W handleEvent(StopView) {already stopped, active view}`(
+        viewType: RumViewScope.RumViewType,
+        @StringForgery key: String,
+        @StringForgery name: String
+    ) {
+        // Given
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
+            mockWriter
+        )
+        RumViewScope(
+            mockParentScope,
+            key,
+            name,
+            fakeEventTime,
+            fakeAttributes,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockTimeProvider,
+            mockRumEventSourceProvider,
+            mockBuildSdkVersionProvider,
+            mockViewUpdatePredicate,
+            type = viewType
+        )
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(key, emptyMap()),
+            mockWriter
+        )
+
+        // Then
+        assertThat(GlobalRum.getRumContext().viewType)
+            .isEqualTo(viewType)
+    }
 
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(StartView) on stopped view`(

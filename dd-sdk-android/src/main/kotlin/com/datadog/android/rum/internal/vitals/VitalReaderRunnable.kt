@@ -7,6 +7,8 @@
 package com.datadog.android.rum.internal.vitals
 
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
@@ -18,11 +20,12 @@ internal class VitalReaderRunnable(
 ) : Runnable {
 
     override fun run() {
-        val data = reader.readVitalData()
-        if (data != null) {
-            observer.onNewSample(data)
+        if (GlobalRum.getRumContext().viewType == RumViewScope.RumViewType.FOREGROUND) {
+            val data = reader.readVitalData()
+            if (data != null) {
+                observer.onNewSample(data)
+            }
         }
-
         executor.scheduleSafe("Vitals monitoring", periodMs, TimeUnit.MILLISECONDS, this)
     }
 }

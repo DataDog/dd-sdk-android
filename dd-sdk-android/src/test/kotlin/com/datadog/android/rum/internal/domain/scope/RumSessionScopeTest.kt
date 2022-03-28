@@ -87,7 +87,7 @@ internal class RumSessionScopeTest {
     lateinit var mockChildScope: RumScope
 
     @Mock
-    lateinit var mockEvent: RumRawEvent
+    lateinit var fakeEvent: RumRawEvent
 
     @Mock
     lateinit var mockWriter: DataWriter<Any>
@@ -232,7 +232,7 @@ internal class RumSessionScopeTest {
 
         for (i in 0..repeatCount) {
             Thread.sleep(TEST_SLEEP_MS)
-            testedScope.handleEvent(mockEvent, mockWriter)
+            testedScope.handleEvent(fakeEvent, mockWriter)
         }
         Thread.sleep(TEST_SLEEP_MS)
         val context = testedScope.getRumContext()
@@ -247,9 +247,9 @@ internal class RumSessionScopeTest {
     @Test
     fun `updates sessionId on ResetSession event `() {
         val firstSessionId = testedScope.getRumContext().sessionId
-        mockEvent = RumRawEvent.ResetSession()
+        fakeEvent = RumRawEvent.ResetSession()
 
-        testedScope.handleEvent(mockEvent, mockWriter)
+        testedScope.handleEvent(fakeEvent, mockWriter)
         val context = testedScope.getRumContext()
 
         assertThat(context.sessionId)
@@ -266,7 +266,7 @@ internal class RumSessionScopeTest {
 
         for (i in 0..repeatCount) {
             Thread.sleep(TEST_SLEEP_MS)
-            testedScope.handleEvent(mockEvent, mockWriter)
+            testedScope.handleEvent(fakeEvent, mockWriter)
         }
         val context = testedScope.getRumContext()
 
@@ -343,7 +343,7 @@ internal class RumSessionScopeTest {
         Datadog.setVerbosity(Log.VERBOSE)
 
         // When
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
         assertThat(testedScope.activeChildrenScopes).isEmpty()
@@ -356,9 +356,9 @@ internal class RumSessionScopeTest {
     fun `M delegate to child scope W handleEvent()`() {
         testedScope.activeChildrenScopes.add(mockChildScope)
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
-        verify(mockChildScope).handleEvent(mockEvent, mockWriter)
+        verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
         assertThat(testedScope.activeChildrenScopes).containsExactly(mockChildScope)
         assertThat(result).isSameAs(testedScope)
         verifyZeroInteractions(mockWriter, logger.mockDevLogHandler)
@@ -383,10 +383,10 @@ internal class RumSessionScopeTest {
         )
         testedScope.activeChildrenScopes.add(mockChildScope)
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         argumentCaptor<DataWriter<Any>> {
-            verify(mockChildScope).handleEvent(same(mockEvent), capture())
+            verify(mockChildScope).handleEvent(same(fakeEvent), capture())
 
             assertThat(firstValue)
                 .isNotSameAs(mockWriter)
@@ -398,15 +398,56 @@ internal class RumSessionScopeTest {
     }
 
     @Test
+    fun `M start a foreground ViewScope W handleEvent(StartView) { app displayed }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeAttributes = forge.exhaustiveAttributes()
+        testedScope = RumSessionScope(
+            mockParentScope,
+            100f,
+            true,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockTimeProvider,
+            mockSessionListener,
+            mockRumEventSourceProvider,
+            mockBuildSdkVersionProvider,
+            TEST_INACTIVITY_NS,
+            TEST_MAX_DURATION_NS
+        )
+        testedScope.applicationDisplayed = true
+
+        fakeEvent = RumRawEvent.StartView(key, name, fakeAttributes)
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // THEN
+        assertThat(testedScope.activeChildrenScopes).hasSize(1)
+        assertThat(testedScope.activeChildrenScopes[0])
+            .isInstanceOfSatisfying(RumViewScope::class.java) {
+                assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
+                assertThat(it.keyRef.get()).isEqualTo(key)
+                assertThat(it.name).isEqualTo(name)
+                assertThat(it.type).isEqualTo(RumViewScope.RumViewType.FOREGROUND)
+            }
+    }
+
+    @Test
     fun `M update child scope W handleEvent(StartView)`(
         @StringForgery key: String,
         @StringForgery name: String,
         forge: Forge
     ) {
         val attributes = forge.exhaustiveAttributes()
-        mockEvent = RumRawEvent.StartView(key, name, attributes)
+        fakeEvent = RumRawEvent.StartView(key, name, attributes)
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         assertThat(testedScope.activeChildrenScopes).hasSize(1)
         val viewScope = testedScope.activeChildrenScopes.first() as RumViewScope
@@ -425,11 +466,11 @@ internal class RumSessionScopeTest {
     ) {
         testedScope.activeChildrenScopes.add(mockChildScope)
         val attributes = forge.exhaustiveAttributes()
-        mockEvent = RumRawEvent.StartView(key, name, attributes)
+        fakeEvent = RumRawEvent.StartView(key, name, attributes)
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
-        verify(mockChildScope).handleEvent(mockEvent, mockWriter)
+        verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
         assertThat(testedScope.activeChildrenScopes).hasSize(2)
         val viewScope = testedScope.activeChildrenScopes.last() as RumViewScope
         assertThat(viewScope.keyRef.get()).isEqualTo(key)
@@ -442,9 +483,9 @@ internal class RumSessionScopeTest {
     @Test
     fun `M keep children scope W handleEvent child returns non null`() {
         testedScope.activeChildrenScopes.add(mockChildScope)
-        whenever(mockChildScope.handleEvent(mockEvent, mockWriter)) doReturn mockChildScope
+        whenever(mockChildScope.handleEvent(fakeEvent, mockWriter)) doReturn mockChildScope
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         assertThat(testedScope.activeChildrenScopes).containsExactly(mockChildScope)
         assertThat(result).isSameAs(testedScope)
@@ -454,9 +495,9 @@ internal class RumSessionScopeTest {
     @Test
     fun `M remove children scope W handleEvent child returns null`() {
         testedScope.activeChildrenScopes.add(mockChildScope)
-        whenever(mockChildScope.handleEvent(mockEvent, mockWriter)) doReturn null
+        whenever(mockChildScope.handleEvent(fakeEvent, mockWriter)) doReturn null
 
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         assertThat(testedScope.activeChildrenScopes).isEmpty()
         assertThat(result).isSameAs(testedScope)
@@ -647,6 +688,7 @@ internal class RumSessionScopeTest {
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+                assertThat(it.type).isEqualTo(RumViewScope.RumViewType.BACKGROUND)
             }
     }
 
@@ -698,6 +740,7 @@ internal class RumSessionScopeTest {
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+                assertThat(it.type).isEqualTo(RumViewScope.RumViewType.BACKGROUND)
             }
     }
 
@@ -722,6 +765,7 @@ internal class RumSessionScopeTest {
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
+                assertThat(it.type).isEqualTo(RumViewScope.RumViewType.APPLICATION_LAUNCH)
             }
     }
 

@@ -7,6 +7,7 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.util.UUID
@@ -19,7 +20,8 @@ internal class RumContextForgeryFactory : ForgeryFactory<RumContext> {
             viewId = forge.aNullable { getForgery<UUID>().toString() },
             viewName = forge.aNullable { forge.anAlphaNumericalString() },
             viewUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/[a-z]+"),
-            actionId = forge.aNullable { getForgery<UUID>().toString() }
+            actionId = forge.aNullable { getForgery<UUID>().toString() },
+            viewType = forge.aValueFrom(RumViewScope.RumViewType::class.java)
         )
     }
 }
