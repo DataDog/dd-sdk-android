@@ -18,6 +18,8 @@ fun Project.kotlinConfig(evaluateWarningsAsErrors: Boolean = true) {
         kotlinOptions {
             jvmTarget = JavaVersion.VERSION_1_8.toString()
             allWarningsAsErrors = evaluateWarningsAsErrors
+            apiVersion = "1.6"
+            languageVersion = "1.6"
         }
     }
 

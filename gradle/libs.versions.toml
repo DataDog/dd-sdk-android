@@ -1,6 +1,6 @@
 [versions]
 # Commons
-kotlin = "1.5.31"
+kotlin = "1.6.10"
 gson = "2.8.8"
 okHttp = "3.12.13"
 kronosNTP = "0.0.1-alpha11"
@@ -15,10 +15,10 @@ androidXNavigation = "2.3.0"
 androidXRecyclerView = "1.1.0"
 androidXWorkManager = "2.7.0"
 androidXConstraintLayout = "2.0.4"
-androidXComposeRuntime = "1.0.5"
+androidXComposeRuntime = "1.1.0-rc01"
 androidXComposeNavigation = "2.4.0-rc01"
-androidXComposeUi = "1.0.5"
-androidXComposeMaterial = "1.0.5"
+androidXComposeUi = "1.1.0-rc01"
+androidXComposeMaterial = "1.1.0-rc01"
 googleAccompanist = "0.20.2"
 googleMaterial = "1.3.0"
 
@@ -58,7 +58,7 @@ mavenModel = "3.6.3"
 versionsPluginGradle = "0.27.0"
 nexusPublishPluginGradle = "1.1.0"
 
-kotlinPoet = "1.9.0"
+kotlinPoet = "1.10.2"
 kotlinGrammarParser = "9b264ee"
 jsonSchemaValidator = "1.12.1"
 
@@ -83,6 +83,7 @@ ktor = "1.6.0"
 # Gradle version catalog doesn't allow names to end with plugin, that is why strange names
 androidToolsPluginGradle = { module = "com.android.tools.build:gradle", version.ref = "androidToolsPlugin" }
 kotlinPluginGradle = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlinSPPluginGradle = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin", version.ref = "kotlinSP" }
 ktLintPluginGradle = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktLint" }
 dokkaPluginGradle = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 unmockPluginGradle = { module = "com.github.bjoernq:unmockplugin", version.ref = "unmock" }
@@ -173,6 +174,8 @@ mavenModel = { module = "org.apache.maven:maven-model", version.ref = "mavenMode
 nexusPublishPluginGradle = { module = "io.github.gradle-nexus:publish-plugin", version.ref = "nexusPublishPluginGradle" }
 
 kotlinPoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinPoet" }
+kotlinPoetKsp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinPoet" }
+kotlinSP = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "kotlinSP" }
 kotlinGrammarParser = { module = "com.github.kotlinx.ast:grammar-kotlin-parser-antlr-kotlin-jvm", version.ref = "kotlinGrammarParser" }
 jsonSchemaValidator = { module = "com.github.everit-org.json-schema:org.everit.json.schema", version.ref = "jsonSchemaValidator" }
 
