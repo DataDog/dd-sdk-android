@@ -9,7 +9,6 @@ import kotlin.collections.emptyList
 
 @Suppress("RedundantUnitReturnType")
 internal class NoOpAnyGenericInterface<T : Any> : AnyGenericInterface<T> {
-
     public override fun doSomethingWithListReturn(models: List<T>): List<T> = emptyList()
 
     public override fun map(event: T): T = event

@@ -5,7 +5,6 @@ import kotlin.Unit
 
 @Suppress("RedundantUnitReturnType")
 internal class NoOpInheritedInterface : InheritedInterface {
-
     public override fun doSomething(): Unit {
     }
 

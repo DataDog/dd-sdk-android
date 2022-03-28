@@ -1,6 +1,7 @@
 [versions]
 # Commons
 kotlin = "1.6.10"
+kotlinSP = "1.6.10-1.0.4"
 gson = "2.8.8"
 okHttp = "3.12.13"
 kronosNTP = "0.0.1-alpha11"
@@ -15,10 +16,10 @@ androidXNavigation = "2.3.0"
 androidXRecyclerView = "1.1.0"
 androidXWorkManager = "2.7.0"
 androidXConstraintLayout = "2.0.4"
-androidXComposeRuntime = "1.1.0-rc01"
+androidXComposeRuntime = "1.1.1"
 androidXComposeNavigation = "2.4.0-rc01"
-androidXComposeUi = "1.1.0-rc01"
-androidXComposeMaterial = "1.1.0-rc01"
+androidXComposeUi = "1.1.1"
+androidXComposeMaterial = "1.1.1"
 googleAccompanist = "0.20.2"
 googleMaterial = "1.3.0"
 

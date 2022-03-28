@@ -15,7 +15,6 @@ import kotlin.collections.emptySet
 
 @Suppress("RedundantUnitReturnType")
 internal class NoOpSimpleInterface : SimpleInterface {
-
     public override fun doSomething(): Unit {
     }
 

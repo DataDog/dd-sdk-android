@@ -4,4 +4,4 @@
 # Copyright 2016-Present Datadog, Inc.
 #
 
-com.datadog.tools.noopfactory.NoOpFactoryAnnotationProcessor,isolating
+com.datadog.tools.noopfactory.NoOpFactoryProvider

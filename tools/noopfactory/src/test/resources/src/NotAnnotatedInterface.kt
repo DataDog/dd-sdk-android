@@ -1,10 +1,8 @@
 package com.example
 
-import com.datadog.tools.annotation.NoOpImplementation
 import java.util.Date
 
-@NoOpImplementation
-interface SimpleInterface {
+interface NotAnnotatedInterface {
     fun doSomething()
 
     fun doSomethingWithParams(
