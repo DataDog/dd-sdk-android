@@ -22,6 +22,7 @@ buildscript {
     dependencies {
         classpath(libs.androidToolsPluginGradle)
         classpath(libs.kotlinPluginGradle)
+        classpath(libs.kotlinSPPluginGradle)
         classpath(libs.ktLintPluginGradle)
         classpath(libs.dokkaPluginGradle)
         classpath(libs.unmockPluginGradle)

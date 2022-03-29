@@ -20,7 +20,7 @@ plugins {
     // Build
     id("com.android.library")
     kotlin("android")
-    kotlin("kapt")
+    id("com.google.devtools.ksp")
 
     // Publish
     `maven-publish`
@@ -134,7 +134,7 @@ dependencies {
     api(libs.bundles.openTracing)
 
     // Generate NoOp implementations
-    kapt(project(":tools:noopfactory"))
+    ksp(project(":tools:noopfactory"))
 
     // Testing
     testImplementation(project(":tools:unit"))

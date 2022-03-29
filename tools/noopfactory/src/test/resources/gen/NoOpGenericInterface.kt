@@ -12,7 +12,6 @@ import kotlin.collections.emptySet
 
 @Suppress("RedundantUnitReturnType")
 internal class NoOpGenericInterface<T : CharSequence> : GenericInterface<T> {
-
     public override fun doSomething(): Unit {
     }
 
