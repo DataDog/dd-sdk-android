@@ -7,6 +7,9 @@
 package com.datadog.android.rum.internal.vitals
 
 import android.util.Log
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.domain.scope.RumViewScope
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -19,6 +22,7 @@ import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -30,6 +34,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -60,6 +66,11 @@ internal class VitalReaderRunnableTest {
 
     @BeforeEach
     fun `set up`() {
+        GlobalRum.updateRumContext(
+            rumMonitor.context.copy(
+                viewType = RumViewScope.RumViewType.FOREGROUND
+            )
+        )
         testedRunnable = VitalReaderRunnable(
             mockReader,
             mockObserver,
@@ -69,7 +80,7 @@ internal class VitalReaderRunnableTest {
     }
 
     @Test
-    fun `𝕄 read data, notify observer and schedule 𝕎 run()`() {
+    fun `𝕄 read data, notify observer and schedule 𝕎 run { viewType == FOREGROUND }()`() {
         // Given
         whenever(mockReader.readVitalData()) doReturn fakeValue
 
@@ -81,6 +92,27 @@ internal class VitalReaderRunnableTest {
             verify(mockObserver).onNewSample(fakeValue)
             verify(mockExecutor).schedule(testedRunnable, TEST_PERIOD_MS, TimeUnit.MILLISECONDS)
         }
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = RumViewScope.RumViewType::class,
+        names = ["FOREGROUND"],
+        mode = EnumSource.Mode.EXCLUDE
+    )
+    fun `𝕄 not read data, not notify observer but schedule 𝕎 run { viewType != FOREGROUND }()`(
+        viewType: RumViewScope.RumViewType
+    ) {
+        // Given
+        GlobalRum.updateRumContext(rumMonitor.context.copy(viewType = viewType))
+
+        // When
+        testedRunnable.run()
+
+        // Then
+        verifyZeroInteractions(mockReader)
+        verifyZeroInteractions(mockObserver)
+        verify(mockExecutor).schedule(testedRunnable, TEST_PERIOD_MS, TimeUnit.MILLISECONDS)
     }
 
     @Test
@@ -120,10 +152,12 @@ internal class VitalReaderRunnableTest {
 
         val logger = LoggerTestConfiguration()
 
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
+            return listOf(logger, rumMonitor)
         }
     }
 }

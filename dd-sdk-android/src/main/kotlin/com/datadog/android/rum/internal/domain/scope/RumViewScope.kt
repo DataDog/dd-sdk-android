@@ -54,7 +54,8 @@ internal open class RumViewScope(
     internal val timeProvider: TimeProvider,
     private val rumEventSourceProvider: RumEventSourceProvider,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
-    private val viewUpdatePredicate: ViewUpdatePredicate = DefaultViewUpdatePredicate()
+    private val viewUpdatePredicate: ViewUpdatePredicate = DefaultViewUpdatePredicate(),
+    internal val type: RumViewType = RumViewType.FOREGROUND
 ) : RumScope {
 
     internal val url = key.resolveViewUrl().replace('.', '/')
@@ -156,7 +157,6 @@ internal open class RumViewScope(
 
             is RumRawEvent.StartView -> onStartView(event, writer)
             is RumRawEvent.StopView -> onStopView(event, writer)
-
             is RumRawEvent.StartAction -> onStartAction(event, writer)
             is RumRawEvent.StartResource -> onStartResource(event, writer)
             is RumRawEvent.AddError -> onAddError(event, writer)
@@ -189,7 +189,8 @@ internal open class RumViewScope(
                 viewId = viewId,
                 viewName = name,
                 viewUrl = url,
-                actionId = (activeActionScope as? RumActionScope)?.actionId
+                actionId = (activeActionScope as? RumActionScope)?.actionId,
+                viewType = type
             )
     }
 
@@ -216,6 +217,7 @@ internal open class RumViewScope(
         val startedKey = keyRef.get()
         val shouldStop = (event.key == startedKey) || (startedKey == null)
         if (shouldStop && !stopped) {
+            GlobalRum.updateRumContext(getRumContext().copy(viewType = RumViewType.NONE))
             attributes.putAll(event.attributes)
             stopped = true
             sendViewUpdate(event, writer)
@@ -692,6 +694,13 @@ internal open class RumViewScope(
             (activity.getSystemService(Context.WINDOW_SERVICE) as? WindowManager)?.defaultDisplay
         } ?: return
         refreshRateScale = 60.0 / display.refreshRate
+    }
+
+    enum class RumViewType {
+        NONE,
+        FOREGROUND,
+        BACKGROUND,
+        APPLICATION_LAUNCH
     }
 
     // endregion

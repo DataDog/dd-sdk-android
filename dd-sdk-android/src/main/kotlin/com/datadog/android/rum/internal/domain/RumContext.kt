@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain
 
+import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import java.util.UUID
 
 internal data class RumContext(
@@ -14,7 +15,8 @@ internal data class RumContext(
     val viewId: String? = null,
     val viewName: String? = null,
     val viewUrl: String? = null,
-    val actionId: String? = null
+    val actionId: String? = null,
+    val viewType: RumViewScope.RumViewType = RumViewScope.RumViewType.NONE
 ) {
 
     companion object {

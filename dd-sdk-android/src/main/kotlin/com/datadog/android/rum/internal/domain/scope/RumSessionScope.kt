@@ -182,7 +182,8 @@ internal class RumSessionScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             timeProvider,
-            rumEventSourceProvider
+            rumEventSourceProvider,
+            type = RumViewScope.RumViewType.BACKGROUND
         )
     }
 
@@ -198,7 +199,8 @@ internal class RumSessionScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             timeProvider,
-            rumEventSourceProvider
+            rumEventSourceProvider,
+            type = RumViewScope.RumViewType.APPLICATION_LAUNCH
         )
     }
 
