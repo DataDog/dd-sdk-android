@@ -26,7 +26,7 @@ public data class Opus(
     public val title: String? = null,
     public val composer: String? = null,
     public val artists: List<Artist>? = null,
-    public val duration: Long? = null
+    public val duration: Long? = null,
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
@@ -73,7 +73,7 @@ public data class Opus(
      */
     public data class Artist(
         public val name: String? = null,
-        public val role: Role? = null
+        public val role: Role? = null,
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()
@@ -106,7 +106,7 @@ public data class Opus(
      * The artist's role.
      */
     public enum class Role(
-        private val jsonValue: String
+        private val jsonValue: String,
     ) {
         SINGER("singer"),
         GUITARIST("guitarist"),

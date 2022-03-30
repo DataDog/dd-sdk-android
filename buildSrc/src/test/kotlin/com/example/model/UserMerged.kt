@@ -15,7 +15,7 @@ public data class UserMerged(
     public val phone: String? = null,
     public val info: Info? = null,
     public val firstname: String? = null,
-    public val lastname: String
+    public val lastname: String,
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
@@ -51,7 +51,7 @@ public data class UserMerged(
 
     public data class Info(
         public val notes: String? = null,
-        public val source: String? = null
+        public val source: String? = null,
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()

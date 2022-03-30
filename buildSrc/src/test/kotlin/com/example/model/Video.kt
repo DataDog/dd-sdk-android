@@ -16,7 +16,7 @@ import kotlin.jvm.Throws
 public data class Video(
     public val title: String,
     public val tags: Set<String>? = null,
-    public val links: Set<String>? = null
+    public val links: Set<String>? = null,
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()

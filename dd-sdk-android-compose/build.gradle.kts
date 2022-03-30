@@ -72,10 +72,10 @@ android {
     }
 
     lint {
-        isWarningsAsErrors = true
-        isAbortOnError = true
-        isCheckReleaseBuilds = false
-        isCheckGeneratedSources = true
+        warningsAsErrors = true
+        abortOnError = true
+        checkReleaseBuilds = false
+        checkGeneratedSources = true
     }
 }
 
@@ -99,7 +99,7 @@ unMock {
     keep("android.os.Bundle")
 }
 
-kotlinConfig(evaluateWarningsAsErrors = false)
+kotlinConfig()
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions {
         freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")

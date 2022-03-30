@@ -16,7 +16,7 @@ import kotlin.jvm.Throws
 public data class Article(
     public val title: String,
     public val tags: List<String>? = null,
-    public val authors: List<String>
+    public val authors: List<String>,
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()

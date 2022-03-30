@@ -14,7 +14,7 @@ import kotlin.jvm.Throws
 public data class Person(
     public val firstName: String? = null,
     public val lastName: String? = null,
-    public val age: Long? = null
+    public val age: Long? = null,
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
