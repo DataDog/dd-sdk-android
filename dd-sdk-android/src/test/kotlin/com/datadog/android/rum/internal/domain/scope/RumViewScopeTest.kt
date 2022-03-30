@@ -84,6 +84,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -5159,6 +5160,49 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    // region Misc
+
+    @ParameterizedTest
+    @MethodSource("brokenTimeRawEventData")
+    fun `M update the duration to 1ns W handleEvent { computed duration less or equal to 0 }`(
+        rawEventData: RumRawEventData
+    ) {
+        // Given
+        testedScope = RumViewScope(
+            mockParentScope,
+            rawEventData.viewKey,
+            fakeName,
+            fakeEventTime,
+            fakeAttributes,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockTimeProvider,
+            mockRumEventSourceProvider,
+            mockBuildSdkVersionProvider,
+            viewUpdatePredicate = mockViewUpdatePredicate
+        )
+
+        // When
+        testedScope.handleEvent(rawEventData.event, mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(firstValue)
+                .apply {
+                    hasDuration(1)
+                }
+        }
+        verify(logger.mockDevLogHandler).handleLog(
+            Log.WARN,
+            RumViewScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, testedScope.name)
+        )
+    }
+
+    // endregion
+
     // region Internal
 
     private fun mockEvent(): RumRawEvent {
@@ -5183,6 +5227,8 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    data class RumRawEventData(val event: RumRawEvent, val viewKey: String)
+
     companion object {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
@@ -5193,6 +5239,49 @@ internal class RumViewScopeTest {
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
             return listOf(logger, appContext, coreFeature, rumMonitor)
+        }
+
+        @JvmStatic
+        fun brokenTimeRawEventData(): List<RumRawEventData> {
+            val forge = Forge()
+            Configurator().apply { configure(forge) }
+            val fakeKey = forge.anAlphabeticalString()
+            val fakeName = forge.anAlphabeticalString()
+            val eventTime = Time(0, 0)
+            return listOf(
+                RumRawEventData(
+                    RumRawEvent.KeepAlive(
+                        eventTime = eventTime
+                    ),
+                    fakeKey
+                ),
+                RumRawEventData(
+                    RumRawEvent.AddCustomTiming(
+                        fakeName,
+                        eventTime = eventTime
+                    ),
+                    fakeKey
+                ),
+                RumRawEventData(
+                    RumRawEvent.UpdateViewLoadingTime(
+                        fakeKey,
+                        forge.aLong(),
+                        forge.aValueFrom(ViewEvent.LoadingType::class.java),
+                        eventTime
+                    ),
+                    fakeKey
+                ),
+                RumRawEventData(RumRawEvent.StopView(fakeKey, emptyMap(), eventTime), fakeKey),
+                RumRawEventData(
+                    RumRawEvent.StartView(
+                        fakeKey,
+                        fakeName,
+                        emptyMap(),
+                        eventTime = eventTime
+                    ),
+                    fakeKey
+                )
+            )
         }
     }
 }
