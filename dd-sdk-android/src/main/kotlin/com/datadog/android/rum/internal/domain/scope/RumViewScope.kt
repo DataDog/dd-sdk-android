@@ -487,7 +487,7 @@ internal open class RumViewScope(
         }
         attributes.putAll(GlobalRum.globalAttributes)
         version++
-        val updatedDurationNs = event.eventTime.nanoTime - startedNanos
+        val updatedDurationNs = resolveViewDuration(event)
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
         val timings = resolveCustomTimings()
@@ -539,6 +539,14 @@ internal open class RumViewScope(
         )
 
         writer.write(viewEvent)
+    }
+
+    private fun resolveViewDuration(event: RumRawEvent): Long {
+        val duration = event.eventTime.nanoTime - startedNanos
+        if (duration <= 0) {
+            devLogger.w(NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, name))
+        }
+        return max(duration, 1)
     }
 
     private fun resolveRefreshRateInfo(refreshRateInfo: VitalInfo?) =
@@ -713,6 +721,8 @@ internal open class RumViewScope(
 
         internal val FROZEN_FRAME_THRESHOLD_NS = TimeUnit.MILLISECONDS.toNanos(700)
         internal const val SLOW_RENDERED_THRESHOLD_FPS = 55
+        internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for your " +
+            "view: %s was 0 or negative. In order to keep the view we forced it to 1ns."
 
         @Suppress("LongParameterList")
         internal fun fromEvent(
