@@ -7,8 +7,11 @@
 package com.datadog.android.rum
 
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.tools.unit.annotations.ProhibitLeavingStaticMocksIn
+import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -17,8 +20,12 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
-@Extensions(ExtendWith(MockitoExtension::class))
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ProhibitLeavingStaticMocksExtension::class)
+)
 @MockitoSettings(strictness = Strictness.LENIENT)
+@ProhibitLeavingStaticMocksIn(GlobalRum::class)
 internal class GlobalRumTest {
 
     @Mock
@@ -26,6 +33,11 @@ internal class GlobalRumTest {
 
     @Mock
     lateinit var mockAdvancedRumMonitor: AdvancedRumMonitor
+
+    @AfterEach
+    fun tearDown() {
+        GlobalRum.monitor = NoOpRumMonitor()
+    }
 
     @Test
     fun `M delegate to monitor W notifyIngestedWebViewEvent(){ AdvancedRumMonitor }`() {

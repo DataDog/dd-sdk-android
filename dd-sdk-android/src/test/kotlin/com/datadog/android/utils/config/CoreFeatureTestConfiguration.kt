@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.lyft.kronos.KronosClock
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
@@ -35,6 +36,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var mockUploadExecutor: ScheduledThreadPoolExecutor
     lateinit var mockOkHttpClient: OkHttpClient
     lateinit var mockPersistenceExecutor: ExecutorService
+    lateinit var mockKronosClock: KronosClock
 
     lateinit var mockTimeProvider: TimeProvider
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
@@ -51,6 +53,10 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     }
 
     override fun tearDown(forge: Forge) {
+        if (!CoreFeature.initialized.get()) {
+            // If test didn't initialize it, we need to do that, to make `stop` run.
+            CoreFeature.initialized.set(true)
+        }
         CoreFeature.stop()
     }
 
@@ -69,6 +75,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         mockPersistenceExecutor = mock()
         mockUploadExecutor = mock()
         mockOkHttpClient = mock()
+        mockKronosClock = mock()
 
         mockTimeProvider = mock()
         mockNetworkInfoProvider = mock()
@@ -91,6 +98,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         CoreFeature.persistenceExecutorService = mockPersistenceExecutor
         CoreFeature.uploadExecutorService = mockUploadExecutor
         CoreFeature.okHttpClient = mockOkHttpClient
+        CoreFeature.kronosClock = mockKronosClock
 
         CoreFeature.timeProvider = mockTimeProvider
         CoreFeature.networkInfoProvider = mockNetworkInfoProvider

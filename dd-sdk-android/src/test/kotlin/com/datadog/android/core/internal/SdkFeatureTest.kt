@@ -16,12 +16,20 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
+import com.datadog.android.error.internal.CrashReportsFeature
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.webview.internal.log.WebViewLogsFeature
+import com.datadog.android.webview.internal.rum.WebViewRumFeature
+import com.datadog.tools.unit.annotations.ProhibitLeavingStaticMocksIn
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
@@ -55,10 +63,20 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
+    ExtendWith(ProhibitLeavingStaticMocksExtension::class),
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
+@ProhibitLeavingStaticMocksIn(
+    CoreFeature::class,
+    RumFeature::class,
+    LogsFeature::class,
+    TracingFeature::class,
+    WebViewLogsFeature::class,
+    WebViewRumFeature::class,
+    CrashReportsFeature::class
+)
 internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : SdkFeature<T, C>> {
 
     lateinit var testedFeature: F
