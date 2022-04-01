@@ -14,7 +14,7 @@ import kotlin.jvm.Throws
 
 public data class DateTime(
     public val date: Date? = null,
-    public val time: Time? = null
+    public val time: Time? = null,
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
@@ -47,7 +47,7 @@ public data class DateTime(
     public data class Date(
         public val year: Long? = null,
         public val month: Month? = null,
-        public val day: Long? = null
+        public val day: Long? = null,
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()
@@ -81,7 +81,7 @@ public data class DateTime(
     public data class Time(
         public val hour: Long? = null,
         public val minute: Long? = null,
-        public val seconds: Long? = null
+        public val seconds: Long? = null,
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()
@@ -111,7 +111,7 @@ public data class DateTime(
     }
 
     public enum class Month(
-        private val jsonValue: String
+        private val jsonValue: String,
     ) {
         JAN("jan"),
         FEB("feb"),

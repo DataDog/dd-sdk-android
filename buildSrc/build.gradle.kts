@@ -9,7 +9,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     `kotlin-dsl`
     @Suppress("DSL_SCOPE_VIOLATION", "UnstableApiUsage")
-    alias(libs.plugins.versionsPluginGradle)
+    alias(libs.plugins.versionsGradlePlugin)
 }
 
 buildscript {
@@ -29,15 +29,15 @@ repositories {
 dependencies {
 
     // Dependencies used to configure the gradle plugins
-    implementation(libs.kotlinPluginGradle)
-    implementation(libs.detektPluginGradle)
-    implementation(libs.ktLintPluginGradle)
-    implementation(libs.androidToolsPluginGradle)
-    implementation(libs.versionsPluginGradle)
+    implementation(libs.kotlinGradlePlugin)
+    implementation(libs.detektGradlePlugin)
+    implementation(libs.ktLintGradlePlugin)
+    implementation(libs.androidToolsGradlePlugin)
+    implementation(libs.versionsGradlePlugin)
     implementation(libs.fuzzyWuzzy)
-    implementation(libs.dokkaPluginGradle)
+    implementation(libs.dokkaGradlePlugin)
     implementation(libs.mavenModel)
-    implementation(libs.nexusPublishPluginGradle)
+    implementation(libs.nexusPublishGradlePlugin)
     implementation(libs.kover)
 
     // check api surface

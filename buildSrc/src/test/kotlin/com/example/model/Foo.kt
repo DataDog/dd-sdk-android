@@ -13,7 +13,7 @@ import kotlin.jvm.Throws
 
 public data class Foo(
     public val bar: String? = null,
-    public val baz: Long? = null
+    public val baz: Long? = null,
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()

@@ -16,7 +16,7 @@ public data class User(
     public val host: String,
     public val firstname: String? = null,
     public val lastname: String,
-    public val contactType: ContactType
+    public val contactType: ContactType,
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
@@ -51,7 +51,7 @@ public data class User(
     }
 
     public enum class ContactType(
-        private val jsonValue: String
+        private val jsonValue: String,
     ) {
         PERSONAL("personal"),
         PROFESSIONAL("professional"),

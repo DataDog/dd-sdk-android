@@ -27,7 +27,7 @@ dependencies {
 
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
-    testImplementation("com.github.tschuchortdev:kotlin-compile-testing-ksp:1.4.7")
+    testImplementation(libs.kspTesting)
 }
 
 kotlinConfig()

@@ -88,6 +88,10 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
 
     @AfterEach
     fun `tear down`() {
+        if (!testedFeature.isInitialized()) {
+            // need for the stop to succeed and restore some static fields
+            testedFeature.initialized.set(true)
+        }
         testedFeature.stop()
     }
 

@@ -20,14 +20,14 @@ buildscript {
     }
 
     dependencies {
-        classpath(libs.androidToolsPluginGradle)
-        classpath(libs.kotlinPluginGradle)
-        classpath(libs.kotlinSPPluginGradle)
-        classpath(libs.ktLintPluginGradle)
-        classpath(libs.dokkaPluginGradle)
-        classpath(libs.unmockPluginGradle)
-        classpath(libs.realmPluginGradle)
-        classpath(libs.sqlDelightPluginGradle)
+        classpath(libs.androidToolsGradlePlugin)
+        classpath(libs.kotlinGradlePlugin)
+        classpath(libs.kotlinSPGradlePlugin)
+        classpath(libs.ktLintGradlePlugin)
+        classpath(libs.dokkaGradlePlugin)
+        classpath(libs.unmockGradlePlugin)
+        classpath(libs.realmGradlePlugin)
+        classpath(libs.sqlDelightGradlePlugin)
     }
 }
 
@@ -220,17 +220,17 @@ tasks.register("detektAll") {
 
 tasks.register("koverReportAll") {
     dependsOn(
-        ":dd-sdk-android:koverXmlProjectReport",
-        ":dd-sdk-android-coil:koverXmlProjectReport",
-        ":dd-sdk-android-compose:koverXmlProjectReport",
-        ":dd-sdk-android-fresco:koverXmlProjectReport",
-        ":dd-sdk-android-glide:koverXmlProjectReport",
-        ":dd-sdk-android-ktx:koverXmlProjectReport",
-        ":dd-sdk-android-ndk:koverXmlProjectReport",
-        ":dd-sdk-android-rx:koverXmlProjectReport",
-        ":dd-sdk-android-sqldelight:koverXmlProjectReport",
-        ":dd-sdk-android-timber:koverXmlProjectReport",
-        ":dd-sdk-android-tv:koverXmlProjectReport"
+        ":dd-sdk-android:koverXmlReport",
+        ":dd-sdk-android-coil:koverXmlReport",
+        ":dd-sdk-android-compose:koverXmlReport",
+        ":dd-sdk-android-fresco:koverXmlReport",
+        ":dd-sdk-android-glide:koverXmlReport",
+        ":dd-sdk-android-ktx:koverXmlReport",
+        ":dd-sdk-android-ndk:koverXmlReport",
+        ":dd-sdk-android-rx:koverXmlReport",
+        ":dd-sdk-android-sqldelight:koverXmlReport",
+        ":dd-sdk-android-timber:koverXmlReport",
+        ":dd-sdk-android-tv:koverXmlReport"
     )
 }
 

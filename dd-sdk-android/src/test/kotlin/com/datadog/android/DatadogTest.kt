@@ -828,13 +828,17 @@ internal class DatadogTest {
     }
 
     @Test
-    fun `𝕄 clear data in all features 𝕎 clearAllData()`() {
+    fun `𝕄 clear data in all features 𝕎 clearAllData()`(
+        @StringForgery internalLogsToken: String,
+        @StringForgery internalLogsUrl: String
+    ) {
         val config = Configuration.Builder(
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
         )
+            .setInternalLogsEnabled(internalLogsToken, internalLogsUrl)
             .build()
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
         val dataReaders: Array<DataReader> = Array(8) { mock() }

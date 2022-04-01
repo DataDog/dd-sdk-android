@@ -97,6 +97,13 @@ android {
         }
     }
 
+    libraryVariants.configureEach {
+        addJavaSourceFoldersToModel(
+            layout.buildDirectory
+                .dir("generated/ksp/$name/kotlin").get().asFile
+        )
+    }
+
     packagingOptions {
         resources {
             excludes += listOf(
@@ -108,11 +115,11 @@ android {
     }
 
     lint {
-        isWarningsAsErrors = true
-        isAbortOnError = true
-        isCheckReleaseBuilds = false
-        isCheckGeneratedSources = true
-        isIgnoreTestSources = true
+        warningsAsErrors = true
+        abortOnError = true
+        checkReleaseBuilds = false
+        checkGeneratedSources = true
+        ignoreTestSources = true
     }
 }
 

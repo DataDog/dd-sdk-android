@@ -12,7 +12,7 @@ import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
 public data class Style(
-    public val color: Color
+    public val color: Color,
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
@@ -39,7 +39,7 @@ public data class Style(
     }
 
     public enum class Color(
-        private val jsonValue: String
+        private val jsonValue: String,
     ) {
         RED("red"),
         AMBER("amber"),

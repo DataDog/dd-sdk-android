@@ -21,7 +21,7 @@ public data class Message(
     public val message: String? = null,
     public var labels: List<String>? = null,
     public var read: Boolean? = null,
-    public var important: Boolean? = null
+    public var important: Boolean? = null,
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
