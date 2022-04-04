@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.net
 
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.log.internal.utils.warningWithTelemetry
 import java.io.IOException
 import kotlin.jvm.Throws
 import okhttp3.Interceptor
@@ -46,7 +47,7 @@ internal class GzipRequestInterceptor : Interceptor {
                     .method(originalRequest.method(), gzip(body))
                     .build()
             } catch (e: Exception) {
-                sdkLogger.w("Unable to gzip request body", e)
+                sdkLogger.warningWithTelemetry("Unable to gzip request body", e)
                 originalRequest
             }
             chain.proceed(compressedRequest)

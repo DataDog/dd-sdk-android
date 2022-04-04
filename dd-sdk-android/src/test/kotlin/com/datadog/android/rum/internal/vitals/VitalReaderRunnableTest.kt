@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.internal.vitals
 
-import android.util.Log
+import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
@@ -141,7 +141,7 @@ internal class VitalReaderRunnableTest {
 
         // Then
         verify(logger.mockSdkLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             "Unable to schedule Vitals monitoring task on the executor",
             exception
         )

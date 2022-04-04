@@ -11,6 +11,8 @@ import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileDataWriter
+import com.datadog.android.core.internal.persistence.file.existsSafe
+import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.Logger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -21,6 +23,7 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import java.io.File
+import java.util.Locale
 
 internal class RumDataWriter(
     fileOrchestrator: FileOrchestrator,
@@ -62,7 +65,13 @@ internal class RumDataWriter(
     // region Internal
 
     private fun persistViewEvent(data: ByteArray) {
-        handler.writeData(lastViewEventFile, data, false, null)
+        // file may not exist: currently it is a file which is located in NDK reports folder, so
+        // if NDK reporting plugin is not initialized, this file won't exist (and no need to write).
+        if (lastViewEventFile.existsSafe()) {
+            handler.writeData(lastViewEventFile, data, false, null)
+        } else {
+            sdkLogger.i(LAST_VIEW_EVENT_FILE_MISSING_MESSAGE.format(Locale.US, lastViewEventFile))
+        }
     }
 
     private fun notifyEventSent(viewId: String, eventType: EventType) {
@@ -70,6 +79,11 @@ internal class RumDataWriter(
         if (rumMonitor is AdvancedRumMonitor) {
             rumMonitor.eventSent(viewId, eventType)
         }
+    }
+
+    companion object {
+        const val LAST_VIEW_EVENT_FILE_MISSING_MESSAGE = "Target file %s for writing" +
+            " last view event doesn't exist."
     }
 
     // endregion

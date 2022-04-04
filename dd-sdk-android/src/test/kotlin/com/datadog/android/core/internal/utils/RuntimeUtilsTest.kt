@@ -10,7 +10,6 @@ import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.ConditionalLogHandler
-import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -46,7 +45,6 @@ internal class RuntimeUtilsTest {
         Datadog.initialized.set(false)
         LogsFeature.initialized.set(false)
         Datadog.isDebug = false
-        InternalLogsFeature.stop()
     }
 
     // region devLogger

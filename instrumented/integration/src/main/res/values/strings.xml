@@ -14,6 +14,7 @@
     <string name="button1">Button1</string>
     <string name="rum_gestures_tracking_end_to_end">Rum Gestures (End to End)</string>
     <string name="rum_activity_view_tracking_end_to_end">Rum Activity View (End to End)</string>
+    <string name="activity_telemetry_end_to_end">Telemetry (End to End)</string>
     <string name="fragment_a">Fragment A</string>
     <string name="fragment_b">Fragment B</string>
     <string name="fragment_c">Fragment C</string>

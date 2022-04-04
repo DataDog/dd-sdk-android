@@ -9,6 +9,7 @@ package com.datadog.android.log.internal.user
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.google.gson.JsonParseException
 import java.util.Locale
 
@@ -20,10 +21,10 @@ internal class UserInfoDeserializer(
         return try {
             UserInfo.fromJson(model)
         } catch (e: JsonParseException) {
-            internalLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model), e)
-            null
-        } catch (e: IllegalStateException) {
-            internalLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model), e)
+            internalLogger.errorWithTelemetry(
+                DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
+                e
+            )
             null
         }
     }

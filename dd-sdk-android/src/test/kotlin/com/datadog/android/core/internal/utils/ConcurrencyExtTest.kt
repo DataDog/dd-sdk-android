@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.internal.utils
 
-import android.util.Log
+import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -78,7 +78,7 @@ internal class ConcurrencyExtTest {
         // Then
         verify(service).execute(runnable)
         verify(logger.mockSdkLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             "Unable to schedule $name task on the executor",
             exception
         )
@@ -124,7 +124,7 @@ internal class ConcurrencyExtTest {
         assertThat(result).isNull()
         verify(service).schedule(runnable, delay, unit)
         verify(logger.mockSdkLogHandler).handleLog(
-            Log.ERROR,
+            ERROR_WITH_TELEMETRY_LEVEL,
             "Unable to schedule $name task on the executor",
             exception
         )

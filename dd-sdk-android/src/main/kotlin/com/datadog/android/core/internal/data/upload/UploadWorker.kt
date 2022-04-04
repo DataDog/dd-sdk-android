@@ -92,8 +92,20 @@ internal class UploadWorker(
         uploader: DataUploader
     ): Boolean {
         val status = uploader.upload(batch.data)
-        status.logStatus(uploader.javaClass.simpleName, batch.data.size, devLogger, false)
-        status.logStatus(uploader.javaClass.simpleName, batch.data.size, sdkLogger, true)
+        status.logStatus(
+            uploader.javaClass.simpleName,
+            batch.data.size,
+            devLogger,
+            ignoreInfo = false,
+            sendToTelemetry = false
+        )
+        status.logStatus(
+            uploader.javaClass.simpleName,
+            batch.data.size,
+            sdkLogger,
+            ignoreInfo = true,
+            sendToTelemetry = true
+        )
         return status == UploadStatus.SUCCESS
     }
 

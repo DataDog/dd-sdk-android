@@ -10,6 +10,7 @@ import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -48,6 +49,9 @@ internal class UploadStatusTest {
     @BoolForgery
     var fakeIgnoreInfo = false
 
+    @BoolForgery
+    var fakeSendToTelemetry = false
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         mockLogger = Logger(mockLogHandler)
@@ -62,7 +66,8 @@ internal class UploadStatusTest {
             fakeContext,
             fakeByteSize,
             mockLogger,
-            true
+            ignoreInfo = true,
+            fakeSendToTelemetry
         )
 
         // Then
@@ -70,13 +75,14 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log SUCCESS 𝕎 logStatus()`() {
+    fun `𝕄 log SUCCESS 𝕎 logStatus() {ignoreInfo=false}`() {
         // When
         UploadStatus.SUCCESS.logStatus(
             fakeContext,
             fakeByteSize,
             mockLogger,
-            false
+            ignoreInfo = false,
+            fakeSendToTelemetry
         )
 
         // Then
@@ -94,7 +100,8 @@ internal class UploadStatusTest {
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeIgnoreInfo
+            ignoreInfo = fakeIgnoreInfo,
+            sendToTelemetry = fakeSendToTelemetry
         )
 
         // Then
@@ -107,13 +114,14 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log INVALID_TOKEN_ERROR 𝕎 logStatus()  {ignoreInfo=true}`() {
+    fun `𝕄 log INVALID_TOKEN_ERROR 𝕎 logStatus() {ignoreInfo=true}`() {
         // When
         UploadStatus.INVALID_TOKEN_ERROR.logStatus(
             fakeContext,
             fakeByteSize,
             mockLogger,
-            true
+            ignoreInfo = true,
+            sendToTelemetry = fakeSendToTelemetry
         )
 
         // Then
@@ -121,13 +129,14 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log INVALID_TOKEN_ERROR 𝕎 logStatus()`() {
+    fun `𝕄 log INVALID_TOKEN_ERROR 𝕎 logStatus() {ignoreInfo=false}`() {
         // When
         UploadStatus.INVALID_TOKEN_ERROR.logStatus(
             fakeContext,
             fakeByteSize,
             mockLogger,
-            false
+            ignoreInfo = false,
+            sendToTelemetry = fakeSendToTelemetry
         )
 
         // Then
@@ -146,7 +155,8 @@ internal class UploadStatusTest {
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeIgnoreInfo
+            ignoreInfo = fakeIgnoreInfo,
+            sendToTelemetry = fakeSendToTelemetry
         )
 
         // Then
@@ -159,13 +169,14 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log HTTP_CLIENT_ERROR 𝕎 logStatus()`() {
+    fun `𝕄 log without telemetry HTTP_CLIENT_ERROR 𝕎 logStatus() {sendToTelemetry=false}`() {
         // When
         UploadStatus.HTTP_CLIENT_ERROR.logStatus(
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeIgnoreInfo
+            ignoreInfo = fakeIgnoreInfo,
+            sendToTelemetry = false
         )
 
         // Then
@@ -179,13 +190,35 @@ internal class UploadStatusTest {
     }
 
     @Test
-    fun `𝕄 log HTTP_CLIENT_ERROR_RETRY 𝕎 logStatus()`() {
+    fun `𝕄 log with telemetry HTTP_CLIENT_ERROR 𝕎 logStatus() {sendToTelemetry=true}`() {
+        // When
+        UploadStatus.HTTP_CLIENT_ERROR.logStatus(
+            fakeContext,
+            fakeByteSize,
+            mockLogger,
+            ignoreInfo = fakeIgnoreInfo,
+            sendToTelemetry = true
+        )
+
+        // Then
+        verify(mockLogHandler)
+            .handleLog(
+                ERROR_WITH_TELEMETRY_LEVEL,
+                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
+                    "because of a processing error or invalid data; " +
+                    "the batch was dropped."
+            )
+    }
+
+    @Test
+    fun `𝕄 log w-o telemetry HTTP_CLIENT_ERROR_RATE_LIMITING 𝕎 logStatus() {telemetry=false}`() {
         // When
         UploadStatus.HTTP_CLIENT_RATE_LIMITING.logStatus(
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeIgnoreInfo
+            ignoreInfo = fakeIgnoreInfo,
+            sendToTelemetry = false
         )
 
         // Then
@@ -198,13 +231,34 @@ internal class UploadStatusTest {
     }
 
     @Test
+    fun `𝕄 log with telemetry HTTP_CLIENT_ERROR_RATE_LIMITING 𝕎 logStatus() {telemetry=true}`() {
+        // When
+        UploadStatus.HTTP_CLIENT_RATE_LIMITING.logStatus(
+            fakeContext,
+            fakeByteSize,
+            mockLogger,
+            ignoreInfo = fakeIgnoreInfo,
+            sendToTelemetry = true
+        )
+
+        // Then
+        verify(mockLogHandler)
+            .handleLog(
+                ERROR_WITH_TELEMETRY_LEVEL,
+                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
+                    "because of a request error; we will retry later."
+            )
+    }
+
+    @Test
     fun `𝕄 log HTTP_SERVER_ERROR 𝕎 logStatus()`() {
         // When
         UploadStatus.HTTP_SERVER_ERROR.logStatus(
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeIgnoreInfo
+            ignoreInfo = fakeIgnoreInfo,
+            sendToTelemetry = fakeSendToTelemetry
         )
 
         // Then
@@ -223,7 +277,8 @@ internal class UploadStatusTest {
             fakeContext,
             fakeByteSize,
             mockLogger,
-            fakeIgnoreInfo
+            ignoreInfo = fakeIgnoreInfo,
+            sendToTelemetry = fakeSendToTelemetry
         )
 
         // Then

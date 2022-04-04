@@ -25,6 +25,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
@@ -485,11 +486,12 @@ internal class UploadWorkerTest {
     companion object {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val mainLooper = MainLooperTestConfiguration()
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, mainLooper)
+            return listOf(appContext, mainLooper, coreFeature)
         }
     }
 }

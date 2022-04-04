@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.time
 
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.lyft.kronos.SyncListener
 
 internal class LoggingSyncListener : SyncListener {
@@ -19,8 +20,8 @@ internal class LoggingSyncListener : SyncListener {
     }
 
     override fun onError(host: String, throwable: Throwable) {
-        sdkLogger.e(
-            "Kronos onError @host:host",
+        sdkLogger.errorWithTelemetry(
+            "Kronos onError @host:$host",
             throwable,
             attributes = mapOf("kronos.sync.host" to host)
         )

@@ -11,6 +11,7 @@ import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.Window
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -45,18 +46,18 @@ internal class WindowCallbackWrapper(
             try {
                 gesturesDetector.onTouchEvent(copy)
             } catch (e: Exception) {
-                sdkLogger.e("Error processing MotionEvent", e)
+                sdkLogger.errorWithTelemetry("Error processing MotionEvent", e)
             } finally {
                 copy.recycle()
             }
         } else {
-            sdkLogger.e("Received MotionEvent=null")
+            sdkLogger.errorWithTelemetry("Received MotionEvent=null")
         }
 
         return try {
             wrappedCallback.dispatchTouchEvent(event)
         } catch (e: Exception) {
-            sdkLogger.e("Wrapped callback failed processing MotionEvent", e)
+            sdkLogger.errorWithTelemetry("Wrapped callback failed processing MotionEvent", e)
             EVENT_CONSUMED
         }
     }
@@ -76,14 +77,14 @@ internal class WindowCallbackWrapper(
         return try {
             wrappedCallback.onMenuItemSelected(featureId, item)
         } catch (e: Exception) {
-            sdkLogger.e("Wrapped callback failed processing MenuItem selection", e)
+            sdkLogger.errorWithTelemetry("Wrapped callback failed processing MenuItem selection", e)
             EVENT_CONSUMED
         }
     }
 
     override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
         if (event == null) {
-            sdkLogger.e("Received KeyEvent=null")
+            sdkLogger.errorWithTelemetry("Received KeyEvent=null")
         } else if (event.keyCode == KeyEvent.KEYCODE_BACK &&
             event.action == KeyEvent.ACTION_UP
         ) {
@@ -96,7 +97,7 @@ internal class WindowCallbackWrapper(
         return try {
             wrappedCallback.dispatchKeyEvent(event)
         } catch (e: Exception) {
-            sdkLogger.e("Wrapped callback failed processing KeyEvent", e)
+            sdkLogger.errorWithTelemetry("Wrapped callback failed processing KeyEvent", e)
             EVENT_CONSUMED
         }
     }

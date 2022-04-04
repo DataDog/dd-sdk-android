@@ -1027,6 +1027,7 @@ datadog:
       - "kotlin.Double.rangeTo(kotlin.Double)"
       - "kotlin.Double.toInt()"
       - "kotlin.Double.toLong()"
+      - "kotlin.Int.inv()"
       - "kotlin.Int.toChar()"
       - "kotlin.Int.toLong()"
       - "kotlin.IntArray.constructor(kotlin.Int)"
@@ -1170,5 +1171,8 @@ datadog:
       # endregion
       # region SQLDelight
       - "com.squareup.sqldelight.android.AndroidSqliteDriver.Callback.onCorruption(androidx.sqlite.db.SupportSQLiteDatabase)"
+      # endregion
+      # region Kronos
+      - "com.lyft.kronos.KronosClock.shutdown()"
       # endregion
 

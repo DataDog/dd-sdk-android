@@ -17,6 +17,7 @@ import com.datadog.android.core.internal.persistence.file.renameToSafe
 import com.datadog.android.core.internal.utils.copyTo
 import com.datadog.android.core.internal.utils.use
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.security.Encryption
 import java.io.File
 import java.io.FileNotFoundException
@@ -40,10 +41,10 @@ internal class BatchFileHandler(
             lockFileAndWriteData(file, append, separator, data)
             true
         } catch (e: IOException) {
-            internalLogger.e(ERROR_WRITE.format(Locale.US, file.path), e)
+            internalLogger.errorWithTelemetry(ERROR_WRITE.format(Locale.US, file.path), e)
             false
         } catch (e: SecurityException) {
-            internalLogger.e(ERROR_WRITE.format(Locale.US, file.path), e)
+            internalLogger.errorWithTelemetry(ERROR_WRITE.format(Locale.US, file.path), e)
             false
         }
     }
@@ -57,10 +58,10 @@ internal class BatchFileHandler(
         return try {
             readFileData(file, prefix ?: EMPTY_BYTE_ARRAY, suffix ?: EMPTY_BYTE_ARRAY)
         } catch (e: IOException) {
-            internalLogger.e(ERROR_READ.format(Locale.US, file.path), e)
+            internalLogger.errorWithTelemetry(ERROR_READ.format(Locale.US, file.path), e)
             EMPTY_BYTE_ARRAY
         } catch (e: SecurityException) {
-            internalLogger.e(ERROR_READ.format(Locale.US, file.path), e)
+            internalLogger.errorWithTelemetry(ERROR_READ.format(Locale.US, file.path), e)
             EMPTY_BYTE_ARRAY
         }
     }
@@ -69,10 +70,10 @@ internal class BatchFileHandler(
         return try {
             target.deleteRecursively()
         } catch (e: FileNotFoundException) {
-            internalLogger.e(ERROR_DELETE.format(Locale.US, target.path), e)
+            internalLogger.errorWithTelemetry(ERROR_DELETE.format(Locale.US, target.path), e)
             false
         } catch (e: SecurityException) {
-            internalLogger.e(ERROR_DELETE.format(Locale.US, target.path), e)
+            internalLogger.errorWithTelemetry(ERROR_DELETE.format(Locale.US, target.path), e)
             false
         }
     }
@@ -83,16 +84,16 @@ internal class BatchFileHandler(
             return true
         }
         if (!srcDir.isDirectorySafe()) {
-            internalLogger.e(ERROR_MOVE_NOT_DIR.format(Locale.US, srcDir.path))
+            internalLogger.errorWithTelemetry(ERROR_MOVE_NOT_DIR.format(Locale.US, srcDir.path))
             return false
         }
         if (!destDir.existsSafe()) {
             if (!destDir.mkdirsSafe()) {
-                internalLogger.e(ERROR_MOVE_NO_DST.format(Locale.US, srcDir.path))
+                internalLogger.errorWithTelemetry(ERROR_MOVE_NO_DST.format(Locale.US, srcDir.path))
                 return false
             }
         } else if (!destDir.isDirectorySafe()) {
-            internalLogger.e(ERROR_MOVE_NOT_DIR.format(Locale.US, destDir.path))
+            internalLogger.errorWithTelemetry(ERROR_MOVE_NOT_DIR.format(Locale.US, destDir.path))
             return false
         }
 

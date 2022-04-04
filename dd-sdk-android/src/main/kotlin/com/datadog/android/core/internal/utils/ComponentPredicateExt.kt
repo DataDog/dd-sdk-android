@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.utils
 
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.rum.tracking.ComponentPredicate
 
 /**
@@ -22,7 +23,7 @@ internal inline fun <reified T : Any> ComponentPredicate<T>.runIfValid(
         try {
             operation(component)
         } catch (e: Exception) {
-            sdkLogger.e("Internal operation failed", e)
+            sdkLogger.errorWithTelemetry("Internal operation failed", e)
         }
     }
 }

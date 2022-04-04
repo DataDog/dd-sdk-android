@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.utils.warningWithTelemetry
 import com.datadog.android.privacy.TrackingConsent
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
@@ -65,7 +66,9 @@ internal class ConsentAwareFileMigrator(
             }
 
             else -> {
-                sdkLogger.w("Unexpected consent migration from $previousState to $newState")
+                sdkLogger.warningWithTelemetry(
+                    "Unexpected consent migration from $previousState to $newState"
+                )
                 NoOpDataMigrationOperation()
             }
         }

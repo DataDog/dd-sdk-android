@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.LogAttributes
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
 import com.google.gson.JsonObject
@@ -19,7 +20,6 @@ import kotlin.NumberFormatException
 
 internal class WebViewLogEventConsumer(
     private val userLogsWriter: DataWriter<JsonObject>,
-    private val internalLogsWriter: DataWriter<JsonObject>,
     private val rumContextProvider: WebViewRumEventContextProvider,
     private val timeProvider: TimeProvider
 ) : WebViewEventConsumer<Pair<JsonObject, String>> {
@@ -31,9 +31,7 @@ internal class WebViewLogEventConsumer(
 
     override fun consume(event: Pair<JsonObject, String>) {
         map(event.first).let {
-            if (event.second == INTERNAL_LOG_EVENT_TYPE) {
-                internalLogsWriter.write(it)
-            } else {
+            if (event.second == USER_LOG_EVENT_TYPE) {
                 userLogsWriter.write(it)
             }
         }
@@ -59,13 +57,13 @@ internal class WebViewLogEventConsumer(
                 )
             }
         } catch (e: ClassCastException) {
-            sdkLogger.e(JSON_PARSING_ERROR_MESSAGE, e)
+            sdkLogger.errorWithTelemetry(JSON_PARSING_ERROR_MESSAGE, e)
         } catch (e: IllegalStateException) {
-            sdkLogger.e(JSON_PARSING_ERROR_MESSAGE, e)
+            sdkLogger.errorWithTelemetry(JSON_PARSING_ERROR_MESSAGE, e)
         } catch (e: NumberFormatException) {
-            sdkLogger.e(JSON_PARSING_ERROR_MESSAGE, e)
+            sdkLogger.errorWithTelemetry(JSON_PARSING_ERROR_MESSAGE, e)
         } catch (e: UnsupportedOperationException) {
-            sdkLogger.e(JSON_PARSING_ERROR_MESSAGE, e)
+            sdkLogger.errorWithTelemetry(JSON_PARSING_ERROR_MESSAGE, e)
         }
     }
 
@@ -74,11 +72,11 @@ internal class WebViewLogEventConsumer(
         try {
             eventDdTags = event.get(DDTAGS_KEY_NAME)?.asString
         } catch (e: ClassCastException) {
-            sdkLogger.e(JSON_PARSING_ERROR_MESSAGE, e)
+            sdkLogger.errorWithTelemetry(JSON_PARSING_ERROR_MESSAGE, e)
         } catch (e: IllegalStateException) {
-            sdkLogger.e(JSON_PARSING_ERROR_MESSAGE, e)
+            sdkLogger.errorWithTelemetry(JSON_PARSING_ERROR_MESSAGE, e)
         } catch (e: UnsupportedOperationException) {
-            sdkLogger.e(JSON_PARSING_ERROR_MESSAGE, e)
+            sdkLogger.errorWithTelemetry(JSON_PARSING_ERROR_MESSAGE, e)
         }
         if (eventDdTags.isNullOrEmpty()) {
             event.addProperty(DDTAGS_KEY_NAME, ddTags)

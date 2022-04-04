@@ -102,7 +102,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun setRumLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
     fun setSpanEventMapper(com.datadog.android.event.SpanEventMapper): Builder
     fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
-    fun setInternalLogsEnabled(String, String): Builder
+    DEPRECATED fun setInternalLogsEnabled(String, String): Builder
     fun setAdditionalConfiguration(Map<String, Any>): Builder
     fun setProxy(java.net.Proxy, okhttp3.Authenticator?): Builder
   companion object 

@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.log.internal.utils.warningWithTelemetry
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.opentracing.DDTracer
 import com.datadog.trace.api.DDTags
@@ -181,7 +182,7 @@ internal constructor(
         val updatedRequest = try {
             updateRequest(request, tracer, span).build()
         } catch (e: IllegalStateException) {
-            sdkLogger.w("Failed to update intercepted OkHttp request", e)
+            sdkLogger.warningWithTelemetry("Failed to update intercepted OkHttp request", e)
             request
         }
 

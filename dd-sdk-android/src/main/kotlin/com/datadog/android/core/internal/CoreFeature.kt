@@ -149,6 +149,9 @@ internal object CoreFeature {
     internal var localDataEncryption: Encryption? = null
     internal lateinit var webViewTrackingHosts: List<String>
 
+    // TESTS ONLY, to prevent Kronos spinning sync threads in unit-tests
+    internal var disableKronosBackgroundSync = false
+
     fun initialize(
         appContext: Context,
         credentials: Credentials,
@@ -189,6 +192,7 @@ internal object CoreFeature {
             contextRef.clear()
 
             trackingConsentProvider.unregisterAllCallbacks()
+            kronosClock.shutdown()
 
             cleanupApplicationInfo()
             cleanupProviders()
@@ -268,7 +272,7 @@ internal object CoreFeature {
             cacheExpirationMs = TimeUnit.MINUTES.toMillis(30),
             minWaitTimeBetweenSyncMs = TimeUnit.MINUTES.toMillis(5),
             syncListener = LoggingSyncListener()
-        ).apply { syncInBackground() }
+        ).apply { if (!disableKronosBackgroundSync) { syncInBackground() } }
     }
 
     private fun readApplicationInformation(appContext: Context, credentials: Credentials) {

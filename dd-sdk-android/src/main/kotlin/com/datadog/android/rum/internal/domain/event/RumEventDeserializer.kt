@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -33,10 +34,16 @@ internal class RumEventDeserializer : Deserializer<Any> {
                 jsonObject
             )
         } catch (e: JsonParseException) {
-            sdkLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model), e)
+            sdkLogger.errorWithTelemetry(
+                DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
+                e
+            )
             null
         } catch (e: IllegalStateException) {
-            sdkLogger.e(DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model), e)
+            sdkLogger.errorWithTelemetry(
+                DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
+                e
+            )
             null
         }
     }

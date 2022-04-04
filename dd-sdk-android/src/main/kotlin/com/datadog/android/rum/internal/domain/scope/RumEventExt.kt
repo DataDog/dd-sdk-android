@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.NetworkInfo
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -24,7 +25,7 @@ internal fun String.toMethod(): ResourceEvent.Method {
     return try {
         ResourceEvent.Method.valueOf(this.uppercase(Locale.US))
     } catch (e: IllegalArgumentException) {
-        sdkLogger.i("Unable to convert [$this] to a valid http method", e)
+        sdkLogger.errorWithTelemetry("Unable to convert [$this] to a valid http method", e)
         ResourceEvent.Method.GET
     }
 }
@@ -33,7 +34,7 @@ internal fun String.toErrorMethod(): ErrorEvent.Method {
     return try {
         ErrorEvent.Method.valueOf(this.uppercase(Locale.US))
     } catch (e: IllegalArgumentException) {
-        sdkLogger.i("Unable to convert [$this] to a valid http method", e)
+        sdkLogger.errorWithTelemetry("Unable to convert [$this] to a valid http method", e)
         ErrorEvent.Method.GET
     }
 }

@@ -59,8 +59,22 @@ internal abstract class DataOkHttpUploaderV2(
             UploadStatus.NETWORK_ERROR
         }
 
-        uploadStatus.logStatus(uploaderName, data.size, devLogger, false, requestId)
-        uploadStatus.logStatus(uploaderName, data.size, internalLogger, true, requestId)
+        uploadStatus.logStatus(
+            uploaderName,
+            data.size,
+            devLogger,
+            ignoreInfo = false,
+            sendToTelemetry = false,
+            requestId = requestId
+        )
+        uploadStatus.logStatus(
+            uploaderName,
+            data.size,
+            internalLogger,
+            ignoreInfo = true,
+            sendToTelemetry = true,
+            requestId = requestId
+        )
 
         return uploadStatus
     }

@@ -25,7 +25,6 @@ import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.monitoring.internal.InternalLogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracingFeature
@@ -34,7 +33,6 @@ import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.webview.internal.log.WebViewInternalLogsFeature
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.opentracing.DDSpan
@@ -105,6 +103,7 @@ internal class DatadogTest {
         // Prevent crash when initializing RumFeature
         mockChoreographerInstance()
 
+        CoreFeature.disableKronosBackgroundSync = true
         CoreFeature.sdkVersion = CoreFeature.DEFAULT_SDK_VERSION
         CoreFeature.sourceName = CoreFeature.DEFAULT_SOURCE_NAME
     }
@@ -389,8 +388,6 @@ internal class DatadogTest {
         assertThat(CrashReportsFeature.initialized.get()).isTrue()
         assertThat(TracingFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isTrue()
-        assertThat(InternalLogsFeature.initialized.get()).isFalse()
-        assertThat(WebViewInternalLogsFeature.initialized.get()).isFalse()
         assertThat(WebViewLogsFeature.initialized.get()).isTrue()
         assertThat(WebViewRumFeature.initialized.get()).isTrue()
     }
@@ -420,8 +417,6 @@ internal class DatadogTest {
         assertThat(CrashReportsFeature.initialized.get()).isEqualTo(crashReportEnabled)
         assertThat(TracingFeature.initialized.get()).isEqualTo(tracesEnabled)
         assertThat(RumFeature.initialized.get()).isEqualTo(rumEnabled)
-        assertThat(InternalLogsFeature.initialized.get()).isFalse()
-        assertThat(WebViewInternalLogsFeature.initialized.get()).isFalse()
         assertThat(WebViewLogsFeature.initialized.get()).isEqualTo(logsEnabled)
         assertThat(WebViewRumFeature.initialized.get()).isEqualTo(rumEnabled)
     }
@@ -446,8 +441,6 @@ internal class DatadogTest {
         assertThat(CrashReportsFeature.initialized.get()).isTrue()
         assertThat(TracingFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isTrue()
-        assertThat(InternalLogsFeature.initialized.get()).isFalse()
-        assertThat(WebViewInternalLogsFeature.initialized.get()).isFalse()
         assertThat(WebViewLogsFeature.initialized.get()).isTrue()
         assertThat(WebViewRumFeature.initialized.get()).isTrue()
         verify(logger.mockDevLogHandler).handleLog(
@@ -476,45 +469,12 @@ internal class DatadogTest {
         assertThat(CrashReportsFeature.initialized.get()).isTrue()
         assertThat(TracingFeature.initialized.get()).isTrue()
         assertThat(RumFeature.initialized.get()).isFalse()
-        assertThat(InternalLogsFeature.initialized.get()).isFalse()
-        assertThat(WebViewInternalLogsFeature.initialized.get()).isFalse()
         assertThat(WebViewLogsFeature.initialized.get()).isTrue()
         assertThat(WebViewRumFeature.initialized.get()).isFalse()
         verify(logger.mockDevLogHandler, never()).handleLog(
             android.util.Log.WARN,
             Datadog.WARNING_MESSAGE_APPLICATION_ID_IS_NULL
         )
-    }
-
-    @Test
-    fun `𝕄 initialize InternalLogs 𝕎 initialize() { Internal logs configured }`(
-        @StringForgery(StringForgeryType.HEXADECIMAL) clientToken: String,
-        @StringForgery(regex = "https://[a-z]+\\.com") url: String
-    ) {
-        // Given
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
-        val configuration = Configuration.Builder(
-            logsEnabled = true,
-            tracesEnabled = true,
-            crashReportsEnabled = true,
-            rumEnabled = true
-        )
-            .setInternalLogsEnabled(clientToken, url)
-            .build()
-
-        // When
-        Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
-
-        // Then
-        assertThat(CoreFeature.initialized.get()).isTrue()
-        assertThat(LogsFeature.initialized.get()).isTrue()
-        assertThat(CrashReportsFeature.initialized.get()).isTrue()
-        assertThat(TracingFeature.initialized.get()).isTrue()
-        assertThat(RumFeature.initialized.get()).isTrue()
-        assertThat(InternalLogsFeature.initialized.get()).isTrue()
-        assertThat(WebViewInternalLogsFeature.initialized.get()).isTrue()
-        assertThat(WebViewLogsFeature.initialized.get()).isTrue()
-        assertThat(WebViewRumFeature.initialized.get()).isTrue()
     }
 
     @Test
@@ -827,6 +787,7 @@ internal class DatadogTest {
         assertThat(RumFeature.debugActivityLifecycleListener).isNull()
     }
 
+    @Suppress("DEPRECATION")
     @Test
     fun `𝕄 clear data in all features 𝕎 clearAllData()`(
         @StringForgery internalLogsToken: String,
@@ -841,7 +802,7 @@ internal class DatadogTest {
             .setInternalLogsEnabled(internalLogsToken, internalLogsUrl)
             .build()
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
-        val dataReaders: Array<DataReader> = Array(8) { mock() }
+        val dataReaders: Array<DataReader> = Array(6) { mock() }
 
         // When
         Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
@@ -857,18 +818,11 @@ internal class DatadogTest {
         TracingFeature.persistenceStrategy = mock<PersistenceStrategy<DDSpan>>().apply {
             whenever(getReader()) doReturn dataReaders[3]
         }
-        InternalLogsFeature.persistenceStrategy = mock<PersistenceStrategy<LogEvent>>().apply {
+        WebViewLogsFeature.persistenceStrategy = mock<PersistenceStrategy<JsonObject>>().apply {
             whenever(getReader()) doReturn dataReaders[4]
         }
-        WebViewInternalLogsFeature.persistenceStrategy =
-            mock<PersistenceStrategy<JsonObject>>().apply {
-                whenever(getReader()) doReturn dataReaders[5]
-            }
-        WebViewLogsFeature.persistenceStrategy = mock<PersistenceStrategy<JsonObject>>().apply {
-            whenever(getReader()) doReturn dataReaders[6]
-        }
         WebViewRumFeature.persistenceStrategy = mock<PersistenceStrategy<Any>>().apply {
-            whenever(getReader()) doReturn dataReaders[7]
+            whenever(getReader()) doReturn dataReaders[5]
         }
         Datadog.clearAllData()
 

@@ -8,12 +8,15 @@ package com.datadog.android.rum.internal.domain.event
 
 import android.util.Log
 import com.datadog.android.event.EventMapper
+import com.datadog.android.log.internal.utils.WARN_WITH_TELEMETRY_LEVEL
 import com.datadog.android.rum.internal.monitor.EventType
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.model.TelemetryDebugEvent
+import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -24,6 +27,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -174,11 +178,35 @@ internal class RumEventMapperTest {
 
         // THEN
         verify(logger.mockSdkLogHandler).handleLog(
-            Log.WARN,
+            WARN_WITH_TELEMETRY_LEVEL,
             RumEventMapper.NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE
                 .format(Locale.US, fakeRumEvent.javaClass.simpleName)
         )
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
+    }
+
+    @Test
+    fun `M return the original event W map { TelemetryDebugEvent }`(
+        @Forgery telemetryDebugEvent: TelemetryDebugEvent
+    ) {
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(telemetryDebugEvent)
+
+        // THEN
+        verifyZeroInteractions(logger.mockSdkLogHandler)
+        assertThat(mappedRumEvent).isSameAs(telemetryDebugEvent)
+    }
+
+    @Test
+    fun `M return the original event W map { TelemetryErrorEvent }`(
+        @Forgery telemetryErrorEvent: TelemetryErrorEvent
+    ) {
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(telemetryErrorEvent)
+
+        // THEN
+        verifyZeroInteractions(logger.mockSdkLogHandler)
+        assertThat(mappedRumEvent).isSameAs(telemetryErrorEvent)
     }
 
     @Test

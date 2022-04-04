@@ -7,6 +7,7 @@
 package com.datadog.android.webview.internal
 
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
 import com.google.gson.JsonObject
@@ -23,11 +24,11 @@ internal class MixedWebViewEventConsumer(
         try {
             val webEvent = JsonParser.parseString(event).asJsonObject
             if (!webEvent.has(EVENT_TYPE_KEY)) {
-                sdkLogger.e(WEB_EVENT_MISSING_TYPE_ERROR_MESSAGE.format(US, event))
+                sdkLogger.errorWithTelemetry(WEB_EVENT_MISSING_TYPE_ERROR_MESSAGE.format(US, event))
                 return
             }
             if (!webEvent.has(EVENT_KEY)) {
-                sdkLogger.e(WEB_EVENT_MISSING_WRAPPED_EVENT.format(US, event))
+                sdkLogger.errorWithTelemetry(WEB_EVENT_MISSING_WRAPPED_EVENT.format(US, event))
                 return
             }
             val eventType = webEvent.get(EVENT_TYPE_KEY).asString
@@ -40,11 +41,13 @@ internal class MixedWebViewEventConsumer(
                     rumEventConsumer.consume(wrappedEvent)
                 }
                 else -> {
-                    sdkLogger.e(WRONG_EVENT_TYPE_ERROR_MESSAGE.format(US, eventType))
+                    sdkLogger.errorWithTelemetry(
+                        WRONG_EVENT_TYPE_ERROR_MESSAGE.format(US, eventType)
+                    )
                 }
             }
         } catch (e: JsonParseException) {
-            sdkLogger.e(WEB_EVENT_PARSING_ERROR_MESSAGE.format(US, event), e)
+            sdkLogger.errorWithTelemetry(WEB_EVENT_PARSING_ERROR_MESSAGE.format(US, event), e)
         }
     }
 

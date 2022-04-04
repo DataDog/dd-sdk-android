@@ -9,7 +9,6 @@ package com.datadog.android.sdk.integration.security
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
-import com.datadog.android.DatadogEndpoint
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.SecurityConfig
@@ -149,16 +148,6 @@ internal class EncryptionTest {
                 tracesEnabled = true,
                 crashReportsEnabled = true,
                 rumEnabled = true
-            )
-            .setInternalLogsEnabled(
-                clientToken = forge.anAlphaNumericalString(),
-                endpointUrl = forge.anElementFrom(
-                    DatadogEndpoint.LOGS_US1,
-                    DatadogEndpoint.LOGS_EU1,
-                    DatadogEndpoint.LOGS_US3,
-                    DatadogEndpoint.LOGS_US5,
-                    DatadogEndpoint.LOGS_US1_FED
-                )
             )
             .setSecurityConfig(SecurityConfig(localDataEncryption = encryption))
             .build()
