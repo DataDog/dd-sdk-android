@@ -192,13 +192,20 @@ internal object CoreFeature {
             contextRef.clear()
 
             trackingConsentProvider.unregisterAllCallbacks()
-            kronosClock.shutdown()
+            try {
+                kronosClock.shutdown()
+            } catch (ise: IllegalStateException) {
+                // this may be called from the test
+                // when Kronos is already shut down
+                sdkLogger.e("Trying to shut down Kronos when it is already not running", ise)
+            }
 
             cleanupApplicationInfo()
             cleanupProviders()
             shutDownExecutors()
             initialized.set(false)
             ndkCrashHandler = NoOpNdkCrashHandler()
+            trackingConsentProvider = NoOpConsentProvider()
         }
     }
 

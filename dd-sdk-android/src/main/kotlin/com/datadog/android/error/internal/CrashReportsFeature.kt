@@ -22,7 +22,7 @@ internal object CrashReportsFeature : SdkFeature<LogEvent, Configuration.Feature
 
     internal const val CRASH_FEATURE_NAME = "crash"
 
-    private var originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
+    internal var originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
 
     // region SdkFeature
 

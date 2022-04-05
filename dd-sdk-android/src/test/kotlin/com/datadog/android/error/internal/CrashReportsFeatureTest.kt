@@ -47,6 +47,7 @@ internal class CrashReportsFeatureTest :
     @AfterEach
     fun `tear down crash reports`() {
         Thread.setDefaultUncaughtExceptionHandler(jvmExceptionHandler)
+        CrashReportsFeature.originalUncaughtExceptionHandler = jvmExceptionHandler
     }
 
     override fun createTestedFeature(): CrashReportsFeature {

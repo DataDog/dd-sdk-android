@@ -29,6 +29,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
@@ -36,7 +37,9 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.opentracing.DDSpan
+import com.datadog.tools.unit.annotations.ProhibitLeavingStaticMocksIn
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonObject
@@ -70,10 +73,20 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
+    ExtendWith(ProhibitLeavingStaticMocksExtension::class),
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
+@ProhibitLeavingStaticMocksIn(
+    CoreFeature::class,
+    RumFeature::class,
+    LogsFeature::class,
+    TracingFeature::class,
+    WebViewLogsFeature::class,
+    WebViewRumFeature::class,
+    CrashReportsFeature::class
+)
 internal class DatadogTest {
 
     @Mock
@@ -845,11 +858,12 @@ internal class DatadogTest {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val mainLooper = MainLooperTestConfiguration()
         val logger = LoggerTestConfiguration()
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, mainLooper)
+            return listOf(logger, appContext, mainLooper, coreFeature)
         }
     }
 }
