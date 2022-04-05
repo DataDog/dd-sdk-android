@@ -119,7 +119,8 @@ internal class AndroidTracerTest {
         // THEN
         verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
-            AndroidTracer.TRACING_NOT_ENABLED_ERROR_MESSAGE
+            AndroidTracer.TRACING_NOT_ENABLED_ERROR_MESSAGE + "\n" +
+                Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
         )
     }
 

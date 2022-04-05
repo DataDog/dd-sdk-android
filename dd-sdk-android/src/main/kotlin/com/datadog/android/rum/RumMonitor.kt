@@ -11,6 +11,7 @@ import android.os.Handler
 import android.os.Looper
 import androidx.annotation.FloatRange
 import androidx.fragment.app.Fragment
+import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.internal.RumFeature
@@ -289,10 +290,13 @@ interface RumMonitor {
         fun build(): RumMonitor {
             val rumApplicationId = CoreFeature.rumApplicationId
             return if (!RumFeature.isInitialized()) {
-                devLogger.e(RUM_NOT_ENABLED_ERROR_MESSAGE)
+                devLogger.e(
+                    RUM_NOT_ENABLED_ERROR_MESSAGE + "\n" +
+                        Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
+                )
                 NoOpRumMonitor()
             } else if (rumApplicationId.isNullOrBlank()) {
-                devLogger.e(RUM_NOT_ENABLED_ERROR_MESSAGE)
+                devLogger.e(INVALID_APPLICATION_ID_ERROR_MESSAGE)
                 NoOpRumMonitor()
             } else {
                 DatadogRumMonitor(
@@ -320,8 +324,11 @@ interface RumMonitor {
         companion object {
             internal const val RUM_NOT_ENABLED_ERROR_MESSAGE =
                 "You're trying to create a RumMonitor instance, " +
-                    "but the RUM feature was disabled in your Configuration. " +
-                    "No RUM data will be sent."
+                    "but the SDK was not initialized or RUM feature was disabled " +
+                    "in your Configuration. No RUM data will be sent."
+            internal const val INVALID_APPLICATION_ID_ERROR_MESSAGE =
+                "You're trying to create a RumMonitor instance, " +
+                    "but the RUM application id was null or empty. No RUM data will be sent."
         }
     }
 }
