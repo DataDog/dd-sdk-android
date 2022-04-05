@@ -28,6 +28,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -106,11 +107,13 @@ internal class RumDataWriterTest {
     }
 
     @Test
-    fun `𝕄 persist the event into the NDK crash folder 𝕎 onDataWritten(){ViewEvent+file exists}`(
+    fun `𝕄 persist the event into the NDK crash folder 𝕎 onDataWritten(){ViewEvent+dir exists}`(
         @Forgery viewEvent: ViewEvent
     ) {
         // Given
-        whenever(fakeLastViewEventFile.exists()) doReturn true
+        val ndkReportsFolder = mock<File>()
+        whenever(ndkReportsFolder.exists()) doReturn true
+        whenever(fakeLastViewEventFile.parentFile) doReturn ndkReportsFolder
 
         // When
         testedWriter.onDataWritten(viewEvent, fakeSerializedData)
@@ -122,11 +125,11 @@ internal class RumDataWriterTest {
     }
 
     @Test
-    fun `𝕄 log info when writing last view event 𝕎 onDataWritten(){ ViewEvent+no file }`(
+    fun `𝕄 log info when writing last view event 𝕎 onDataWritten(){ ViewEvent+no crash dir }`(
         @Forgery viewEvent: ViewEvent
     ) {
         // Given
-        whenever(fakeLastViewEventFile.exists()) doReturn false
+        whenever(fakeLastViewEventFile.parentFile) doReturn null
 
         // When
         testedWriter.onDataWritten(viewEvent, fakeSerializedData)
@@ -136,9 +139,9 @@ internal class RumDataWriterTest {
         verify(logger.mockSdkLogHandler)
             .handleLog(
                 Log.INFO,
-                RumDataWriter.LAST_VIEW_EVENT_FILE_MISSING_MESSAGE.format(
+                RumDataWriter.LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(
                     Locale.US,
-                    fakeLastViewEventFile
+                    fakeLastViewEventFile.parent
                 )
             )
     }
