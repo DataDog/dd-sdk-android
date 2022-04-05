@@ -65,12 +65,15 @@ internal class RumDataWriter(
     // region Internal
 
     private fun persistViewEvent(data: ByteArray) {
-        // file may not exist: currently it is a file which is located in NDK reports folder, so
-        // if NDK reporting plugin is not initialized, this file won't exist (and no need to write).
-        if (lastViewEventFile.existsSafe()) {
+        // directory structure may not exist: currently it is a file which is located in NDK reports
+        // folder, so if NDK reporting plugin is not initialized, this NDK reports dir won't exist
+        // as well (and no need to write).
+        if (lastViewEventFile.parentFile?.existsSafe() == true) {
             handler.writeData(lastViewEventFile, data, false, null)
         } else {
-            sdkLogger.i(LAST_VIEW_EVENT_FILE_MISSING_MESSAGE.format(Locale.US, lastViewEventFile))
+            sdkLogger.i(
+                LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(Locale.US, lastViewEventFile.parent)
+            )
         }
     }
 
@@ -82,7 +85,7 @@ internal class RumDataWriter(
     }
 
     companion object {
-        const val LAST_VIEW_EVENT_FILE_MISSING_MESSAGE = "Target file %s for writing" +
+        const val LAST_VIEW_EVENT_DIR_MISSING_MESSAGE = "Directory structure %s for writing" +
             " last view event doesn't exist."
     }
 
