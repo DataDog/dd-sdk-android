@@ -811,6 +811,7 @@ public class Config {
      * @deprecated This method should only be used internally. Use the instance getter instead {@link
      * #isJmxFetchIntegrationEnabled(SortedSet, boolean)}.
      */
+    @Deprecated
     public static boolean jmxFetchIntegrationEnabled(
             final SortedSet<String> integrationNames, final boolean defaultEnabled) {
         // If default is enabled, we want to enable individually,
@@ -840,6 +841,7 @@ public class Config {
      * @deprecated This method should only be used internally. Use the instance getter instead {@link
      * #isTraceAnalyticsIntegrationEnabled(SortedSet, boolean)}.
      */
+    @Deprecated
     public static boolean traceAnalyticsIntegrationEnabled(
             final SortedSet<String> integrationNames, final boolean defaultEnabled) {
         // If default is enabled, we want to enable individually,
@@ -868,6 +870,7 @@ public class Config {
      * @return
      * @deprecated This method should only be used internally. Use the explicit getter instead.
      */
+    @Deprecated
     public static String getSettingFromEnvironment(final String name, final String defaultValue) {
         String value;
         final String systemPropertyName = propertyNameToSystemPropertyName(name);
@@ -896,6 +899,7 @@ public class Config {
     /**
      * @deprecated This method should only be used internally. Use the explicit getter instead.
      */
+    @Deprecated
     private static Map<String, String> getMapSettingFromEnvironment(
             final String name, final String defaultValue) {
         return parseMap(
@@ -908,6 +912,7 @@ public class Config {
      *
      * @deprecated This method should only be used internally. Use the explicit getter instead.
      */
+    @Deprecated
     private static List<String> getListSettingFromEnvironment(
             final String name, final String defaultValue) {
         return parseList(getSettingFromEnvironment(name, defaultValue));
@@ -918,6 +923,7 @@ public class Config {
      *
      * @deprecated This method should only be used internally. Use the explicit getter instead.
      */
+    @Deprecated
     public static Boolean getBooleanSettingFromEnvironment(
             final String name, final Boolean defaultValue) {
         return getSettingFromEnvironmentWithLog(name, Boolean.class, defaultValue);
@@ -928,6 +934,7 @@ public class Config {
      *
      * @deprecated This method should only be used internally. Use the explicit getter instead.
      */
+    @Deprecated
     public static Float getFloatSettingFromEnvironment(final String name, final Float defaultValue) {
         return getSettingFromEnvironmentWithLog(name, Float.class, defaultValue);
     }
