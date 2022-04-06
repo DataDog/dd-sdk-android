@@ -9,7 +9,9 @@ package com.datadog.android.rum
 import android.content.Context
 import android.os.Looper
 import android.util.Log
+import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
@@ -152,7 +154,24 @@ internal class RumMonitorBuilderTest {
         // Then
         verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
-            RumMonitor.Builder.RUM_NOT_ENABLED_ERROR_MESSAGE
+            RumMonitor.Builder.RUM_NOT_ENABLED_ERROR_MESSAGE + "\n" +
+                Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
+        )
+        check(monitor is NoOpRumMonitor)
+    }
+
+    @Test
+    fun `𝕄 builds nothing 𝕎 build() { rumApplicationId is null }`() {
+        // Given
+        CoreFeature.rumApplicationId = null
+
+        // When
+        val monitor = testedBuilder.build()
+
+        // Then
+        verify(logger.mockDevLogHandler).handleLog(
+            Log.ERROR,
+            RumMonitor.Builder.INVALID_APPLICATION_ID_ERROR_MESSAGE
         )
         check(monitor is NoOpRumMonitor)
     }

@@ -309,7 +309,10 @@ internal constructor(internal var handler: LogHandler) {
             return if (LogsFeature.isInitialized()) {
                 LogsFeature.persistenceStrategy.getWriter()
             } else {
-                devLogger.e(Datadog.MESSAGE_NOT_INITIALIZED)
+                devLogger.e(
+                    SDK_NOT_INITIALIZED_WARNING_MESSAGE + "\n" +
+                        Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
+                )
                 null
             }
         }
@@ -584,4 +587,12 @@ internal constructor(internal var handler: LogHandler) {
     }
 
     // endregion
+
+    internal companion object {
+        internal const val SDK_NOT_INITIALIZED_WARNING_MESSAGE =
+            "You're trying to create a Logger instance, but the SDK was not yet initialized. " +
+                "This Logger will not be able to send any messages. " +
+                "Please initialize the Datadog SDK first before" +
+                " creating a new Logger instance."
+    }
 }

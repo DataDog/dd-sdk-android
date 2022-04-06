@@ -379,14 +379,14 @@ object Datadog {
             "(\"<CLIENT_TOKEN>\", \"<ENVIRONMENT>\", \"<VARIANT>\", \"<APPLICATION_ID>\")\n" +
             "Datadog.initialize(context, credentials, configuration, trackingConsent);"
 
-    internal const val MESSAGE_NOT_INITIALIZED = "Datadog has not been initialized.\n" +
+    internal const val MESSAGE_SDK_INITIALIZATION_GUIDE =
         "Please add the following code in your application's onCreate() method:\n" +
-        "val credentials = Credentials" +
-        "(\"<CLIENT_TOKEN>\", \"<ENVIRONMENT>\", \"<VARIANT>\", \"<APPLICATION_ID>\")\n" +
-        "Datadog.initialize(context, credentials, configuration, trackingConsent);"
+            "val credentials = Credentials" +
+            "(\"<CLIENT_TOKEN>\", \"<ENVIRONMENT>\", \"<VARIANT>\", \"<APPLICATION_ID>\")\n" +
+            "Datadog.initialize(context, credentials, configuration, trackingConsent);"
 
-    internal const val MESSAGE_DEPRECATED = "%s has been deprecated. " +
-        "If you need it, submit an issue at https://github.com/DataDog/dd-sdk-android/issues/"
+    internal const val MESSAGE_NOT_INITIALIZED = "Datadog has not been initialized.\n " +
+        MESSAGE_SDK_INITIALIZATION_GUIDE
 
     internal const val SHUTDOWN_THREAD = "datadog_shutdown"
     internal const val ENV_NAME_VALIDATION_REG_EX = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]"

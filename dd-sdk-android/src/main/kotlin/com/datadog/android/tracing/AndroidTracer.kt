@@ -6,6 +6,7 @@
 
 package com.datadog.android.tracing
 
+import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.LogAttributes
@@ -77,7 +78,10 @@ class AndroidTracer internal constructor(
          */
         fun build(): AndroidTracer {
             if (!TracingFeature.isInitialized()) {
-                devLogger.e(TRACING_NOT_ENABLED_ERROR_MESSAGE)
+                devLogger.e(
+                    TRACING_NOT_ENABLED_ERROR_MESSAGE + "\n" +
+                        Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
+                )
             }
             if (bundleWithRumEnabled && !RumFeature.isInitialized()) {
                 devLogger.e(RUM_NOT_ENABLED_ERROR_MESSAGE)
@@ -182,8 +186,8 @@ class AndroidTracer internal constructor(
     companion object {
         internal const val TRACING_NOT_ENABLED_ERROR_MESSAGE =
             "You're trying to create an AndroidTracer instance, " +
-                "but the Tracing feature was disabled in your Configuration. " +
-                "No tracing data will be sent."
+                "but either the SDK was not initialized or the Tracing feature was " +
+                "disabled in your Configuration. No tracing data will be sent."
         internal const val RUM_NOT_ENABLED_ERROR_MESSAGE =
             "You're trying to bundle the traces with a RUM context, " +
                 "but the RUM feature was disabled in your Configuration. " +
