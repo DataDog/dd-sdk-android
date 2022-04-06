@@ -52,7 +52,7 @@ class SampleApplication : Application() {
     )
 
     private val webViewTrackingHosts = listOf(
-        "datadoghq.com"
+        "datadoghq.dev"
     )
 
     private val okHttpClient = OkHttpClient.Builder()
@@ -129,7 +129,6 @@ class SampleApplication : Application() {
             rumEnabled = true
         )
             .setFirstPartyHosts(tracedHosts)
-            .setWebViewTrackingHosts(listOf("datadoghq.dev"))
             .addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
             .setWebViewTrackingHosts(webViewTrackingHosts)
             .useViewTrackingStrategy(
