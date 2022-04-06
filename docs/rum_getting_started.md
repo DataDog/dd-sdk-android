@@ -24,7 +24,7 @@ buildscript {
     }
 }
 plugins {
-    id("dd-sdk-android-gradle-plugin")
+    id("com.datadoghq.dd-sdk-android-gradle-plugin")
     //(...)
 }
 android {
