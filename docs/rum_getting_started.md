@@ -15,20 +15,26 @@ The Datadog Android SDK supports Android 4.4 (API level 19)+.
 
 ### Declare SDK as dependency
 
-Declare [dd-sdk-android][1] and the [gradle plugin][12] as a dependency in your `build.gradle` file.
+Declare [dd-sdk-android][1] and the [Gradle plugin][12] as a dependency in your **application module's** `build.gradle` file.
 
 ```
-plugins {
-    id("dd-sdk-android-gradle-plugin")
-}
-dependencies {
-    implementation "com.datadoghq:dd-sdk-android:x.x.x" 
-}
 buildscript {
     dependencies {
         classpath("com.datadoghq:dd-sdk-android-gradle-plugin:x.x.x")
     }
 }
+plugins {
+    id("com.datadoghq.dd-sdk-android-gradle-plugin")
+    //(...)
+}
+android {
+    //(...)
+}
+dependencies {
+    implementation "com.datadoghq:dd-sdk-android:x.x.x" 
+    //(...)
+}
+
 ```
 
 ### Specify application details in the UI
