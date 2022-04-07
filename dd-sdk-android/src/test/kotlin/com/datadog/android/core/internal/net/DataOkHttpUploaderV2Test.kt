@@ -169,7 +169,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
         val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
 
         // Then
-        assertThat(result).isEqualTo(UploadStatus.HTTP_CLIENT_ERROR)
+        assertThat(result).isEqualTo(UploadStatus.INVALID_TOKEN_ERROR)
         verifyRequest()
         verifyResponseIsClosed()
     }

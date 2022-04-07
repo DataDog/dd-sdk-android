@@ -40,7 +40,8 @@ internal enum class UploadStatus(val shouldRetry: Boolean) {
             INVALID_TOKEN_ERROR -> if (!ignoreInfo) {
                 logger.e(
                     "$batchInfo failed because your token is invalid. " +
-                        "Make sure that the provided token still exists."
+                        "Make sure that the provided token still exists " +
+                        "and you're targeting the relevant Datadog site."
                 )
             }
             HTTP_REDIRECTION -> logger.w(

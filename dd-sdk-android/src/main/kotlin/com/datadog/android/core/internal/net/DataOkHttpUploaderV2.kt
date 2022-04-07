@@ -133,7 +133,7 @@ internal abstract class DataOkHttpUploaderV2(
             HTTP_ACCEPTED -> UploadStatus.SUCCESS
             HTTP_BAD_REQUEST -> UploadStatus.HTTP_CLIENT_ERROR
             HTTP_UNAUTHORIZED -> UploadStatus.INVALID_TOKEN_ERROR
-            HTTP_FORBIDDEN -> UploadStatus.HTTP_CLIENT_ERROR
+            HTTP_FORBIDDEN -> UploadStatus.INVALID_TOKEN_ERROR
             HTTP_CLIENT_TIMEOUT -> UploadStatus.HTTP_CLIENT_RATE_LIMITING
             HTTP_ENTITY_TOO_LARGE -> UploadStatus.HTTP_CLIENT_ERROR
             HTTP_TOO_MANY_REQUESTS -> UploadStatus.HTTP_CLIENT_RATE_LIMITING
