@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
@@ -22,6 +23,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import java.net.MalformedURLException
 import java.net.URL
+import java.util.Locale
 import java.util.UUID
 
 internal class RumResourceScope(
@@ -163,7 +165,7 @@ internal class RumResourceScope(
         val finalTiming = timing ?: extractResourceTiming(
             attributes.remove(RumAttributes.RESOURCE_TIMINGS) as? Map<String, Any?>
         )
-        val duration = eventTime.nanoTime - startedNanos
+        val duration = resolveResourceDuration(eventTime)
         val resourceEvent = ResourceEvent(
             date = eventTimestamp,
             resource = ResourceEvent.Resource(
@@ -209,6 +211,16 @@ internal class RumResourceScope(
         )
         writer.write(resourceEvent)
         sent = true
+    }
+
+    private fun resolveResourceDuration(eventTime: Time): Long {
+        val duration = eventTime.nanoTime - startedNanos
+        return if (duration <= 0) {
+            devLogger.w(NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, url))
+            1
+        } else {
+            duration
+        }
     }
 
     private fun resolveResourceProvider(): ResourceEvent.Provider? {
@@ -299,6 +311,10 @@ internal class RumResourceScope(
     // endregion
 
     companion object {
+
+        internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for your " +
+            "resource: %s was 0 or negative. In order to keep the resource event" +
+            " we forced it to 1ns."
 
         fun fromEvent(
             parentScope: RumScope,

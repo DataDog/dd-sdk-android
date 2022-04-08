@@ -97,6 +97,16 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
+    fun hasDuration(duration: Long): ResourceEventAssert {
+        assertThat(actual.resource.duration)
+            .overridingErrorMessage(
+                "Expected event data to have resource.duration $duration " +
+                    "but was ${actual.resource.duration}"
+            )
+            .isEqualTo(duration)
+        return this
+    }
+
     fun hasTiming(expected: ResourceTiming): ResourceEventAssert {
         if (expected.dnsDuration > 0) {
             assertThat(actual.resource.dns?.start)

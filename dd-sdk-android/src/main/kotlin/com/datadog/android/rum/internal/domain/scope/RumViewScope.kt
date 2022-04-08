@@ -543,10 +543,12 @@ internal open class RumViewScope(
 
     private fun resolveViewDuration(event: RumRawEvent): Long {
         val duration = event.eventTime.nanoTime - startedNanos
-        if (duration <= 0) {
+        return if (duration <= 0) {
             devLogger.w(NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, name))
+            1
+        } else {
+            duration
         }
-        return max(duration, 1)
     }
 
     private fun resolveRefreshRateInfo(refreshRateInfo: VitalInfo?) =
