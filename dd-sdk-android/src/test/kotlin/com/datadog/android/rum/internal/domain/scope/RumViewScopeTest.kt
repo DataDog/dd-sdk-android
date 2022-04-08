@@ -21,6 +21,7 @@ import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
+import com.datadog.android.log.internal.utils.DEBUG_WITH_TELEMETRY_LEVEL
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -362,6 +363,99 @@ internal class RumViewScopeTest {
         // Then
         assertThat(GlobalRum.getRumContext().viewType)
             .isEqualTo(RumViewScope.RumViewType.FOREGROUND)
+    }
+
+    @Test
+    fun `𝕄 not update the context W handleEvent(StopView) { another view scope created before }`(
+        forge: Forge
+    ) {
+        // Given
+        val expectedViewType = forge.aValueFrom(RumViewScope.RumViewType::class.java)
+
+        val anotherScope = RumViewScope(
+            mockParentScope,
+            fakeKey,
+            fakeName,
+            fakeEventTime,
+            fakeAttributes,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockTimeProvider,
+            mockRumEventSourceProvider,
+            mockBuildSdkVersionProvider,
+            mockViewUpdatePredicate,
+            type = expectedViewType
+        )
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
+            mockWriter
+        )
+
+        // Then
+        val currentRumContext = GlobalRum.getRumContext()
+
+        assertThat(currentRumContext.viewType)
+            .isEqualTo(expectedViewType)
+        assertThat(currentRumContext.viewName)
+            .isEqualTo(anotherScope.getRumContext().viewName)
+        assertThat(currentRumContext.viewId)
+            .isEqualTo(anotherScope.getRumContext().viewId)
+        assertThat(currentRumContext.viewUrl)
+            .isEqualTo(anotherScope.getRumContext().viewUrl)
+        assertThat(currentRumContext.actionId)
+            .isEqualTo(anotherScope.getRumContext().actionId)
+
+        verify(logger.mockSdkLogHandler)
+            .handleLog(
+                DEBUG_WITH_TELEMETRY_LEVEL,
+                RumViewScope.RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE
+            )
+    }
+
+    @Test
+    fun `𝕄 not update the context W handleEvent() { action completes after view stopped }`(
+        @StringForgery actionName: String,
+        @Forgery rumActionType: RumActionType
+    ) {
+        // Given
+        testedScope.activeActionScope = mockChildScope
+
+        val stopActionEvent = RumRawEvent.StopAction(rumActionType, actionName, emptyMap())
+        whenever(testedScope.handleEvent(stopActionEvent, mockWriter)) doReturn null
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
+            mockWriter
+        )
+        testedScope.handleEvent(
+            stopActionEvent,
+            mockWriter
+        )
+
+        // Then
+        val currentRumContext = GlobalRum.getRumContext()
+
+        assertThat(currentRumContext.viewType)
+            .isEqualTo(RumViewScope.RumViewType.NONE)
+        assertThat(currentRumContext.viewName)
+            .isNull()
+        assertThat(currentRumContext.viewId)
+            .isNull()
+        assertThat(currentRumContext.viewUrl)
+            .isNull()
+        assertThat(currentRumContext.actionId)
+            .isNull()
+
+        verify(logger.mockSdkLogHandler)
+            .handleLog(
+                DEBUG_WITH_TELEMETRY_LEVEL,
+                RumViewScope.RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE
+            )
     }
 
     // endregion
@@ -5241,6 +5335,7 @@ internal class RumViewScopeTest {
             return listOf(logger, appContext, coreFeature, rumMonitor)
         }
 
+        @Suppress("unused")
         @JvmStatic
         fun brokenTimeRawEventData(): List<RumRawEventData> {
             val forge = Forge()

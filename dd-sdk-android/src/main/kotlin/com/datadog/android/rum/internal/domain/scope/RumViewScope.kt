@@ -21,6 +21,8 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
+import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.log.internal.utils.debugWithTelemetry
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -203,6 +205,9 @@ internal open class RumViewScope(
         writer: DataWriter<Any>
     ) {
         if (!stopped) {
+            // no need to update RUM Context here erasing current view, because this is called
+            // only with event starting a new view, which itself will update a context
+            // at the construction time
             stopped = true
             sendViewUpdate(event, writer)
             delegateEventToChildren(event, writer)
@@ -217,7 +222,25 @@ internal open class RumViewScope(
         val startedKey = keyRef.get()
         val shouldStop = (event.key == startedKey) || (startedKey == null)
         if (shouldStop && !stopped) {
-            GlobalRum.updateRumContext(getRumContext().copy(viewType = RumViewType.NONE))
+            GlobalRum.updateRumContext(
+                getRumContext().copy(
+                    viewType = RumViewType.NONE,
+                    viewId = null,
+                    viewName = null,
+                    viewUrl = null,
+                    actionId = null
+                ),
+                applyOnlyIf = { currentContext ->
+                    if (currentContext.viewId == this.viewId) {
+                        true
+                    } else {
+                        sdkLogger.debugWithTelemetry(
+                            RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE
+                        )
+                        false
+                    }
+                }
+            )
             attributes.putAll(event.attributes)
             stopped = true
             sendViewUpdate(event, writer)
@@ -386,7 +409,16 @@ internal open class RumViewScope(
     private fun updateActiveActionScope(scope: RumScope?) {
         activeActionScope = scope
         // update the Rum Context to make it available for Logs/Trace bundling
-        GlobalRum.updateRumContext(getRumContext())
+        GlobalRum.updateRumContext(getRumContext(), applyOnlyIf = { currentContext ->
+            if (currentContext.viewId == this.viewId) {
+                true
+            } else {
+                sdkLogger.debugWithTelemetry(
+                    RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE
+                )
+                false
+            }
+        })
     }
 
     private fun delegateEventToResources(
@@ -718,6 +750,13 @@ internal open class RumViewScope(
 
         internal const val ACTION_DROPPED_WARNING = "RUM Action (%s on %s) was dropped, because" +
             " another action is still active for the same view"
+
+        internal const val RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE =
+            "Trying to update global RUM context when StopView event arrived, but the context" +
+                " doesn't reference this view."
+        internal const val RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE =
+            "Trying to update active action in the global RUM context, but the context" +
+                " doesn't reference this view."
 
         internal val FROZEN_FRAME_THRESHOLD_NS = TimeUnit.MILLISECONDS.toNanos(700)
         internal const val SLOW_RENDERED_THRESHOLD_FPS = 55
