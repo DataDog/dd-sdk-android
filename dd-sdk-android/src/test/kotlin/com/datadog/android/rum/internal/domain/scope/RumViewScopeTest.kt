@@ -292,6 +292,34 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    // region isActive
+
+    @Test
+    fun `M return true W isActive() {not stopped}`() {
+        // Given
+        testedScope.stopped = false
+
+        // When
+        val isActive = testedScope.isActive()
+
+        // Then
+        assertThat(isActive).isTrue()
+    }
+
+    @Test
+    fun `M return false W isActive() {stopped}`() {
+        // Given
+        testedScope.stopped = true
+
+        // When
+        val isActive = testedScope.isActive()
+
+        // Then
+        assertThat(isActive).isFalse()
+    }
+
+    // endregion
+
     // region View
 
     @Test

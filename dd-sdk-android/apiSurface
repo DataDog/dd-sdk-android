@@ -1402,4 +1402,5 @@ class com.datadog.android.webview.DatadogEventBridge
   fun send(String)
   fun getAllowedWebViewHosts(): String
   companion object 
+    fun setup(android.webkit.WebView)
 class com.datadog.tools.annotation.NoOpImplementation

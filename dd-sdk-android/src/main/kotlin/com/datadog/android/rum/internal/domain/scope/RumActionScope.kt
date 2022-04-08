@@ -54,7 +54,7 @@ internal class RumActionScope(
     internal var longTaskCount: Long = 0
 
     private var sent = false
-    private var stopped = false
+    internal var stopped = false
 
     // endregion
 
@@ -86,6 +86,10 @@ internal class RumActionScope(
 
     override fun getRumContext(): RumContext {
         return parentScope.getRumContext()
+    }
+
+    override fun isActive(): Boolean {
+        return !stopped
     }
 
     // endregion

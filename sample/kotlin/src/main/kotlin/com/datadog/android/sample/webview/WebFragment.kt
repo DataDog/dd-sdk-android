@@ -32,7 +32,7 @@ class WebFragment : Fragment() {
         webView = rootView.findViewById(R.id.webview)
         webView.webViewClient = WebViewClient()
         webView.settings.javaScriptEnabled = true
-        webView.addJavascriptInterface(DatadogEventBridge(), "DatadogEventBridge")
+        DatadogEventBridge.setup(webView)
         return rootView
     }
 
