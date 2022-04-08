@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import android.content.Context
+import android.util.Log
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.utils.loggableStackTrace
@@ -28,6 +29,7 @@ import com.datadog.android.utils.asTimingsPayload
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aFilteredMap
 import com.datadog.android.utils.forge.exhaustiveAttributes
@@ -52,6 +54,7 @@ import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.net.URL
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -1660,6 +1663,102 @@ internal class RumResourceScopeTest {
         }
     }
 
+    @Test
+    fun `M update the duration to 1ns W handleEvent { computed duration less than 0 }`(
+        forge: Forge
+    ) {
+        val fakeStatusCode = forge.aNullable { forge.aLong() }
+        val fakeSize = forge.aNullable { forge.aLong() }
+        val fakeKind = forge.aValueFrom(RumResourceKind::class.java)
+        val fakeStopEvent = RumRawEvent.StopResource(
+            fakeKey,
+            fakeStatusCode,
+            fakeSize,
+            fakeKind,
+            emptyMap(),
+            Time(0, 0)
+        )
+        // Given
+        val result = testedScope.handleEvent(fakeStopEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(firstValue)
+                .apply {
+                    hasId(testedScope.resourceId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasDuration(1)
+                    hasUrl(fakeUrl)
+                    hasMethod(fakeMethod)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
+                    doesNotHaveAResourceProvider()
+                    hasLiteSessionPlan()
+                    hasSource(fakeSourceResourceEvent)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(loggerTestConfiguration.mockDevLogHandler).handleLog(
+            Log.WARN,
+            RumResourceScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, fakeUrl)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isEqualTo(null)
+    }
+
+    @Test
+    fun `M update the duration to 1ns W handleEvent { computed duration equal to 0 }`(
+        forge: Forge
+    ) {
+        val fakeStatusCode = forge.aNullable { forge.aLong() }
+        val fakeSize = forge.aNullable { forge.aLong() }
+        val fakeKind = forge.aValueFrom(RumResourceKind::class.java)
+        val fakeStopEvent = RumRawEvent.StopResource(
+            fakeKey,
+            fakeStatusCode,
+            fakeSize,
+            fakeKind,
+            emptyMap(),
+            fakeEventTime
+        )
+        // Given
+        val result = testedScope.handleEvent(fakeStopEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(firstValue)
+                .apply {
+                    hasId(testedScope.resourceId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasDuration(1)
+                    hasUrl(fakeUrl)
+                    hasMethod(fakeMethod)
+                    hasUserInfo(fakeUserInfo)
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasView(fakeParentContext)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasActionId(fakeParentContext.actionId)
+                    doesNotHaveAResourceProvider()
+                    hasLiteSessionPlan()
+                    hasSource(fakeSourceResourceEvent)
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(loggerTestConfiguration.mockDevLogHandler).handleLog(
+            Log.WARN,
+            RumResourceScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, fakeUrl)
+        )
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isEqualTo(null)
+    }
+
     // region Internal
 
     private fun mockEvent(): RumRawEvent {
@@ -1680,11 +1779,12 @@ internal class RumResourceScopeTest {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
+        val loggerTestConfiguration = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, rumMonitor, coreFeature)
+            return listOf(appContext, rumMonitor, coreFeature, loggerTestConfiguration)
         }
     }
 }
