@@ -1,16 +1,16 @@
-# Datadog SDK for Android
+# Datadog SDK for Android and Android TV
 
-> A client-side Android library to interact with Datadog.
+> A client-side Android and Android TV library to interact with Datadog.
 
 ## Getting Started
 
 ### Log Collection
 
-See the dedicated [Datadog Android Log Collection documentation](http://docs.datadoghq.com/logs/log_collection/android) to learn how to forward logs from your Android application to Datadog.
+See the dedicated [Datadog Android Log Collection documentation](http://docs.datadoghq.com/logs/log_collection/android) to learn how to forward logs from your Android or Android TV application to Datadog.
 
 ### Real User Monitoring
 
-See the dedicated [Datadog Android RUM Collection documentation](https://docs.datadoghq.com/real_user_monitoring/android/) to learn how to send RUM data from your Android application to Datadog.
+See the dedicated [Datadog Android RUM Collection documentation](https://docs.datadoghq.com/real_user_monitoring/android/) to learn how to send RUM data from your Android or Android TV application to Datadog.
 
 ## Log Integrations
 
@@ -30,11 +30,11 @@ If you use Fresco to load images in your application, take a look at Datadog's [
 
 ### Glide
 
-If you use Glide to load images in your application, take a look at our [dedicated library](dd-sdk-android-glide/README.md).
+If you use Glide to load images in your application, take a look at Datadog's [dedicated library](dd-sdk-android-glide/README.md).
 
 ### Picasso
 
-If you use Picasso, let it use your `OkHttpClient`, and you'll get RUM and APM information about network requests made by Picasso.
+If you use Picasso, let it use your `OkHttpClient`, and you can get RUM and APM information about network requests made by Picasso.
 
 ```kotlin
         val picasso = Picasso.Builder(context)
@@ -46,7 +46,7 @@ If you use Picasso, let it use your `OkHttpClient`, and you'll get RUM and APM i
 
 ### Retrofit
 
-If you use Retrofit, let it use your `OkHttpClient`, and you'll get RUM and APM information about network requests made with Retrofit.
+If you use Retrofit, let it use your `OkHttpClient`, and you can get RUM and APM information about network requests made with Retrofit.
 
 ```kotlin
         val retrofitClient = Retrofit.Builder()
@@ -57,7 +57,7 @@ If you use Retrofit, let it use your `OkHttpClient`, and you'll get RUM and APM 
 
 ### Apollo (GraphQL)
 
-If you use Apollo, let it use your `OkHttpClient`, and you'll get RUM and APM information about all the queries performed through Apollo client.
+If you use Apollo, let it use your `OkHttpClient`, and you can get RUM and APM information about all the queries performed through the Apollo client.
 
 ```kotlin
         val apolloClient =  ApolloClient.builder()
@@ -68,33 +68,31 @@ If you use Apollo, let it use your `OkHttpClient`, and you'll get RUM and APM in
 
 ## Looking up your logs
 
-When you open your console in Datadog, navigate to the Logs section. In the search bar, type `source:android`. This filters your logs to only show the ones coming from Android applications.
+When you open your console in Datadog, navigate to the [Log Explorer][1]. In the search bar, type `source:android`. This filters your logs to only show the ones coming from Android or Android TV applications.
 
 ![Datadog Mobile Logs](docs/images/screenshot_logs.png)
 
 ## Looking up your spans
 
-When you open your console in Datadog, navigate to the APM section. In the list of services, you'll see all your android applications (by default the service name will match your application's package name, e.g.: `com.example.android`). You'll then be able to see all the traces started from your application.
+When you open your console in Datadog, navigate to [**APM** > **Services**][2]. In the list of services, you can see all your Android and Android TV applications (by default, the service name matches your application's package name, for example: `com.example.android`). You can access all the traces started from your application.
 
 ![Datadog Mobile Logs](docs/images/screenshot_apm.png)
 
 ## Looking up your RUM events
 
-When you open your console in Datadog, navigate to the RUM Explorer section. In the side bar, you can then select your application and explore Sessions, Views, Actions, Errors and Resources.
+When you open your console in Datadog, navigate to the [RUM Explorer][3]. In the side bar, you can select your application and explore Sessions, Views, Actions, Errors, Resources, and Long Tasks.
 
 ![Datadog Mobile Logs](docs/images/screenshot_rum.png)
 
 ## Troubleshooting
 
-If you encounter any issue when using the Datadog SDK for Android, please take a look at 
+If you encounter any issue when using the Datadog SDK for Android and Android TV, please take a look at 
 the [troubleshooting checklist](docs/troubleshooting_android.md), [common problems](docs/advanced_troubleshooting.md), or at
 the existing [issues](https://github.com/DataDog/dd-sdk-android/issues?q=is%3Aissue).
 
-## Warning
-
-We have not tested the SDK on Roku devices running with Android OS and we cannot guarantee that it will perform well.
-If you encounter any problems while using our SDK for these particular devices please contact us at [Datadog Support](https://docs.datadoghq.com/help/)
-or you can directly open an issue in our GitHub project.
+<div class="alert alert-warning">
+Datadog cannot guarantee the Android and Android TV SDK's performance on Roku devices running with Android OS. If you encounter any issues when using the SDK for these devices, contact <a href="https://docs.datadoghq.com/help/">Datadog Support</a> or open an issue in our GitHub project.
+</div>
 
 ## Contributing
 
@@ -103,3 +101,7 @@ Pull requests are welcome. First, open an issue to discuss what you would like t
 ## License
 
 [Apache License, v2.0](LICENSE)
+
+[1]: https://app.datadoghq.com/logs
+[2]: https://app.datadoghq.com/apm/services
+[3]: https://app.datadoghq.com/rum/explorer
