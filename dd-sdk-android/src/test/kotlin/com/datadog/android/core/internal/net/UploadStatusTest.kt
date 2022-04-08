@@ -144,7 +144,8 @@ internal class UploadStatusTest {
             .handleLog(
                 Log.ERROR,
                 "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                    "because your token is invalid. Make sure that the provided token still exists."
+                    "because your token is invalid. Make sure that the provided token still " +
+                    "exists and you're targeting the relevant Datadog site."
             )
     }
 
