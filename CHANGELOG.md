@@ -1,3 +1,22 @@
+# 1.12.0 / 2022-04-11
+
+* [BUGFIX] Core: Internal attributes coming from cross-platform are removed after being read
+* [BUGFIX] RUM: Ensure Crash report works even when there're no active view [#849](https://github.com/DataDog/dd-sdk-android/issues/849) (Thanks [@emichaux](https://github.com/emichaux))
+* [BUGFIX] RUM: Span created from network requests stop sending the query params in the `resource` attribute
+* [BUGFIX] RUM: Ongoing action completes when a new view starts
+* [FEATURE] RUM: Allow tracking browser RUM events from Webviews
+* [FEATURE] RUM: Add support to Jetpack Compose
+* [IMPROVEMENT] Logs: Support adding org.json.JSONObject attributes to Loggers [#588](https://github.com/DataDog/dd-sdk-android/issues/588) (Thanks [@fleficher](https://github.com/fleficher))
+* [IMPROVEMENT] RUM: Automatically track Activity Intents
+* [IMPROVEMENT] RUM: Collect RUM events during application launch
+* [IMPROVEMENT] RUM: Remove RUM Action automatic filtering
+* [IMPROVEMENT] Global: Prevent 3rd party/system dependency calls from crashing the host application
+* [IMPROVEMENT] Global: Use the cache folder to store batch files
+
+# 1.11.1 / 2022-01-06
+
+* [BUGFIX] RUM: Prevent potential crash when targeting Android SDK 31 [#709](https://github.com/DataDog/dd-sdk-android/issues/709) (Thanks [@mattking-chip](https://github.com/mattking-chip))
+
 # 1.11.0 / 2021-12-07
 
 * [BUGFIX] RUM: Fix Memory Vital downscaled on Android
