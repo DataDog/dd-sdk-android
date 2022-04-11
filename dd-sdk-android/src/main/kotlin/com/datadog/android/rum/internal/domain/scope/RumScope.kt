@@ -24,5 +24,14 @@ internal interface RumScope {
         writer: DataWriter<Any>
     ): RumScope?
 
+    /**
+     * @return whether the current scope is active. Note that an inactive scope can still process
+     * events (to handle ongoing event started while it was active).
+     */
+    fun isActive(): Boolean
+
+    /**
+     * @return the context related to this scope
+     */
     fun getRumContext(): RumContext
 }

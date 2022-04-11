@@ -7,8 +7,11 @@
 package com.datadog.android.webview
 
 import android.webkit.JavascriptInterface
+import android.webkit.WebView
+import androidx.annotation.MainThread
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
@@ -95,6 +98,36 @@ internal constructor(
     // endregion
 
     companion object {
+
+        internal const val JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE =
+            "You are trying to enable the WebView" +
+                "tracking but the java script capability was not enabled for the given WebView."
+        internal const val DATADOG_EVENT_BRIDGE_NAME = "DatadogEventBridge"
+
+        /**
+         * Attach the [DatadogEventBridge] to track events from the WebView as part of the same session.
+         * This method must be called from the Main Thread.
+         * Please note that:
+         * - you need to enable the JavaScript support in the WebView settings for this feature
+         * to be functional:
+         * ```
+         * webView.settings.javaScriptEnabled = true
+         * ```
+         * - by default, navigation will happen outside of your application (in a browser or a different app). To prevent that and ensure Datadog can track the full WebView user journey, attach a [android.webkit.WebViewClient] to your WebView, as follow:
+         * ```
+         * webView.webViewClient = WebViewClient()
+         * ```
+         * @param webView the webView on which to attach the bridge
+         * [More here](https://developer.android.com/guide/webapps/webview#HandlingNavigation).
+         */
+        @MainThread
+        fun setup(webView: WebView) {
+            if (!webView.settings.javaScriptEnabled) {
+                devLogger.w(JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE)
+            }
+            webView.addJavascriptInterface(DatadogEventBridge(), DATADOG_EVENT_BRIDGE_NAME)
+        }
+
         private fun buildWebViewEventConsumer(): WebViewEventConsumer<String> {
             val contextProvider = WebViewRumEventContextProvider()
             return MixedWebViewEventConsumer(

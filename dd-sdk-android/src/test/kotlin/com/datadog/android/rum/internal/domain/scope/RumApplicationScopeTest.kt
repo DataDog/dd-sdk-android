@@ -114,6 +114,13 @@ internal class RumApplicationScopeTest {
     }
 
     @Test
+    fun `M return true W isActive()`() {
+        val isActive = testedScope.isActive()
+
+        assertThat(isActive).isTrue()
+    }
+
+    @Test
     fun `delegates all events to child scope`() {
         testedScope.setFieldValue("childScope", mockChildScope)
 

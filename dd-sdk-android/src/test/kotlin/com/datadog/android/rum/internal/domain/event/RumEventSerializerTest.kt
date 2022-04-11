@@ -16,12 +16,20 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.isNull
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -39,7 +47,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -740,11 +749,13 @@ internal class RumEventSerializerTest {
         val fakeInternalTimestamp = forge.aLong()
         val fakeErrorType = forge.aString()
         val fakeErrorSourceType = forge.aString()
+        val fakeIsCrash = forge.aBool()
         val fakeEventWithInternalGlobalAttributes = forge.forgeRumEvent(
             attributes = mapOf(
                 RumAttributes.INTERNAL_ERROR_TYPE to fakeErrorType,
                 RumAttributes.INTERNAL_TIMESTAMP to fakeInternalTimestamp,
-                RumAttributes.INTERNAL_ERROR_SOURCE_TYPE to fakeErrorSourceType
+                RumAttributes.INTERNAL_ERROR_SOURCE_TYPE to fakeErrorSourceType,
+                RumAttributes.INTERNAL_ERROR_IS_CRASH to fakeIsCrash
             )
         )
         // WHEN
@@ -765,6 +776,53 @@ internal class RumEventSerializerTest {
                 RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX +
                     "." + RumAttributes.INTERNAL_ERROR_SOURCE_TYPE
             )
+        assertThat(jsonObject)
+            .doesNotHaveField(
+                RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX +
+                    "." + RumAttributes.INTERNAL_ERROR_IS_CRASH
+            )
+    }
+
+    @Test
+    fun `M silently drop the cross-platform attributes W serialize { custom global attributes }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeInternalTimestamp = forge.aLong()
+        val fakeErrorType = forge.aString()
+        val fakeErrorSourceType = forge.aString()
+        val fakeIsCrash = forge.aBool()
+        val fakeEventWithInternalGlobalAttributes = forge.forgeRumEvent(
+            attributes = mapOf(
+                RumAttributes.INTERNAL_ERROR_TYPE to fakeErrorType,
+                RumAttributes.INTERNAL_TIMESTAMP to fakeInternalTimestamp,
+                RumAttributes.INTERNAL_ERROR_SOURCE_TYPE to fakeErrorSourceType,
+                RumAttributes.INTERNAL_ERROR_IS_CRASH to fakeIsCrash
+            )
+        )
+
+        val mockedDataConstrains: DataConstraints = mock()
+        testedSerializer = RumEventSerializer(mockedDataConstrains)
+
+        // WHEN
+        testedSerializer.serialize(fakeEventWithInternalGlobalAttributes)
+
+        // THEN
+        argumentCaptor<Map<String, Any?>> {
+            verify(mockedDataConstrains).validateAttributes(
+                capture(),
+                eq(RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX),
+                isNull(),
+                eq(RumEventSerializer.ignoredAttributes)
+            )
+            assertThat(lastValue)
+                .doesNotContainKey(RumAttributes.INTERNAL_ERROR_TYPE)
+                .doesNotContainKey(RumAttributes.INTERNAL_TIMESTAMP)
+                .doesNotContainKey(RumAttributes.INTERNAL_ERROR_SOURCE_TYPE)
+                .doesNotContainKey(RumAttributes.INTERNAL_ERROR_IS_CRASH)
+        }
+
+        verifyZeroInteractions(logger.mockDevLogHandler)
     }
 
     @Test
@@ -775,11 +833,13 @@ internal class RumEventSerializerTest {
         val fakeInternalTimestamp = forge.aLong()
         val fakeErrorType = forge.aString()
         val fakeErrorSourceType = forge.aString()
+        val fakeIsCrash = forge.aBool()
         val fakeEventWithInternalUserAttributes = forge.forgeRumEvent(
             userAttributes = mapOf(
                 RumAttributes.INTERNAL_ERROR_TYPE to fakeErrorType,
                 RumAttributes.INTERNAL_TIMESTAMP to fakeInternalTimestamp,
-                RumAttributes.INTERNAL_ERROR_SOURCE_TYPE to fakeErrorSourceType
+                RumAttributes.INTERNAL_ERROR_SOURCE_TYPE to fakeErrorSourceType,
+                RumAttributes.INTERNAL_ERROR_IS_CRASH to fakeIsCrash
             )
         )
 
@@ -800,6 +860,11 @@ internal class RumEventSerializerTest {
             .doesNotHaveField(
                 RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX +
                     "." + RumAttributes.INTERNAL_ERROR_SOURCE_TYPE
+            )
+        assertThat(jsonObject)
+            .doesNotHaveField(
+                RumEventSerializer.GLOBAL_ATTRIBUTE_PREFIX +
+                    "." + RumAttributes.INTERNAL_ERROR_IS_CRASH
             )
     }
 
@@ -846,4 +911,14 @@ internal class RumEventSerializerTest {
     }
 
     // endregion
+
+    companion object {
+        val logger = LoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
+    }
 }

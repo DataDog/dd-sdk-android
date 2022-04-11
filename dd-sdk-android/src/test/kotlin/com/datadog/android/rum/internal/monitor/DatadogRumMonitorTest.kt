@@ -1287,6 +1287,8 @@ internal class DatadogRumMonitorTest {
             mock<RumViewScope>().apply {
                 whenever(getRumContext()) doReturn
                     RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
+
+                whenever(isActive()) doReturn true
             }
         }
 
@@ -1297,7 +1299,46 @@ internal class DatadogRumMonitorTest {
         }
 
         whenever(mockRumApplicationScope.childScope) doReturn mockSessionScope
-        whenever(mockSessionScope.activeChildrenScopes) doReturn
+        whenever(mockSessionScope.childrenScopes) doReturn
+            (viewScopes + otherScopes).toMutableList()
+
+        // When
+        testedMonitor.notifyDebugListenerWithState()
+
+        // Then
+        verify(listener).onReceiveRumActiveViews(expectedViewNames)
+    }
+
+    @Test
+    fun `M notify debug listener with empty list W notifyDebugListenerWithState() {inactive}`(
+        forge: Forge
+    ) {
+        // Given
+        val mockRumApplicationScope = mock<RumApplicationScope>()
+        testedMonitor.rootScope = mockRumApplicationScope
+
+        val mockSessionScope = mock<RumSessionScope>()
+
+        val listener = mock<RumDebugListener>()
+        testedMonitor.debugListener = listener
+
+        val viewScopes = forge.aList {
+            mock<RumViewScope>().apply {
+                whenever(getRumContext()) doReturn
+                    RumContext(viewName = forge.aNullable { forge.anAlphaNumericalString() })
+
+                whenever(isActive()) doReturn false
+            }
+        }
+
+        val expectedViewNames = emptyList<String>()
+
+        val otherScopes = forge.aList {
+            forge.anElementFrom(mock(), mock<RumActionScope>(), mock<RumResourceScope>())
+        }
+
+        whenever(mockRumApplicationScope.childScope) doReturn mockSessionScope
+        whenever(mockSessionScope.childrenScopes) doReturn
             (viewScopes + otherScopes).toMutableList()
 
         // When

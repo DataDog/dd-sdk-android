@@ -20,26 +20,34 @@ TARGET_APP = "app"
 TARGET_DEMO = "demo"
 TARGET_BRIDGE = "bridge"
 TARGET_GRADLE_PLUGIN = "gradle-plugin"
+TARGET_FLUTTER = "flutter"
 
 REPOSITORIES = {
     TARGET_APP: "datadog-android",
     TARGET_DEMO: "shopist-android",
     TARGET_BRIDGE: "dd-bridge-android",
-    TARGET_GRADLE_PLUGIN: "dd-sdk-android-gradle-plugin"
+    TARGET_GRADLE_PLUGIN: "dd-sdk-android-gradle-plugin",
+    TARGET_FLUTTER: "dd-sdk-flutter"
+}
+
+DOC_FILE_PATH = {
+    TARGET_FLUTTER: os.path.join("packages", "datadog_flutter_plugin", "README.md")
 }
 
 FILE_PATH = {
     TARGET_APP: os.path.join("gradle", "libs.versions.toml"),
     TARGET_DEMO: os.path.join("gradle", "libs.versions.toml"),
     TARGET_BRIDGE: os.path.join("gradle", "libs.versions.toml"),
-    TARGET_GRADLE_PLUGIN: os.path.join("gradle", "libs.versions.toml")
+    TARGET_GRADLE_PLUGIN: os.path.join("gradle", "libs.versions.toml"),
+    TARGET_FLUTTER: os.path.join("packages", "datadog_flutter_plugin", "android", "build.gradle")
 }
 
 PREFIX = {
     TARGET_APP: "datadog",
     TARGET_DEMO: "datadogSdk",
     TARGET_BRIDGE: "datadogSdk",
-    TARGET_GRADLE_PLUGIN: "datadogSdk"
+    TARGET_GRADLE_PLUGIN: "datadogSdk",
+    TARGET_FLUTTER: "ext.datadog_sdk_version"
 }
 
 
@@ -48,7 +56,7 @@ def parse_arguments(args: list) -> Namespace:
 
     parser.add_argument("-v", "--version", required=True, help="the version of the SDK")
     parser.add_argument("-t", "--target", required=True,
-                        choices=[TARGET_APP, TARGET_DEMO, TARGET_BRIDGE, TARGET_GRADLE_PLUGIN],
+                        choices=[TARGET_APP, TARGET_DEMO, TARGET_BRIDGE, TARGET_GRADLE_PLUGIN, TARGET_FLUTTER],
                         help="the target repository")
 
     return parser.parse_args(args)
@@ -72,6 +80,37 @@ def github_create_pr(repository: str, branch_name: str, base_name: str, version:
         print("pull request failed " + str(response.status_code) + '\n' + response.text)
         return 1
 
+def update_version_table(target: str, temp_dir_path: str, version: str):
+    if not target in DOC_FILE_PATH:
+        return
+    
+    doc_path = DOC_FILE_PATH[target]
+
+    print("Updating documentation with version " + version)
+    target_file = os.path.join(temp_dir_path, doc_path)
+    with open(target_file, 'r+') as readme:
+        lines = readme.readlines()
+        in_table = False
+        android_sdk_column = None
+        for idx, line in enumerate(lines):
+            if in_table:
+                if line.startswith('[//]: #'):
+                    # All done
+                    break
+                elif line.startswith('|'):
+                    columns = list(filter(None, map(str.strip, line.split('|'))))
+                    if 'Android SDK' in columns:
+                        android_sdk_column = columns.index('Android SDK')
+                    elif ':-' in columns[0]:
+                        continue
+                    elif android_sdk_column is not None:
+                        columns[android_sdk_column] = version
+                        lines[idx] = '| ' + ' | '.join(columns) + ' |\n'
+            elif line.startswith('[//]: # (SDK Table)'):
+                in_table = True
+
+        readme.seek(0)
+        readme.write(''.join(lines))
 
 def generate_target_code(target: str, temp_dir_path: str, version: str):
     print("Generating code with version " + version)
@@ -120,6 +159,7 @@ def update_dependant(version: str, target: str, gh_token: str) -> int:
     repo.git.checkout('HEAD', b=branch_name)
 
     generate_target_code(target, temp_dir_path, version)
+    update_version_table(target, temp_dir_path, version)
 
     if not repo.is_dirty():
         print("Nothing to commit, all is in order-")

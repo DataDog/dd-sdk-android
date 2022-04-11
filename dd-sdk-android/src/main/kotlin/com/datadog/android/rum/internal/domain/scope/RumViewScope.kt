@@ -196,6 +196,10 @@ internal open class RumViewScope(
             )
     }
 
+    override fun isActive(): Boolean {
+        return !stopped
+    }
+
     // endregion
 
     // region Internal

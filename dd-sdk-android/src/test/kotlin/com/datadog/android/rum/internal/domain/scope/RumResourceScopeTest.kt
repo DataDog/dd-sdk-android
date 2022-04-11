@@ -153,6 +153,30 @@ internal class RumResourceScopeTest {
     }
 
     @Test
+    fun `M return true W isActive() {not stopped}`() {
+        // Given
+        testedScope.stopped = false
+
+        // When
+        val isActive = testedScope.isActive()
+
+        // Then
+        assertThat(isActive).isTrue()
+    }
+
+    @Test
+    fun `M return false W isActive() {stopped}`() {
+        // Given
+        testedScope.stopped = true
+
+        // When
+        val isActive = testedScope.isActive()
+
+        // Then
+        assertThat(isActive).isFalse()
+    }
+
+    @Test
     fun `𝕄 send Resource event 𝕎 handleEvent(StopResource)`(
         @Forgery kind: RumResourceKind,
         @LongForgery(200, 600) statusCode: Long,

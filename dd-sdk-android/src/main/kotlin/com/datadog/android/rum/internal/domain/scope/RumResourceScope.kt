@@ -51,7 +51,7 @@ internal class RumResourceScope(
 
     private var sent = false
     private var waitForTiming = false
-    private var stopped = false
+    internal var stopped = false
     private var kind: RumResourceKind = RumResourceKind.UNKNOWN
     private var statusCode: Long? = null
     private var size: Long? = null
@@ -75,6 +75,10 @@ internal class RumResourceScope(
 
     override fun getRumContext(): RumContext {
         return initialContext
+    }
+
+    override fun isActive(): Boolean {
+        return !stopped
     }
 
     // endregion
