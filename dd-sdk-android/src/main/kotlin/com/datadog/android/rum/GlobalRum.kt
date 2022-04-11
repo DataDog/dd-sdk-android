@@ -149,7 +149,12 @@ object GlobalRum {
         return activeContext.get()
     }
 
-    internal fun updateRumContext(newContext: RumContext) {
+    internal fun updateRumContext(
+        newContext: RumContext,
+        applyOnlyIf: (currentContext: RumContext) -> Boolean = { true }
+    ) {
+        if (!applyOnlyIf(activeContext.get())) return
+
         activeContext.set(newContext)
         val pluginContext = DatadogContext(
             DatadogRumContext(
