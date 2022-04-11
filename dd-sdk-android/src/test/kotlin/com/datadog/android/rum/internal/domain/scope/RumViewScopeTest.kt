@@ -2621,7 +2621,6 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
-                    hasSource(fakeSourceErrorEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2887,7 +2886,13 @@ internal class RumViewScopeTest {
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         fakeEvent = RumRawEvent.AddError(
-            message, source, null, null, false, attributes, sourceType = sourceType
+            message,
+            source,
+            null,
+            null,
+            false,
+            attributes,
+            sourceType = sourceType
         )
 
         // When
@@ -2932,7 +2937,12 @@ internal class RumViewScopeTest {
         testedScope.activeActionScope = mockActionScope
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
         fakeEvent = RumRawEvent.AddError(
-            message, source, null, null, true, attributes,
+            message,
+            source,
+            null,
+            null,
+            true,
+            attributes,
             sourceType = sourceType
         )
 
@@ -3177,7 +3187,6 @@ internal class RumViewScopeTest {
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
-                    hasSource(fakeSourceErrorEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)

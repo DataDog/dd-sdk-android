@@ -700,7 +700,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 use default sdk version 𝕎 applyAdditionalConfig(config) { with sdk version !string }`(
-        forge: Forge
+        forge: Forge,
     ) {
         // Given
         val config = Configuration.Builder(
@@ -734,7 +734,7 @@ internal class DatadogTest {
 
     @Test
     fun `𝕄 use default sdk version 𝕎 applyAdditionalConfig(config) { without sdk version }`(
-        forge: Forge
+        forge: Forge,
     ) {
         // Given
         val config = Configuration.Builder(

@@ -285,7 +285,7 @@ internal class RumEventSerializerTest {
                 hasNullableField("stack", event.error.stack)
                 event.error.resource?.let {
                     hasField("resource") {
-                        hasField("method", it.method.name.uppercase())
+                        hasField("method", it.method.name.uppercase(Locale.US))
                         hasField("status_code", it.statusCode)
                         hasField("url", it.url)
                     }

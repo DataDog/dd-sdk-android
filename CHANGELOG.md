@@ -1,6 +1,4 @@
-# 1.11.0 / 2021-11-??
-
-Bug
+# 1.11.0 / 2021-12-07
 
 * [BUGFIX] RUM: Fix Memory Vital downscaled on Android
 * [BUGFIX] RUM: Prevent potential crash in DatadogExceptionHandler [#749](https://github.com/DataDog/dd-sdk-android/issues/749) (Thanks [@ribafish](https://github.com/ribafish))
@@ -14,6 +12,7 @@ Bug
 * [IMPROVEMENT] RUM: Associate Logs and Traces with RUM Action
 * [IMPROVEMENT] RUM: Tag RUM Resources as `native` by default (instead of `xhr`)
 * [IMPROVEMENT] RUM: Sanitize NDK crash stacktraces
+* [IMPROVEMENT] RUM: Enrich RUM Errors with the Throwable's message
 * [IMPROVEMENT] Global: Update the intake request for Datadog's API v2
 * [IMPROVEMENT] Global: Add support to US5 endpoint
 * [IMPROVEMENT] RUM: Prevent Get leaking memory with OkHttp ResponseBody objects
