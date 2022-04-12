@@ -12,6 +12,8 @@ variables:
   DD_SERVICE: "dd-sdk-android"
   DD_ENV_TESTS: "ci"
   DD_INTEGRATION_JUNIT_5_ENABLED: "true"
+  DD_CIVISIBILITY_ENABLED: "true"
+  DD_INSIDE_CI: "true"
 
 stages:
   - ci-image
