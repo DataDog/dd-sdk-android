@@ -14,9 +14,12 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -42,7 +45,8 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -285,7 +289,7 @@ internal class RumEventSerializerTest {
                 hasNullableField("stack", event.error.stack)
                 event.error.resource?.let {
                     hasField("resource") {
-                        hasField("method", it.method.name.uppercase())
+                        hasField("method", it.method.name.uppercase(Locale.US))
                         hasField("status_code", it.statusCode)
                         hasField("url", it.url)
                     }
@@ -656,8 +660,6 @@ internal class RumEventSerializerTest {
         forge: Forge
     ) {
         // GIVEN
-        val mockDevLogHandler = mockDevLogHandler()
-
         val fakeInternalTimestamp = forge.aLong()
         val fakeErrorType = forge.aString()
         val fakeErrorSourceType = forge.aString()
@@ -670,7 +672,6 @@ internal class RumEventSerializerTest {
                 RumAttributes.INTERNAL_ERROR_IS_CRASH to fakeIsCrash
             )
         )
-
         val mockedDataConstrains: DataConstraints = mock()
         testedSerializer = RumEventSerializer(mockedDataConstrains)
 
@@ -691,8 +692,7 @@ internal class RumEventSerializerTest {
                 .doesNotContainKey(RumAttributes.INTERNAL_ERROR_SOURCE_TYPE)
                 .doesNotContainKey(RumAttributes.INTERNAL_ERROR_IS_CRASH)
         }
-
-        verifyZeroInteractions(mockDevLogHandler)
+        verifyZeroInteractions(logger.mockDevLogHandler)
     }
 
     @Test
@@ -781,4 +781,14 @@ internal class RumEventSerializerTest {
     }
 
     // endregion
+
+    companion object {
+        val logger = LoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
+    }
 }

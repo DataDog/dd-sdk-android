@@ -10,12 +10,14 @@ import android.util.Log
 import android.webkit.WebSettings
 import android.webkit.WebView
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.mockDevLogHandler
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
@@ -39,6 +41,7 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -49,11 +52,8 @@ internal class DatadogEventBridgeTest {
     @Mock
     lateinit var mockWebViewEventConsumer: MixedWebViewEventConsumer
 
-    lateinit var mockDevLogHandler: LogHandler
-
     @BeforeEach
     fun `set up`() {
-        mockDevLogHandler = mockDevLogHandler()
         testedDatadogEventBridge = DatadogEventBridge(mockWebViewEventConsumer, emptyList())
     }
 
@@ -174,9 +174,19 @@ internal class DatadogEventBridgeTest {
             argThat { this is DatadogEventBridge },
             eq(DatadogEventBridge.DATADOG_EVENT_BRIDGE_NAME)
         )
-        verify(mockDevLogHandler).handleLog(
+        verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             DatadogEventBridge.JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE
         )
+    }
+
+    companion object {
+        val logger = LoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
     }
 }

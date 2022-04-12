@@ -1305,7 +1305,7 @@ internal class DatadogRumMonitorTest {
     ) {
         // Given
         val mockRumApplicationScope = mock<RumApplicationScope>()
-        testedMonitor.setFieldValue("rootScope", mockRumApplicationScope)
+        testedMonitor.rootScope = mockRumApplicationScope
 
         val mockSessionScope = mock<RumSessionScope>()
 

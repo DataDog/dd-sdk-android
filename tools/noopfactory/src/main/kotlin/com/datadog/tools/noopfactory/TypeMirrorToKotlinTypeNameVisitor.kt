@@ -103,7 +103,6 @@ internal class TypeMirrorToKotlinTypeNameVisitor : SimpleTypeVisitor8<TypeName, 
     override fun visitDeclared(t: DeclaredType, p: Void?): TypeName {
         // The recommended kotlinpoet-metadata API is
         // experimental there. For now we will just suppress the deprecation warning here.
-        @Suppress("DEPRECATION")
         val rawType: ClassName = (t.asElement() as TypeElement).asClassName()
         val enclosingType = t.enclosingType
         val enclosing = if (enclosingType.kind != TypeKind.NONE &&
