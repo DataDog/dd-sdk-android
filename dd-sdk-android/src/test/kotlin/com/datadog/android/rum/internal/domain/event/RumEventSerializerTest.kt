@@ -291,7 +291,7 @@ internal class RumEventSerializerTest {
                 hasNullableField("stack", event.error.stack)
                 event.error.resource?.let {
                     hasField("resource") {
-                        hasField("method", it.method.name.uppercase())
+                        hasField("method", it.method.name.uppercase(Locale.US))
                         hasField("status_code", it.statusCode)
                         hasField("url", it.url)
                     }
@@ -800,7 +800,6 @@ internal class RumEventSerializerTest {
                 RumAttributes.INTERNAL_ERROR_IS_CRASH to fakeIsCrash
             )
         )
-
         val mockedDataConstrains: DataConstraints = mock()
         testedSerializer = RumEventSerializer(mockedDataConstrains)
 
@@ -821,7 +820,6 @@ internal class RumEventSerializerTest {
                 .doesNotContainKey(RumAttributes.INTERNAL_ERROR_SOURCE_TYPE)
                 .doesNotContainKey(RumAttributes.INTERNAL_ERROR_IS_CRASH)
         }
-
         verifyZeroInteractions(logger.mockDevLogHandler)
     }
 

@@ -2875,7 +2875,6 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
-                    hasSource(fakeSourceErrorEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3442,7 +3441,6 @@ internal class RumViewScopeTest {
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
-                    hasSource(fakeSourceErrorEvent)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
