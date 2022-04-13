@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.time
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.lyft.kronos.SyncListener
+import java.net.SocketTimeoutException
 
 internal class LoggingSyncListener : SyncListener {
     override fun onStartSync(host: String) {
@@ -20,10 +21,12 @@ internal class LoggingSyncListener : SyncListener {
     }
 
     override fun onError(host: String, throwable: Throwable) {
-        sdkLogger.errorWithTelemetry(
-            "Kronos onError @host:$host",
-            throwable,
-            attributes = mapOf("kronos.sync.host" to host)
-        )
+        val message = "Kronos onError @host:$host"
+        val attributes = mapOf("kronos.sync.host" to host)
+        if (throwable is SocketTimeoutException) {
+            sdkLogger.e(message, throwable, attributes)
+        } else {
+            sdkLogger.errorWithTelemetry(message, throwable, attributes)
+        }
     }
 }

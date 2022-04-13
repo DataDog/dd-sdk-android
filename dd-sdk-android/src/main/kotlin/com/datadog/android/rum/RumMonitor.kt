@@ -13,6 +13,7 @@ import androidx.annotation.FloatRange
 import androidx.fragment.app.Fragment
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
@@ -308,7 +309,8 @@ interface RumMonitor {
                         CoreFeature.serviceName,
                         CoreFeature.sdkVersion,
                         RumEventSourceProvider(CoreFeature.sourceName),
-                        CoreFeature.timeProvider
+                        CoreFeature.timeProvider,
+                        RateBasedSampler(RumFeature.telemetrySamplingRate / 100)
                     ),
                     firstPartyHostDetector = CoreFeature.firstPartyHostDetector,
                     cpuVitalMonitor = RumFeature.cpuVitalMonitor,
