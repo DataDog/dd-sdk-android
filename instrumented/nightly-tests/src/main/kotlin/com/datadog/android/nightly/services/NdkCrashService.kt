@@ -74,7 +74,7 @@ internal open class NdkCrashService : CrashService() {
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = rumEnabled
-        )
+        ).sampleTelemetry(100f)
         if (ndkCrashReportsEnabled) {
             configBuilder.addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
         }

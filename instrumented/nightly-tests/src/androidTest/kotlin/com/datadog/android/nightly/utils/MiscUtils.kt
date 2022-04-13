@@ -106,6 +106,25 @@ fun initializeSdk(
     GlobalRum.registerIfAbsent(rumMonitorProvider.invoke())
 }
 
+/**
+ * Default builder for nightly runs with telemetry set to 100%.
+ */
+fun defaultConfigurationBuilder(
+    logsEnabled: Boolean = true,
+    tracesEnabled: Boolean = true,
+    crashReportsEnabled: Boolean = true,
+    rumEnabled: Boolean = true
+): Configuration.Builder {
+    val configBuilder = Configuration.Builder(
+        logsEnabled,
+        tracesEnabled,
+        crashReportsEnabled,
+        rumEnabled
+    )
+    return configBuilder
+        .sampleTelemetry(100f)
+}
+
 fun cleanStorageFiles() {
     InstrumentationRegistry
         .getInstrumentation()
@@ -127,13 +146,7 @@ private fun createDatadogCredentials(): Credentials {
 }
 
 private fun createDatadogDefaultConfiguration(): Configuration {
-    val configBuilder = Configuration.Builder(
-        logsEnabled = true,
-        tracesEnabled = true,
-        crashReportsEnabled = true,
-        rumEnabled = true
-    )
-    return configBuilder.build()
+    return defaultConfigurationBuilder().build()
 }
 
 private fun createDefaultAndroidTracer(): Tracer = AndroidTracer.Builder().build()

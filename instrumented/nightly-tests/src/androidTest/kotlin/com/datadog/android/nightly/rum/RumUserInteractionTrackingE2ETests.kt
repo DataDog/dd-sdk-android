@@ -13,11 +13,11 @@ import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.nightly.R
 import com.datadog.android.nightly.activities.UserInteractionCustomTargetActivity
 import com.datadog.android.nightly.activities.UserInteractionTrackingActivity
 import com.datadog.android.nightly.rules.NightlyTestRule
+import com.datadog.android.nightly.utils.defaultConfigurationBuilder
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measureSdkInitialize
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -38,7 +38,7 @@ internal class RumUserInteractionTrackingE2ETests {
     @Test
     fun rum_user_interaction_tracking_strategy() {
         measureSdkInitialize {
-            val config = Configuration.Builder(
+            val config = defaultConfigurationBuilder(
                 logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
@@ -61,7 +61,7 @@ internal class RumUserInteractionTrackingE2ETests {
     @Test
     fun rum_user_interaction_tracking_strategy_custom_target_name() {
         measureSdkInitialize {
-            val config = Configuration.Builder(
+            val config = defaultConfigurationBuilder(
                 logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,

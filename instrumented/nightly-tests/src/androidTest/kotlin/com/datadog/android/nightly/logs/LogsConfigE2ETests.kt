@@ -17,6 +17,7 @@ import com.datadog.android.log.Logger
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.TestEncryption
+import com.datadog.android.nightly.utils.defaultConfigurationBuilder
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measure
 import com.datadog.android.nightly.utils.measureLoggerInitialize
@@ -50,7 +51,7 @@ class LogsConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -74,7 +75,7 @@ class LogsConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -98,7 +99,7 @@ class LogsConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = false,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -122,7 +123,7 @@ class LogsConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -155,7 +156,7 @@ class LogsConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,

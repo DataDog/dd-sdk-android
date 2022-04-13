@@ -17,6 +17,7 @@ import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.nightly.SPECIAL_STRING_TAG_NAME
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.TestEncryption
+import com.datadog.android.nightly.utils.defaultConfigurationBuilder
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measure
 import com.datadog.android.nightly.utils.measureSdkInitialize
@@ -52,7 +53,7 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = Configuration.Builder(
+                config = defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -76,7 +77,7 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = Configuration.Builder(
+                config = defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -100,7 +101,7 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = Configuration.Builder(
+                config = defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = false,
                     rumEnabled = true,
@@ -125,7 +126,7 @@ class SpanConfigE2ETests {
         measureSdkInitialize {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
-                config = Configuration.Builder(
+                config = defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
