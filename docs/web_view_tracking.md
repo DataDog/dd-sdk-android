@@ -18,7 +18,7 @@ further_reading:
 
 Real User Monitoring allows you to monitor web views and eliminate blind spots in your hybrid Android and Android TV applications.
 
-You can:
+You can perform the following:
 
 - Track user journeys across web and native components in mobile applications
 - Scope the root cause of latency to web pages or native components in mobile applications
@@ -56,7 +56,7 @@ Set up the web page you want rendered on your mobile Android and Android TV appl
 
 ## Access your web views
 
-Your web views appear as events and views in the [RUM Explorer][4]. Filter on your Android and Android TV applications and click a session. A side panel with a list of events in the session appears. 
+Your web views appear as events and views in the [RUM Explorer][4]. Filter on your Android and Android TV applications, and click a session. A side panel with a list of events in the session appears. 
 
 {{< img src="real_user_monitoring/android/android-webview-tracking.png" alt="Webview events captured in a session in the RUM Explorer" style="width:100%;">}}
 
