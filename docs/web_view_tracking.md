@@ -37,7 +37,7 @@ Set up the web page you want rendered on your mobile Android and Android TV appl
 3. Add tracking for web views with the following example:
 
    ```
-   val configuration = Configuration.Builder(
+            val configuration = Configuration.Builder(
                     rumEnabled = true
                 )
                .useSite()
