@@ -114,6 +114,16 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
     }
 
     @Test
+    fun `𝕄 store telemetry sampling rate 𝕎 initialize()`() {
+        // When
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+
+        // Then
+        assertThat(testedFeature.telemetrySamplingRate)
+            .isEqualTo(fakeConfigurationFeature.telemetrySamplingRate)
+    }
+
+    @Test
     fun `𝕄 store background tracking 𝕎 initialize()`() {
         // When
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)

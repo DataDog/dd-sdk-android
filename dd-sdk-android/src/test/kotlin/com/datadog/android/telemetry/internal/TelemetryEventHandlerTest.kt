@@ -6,7 +6,9 @@
 
 package com.datadog.android.telemetry.internal
 
+import android.util.Log
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
@@ -17,19 +19,29 @@ import com.datadog.android.telemetry.assertj.TelemetryErrorEventAssert
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.atLeastOnce
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.Locale
+import kotlin.reflect.jvm.jvmName
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Percentage
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -59,6 +71,9 @@ internal class TelemetryEventHandlerTest {
     @Mock
     lateinit var mockSourceProvider: RumEventSourceProvider
 
+    @Mock
+    lateinit var mockSampler: Sampler
+
     @StringForgery
     lateinit var mockServiceName: String
 
@@ -78,12 +93,15 @@ internal class TelemetryEventHandlerTest {
         whenever(mockSourceProvider.telemetryErrorEventSource) doReturn
             TelemetryErrorEvent.Source.ANDROID
 
+        whenever(mockSampler.sample()) doReturn true
+
         testedTelemetryHandler =
             TelemetryEventHandler(
                 mockServiceName,
                 mockSdkVersion,
                 mockSourceProvider,
-                mockTimeProvider
+                mockTimeProvider,
+                mockSampler
             )
     }
 
@@ -143,7 +161,273 @@ internal class TelemetryEventHandlerTest {
         }
     }
 
+    @Test
+    fun `𝕄 not write event 𝕎 handleEvent(SendTelemetry) { event is not sampled }`(forge: Forge) {
+        // Given
+        val rawEvent = forge.createRumRawTelemetryEvent()
+        whenever(mockSampler.sample()) doReturn false
+
+        // When
+        testedTelemetryHandler.handleEvent(rawEvent, mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+    }
+
+    @Test
+    fun `𝕄 not write event 𝕎 handleEvent(SendTelemetry) { seen in the session }`(forge: Forge) {
+        // Given
+        val rawEvent = forge.createRumRawTelemetryEvent()
+        val anotherEvent = rawEvent.copy()
+
+        val rumContext = GlobalRum.getRumContext()
+
+        // When
+        testedTelemetryHandler.handleEvent(rawEvent, mockWriter)
+        testedTelemetryHandler.handleEvent(anotherEvent, mockWriter)
+
+        // Then
+        verify(logger.mockSdkLogHandler)
+            .handleLog(
+                Log.INFO,
+                TelemetryEventHandler.ALREADY_SEEN_EVENT_MESSAGE.format(
+                    Locale.US,
+                    TelemetryEventHandler.EventIdentity(
+                        rawEvent.message,
+                        if (rawEvent.throwable != null) rawEvent.throwable::class.java else null
+                    )
+                )
+            )
+
+        argumentCaptor<Any> {
+            verify(mockWriter)
+                .write(capture())
+            when (val capturedValue = lastValue) {
+                is TelemetryDebugEvent -> {
+                    TelemetryDebugEventAssert.assertThat(capturedValue).apply {
+                        hasDate(rawEvent.eventTime.timestamp + fakeServerOffset)
+                        hasSource(TelemetryDebugEvent.Source.ANDROID)
+                        hasMessage(rawEvent.message)
+                        hasService(mockServiceName)
+                        hasVersion(mockSdkVersion)
+                        hasApplicationId(rumContext.applicationId)
+                        hasSessionId(rumContext.sessionId)
+                        hasViewId(rumContext.viewId)
+                        hasActionId(rumContext.actionId)
+                    }
+                }
+                is TelemetryErrorEvent -> {
+                    TelemetryErrorEventAssert.assertThat(capturedValue).apply {
+                        hasDate(rawEvent.eventTime.timestamp + fakeServerOffset)
+                        hasSource(TelemetryErrorEvent.Source.ANDROID)
+                        hasMessage(rawEvent.message)
+                        hasService(mockServiceName)
+                        hasVersion(mockSdkVersion)
+                        hasApplicationId(rumContext.applicationId)
+                        hasSessionId(rumContext.sessionId)
+                        hasViewId(rumContext.viewId)
+                        hasActionId(rumContext.actionId)
+                        hasErrorStack(rawEvent.throwable?.loggableStackTrace())
+                        hasErrorKind(rawEvent.throwable?.javaClass?.canonicalName)
+                    }
+                }
+                else -> throw IllegalArgumentException(
+                    "Unexpected type=${lastValue::class.jvmName} of the captured value."
+                )
+            }
+            verifyNoMoreInteractions(mockWriter)
+        }
+    }
+
+    @Test
+    fun `𝕄 not write events over the limit 𝕎 handleEvent(SendTelemetry)`(forge: Forge) {
+        // Given
+        val extraNumber = forge.aSmallInt()
+        val events = forge.aList(
+            size = TelemetryEventHandler.MAX_EVENTS_PER_SESSION + extraNumber
+        ) {
+            createRumRawTelemetryEvent()
+        }
+
+        val expectedInvocations = TelemetryEventHandler.MAX_EVENTS_PER_SESSION
+
+        val rumContext = GlobalRum.getRumContext()
+
+        // When
+        events.forEach {
+            testedTelemetryHandler.handleEvent(it, mockWriter)
+        }
+
+        // Then
+        verify(logger.mockSdkLogHandler, times(extraNumber))
+            .handleLog(
+                Log.INFO,
+                TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE
+            )
+
+        argumentCaptor<Any> {
+            verify(mockWriter, times(expectedInvocations))
+                .write(capture())
+            allValues.withIndex().forEach {
+                when (val capturedValue = it.value) {
+                    is TelemetryDebugEvent -> {
+                        TelemetryDebugEventAssert.assertThat(capturedValue).apply {
+                            hasDate(events[it.index].eventTime.timestamp + fakeServerOffset)
+                            hasSource(TelemetryDebugEvent.Source.ANDROID)
+                            hasMessage(events[it.index].message)
+                            hasService(mockServiceName)
+                            hasVersion(mockSdkVersion)
+                            hasApplicationId(rumContext.applicationId)
+                            hasSessionId(rumContext.sessionId)
+                            hasViewId(rumContext.viewId)
+                            hasActionId(rumContext.actionId)
+                        }
+                    }
+                    is TelemetryErrorEvent -> {
+                        TelemetryErrorEventAssert.assertThat(capturedValue).apply {
+                            hasDate(events[it.index].eventTime.timestamp + fakeServerOffset)
+                            hasSource(TelemetryErrorEvent.Source.ANDROID)
+                            hasMessage(events[it.index].message)
+                            hasService(mockServiceName)
+                            hasVersion(mockSdkVersion)
+                            hasApplicationId(rumContext.applicationId)
+                            hasSessionId(rumContext.sessionId)
+                            hasViewId(rumContext.viewId)
+                            hasActionId(rumContext.actionId)
+                            hasErrorStack(events[it.index].throwable?.loggableStackTrace())
+                            hasErrorKind(events[it.index].throwable?.javaClass?.canonicalName)
+                        }
+                    }
+                    else -> throw IllegalArgumentException(
+                        "Unexpected type=${lastValue::class.jvmName} of the captured value."
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `𝕄 continue writing events after new session 𝕎 handleEvent(SendTelemetry)`(forge: Forge) {
+        // Given
+        val extraNumber = forge.aSmallInt()
+        val eventsInOldSession = forge.aList(
+            size = TelemetryEventHandler.MAX_EVENTS_PER_SESSION + extraNumber
+        ) {
+            createRumRawTelemetryEvent()
+        }
+
+        val eventsInNewSessionNumber = forge.aTinyInt()
+        val eventsInNewSession = forge.aList(
+            size = eventsInNewSessionNumber
+        ) {
+            createRumRawTelemetryEvent()
+        }
+
+        val expectedInvocations = TelemetryEventHandler.MAX_EVENTS_PER_SESSION +
+            eventsInNewSessionNumber
+        val expectedEvents = eventsInOldSession
+            .take(TelemetryEventHandler.MAX_EVENTS_PER_SESSION) + eventsInNewSession
+
+        val rumContext = GlobalRum.getRumContext()
+
+        // When
+        eventsInOldSession.forEach {
+            testedTelemetryHandler.handleEvent(it, mockWriter)
+        }
+
+        testedTelemetryHandler.onSessionStarted(forge.aString(), forge.aBool())
+
+        eventsInNewSession.forEach {
+            testedTelemetryHandler.handleEvent(it, mockWriter)
+        }
+
+        // Then
+        verify(logger.mockSdkLogHandler, times(extraNumber))
+            .handleLog(
+                Log.INFO,
+                TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE
+            )
+
+        argumentCaptor<Any> {
+            verify(mockWriter, times(expectedInvocations))
+                .write(capture())
+            allValues.withIndex().forEach {
+                when (val capturedValue = it.value) {
+                    is TelemetryDebugEvent -> {
+                        TelemetryDebugEventAssert.assertThat(capturedValue).apply {
+                            hasDate(expectedEvents[it.index].eventTime.timestamp + fakeServerOffset)
+                            hasSource(TelemetryDebugEvent.Source.ANDROID)
+                            hasMessage(expectedEvents[it.index].message)
+                            hasService(mockServiceName)
+                            hasVersion(mockSdkVersion)
+                            hasApplicationId(rumContext.applicationId)
+                            hasSessionId(rumContext.sessionId)
+                            hasViewId(rumContext.viewId)
+                            hasActionId(rumContext.actionId)
+                        }
+                    }
+                    is TelemetryErrorEvent -> {
+                        TelemetryErrorEventAssert.assertThat(capturedValue).apply {
+                            hasDate(expectedEvents[it.index].eventTime.timestamp + fakeServerOffset)
+                            hasSource(TelemetryErrorEvent.Source.ANDROID)
+                            hasMessage(expectedEvents[it.index].message)
+                            hasService(mockServiceName)
+                            hasVersion(mockSdkVersion)
+                            hasApplicationId(rumContext.applicationId)
+                            hasSessionId(rumContext.sessionId)
+                            hasViewId(rumContext.viewId)
+                            hasActionId(rumContext.actionId)
+                            hasErrorStack(expectedEvents[it.index].throwable?.loggableStackTrace())
+                            hasErrorKind(
+                                expectedEvents[it.index].throwable?.javaClass?.canonicalName
+                            )
+                        }
+                    }
+                    else -> throw IllegalArgumentException(
+                        "Unexpected type=${lastValue::class.jvmName} of the captured value."
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `𝕄 count the limit only after the sampling 𝕎 handleEvent(SendTelemetry)`(forge: Forge) {
+        // Given
+        whenever(mockSampler.sample()) doAnswer { forge.aBool() }
+
+        val extraNumber = forge.aTinyInt()
+        val events = forge.aList(
+            size = TelemetryEventHandler.MAX_EVENTS_PER_SESSION + extraNumber
+        ) {
+            createRumRawTelemetryEvent()
+        }
+
+        val expectedWrites = events.size / 2
+
+        // When
+        events.forEach {
+            testedTelemetryHandler.handleEvent(it, mockWriter)
+        }
+
+        // Then
+        verifyZeroInteractions(logger.mockSdkLogHandler)
+
+        argumentCaptor<Any> {
+            verify(mockWriter, atLeastOnce())
+                .write(capture())
+            assertThat(allValues.size).isCloseTo(expectedWrites, Percentage.withPercentage(25.0))
+        }
+    }
+
     // region private
+
+    private fun Forge.createRumRawTelemetryEvent(): RumRawEvent.SendTelemetry {
+        return anElementFrom(
+            createRumRawTelemetryDebugEvent(),
+            createRumRawTelemetryErrorEvent()
+        )
+    }
 
     private fun Forge.createRumRawTelemetryDebugEvent(): RumRawEvent.SendTelemetry {
         return RumRawEvent.SendTelemetry(
@@ -165,11 +449,12 @@ internal class TelemetryEventHandlerTest {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
+        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
+            return listOf(rumMonitor, logger)
         }
     }
 }

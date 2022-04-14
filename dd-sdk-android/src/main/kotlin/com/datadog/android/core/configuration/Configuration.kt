@@ -8,6 +8,7 @@ package com.datadog.android.core.configuration
 
 import android.os.Build
 import android.os.Looper
+import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogInterceptor
@@ -97,6 +98,7 @@ internal constructor(
             override val endpointUrl: String,
             override val plugins: List<DatadogPlugin>,
             val samplingRate: Float,
+            val telemetrySamplingRate: Float,
             val userActionTrackingStrategy: UserActionTrackingStrategy?,
             val viewTrackingStrategy: ViewTrackingStrategy?,
             val longTaskTrackingStrategy: TrackingStrategy?,
@@ -456,9 +458,23 @@ internal constructor(
          * @param samplingRate the sampling rate must be a value between 0 and 100. A value of 0
          * means no RUM event will be sent, 100 means all sessions will be kept.
          */
-        fun sampleRumSessions(samplingRate: Float): Builder {
+        fun sampleRumSessions(@FloatRange(from = 0.0, to = 100.0) samplingRate: Float): Builder {
             applyIfFeatureEnabled(PluginFeature.RUM, "sampleRumSessions") {
                 rumConfig = rumConfig.copy(samplingRate = samplingRate)
+            }
+            return this
+        }
+
+        /**
+         * Sets the sampling rate for Internal Telemetry (info related to the work of the
+         * SDK internals). Default value is 20.
+         *
+         * @param samplingRate the sampling rate must be a value between 0 and 100. A value of 0
+         * means no telemetry will be sent, 100 means all telemetry will be kept.
+         */
+        fun sampleTelemetry(@FloatRange(from = 0.0, to = 100.0) samplingRate: Float): Builder {
+            applyIfFeatureEnabled(PluginFeature.RUM, "sampleTelemetry") {
+                rumConfig = rumConfig.copy(telemetrySamplingRate = samplingRate)
             }
             return this
         }
@@ -681,6 +697,7 @@ internal constructor(
 
     companion object {
         internal const val DEFAULT_SAMPLING_RATE: Float = 100f
+        internal const val DEFAULT_TELEMETRY_SAMPLING_RATE: Float = 20f
         internal const val DEFAULT_LONG_TASK_THRESHOLD_MS = 100L
 
         internal val DEFAULT_CORE_CONFIG = Core(
@@ -712,6 +729,7 @@ internal constructor(
             endpointUrl = DatadogEndpoint.RUM_US1,
             plugins = emptyList(),
             samplingRate = DEFAULT_SAMPLING_RATE,
+            telemetrySamplingRate = DEFAULT_TELEMETRY_SAMPLING_RATE,
             userActionTrackingStrategy = provideUserTrackingStrategy(
                 emptyArray(),
                 NoOpInteractionPredicate()

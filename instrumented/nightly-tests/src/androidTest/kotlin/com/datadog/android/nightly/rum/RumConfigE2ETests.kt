@@ -25,6 +25,7 @@ import com.datadog.android.nightly.utils.aViewKey
 import com.datadog.android.nightly.utils.aViewName
 import com.datadog.android.nightly.utils.anActionName
 import com.datadog.android.nightly.utils.anErrorMessage
+import com.datadog.android.nightly.utils.defaultConfigurationBuilder
 import com.datadog.android.nightly.utils.defaultTestAttributes
 import com.datadog.android.nightly.utils.executeInsideView
 import com.datadog.android.nightly.utils.initializeSdk
@@ -70,12 +71,7 @@ class RumConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
-                    crashReportsEnabled = true
-                ).build()
+                defaultConfigurationBuilder().build()
             )
         }
         sendAllRumEvents(forge, testMethodName)
@@ -91,12 +87,8 @@ class RumConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
-                    logsEnabled = true,
-                    tracesEnabled = true,
-                    rumEnabled = true,
-                    crashReportsEnabled = true
-                ).setBatchSize(forge.aValueFrom(BatchSize::class.java)).build()
+                defaultConfigurationBuilder()
+                    .setBatchSize(forge.aValueFrom(BatchSize::class.java)).build()
             )
         }
         sendAllRumEvents(forge, testMethodName)
@@ -112,7 +104,7 @@ class RumConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = false,
@@ -137,7 +129,7 @@ class RumConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -174,7 +166,7 @@ class RumConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -213,7 +205,7 @@ class RumConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -241,7 +233,7 @@ class RumConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -269,7 +261,7 @@ class RumConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -302,7 +294,7 @@ class RumConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -330,7 +322,7 @@ class RumConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -358,7 +350,7 @@ class RumConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -391,7 +383,7 @@ class RumConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -419,7 +411,7 @@ class RumConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -447,7 +439,7 @@ class RumConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -478,7 +470,7 @@ class RumConfigE2ETests {
     fun rum_config_set_rum_longtask_event_mapper_map_to_null() {
         val testMethodName = "rum_config_set_rum_longtask_event_mapper_map_to_null"
         measureSdkInitialize {
-            val builder = Configuration.Builder(
+            val builder = defaultConfigurationBuilder(
                 logsEnabled = true,
                 tracesEnabled = true,
                 rumEnabled = true,
@@ -511,7 +503,7 @@ class RumConfigE2ETests {
     fun rum_config_set_rum_longtask_event_mapper_map_to_copy() {
         val testMethodName = "rum_config_set_rum_longtask_event_mapper_map_to_copy"
         measureSdkInitialize {
-            val builder = Configuration.Builder(
+            val builder = defaultConfigurationBuilder(
                 logsEnabled = true,
                 tracesEnabled = true,
                 rumEnabled = true,
@@ -544,7 +536,7 @@ class RumConfigE2ETests {
     fun rum_config_set_rum_longtask_event_mapper() {
         val testMethodName = "rum_config_set_rum_longtask_event_mapper"
         measureSdkInitialize {
-            val builder = Configuration.Builder(
+            val builder = defaultConfigurationBuilder(
                 logsEnabled = true,
                 tracesEnabled = true,
                 rumEnabled = true,
@@ -584,7 +576,7 @@ class RumConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -606,7 +598,7 @@ class RumConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
@@ -629,7 +621,7 @@ class RumConfigE2ETests {
             initializeSdk(
                 InstrumentationRegistry.getInstrumentation().targetContext,
                 TrackingConsent.GRANTED,
-                Configuration.Builder(
+                defaultConfigurationBuilder(
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,

@@ -138,6 +138,7 @@ internal class ConfigurationBuilderTest {
                 endpointUrl = DatadogEndpoint.RUM_US1,
                 plugins = emptyList(),
                 samplingRate = Configuration.DEFAULT_SAMPLING_RATE,
+                telemetrySamplingRate = Configuration.DEFAULT_TELEMETRY_SAMPLING_RATE,
                 userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
                     DatadogGesturesTracker(
                         arrayOf(JetpackViewAttributesProvider()),
@@ -597,6 +598,29 @@ internal class ConfigurationBuilderTest {
                 samplingRate = sampling
             )
         )
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 build config with sampling rate 𝕎 sampleTelemetry() and build()`(
+        @FloatForgery(min = 0f, max = 100f) sampling: Float
+    ) {
+        // When
+        val config = testedBuilder
+            .sampleTelemetry(sampling)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(
+                telemetrySamplingRate = sampling
+            )
+        )
+
         assertThat(config.additionalConfig).isEmpty()
     }
 

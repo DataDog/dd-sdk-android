@@ -17,6 +17,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.Time
@@ -45,7 +46,7 @@ internal class DatadogRumMonitor(
     internal val backgroundTrackingEnabled: Boolean,
     private val writer: DataWriter<Any>,
     internal val handler: Handler,
-    private val telemetryEventHandler: TelemetryEventHandler,
+    internal val telemetryEventHandler: TelemetryEventHandler,
     firstPartyHostDetector: FirstPartyHostDetector,
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
@@ -64,7 +65,11 @@ internal class DatadogRumMonitor(
         memoryVitalMonitor,
         frameRateVitalMonitor,
         timeProvider,
-        sessionListener
+        if (sessionListener != null) {
+            CombinedRumSessionListener(sessionListener, telemetryEventHandler)
+        } else {
+            telemetryEventHandler
+        }
     )
 
     internal val keepAliveRunnable = Runnable {

@@ -18,6 +18,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.nightly.activities.WebViewTrackingActivity
 import com.datadog.android.nightly.activities.WebViewTrackingBridgeHostsActivity
 import com.datadog.android.nightly.rules.NightlyTestRule
+import com.datadog.android.nightly.utils.defaultConfigurationBuilder
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measureSdkInitialize
 import org.junit.After
@@ -58,7 +59,7 @@ internal class WebViewTrackingE2ETests {
      */
     @Test
     fun web_view_page_view_tracking_allowed_hosts_at_bridge_level() {
-        val config = Configuration.Builder(
+        val config = defaultConfigurationBuilder(
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
@@ -78,7 +79,7 @@ internal class WebViewTrackingE2ETests {
      */
     @Test
     fun web_view_no_allowed_host_no_tracking() {
-        val config = Configuration.Builder(
+        val config = defaultConfigurationBuilder(
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
@@ -152,7 +153,7 @@ internal class WebViewTrackingE2ETests {
     // region Internal
 
     private fun initSdk(
-        config: Configuration = Configuration.Builder(
+        config: Configuration = defaultConfigurationBuilder(
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,

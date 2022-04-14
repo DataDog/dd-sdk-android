@@ -53,6 +53,7 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
     internal const val RUM_FEATURE_NAME = "rum"
 
     internal var samplingRate: Float = 0f
+    internal var telemetrySamplingRate: Float = 0f
     internal var backgroundEventTracking: Boolean = false
 
     internal var viewTrackingStrategy: ViewTrackingStrategy = NoOpViewTrackingStrategy()
@@ -77,6 +78,7 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
 
     override fun onInitialize(context: Context, configuration: Configuration.Feature.RUM) {
         samplingRate = configuration.samplingRate
+        telemetrySamplingRate = configuration.telemetrySamplingRate
         backgroundEventTracking = configuration.backgroundEventTracking
         rumEventMapper = configuration.rumEventMapper
 

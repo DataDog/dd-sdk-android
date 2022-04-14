@@ -9,13 +9,13 @@ package com.datadog.android.nightly.rum
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.aResourceErrorMessage
 import com.datadog.android.nightly.utils.aResourceKey
 import com.datadog.android.nightly.utils.aResourceMethod
 import com.datadog.android.nightly.utils.anActionName
 import com.datadog.android.nightly.utils.anErrorMessage
+import com.datadog.android.nightly.utils.defaultConfigurationBuilder
 import com.datadog.android.nightly.utils.defaultTestAttributes
 import com.datadog.android.nightly.utils.exhaustiveAttributes
 import com.datadog.android.nightly.utils.initializeSdk
@@ -54,7 +54,7 @@ class RumMonitorBackgroundE2ETests {
     fun setUp() {
         initializeSdk(
             InstrumentationRegistry.getInstrumentation().targetContext,
-            config = Configuration.Builder(
+            config = defaultConfigurationBuilder(
                 logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,

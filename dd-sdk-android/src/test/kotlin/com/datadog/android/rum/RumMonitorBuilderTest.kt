@@ -12,6 +12,8 @@ import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.sampling.RateBasedSampler
+import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
@@ -85,6 +87,15 @@ internal class RumMonitorBuilderTest {
         assertThat(monitor.handler.looper).isSameAs(Looper.getMainLooper())
         assertThat(monitor.samplingRate).isEqualTo(fakeConfig.samplingRate)
         assertThat(monitor.backgroundTrackingEnabled).isEqualTo(fakeConfig.backgroundEventTracking)
+
+        assertThat(monitor.telemetryEventHandler.sdkVersion).isEqualTo(CoreFeature.sdkVersion)
+        assertThat(monitor.telemetryEventHandler.serviceName).isEqualTo(CoreFeature.serviceName)
+
+        val telemetrySampler = monitor.telemetryEventHandler.eventSampler
+        check(telemetrySampler is RateBasedSampler)
+
+        assertThat(telemetrySampler.sampleRate)
+            .isEqualTo(RumFeature.telemetrySamplingRate / 100)
     }
 
     @Test
@@ -123,7 +134,7 @@ internal class RumMonitorBuilderTest {
         val appScope = monitor.rootScope as RumApplicationScope
         assertThat(appScope.childScope).isInstanceOf(RumSessionScope::class.java)
         val sessionScope = appScope.childScope as RumSessionScope
-        assertThat(sessionScope.sessionListener).isNull()
+        assertThat(sessionScope.sessionListener).isSameAs(monitor.telemetryEventHandler)
     }
 
     @Test
@@ -140,7 +151,13 @@ internal class RumMonitorBuilderTest {
         val appScope = monitor.rootScope as RumApplicationScope
         assertThat(appScope.childScope).isInstanceOf(RumSessionScope::class.java)
         val sessionScope = appScope.childScope as RumSessionScope
-        assertThat(sessionScope.sessionListener).isSameAs(mockListener)
+        assertThat(sessionScope.sessionListener)
+            .isInstanceOf(CombinedRumSessionListener::class.java)
+        val sessionListenerWrapper = sessionScope.sessionListener as CombinedRumSessionListener
+        assertThat(sessionListenerWrapper.listeners).containsExactlyInAnyOrder(
+            mockListener,
+            monitor.telemetryEventHandler
+        )
     }
 
     @Test

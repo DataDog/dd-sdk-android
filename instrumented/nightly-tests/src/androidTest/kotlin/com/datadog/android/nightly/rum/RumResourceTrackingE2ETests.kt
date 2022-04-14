@@ -10,13 +10,13 @@ import androidx.test.core.app.ActivityScenario.launch
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.nightly.activities.ResourceTrackingActivity
 import com.datadog.android.nightly.activities.ResourceTrackingCustomAttributesActivity
 import com.datadog.android.nightly.activities.ResourceTrackingCustomSpanAttributesActivity
 import com.datadog.android.nightly.activities.ResourceTrackingFirstPartyHostsActivity
 import com.datadog.android.nightly.activities.ResourceTrackingNetworkInterceptorActivity
 import com.datadog.android.nightly.rules.NightlyTestRule
+import com.datadog.android.nightly.utils.defaultConfigurationBuilder
 import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.measureSdkInitialize
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
@@ -39,7 +39,7 @@ internal class RumResourceTrackingE2ETests {
     @Test
     fun rum_resource_tracking() {
         measureSdkInitialize {
-            val config = Configuration.Builder(
+            val config = defaultConfigurationBuilder(
                 logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
@@ -64,7 +64,7 @@ internal class RumResourceTrackingE2ETests {
     @Test
     fun rum_resource_tracking_with_custom_attributes() {
         measureSdkInitialize {
-            val config = Configuration.Builder(
+            val config = defaultConfigurationBuilder(
                 logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
@@ -95,7 +95,7 @@ internal class RumResourceTrackingE2ETests {
         // custom metric: "rum_resource_tracking_with_first_party_hosts" to assert this behaviour
         // in the monitor.
         measureSdkInitialize {
-            val config = Configuration.Builder(
+            val config = defaultConfigurationBuilder(
                 logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
@@ -124,7 +124,7 @@ internal class RumResourceTrackingE2ETests {
         // "okhttp.request" Span we do not have to create the custom metric as the
         // "hits" and "duration" metrics are automatically created.
         measureSdkInitialize {
-            val config = Configuration.Builder(
+            val config = defaultConfigurationBuilder(
                 logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
@@ -153,7 +153,7 @@ internal class RumResourceTrackingE2ETests {
         // a normal "okhttp.request" Span that will automatically generate "hits" and "duration"
         // metrics.
         measureSdkInitialize {
-            val config = Configuration.Builder(
+            val config = defaultConfigurationBuilder(
                 logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,

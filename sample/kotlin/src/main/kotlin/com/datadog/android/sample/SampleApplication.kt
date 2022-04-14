@@ -128,6 +128,7 @@ class SampleApplication : Application() {
             crashReportsEnabled = true,
             rumEnabled = true
         )
+            .sampleTelemetry(100f)
             .setFirstPartyHosts(tracedHosts)
             .addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
             .setWebViewTrackingHosts(webViewTrackingHosts)
