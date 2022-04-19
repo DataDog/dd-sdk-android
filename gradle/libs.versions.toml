@@ -80,6 +80,12 @@ coroutines = "1.4.2"
 # Local Server
 ktor = "1.6.0"
 
+# ASM
+asm = "9.1"
+
+# AGP
+agp= "7.1.2"
+
 [libraries]
 
 # Classpaths
@@ -205,6 +211,13 @@ timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutinesAndroid = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 
+asm = { module = "org.ow2.asm:asm-util", version.ref = "asm" }
+asmCommons = { module = "org.ow2.asm:asm-commons", version.ref = "asm" }
+
+agp= { module="com.android.tools.build:gradle", version.ref="agp" }
+agpApi= { module="com.android.tools.build:gradle-api", version.ref="agp" }
+
+
 # Local Server
 ktorCore = { module = "io.ktor:ktor", version.ref = "ktor" }
 ktorNetty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
@@ -280,6 +293,16 @@ ktor = [
     "ktorCore",
     "ktorNetty",
     "ktorGson"
+]
+
+asm = [
+    "asm",
+    "asmCommons"
+]
+
+agp = [
+    "agp",
+    "agpApi"
 ]
 
 [plugins]

@@ -125,6 +125,7 @@ android {
 
 dependencies {
     implementation(libs.kotlin)
+    implementation(libs.androidXComposeUi)
 
     // Network
     implementation(libs.okHttp)

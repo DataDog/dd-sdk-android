@@ -1322,6 +1322,33 @@ DEPRECATED open class com.datadog.android.rum.webview.RumWebViewClient : android
 interface com.datadog.android.security.Encryption
   fun encrypt(ByteArray): ByteArray
   fun decrypt(ByteArray): ByteArray
+interface com.datadog.android.sessionreplay.A
+interface com.datadog.android.sessionreplay.B
+interface com.datadog.android.sessionreplay.C
+class com.datadog.android.sessionreplay.ComposeNode
+  constructor(Int, Int, androidx.compose.ui.layout.Measurable, androidx.compose.ui.layout.Remeasurement, androidx.compose.ui.layout.LayoutInfo)
+  val children: MutableMap<Int, ComposeNode>
+class com.datadog.android.sessionreplay.ComposeNodeView
+  constructor(Int, Int, A, B, C)
+class com.datadog.android.sessionreplay.R : A, B, C
+object com.datadog.android.sessionreplay.SessionReplay
+  var root: ComposeNode
+  val rootNodes: MutableMap<Int, ComposeNode>
+  val nodes: MutableMap<Int, ComposeNode>
+  var windowReference: java.lang.ref.WeakReference<android.view.Window>
+  fun record(android.view.Window)
+  fun takeScrrenShot()
+  fun stop(android.view.Window)
+  fun getBitmapFormView(android.view.Window, () -> Any)
+  fun addNode(android.view.View, ComposeNode)
+  fun detachNode(android.view.View, ComposeNode)
+fun toJson(android.content.Context, Float): com.google.gson.JsonElement?
+class com.datadog.android.sessionreplay.T : android.view.View
+  constructor(android.content.Context)
+  fun stop()
+class com.datadog.android.sessionreplay.WorkerThread : Thread
+  var handler: android.os.Handler
+  override fun run()
 class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
   constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
   override fun onCorruption(android.database.sqlite.SQLiteDatabase)
