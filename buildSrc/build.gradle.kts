@@ -94,12 +94,6 @@ tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = JavaVersion.VERSION_11.toString()
 }
 
-tasks.withType<GroovyCompile>().configureEach {
-    sourceCompatibility = JavaVersion.VERSION_1_8.toString()
-    targetCompatibility = JavaVersion.VERSION_1_8.toString()
-    classpath = sourceSets["main"].compileClasspath
-}
-
 tasks {
     val copyTestRes = register<Copy>("copyTestRes") {
         from("$projectDir/src/test/kotlin/com/example/model")

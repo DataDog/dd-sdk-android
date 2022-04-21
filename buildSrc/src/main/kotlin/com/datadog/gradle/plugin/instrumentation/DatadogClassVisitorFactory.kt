@@ -25,26 +25,10 @@ abstract class DatadogClassVisitorFactory : AsmClassVisitorFactory<DatadogClassV
 
     interface Parameters : InstrumentationParameters {
 
-        /**
-         * AGP will re-instrument dependencies, when the [InstrumentationParameters] changed
-         * https://issuetracker.google.com/issues/190082518#comment4. This is just a dummy parameter
-         * that is used solely for that purpose.
-         */
         @get:Input
         @get:Optional
         val invalidate: Property<Long>
 
-        // @get:Input
-        // val features: SetProperty<InstrumentationFeature>
-        //
-        // @get:Internal
-        // val sdkStateHolder: Property<SentrySdkStateHolder>
-        //
-        // @get:Internal
-        // val tmpDir: Property<File>
-        //
-        // @get:Internal
-        // var _instrumentables: List<ClassInstrumentable>?
     }
 
     override fun isInstrumentable(classData: ClassData): Boolean {
