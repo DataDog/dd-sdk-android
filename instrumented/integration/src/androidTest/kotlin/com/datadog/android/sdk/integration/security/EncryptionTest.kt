@@ -76,7 +76,7 @@ internal class EncryptionTest {
             file.name.startsWith("dd") && file.name.contains("pending")
         }
         val isNdkPendingDirectory = { file: File ->
-            file.name == "ndk_crash_reports_intermediary"
+            file.name == "ndk_crash_reports_intermediary_v2"
         }
 
         val dataDirectories =

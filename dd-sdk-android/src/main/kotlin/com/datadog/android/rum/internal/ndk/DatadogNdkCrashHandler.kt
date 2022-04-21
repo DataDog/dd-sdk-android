@@ -345,11 +345,11 @@ internal class DatadogNdkCrashHandler(
 
         internal const val ERROR_TASK_REJECTED = "Unable to schedule operation on the executor"
 
-        internal const val NDK_CRASH_REPORTS_FOLDER_NAME = "ndk_crash_reports"
-        private const val NDK_CRASH_REPORTS_PENDING_FOLDER_NAME = "ndk_crash_reports_intermediary"
+        private const val STORAGE_VERSION = 2
 
-        internal const val DESERIALIZE_CRASH_EVENT_ERROR_MESSAGE =
-            "Error while trying to deserialize the ndk crash log event"
+        internal const val NDK_CRASH_REPORTS_FOLDER_NAME = "ndk_crash_reports_v$STORAGE_VERSION"
+        private const val NDK_CRASH_REPORTS_PENDING_FOLDER_NAME =
+            "ndk_crash_reports_intermediary_v$STORAGE_VERSION"
 
         internal fun getNdkGrantedDir(context: Context): File {
             return File(context.cacheDir, NDK_CRASH_REPORTS_FOLDER_NAME)

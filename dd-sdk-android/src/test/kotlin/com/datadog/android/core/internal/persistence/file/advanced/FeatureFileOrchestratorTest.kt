@@ -81,7 +81,7 @@ internal class FeatureFileOrchestratorTest {
         assertThat(orchestrator.pendingOrchestrator)
             .isInstanceOf(BatchFileOrchestrator::class.java)
         assertThat(orchestrator.pendingOrchestrator.getRootDir())
-            .isEqualTo(File(appContext.fakeCacheDir, "dd-$fakeFeatureName-pending-v1"))
+            .isEqualTo(File(appContext.fakeCacheDir, "dd-$fakeFeatureName-pending-v2"))
     }
 
     @Test
@@ -101,7 +101,7 @@ internal class FeatureFileOrchestratorTest {
         assertThat(orchestrator.grantedOrchestrator)
             .isInstanceOf(BatchFileOrchestrator::class.java)
         assertThat(orchestrator.grantedOrchestrator.getRootDir())
-            .isEqualTo(File(appContext.fakeCacheDir, "dd-$fakeFeatureName-v1"))
+            .isEqualTo(File(appContext.fakeCacheDir, "dd-$fakeFeatureName-v2"))
     }
 
     @Test
