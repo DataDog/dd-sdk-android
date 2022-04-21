@@ -1,0 +1,106 @@
+buildscript {
+    repositories {
+        jcenter()
+		google()
+	}
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.6.2'
+    }
+}
+
+apply plugin: 'com.android.application'
+apply plugin: 'pmd'
+
+
+repositories {
+    jcenter()
+	google()
+	maven { url "https://dl.bintray.com/datadog/datadog-maven" }
+}
+
+dependencies {
+	implementation(project(":dd-sdk-android"))
+	implementation 'com.fasterxml.jackson.core:jackson-core:2.10.0'
+    implementation 'org.apache.commons:commons-lang3:3.9'
+    implementation 'joda-time:joda-time:2.10.5'
+	implementation 'androidx.appcompat:appcompat:1.2.0'
+	implementation 'androidx.recyclerview:recyclerview:1.1.0'
+	implementation 'com.google.android.material:material:1.2.1'
+	implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
+	implementation 'androidx.media:media:1.0.0'
+    implementation 'com.squareup.okhttp3:okhttp:3.12.8'
+    implementation 'info.guardianproject.netcipher:netcipher:1.2.1'
+	implementation 'com.google.android.exoplayer:exoplayer-core:2.9.6'
+	implementation 'com.google.android.exoplayer:exoplayer-ui:2.9.6'
+	implementation 'androidx.multidex:multidex:2.0.1'
+
+    testImplementation 'junit:junit:4.13'
+}
+
+android {
+    compileSdkVersion 31
+
+    defaultConfig {
+		multiDexEnabled true
+        vectorDrawables.generatedDensities = ['mdpi', 'hdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi']
+
+		minSdkVersion 21
+		targetSdkVersion 31
+
+		applicationId "org.quantumbadger.redreader"
+	}
+    // Flag to tell aapt to keep the attribute ids around
+    aaptOptions {
+        additionalParameters "--no-version-vectors"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            minifyEnabled true
+			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        compileOptions.encoding = "UTF-8"
+
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+
+        // Translations are crowd-sourced
+        disable 'MissingTranslation'
+    }
+
+    packagingOptions {
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/NOTICE.txt'
+    }
+
+    sourceSets {
+        main {
+            assets.srcDirs = ['assets']
+        }
+    }
+}
+
+pmd {
+    toolVersion = '5.6.0'
+    consoleOutput = true
+}
+
+task pmd(type: Pmd) {
+    dependsOn 'assembleDebug'
+    ruleSetFiles = files("${project.rootDir}/config/pmd/rules.xml")
+    ruleSets = [] // otherwise defaults clash with the list in rules.xml
+    source 'src/main/java/org/quantumbadger'
+    include '**/*.java'
+}

@@ -8,6 +8,8 @@ package com.datadog.android.sessionreplay
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.view.Gravity
@@ -30,7 +32,7 @@ import com.google.gson.JsonObject
 import kotlin.math.roundToInt
 
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-public fun View.toJson(context: Context, scale: Float): JsonElement? {
+internal fun View.toJson(context: Context, scale: Float): JsonElement? {
     if (id in setOf(android.R.id.navigationBarBackground, android.R.id.statusBarBackground)
         || this is ViewStub || this.javaClass.name == "androidx.appcompat.widget.ActionBarContextView"
     ) {
@@ -40,10 +42,12 @@ public fun View.toJson(context: Context, scale: Float): JsonElement? {
         return SessionReplay.rootNodes[this.hashCode()]?.toJson(scale)
     }
 
+    val scaledHeight = height.toPx(scale)
+    val scaledWidth = width.toPx(scale)
     val jsonElement = JsonObject()
     jsonElement.addProperty("displayName", this::class.java.simpleName)
-    jsonElement.addProperty("height", this.height.toPx(scale))
-    jsonElement.addProperty("width", this.width.toPx(scale))
+    jsonElement.addProperty("height", scaledHeight)
+    jsonElement.addProperty("width", scaledWidth)
     jsonElement.addProperty("x", this.x.toPx(scale))
     jsonElement.addProperty("y", this.y.toPx(scale))
     jsonElement.addProperty("opacity", alpha)
@@ -72,6 +76,12 @@ public fun View.toJson(context: Context, scale: Float): JsonElement? {
         }
         ImageView::class.java.isAssignableFrom(this::class.java) -> {
             jsonElement.addProperty("type", "button")
+            if (scaledWidth > 0 && scaledHeight > 0) {
+                SessionReplay.persistBitmap(
+                    captureViewBitmap(this, scaledWidth, scaledHeight),
+                    "${this.id}_${System.nanoTime()}"
+                )
+            }
         }
         TextView::class.java.isAssignableFrom(this::class.java) -> {
             val textView = this as TextView
@@ -150,11 +160,13 @@ internal fun ComposeNode.toJson(scale: Float): JsonElement? {
     val jsonElement = JsonObject()
     val width = this.layoutInfo.width
     val height = this.layoutInfo.height
+    val scaledHeight = height.toPx(scale)
+    val scaledWidth = width.toPx(scale)
     val x = this.layoutInfo.coordinates.positionInParent().x
     val y = this.layoutInfo.coordinates.positionInParent().y
     jsonElement.addProperty("displayName", this::class.java.simpleName)
-    jsonElement.addProperty("height", height.toPx(scale))
-    jsonElement.addProperty("width", width.toPx(scale))
+    jsonElement.addProperty("height", scaledHeight)
+    jsonElement.addProperty("width", scaledWidth)
     jsonElement.addProperty("x", x.toPx(scale))
     jsonElement.addProperty("y", y.toPx(scale))
     jsonElement.addProperty("type", "div")
@@ -167,15 +179,32 @@ internal fun ComposeNode.toJson(scale: Float): JsonElement? {
     if (childrenJsonArray.size() > 0) {
         jsonElement.add("children", childrenJsonArray)
     }
-    val textProperties = layoutInfo.getModifierInfo()
-        .filter { it.modifier is SemanticsModifier }.map { it.modifier as SemanticsModifier }
-        .mapNotNull { it.semanticsConfiguration.getOrNull(SemanticsProperties.Text) }.flatten()
+    val semanticsModifiers =
+        layoutInfo.getModifierInfo()
+            .filter { it.modifier is SemanticsModifier }
+            .map { it.modifier as SemanticsModifier }
+    val textProperties =
+        semanticsModifiers.mapNotNull { it.semanticsConfiguration.getOrNull(SemanticsProperties.Text) }
+            .flatten()
+    // val imageRole =
+    //     semanticsModifiers.mapNotNull { it.semanticsConfiguration.getOrNull(SemanticsProperties.Role) }
+    //         .filter { it.toString() == "Image" }
     if (textProperties.size > 0) {
         val textValue = textProperties.joinToString(" ")
         jsonElement.addProperty("type", "text")
         jsonElement.addProperty("label", textValue)
     }
 
+    // if(imageRole!=null){
+    //     layoutInfo.getModifierInfo().filter { it is  }
+    // }
     return jsonElement
+}
+
+fun captureViewBitmap(view: View, scaledWidth: Int, scaledHeight: Int): Bitmap {
+    val bitmap: Bitmap =
+        Bitmap.createBitmap(scaledWidth, scaledHeight, Bitmap.Config.ARGB_8888)
+    view.draw(Canvas(bitmap))
+    return bitmap
 }
 

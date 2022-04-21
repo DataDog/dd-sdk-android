@@ -1332,23 +1332,27 @@ class com.datadog.android.sessionreplay.ComposeNodeView
   constructor(Int, Int, A, B, C)
 class com.datadog.android.sessionreplay.R : A, B, C
 object com.datadog.android.sessionreplay.SessionReplay
+  enum RecordStrategy
+    - SCREEN_SHOTS
+    - HYBRID
   var root: ComposeNode
   val rootNodes: MutableMap<Int, ComposeNode>
   val nodes: MutableMap<Int, ComposeNode>
   var windowReference: java.lang.ref.WeakReference<android.view.Window>
-  fun record(android.view.Window)
-  fun takeScrrenShot()
+  fun record(android.view.Window, RecordStrategy = RecordStrategy.HYBRID)
   fun stop(android.view.Window)
-  fun getBitmapFormView(android.view.Window, () -> Any)
+  fun getBitmapFromWindow(android.view.Window, () -> Any)
   fun addNode(android.view.View, ComposeNode)
   fun detachNode(android.view.View, ComposeNode)
-fun toJson(android.content.Context, Float): com.google.gson.JsonElement?
+  fun persistBitmap(android.graphics.Bitmap, String)
+fun captureViewBitmap(android.view.View, Int, Int): android.graphics.Bitmap
 class com.datadog.android.sessionreplay.T : android.view.View
   constructor(android.content.Context)
   fun stop()
 class com.datadog.android.sessionreplay.WorkerThread : Thread
-  var handler: android.os.Handler
+  var handler: android.os.Handler?
   override fun run()
+  fun post(Runnable)
 class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
   constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
   override fun onCorruption(android.database.sqlite.SQLiteDatabase)

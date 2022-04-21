@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  ~ This file is part of RedReader.
+  ~
+  ~ RedReader is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ RedReader is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with RedReader.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/pref_cache_general_header">
+
+        <Preference android:title="@string/pref_cache_location_title"
+                    android:key="@string/pref_cache_location_key"/>
+
+		<ListPreference android:title="@string/pref_cache_rerequest_postlist_age_title"
+						android:key="@string/pref_cache_rerequest_postlist_age_key"
+						android:entries="@array/pref_cache_autorefresh_age"
+						android:entryValues="@array/pref_cache_autorefresh_age_return"
+						android:defaultValue="1"/>
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_cache_precache_images_header">
+
+		<ListPreference android:title="@string/pref_cache_precache_images_title"
+						android:key="@string/pref_cache_precache_images_list_key"
+						android:entries="@array/list_yes_no_or_wifi_items"
+						android:entryValues="@array/list_yes_no_or_wifi_return"
+						android:defaultValue="wifionly"/>
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_cache_precache_comments_header">
+
+		<ListPreference android:title="@string/pref_cache_precache_comments_title"
+						android:key="@string/pref_cache_precache_comments_list_key"
+						android:entries="@array/list_yes_no_or_wifi_items"
+						android:entryValues="@array/list_yes_no_or_wifi_return"
+						android:defaultValue="always"/>
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_cache_pruning">
+
+    <ListPreference android:title="@string/pref_cache_maxage_listing_title"
+                    android:key="@string/pref_cache_maxage_listing_key"
+                    android:entries="@array/pref_cache_maxage"
+                    android:entryValues="@array/pref_cache_maxage_return"
+                    android:defaultValue="168"/>
+
+    <ListPreference android:title="@string/pref_cache_maxage_thumb_title"
+                    android:key="@string/pref_cache_maxage_thumb_key"
+                    android:entries="@array/pref_cache_maxage"
+                    android:entryValues="@array/pref_cache_maxage_return"
+                    android:defaultValue="168"/>
+
+    <ListPreference android:title="@string/pref_cache_maxage_image_title"
+                    android:key="@string/pref_cache_maxage_image_key"
+                    android:entries="@array/pref_cache_maxage"
+                    android:entryValues="@array/pref_cache_maxage_return"
+                    android:defaultValue="24"/>
+
+    <ListPreference android:title="@string/pref_cache_maxage_entry_title"
+                    android:key="@string/pref_cache_maxage_entry_key"
+                    android:entries="@array/pref_cache_maxage"
+                    android:entryValues="@array/pref_cache_maxage_return"
+                    android:defaultValue="168"/>
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

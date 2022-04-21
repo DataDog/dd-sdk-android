@@ -1,0 +1,16 @@
+# Travis CI configuration
+language: android
+
+jdk: oraclejdk8
+
+android:
+  components:
+    - tools
+    - android-28
+    - build-tools-29.0.2
+    - extra-android-m2repository
+
+script:
+    - ./gradlew build
+    - ./gradlew test
+    - ./gradlew pmd

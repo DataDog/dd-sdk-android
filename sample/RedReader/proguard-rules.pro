@@ -1,0 +1,1 @@
+-keepnames class org.quantumbadger.redreader.** { *; }
