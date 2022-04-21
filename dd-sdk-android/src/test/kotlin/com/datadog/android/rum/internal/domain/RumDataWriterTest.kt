@@ -120,7 +120,7 @@ internal class RumDataWriterTest {
 
         // Then
         verify(mockFileHandler)
-            .writeData(fakeLastViewEventFile, fakeSerializedData, false, null)
+            .writeData(fakeLastViewEventFile, fakeSerializedData, false)
         verifyZeroInteractions(logger.mockSdkLogHandler)
     }
 

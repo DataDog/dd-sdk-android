@@ -32,6 +32,39 @@ internal fun ByteArray.split(delimiter: Byte): List<ByteArray> {
 }
 
 /**
+ * Joins a collection of [ByteArray] elements into a single [ByteArray], taking into account
+ * separator between elements and prefix and suffix decoration of the final array.
+ */
+internal fun Collection<ByteArray>.join(
+    separator: ByteArray,
+    prefix: ByteArray = ByteArray(0),
+    suffix: ByteArray = ByteArray(0)
+): ByteArray {
+    val result = ByteArray(
+        this.sumOf { it.size } +
+            prefix.size + suffix.size + separator.size * (this.size - 1)
+    )
+
+    var offset = 0
+
+    prefix.copyTo(0, result, 0, prefix.size)
+    offset += prefix.size
+
+    for (item in this.withIndex()) {
+        item.value.copyTo(0, result, offset, item.value.size)
+        offset += item.value.size
+        if (item.index != this.size - 1) {
+            separator.copyTo(0, result, offset, separator.size)
+            offset += separator.size
+        }
+    }
+
+    suffix.copyTo(0, result, offset, suffix.size)
+
+    return result
+}
+
+/**
  * Returns the index within this [ByteArray] of the first occurrence of the specified [b],
  * starting from the specified [startIndex].
  *
@@ -47,7 +80,7 @@ internal fun ByteArray.indexOf(b: Byte, startIndex: Int = 0): Int {
 }
 
 /**
- * Performs a safe version of [System.arrayCopy] by performing the necessary checks and try-catch.
+ * Performs a safe version of [System.arraycopy] by performing the necessary checks and try-catch.
  *
  * @return true if the copy was successful.
  */

@@ -69,7 +69,7 @@ internal class RumDataWriter(
         // folder, so if NDK reporting plugin is not initialized, this NDK reports dir won't exist
         // as well (and no need to write).
         if (lastViewEventFile.parentFile?.existsSafe() == true) {
-            handler.writeData(lastViewEventFile, data, false, null)
+            handler.writeData(lastViewEventFile, data, false)
         } else {
             sdkLogger.i(
                 LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(Locale.US, lastViewEventFile.parent)

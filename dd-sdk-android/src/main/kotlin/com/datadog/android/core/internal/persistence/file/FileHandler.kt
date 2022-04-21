@@ -18,31 +18,22 @@ internal interface FileHandler {
      * @param file the file to write to
      * @param data the data to write
      * @param append whether to append data at the end of the file or overwrite
-     * @param separator an optional [ByteArray] used when appending to a non empty file
      * @return whether the write operation was successful
      */
     fun writeData(
         file: File,
         data: ByteArray,
-        append: Boolean,
-        separator: ByteArray?
+        append: Boolean
     ): Boolean
 
     /**
      * Reads data from the given file.
      *  @param file the file to read from
-     *  @param prefix an (optional) prefix to embed before the file content
-     *  @param suffix an (optional) suffix to embed after the file content
-     *  @param separator an (optional) separator used to write the data in append mode, is needed
-     *  only in the case of using encryption for data storage
-     *  @return the [ByteArray] data or an empty array if the file can't be read (e.g.: exception)
+     *  @return the list of events as [ByteArray] data stored in a file.
      */
     fun readData(
-        file: File,
-        prefix: ByteArray?,
-        suffix: ByteArray?,
-        separator: ByteArray?
-    ): ByteArray
+        file: File
+    ): List<ByteArray>
 
     /**
      * Deletes the file or directory (recursively if needed).

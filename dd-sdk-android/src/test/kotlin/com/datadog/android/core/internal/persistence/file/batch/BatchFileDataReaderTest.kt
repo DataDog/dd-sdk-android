@@ -21,6 +21,7 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -75,19 +76,14 @@ internal class BatchFileDataReaderTest {
 
     @Test
     fun `𝕄 read batch 𝕎 lockAndReadNext()`(
-        @StringForgery data: String,
-        @Forgery file: File
+        @Forgery file: File,
+        forge: Forge
     ) {
         // Given
-        val readData = data.toByteArray(Charsets.UTF_8)
+        val readData = forge.aList { aString().toByteArray(Charsets.UTF_8) }
         whenever(mockOrchestrator.getReadableFile(emptySet())) doReturn file
         whenever(
-            mockFileHandler.readData(
-                file,
-                fakeDecoration.prefixBytes,
-                fakeDecoration.suffixBytes,
-                fakeDecoration.separatorBytes
-            )
+            mockFileHandler.readData(file)
         ) doReturn readData
 
         // When
@@ -96,7 +92,13 @@ internal class BatchFileDataReaderTest {
         // Then
         checkNotNull(result)
         assertThat(result.id).isEqualTo(file.name)
-        assertThat(result.data).isEqualTo(readData)
+        assertThat(result.data).isEqualTo(
+            readData.join(
+                fakeDecoration.separatorBytes,
+                fakeDecoration.prefixBytes,
+                fakeDecoration.suffixBytes
+            )
+        )
     }
 
     @Test
@@ -117,19 +119,14 @@ internal class BatchFileDataReaderTest {
 
     @Test
     fun `𝕄 read batch twice 𝕎 lockAndReadNext() + release() + lockAndReadNext()`(
-        @StringForgery data: String,
-        @Forgery file: File
+        @Forgery file: File,
+        forge: Forge
     ) {
         // Given
-        val readData = data.toByteArray(Charsets.UTF_8)
+        val readData = forge.aList { aString().toByteArray(Charsets.UTF_8) }
         whenever(mockOrchestrator.getReadableFile(emptySet())) doReturn file
         whenever(
-            mockFileHandler.readData(
-                file,
-                fakeDecoration.prefixBytes,
-                fakeDecoration.suffixBytes,
-                fakeDecoration.separatorBytes
-            )
+            mockFileHandler.readData(file)
         ) doReturn readData
 
         // When
@@ -141,25 +138,26 @@ internal class BatchFileDataReaderTest {
         // Then
         checkNotNull(result2)
         assertThat(result2.id).isEqualTo(file.name)
-        assertThat(result2.data).isEqualTo(readData)
+        assertThat(result2.data).isEqualTo(
+            readData.join(
+                fakeDecoration.separatorBytes,
+                fakeDecoration.prefixBytes,
+                fakeDecoration.suffixBytes
+            )
+        )
         verify(mockFileHandler, never()).delete(any())
     }
 
     @Test
     fun `𝕄 read batch twice 𝕎 lockAndReadNext() + release() + lockAndReadNext() {multithreaded}`(
-        @StringForgery data: String,
-        @Forgery file: File
+        @Forgery file: File,
+        forge: Forge
     ) {
         // Given
-        val readData = data.toByteArray(Charsets.UTF_8)
+        val readData = forge.aList { aString().toByteArray(Charsets.UTF_8) }
         whenever(mockOrchestrator.getReadableFile(emptySet())) doReturn file
         whenever(
-            mockFileHandler.readData(
-                file,
-                fakeDecoration.prefixBytes,
-                fakeDecoration.suffixBytes,
-                fakeDecoration.separatorBytes
-            )
+            mockFileHandler.readData(file)
         ) doReturn readData
         val countDownLatch = CountDownLatch(2)
 
@@ -182,25 +180,26 @@ internal class BatchFileDataReaderTest {
         val result2 = threadResult
         checkNotNull(result2)
         assertThat(result2.id).isEqualTo(file.name)
-        assertThat(result2.data).isEqualTo(readData)
+        assertThat(result2.data).isEqualTo(
+            readData.join(
+                fakeDecoration.separatorBytes,
+                fakeDecoration.prefixBytes,
+                fakeDecoration.suffixBytes
+            )
+        )
         verify(mockFileHandler, never()).delete(any())
     }
 
     @Test
     fun `𝕄 read batch once 𝕎 lockAndReadNext() + release() {diff} + lockAndReadNext()`(
-        @StringForgery data: String,
-        @Forgery file: File
+        @Forgery file: File,
+        forge: Forge
     ) {
         // Given
-        val readData = data.toByteArray(Charsets.UTF_8)
+        val readData = forge.aList { aString().toByteArray(Charsets.UTF_8) }
         whenever(mockOrchestrator.getReadableFile(emptySet())) doReturn file
         whenever(
-            mockFileHandler.readData(
-                file,
-                fakeDecoration.prefixBytes,
-                fakeDecoration.suffixBytes,
-                fakeDecoration.separatorBytes
-            )
+            mockFileHandler.readData(file)
         ) doReturn readData
 
         // When
@@ -211,28 +210,34 @@ internal class BatchFileDataReaderTest {
         // Then
         checkNotNull(result1)
         assertThat(result1.id).isEqualTo(file.name)
-        assertThat(result1.data).isEqualTo(readData)
+        assertThat(result1.data).isEqualTo(
+            readData.join(
+                fakeDecoration.separatorBytes,
+                fakeDecoration.prefixBytes,
+                fakeDecoration.suffixBytes
+            )
+        )
         assertThat(result2).isNull()
         verify(mockFileHandler, never()).delete(any())
     }
 
     @Test
-    fun `𝕄 read and release mutliple batches 𝕎 lockAndReadNext() + release() { multithreaded }`(
-        @StringForgery data: String,
+    fun `𝕄 read and release multiple batches 𝕎 lockAndReadNext() + release() { multithreaded }`(
         @Forgery file1: File,
         @Forgery file2: File,
         @Forgery file3: File,
-        @Forgery file4: File
+        @Forgery file4: File,
+        forge: Forge
     ) {
         // Given
-        val readData = data.toByteArray(Charsets.UTF_8)
+        val readData = forge.aList { aString().toByteArray(Charsets.UTF_8) }
         val files = listOf(file1, file2, file3, file4)
         val expectedIds = files.map { it.name }
         whenever(mockOrchestrator.getReadableFile(any())) doAnswer { invocation ->
             val set = invocation.getArgument<Set<String>>(0)
             files.first { it.name !in set }
         }
-        whenever(mockFileHandler.readData(any(), any(), any(), any())) doReturn readData
+        whenever(mockFileHandler.readData(any())) doReturn readData
         val countDownLatch = CountDownLatch(4)
 
         // When
@@ -280,19 +285,14 @@ internal class BatchFileDataReaderTest {
 
     @Test
     fun `𝕄 delete underlying file 𝕎 lockAndReadNext() + dropBatch()`(
-        @StringForgery data: String,
-        @Forgery file: File
+        @Forgery file: File,
+        forge: Forge
     ) {
         // Given
-        val readData = data.toByteArray(Charsets.UTF_8)
+        val readData = forge.aList { aString().toByteArray(Charsets.UTF_8) }
         whenever(mockOrchestrator.getReadableFile(emptySet())) doReturn file
         whenever(
-            mockFileHandler.readData(
-                file,
-                fakeDecoration.prefixBytes,
-                fakeDecoration.suffixBytes,
-                fakeDecoration.separatorBytes
-            )
+            mockFileHandler.readData(file)
         ) doReturn readData
         whenever(mockFileHandler.delete(file)) doReturn true
 
@@ -307,19 +307,14 @@ internal class BatchFileDataReaderTest {
 
     @Test
     fun `𝕄 warn 𝕎 lockAndReadNext() + dropBatch() {delete fails}`(
-        @StringForgery data: String,
-        @Forgery file: File
+        @Forgery file: File,
+        forge: Forge
     ) {
         // Given
-        val readData = data.toByteArray(Charsets.UTF_8)
+        val readData = forge.aList { aString().toByteArray(Charsets.UTF_8) }
         whenever(mockOrchestrator.getReadableFile(emptySet())) doReturn file
         whenever(
-            mockFileHandler.readData(
-                file,
-                fakeDecoration.prefixBytes,
-                fakeDecoration.suffixBytes,
-                fakeDecoration.separatorBytes
-            )
+            mockFileHandler.readData(file)
         ) doReturn readData
         whenever(mockFileHandler.delete(file)) doReturn false
 
@@ -359,20 +354,15 @@ internal class BatchFileDataReaderTest {
 
     @Test
     fun `𝕄 delete underlying file 𝕎 lockAndReadNext() + dropAll()`(
-        @StringForgery data: String,
-        @Forgery file: File
+        @Forgery file: File,
+        forge: Forge
     ) {
         // Given
-        val readData = data.toByteArray(Charsets.UTF_8)
+        val readData = forge.aList { aString().toByteArray(Charsets.UTF_8) }
         whenever(mockOrchestrator.getReadableFile(emptySet())) doReturn file
         whenever(mockOrchestrator.getAllFiles()) doReturn emptyList()
         whenever(
-            mockFileHandler.readData(
-                file,
-                fakeDecoration.prefixBytes,
-                fakeDecoration.suffixBytes,
-                fakeDecoration.separatorBytes
-            )
+            mockFileHandler.readData(file)
         ) doReturn readData
         whenever(mockFileHandler.delete(file)) doReturn true
 
@@ -404,6 +394,20 @@ internal class BatchFileDataReaderTest {
         verify(mockFileHandler).delete(file2)
         verify(mockFileHandler).delete(file3)
         verify(mockFileHandler).delete(file4)
+    }
+
+    // endregion
+
+    // region private
+
+    private fun List<ByteArray>.join(
+        separator: ByteArray,
+        prefix: ByteArray,
+        suffix: ByteArray
+    ): ByteArray {
+        return prefix + this.reduce { acc, bytes ->
+            acc + separator + bytes
+        } + suffix
     }
 
     // endregion

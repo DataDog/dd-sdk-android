@@ -103,8 +103,7 @@ internal class SingleItemDataWriterTest {
             .writeData(
                 file,
                 serialized,
-                append = false,
-                separator = null
+                append = false
             )
     }
 
@@ -125,8 +124,7 @@ internal class SingleItemDataWriterTest {
             .writeData(
                 file,
                 lastSerialized,
-                append = false,
-                separator = null
+                append = false
             )
     }
 

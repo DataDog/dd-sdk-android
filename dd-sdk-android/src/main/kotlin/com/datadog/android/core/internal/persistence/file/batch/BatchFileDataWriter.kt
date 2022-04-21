@@ -70,7 +70,7 @@ internal open class BatchFileDataWriter<T : Any>(
 
     private fun writeData(byteArray: ByteArray): Boolean {
         val file = fileOrchestrator.getWritableFile(byteArray.size) ?: return false
-        return handler.writeData(file, byteArray, true, decoration.separatorBytes)
+        return handler.writeData(file, byteArray, true)
     }
 
     // endregion

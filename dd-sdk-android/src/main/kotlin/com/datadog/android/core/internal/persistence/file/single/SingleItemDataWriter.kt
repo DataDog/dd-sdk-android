@@ -45,7 +45,7 @@ internal open class SingleItemDataWriter<T : Any>(
 
     private fun writeData(byteArray: ByteArray): Boolean {
         val file = fileOrchestrator.getWritableFile(byteArray.size) ?: return false
-        return handler.writeData(file, byteArray, false, null)
+        return handler.writeData(file, byteArray, false)
     }
 
     // endregion

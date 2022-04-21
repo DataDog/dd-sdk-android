@@ -7,19 +7,18 @@
 package com.datadog.android.core.internal.utils
 
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.junit.jupiter.MockitoSettings
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-@MockitoSettings()
 internal class ByteArrayExtTest {
 
     // region split
@@ -138,6 +137,137 @@ internal class ByteArrayExtTest {
 
         assertThat(foundIndexes)
             .containsAll(expectedIndexes)
+    }
+
+    // endregion
+
+    // region join
+
+    @Test
+    fun `𝕄 join items 𝕎 join() { no prefix }`(
+        @StringForgery separator: String,
+        @StringForgery suffix: String,
+        forge: Forge
+    ) {
+        // Given
+        val dataBytes = forge.aList {
+            forge.aString().toByteArray()
+        }
+
+        val separatorBytes = separator.toByteArray()
+        val suffixBytes = suffix.toByteArray()
+
+        val expected = dataBytes.reduce { acc, item ->
+            acc + separatorBytes + item
+        } + suffixBytes
+
+        // When
+        val joined = dataBytes.join(separatorBytes, suffix = suffixBytes)
+
+        // Then
+        assertThat(joined).isEqualTo(expected)
+    }
+
+    @Test
+    fun `𝕄 join items 𝕎 join() { no suffix }`(
+        @StringForgery separator: String,
+        @StringForgery prefix: String,
+        forge: Forge
+    ) {
+        // Given
+        val dataBytes = forge.aList {
+            forge.aString().toByteArray()
+        }
+
+        val separatorBytes = separator.toByteArray()
+        val prefixBytes = prefix.toByteArray()
+
+        val expected = prefixBytes + dataBytes.reduce { acc, item ->
+            acc + separatorBytes + item
+        }
+
+        // When
+        val joined = dataBytes.join(separatorBytes, prefix = prefixBytes)
+
+        // Then
+        assertThat(joined).isEqualTo(expected)
+    }
+
+    @Test
+    fun `𝕄 join items 𝕎 join() { no suffix and prefix }`(
+        @StringForgery separator: String,
+        forge: Forge
+    ) {
+        // Given
+        val dataBytes = forge.aList {
+            forge.aString().toByteArray()
+        }
+
+        val separatorBytes = separator.toByteArray()
+
+        val expected = dataBytes.reduce { acc, item ->
+            acc + separatorBytes + item
+        }
+
+        // When
+        val joined = dataBytes.join(separatorBytes)
+
+        // Then
+        assertThat(joined).isEqualTo(expected)
+    }
+
+    @Test
+    fun `𝕄 join items 𝕎 join() { empty separator }`(
+        @StringForgery prefix: String,
+        @StringForgery suffix: String,
+        forge: Forge
+    ) {
+        // Given
+        val dataBytes = forge.aList {
+            forge.aString().toByteArray()
+        }
+
+        val prefixBytes = prefix.toByteArray()
+        val suffixBytes = suffix.toByteArray()
+
+        val expected = prefixBytes + dataBytes.reduce { acc, bytes ->
+            acc + bytes
+        } + suffixBytes
+
+        // When
+        val joined =
+            dataBytes.join(separator = ByteArray(0), prefix = prefixBytes, suffix = suffixBytes)
+
+        // Then
+        assertThat(joined).isEqualTo(expected)
+    }
+
+    @Test
+    fun `𝕄 join items 𝕎 join()`(
+        @StringForgery separator: String,
+        @StringForgery prefix: String,
+        @StringForgery suffix: String,
+        forge: Forge
+    ) {
+        // Given
+        val dataBytes = forge.aList {
+            forge.aString().toByteArray()
+        }
+
+        val separatorBytes = separator.toByteArray()
+        val prefixBytes = prefix.toByteArray()
+        val suffixBytes = suffix.toByteArray()
+
+        val expected = prefixBytes + dataBytes.reduce { acc, item ->
+            acc + separatorBytes + item
+        } + suffixBytes
+
+        // When
+        val joined =
+            dataBytes.join(separator = separatorBytes, prefix = prefixBytes, suffix = suffixBytes)
+
+        // Then
+        assertThat(joined).isEqualTo(expected)
     }
 
     // endregion

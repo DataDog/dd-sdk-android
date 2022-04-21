@@ -591,7 +591,6 @@ datadog:
       - "android.content.res.Resources.getResourceEntryName(kotlin.Int):android.content.res.Resources.NotFoundException"
       - "android.net.ConnectivityManager.registerDefaultNetworkCallback(android.net.ConnectivityManager.NetworkCallback):java.lang.IllegalArgumentException,java.lang.SecurityException"
       - "android.net.ConnectivityManager.unregisterNetworkCallback(android.net.ConnectivityManager.NetworkCallback):java.lang.SecurityException"
-      - "android.util.Base64.decode(kotlin.ByteArray, kotlin.Int):java.lang.IllegalArgumentException"
       - "android.view.Choreographer.getInstance():java.lang.IllegalStateException"
       - "android.view.Choreographer.postFrameCallback():java.lang.IllegalArgumentException"
       - "android.view.MotionEvent.obtain(android.view.MotionEvent):java.lang.IllegalArgumentException"
@@ -618,6 +617,8 @@ datadog:
       - "java.io.FileInputStream.use(kotlin.Function1):java.io.IOException"
       - "java.io.FileOutputStream.use(kotlin.Function1):java.io.IOException"
       - "java.io.FileOutputStream.write(kotlin.ByteArray):java.io.IOException"
+      - "java.io.InputStream.read():java.io.IOException"
+      - "java.io.InputStream.read(kotlin.ByteArray, kotlin.Int, kotlin.Int):java.io.IOException"
       - "java.nio.channels.FileChannel.lock():java.io.IOException,java.lang.IllegalStateException"
       - "java.nio.channels.FileLock.release():java.io.IOException"
       # endregion
@@ -735,7 +736,6 @@ datadog:
       - "android.os.Process.getStartElapsedRealtime()"
       - "android.os.Process.myPid()"
       - "android.os.SystemClock.elapsedRealtime()"
-      - "android.util.Base64.encode(kotlin.ByteArray, kotlin.Int)"
       - "android.util.Log.i(kotlin.String?, kotlin.String)"
       - "android.util.Log.e(kotlin.String?, kotlin.String)"
       - "android.util.Log.e(kotlin.String?, kotlin.String?, kotlin.Throwable?)"
@@ -942,6 +942,8 @@ datadog:
       - "kotlin.ByteArray.any(kotlin.Function1)"
       - "kotlin.ByteArray.isEmpty()"
       - "kotlin.ByteArray.isNotEmpty()"
+      - "kotlin.collections.Collection.sumOf(kotlin.Function1)"
+      - "kotlin.collections.Collection.withIndex()"
       - "kotlin.collections.Iterable.any(kotlin.Function1)"
       - "kotlin.collections.List.any(kotlin.Function1)"
       - "kotlin.collections.List.asSequence()"
@@ -1084,6 +1086,7 @@ datadog:
       - "kotlin.text.Regex.matchEntire(kotlin.CharSequence)"
       # region Gson
       - "com.google.gson.JsonArray.add(kotlin.String)"
+      - "com.google.gson.JsonParseException.constructor(kotlin.Throwable)"
       # endregion
       # region Kronos
       - "com.lyft.kronos.AndroidClockFactory.createKronosClock(android.content.Context, kotlin.collections.List, kotlin.Long, kotlin.Long, com.lyft.kronos.SyncListener?, kotlin.Long, kotlin.Long)"
