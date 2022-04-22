@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay
 
+import androidx.compose.runtime.currentRecomposeScope
 import com.datadog.android.core.internal.utils.devLogger
 import java.io.File
 import java.util.Locale
@@ -13,7 +14,7 @@ import java.util.Locale
 internal class SessionReplayVitals(val storageFolder: File) {
     private val workerThread = WorkerThread()
     private var times = 0
-    private var currentTotal: Double = 0.0
+    private var currentMean: Double = 0.0
 
     init {
         workerThread.start()
@@ -26,9 +27,9 @@ internal class SessionReplayVitals(val storageFolder: File) {
     fun logVitals() {
         workerThread.post {
             cpuProfilingProvider.readCpuData().let { currentValue ->
+                val currentTimes = times
+                currentMean = (currentValue + (currentMean * currentTimes)) / (currentTimes + 1)
                 times++
-                currentTotal +=currentValue
-                val currentMean = currentTotal/times
                 devLogger.v(
                     CPU_CONSUMPTION_MESSAGE_FORMAT.format(
                         Locale.US,
@@ -44,7 +45,7 @@ internal class SessionReplayVitals(val storageFolder: File) {
 
     private fun File.size(): Long {
         var length = 0L
-        listFiles()?.filter {it.isFile }?.forEach {
+        listFiles()?.filter { it.isFile }?.forEach {
             length += it.length()
         }
         return length

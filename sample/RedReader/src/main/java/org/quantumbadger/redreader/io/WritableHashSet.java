@@ -17,6 +17,7 @@
 
 package org.quantumbadger.redreader.io;
 
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import org.quantumbadger.redreader.common.UnexpectedInternalStateException;
 
@@ -25,6 +26,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 
+@Keep
 public class WritableHashSet implements WritableObject<String>, Iterable<String> {
 
 	@WritableObjectVersion

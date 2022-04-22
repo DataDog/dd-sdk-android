@@ -23,9 +23,16 @@ import java.lang.ref.WeakReference
 
 object SessionReplay {
 
-    enum class RecordStrategy {
+    private const val SCREEN_CAPTURE_FREQUENCY = 500L
+
+    internal enum class RecordStrategy {
         SCREEN_SHOTS,
         HYBRID
+    }
+
+    internal enum class RecordFrequencyStrategy {
+        ON_SCREEN_CHANGE,
+        TIME_BASED
     }
 
     lateinit var root: ComposeNode
@@ -56,19 +63,49 @@ object SessionReplay {
     }
     var windowReference: WeakReference<Window> = WeakReference(null)
 
+    private var screenRecordStrategy = RecordStrategy.HYBRID
 
-    fun record(window: Window, strategy: RecordStrategy = RecordStrategy.HYBRID) {
-        window.decorView.viewTreeObserver.addOnGlobalLayoutListener {
-            captureScreen(strategy, window)
-        }
-        captureScreen(strategy, window)
+    internal fun record(
+        window: Window,
+        strategy: RecordStrategy = RecordStrategy.HYBRID,
+        frequencyStrategy: RecordFrequencyStrategy = RecordFrequencyStrategy.ON_SCREEN_CHANGE
+    ) {
+        screenRecordStrategy = strategy
         windowReference = WeakReference(window)
+
+        if (frequencyStrategy == RecordFrequencyStrategy.ON_SCREEN_CHANGE) {
+            handler.removeCallbacksAndMessages(null)
+            window.decorView.viewTreeObserver.addOnGlobalLayoutListener {
+                handler.removeCallbacksAndMessages(null)
+                handler.postDelayed({ captureScreen(strategy) }, SCREEN_CAPTURE_FREQUENCY)
+            }
+            handler.removeCallbacksAndMessages(null)
+            handler.post { captureScreen(strategy) }
+        } else {
+            handler.post(captureScreenRunnable)
+        }
+    }
+
+    private val captureScreenRunnable: Runnable = object : Runnable {
+
+        override fun run() {
+            captureScreen(screenRecordStrategy)
+            handler.removeCallbacksAndMessages(null)
+            handler.postDelayed(this, SCREEN_CAPTURE_FREQUENCY)
+        }
+    }
+
+    internal fun stop(window: Window) {
+        if (windowReference.get() == window) {
+            handler.removeCallbacksAndMessages(null)
+            windowReference.clear()
+        }
     }
 
     private fun captureScreen(
-        strategy: RecordStrategy,
-        window: Window
+        strategy: RecordStrategy
     ) {
+        val window = windowReference.get() ?: return
         if (strategy == RecordStrategy.HYBRID &&
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
         ) {
@@ -80,40 +117,23 @@ object SessionReplay {
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun scheduleViewTreeCapture(window: Window) {
-        handler.removeCallbacksAndMessages(null)
-        handler.postDelayed({
-            val span = GlobalTracer.get().buildSpan("view tree capture").start()
-            val treeView = window.decorView.rootView.toJson(CoreFeature.contextRef.get()!!, scale)
-            sessionReplayVitals.logVitals()
-            span.finish()
-            treeView?.let { tree ->
-                persister.persist(tree)
-            }
-        }, 500)
+        val span = GlobalTracer.get().buildSpan("view tree capture").start()
+        val treeView = window.decorView.rootView.toJson(CoreFeature.contextRef.get()!!, scale)
+        sessionReplayVitals.logVitals()
+        span.finish()
+        treeView?.let { tree ->
+            persister.persist(tree)
+        }
     }
 
     private fun scheduleScreenCapture(window: Window) {
-        handler.removeCallbacksAndMessages(null)
-
-        handler.postDelayed({
-            val span = GlobalTracer.get().buildSpan("view screenshot capture").start()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                getBitmapFromWindow(window) { bitmap ->
-                    persister.persist(bitmap, System.nanoTime().toString())
-                }
+        val span = GlobalTracer.get().buildSpan("view screenshot capture").start()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            getBitmapFromWindow(window) { bitmap ->
+                persister.persist(bitmap, System.nanoTime().toString())
             }
-
-
-            span.finish()
-
-        }, 1000)
-    }
-
-    fun stop(window: Window) {
-        if (windowReference.get() == window) {
-            handler.removeCallbacksAndMessages(null)
-            windowReference.clear()
         }
+        span.finish()
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)

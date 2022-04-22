@@ -17,11 +17,13 @@
 
 package org.quantumbadger.redreader.io;
 
+import androidx.annotation.Keep;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
+@Keep
 public interface WritableObject<K> {
 
 	class CreationData {

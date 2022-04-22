@@ -20,6 +20,7 @@ package org.quantumbadger.redreader.reddit.things;
 import android.content.Intent;
 import android.os.Parcel;
 import android.os.Parcelable;
+import androidx.annotation.Keep;
 import androidx.appcompat.app.AppCompatActivity;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.quantumbadger.redreader.R;
@@ -33,6 +34,7 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Keep
 public class RedditSubreddit implements Parcelable, Comparable<RedditSubreddit>, WritableObject<SubredditCanonicalId> {
 
 	public SubredditCanonicalId getKey() {

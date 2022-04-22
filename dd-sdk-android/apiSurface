@@ -1332,15 +1332,10 @@ class com.datadog.android.sessionreplay.ComposeNodeView
   constructor(Int, Int, A, B, C)
 class com.datadog.android.sessionreplay.R : A, B, C
 object com.datadog.android.sessionreplay.SessionReplay
-  enum RecordStrategy
-    - SCREEN_SHOTS
-    - HYBRID
   var root: ComposeNode
   val rootNodes: MutableMap<Int, ComposeNode>
   val nodes: MutableMap<Int, ComposeNode>
   var windowReference: java.lang.ref.WeakReference<android.view.Window>
-  fun record(android.view.Window, RecordStrategy = RecordStrategy.HYBRID)
-  fun stop(android.view.Window)
   fun getBitmapFromWindow(android.view.Window, () -> Any)
   fun addNode(android.view.View, ComposeNode)
   fun detachNode(android.view.View, ComposeNode)

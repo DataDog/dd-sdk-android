@@ -115,7 +115,7 @@ public class RedReader extends Application {
 				TrackingConsent.GRANTED
 		);
 		Datadog.setVerbosity(Log.VERBOSE);
-		Datadog.enableRumDebugging(true);
+//		Datadog.enableRumDebugging(true);
 
 		GlobalTracer.registerIfAbsent(new  AndroidTracer.Builder().build());
 		GlobalRum.registerIfAbsent(new RumMonitor.Builder().build());
