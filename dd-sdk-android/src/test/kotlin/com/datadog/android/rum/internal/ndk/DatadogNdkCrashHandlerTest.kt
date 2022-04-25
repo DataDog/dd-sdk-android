@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.ndk
 import android.content.Context
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Deserializer
+import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
@@ -23,7 +24,6 @@ import com.datadog.android.rum.assertj.ViewEventAssert
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.security.Encryption
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -40,7 +40,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
-import java.util.Base64
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import org.assertj.core.api.Assertions.assertThat
@@ -99,6 +98,9 @@ internal class DatadogNdkCrashHandlerTest {
     @Mock
     lateinit var mockLogHandler: LogHandler
 
+    @Mock
+    lateinit var mockFileHandler: FileHandler
+
     lateinit var fakeNdkCacheDir: File
 
     @Forgery
@@ -109,9 +111,6 @@ internal class DatadogNdkCrashHandlerTest {
 
     @Mock
     lateinit var mockTimeProvider: TimeProvider
-
-    @Mock
-    lateinit var mockLocalDataEncryption: Encryption
 
     var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
 
@@ -127,8 +126,11 @@ internal class DatadogNdkCrashHandlerTest {
             .thenReturn(fakeSourceErrorEvent)
         whenever(mockContext.cacheDir) doReturn fakeCacheDir
         fakeNdkCacheDir = File(fakeCacheDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME)
-
-        whenever(mockLocalDataEncryption.decrypt(any())) doAnswer { it.getArgument(0) }
+        whenever(mockFileHandler.readData(any())) doAnswer {
+            listOf(
+                it.getArgument<File>(0).readBytes()
+            )
+        }
 
         testedHandler = DatadogNdkCrashHandler(
             mockContext,
@@ -140,7 +142,7 @@ internal class DatadogNdkCrashHandlerTest {
             mockUserInfoDeserializer,
             Logger(mockLogHandler),
             mockTimeProvider,
-            null,
+            mockFileHandler,
             mockRumEventSourceProvider
         )
     }
@@ -184,39 +186,6 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 read last RUM View event 𝕎 prepareData() { with encryption }`(
-        @StringForgery viewEvent: String
-    ) {
-        testedHandler = DatadogNdkCrashHandler(
-            mockContext,
-            mockExecutorService,
-            mockLogGenerator,
-            mockNdkCrashLogDeserializer,
-            mockRumEventDeserializer,
-            mockNetworkInfoDeserializer,
-            mockUserInfoDeserializer,
-            Logger(mockLogHandler),
-            mockTimeProvider,
-            mockLocalDataEncryption
-        )
-
-        // Given
-        fakeNdkCacheDir.mkdirs()
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.RUM_VIEW_EVENT_FILE_NAME)
-            .writeBytes(Base64.getEncoder().encode(viewEvent.toByteArray()))
-
-        // When
-        testedHandler.prepareData()
-
-        // Then
-        assertThat(testedHandler.lastSerializedRumViewEvent).isNull()
-        verify(mockExecutorService).submit(captureRunnable.capture())
-        captureRunnable.firstValue.run()
-        assertThat(testedHandler.lastSerializedRumViewEvent)
-            .isEqualTo(viewEvent)
-    }
-
-    @Test
     fun `𝕄 read network info 𝕎 prepareData()`(
         @StringForgery networkInfo: String
     ) {
@@ -236,78 +205,12 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 read network info 𝕎 prepareData() { with encryption }`(
-        @StringForgery networkInfo: String
-    ) {
-        testedHandler = DatadogNdkCrashHandler(
-            mockContext,
-            mockExecutorService,
-            mockLogGenerator,
-            mockNdkCrashLogDeserializer,
-            mockRumEventDeserializer,
-            mockNetworkInfoDeserializer,
-            mockUserInfoDeserializer,
-            Logger(mockLogHandler),
-            mockTimeProvider,
-            mockLocalDataEncryption
-        )
-
-        // Given
-        fakeNdkCacheDir.mkdirs()
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME)
-            .writeBytes(Base64.getEncoder().encode(networkInfo.toByteArray()))
-
-        // When
-        testedHandler.prepareData()
-
-        // Then
-        assertThat(testedHandler.lastSerializedNetworkInformation).isNull()
-        verify(mockExecutorService).submit(captureRunnable.capture())
-        captureRunnable.firstValue.run()
-        assertThat(testedHandler.lastSerializedNetworkInformation)
-            .isEqualTo(networkInfo)
-    }
-
-    @Test
     fun `𝕄 read user info 𝕎 prepareData()`(
         @StringForgery userInfo: String
     ) {
         // Given
         fakeNdkCacheDir.mkdirs()
         File(fakeNdkCacheDir, DatadogNdkCrashHandler.USER_INFO_FILE_NAME).writeText(userInfo)
-
-        // When
-        testedHandler.prepareData()
-
-        // Then
-        assertThat(testedHandler.lastSerializedUserInformation).isNull()
-        verify(mockExecutorService).submit(captureRunnable.capture())
-        captureRunnable.firstValue.run()
-        assertThat(testedHandler.lastSerializedUserInformation)
-            .isEqualTo(userInfo)
-    }
-
-    @Test
-    fun `𝕄 read user info 𝕎 prepareData() { with encryption }`(
-        @StringForgery userInfo: String
-    ) {
-        testedHandler = DatadogNdkCrashHandler(
-            mockContext,
-            mockExecutorService,
-            mockLogGenerator,
-            mockNdkCrashLogDeserializer,
-            mockRumEventDeserializer,
-            mockNetworkInfoDeserializer,
-            mockUserInfoDeserializer,
-            Logger(mockLogHandler),
-            mockTimeProvider,
-            mockLocalDataEncryption
-        )
-
-        // Given
-        fakeNdkCacheDir.mkdirs()
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.USER_INFO_FILE_NAME)
-            .writeBytes(Base64.getEncoder().encode(userInfo.toByteArray()))
 
         // When
         testedHandler.prepareData()

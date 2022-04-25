@@ -7,17 +7,15 @@
 package com.datadog.android.rum.internal.ndk
 
 import android.content.Context
-import android.util.Base64
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.core.internal.persistence.file.EncryptedFileHandler
+import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
-import com.datadog.android.core.internal.persistence.file.readBytesSafe
 import com.datadog.android.core.internal.persistence.file.readTextSafe
 import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.join
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
@@ -28,7 +26,6 @@ import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.security.Encryption
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.ExecutorService
@@ -45,7 +42,7 @@ internal class DatadogNdkCrashHandler(
     private val userInfoDeserializer: Deserializer<UserInfo>,
     private val internalLogger: Logger,
     private val timeProvider: TimeProvider,
-    private val localDataEncryption: Encryption?,
+    private val fileHandler: FileHandler,
     private val rumEventSourceProvider: RumEventSourceProvider =
         RumEventSourceProvider(CoreFeature.sourceName)
 ) : NdkCrashHandler {
@@ -99,13 +96,13 @@ internal class DatadogNdkCrashHandler(
                     CRASH_DATA_FILE_NAME -> lastSerializedNdkCrashLog = it.readTextSafe()
                     RUM_VIEW_EVENT_FILE_NAME ->
                         lastSerializedRumViewEvent =
-                            readFileContent(it, localDataEncryption)
+                            readFileContent(it, fileHandler)
                     USER_INFO_FILE_NAME ->
                         lastSerializedUserInformation =
-                            readFileContent(it, localDataEncryption)
+                            readFileContent(it, fileHandler)
                     NETWORK_INFO_FILE_NAME ->
                         lastSerializedNetworkInformation =
-                            readFileContent(it, localDataEncryption)
+                            readFileContent(it, fileHandler)
                 }
             }
         } catch (e: SecurityException) {
@@ -115,30 +112,12 @@ internal class DatadogNdkCrashHandler(
         }
     }
 
-    private fun readFileContent(file: File, encryption: Encryption?): String? {
-        return if (encryption == null) {
-            file.readTextSafe()
+    private fun readFileContent(file: File, fileHandler: FileHandler): String? {
+        val content = fileHandler.readData(file)
+        return if (content.isEmpty()) {
+            null
         } else {
-            val bytes = file.readBytesSafe() ?: return null
-            // if bytes is not a valid sequence for the given charset encoding, String
-            // constructor doesn't throw, but replaces bad bytes with default
-            // replacement sequence. If decrypt throws, we let it exception to propagate,
-            // because it is an issue in the user code.
-            // TODO RUMM-1944 Rework that, decoding logic should be encapsulated somewhere and
-            //  shared with EncryptedFileHandler. Should maybe inject file handler in plugin
-            //  instead?
-            val decoded = try {
-                Base64.decode(bytes, EncryptedFileHandler.ENCODING_FLAGS)
-            } catch (iae: IllegalArgumentException) {
-                devLogger.e("Cannot decode previously saved file", iae)
-                null
-            }
-
-            if (decoded != null) {
-                String(encryption.decrypt(decoded), Charsets.UTF_8)
-            } else {
-                null
-            }
+            String(content.join(ByteArray(0)))
         }
     }
 
@@ -366,11 +345,11 @@ internal class DatadogNdkCrashHandler(
 
         internal const val ERROR_TASK_REJECTED = "Unable to schedule operation on the executor"
 
-        internal const val NDK_CRASH_REPORTS_FOLDER_NAME = "ndk_crash_reports"
-        private const val NDK_CRASH_REPORTS_PENDING_FOLDER_NAME = "ndk_crash_reports_intermediary"
+        private const val STORAGE_VERSION = 2
 
-        internal const val DESERIALIZE_CRASH_EVENT_ERROR_MESSAGE =
-            "Error while trying to deserialize the ndk crash log event"
+        internal const val NDK_CRASH_REPORTS_FOLDER_NAME = "ndk_crash_reports_v$STORAGE_VERSION"
+        private const val NDK_CRASH_REPORTS_PENDING_FOLDER_NAME =
+            "ndk_crash_reports_intermediary_v$STORAGE_VERSION"
 
         internal fun getNdkGrantedDir(context: Context): File {
             return File(context.cacheDir, NDK_CRASH_REPORTS_FOLDER_NAME)

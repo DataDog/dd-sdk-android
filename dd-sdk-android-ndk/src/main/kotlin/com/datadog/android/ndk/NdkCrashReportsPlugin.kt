@@ -104,7 +104,7 @@ class NdkCrashReportsPlugin : DatadogPlugin {
     // endregion
 
     companion object {
-        internal const val NDK_CRASH_REPORTS_FOLDER = "ndk_crash_reports"
+        internal const val NDK_CRASH_REPORTS_FOLDER = "ndk_crash_reports_v2"
         private const val TAG: String = "NdkCrashReportsPlugin"
         private const val ERROR_LOADING_NATIVE_MESSAGE: String =
             "We could not load the native library"

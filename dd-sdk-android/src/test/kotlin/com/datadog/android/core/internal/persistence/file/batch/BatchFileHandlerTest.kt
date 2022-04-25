@@ -8,14 +8,20 @@ package com.datadog.android.core.internal.persistence.file.batch
 
 import android.util.Log
 import com.datadog.android.core.internal.persistence.file.EncryptedFileHandler
+import com.datadog.android.core.internal.persistence.file.EventMeta
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.security.Encryption
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.google.gson.JsonParseException
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.isNull
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -34,23 +40,20 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class BatchFileHandlerTest {
 
     lateinit var testedFileHandler: FileHandler
-
-    @Mock
-    lateinit var mockLogHandler: LogHandler
 
     @StringForgery(regex = "([a-z]+)-([a-z]+)")
     lateinit var fakeSrcDirName: String
@@ -68,103 +71,57 @@ internal class BatchFileHandlerTest {
     fun `set up`() {
         fakeSrcDir = File(fakeRootDirectory, fakeSrcDirName)
         fakeDstDir = File(fakeRootDirectory, fakeDstDirName)
-        testedFileHandler = BatchFileHandler(Logger(mockLogHandler))
+        testedFileHandler = BatchFileHandler(Logger(logger.mockSdkLogHandler))
     }
 
     // region writeData
 
     @Test
-    fun `𝕄 write data in empty file 𝕎 writeData() {append=false, separator=null}`(
+    fun `𝕄 write data in empty file 𝕎 writeData() {append=false}`(
         @StringForgery fileName: String,
         @StringForgery content: String
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
         file.createNewFile()
+        val contentBytes = content.toByteArray()
 
         // When
         val result = testedFileHandler.writeData(
             file,
-            content.toByteArray(),
-            append = false,
-            separator = null
+            contentBytes,
+            append = false
         )
 
         // Then
         assertThat(result).isTrue()
-        assertThat(file).exists().hasContent(content)
+        assertThat(file).exists().hasBinaryContent(headerBytes(contentBytes) + contentBytes)
     }
 
     @Test
-    fun `𝕄 write data in empty file  𝕎 writeData() {append=true, separator=null}`(
+    fun `𝕄 write data in empty file  𝕎 writeData() {append=true}`(
         @StringForgery fileName: String,
         @StringForgery content: String
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
         file.createNewFile()
+        val contentBytes = content.toByteArray()
 
         // When
         val result = testedFileHandler.writeData(
             file,
-            content.toByteArray(),
-            append = false,
-            separator = null
+            contentBytes,
+            append = false
         )
 
         // Then
         assertThat(result).isTrue()
-        assertThat(file).exists().hasContent(content)
+        assertThat(file).exists().hasBinaryContent(headerBytes(contentBytes) + contentBytes)
     }
 
     @Test
-    fun `𝕄 write data in empty file 𝕎 writeData() {append=false, separator=non null}`(
-        @StringForgery fileName: String,
-        @StringForgery content: String,
-        @StringForgery separator: String
-    ) {
-        // Given
-        val file = File(fakeRootDirectory, fileName)
-        file.createNewFile()
-
-        // When
-        val result = testedFileHandler.writeData(
-            file,
-            content.toByteArray(),
-            append = false,
-            separator = separator.toByteArray()
-        )
-
-        // Then
-        assertThat(result).isTrue()
-        assertThat(file).exists().hasContent(content)
-    }
-
-    @Test
-    fun `𝕄 write data in empty file  𝕎 writeData() {append=true, separator=non null }`(
-        @StringForgery fileName: String,
-        @StringForgery content: String,
-        @StringForgery separator: String
-    ) {
-        // Given
-        val file = File(fakeRootDirectory, fileName)
-        file.createNewFile()
-
-        // When
-        val result = testedFileHandler.writeData(
-            file,
-            content.toByteArray(),
-            append = false,
-            separator = separator.toByteArray()
-        )
-
-        // Then
-        assertThat(result).isTrue()
-        assertThat(file).exists().hasContent(content)
-    }
-
-    @Test
-    fun `𝕄 overwrite data in non empty file 𝕎 writeData() {append=false, separator=null}`(
+    fun `𝕄 overwrite data in non empty file 𝕎 writeData() {append=false}`(
         @StringForgery fileName: String,
         @StringForgery previousContent: String,
         @StringForgery content: String
@@ -172,97 +129,53 @@ internal class BatchFileHandlerTest {
         // Given
         val file = File(fakeRootDirectory, fileName)
         file.writeText(previousContent)
+        val contentBytes = content.toByteArray()
 
         // When
         val result = testedFileHandler.writeData(
             file,
-            content.toByteArray(),
-            append = false,
-            separator = null
+            contentBytes,
+            append = false
         )
 
         // Then
         assertThat(result).isTrue()
-        assertThat(file).exists().hasContent(content)
+        assertThat(file).exists().hasBinaryContent(headerBytes(contentBytes) + contentBytes)
     }
 
     @Test
-    fun `𝕄 overwrite data in non empty file 𝕎 writeData() {append=false, separator=non null}`(
-        @StringForgery fileName: String,
-        @StringForgery previousContent: String,
-        @StringForgery content: String,
-        @StringForgery separator: String
-    ) {
-        // Given
-        val file = File(fakeRootDirectory, fileName)
-        file.writeText(previousContent)
-
-        // When
-        val result = testedFileHandler.writeData(
-            file,
-            content.toByteArray(),
-            append = false,
-            separator = separator.toByteArray()
-        )
-
-        // Then
-        assertThat(result).isTrue()
-        assertThat(file).exists().hasContent(content)
-    }
-
-    @Test
-    fun `𝕄 append data in non empty file 𝕎 writeData() {append=true, separator=null}`(
+    fun `𝕄 append data in non empty file 𝕎 writeData() {append=true}`(
         @StringForgery fileName: String,
         @StringForgery previousContent: String,
         @StringForgery content: String
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
-        file.writeText(previousContent)
+        val previousData = previousContent.toByteArray()
+        file.writeBytes(headerBytes(previousData) + previousData)
+        val contentBytes = content.toByteArray()
 
         // When
         val result = testedFileHandler.writeData(
             file,
-            content.toByteArray(),
-            append = true,
-            separator = null
+            contentBytes,
+            append = true
         )
 
         // Then
         assertThat(result).isTrue()
-        assertThat(file).exists().hasContent(previousContent + content)
-    }
-
-    @Test
-    fun `𝕄 append data in non empty file 𝕎 writeData() {append=true, separator=non null}`(
-        @StringForgery fileName: String,
-        @StringForgery previousContent: String,
-        @StringForgery content: String,
-        @StringForgery separator: String
-    ) {
-        // Given
-        val file = File(fakeRootDirectory, fileName)
-        file.writeText(previousContent)
-
-        // When
-        val result = testedFileHandler.writeData(
-            file,
-            content.toByteArray(),
-            append = true,
-            separator = separator.toByteArray()
-        )
-
-        // Then
-        assertThat(result).isTrue()
-        assertThat(file).exists().hasContent(previousContent + separator + content)
+        assertThat(file).exists()
+            .hasBinaryContent(
+                headerBytes(previousData) + previousData +
+                    headerBytes(contentBytes) + contentBytes
+            )
     }
 
     @Test
     fun `𝕄 return false and warn 𝕎 writeData() {parent dir does not exist}`(
         @StringForgery fileName: String,
         @StringForgery content: String,
-        @BoolForgery append: Boolean,
-        @StringForgery separator: String
+        @BoolForgery append: Boolean
     ) {
         // Given
         assumeFalse(fakeSrcDir.exists())
@@ -272,14 +185,13 @@ internal class BatchFileHandlerTest {
         val result = testedFileHandler.writeData(
             file,
             content.toByteArray(),
-            append = append,
-            separator = separator.toByteArray()
+            append = append
         )
 
         // Then
         assertThat(result).isFalse()
         assertThat(file).doesNotExist()
-        verify(mockLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             eq(ERROR_WITH_TELEMETRY_LEVEL),
             eq(BatchFileHandler.ERROR_WRITE.format(Locale.US, file.path)),
             any(),
@@ -293,8 +205,7 @@ internal class BatchFileHandlerTest {
     fun `𝕄 return false and warn 𝕎 writeData() {file is not file}`(
         @StringForgery fileName: String,
         @StringForgery content: String,
-        @BoolForgery append: Boolean,
-        @StringForgery separator: String
+        @BoolForgery append: Boolean
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
@@ -304,16 +215,51 @@ internal class BatchFileHandlerTest {
         val result = testedFileHandler.writeData(
             file,
             content.toByteArray(),
-            append = append,
-            separator = separator.toByteArray()
+            append = append
         )
 
         // Then
         assertThat(result).isFalse()
-        verify(mockLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             eq(ERROR_WITH_TELEMETRY_LEVEL),
             eq(BatchFileHandler.ERROR_WRITE.format(Locale.US, file.path)),
             any(),
+            eq(emptyMap()),
+            eq(emptySet()),
+            isNull()
+        )
+    }
+
+    @Test
+    fun `𝕄 return false and warn 𝕎 writeData() { meta is too big }`(
+        @StringForgery fileName: String,
+        @StringForgery content: String,
+        @BoolForgery append: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        testedFileHandler = BatchFileHandler(
+            Logger(logger.mockSdkLogHandler),
+            metaGenerator = {
+                ByteArray(BatchFileHandler.MAX_META_SIZE_BYTES + forge.aTinyInt())
+            }
+        )
+        val file = File(fakeRootDirectory, fileName)
+        file.createNewFile()
+
+        // When
+        val result = testedFileHandler.writeData(
+            file,
+            content.toByteArray(),
+            append = append
+        )
+
+        // Then
+        assertThat(result).isFalse()
+        verify(logger.mockSdkLogHandler).handleLog(
+            eq(ERROR_WITH_TELEMETRY_LEVEL),
+            eq(BatchFileHandler.ERROR_WRITE.format(Locale.US, file.path)),
+            isA<BatchFileHandler.MetaTooBigException>(),
             eq(emptyMap()),
             eq(emptySet()),
             isNull()
@@ -325,29 +271,20 @@ internal class BatchFileHandlerTest {
     // region readData
 
     @Test
-    fun `𝕄 return empty ByteArray and warn 𝕎 readData() {file does not exist}`(
-        @StringForgery fileName: String,
-        @StringForgery prefix: String,
-        @StringForgery suffix: String,
-        @StringForgery separator: String,
-        forge: Forge
+    fun `𝕄 return empty list and warn 𝕎 readData() {file does not exist}`(
+        @StringForgery fileName: String
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
         assumeFalse(file.exists())
 
         // When
-        val result = testedFileHandler.readData(
-            file,
-            prefix.toByteArray(),
-            suffix.toByteArray(),
-            forge.aNullable { separator.toByteArray() }
-        )
+        val result = testedFileHandler.readData(file)
 
         // Then
         assertThat(result).isEmpty()
         assertThat(file).doesNotExist()
-        verify(mockLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             eq(ERROR_WITH_TELEMETRY_LEVEL),
             eq(BatchFileHandler.ERROR_READ.format(Locale.US, file.path)),
             any(),
@@ -358,28 +295,19 @@ internal class BatchFileHandlerTest {
     }
 
     @Test
-    fun `𝕄 return empty ByteArray and warn 𝕎 readData() {file is not file}`(
-        @StringForgery fileName: String,
-        @StringForgery prefix: String,
-        @StringForgery suffix: String,
-        @StringForgery separator: String,
-        forge: Forge
+    fun `𝕄 return empty list and warn 𝕎 readData() {file is not file}`(
+        @StringForgery fileName: String
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
         assumeFalse(file.exists())
 
         // When
-        val result = testedFileHandler.readData(
-            file,
-            prefix.toByteArray(),
-            suffix.toByteArray(),
-            forge.aNullable { separator.toByteArray() }
-        )
+        val result = testedFileHandler.readData(file)
 
         // Then
         assertThat(result).isEmpty()
-        verify(mockLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             eq(ERROR_WITH_TELEMETRY_LEVEL),
             eq(BatchFileHandler.ERROR_READ.format(Locale.US, file.path)),
             any(),
@@ -390,79 +318,214 @@ internal class BatchFileHandlerTest {
     }
 
     @Test
-    fun `𝕄 return file content 𝕎 readData() {postfix and suffix are null}`(
+    fun `𝕄 return empty list and warn user 𝕎 readData() { corrupted data }`(
         @StringForgery fileName: String,
-        @StringForgery content: String,
-        @StringForgery separator: String,
-        forge: Forge
+        @StringForgery content: String
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
-        file.writeText(content)
+        file.writeBytes(content.toByteArray())
 
         // When
-        val result = testedFileHandler.readData(
-            file,
-            null,
-            null,
-            forge.aNullable { separator.toByteArray() }
-        )
+        val result = testedFileHandler.readData(file)
 
         // Then
-        assertThat(result).isEqualTo(content.toByteArray(Charsets.UTF_8))
-    }
-
-    @Test
-    fun `𝕄 return decorated content 𝕎 readData() {postfix and suffix are not null}`(
-        @StringForgery fileName: String,
-        @StringForgery content: String,
-        @StringForgery prefix: String,
-        @StringForgery suffix: String,
-        @StringForgery separator: String,
-        forge: Forge
-    ) {
-        // Given
-        val file = File(fakeRootDirectory, fileName)
-        file.writeText(content)
-
-        // When
-        val result = testedFileHandler.readData(
-            file,
-            prefix.toByteArray(),
-            suffix.toByteArray(),
-            forge.aNullable { separator.toByteArray() }
+        assertThat(result).isEmpty()
+        verify(logger.mockDevLogHandler).handleLog(
+            Log.ERROR,
+            BatchFileHandler.WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)
         )
-
-        // Then
-        assertThat(result).isEqualTo(
-            (prefix + content + suffix).toByteArray(Charsets.UTF_8)
+        verify(logger.mockSdkLogHandler).handleLog(
+            ERROR_WITH_TELEMETRY_LEVEL,
+            BatchFileHandler.WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)
         )
     }
 
     @Test
-    fun `𝕄 return decoration only 𝕎 readData() {empty file, postfix and suffix are not null}`(
+    fun `𝕄 return valid events read so far and warn 𝕎 readData() { stream cutoff at meta block }`(
         @StringForgery fileName: String,
-        @StringForgery prefix: String,
-        @StringForgery suffix: String,
-        @StringForgery separator: String,
         forge: Forge
     ) {
         // Given
         val file = File(fakeRootDirectory, fileName)
-        file.createNewFile()
+        val events = forge.aList {
+            aString().toByteArray()
+        }
+
+        file.writeBytes(
+            events.mapIndexed { index, bytes ->
+                if (index == events.lastIndex) {
+                    headerBytes(bytes)
+                        .let { it.take(forge.anInt(min = 2, max = it.size - 1)) }
+                        .toByteArray()
+                } else {
+                    headerBytes(bytes) + bytes
+                }
+            }.reduce { acc, bytes -> acc + bytes }
+        )
 
         // When
-        val result = testedFileHandler.readData(
-            file,
-            prefix.toByteArray(),
-            suffix.toByteArray(),
-            forge.aNullable { separator.toByteArray() }
-        )
+        val result = testedFileHandler.readData(file)
 
         // Then
-        assertThat(result).isEqualTo(
-            (prefix + suffix).toByteArray(Charsets.UTF_8)
+        assertThat(result).containsExactlyElementsOf(events.take(events.size - 1))
+    }
+
+    @Test
+    fun `𝕄 return valid events read so far and warn 𝕎 readData() { malformed meta }`(
+        @StringForgery fileName: String,
+        forge: Forge
+    ) {
+        // Given
+        val file = File(fakeRootDirectory, fileName)
+        val events = forge.aList {
+            aString().toByteArray()
+        }
+
+        file.writeBytes(
+            events.map {
+                headerBytes(it) + it
+            }.reduce { acc, bytes -> acc + bytes }
         )
+
+        val malformedMetaIndex = forge.anInt(min = 0, max = events.size)
+        testedFileHandler = BatchFileHandler(
+            Logger(logger.mockSdkLogHandler),
+            metaParser = object : (ByteArray) -> EventMeta {
+                var invocations = 0
+
+                override fun invoke(metaBytes: ByteArray): EventMeta {
+                    return if (invocations == malformedMetaIndex) {
+                        throw JsonParseException(forge.aString())
+                    } else {
+                        invocations++
+                        EventMeta.fromBytes(metaBytes)
+                    }
+                }
+            }
+        )
+
+        // When
+        val result = testedFileHandler.readData(file)
+
+        // Then
+        assertThat(result).containsExactlyElementsOf(events.take(malformedMetaIndex))
+
+        verify(logger.mockSdkLogHandler).handleLog(
+            eq(Log.ERROR),
+            eq(BatchFileHandler.ERROR_FAILED_META_PARSE),
+            isA<JsonParseException>(),
+            eq(emptyMap()),
+            eq(emptySet()),
+            isNull()
+        )
+    }
+
+    @Test
+    fun `𝕄 return valid events read so far and warn 𝕎 readData() {stream cutoff at event block}`(
+        @StringForgery fileName: String,
+        forge: Forge
+    ) {
+        // Given
+        val file = File(fakeRootDirectory, fileName)
+        val events = forge.aList {
+            aString().toByteArray()
+        }
+
+        file.writeBytes(
+            events.mapIndexed { index, bytes ->
+                headerBytes(bytes) + if (index == events.lastIndex) {
+                    bytes.let { it.take(forge.anInt(min = 0, max = it.size - 1)) }.toByteArray()
+                } else {
+                    bytes
+                }
+            }.reduce { acc, bytes -> acc + bytes }
+        )
+
+        // When
+        val result = testedFileHandler.readData(file)
+
+        // Then
+        assertThat(result).containsExactlyElementsOf(events.take(events.size - 1))
+    }
+
+    @Test
+    fun `𝕄 return file content 𝕎 readData() { single event }`(
+        @StringForgery fileName: String,
+        @StringForgery event: String
+    ) {
+        // Given
+        val file = File(fakeRootDirectory, fileName)
+        val eventBytes = event.toByteArray()
+        file.writeBytes(headerBytes(eventBytes) + eventBytes)
+
+        // When
+        val result = testedFileHandler.readData(file)
+
+        // Then
+        assertThat(result).containsExactlyElementsOf(listOf(eventBytes))
+    }
+
+    @Test
+    fun `𝕄 return file content 𝕎 readData() { multiple events }`(
+        @StringForgery fileName: String,
+        forge: Forge
+    ) {
+        // Given
+        val file = File(fakeRootDirectory, fileName)
+        val events = forge.aList {
+            aString().toByteArray()
+        }
+        file.writeBytes(events.map { headerBytes(it) + it }.reduce { acc, bytes -> acc + bytes })
+
+        // When
+        val result = testedFileHandler.readData(file)
+
+        // Then
+        assertThat(result).containsExactlyElementsOf(events)
+    }
+
+    // endregion
+
+    // region writeData + readData
+
+    @Test
+    fun `𝕄 return file content 𝕎 writeData + readData() { append = false }`(
+        @StringForgery fileName: String,
+        @StringForgery content: String
+    ) {
+        // Given
+        val file = File(fakeRootDirectory, fileName)
+
+        // When
+        val writeResult = testedFileHandler.writeData(file, content.toByteArray(), false)
+        val readResult = testedFileHandler.readData(file)
+
+        // Then
+        assertThat(writeResult).isTrue()
+        assertThat(readResult).containsExactlyElementsOf(listOf(content.toByteArray()))
+    }
+
+    @Test
+    fun `𝕄 return file content 𝕎 writeData + readData() { append = true }`(
+        @StringForgery fileName: String,
+        forge: Forge
+    ) {
+        // Given
+        val file = File(fakeRootDirectory, fileName)
+
+        val data = forge.aList {
+            aString().toByteArray()
+        }
+
+        // When
+        var writeResult = true
+        data.forEach { writeResult = writeResult && testedFileHandler.writeData(file, it, true) }
+        val readResult = testedFileHandler.readData(file)
+
+        // Then
+        assertThat(writeResult).isTrue()
+        assertThat(readResult).containsExactlyElementsOf(data)
     }
 
     // endregion
@@ -547,7 +610,7 @@ internal class BatchFileHandlerTest {
 
         // Then
         assertThat(result).isTrue()
-        verify(mockLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             Log.INFO,
             BatchFileHandler.INFO_MOVE_NO_SRC.format(Locale.US, fakeSrcDir.path)
         )
@@ -564,7 +627,7 @@ internal class BatchFileHandlerTest {
 
         // Then
         assertThat(result).isFalse()
-        verify(mockLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileHandler.ERROR_MOVE_NOT_DIR.format(Locale.US, fakeSrcDir.path)
         )
@@ -581,7 +644,7 @@ internal class BatchFileHandlerTest {
 
         // Then
         assertThat(result).isFalse()
-        verify(mockLogHandler).handleLog(
+        verify(logger.mockSdkLogHandler).handleLog(
             ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileHandler.ERROR_MOVE_NOT_DIR.format(Locale.US, fakeDstDir.path)
         )
@@ -664,7 +727,7 @@ internal class BatchFileHandlerTest {
     @Test
     fun `𝕄 create BatchFileHandler 𝕎 create() { without encryption }`() {
         // When
-        val fileHandler = BatchFileHandler.create(Logger(mockLogHandler), null)
+        val fileHandler = BatchFileHandler.create(Logger(logger.mockSdkLogHandler), null)
         // Then
         assertThat(fileHandler)
             .isInstanceOf(BatchFileHandler::class.java)
@@ -674,7 +737,7 @@ internal class BatchFileHandlerTest {
     fun `𝕄 create BatchFileHandler 𝕎 create() { with encryption }`() {
         // When
         val mockEncryption = mock<Encryption>()
-        val fileHandler = BatchFileHandler.create(Logger(mockLogHandler), mockEncryption)
+        val fileHandler = BatchFileHandler.create(Logger(logger.mockSdkLogHandler), mockEncryption)
 
         // Then
         assertThat(fileHandler)
@@ -687,4 +750,27 @@ internal class BatchFileHandlerTest {
     }
 
     // endregion
+
+    // region private
+
+    private fun headerBytes(data: ByteArray): ByteArray {
+        val meta = EventMeta(eventSize = data.size).asBytes
+
+        return ByteArray(2).apply {
+            set(0, BatchFileHandler.HEADER_VERSION)
+            set(1, meta.size.toByte())
+        } + meta
+    }
+
+    // endregion
+
+    companion object {
+        val logger = LoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
+    }
 }

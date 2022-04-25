@@ -74,29 +74,32 @@ internal class DataFlusherTest {
     ) {
         // Given
         val fakeFiles = forge.aList { mock<File>() }
-        val fakeBatchesAsByteArray = forge
+        val fakeBatches = forge
             .aList(fakeFiles.size) {
-                forge.aString()
+                forge
+                    .aList {
+                        forge.aString()
+                    }
+                    .map { it.toByteArray() }
             }
-            .map { it.toByteArray(Charsets.UTF_8) }
         whenever(mockFileOrchestrator.getFlushableFiles()).thenReturn(fakeFiles)
         fakeFiles.forEachIndexed { index, file ->
             whenever(
-                mockFileHandler.readData(
-                    file,
-                    payloadDecoration.prefixBytes,
-                    payloadDecoration.suffixBytes,
-                    payloadDecoration.separatorBytes
-                )
-            ).thenReturn(fakeBatchesAsByteArray[index])
+                mockFileHandler.readData(file)
+            ).thenReturn(fakeBatches[index])
         }
 
         // When
         testedFlusher.flush(mockDataUploader)
 
         // Then
-        fakeBatchesAsByteArray.forEach {
-            verify(mockDataUploader).upload(it)
+        fakeBatches.forEach {
+            val expectedPayload =
+                payloadDecoration.prefixBytes + it.reduce { acc, bytes ->
+                    acc + payloadDecoration.separatorBytes + bytes
+                } + payloadDecoration.suffixBytes
+
+            verify(mockDataUploader).upload(expectedPayload)
         }
     }
 
@@ -106,21 +109,19 @@ internal class DataFlusherTest {
     ) {
         // Given
         val fakeFiles = forge.aList { mock<File>() }
-        val fakeBatchesAsByteArray = forge
+        val fakeBatches = forge
             .aList(fakeFiles.size) {
-                forge.aString()
+                forge
+                    .aList {
+                        forge.aString()
+                    }
+                    .map { it.toByteArray() }
             }
-            .map { it.toByteArray(Charsets.UTF_8) }
         whenever(mockFileOrchestrator.getFlushableFiles()).thenReturn(fakeFiles)
         fakeFiles.forEachIndexed { index, file ->
             whenever(
-                mockFileHandler.readData(
-                    file,
-                    payloadDecoration.prefixBytes,
-                    payloadDecoration.suffixBytes,
-                    payloadDecoration.separatorBytes
-                )
-            ).thenReturn(fakeBatchesAsByteArray[index])
+                mockFileHandler.readData(file)
+            ).thenReturn(fakeBatches[index])
         }
 
         // When

@@ -261,7 +261,7 @@ internal object CoreFeature {
                 UserInfoDeserializer(sdkLogger),
                 sdkLogger,
                 timeProvider,
-                localDataEncryption
+                BatchFileHandler.create(sdkLogger, localDataEncryption)
             )
             ndkCrashHandler.prepareData()
         }

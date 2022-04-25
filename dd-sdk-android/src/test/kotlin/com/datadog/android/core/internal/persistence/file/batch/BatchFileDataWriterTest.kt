@@ -129,8 +129,7 @@ internal class BatchFileDataWriterTest {
             .writeData(
                 file,
                 serialized,
-                append = true,
-                separator = fakeDecoration.separatorBytes
+                append = true
             )
     }
 
@@ -151,8 +150,7 @@ internal class BatchFileDataWriterTest {
                 .writeData(
                     same(file),
                     capture(),
-                    append = eq(true),
-                    separator = eq(fakeDecoration.separatorBytes)
+                    append = eq(true)
                 )
             assertThat(allValues)
                 .containsExactlyElementsOf(
@@ -169,7 +167,7 @@ internal class BatchFileDataWriterTest {
         @Forgery file: File
     ) {
         // Given
-        whenever(mockFileHandler.writeData(any(), any(), any(), any())) doReturn true
+        whenever(mockFileHandler.writeData(any(), any(), any())) doReturn true
         whenever(mockOrchestrator.getWritableFile(any())) doReturn file
 
         // When
@@ -186,7 +184,7 @@ internal class BatchFileDataWriterTest {
         @Forgery file: File
     ) {
         // Given
-        whenever(mockFileHandler.writeData(any(), any(), any(), any())) doReturn false
+        whenever(mockFileHandler.writeData(any(), any(), any())) doReturn false
         whenever(mockOrchestrator.getWritableFile(any())) doReturn file
 
         // When

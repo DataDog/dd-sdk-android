@@ -26,8 +26,8 @@ import fr.xgouchet.elmyr.junit4.ForgeRule
 import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
 import java.io.File
-import java.util.Base64
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.experimental.inv
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -76,7 +76,7 @@ internal class EncryptionTest {
             file.name.startsWith("dd") && file.name.contains("pending")
         }
         val isNdkPendingDirectory = { file: File ->
-            file.name == "ndk_crash_reports_intermediary"
+            file.name == "ndk_crash_reports_intermediary_v2"
         }
 
         val dataDirectories =
@@ -107,15 +107,7 @@ internal class EncryptionTest {
                     .doesNotContain("source")
                 assertThat(content)
                     .overridingErrorMessage("Expecting ${file.path} to contain encryption marker")
-                    .contains(
-                        Base64.getEncoder()
-                            .withoutPadding()
-                            .encode(ENCRYPTION_MARKER.toByteArray())
-                            .decodeToString()
-                            // last 1 or 2 characters may be different in the final file, because
-                            // we encode marker + payload as a whole, so we drop them for comparison
-                            .dropLast(2)
-                    )
+                    .contains(ENCRYPTION_MARKER)
             }
         }
     }
@@ -134,7 +126,7 @@ internal class EncryptionTest {
     private fun createSdkConfiguration(): Configuration {
         val encryption = object : Encryption {
             override fun encrypt(data: ByteArray): ByteArray {
-                return ENCRYPTION_MARKER.toByteArray() + data
+                return ENCRYPTION_MARKER.toByteArray() + data.map { it.inv() }
             }
 
             override fun decrypt(data: ByteArray): ByteArray {

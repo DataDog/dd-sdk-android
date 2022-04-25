@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.utils.join
 import com.datadog.android.log.Logger
 import java.io.File
 import java.util.Locale
@@ -31,12 +32,12 @@ internal class BatchFileDataReader(
 
     override fun lockAndReadNext(): Batch? {
         val file = getAndLockReadableFile() ?: return null
-        val data = handler.readData(
-            file,
-            decoration.prefixBytes,
-            decoration.suffixBytes,
-            decoration.separatorBytes
-        )
+        val data = handler.readData(file)
+            .join(
+                separator = decoration.separatorBytes,
+                prefix = decoration.prefixBytes,
+                suffix = decoration.suffixBytes
+            )
 
         return Batch(file.name, data)
     }

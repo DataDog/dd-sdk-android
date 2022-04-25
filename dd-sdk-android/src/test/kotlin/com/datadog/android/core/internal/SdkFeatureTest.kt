@@ -310,7 +310,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
 
         // Given
         val fileName = System.currentTimeMillis().toString()
-        val oldFilesDir = File(appContext.fakeFilesDir, "dd-${featureDirName()}-v1")
+        val oldFilesDir = File(appContext.fakeFilesDir, "dd-${featureDirName()}-v2")
         oldFilesDir.mkdirs()
         val oldBatchFile = File(oldFilesDir, fileName)
         val content = "{\"message\":\"$message\"}"
@@ -320,7 +320,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // Then
-        val newFilesDir = File(appContext.fakeCacheDir, "dd-${featureDirName()}-v1")
+        val newFilesDir = File(appContext.fakeCacheDir, "dd-${featureDirName()}-v2")
         val newBatchFile = File(newFilesDir, fileName)
 
         val captor = argumentCaptor<Runnable>()
