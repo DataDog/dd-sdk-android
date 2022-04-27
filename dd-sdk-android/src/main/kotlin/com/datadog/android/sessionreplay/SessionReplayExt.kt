@@ -26,6 +26,7 @@ import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.semantics.SemanticsModifier
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.core.graphics.scale
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -203,8 +204,9 @@ internal fun ComposeNode.toJson(scale: Float): JsonElement? {
 
 fun captureViewBitmap(view: View, scaledWidth: Int, scaledHeight: Int): Bitmap {
     val bitmap: Bitmap =
-        Bitmap.createBitmap(scaledWidth, scaledHeight, Bitmap.Config.ARGB_8888)
+        Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
     view.draw(Canvas(bitmap))
+    bitmap.scale(scaledWidth, scaledHeight)
     return bitmap
 }
 

@@ -30,7 +30,7 @@ internal class SessionReplayUploader(val okHttpClient: OkHttpClient, dataFolder:
     }
 
     private fun scheduleUpload() {
-        scheduledThreadPoolExecutor.schedule(uploadRunnable, 10, TimeUnit.SECONDS)
+        scheduledThreadPoolExecutor.schedule(uploadRunnable, 5, TimeUnit.SECONDS)
     }
 
     private val uploadRunnable = {
@@ -41,23 +41,32 @@ internal class SessionReplayUploader(val okHttpClient: OkHttpClient, dataFolder:
     }
 
     private fun uploadFile(file: File) {
-        file.inputStream().use {
+        val data = file.inputStream().use {
             it.readBytes()
-            val request = Request.Builder()
+        }
+        val request = if (file.absolutePath.contains("jpeg")) {
+            Request.Builder()
+                .addHeader("Content-Type", "text/plain")
+                .post(RequestBody.create(null, data))
+                .url("http://10.0.2.2:3000/save-image")
+                .build()
+        } else {
+            Request.Builder()
                 .addHeader("Content-Type", "application/json")
-                .post(RequestBody.create(null, it.readBytes()))
+                .post(RequestBody.create(null, data))
                 .url("http://10.0.2.2:3000/save-view-tree")
                 .build()
-            okHttpClient.newCall(request).enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
-                    devLogger.e(SessionReplay.javaClass.simpleName, e)
-                }
-
-                override fun onResponse(call: Call, response: Response) {
-                    devLogger.v(SessionReplay.javaClass.simpleName + ":" + response.message())
-                }
-            })
-
         }
+        okHttpClient.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                devLogger.e(SessionReplay.javaClass.simpleName, e)
+                file.delete()
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                devLogger.v(SessionReplay.javaClass.simpleName + ":" + response.message())
+                file.delete()
+            }
+        })
     }
 }

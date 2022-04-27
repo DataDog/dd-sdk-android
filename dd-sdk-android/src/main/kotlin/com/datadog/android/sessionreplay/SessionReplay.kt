@@ -23,7 +23,7 @@ import java.lang.ref.WeakReference
 
 object SessionReplay {
 
-    private const val SCREEN_CAPTURE_FREQUENCY = 500L
+    private const val SCREEN_CAPTURE_FREQUENCY = 1000L
 
     internal enum class RecordStrategy {
         SCREEN_SHOTS,
@@ -84,6 +84,7 @@ object SessionReplay {
         } else {
             handler.post(captureScreenRunnable)
         }
+        uploader.startUploading()
     }
 
     private val captureScreenRunnable: Runnable = object : Runnable {

@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay
 
 import android.graphics.Bitmap
+import android.util.Base64
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.utils.devLogger
 import com.google.gson.JsonElement
@@ -16,6 +17,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -38,10 +41,14 @@ internal class SessionReplayPersister(val dataFolder: File,val sessionReplayVita
     fun persist(bitmap: Bitmap, id: String) {
         prepare()
         threadPoolExecutor.execute {
-            val bitmapFile = File(dataFolder, id)
+            val bitmapFile = File(dataFolder, "${id}.jpeg")
+            val quality = 100
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, quality, byteArrayOutputStream)
+            val imageAsBase64=
+                Base64.encodeToString(byteArrayOutputStream.toByteArray(), Base64.DEFAULT)
             FileOutputStream(bitmapFile).use {
-                val quality = 100
-                bitmap.compress(Bitmap.CompressFormat.JPEG, quality, it)
+               it.write(imageAsBase64.toByteArray())
             }
             sessionReplayVitals.logVitals()
         }
