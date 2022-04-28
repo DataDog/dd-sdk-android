@@ -25,6 +25,8 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
 import java.util.Locale
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
@@ -882,6 +884,32 @@ internal class BatchFileOrchestratorTest {
 
         // Then
         assertThat(result).isEqualTo(fakeRootDir)
+        verifyZeroInteractions(mockLogHandler)
+    }
+
+    @Test
+    fun `𝕄 return root dir { multithreaded }`() {
+        // since getRootDir involves the creation of the directory structure,
+        // we need to make sure that other threads won't try to create it again when it is already
+        // created by some thread
+
+        // Given
+        fakeRootDir.deleteRecursively()
+        val countDownLatch = CountDownLatch(4)
+        val results = mutableListOf<File?>()
+
+        // When
+        repeat(4) {
+            Thread {
+                val result = testedOrchestrator.getRootDir()
+                results.add(result)
+                countDownLatch.countDown()
+            }.start()
+        }
+        countDownLatch.await(2, TimeUnit.SECONDS)
+
+        // Then
+        assertThat(results).containsExactlyElementsOf(List(4) { fakeRootDir })
         verifyZeroInteractions(mockLogHandler)
     }
 
