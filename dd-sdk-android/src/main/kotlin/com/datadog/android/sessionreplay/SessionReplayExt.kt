@@ -27,10 +27,18 @@ import androidx.compose.ui.semantics.SemanticsModifier
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.core.graphics.scale
+import com.datadog.android.sessionreplay.model.ElementNode
+import com.datadog.android.sessionreplay.model.Node
+import com.datadog.android.sessionreplay.model.Tags
+import com.datadog.android.sessionreplay.model.TextNode
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import java.security.SecureRandom
+import java.util.LinkedList
 import kotlin.math.roundToInt
+
+private val random = SecureRandom()
 
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 internal fun View.toJson(context: Context, scale: Float): JsonElement? {
@@ -202,7 +210,7 @@ internal fun ComposeNode.toJson(scale: Float): JsonElement? {
     return jsonElement
 }
 
-fun captureViewBitmap(view: View, scaledWidth: Int, scaledHeight: Int): Bitmap {
+internal fun captureViewBitmap(view: View, scaledWidth: Int, scaledHeight: Int): Bitmap {
     val bitmap: Bitmap =
         Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
     view.draw(Canvas(bitmap))
@@ -210,3 +218,184 @@ fun captureViewBitmap(view: View, scaledWidth: Int, scaledHeight: Int): Bitmap {
     return bitmap
 }
 
+internal fun View.toNode(scale: Float): Node? {
+
+    if (id in setOf(android.R.id.navigationBarBackground, android.R.id.statusBarBackground)
+        || this is ViewStub || this.javaClass.name == "androidx.appcompat.widget.ActionBarContextView"
+    ) {
+        return null
+    }
+    if (this.javaClass.name == "androidx.compose.ui.platform.AndroidComposeView") {
+        return null
+        // return SessionReplay.rootNodes[this.hashCode()]?.toNode(scale)
+    }
+
+    val attributes = HashMap<String, Any>()
+    val scaledHeight = height.toPx(scale)
+    val scaledWidth = width.toPx(scale)
+    attributes["width"] = scaledWidth
+    attributes["height"] = scaledHeight
+    attributes["x"] = this.x.toPx(scale)
+    attributes["y"] = this.y.toPx(scale)
+    attributes["alpha"] = alpha
+
+    val viewBackground = background
+    if (viewBackground is ColorDrawable) {
+        val color = viewBackground.color
+        val colorAsHexa = String.format("#%06X", 0xFFFFFF and color)
+        attributes["backgroundColor"] = colorAsHexa
+    }
+
+    val childNodes = LinkedList<Node>()
+    if (this is ViewGroup && childCount > 0) {
+        if (this.javaClass.name == "androidx.appcompat.widget.ActionBarOverlayLayout") {
+            for (i in childCount - 1 downTo 0) {
+                val view = getChildAt(i) ?: continue
+                view.toNode(scale)?.let {
+                    childNodes.add(it)
+                }
+            }
+        } else {
+            for (i in 0 until childCount) {
+                val view = getChildAt(i) ?: continue
+                view.toNode(scale)?.let {
+                    childNodes.add(it)
+                }
+            }
+        }
+    }
+
+    when {
+        Button::class.java.isAssignableFrom(this::class.java) -> {
+            return (this as Button).asNode(attributes, scale)
+        }
+        ImageView::class.java.isAssignableFrom(this::class.java) -> {
+            return (this as ImageView).asNode(attributes, scaledWidth, scaledHeight)
+        }
+        TextView::class.java.isAssignableFrom(this::class.java) -> {
+            return (this as TextView).asNode(attributes, scale)
+        }
+        LinearLayout::class.java.isAssignableFrom(this::class.java) -> {
+            return (this as LinearLayout).asNode(attributes, childNodes)
+        }
+        RelativeLayout::class.java.isAssignableFrom(this::class.java) -> {
+            return (this as RelativeLayout).asNode(attributes, childNodes)
+        }
+        else -> {
+            return ElementNode(
+                childNodes = childNodes,
+                id = this.resolvedId(),
+                attributes = attributes
+            )
+        }
+    }
+}
+
+private fun View.resolvedId(): Int? {
+    return if (id != View.NO_ID) id else null
+}
+
+private fun TextView.asNode(
+    attributes: MutableMap<String, Any>,
+    scale: Float,
+): TextNode {
+    addTextAttributes(attributes, this, scale)
+    return TextNode(
+        textContent = this.text.toString(),
+        attributes = attributes,
+        id = resolvedId()
+    )
+}
+
+private fun Button.asNode(
+    attributes: MutableMap<String, Any>,
+    scale: Float
+): ElementNode {
+    addButtonAttributes(attributes, this, scale)
+    return ElementNode(
+        attributes = attributes,
+        id = resolvedId(),
+        tagName = Tags.BUTTON.tagValue,
+        childNodes = listOf(TextNode(textContent = text.toString()))
+    )
+}
+
+private fun ImageView.asNode(
+    attributes: MutableMap<String, Any>,
+    scaledWidth: Int,
+    scaledHeight: Int
+): ElementNode {
+    val uniqueId = random.nextInt().toString()
+    if (scaledWidth > 0 && scaledHeight > 0) {
+        SessionReplay.persistBitmap(
+            captureViewBitmap(this, scaledWidth, scaledHeight),
+            uniqueId
+        )
+    }
+    attributes["src"] = uniqueId
+    return ElementNode(
+        attributes = attributes,
+        id = resolvedId(),
+        tagName = Tags.IMAGE.tagValue,
+    )
+}
+
+private fun LinearLayout.asNode(
+    attributes: MutableMap<String, Any>,
+    children: List<Node>
+): ElementNode {
+    addLinearLayoutAttributes(attributes, this)
+    return ElementNode(childNodes = children, id = resolvedId(), attributes = attributes)
+}
+
+private fun RelativeLayout.asNode(
+    attributes: MutableMap<String, Any>,
+    children: List<Node>
+): ElementNode {
+    addRelativeLayoutAttributes(attributes, this)
+    return ElementNode(childNodes = children, id = resolvedId(), attributes = attributes)
+}
+
+private fun addRelativeLayoutAttributes(
+    attributes: MutableMap<String, Any>,
+    relativeLayout: RelativeLayout
+) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        attributes["textAlign"] = relativeLayout.gravity.asHtmlTextAlignment()
+    }
+}
+
+// private fun addImageAttributes(attributes: MutableMap<String, Any>, imageView: ImageView) {}
+
+private fun addTextAttributes(
+    attributes: MutableMap<String, Any>,
+    textView: TextView,
+    scale: Float
+) {
+    val textColor = String.format("#%06X", 0xFFFFFF and textView.currentTextColor)
+    attributes["color"] = textColor
+    attributes["textAlign"] = textView.gravity.asHtmlTextAlignment()
+    attributes["fontSize"] = textView.textSize.toPx(scale)
+    attributes["isClickable"] = textView.isClickable
+}
+
+private fun addButtonAttributes(attributes: MutableMap<String, Any>, button: Button, scale: Float) {
+    val textColor = String.format("#%06X", 0xFFFFFF and button.currentTextColor)
+    attributes["label"] = button.text.toString()
+    attributes["color"] = textColor
+    attributes["fontSize"] = button.textSize.toPx(scale)
+    attributes["textAlign"] = button.gravity.asHtmlTextAlignment()
+}
+
+private fun addLinearLayoutAttributes(
+    attributes: MutableMap<String, Any>,
+    linearLayout: LinearLayout
+) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        attributes["textAlign"] = linearLayout.gravity.asHtmlTextAlignment()
+    }
+}
+
+// fun ComposeNode.toNode(scale: Float): Node? {
+//     return null
+// }

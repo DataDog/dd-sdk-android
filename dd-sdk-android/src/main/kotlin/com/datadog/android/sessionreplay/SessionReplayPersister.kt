@@ -8,22 +8,13 @@ package com.datadog.android.sessionreplay
 
 import android.graphics.Bitmap
 import android.util.Base64
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.sessionreplay.model.Segment
+import com.google.gson.Gson
 import com.google.gson.JsonElement
-import okhttp3.Call
-import okhttp3.Callback
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody
-import okhttp3.Response
-import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
-import java.io.IOException
 import java.util.concurrent.LinkedBlockingDeque
-import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -37,6 +28,7 @@ internal class SessionReplayPersister(val dataFolder: File,val sessionReplayVita
         LinkedBlockingDeque()
     )
     private var wasStarted = AtomicBoolean(false)
+    private val gson = Gson()
 
     fun persist(bitmap: Bitmap, id: String) {
         prepare()
@@ -60,6 +52,18 @@ internal class SessionReplayPersister(val dataFolder: File,val sessionReplayVita
             val file = File(dataFolder, System.nanoTime().toString())
             FileOutputStream(file).use {
                 it.write(jsonTree.toString().toByteArray())
+            }
+            sessionReplayVitals.logVitals()
+        }
+    }
+
+    fun persist(segment: Segment) {
+        prepare()
+        threadPoolExecutor.execute {
+            val serializedSegment = gson.toJson(segment).toString()
+            val file = File(dataFolder, System.nanoTime().toString())
+            FileOutputStream(file).use {
+                it.write(serializedSegment.toString().toByteArray())
             }
             sessionReplayVitals.logVitals()
         }

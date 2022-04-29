@@ -16,6 +16,12 @@ import android.view.View
 import android.view.Window
 import androidx.annotation.RequiresApi
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.sessionreplay.model.CreationReason
+import com.datadog.android.sessionreplay.model.FullSnapshotRecord
+import com.datadog.android.sessionreplay.model.Offset
+import com.datadog.android.sessionreplay.model.RecordData
+import com.datadog.android.sessionreplay.model.Segment
 import io.opentracing.util.GlobalTracer
 import okhttp3.OkHttpClient
 import java.io.File
@@ -119,11 +125,34 @@ object SessionReplay {
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun scheduleViewTreeCapture(window: Window) {
         val span = GlobalTracer.get().buildSpan("view tree capture").start()
-        val treeView = window.decorView.rootView.toJson(CoreFeature.contextRef.get()!!, scale)
+        val context = GlobalRum.getRumContext()
+
+        val node = window.decorView.rootView.toNode(scale)
         sessionReplayVitals.logVitals()
         span.finish()
-        treeView?.let { tree ->
-            persister.persist(tree)
+        val start = System.currentTimeMillis()
+        node?.let { tree ->
+            val segment = Segment(
+                applicationId = context.applicationId,
+                sessionId = context.sessionId,
+                viewId = context.viewId ?: "",
+                start = start,
+                end = start,
+                hasFullSnapshot = true,
+                recordsCount = 1,
+                creationReason = CreationReason.VIEW_CHANGE,
+                indexInView = 0,
+                records = listOf(
+                    FullSnapshotRecord(
+                        timestamp = start,
+                        data = RecordData(
+                            tree,
+                            initialOffset = Offset(0, 0)
+                        )
+                    )
+                )
+            )
+            persister.persist(segment)
         }
     }
 

@@ -1340,7 +1340,6 @@ object com.datadog.android.sessionreplay.SessionReplay
   fun addNode(android.view.View, ComposeNode)
   fun detachNode(android.view.View, ComposeNode)
   fun persistBitmap(android.graphics.Bitmap, String)
-fun captureViewBitmap(android.view.View, Int, Int): android.graphics.Bitmap
 class com.datadog.android.sessionreplay.T : android.view.View
   constructor(android.content.Context)
   fun stop()
@@ -1348,6 +1347,55 @@ class com.datadog.android.sessionreplay.WorkerThread : Thread
   var handler: android.os.Handler?
   override fun run()
   fun post(Runnable)
+enum com.datadog.android.sessionreplay.model.NodeType
+  - Document
+  - DocumentType
+  - Element
+  - Text
+  - CDATA
+  - Comment
+enum com.datadog.android.sessionreplay.model.Tags
+  constructor(String)
+  - SPAN
+  - DIV
+  - IMAGE
+  - BUTTON
+interface com.datadog.android.sessionreplay.model.Node
+  val type: NodeType
+  val attributes: Map<String, Any>?
+  val id: Int?
+data class com.datadog.android.sessionreplay.model.DocumentNode : Node
+  constructor(List<Node>, Map<String, Any>?, Int? = null)
+  override val type: NodeType
+data class com.datadog.android.sessionreplay.model.ElementNode : Node
+  constructor(NodeType = NodeType.Element, List<Node> = emptyList(), String? = Tags.DIV.tagValue, Int? = null, Map<String, Any>? = null, Boolean = false)
+data class com.datadog.android.sessionreplay.model.TextNode : Node
+  constructor(String, Map<String, Any>? = null, Int? = null)
+  override val type: NodeType
+data class com.datadog.android.sessionreplay.model.Offset
+  constructor(Int, Int)
+data class com.datadog.android.sessionreplay.model.RecordData
+  constructor(Node, Offset)
+interface com.datadog.android.sessionreplay.model.Record
+enum com.datadog.android.sessionreplay.model.RecordType
+  constructor(Int)
+  - FULL_SNAPSHOT
+  - INCREMENTAL_SNAPSHOT
+  - META
+  - FOCUS
+  - VIEW_END
+  - VISUAL_VIEWPORT
+data class com.datadog.android.sessionreplay.model.FullSnapshotRecord : Record
+  constructor(RecordType = RecordType.FULL_SNAPSHOT, Long, RecordData)
+enum com.datadog.android.sessionreplay.model.CreationReason
+  - INIT
+  - MAX_DURATION
+  - MAX_SIZE
+  - VIEW_CHANGE
+  - BEFORE_UNLOAD
+  - VISIBILITY_HIDDEN
+data class com.datadog.android.sessionreplay.model.Segment
+  constructor(String, String, String, Long, Long, Boolean, Int, CreationReason, Int, List<Record>)
 class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
   constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
   override fun onCorruption(android.database.sqlite.SQLiteDatabase)

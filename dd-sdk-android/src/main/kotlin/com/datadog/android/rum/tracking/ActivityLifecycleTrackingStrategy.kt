@@ -53,7 +53,7 @@ abstract class ActivityLifecycleTrackingStrategy :
         // No Op
         SessionReplay.record(activity.window,
             SessionReplay.RecordStrategy.HYBRID,
-            frequencyStrategy = SessionReplay.RecordFrequencyStrategy.ON_SCREEN_CHANGE)
+            frequencyStrategy = SessionReplay.RecordFrequencyStrategy.TIME_BASED)
     }
 
     override fun onActivityDestroyed(activity: Activity) {
