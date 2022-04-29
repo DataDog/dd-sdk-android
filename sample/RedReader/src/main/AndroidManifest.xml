@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ This file is part of RedReader.
+  ~
+  ~ RedReader is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ RedReader is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with RedReader.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+		xmlns:tools="http://schemas.android.com/tools"
+		package="org.quantumbadger.redreader"
+		android:installLocation="auto"
+		android:versionCode="89"
+		android:versionName="1.9.11">
+
+	<uses-feature
+			android:glEsVersion="0x00020000"
+			android:required="true" />
+
+	<uses-permission android:name="android.permission.INTERNET" />
+	<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+	<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+	<application
+			android:name="org.quantumbadger.redreader.RedReader"
+			android:allowBackup="true"
+			android:hardwareAccelerated="true"
+			android:icon="@mipmap/icon"
+			android:label="@string/app_name"
+			android:largeHeap="true"
+			android:theme="@style/RR.Startup"
+			android:usesCleartextTraffic="true">
+		<meta-data
+				android:name="android.max_aspect"
+				android:value="2.1" />
+
+		<meta-data
+				android:name="com.lge.support.SPLIT_WINDOW"
+				android:value="true" />
+
+		<activity
+				android:name=".activities.MainActivity"
+				android:alwaysRetainTaskState="true"
+				android:clearTaskOnLaunch="false"
+				android:exported="true"
+				android:configChanges="orientation|screenSize|keyboardHidden"
+				android:finishOnTaskLaunch="false">
+
+			<intent-filter>
+				<action android:name="android.intent.action.MAIN" />
+
+				<category android:name="android.intent.category.LAUNCHER" />
+				<category android:name="android.intent.category.MULTIWINDOW_LAUNCHER" />
+			</intent-filter>
+
+		</activity>
+
+		<activity
+				android:name=".settings.SettingsActivity"
+				android:configChanges="orientation|screenSize|keyboardHidden" />
+
+		<activity android:name=".activities.LinkDispatchActivity" android:exported="true">
+			<intent-filter>
+				<action android:name="android.intent.action.VIEW" />
+
+				<category android:name="android.intent.category.DEFAULT" />
+				<category android:name="android.intent.category.BROWSABLE" />
+
+				<data
+						android:host="*.reddit.com"
+						android:scheme="http" />
+				<data
+						android:host="reddit.com"
+						android:scheme="http" />
+				<data
+						android:host="redd.it"
+						android:scheme="http" />
+				<data
+						android:host="*.reddit.com"
+						android:scheme="https" />
+				<data
+						android:host="reddit.com"
+						android:scheme="https" />
+				<data
+						android:host="redd.it"
+						android:scheme="https" />
+			</intent-filter>
+		</activity>
+
+		<activity
+				android:name=".activities.PostListingActivity"
+				android:configChanges="orientation|screenSize|keyboardHidden" />
+
+		<activity
+				android:name=".activities.CommentListingActivity"
+				android:configChanges="orientation|screenSize|keyboardHidden" />
+
+		<activity
+				android:name=".activities.ChangelogActivity"
+				android:configChanges="orientation|screenSize|keyboardHidden" />
+
+		<activity
+				android:name=".activities.ImgurUploadActivity"
+				android:configChanges="orientation|screenSize|keyboardHidden" />
+
+		<activity
+				android:name=".activities.MoreCommentsListingActivity"
+				android:configChanges="orientation|screenSize|keyboardHidden" />
+
+		<activity
+				android:name=".activities.WebViewActivity"
+				android:configChanges="orientation|screenSize|keyboardHidden"
+				android:theme="@style/RR.Dark" />
+
+		<activity
+				android:name=".activities.HtmlViewActivity"
+				android:configChanges="orientation|screenSize|keyboardHidden" />
+
+		<activity
+				android:name=".activities.OAuthLoginActivity"
+				android:configChanges="orientation|screenSize|keyboardHidden" />
+
+		<activity
+				android:name=".activities.AlbumListingActivity"
+				android:configChanges="orientation|screenSize|keyboardHidden" />
+
+		<activity
+				android:name=".activities.ImageViewActivity"
+				android:configChanges="orientation|screenSize|keyboardHidden"
+				android:theme="@style/RR.Dark" />
+
+		<activity
+				android:name=".activities.CommentReplyActivity"
+				android:configChanges="orientation|screenSize|keyboardHidden" />
+
+		<activity
+				android:name=".activities.CommentEditActivity"
+				android:configChanges="orientation|screenSize|keyboardHidden" />
+
+		<activity
+				android:name=".activities.PMSendActivity"
+				android:configChanges="orientation|screenSize|keyboardHidden" />
+
+		<activity
+				android:name=".activities.PostSubmitActivity"
+				android:exported="true"
+				android:configChanges="orientation|screenSize|keyboardHidden">
+			<intent-filter>
+				<action android:name="android.intent.action.SEND" />
+				<category android:name="android.intent.category.DEFAULT" />
+				<data android:mimeType="text/plain" />
+			</intent-filter>
+		</activity>
+
+		<activity
+				android:name=".activities.BugReportActivity"
+				android:configChanges="orientation|screenSize|keyboardHidden"
+				android:launchMode="singleInstance" />
+
+		<activity
+				android:name=".activities.InboxListingActivity"
+				android:configChanges="orientation|screenSize|keyboardHidden" />
+
+		<receiver android:name=".receivers.NewMessageChecker" />
+		<receiver android:name=".receivers.RegularCachePruner" />
+		<receiver android:name=".receivers.BootReceiver" android:exported="false">
+			<intent-filter>
+				<action android:name="android.intent.action.BOOT_COMPLETED" />
+			</intent-filter>
+		</receiver>
+
+		<uses-library
+				android:name="com.sec.android.app.multiwindow"
+				android:required="false" />
+
+		<meta-data
+				android:name="com.sec.android.support.multiwindow"
+				android:value="true" />
+
+		<meta-data
+				android:name="com.sec.android.multiwindow.DEFAULT_SIZE_W"
+				android:resource="@dimen/app_defaultsize_w" />
+		<meta-data
+				android:name="com.sec.android.multiwindow.DEFAULT_SIZE_H"
+				android:resource="@dimen/app_defaultsize_h" />
+		<meta-data
+				android:name="com.sec.android.multiwindow.MINIMUM_SIZE_W"
+				android:resource="@dimen/app_minimumsize_w" />
+		<meta-data
+				android:name="com.sec.android.multiwindow.MINIMUM_SIZE_H"
+				android:resource="@dimen/app_minimumsize_h" />
+
+		<provider
+				android:name="androidx.core.content.FileProvider"
+				android:authorities="org.quantumbadger.redreader.provider"
+				android:exported="false"
+				android:grantUriPermissions="true">
+			<meta-data
+					android:name="android.support.FILE_PROVIDER_PATHS"
+					android:resource="@xml/file_paths"></meta-data>
+		</provider>
+	</application>
+
+</manifest>
+

@@ -14,6 +14,7 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.sessionreplay.SessionReplay
 
 /**
  * A [ViewTrackingStrategy] that will track [Activity] as RUM Views.

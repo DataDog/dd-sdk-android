@@ -26,6 +26,7 @@ plugins {
     id("org.jetbrains.dokka")
     id("realm-android")
     id("com.squareup.sqldelight")
+    id("datadogInstrumentation")
 }
 
 sqldelight {

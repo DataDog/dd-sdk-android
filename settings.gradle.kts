@@ -22,6 +22,8 @@ include(":instrumented:integration")
 include(":instrumented:nightly-tests")
 
 include(":sample:kotlin")
+include(":sample:RedReader")
+// include(":sample:JetNews:app")
 
 include(":tools:detekt")
 include(":tools:unit")

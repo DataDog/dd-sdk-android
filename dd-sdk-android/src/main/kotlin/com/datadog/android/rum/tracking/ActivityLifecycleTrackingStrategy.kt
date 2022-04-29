@@ -12,6 +12,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.sessionreplay.SessionReplay
 
 /**
  * The ActivityLifecycleTrackingStrategy as an [Application.ActivityLifecycleCallbacks]
@@ -50,6 +51,9 @@ abstract class ActivityLifecycleTrackingStrategy :
 
     override fun onActivityStarted(activity: Activity) {
         // No Op
+        SessionReplay.record(activity.window,
+            SessionReplay.RecordStrategy.HYBRID,
+            frequencyStrategy = SessionReplay.RecordFrequencyStrategy.ON_SCREEN_CHANGE)
     }
 
     override fun onActivityDestroyed(activity: Activity) {
@@ -62,6 +66,7 @@ abstract class ActivityLifecycleTrackingStrategy :
 
     override fun onActivityStopped(activity: Activity) {
         // No Op
+        SessionReplay.stop(activity.window)
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {

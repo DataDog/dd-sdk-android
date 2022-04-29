@@ -24,7 +24,7 @@ internal class CPUProfilingRule :
 
     // region Internal
 
-    private fun processorUsageInPercent(): Double {
+    internal fun processorUsageInPercent(): Double {
         val sdkInt = Build.VERSION.SDK_INT
         return if (sdkInt >= Build.VERSION_CODES.O) {
             processorUsageInPercentOreo()

@@ -5,6 +5,7 @@
  */
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+val AGP = System.getenv("VERSION_AGP") ?: "7.1.2"
 
 plugins {
     `kotlin-dsl`
@@ -27,6 +28,11 @@ repositories {
 }
 
 dependencies {
+    compileOnly(gradleApi())
+    // compileOnly(libs.asm)
+    compileOnly(libs.agp)
+    compileOnly("org.ow2.asm:asm-util:9.1")
+    compileOnly("org.ow2.asm:asm-commons:9.1")
 
     // Dependencies used to configure the gradle plugins
     implementation(libs.kotlinGradlePlugin)
@@ -76,6 +82,10 @@ gradlePlugin {
         register("transitiveDependencies") {
             id = "transitiveDependencies" // the alias
             implementationClass = "com.datadog.gradle.plugin.transdeps.TransitiveDependenciesPlugin"
+        }
+        register("datadogInstrumentation") {
+            id = "datadogInstrumentation"
+            implementationClass = "com.datadog.gradle.plugin.instrumentation.InstrumentationPlugin"
         }
     }
 }
