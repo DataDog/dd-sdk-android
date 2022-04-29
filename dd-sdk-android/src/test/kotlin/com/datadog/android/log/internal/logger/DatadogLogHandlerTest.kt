@@ -205,6 +205,39 @@ internal class DatadogLogHandlerTest {
     }
 
     @Test
+    fun `M not forward log to LogWriter W level is below the min supported`(
+        forge: Forge
+    ) {
+        // Given
+        testedHandler = DatadogLogHandler(
+            LogGenerator(
+                fakeServiceName,
+                fakeLoggerName,
+                mockNetworkInfoProvider,
+                mockUserInfoProvider,
+                mockTimeProvider,
+                fakeSdkVersion,
+                fakeEnvName,
+                fakeAppVersion
+            ),
+            mockWriter,
+            minLogPriority = forge.anInt(min = fakeLevel + 1)
+        )
+
+        // When
+        testedHandler.handleLog(
+            fakeLevel,
+            fakeMessage,
+            forge.aNullable { fakeThrowable },
+            fakeAttributes,
+            fakeTags
+        )
+
+        // Then
+        verifyZeroInteractions(mockWriter, mockSampler)
+    }
+
+    @Test
     fun `forward log to LogWriter with throwable`() {
         val now = System.currentTimeMillis()
 

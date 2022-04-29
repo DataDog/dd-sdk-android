@@ -209,6 +209,7 @@ class com.datadog.android.log.Logger
     fun build(): Logger
     fun setServiceName(String): Builder
     fun setDatadogLogsEnabled(Boolean): Builder
+    fun setDatadogLogsMinPriority(Int): Builder
     fun setLogcatLogsEnabled(Boolean): Builder
     fun setNetworkInfoEnabled(Boolean): Builder
     fun setLoggerName(String): Builder

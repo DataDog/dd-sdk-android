@@ -17,12 +17,14 @@ fun initializeLogger() = Logger.Builder()
 
 fun Logger.sendRandomLog(
     testMethodName: String,
-    forge: Forge
+    forge: Forge,
+    minLogLevel: Int = 1,
+    maxLogLevel: Int = 6
 ) {
     val message = forge.anAlphabeticalString()
     val throwable = forge.aNullable { forge.aThrowable() }
     val attributes = defaultTestAttributes(testMethodName)
-    when (forge.anInt(min = 1, max = 7)) {
+    when (forge.anInt(min = minLogLevel, max = maxLogLevel + 1)) {
         1 -> v(message, throwable, attributes)
         2 -> d(message, throwable, attributes)
         3 -> w(message, throwable, attributes)

@@ -6,6 +6,7 @@
 
 package com.datadog.android.nightly.logs
 
+import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
@@ -106,6 +107,35 @@ class LoggerBuilderE2ETests {
             logger = Logger.Builder().setDatadogLogsEnabled(false).build()
         }
         logger.sendRandomLog(testMethodName, forge)
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setDatadogLogsMinPriority(Int): Builder
+     * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun build(): Logger
+     */
+    @Test
+    fun logs_logger_builder_datadog_min_log_priority() {
+        val testMethodName = "logs_logger_builder_datadog_min_log_priority"
+
+        val minLogLevel = forge.anElementFrom(
+            Log.ERROR,
+            Log.WARN,
+            Log.INFO,
+            Log.DEBUG
+        )
+
+        measureLoggerInitialize {
+            logger = Logger.Builder()
+                .setDatadogLogsEnabled(true)
+                .setDatadogLogsMinPriority(minLogLevel)
+                .build()
+        }
+        logger.sendRandomLog(
+            testMethodName,
+            forge,
+            minLogLevel = Log.VERBOSE,
+            maxLogLevel = minLogLevel
+        )
     }
 
     /**
