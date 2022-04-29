@@ -46,7 +46,7 @@ internal open class RumOkHttpUploaderV2(
         elements.joinToString(",")
     }
 
-    // region DataOkHttpUploader
+    // region DataOkHttpUploaderV2
 
     override fun buildQueryParameters(): Map<String, Any> {
         return mapOf(
