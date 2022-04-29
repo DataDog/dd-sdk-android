@@ -22,6 +22,7 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
@@ -219,16 +220,18 @@ internal class RumSessionScope(
                 CoreFeature.processImportance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND
             if (isForegroundProcess) {
                 val applicationStartTime = resolveStartupTimeNs()
-                viewScope.handleEvent(
-                    RumRawEvent.ApplicationStarted(event.eventTime, applicationStartTime),
-                    writer
-                )
+                if (applicationStartTime != null) {
+                    viewScope.handleEvent(
+                        RumRawEvent.ApplicationStarted(event.eventTime, applicationStartTime),
+                        writer
+                    )
+                }
             }
         }
     }
 
     @SuppressLint("NewApi")
-    private fun resolveStartupTimeNs(): Long {
+    private fun resolveStartupTimeNs(): Long? {
         val resetTimeNs = resetSessionTime
         return when {
             resetTimeNs != null -> resetTimeNs
@@ -236,7 +239,7 @@ internal class RumSessionScope(
                 val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
                 System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(diffMs)
             }
-            else -> Datadog.startupTimeNs
+            else -> RumFeature.startupTimeNs
         }
     }
 

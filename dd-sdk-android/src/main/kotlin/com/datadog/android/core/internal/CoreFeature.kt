@@ -449,6 +449,7 @@ internal object CoreFeature {
         packageVersion = ""
         serviceName = ""
         sourceName = DEFAULT_SOURCE_NAME
+        sdkVersion = DEFAULT_SDK_VERSION
         rumApplicationId = null
         isMainProcess = true
         envName = ""

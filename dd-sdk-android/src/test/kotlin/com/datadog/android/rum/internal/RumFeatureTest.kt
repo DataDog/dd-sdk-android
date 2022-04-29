@@ -40,6 +40,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.lang.ref.WeakReference
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith

@@ -8,12 +8,12 @@ package com.datadog.android.log.internal.logger
 
 import android.os.Build
 import android.util.Log
-import com.datadog.android.Datadog
 import com.datadog.android.log.Logger
 
 internal class LogcatLogHandler(
     internal val serviceName: String,
-    internal val useClassnameAsTag: Boolean
+    internal val useClassnameAsTag: Boolean,
+    internal val isDebug: Boolean = false
 ) : LogHandler {
 
     // region LogHandler
@@ -70,7 +70,7 @@ internal class LogcatLogHandler(
     }
 
     internal fun getCallerStackElement(): StackTraceElement? {
-        return if (Datadog.isDebug && useClassnameAsTag) {
+        return if (isDebug && useClassnameAsTag) {
             val stackTrace = Throwable().stackTrace
             return findValidCallStackElement(stackTrace)
         } else {

@@ -56,6 +56,8 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
     internal var telemetrySamplingRate: Float = 0f
     internal var backgroundEventTracking: Boolean = false
 
+    internal var startupTimeNs: Long = System.nanoTime()
+
     internal var viewTrackingStrategy: ViewTrackingStrategy = NoOpViewTrackingStrategy()
     internal var actionTrackingStrategy: UserActionTrackingStrategy =
         NoOpUserActionTrackingStrategy()

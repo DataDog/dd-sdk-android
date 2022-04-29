@@ -1494,6 +1494,30 @@ data class com.datadog.android.tracing.model.SpanEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): SimCarrier
+interface com.datadog.android.v2.api.SDKCore
+  fun registerFeature(String, SDKFeatureStorageConfiguration, SDKFeatureUploadConfiguration)
+  fun getFeature(String): SDKFeature?
+  fun setVerbosity(Int)
+  fun getVerbosity(): Int
+  fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+  fun setUserInfo(com.datadog.android.core.model.UserInfo)
+  fun stop()
+interface com.datadog.android.v2.api.SDKFeature
+interface com.datadog.android.v2.api.SDKFeatureConfiguration
+  fun register(SDKCore)
+class com.datadog.android.v2.api.SDKFeatureStorageConfiguration
+data class com.datadog.android.v2.api.SDKFeatureUploadConfiguration
+  constructor(String)
+class com.datadog.android.v2.core.DatadogCore : com.datadog.android.v2.api.SDKCore
+  constructor(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration)
+  override fun registerFeature(String, com.datadog.android.v2.api.SDKFeatureStorageConfiguration, com.datadog.android.v2.api.SDKFeatureUploadConfiguration)
+  override fun getFeature(String): com.datadog.android.v2.api.SDKFeature?
+  override fun setVerbosity(Int)
+  override fun getVerbosity(): Int
+  override fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+  override fun setUserInfo(com.datadog.android.core.model.UserInfo)
+  override fun stop()
+  companion object 
 class com.datadog.android.webview.DatadogEventBridge
   constructor()
   constructor(List<String>)

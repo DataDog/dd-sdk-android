@@ -58,6 +58,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
             CoreFeature.initialized.set(true)
         }
         CoreFeature.stop()
+        CoreFeature.sourceName = CoreFeature.DEFAULT_SOURCE_NAME
     }
 
     // endregion
