@@ -50,6 +50,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
@@ -187,18 +188,11 @@ internal class DatadogCoreInitializationTest {
             rumEnabled = true
         ).build()
 
-        // When
-        var caughtException: Exception? = null
-        try {
-            testedCore = DatadogCore(appContext.mockInstance, fakeCredentials, configuration)
-        } catch (e: Exception) {
-            caughtException = e
-        }
-
         // Then
-        assertThat(caughtException)
-            .isInstanceOf(IllegalArgumentException::class.java)
-            .hasMessage(DatadogCore.MESSAGE_ENV_NAME_NOT_VALID)
+        assertThrows<IllegalArgumentException>(DatadogCore.MESSAGE_ENV_NAME_NOT_VALID) {
+            // When
+            testedCore = DatadogCore(appContext.mockInstance, fakeCredentials, configuration)
+        }
     }
 
     @Test

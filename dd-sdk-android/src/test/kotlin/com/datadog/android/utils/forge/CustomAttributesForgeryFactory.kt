@@ -60,7 +60,7 @@ internal class CustomAttributesForgeryFactory : ForgeryFactory<CustomAttributes>
                     getForgery<JSONObject>(),
                     getForgery<JSONArray>(),
                     aList { anAlphabeticalString() },
-                    aList { aDouble() },
+                    aList { aDouble() }
                 )
                     .map { anAlphaNumericalString() to it }
                     .toMap()

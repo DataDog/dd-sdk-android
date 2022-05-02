@@ -57,7 +57,7 @@ internal class RuntimeUtilsTest {
         @IntForgery(min = Log.VERBOSE, max = (Log.ASSERT + 1)) level: Int
     ) {
         // Given
-        val mockSdkCore : SDKCore = mock()
+        val mockSdkCore: SDKCore = mock()
         whenever(mockSdkCore.getVerbosity()) doReturn level
 
         // When

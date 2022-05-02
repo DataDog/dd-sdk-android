@@ -6,20 +6,19 @@
 
 package com.datadog.android.utils.forge
 
-import androidx.core.os.trace
 import com.datadog.android.core.configuration.Configuration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-internal class ConfigurationForgeryFactory: ForgeryFactory<Configuration> {
+internal class ConfigurationForgeryFactory : ForgeryFactory<Configuration> {
     override fun getForgery(forge: Forge): Configuration {
-       return Configuration(
-           coreConfig = forge.getForgery(),
-           logsConfig = forge.getForgery(),
-           tracesConfig = forge.getForgery(),
-           crashReportConfig = forge.getForgery(),
-           rumConfig = forge.getForgery(),
-           additionalConfig = emptyMap()
-       )
+        return Configuration(
+            coreConfig = forge.getForgery(),
+            logsConfig = forge.getForgery(),
+            tracesConfig = forge.getForgery(),
+            crashReportConfig = forge.getForgery(),
+            rumConfig = forge.getForgery(),
+            additionalConfig = emptyMap()
+        )
     }
 }

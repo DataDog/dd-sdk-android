@@ -11,7 +11,6 @@ import android.app.ActivityManager.RunningAppProcessInfo
 import android.os.Build
 import android.os.Process
 import android.os.SystemClock
-import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
@@ -220,18 +219,16 @@ internal class RumSessionScope(
                 CoreFeature.processImportance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND
             if (isForegroundProcess) {
                 val applicationStartTime = resolveStartupTimeNs()
-                if (applicationStartTime != null) {
-                    viewScope.handleEvent(
-                        RumRawEvent.ApplicationStarted(event.eventTime, applicationStartTime),
-                        writer
-                    )
-                }
+                viewScope.handleEvent(
+                    RumRawEvent.ApplicationStarted(event.eventTime, applicationStartTime),
+                    writer
+                )
             }
         }
     }
 
     @SuppressLint("NewApi")
-    private fun resolveStartupTimeNs(): Long? {
+    private fun resolveStartupTimeNs(): Long {
         val resetTimeNs = resetSessionTime
         return when {
             resetTimeNs != null -> resetTimeNs

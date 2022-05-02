@@ -6,15 +6,12 @@
 
 package com.datadog.android.log.internal.logger
 
-import com.datadog.android.BuildConfig
-import com.datadog.android.Datadog
 import fr.xgouchet.elmyr.Case
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Locale
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.RepeatedTest
@@ -110,11 +107,11 @@ internal class LogcatLogHandlerTest {
             } else {
                 // generate from ignored packages prefixes pattern
                 val packagePrefix = LogcatLogHandler.IGNORED_PACKAGE_PREFIXES.random()
-                packagePrefix + ".${anAlphabeticalString(Case.ANY).replaceFirstChar {
-                    if (it.isLowerCase()) it.titlecase(
-                        Locale.US
-                    ) else it.toString()
-                }}"
+                val packageSuffix = anAlphabeticalString(Case.ANY)
+                    .replaceFirstChar {
+                        if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString()
+                    }
+                "$packagePrefix.$packageSuffix"
             }
 
             StackTraceElement(

@@ -8,7 +8,6 @@ package com.datadog.android.core.internal.utils
 
 import com.datadog.android.BuildConfig
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.ConditionalLogHandler
 import com.datadog.android.log.internal.logger.InternalLogHandler
