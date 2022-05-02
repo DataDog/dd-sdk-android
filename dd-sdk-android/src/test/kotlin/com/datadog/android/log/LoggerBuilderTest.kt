@@ -27,6 +27,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -89,6 +90,7 @@ internal class LoggerBuilderTest {
         assertThat(handler.bundleWithTraces).isTrue()
         assertThat(handler.sampler).isInstanceOf(RateBasedSampler::class.java)
         assertThat((handler.sampler as RateBasedSampler).sampleRate).isEqualTo(1.0f)
+        assertThat(handler.minLogPriority).isEqualTo(-1)
     }
 
     @Test
@@ -113,6 +115,18 @@ internal class LoggerBuilderTest {
 
         val handler: LogHandler = logger.handler
         assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
+    }
+
+    @Test
+    fun `builder can set min datadog logs priority`(
+        @IntForgery minLogPriority: Int
+    ) {
+        val logger: Logger = Logger.Builder()
+            .setDatadogLogsMinPriority(minLogPriority)
+            .build()
+
+        val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
+        assertThat(handler.minLogPriority).isEqualTo(minLogPriority)
     }
 
     @Test

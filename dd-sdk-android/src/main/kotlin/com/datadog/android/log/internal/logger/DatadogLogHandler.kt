@@ -20,7 +20,8 @@ internal class DatadogLogHandler(
     internal val writer: DataWriter<LogEvent>,
     internal val bundleWithTraces: Boolean = true,
     internal val bundleWithRum: Boolean = true,
-    internal val sampler: Sampler = RateBasedSampler(1.0f)
+    internal val sampler: Sampler = RateBasedSampler(1.0f),
+    internal val minLogPriority: Int = -1
 ) : LogHandler {
 
     // region LogHandler
@@ -33,6 +34,10 @@ internal class DatadogLogHandler(
         tags: Set<String>,
         timestamp: Long?
     ) {
+        if (level < minLogPriority) {
+            return
+        }
+
         val resolvedTimeStamp = timestamp ?: System.currentTimeMillis()
         if (sampler.sample()) {
             val log = createLog(level, message, throwable, attributes, tags, resolvedTimeStamp)
