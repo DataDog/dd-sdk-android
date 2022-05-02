@@ -19,6 +19,21 @@ class DatadogTree(
 ) :
     Timber.Tree() {
 
+    /**
+     * Creates a [Timber.Tree] with a default [Logger] having a minimum log priority
+     * for Datadog logs set to specified value.
+     *
+     * See [Logger.Builder.setDatadogLogsMinPriority] for details.
+     *
+     * @param minLogPriority Minimum log priority to be sent to the Datadog servers.
+     */
+    constructor(minLogPriority: Int) :
+        this(
+            Logger.Builder()
+                .setDatadogLogsMinPriority(minLogPriority)
+                .build()
+        )
+
     init {
         logger.addTag("android:timber")
     }
