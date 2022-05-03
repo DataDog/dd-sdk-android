@@ -134,7 +134,7 @@ class LoggerBuilderE2ETests {
             testMethodName,
             forge,
             minLogLevel = Log.VERBOSE,
-            maxLogLevel = minLogLevel
+            maxLogLevel = minLogLevel - 1
         )
     }
 
