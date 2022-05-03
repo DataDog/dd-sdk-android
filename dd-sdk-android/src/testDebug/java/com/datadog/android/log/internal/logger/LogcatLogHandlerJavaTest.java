@@ -27,19 +27,9 @@ public class LogcatLogHandlerJavaTest {
     @StringForgery
     String fakeServiceName;
 
-    @BeforeEach
-    void setUp() {
-        testedHandler = new LogcatLogHandler(fakeServiceName, true);
-    }
-
-    @AfterEach
-    void tearDown() {
-        Datadog.INSTANCE.setDebug$dd_sdk_android_debug(BuildConfig.DEBUG);
-    }
-
     @Test
     void resolves_stack_trace_element_null_if_in_release_mode() {
-        Datadog.INSTANCE.setDebug$dd_sdk_android_debug(false);
+        testedHandler = new LogcatLogHandler(fakeServiceName, true, false);
 
         StackTraceElement element = testedHandler.getCallerStackElement$dd_sdk_android_debug();
 
@@ -49,8 +39,7 @@ public class LogcatLogHandlerJavaTest {
 
     @Test
     void resolves_stack_trace_element_null_if_useClassnameAsTag_is_false() {
-        testedHandler = new LogcatLogHandler(fakeServiceName, false);
-        Datadog.INSTANCE.setDebug$dd_sdk_android_debug(true);
+        testedHandler = new LogcatLogHandler(fakeServiceName, false, true);
 
         StackTraceElement element = testedHandler.getCallerStackElement$dd_sdk_android_debug();
 
@@ -60,7 +49,7 @@ public class LogcatLogHandlerJavaTest {
 
     @Test
     void resolves_stack_trace_element_from_caller() {
-        Datadog.INSTANCE.setDebug$dd_sdk_android_debug(true);
+        testedHandler = new LogcatLogHandler(fakeServiceName, true, true);
 
         StackTraceElement element = testedHandler.getCallerStackElement$dd_sdk_android_debug();
 
@@ -71,7 +60,7 @@ public class LogcatLogHandlerJavaTest {
 
     @Test
     void resolves_nested_stack_trace_element_from_caller() {
-        Datadog.INSTANCE.setDebug$dd_sdk_android_debug(true);
+        testedHandler = new LogcatLogHandler(fakeServiceName, true, true);
 
         AtomicReference<StackTraceElement> elementRef = new AtomicReference<>();
 

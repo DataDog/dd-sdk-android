@@ -24,6 +24,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
@@ -530,7 +531,7 @@ internal class RumSessionScopeTest {
             verify(childView).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.ApplicationStarted
-            assertThat(event.applicationStartupNanos).isEqualTo(Datadog.startupTimeNs)
+            assertThat(event.applicationStartupNanos).isEqualTo(RumFeature.startupTimeNs)
         }
         verifyZeroInteractions(mockWriter)
     }
@@ -564,17 +565,20 @@ internal class RumSessionScopeTest {
         @StringForgery key: String,
         @StringForgery name: String
     ) {
+        // Given
         val childView: RumViewScope = mock()
         val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
 
+        // When
         testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
         testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(childView).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.ApplicationStarted
-            assertThat(event.applicationStartupNanos).isEqualTo(Datadog.startupTimeNs)
+            assertThat(event.applicationStartupNanos).isEqualTo(RumFeature.startupTimeNs)
         }
         verifyZeroInteractions(mockWriter)
     }
@@ -584,19 +588,22 @@ internal class RumSessionScopeTest {
         @StringForgery key: String,
         @StringForgery name: String
     ) {
+        // Given
         val childView: RumViewScope = mock()
         val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
 
+        // When
         testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
         val resetNanos = System.nanoTime()
         testedScope.handleEvent(RumRawEvent.ResetSession(), mockWriter)
         testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(childView, times(2)).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.ApplicationStarted
-            assertThat(event.applicationStartupNanos).isEqualTo(Datadog.startupTimeNs)
+            assertThat(event.applicationStartupNanos).isEqualTo(RumFeature.startupTimeNs)
             val event2 = lastValue as RumRawEvent.ApplicationStarted
             assertThat(event2.applicationStartupNanos).isGreaterThanOrEqualTo(resetNanos)
         }

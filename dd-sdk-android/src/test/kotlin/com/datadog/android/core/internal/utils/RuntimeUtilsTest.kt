@@ -11,10 +11,14 @@ import com.datadog.android.Datadog
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.ConditionalLogHandler
 import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.v2.api.SDKCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -44,7 +48,6 @@ internal class RuntimeUtilsTest {
     fun `tear down`() {
         Datadog.initialized.set(false)
         LogsFeature.initialized.set(false)
-        Datadog.isDebug = false
     }
 
     // region devLogger
@@ -54,10 +57,11 @@ internal class RuntimeUtilsTest {
         @IntForgery(min = Log.VERBOSE, max = (Log.ASSERT + 1)) level: Int
     ) {
         // Given
-        Datadog.setVerbosity(level)
+        val mockSdkCore: SDKCore = mock()
+        whenever(mockSdkCore.getVerbosity()) doReturn level
 
         // When
-        val handler = buildDevLogHandler()
+        val handler = buildDevLogHandler(mockSdkCore)
 
         // Then
         assertThat(handler).isInstanceOf(ConditionalLogHandler::class.java)

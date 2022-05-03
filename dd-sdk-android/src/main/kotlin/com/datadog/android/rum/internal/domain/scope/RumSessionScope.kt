@@ -11,7 +11,6 @@ import android.app.ActivityManager.RunningAppProcessInfo
 import android.os.Build
 import android.os.Process
 import android.os.SystemClock
-import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
@@ -22,6 +21,7 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
@@ -236,7 +236,7 @@ internal class RumSessionScope(
                 val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
                 System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(diffMs)
             }
-            else -> Datadog.startupTimeNs
+            else -> RumFeature.startupTimeNs
         }
     }
 
