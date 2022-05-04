@@ -270,5 +270,66 @@ internal class ByteArrayExtTest {
         assertThat(joined).isEqualTo(expected)
     }
 
+    @Test
+    fun `𝕄 join items 𝕎 join() { no items }`(
+        @StringForgery separator: String,
+        @StringForgery prefix: String,
+        @StringForgery suffix: String
+    ) {
+        // Given
+        val dataBytes = emptyList<ByteArray>()
+
+        val separatorBytes = separator.toByteArray()
+        val prefixBytes = prefix.toByteArray()
+        val suffixBytes = suffix.toByteArray()
+
+        val expected = prefixBytes + suffixBytes
+
+        // When
+        val joined =
+            dataBytes.join(separator = separatorBytes, prefix = prefixBytes, suffix = suffixBytes)
+
+        // Then
+        assertThat(joined).isEqualTo(expected)
+    }
+
+    @Test
+    fun `𝕄 join items 𝕎 join() { single item }`(
+        @StringForgery separator: String,
+        @StringForgery prefix: String,
+        @StringForgery suffix: String,
+        forge: Forge
+    ) {
+        // Given
+        val dataBytes = listOf(forge.aString().toByteArray())
+
+        val separatorBytes = separator.toByteArray()
+        val prefixBytes = prefix.toByteArray()
+        val suffixBytes = suffix.toByteArray()
+
+        val expected = prefixBytes + dataBytes[0] + suffixBytes
+
+        // When
+        val joined =
+            dataBytes.join(separator = separatorBytes, prefix = prefixBytes, suffix = suffixBytes)
+
+        // Then
+        assertThat(joined).isEqualTo(expected)
+    }
+
+    @Test
+    fun `𝕄 join items 𝕎 join() { no prefix, no suffix, no data }`(
+        @StringForgery separator: String
+    ) {
+        // Given
+        val dataBytes = emptyList<ByteArray>()
+
+        // When
+        val joined = dataBytes.join(separator = separator.toByteArray())
+
+        // Then
+        assertThat(joined).isEmpty()
+    }
+
     // endregion
 }
