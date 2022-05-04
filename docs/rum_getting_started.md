@@ -326,7 +326,25 @@ This records each request processed by the `OkHttpClient` as a resource in RUM, 
 
 **Note**: If you also use multiple Interceptors, call `DatadogInterceptor` first.
 
-You can also add an `EventListener` for the `OkHttpClient` to [automatically track resource timing][11] for third-party providers and network requests. 
+You can also add an `EventListener` for the `OkHttpClient` to [automatically track resource timing][11] for third-party providers and network requests.
+
+### Track background events
+
+To track events (crashes, network requests etc.) when your application is in the background, i.e. there is no active view, add the following snippet during initialization while setting up Datadog configuration:
+
+ {{< tabs >}}
+ {{% tab "Java" %}}
+ ```swift
+ .trackBackgroundRumEvents(true)
+
+ ```
+
+ <div class="alert alert-info"><p>Note that tracking background events could lead to additional sessions that might impact billing. For questions contact support@datadoghq.com</p>
+ </div>
+
+<div class="alert alert-info"><p>Note that tracking background events could lead to additional sessions that might impact billing. For questions contact support@datadoghq.com</p>
+</div>
+
 
 ## Further Reading
 
