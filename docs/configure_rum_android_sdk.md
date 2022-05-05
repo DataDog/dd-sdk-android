@@ -373,6 +373,18 @@ To modify some attributes in your RUM events, or to drop some of the events enti
    
    **Note**: If you return null from the `EventMapper<T>` implementation, the event is dropped.
 
+## Sample RUM sessions
+
+To control the data your application sends to Datadog RUM, you can specify a sampling rate for RUM sessions while [initializing the RumMonitor][2] as a percentage between 0 and 100.
+
+```kotlin
+val monitor = RumMonitor.Builder()
+        // Here 75% of the RUM sessions are sent to Datadog
+        .sampleRumSessions(75.0f)
+        .build()
+GlobalRum.registerIfAbsent(monitor)
+```
+
    ## Further Reading
 
 {{< partial name="whats-next/whats-next.html" >}}
@@ -386,4 +398,3 @@ To modify some attributes in your RUM events, or to drop some of the events enti
 [7]: https://github.com/DataDog/dd-sdk-android/tree/master/sample/kotlin/src/main/kotlin/com/datadog/android/sample/widget
 [8]: https://square.github.io/okhttp/events/
 [9]: https://docs.datadoghq.com/real_user_monitoring/android/data_collected/?tab=error#event-specific-attributes
- 
