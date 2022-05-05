@@ -942,6 +942,7 @@ datadog:
       - "kotlin.ByteArray.any(kotlin.Function1)"
       - "kotlin.ByteArray.isEmpty()"
       - "kotlin.ByteArray.isNotEmpty()"
+      - "kotlin.collections.Collection.isNotEmpty()"
       - "kotlin.collections.Collection.sumOf(kotlin.Function1)"
       - "kotlin.collections.Collection.withIndex()"
       - "kotlin.collections.Iterable.any(kotlin.Function1)"
