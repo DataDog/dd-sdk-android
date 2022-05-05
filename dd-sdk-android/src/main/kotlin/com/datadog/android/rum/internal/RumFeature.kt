@@ -12,12 +12,14 @@ import android.os.Handler
 import android.os.Looper
 import android.view.Choreographer
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.system.StaticAndroidInfoProvider
+import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
@@ -45,6 +47,7 @@ import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -68,7 +71,7 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
 
     internal var debugActivityLifecycleListener: Application.ActivityLifecycleCallbacks? = null
 
-    internal lateinit var vitalExecutorService: ScheduledThreadPoolExecutor
+    internal var vitalExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
     internal lateinit var anrDetectorExecutorService: ExecutorService
     internal lateinit var anrDetectorRunnable: ANRDetectorRunnable
     internal lateinit var anrDetectorHandler: Handler
@@ -86,7 +89,8 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
         configuration.userActionTrackingStrategy?.let { actionTrackingStrategy = it }
         configuration.longTaskTrackingStrategy?.let { longTaskTrackingStrategy = it }
 
-        initializeVitalMonitors()
+        initializeVitalMonitors(configuration.vitalsMonitorUpdateFrequency)
+
         initializeANRDetector()
 
         registerTrackingStrategies(context)
@@ -109,6 +113,7 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
         vitalExecutorService.shutdownNow()
         anrDetectorExecutorService.shutdownNow()
         anrDetectorRunnable.stop()
+        vitalExecutorService = NoOpScheduledExecutorService()
     }
 
     override fun createPersistenceStrategy(
@@ -173,16 +178,22 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
         longTaskTrackingStrategy.unregister(appContext)
     }
 
-    private fun initializeVitalMonitors() {
+    private fun initializeVitalMonitors(frequency: VitalsUpdateFrequency) {
+        if (frequency == VitalsUpdateFrequency.NEVER) {
+            return
+        }
         cpuVitalMonitor = AggregatingVitalMonitor()
         memoryVitalMonitor = AggregatingVitalMonitor()
         frameRateVitalMonitor = AggregatingVitalMonitor()
+        initializeVitalReaders(frequency.periodInMs)
+    }
 
+    private fun initializeVitalReaders(periodInMs: Long) {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
         vitalExecutorService = ScheduledThreadPoolExecutor(1)
 
-        initializeVitalMonitor(CPUVitalReader(), cpuVitalMonitor)
-        initializeVitalMonitor(MemoryVitalReader(), memoryVitalMonitor)
+        initializeVitalMonitor(CPUVitalReader(), cpuVitalMonitor, periodInMs)
+        initializeVitalMonitor(MemoryVitalReader(), memoryVitalMonitor, periodInMs)
 
         val vitalFrameCallback = VitalFrameCallback(frameRateVitalMonitor) { isInitialized() }
         try {
@@ -199,17 +210,18 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
 
     private fun initializeVitalMonitor(
         vitalReader: VitalReader,
-        vitalObserver: VitalObserver
+        vitalObserver: VitalObserver,
+        periodInMs: Long
     ) {
         val readerRunnable = VitalReaderRunnable(
             vitalReader,
             vitalObserver,
             vitalExecutorService,
-            VITAL_UPDATE_PERIOD_MS
+            periodInMs
         )
         vitalExecutorService.scheduleSafe(
             "Vitals monitoring",
-            VITAL_UPDATE_PERIOD_MS,
+            periodInMs,
             TimeUnit.MILLISECONDS,
             readerRunnable
         )
@@ -221,9 +233,6 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
         anrDetectorExecutorService = Executors.newSingleThreadExecutor()
         anrDetectorExecutorService.executeSafe("ANR detection", anrDetectorRunnable)
     }
-
-    // Update Vitals every second
-    private const val VITAL_UPDATE_PERIOD_MS = 100L
 
     // endregion
 }

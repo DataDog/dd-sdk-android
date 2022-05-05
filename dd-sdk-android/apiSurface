@@ -106,6 +106,7 @@ data class com.datadog.android.core.configuration.Configuration
     DEPRECATED fun setInternalLogsEnabled(String, String): Builder
     fun setAdditionalConfiguration(Map<String, Any>): Builder
     fun setProxy(java.net.Proxy, okhttp3.Authenticator?): Builder
+    fun setVitalsUpdateFrequency(VitalsUpdateFrequency): Builder
   companion object 
 data class com.datadog.android.core.configuration.Credentials
   constructor(String, String, String, String?, String? = null)
@@ -118,6 +119,12 @@ enum com.datadog.android.core.configuration.UploadFrequency
   - FREQUENT
   - AVERAGE
   - RARE
+enum com.datadog.android.core.configuration.VitalsUpdateFrequency
+  constructor(Long)
+  - FREQUENT
+  - AVERAGE
+  - RARE
+  - NEVER
 data class com.datadog.android.core.model.NetworkInfo
   constructor(Connectivity = Connectivity.NETWORK_NOT_CONNECTED, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null)
   fun toJson(): com.google.gson.JsonElement
