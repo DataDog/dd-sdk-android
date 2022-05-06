@@ -62,12 +62,16 @@ def parse_arguments(args: list) -> Namespace:
     return parser.parse_args(args)
 
 
-def github_create_pr(repository: str, branch_name: str, base_name: str, version: str, gh_token: str) -> int:
+def github_create_pr(repository: str, branch_name: str, base_name: str, version: str, previous_version: str, gh_token: str) -> int:
     headers = {
         'authorization': "Bearer " + gh_token,
         'Accept': 'application/vnd.github.v3+json',
     }
-    data = '{"body": "This PR has been created automatically by the CI", ' \
+    body = "This PR has been created automatically by the CI"
+    if previous_version:
+        diff = "Updating from version '{previous_version}' to version '{version}': [diff](https://github.com/DataDog/dd-sdk-android/compare/{previous_version}...{version})".format(previous_version=previous_version, version=version)
+        body = "\n".join([body, diff])
+    data = '{"body": "' + body + '", ' \
            '"title": "Update to version ' + version + '", ' \
                                                       '"base":"' + base_name + '", "head":"' + branch_name + '"}'
 
@@ -119,14 +123,20 @@ def generate_target_code(target: str, temp_dir_path: str, version: str):
     prefix = PREFIX[target]
     regex = prefix + " = \"[0-9a-z\\.-]+\""
 
+    previous_version = None
+
     print("regex = ")
     with open(target_file, 'r') as target:
         content = target.read()
+        previous_version_search = re.search(prefix + " = \"(.*)\"", content, flags=re.M)
+        if previous_version_search:
+            previous_version = previous_version_search.group(1)
         updated_content = re.sub(regex, prefix + " = \"" + version + "\"", content, flags=re.M)
-        # print(updated_content)
 
     with open(target_file, 'w') as target:
         target.write(updated_content)
+
+    return previous_version
 
 
 def git_clone_repository(repo_name: str, gh_token: str, temp_dir_path: str) -> Tuple[Repo, str]:
@@ -158,7 +168,7 @@ def update_dependant(version: str, target: str, gh_token: str) -> int:
     print("Creating branch " + branch_name)
     repo.git.checkout('HEAD', b=branch_name)
 
-    generate_target_code(target, temp_dir_path, version)
+    previous_version = generate_target_code(target, temp_dir_path, version)
     update_version_table(target, temp_dir_path, version)
 
     if not repo.is_dirty():
@@ -167,7 +177,7 @@ def update_dependant(version: str, target: str, gh_token: str) -> int:
 
     git_push_changes(repo, version)
 
-    return github_create_pr(repo_name, branch_name, base_name, version, gh_token)
+    return github_create_pr(repo_name, branch_name, base_name, version, previous_version, gh_token)
 
 
 def run_main() -> int:
