@@ -18,9 +18,9 @@ import com.datadog.android.tracing.internal.domain.TracesFilePersistenceStrategy
 import com.datadog.android.tracing.internal.net.TracesOkHttpUploaderV2
 import com.datadog.opentracing.DDSpan
 
-internal object TracingFeature : SdkFeature<DDSpan, Configuration.Feature.Tracing>() {
-
-    internal const val TRACING_FEATURE_NAME = "tracing"
+internal class TracingFeature(
+    coreFeature: CoreFeature
+) : SdkFeature<DDSpan, Configuration.Feature.Tracing>(coreFeature) {
 
     // region SdkFeature
 
@@ -29,26 +29,24 @@ internal object TracingFeature : SdkFeature<DDSpan, Configuration.Feature.Tracin
         configuration: Configuration.Feature.Tracing
     ): PersistenceStrategy<DDSpan> {
         return TracesFilePersistenceStrategy(
-            CoreFeature.trackingConsentProvider,
+            coreFeature.trackingConsentProvider,
             context,
-            CoreFeature.persistenceExecutorService,
-            CoreFeature.timeProvider,
-            CoreFeature.networkInfoProvider,
-            CoreFeature.userInfoProvider,
-            CoreFeature.envName,
+            coreFeature.persistenceExecutorService,
+            coreFeature,
+            coreFeature.envName,
             sdkLogger,
             configuration.spanEventMapper,
-            CoreFeature.localDataEncryption
+            coreFeature.localDataEncryption
         )
     }
 
     override fun createUploader(configuration: Configuration.Feature.Tracing): DataUploader {
         return TracesOkHttpUploaderV2(
             configuration.endpointUrl,
-            CoreFeature.clientToken,
-            CoreFeature.sourceName,
-            CoreFeature.sdkVersion,
-            CoreFeature.okHttpClient,
+            coreFeature.clientToken,
+            coreFeature.sourceName,
+            coreFeature.sdkVersion,
+            coreFeature.okHttpClient,
             StaticAndroidInfoProvider
         )
     }
@@ -58,4 +56,8 @@ internal object TracingFeature : SdkFeature<DDSpan, Configuration.Feature.Tracin
     }
 
     // endregion
+
+    companion object {
+        internal const val TRACING_FEATURE_NAME = "tracing"
+    }
 }

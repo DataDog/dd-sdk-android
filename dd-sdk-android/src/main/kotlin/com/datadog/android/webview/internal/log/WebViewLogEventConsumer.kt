@@ -15,18 +15,17 @@ import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
 import com.google.gson.JsonObject
-import kotlin.ClassCastException
-import kotlin.NumberFormatException
 
 internal class WebViewLogEventConsumer(
     private val userLogsWriter: DataWriter<JsonObject>,
     private val rumContextProvider: WebViewRumEventContextProvider,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    coreFeature: CoreFeature
 ) : WebViewEventConsumer<Pair<JsonObject, String>> {
 
     private val ddTags: String by lazy {
-        "${LogAttributes.APPLICATION_VERSION}:${CoreFeature.packageVersion}" +
-            ",${LogAttributes.ENV}:${CoreFeature.envName}"
+        "${LogAttributes.APPLICATION_VERSION}:${coreFeature.packageVersion}" +
+            ",${LogAttributes.ENV}:${coreFeature.envName}"
     }
 
     override fun consume(event: Pair<JsonObject, String>) {

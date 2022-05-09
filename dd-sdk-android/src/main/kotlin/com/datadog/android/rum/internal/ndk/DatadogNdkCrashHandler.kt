@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.ndk
 
 import android.content.Context
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.file.FileHandler
@@ -20,7 +19,7 @@ import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.domain.LogGenerator
+import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
@@ -35,7 +34,7 @@ import java.util.concurrent.TimeUnit
 internal class DatadogNdkCrashHandler(
     appContext: Context,
     private val dataPersistenceExecutorService: ExecutorService,
-    internal val logGenerator: LogGenerator,
+    internal val logGenerator: DatadogLogGenerator,
     private val ndkCrashLogDeserializer: Deserializer<NdkCrashLog>,
     private val rumEventDeserializer: Deserializer<Any>,
     private val networkInfoDeserializer: Deserializer<NetworkInfo>,
@@ -43,8 +42,7 @@ internal class DatadogNdkCrashHandler(
     private val internalLogger: Logger,
     private val timeProvider: TimeProvider,
     private val fileHandler: FileHandler,
-    private val rumEventSourceProvider: RumEventSourceProvider =
-        RumEventSourceProvider(CoreFeature.sourceName)
+    private val rumEventSourceProvider: RumEventSourceProvider
 ) : NdkCrashHandler {
 
     private val ndkCrashDataDirectory: File = getNdkGrantedDir(appContext)
@@ -232,7 +230,7 @@ internal class DatadogNdkCrashHandler(
         lastUserInfo: UserInfo?
     ) {
         val log = logGenerator.generateLog(
-            level = LogGenerator.CRASH,
+            level = DatadogLogGenerator.CRASH,
             errorLogMessage,
             null,
             logAttributes,

@@ -16,10 +16,7 @@ import com.datadog.android.core.internal.persistence.Batch
 import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.error.internal.CrashReportsFeature
-import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.tracing.internal.TracingFeature
+import com.datadog.android.v2.core.DatadogCore
 
 internal class UploadWorker(
     appContext: Context,
@@ -35,28 +32,21 @@ internal class UploadWorker(
         }
 
         // Upload Crash reports
-        uploadAllBatches(
-            CrashReportsFeature.persistenceStrategy.getReader(),
-            CrashReportsFeature.uploader
+        val globalSDKCore: DatadogCore? = (Datadog.globalSDKCore as? DatadogCore)
+        listOfNotNull(
+            globalSDKCore?.crashReportsFeature,
+            globalSDKCore?.logsFeature,
+            globalSDKCore?.tracingFeature,
+            globalSDKCore?.rumFeature,
+            globalSDKCore?.webViewLogsFeature,
+            globalSDKCore?.webViewRumFeature
         )
-
-        // Upload Logs
-        uploadAllBatches(
-            LogsFeature.persistenceStrategy.getReader(),
-            LogsFeature.uploader
-        )
-
-        // Upload Traces
-        uploadAllBatches(
-            TracingFeature.persistenceStrategy.getReader(),
-            TracingFeature.uploader
-        )
-
-        // Upload RUM
-        uploadAllBatches(
-            RumFeature.persistenceStrategy.getReader(),
-            RumFeature.uploader
-        )
+            .forEach {
+                uploadAllBatches(
+                    it.persistenceStrategy.getReader(),
+                    it.uploader
+                )
+            }
 
         return Result.success()
     }

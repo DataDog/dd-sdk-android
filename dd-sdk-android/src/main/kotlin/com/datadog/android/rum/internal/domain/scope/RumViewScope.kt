@@ -12,8 +12,8 @@ import android.content.Context
 import android.os.Build
 import android.view.WindowManager
 import androidx.fragment.app.Fragment
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
@@ -22,6 +22,7 @@ import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.log.internal.utils.debugWithTelemetry
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
@@ -43,7 +44,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
-@Suppress("LargeClass")
+@Suppress("LargeClass", "LongParameterList")
 internal open class RumViewScope(
     private val parentScope: RumScope,
     key: Any,
@@ -56,6 +57,8 @@ internal open class RumViewScope(
     internal val frameRateVitalMonitor: VitalMonitor,
     internal val timeProvider: TimeProvider,
     private val rumEventSourceProvider: RumEventSourceProvider,
+    private val userInfoProvider: UserInfoProvider,
+    private val networkInfoProvider: NetworkInfoProvider,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val viewUpdatePredicate: ViewUpdatePredicate = DefaultViewUpdatePredicate(),
     internal val type: RumViewType = RumViewType.FOREGROUND
@@ -275,7 +278,8 @@ internal open class RumViewScope(
                     this,
                     event,
                     serverTimeOffsetInMs,
-                    rumEventSourceProvider
+                    rumEventSourceProvider,
+                    userInfoProvider
                 )
                 pendingActionCount++
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), writer)
@@ -291,7 +295,8 @@ internal open class RumViewScope(
                 this,
                 event,
                 serverTimeOffsetInMs,
-                rumEventSourceProvider
+                rumEventSourceProvider,
+                userInfoProvider
             )
         )
         pendingActionCount++
@@ -312,7 +317,9 @@ internal open class RumViewScope(
             updatedEvent,
             firstPartyHostDetector,
             serverTimeOffsetInMs,
-            rumEventSourceProvider
+            rumEventSourceProvider,
+            userInfoProvider,
+            networkInfoProvider
         )
         pendingResourceCount++
     }
@@ -326,10 +333,10 @@ internal open class RumViewScope(
         if (stopped) return
 
         val context = getRumContext()
-        val user = CoreFeature.userInfoProvider.getUserInfo()
+        val user = userInfoProvider.getUserInfo()
         val updatedAttributes = addExtraAttributes(event.attributes)
         val isFatal = updatedAttributes.remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean
-        val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
+        val networkInfo = networkInfoProvider.getLatestNetworkInfo()
         val errorType = event.type ?: event.throwable?.javaClass?.canonicalName
         val throwableMessage = event.throwable?.message ?: ""
         val message = if (throwableMessage.isNotBlank() && event.message != throwableMessage) {
@@ -540,7 +547,7 @@ internal open class RumViewScope(
         version++
         val updatedDurationNs = resolveViewDuration(event)
         val context = getRumContext()
-        val user = CoreFeature.userInfoProvider.getUserInfo()
+        val user = userInfoProvider.getUserInfo()
         val timings = resolveCustomTimings()
         val memoryInfo = lastMemoryInfo
         val refreshRateInfo = lastFrameRateInfo
@@ -641,7 +648,7 @@ internal open class RumViewScope(
     ) {
         pendingActionCount++
         val context = getRumContext()
-        val user = CoreFeature.userInfoProvider.getUserInfo()
+        val user = userInfoProvider.getUserInfo()
 
         val actionEvent = ActionEvent(
             date = eventTimestamp,
@@ -684,11 +691,11 @@ internal open class RumViewScope(
         if (stopped) return
 
         val context = getRumContext()
-        val user = CoreFeature.userInfoProvider.getUserInfo()
+        val user = userInfoProvider.getUserInfo()
         val updatedAttributes = addExtraAttributes(
             mapOf(RumAttributes.LONG_TASK_TARGET to event.target)
         )
-        val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
+        val networkInfo = networkInfoProvider.getLatestNetworkInfo()
         val timestamp = event.eventTime.timestamp + serverTimeOffsetInMs
         val isFrozenFrame = event.durationNs > FROZEN_FRAME_THRESHOLD_NS
         val longTaskEvent = LongTaskEvent(
@@ -793,7 +800,9 @@ internal open class RumViewScope(
             memoryVitalMonitor: VitalMonitor,
             frameRateVitalMonitor: VitalMonitor,
             timeProvider: TimeProvider,
-            rumEventSourceProvider: RumEventSourceProvider
+            rumEventSourceProvider: RumEventSourceProvider,
+            userInfoProvider: UserInfoProvider,
+            networkInfoProvider: NetworkInfoProvider
         ): RumViewScope {
             return RumViewScope(
                 parentScope,
@@ -806,7 +815,9 @@ internal open class RumViewScope(
                 memoryVitalMonitor,
                 frameRateVitalMonitor,
                 timeProvider,
-                rumEventSourceProvider
+                rumEventSourceProvider,
+                userInfoProvider,
+                networkInfoProvider
             )
         }
     }

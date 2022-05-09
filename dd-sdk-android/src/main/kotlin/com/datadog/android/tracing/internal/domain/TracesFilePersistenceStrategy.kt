@@ -7,16 +7,14 @@
 package com.datadog.android.tracing.internal.domain
 
 import android.content.Context
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
 import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.security.Encryption
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.tracing.internal.domain.event.DdSpanToSpanEventMapper
@@ -30,9 +28,7 @@ internal class TracesFilePersistenceStrategy(
     consentProvider: ConsentProvider,
     context: Context,
     executorService: ExecutorService,
-    timeProvider: TimeProvider,
-    networkInfoProvider: NetworkInfoProvider,
-    userInfoProvider: UserInfoProvider,
+    coreFeature: CoreFeature,
     envName: String,
     internalLogger: Logger,
     spanEventMapper: SpanEventMapper,
@@ -48,9 +44,7 @@ internal class TracesFilePersistenceStrategy(
     executorService,
     SpanMapperSerializer(
         DdSpanToSpanEventMapper(
-            timeProvider,
-            networkInfoProvider,
-            userInfoProvider
+            coreFeature
         ),
         SpanEventMapperWrapper(spanEventMapper),
         SpanEventSerializer(envName)

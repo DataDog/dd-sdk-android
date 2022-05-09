@@ -280,7 +280,7 @@ data class com.datadog.android.log.model.LogEvent
       fun fromJson(kotlin.String): Status
 data class com.datadog.android.plugin.DatadogContext
   constructor(DatadogRumContext? = null)
-interface com.datadog.android.plugin.DatadogPlugin : com.datadog.android.privacy.TrackingConsentProviderCallback
+DEPRECATED interface com.datadog.android.plugin.DatadogPlugin : com.datadog.android.privacy.TrackingConsentProviderCallback
   fun register(DatadogPluginConfig)
   fun unregister()
   fun onContextChanged(DatadogContext)
@@ -1502,6 +1502,8 @@ interface com.datadog.android.v2.api.SDKCore
   fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
   fun setUserInfo(com.datadog.android.core.model.UserInfo)
   fun stop()
+  fun clearAllData()
+  fun flushStoredData()
 interface com.datadog.android.v2.api.SDKFeature
 interface com.datadog.android.v2.api.SDKFeatureConfiguration
   fun register(SDKCore)
@@ -1516,7 +1518,9 @@ class com.datadog.android.v2.core.DatadogCore : com.datadog.android.v2.api.SDKCo
   override fun getVerbosity(): Int
   override fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
   override fun setUserInfo(com.datadog.android.core.model.UserInfo)
+  override fun clearAllData()
   override fun stop()
+  override fun flushStoredData()
   companion object 
 class com.datadog.android.webview.DatadogEventBridge
   constructor()

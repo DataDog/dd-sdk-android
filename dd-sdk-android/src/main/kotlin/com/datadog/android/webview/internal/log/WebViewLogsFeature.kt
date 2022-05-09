@@ -17,9 +17,9 @@ import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
 import com.google.gson.JsonObject
 
-internal object WebViewLogsFeature : SdkFeature<JsonObject, Configuration.Feature.Logs>() {
-
-    internal const val WEB_LOGS_FEATURE_NAME = "web-logs"
+internal class WebViewLogsFeature(
+    coreFeature: CoreFeature
+) : SdkFeature<JsonObject, Configuration.Feature.Logs>(coreFeature) {
 
     // region SdkFeature
 
@@ -28,25 +28,29 @@ internal object WebViewLogsFeature : SdkFeature<JsonObject, Configuration.Featur
         configuration: Configuration.Feature.Logs
     ): PersistenceStrategy<JsonObject> {
         return WebViewLogFilePersistenceStrategy(
-            CoreFeature.trackingConsentProvider,
+            coreFeature.trackingConsentProvider,
             context,
-            CoreFeature.persistenceExecutorService,
+            coreFeature.persistenceExecutorService,
             sdkLogger,
-            CoreFeature.localDataEncryption
+            coreFeature.localDataEncryption
         )
     }
 
     override fun createUploader(configuration: Configuration.Feature.Logs): DataUploader {
         return LogsOkHttpUploaderV2(
             configuration.endpointUrl,
-            CoreFeature.clientToken,
-            CoreFeature.sourceName,
-            CoreFeature.sdkVersion,
-            CoreFeature.okHttpClient,
+            coreFeature.clientToken,
+            coreFeature.sourceName,
+            coreFeature.sdkVersion,
+            coreFeature.okHttpClient,
             StaticAndroidInfoProvider,
             sdkLogger
         )
     }
 
     // endregion
+
+    companion object {
+        internal const val WEB_LOGS_FEATURE_NAME = "web-logs"
+    }
 }

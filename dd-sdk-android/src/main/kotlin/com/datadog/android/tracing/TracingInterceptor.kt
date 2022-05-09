@@ -6,14 +6,14 @@
 
 package com.datadog.android.tracing
 
+import com.datadog.android.Datadog
 import com.datadog.android.DatadogInterceptor
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.utils.warningWithTelemetry
-import com.datadog.android.tracing.internal.TracingFeature
+import com.datadog.android.v2.core.DatadogCore
 import com.datadog.opentracing.DDTracer
 import com.datadog.trace.api.DDTags
 import com.datadog.trace.api.interceptor.MutableSpan
@@ -96,7 +96,7 @@ internal constructor(
     ) : this(
         tracedHosts,
         tracedRequestListener,
-        CoreFeature.firstPartyHostDetector,
+        getGlobalFirstPartyHostDetector(),
         null,
         { AndroidTracer.Builder().build() }
     )
@@ -112,7 +112,7 @@ internal constructor(
     ) : this(
         emptyList(),
         tracedRequestListener,
-        CoreFeature.firstPartyHostDetector,
+        getGlobalFirstPartyHostDetector(),
         null,
         { AndroidTracer.Builder().build() }
     )
@@ -213,7 +213,8 @@ internal constructor(
 
     @Synchronized
     private fun resolveTracer(): Tracer? {
-        return if (!TracingFeature.initialized.get()) {
+        val tracingFeature = (Datadog.globalSDKCore as? DatadogCore)?.tracingFeature
+        return if (tracingFeature == null) {
             devLogger.w(WARNING_TRACING_DISABLED)
             null
         } else if (GlobalTracer.isRegistered()) {
@@ -351,5 +352,18 @@ internal constructor(
             "You added a TracingInterceptor to your OkHttpClient, " +
                 "but you didn't register any Tracer. " +
                 "We automatically created a local tracer for you."
+
+        /**
+         * Temporary helper method for now, it'll be removed eventually.
+         */
+        @Suppress("FunctionMaxLength")
+        internal fun getGlobalFirstPartyHostDetector(): FirstPartyHostDetector {
+            return (
+                (Datadog.globalSDKCore as? DatadogCore)
+                    ?.coreFeature
+                    ?.firstPartyHostDetector
+                    ?: FirstPartyHostDetector(emptyList())
+                )
+        }
     }
 }

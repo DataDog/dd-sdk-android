@@ -26,6 +26,7 @@ internal class OreoFragmentLifecycleCallbacks(
     private val argumentsProvider: (Fragment) -> Map<String, Any?>,
     private val componentPredicate: ComponentPredicate<Fragment>,
     private val viewLoadingTimer: ViewLoadingTimer = ViewLoadingTimer(),
+    private val rumFeature: RumFeature,
     private val rumMonitor: RumMonitor,
     private val advancedRumMonitor: AdvancedRumMonitor,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
@@ -58,10 +59,9 @@ internal class OreoFragmentLifecycleCallbacks(
         if (isNotAViewFragment(f)) return
 
         val context = f.context
-
         if (f is DialogFragment && context != null) {
             val window = f.dialog?.window
-            val gesturesTracker = RumFeature.actionTrackingStrategy.getGesturesTracker()
+            val gesturesTracker = rumFeature.actionTrackingStrategy.getGesturesTracker()
             gesturesTracker.startTracking(window, context)
         }
     }

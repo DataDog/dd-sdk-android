@@ -16,6 +16,7 @@ import com.datadog.android.privacy.TrackingConsentProviderCallback
  * @see [Feature.TRACE]
  * @see [Feature.RUM]
  */
+@Deprecated("Datadog Plugins won't work in SDK v2, you'll need to write your own Feature")
 interface DatadogPlugin : TrackingConsentProviderCallback {
 
     /**

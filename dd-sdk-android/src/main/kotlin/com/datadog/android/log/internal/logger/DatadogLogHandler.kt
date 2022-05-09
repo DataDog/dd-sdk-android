@@ -36,7 +36,9 @@ internal class DatadogLogHandler(
         val resolvedTimeStamp = timestamp ?: System.currentTimeMillis()
         if (sampler.sample()) {
             val log = createLog(level, message, throwable, attributes, tags, resolvedTimeStamp)
-            writer.write(log)
+            if (log != null) {
+                writer.write(log)
+            }
         }
 
         if (level >= AndroidLog.ERROR) {
@@ -56,7 +58,7 @@ internal class DatadogLogHandler(
         attributes: Map<String, Any?>,
         tags: Set<String>,
         timestamp: Long
-    ): LogEvent {
+    ): LogEvent? {
         return logGenerator.generateLog(
             level,
             message,

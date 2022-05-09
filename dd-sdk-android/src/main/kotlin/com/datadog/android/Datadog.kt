@@ -9,22 +9,15 @@ package com.datadog.android
 import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.model.UserInfo
-import com.datadog.android.error.internal.CrashReportsFeature
-import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
-import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.v2.api.NoOpSDKCore
 import com.datadog.android.v2.api.SDKCore
 import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.webview.internal.log.WebViewLogsFeature
-import com.datadog.android.webview.internal.rum.WebViewRumFeature
-import java.lang.IllegalArgumentException
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -33,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 @Suppress("TooManyFunctions")
 object Datadog {
 
-    private var globalSDKCore: SDKCore = NoOpSDKCore()
+    internal var globalSDKCore: SDKCore = NoOpSDKCore()
 
     internal val initialized = AtomicBoolean(false)
 
@@ -88,12 +81,7 @@ object Datadog {
      */
     @JvmStatic
     fun clearAllData() {
-        LogsFeature.clearAllData()
-        CrashReportsFeature.clearAllData()
-        RumFeature.clearAllData()
-        TracingFeature.clearAllData()
-        WebViewLogsFeature.clearAllData()
-        WebViewRumFeature.clearAllData()
+        globalSDKCore.clearAllData()
     }
 
     // Stop all Datadog work (for test purposes).
@@ -120,15 +108,7 @@ object Datadog {
                 it.stopKeepAliveCallback()
                 it.drainExecutorService()
             }
-            // We need to drain and shutdown the executors first to make sure we avoid duplicated
-            // data due to async operations.
-            CoreFeature.drainAndShutdownExecutors()
-            LogsFeature.flushStoredData()
-            TracingFeature.flushStoredData()
-            RumFeature.flushStoredData()
-            CrashReportsFeature.flushStoredData()
-            WebViewLogsFeature.flushStoredData()
-            WebViewRumFeature.flushStoredData()
+            globalSDKCore.flushStoredData()
         }
     }
 
@@ -194,11 +174,11 @@ object Datadog {
      */
     @JvmStatic
     fun enableRumDebugging(enable: Boolean) {
-        // TODO-2138 Move this to the RUM SdkFeature
+        val rumFeature = ((globalSDKCore as? DatadogCore)?.rumFeature) as? RumFeature
         if (enable) {
-            RumFeature.enableDebugging()
+            rumFeature?.enableDebugging()
         } else {
-            RumFeature.disableDebugging()
+            rumFeature?.disableDebugging()
         }
     }
 

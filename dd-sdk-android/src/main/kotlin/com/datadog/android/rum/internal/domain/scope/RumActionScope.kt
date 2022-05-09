@@ -6,8 +6,8 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.domain.RumContext
@@ -29,7 +29,8 @@ internal class RumActionScope(
     serverTimeOffsetInMs: Long,
     inactivityThresholdMs: Long = ACTION_INACTIVITY_MS,
     maxDurationMs: Long = ACTION_MAX_DURATION_MS,
-    private val rumEventSourceProvider: RumEventSourceProvider
+    private val rumEventSourceProvider: RumEventSourceProvider,
+    private val userInfoProvider: UserInfoProvider
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
@@ -184,7 +185,7 @@ internal class RumActionScope(
         attributes.putAll(GlobalRum.globalAttributes)
 
         val context = getRumContext()
-        val user = CoreFeature.userInfoProvider.getUserInfo()
+        val user = userInfoProvider.getUserInfo()
 
         val actionEvent = ActionEvent(
             date = eventTimestamp,
@@ -233,7 +234,8 @@ internal class RumActionScope(
             parentScope: RumScope,
             event: RumRawEvent.StartAction,
             timestampOffset: Long,
-            eventSourceProvider: RumEventSourceProvider
+            eventSourceProvider: RumEventSourceProvider,
+            userInfoProvider: UserInfoProvider
         ): RumScope {
             return RumActionScope(
                 parentScope,
@@ -243,7 +245,8 @@ internal class RumActionScope(
                 event.name,
                 event.attributes,
                 timestampOffset,
-                rumEventSourceProvider = eventSourceProvider
+                rumEventSourceProvider = eventSourceProvider,
+                userInfoProvider = userInfoProvider
             )
         }
     }

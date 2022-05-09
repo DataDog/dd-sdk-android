@@ -10,18 +10,21 @@ import android.util.Log as AndroidLog
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.domain.LogGenerator
+import com.datadog.android.log.internal.domain.NoOpLogGenerator
 import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.log.model.LogEvent
+import com.datadog.android.v2.core.DatadogCore
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Date
@@ -178,28 +181,31 @@ internal constructor(internal var handler: LogHandler) {
      */
     class Builder {
 
-        private var serviceName: String = CoreFeature.serviceName
+        private var serviceName: String? = null
+        private var loggerName: String? = null
         private var datadogLogsEnabled: Boolean = true
         private var logcatLogsEnabled: Boolean = false
         private var networkInfoEnabled: Boolean = false
         private var bundleWithTraceEnabled: Boolean = true
         private var bundleWithRumEnabled: Boolean = true
-        private var loggerName: String = CoreFeature.packageName
         private var sampleRate: Float = 1.0f
 
         /**
          * Builds a [Logger] based on the current state of this Builder.
          */
         fun build(): Logger {
+            val datadogCore = Datadog.globalSDKCore as? DatadogCore
+            val coreFeature = datadogCore?.coreFeature
+            val logsFeature = datadogCore?.logsFeature
             val handler = when {
                 datadogLogsEnabled && logcatLogsEnabled -> {
                     CombinedLogHandler(
-                        buildDatadogHandler(),
-                        buildLogcatHandler()
+                        buildDatadogHandler(coreFeature, logsFeature),
+                        buildLogcatHandler(coreFeature)
                     )
                 }
-                datadogLogsEnabled -> buildDatadogHandler()
-                logcatLogsEnabled -> buildLogcatHandler()
+                datadogLogsEnabled -> buildDatadogHandler(coreFeature, logsFeature)
+                logcatLogsEnabled -> buildLogcatHandler(coreFeature)
                 else -> NoOpLogHandler()
             }
 
@@ -287,14 +293,20 @@ internal constructor(internal var handler: LogHandler) {
 
         // region Internal
 
-        private fun buildLogcatHandler(): LogHandler {
-            return LogcatLogHandler(serviceName, true)
+        private fun buildLogcatHandler(coreFeature: CoreFeature?): LogHandler {
+            return LogcatLogHandler(
+                serviceName = serviceName ?: coreFeature?.serviceName ?: "unknown",
+                useClassnameAsTag = true
+            )
         }
 
-        private fun buildDatadogHandler(): LogHandler {
-            val writer = buildLogWriter() ?: return NoOpLogHandler()
+        private fun buildDatadogHandler(
+            coreFeature: CoreFeature?,
+            logsFeature: SdkFeature<LogEvent, *>?
+        ): LogHandler {
+            val writer = buildLogWriter(logsFeature) ?: return NoOpLogHandler()
 
-            val logGenerator = buildLogGenerator()
+            val logGenerator = buildLogGenerator(coreFeature)
 
             return DatadogLogHandler(
                 logGenerator = logGenerator,
@@ -305,9 +317,9 @@ internal constructor(internal var handler: LogHandler) {
             )
         }
 
-        private fun buildLogWriter(): DataWriter<LogEvent>? {
-            return if (LogsFeature.isInitialized()) {
-                LogsFeature.persistenceStrategy.getWriter()
+        private fun buildLogWriter(logsFeature: SdkFeature<LogEvent, *>?): DataWriter<LogEvent>? {
+            return if (logsFeature != null) {
+                logsFeature.persistenceStrategy.getWriter()
             } else {
                 devLogger.e(
                     SDK_NOT_INITIALIZED_WARNING_MESSAGE + "\n" +
@@ -317,22 +329,26 @@ internal constructor(internal var handler: LogHandler) {
             }
         }
 
-        private fun buildLogGenerator(): LogGenerator {
-            val netInfoProvider = if (networkInfoEnabled) {
-                CoreFeature.networkInfoProvider
+        private fun buildLogGenerator(coreFeature: CoreFeature?): LogGenerator {
+            if (coreFeature == null) {
+                return NoOpLogGenerator()
             } else {
-                null
+                val netInfoProvider = if (networkInfoEnabled) {
+                    coreFeature.networkInfoProvider
+                } else {
+                    null
+                }
+                return DatadogLogGenerator(
+                    serviceName ?: coreFeature.serviceName,
+                    loggerName ?: coreFeature.packageName,
+                    netInfoProvider,
+                    coreFeature.userInfoProvider,
+                    coreFeature.timeProvider,
+                    coreFeature.sdkVersion,
+                    coreFeature.envName,
+                    coreFeature.packageVersion
+                )
             }
-            return LogGenerator(
-                serviceName,
-                loggerName,
-                netInfoProvider,
-                CoreFeature.userInfoProvider,
-                CoreFeature.timeProvider,
-                CoreFeature.sdkVersion,
-                CoreFeature.envName,
-                CoreFeature.packageVersion
-            )
         }
 
         // endregion

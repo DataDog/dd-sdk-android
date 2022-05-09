@@ -6,11 +6,12 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -35,7 +36,9 @@ internal class RumResourceScope(
     initialAttributes: Map<String, Any?>,
     serverTimeOffsetInMs: Long,
     internal val firstPartyHostDetector: FirstPartyHostDetector,
-    private val rumEventSourceProvider: RumEventSourceProvider
+    private val rumEventSourceProvider: RumEventSourceProvider,
+    private val userInfoProvider: UserInfoProvider,
+    private val networkInfoProvider: NetworkInfoProvider
 ) : RumScope {
 
     internal val resourceId: String = UUID.randomUUID().toString()
@@ -47,7 +50,7 @@ internal class RumResourceScope(
 
     internal val eventTimestamp = eventTime.timestamp + serverTimeOffsetInMs
     private val startedNanos: Long = eventTime.nanoTime
-    private val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
+    private val networkInfo = networkInfoProvider.getLatestNetworkInfo()
 
     private var sent = false
     private var waitForTiming = false
@@ -163,7 +166,7 @@ internal class RumResourceScope(
         val spanId = attributes.remove(RumAttributes.SPAN_ID)?.toString()
 
         val context = getRumContext()
-        val user = CoreFeature.userInfoProvider.getUserInfo()
+        val user = userInfoProvider.getUserInfo()
 
         @Suppress("UNCHECKED_CAST")
         val finalTiming = timing ?: extractResourceTiming(
@@ -250,7 +253,7 @@ internal class RumResourceScope(
         attributes.putAll(GlobalRum.globalAttributes)
 
         val context = getRumContext()
-        val user = CoreFeature.userInfoProvider.getUserInfo()
+        val user = userInfoProvider.getUserInfo()
         val errorEvent = ErrorEvent(
             date = eventTimestamp,
             error = ErrorEvent.Error(
@@ -320,13 +323,15 @@ internal class RumResourceScope(
             "resource: %s was 0 or negative. In order to keep the resource event" +
             " we forced it to 1ns."
 
+        @Suppress("LongParameterList")
         fun fromEvent(
             parentScope: RumScope,
             event: RumRawEvent.StartResource,
             firstPartyHostDetector: FirstPartyHostDetector,
             timestampOffset: Long,
-            rumEventSourceProvider: RumEventSourceProvider
-
+            rumEventSourceProvider: RumEventSourceProvider,
+            userInfoProvider: UserInfoProvider,
+            networkInfoProvider: NetworkInfoProvider
         ): RumScope {
             return RumResourceScope(
                 parentScope,
@@ -337,7 +342,9 @@ internal class RumResourceScope(
                 event.attributes,
                 timestampOffset,
                 firstPartyHostDetector,
-                rumEventSourceProvider
+                rumEventSourceProvider,
+                userInfoProvider,
+                networkInfoProvider
             )
         }
     }

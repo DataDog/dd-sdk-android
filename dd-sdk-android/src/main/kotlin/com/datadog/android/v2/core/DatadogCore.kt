@@ -16,13 +16,16 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
+import com.datadog.android.core.internal.persistence.NoOpDataWriter
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracingFeature
@@ -32,6 +35,8 @@ import com.datadog.android.v2.api.SDKFeatureStorageConfiguration
 import com.datadog.android.v2.api.SDKFeatureUploadConfiguration
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
+import com.datadog.opentracing.DDSpan
+import com.google.gson.JsonObject
 
 /**
  * Internal implementation of the [SDKCore] interface.
@@ -45,6 +50,16 @@ class DatadogCore(
 
     internal var libraryVerbosity = Int.MAX_VALUE
     internal val startupTimeNs: Long = System.nanoTime()
+
+    internal lateinit var coreFeature: CoreFeature
+
+    internal var logsFeature: SdkFeature<LogEvent, Configuration.Feature.Logs>? = null
+    internal var tracingFeature: SdkFeature<DDSpan, Configuration.Feature.Tracing>? = null
+    internal var rumFeature: SdkFeature<Any, Configuration.Feature.RUM>? = null
+    internal var crashReportsFeature: SdkFeature<LogEvent, Configuration.Feature.CrashReport>? =
+        null
+    internal var webViewLogsFeature: SdkFeature<JsonObject, Configuration.Feature.Logs>? = null
+    internal var webViewRumFeature: SdkFeature<Any, Configuration.Feature.RUM>? = null
 
     init {
         val isDebug = isAppDebuggable(context)
@@ -84,22 +99,48 @@ class DatadogCore(
 
     /** @inheritDoc */
     override fun setTrackingConsent(consent: TrackingConsent) {
-        CoreFeature.trackingConsentProvider.setConsent(consent)
+        coreFeature.trackingConsentProvider.setConsent(consent)
     }
 
     /** @inheritDoc */
     override fun setUserInfo(userInfo: UserInfo) {
-        CoreFeature.userInfoProvider.setUserInfo(userInfo)
+        coreFeature.userInfoProvider.setUserInfo(userInfo)
     }
 
+    /** @inheritDoc */
+    override fun clearAllData() {
+        logsFeature?.clearAllData()
+        crashReportsFeature?.clearAllData()
+        rumFeature?.clearAllData()
+        tracingFeature?.clearAllData()
+        webViewLogsFeature?.clearAllData()
+        webViewRumFeature?.clearAllData()
+    }
+
+    /** @inheritDoc */
     override fun stop() {
-        LogsFeature.stop()
-        TracingFeature.stop()
-        RumFeature.stop()
-        CrashReportsFeature.stop()
-        CoreFeature.stop()
-        WebViewLogsFeature.stop()
-        WebViewRumFeature.stop()
+        logsFeature?.stop()
+        tracingFeature?.stop()
+        rumFeature?.stop()
+        crashReportsFeature?.stop()
+        webViewLogsFeature?.stop()
+        webViewRumFeature?.stop()
+
+        coreFeature.stop()
+    }
+
+    /** @inheritDoc */
+    override fun flushStoredData() {
+        // We need to drain and shutdown the executors first to make sure we avoid duplicated
+        // data due to async operations.
+        coreFeature.drainAndShutdownExecutors()
+
+        logsFeature?.flushStoredData()
+        tracingFeature?.flushStoredData()
+        rumFeature?.flushStoredData()
+        crashReportsFeature?.flushStoredData()
+        webViewLogsFeature?.flushStoredData()
+        webViewRumFeature?.flushStoredData()
     }
 
     // endregion
@@ -121,7 +162,8 @@ class DatadogCore(
         }
 
         // always initialize Core Features first
-        CoreFeature.initialize(
+        coreFeature = CoreFeature()
+        coreFeature.initialize(
             appContext,
             credentials,
             mutableConfig.coreConfig,
@@ -135,9 +177,9 @@ class DatadogCore(
         initializeRumFeature(mutableConfig.rumConfig, appContext)
         initializeCrashReportFeature(mutableConfig.crashReportConfig, appContext)
 
-        CoreFeature.ndkCrashHandler.handleNdkCrash(
-            LogsFeature.persistenceStrategy.getWriter(),
-            RumFeature.persistenceStrategy.getWriter()
+        coreFeature.ndkCrashHandler.handleNdkCrash(
+            logsFeature?.persistenceStrategy?.getWriter() ?: NoOpDataWriter(),
+            rumFeature?.persistenceStrategy?.getWriter() ?: NoOpDataWriter<Any>()
         )
 
         setupLifecycleMonitorCallback(appContext)
@@ -168,8 +210,10 @@ class DatadogCore(
         appContext: Context
     ) {
         if (configuration != null) {
-            LogsFeature.initialize(appContext, configuration)
-            WebViewLogsFeature.initialize(appContext, configuration)
+            logsFeature = LogsFeature(coreFeature)
+            webViewLogsFeature = WebViewLogsFeature(coreFeature)
+            logsFeature?.initialize(appContext, configuration)
+            webViewLogsFeature?.initialize(appContext, configuration)
         }
     }
 
@@ -178,7 +222,8 @@ class DatadogCore(
         appContext: Context
     ) {
         if (configuration != null) {
-            CrashReportsFeature.initialize(appContext, configuration)
+            crashReportsFeature = CrashReportsFeature(coreFeature)
+            crashReportsFeature?.initialize(appContext, configuration)
         }
     }
 
@@ -187,7 +232,8 @@ class DatadogCore(
         appContext: Context
     ) {
         if (configuration != null) {
-            TracingFeature.initialize(appContext, configuration)
+            tracingFeature = TracingFeature(coreFeature)
+            tracingFeature?.initialize(appContext, configuration)
         }
     }
 
@@ -196,11 +242,13 @@ class DatadogCore(
         appContext: Context
     ) {
         if (configuration != null) {
-            if (CoreFeature.rumApplicationId.isNullOrBlank()) {
+            if (coreFeature.rumApplicationId.isNullOrBlank()) {
                 devLogger.w(WARNING_MESSAGE_APPLICATION_ID_IS_NULL)
             }
-            RumFeature.initialize(appContext, configuration)
-            WebViewRumFeature.initialize(appContext, configuration)
+            rumFeature = RumFeature(coreFeature)
+            webViewRumFeature = WebViewRumFeature(coreFeature)
+            rumFeature?.initialize(appContext, configuration)
+            webViewRumFeature?.initialize(appContext, configuration)
         }
     }
 
@@ -225,20 +273,20 @@ class DatadogCore(
         // initialized and be not mutable anymore
         additionalConfiguration[Datadog.DD_SOURCE_TAG]?.let {
             if (it is String && it.isNotBlank()) {
-                CoreFeature.sourceName = it
+                coreFeature.sourceName = it
             }
         }
 
         additionalConfiguration[Datadog.DD_SDK_VERSION_TAG]?.let {
             if (it is String && it.isNotBlank()) {
-                CoreFeature.sdkVersion = it
+                coreFeature.sdkVersion = it
             }
         }
     }
 
     private fun setupLifecycleMonitorCallback(appContext: Context) {
         if (appContext is Application) {
-            val callback = ProcessLifecycleCallback(CoreFeature.networkInfoProvider, appContext)
+            val callback = ProcessLifecycleCallback(coreFeature.networkInfoProvider, appContext)
             appContext.registerActivityLifecycleCallbacks(ProcessLifecycleMonitor(callback))
         }
     }

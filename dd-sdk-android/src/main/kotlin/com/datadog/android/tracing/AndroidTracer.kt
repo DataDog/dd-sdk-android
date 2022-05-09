@@ -7,15 +7,14 @@
 package com.datadog.android.tracing
 
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.persistence.NoOpDataWriter
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.tracing.internal.data.TraceWriter
 import com.datadog.android.tracing.internal.handlers.AndroidSpanLogsHandler
+import com.datadog.android.v2.core.DatadogCore
 import com.datadog.opentracing.DDTracer
 import com.datadog.opentracing.LogHandler
 import com.datadog.trace.api.Config
@@ -59,7 +58,7 @@ class AndroidTracer internal constructor(
     internal constructor(private val logsHandler: LogHandler) {
 
         private var bundleWithRumEnabled: Boolean = true
-        private var serviceName: String = CoreFeature.serviceName
+        private var serviceName: String? = null
         private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
         private var random: Random = SecureRandom()
 
@@ -77,19 +76,25 @@ class AndroidTracer internal constructor(
          * Builds a [AndroidTracer] based on the current state of this Builder.
          */
         fun build(): AndroidTracer {
-            if (!TracingFeature.isInitialized()) {
+            val datadogCore = Datadog.globalSDKCore as? DatadogCore
+            val tracingFeature = datadogCore?.tracingFeature
+            val rumFeature = datadogCore?.rumFeature
+
+            if (tracingFeature == null) {
                 devLogger.e(
                     TRACING_NOT_ENABLED_ERROR_MESSAGE + "\n" +
                         Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
                 )
             }
-            if (bundleWithRumEnabled && !RumFeature.isInitialized()) {
+
+            if (bundleWithRumEnabled && rumFeature != null) {
                 devLogger.e(RUM_NOT_ENABLED_ERROR_MESSAGE)
                 bundleWithRumEnabled = false
             }
+            val writer = tracingFeature?.persistenceStrategy?.getWriter() ?: NoOpDataWriter()
             return AndroidTracer(
                 config(),
-                TraceWriter(TracingFeature.persistenceStrategy.getWriter()),
+                TraceWriter(writer),
                 random,
                 logsHandler,
                 bundleWithRumEnabled

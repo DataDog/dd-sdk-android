@@ -6,6 +6,9 @@
 
 package com.datadog.android.webview.internal
 
+import com.datadog.tools.annotation.NoOpImplementation
+
+@NoOpImplementation
 internal interface WebViewEventConsumer<T : Any> {
     fun consume(event: T)
 }

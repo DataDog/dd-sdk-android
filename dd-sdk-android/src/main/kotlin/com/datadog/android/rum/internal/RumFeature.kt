@@ -48,15 +48,13 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
-internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
-
-    internal const val RUM_FEATURE_NAME = "rum"
+internal class RumFeature(
+    coreFeature: CoreFeature
+) : SdkFeature<Any, Configuration.Feature.RUM>(coreFeature) {
 
     internal var samplingRate: Float = 0f
     internal var telemetrySamplingRate: Float = 0f
     internal var backgroundEventTracking: Boolean = false
-
-    internal var startupTimeNs: Long = System.nanoTime()
 
     internal var viewTrackingStrategy: ViewTrackingStrategy = NoOpViewTrackingStrategy()
     internal var actionTrackingStrategy: UserActionTrackingStrategy =
@@ -97,7 +95,7 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
     }
 
     override fun onStop() {
-        unregisterTrackingStrategies(CoreFeature.contextRef.get())
+        unregisterTrackingStrategies(coreFeature.contextRef.get())
 
         viewTrackingStrategy = NoOpViewTrackingStrategy()
         actionTrackingStrategy = NoOpUserActionTrackingStrategy()
@@ -118,12 +116,12 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
         configuration: Configuration.Feature.RUM
     ): PersistenceStrategy<Any> {
         return RumFilePersistenceStrategy(
-            CoreFeature.trackingConsentProvider,
+            coreFeature.trackingConsentProvider,
             context,
             configuration.rumEventMapper,
-            CoreFeature.persistenceExecutorService,
+            coreFeature.persistenceExecutorService,
             sdkLogger,
-            CoreFeature.localDataEncryption,
+            coreFeature.localDataEncryption,
             DatadogNdkCrashHandler.getLastViewEventFile(context)
         )
     }
@@ -131,11 +129,12 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
     override fun createUploader(configuration: Configuration.Feature.RUM): DataUploader {
         return RumOkHttpUploaderV2(
             configuration.endpointUrl,
-            CoreFeature.clientToken,
-            CoreFeature.sourceName,
-            CoreFeature.sdkVersion,
-            CoreFeature.okHttpClient,
-            StaticAndroidInfoProvider
+            coreFeature.clientToken,
+            coreFeature.sourceName,
+            coreFeature.sdkVersion,
+            coreFeature.okHttpClient,
+            StaticAndroidInfoProvider,
+            coreFeature
         )
     }
 
@@ -224,8 +223,14 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
         anrDetectorExecutorService.executeSafe("ANR detection", anrDetectorRunnable)
     }
 
-    // Update Vitals every second
-    private const val VITAL_UPDATE_PERIOD_MS = 100L
-
     // endregion
+
+    companion object {
+        internal val startupTimeNs: Long = System.nanoTime()
+
+        // Update Vitals every 500 millisecond
+        private const val VITAL_UPDATE_PERIOD_MS = 500L
+
+        internal const val RUM_FEATURE_NAME = "rum"
+    }
 }
