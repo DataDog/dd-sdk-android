@@ -330,7 +330,9 @@ You can also add an `EventListener` for the `OkHttpClient` to [automatically tra
 
 ### Track background events
 
-To track events (crashes, network requests etc.) when your application is in the background, i.e. there is no active view, add the following snippet during initialization while setting up Datadog configuration:
+You can track events such as crashes and network requests when your application is in the background (for example, no active view is available). 
+
+Add the following snippet during initialization in your Datadog configuration:
 
  {{< tabs >}}
  {{% tab "Java" %}}
@@ -339,10 +341,7 @@ To track events (crashes, network requests etc.) when your application is in the
 
  ```
 
- <div class="alert alert-info"><p>Note that tracking background events could lead to additional sessions that might impact billing. For questions contact support@datadoghq.com</p>
- </div>
-
-<div class="alert alert-info"><p>Note that tracking background events could lead to additional sessions that might impact billing. For questions contact support@datadoghq.com</p>
+<div class="alert alert-info"><p>Tracking background events may lead to additional sessions, which can impact billing. For questions, <a href="https://docs.datadoghq.com/help/">contact Datadog support.</a></p>
 </div>
 
 
