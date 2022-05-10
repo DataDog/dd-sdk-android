@@ -10,13 +10,16 @@ import android.app.Activity
 import android.os.Build
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallbacks
 import com.datadog.android.rum.internal.tracking.FragmentLifecycleCallbacks
 import com.datadog.android.rum.internal.tracking.NoOpFragmentLifecycleCallbacks
 import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
+import com.datadog.android.v2.core.DatadogCore
 
 /**
  * A [ViewTrackingStrategy] that will track [Fragment]s as RUM Views.
@@ -44,19 +47,26 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
 
     private val androidXLifecycleCallbacks: FragmentLifecycleCallbacks<FragmentActivity>
         by lazy {
-            AndroidXFragmentLifecycleCallbacks(
-                argumentsProvider = {
-                    if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
-                },
-                componentPredicate = supportFragmentComponentPredicate,
-                rumMonitor = GlobalRum.get(),
-                advancedRumMonitor = GlobalRum.get() as? AdvancedRumMonitor
-                    ?: NoOpAdvancedRumMonitor()
-            )
+            val rumFeature = (Datadog.globalSDKCore as? DatadogCore)?.rumFeature as? RumFeature
+            if (rumFeature != null) {
+                AndroidXFragmentLifecycleCallbacks(
+                    argumentsProvider = {
+                        if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
+                    },
+                    componentPredicate = supportFragmentComponentPredicate,
+                    rumMonitor = GlobalRum.get(),
+                    advancedRumMonitor = GlobalRum.get() as? AdvancedRumMonitor
+                        ?: NoOpAdvancedRumMonitor(),
+                    rumFeature = rumFeature
+                )
+            } else {
+                NoOpFragmentLifecycleCallbacks()
+            }
         }
     private val oreoLifecycleCallbacks: FragmentLifecycleCallbacks<Activity>
         by lazy {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val rumFeature = (Datadog.globalSDKCore as? DatadogCore)?.rumFeature as? RumFeature
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && rumFeature != null) {
                 OreoFragmentLifecycleCallbacks(
                     argumentsProvider = {
                         if (trackArguments) convertToRumAttributes(it.arguments) else emptyMap()
@@ -64,7 +74,8 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
                     componentPredicate = defaultFragmentComponentPredicate,
                     rumMonitor = GlobalRum.get(),
                     advancedRumMonitor = GlobalRum.get() as? AdvancedRumMonitor
-                        ?: NoOpAdvancedRumMonitor()
+                        ?: NoOpAdvancedRumMonitor(),
+                    rumFeature = rumFeature
                 )
             } else {
                 NoOpFragmentLifecycleCallbacks()

@@ -8,24 +8,19 @@ package com.datadog.android.tracing.internal.domain.event
 
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.Mapper
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.tracing.model.SpanEvent
 import com.datadog.opentracing.DDSpan
 
 internal class DdSpanToSpanEventMapper(
-    private val timeProvider: TimeProvider,
-    private val networkInfoProvider: NetworkInfoProvider,
-    private val userInfoProvider: UserInfoProvider
+    private val coreFeature: CoreFeature
 ) : Mapper<DDSpan, SpanEvent> {
 
     // region Mapper
 
     override fun map(model: DDSpan): SpanEvent {
-        val serverOffset = timeProvider.getServerOffsetNanos()
+        val serverOffset = coreFeature.timeProvider.getServerOffsetNanos()
         val metrics = resolveMetrics(model)
         val metadata = resolveMeta(model)
         return SpanEvent(
@@ -53,7 +48,7 @@ internal class DdSpanToSpanEventMapper(
     )
 
     private fun resolveMeta(event: DDSpan): SpanEvent.Meta {
-        val networkInfo = networkInfoProvider.getLatestNetworkInfo()
+        val networkInfo = coreFeature.networkInfoProvider.getLatestNetworkInfo()
         val simCarrier = resolveSimCarrier(networkInfo)
         val networkInfoClient = SpanEvent.Client(
             simCarrier = simCarrier,
@@ -63,7 +58,7 @@ internal class DdSpanToSpanEventMapper(
             connectivity = networkInfo.connectivity.toString()
         )
         val networkInfoMeta = SpanEvent.Network(networkInfoClient)
-        val userInfo = userInfoProvider.getUserInfo()
+        val userInfo = coreFeature.userInfoProvider.getUserInfo()
         val usrMeta = SpanEvent.Usr(
             id = userInfo.id,
             name = userInfo.name,
@@ -71,11 +66,11 @@ internal class DdSpanToSpanEventMapper(
             additionalProperties = userInfo.additionalProperties
         )
         return SpanEvent.Meta(
-            version = CoreFeature.packageVersion,
-            dd = SpanEvent.Dd(source = CoreFeature.sourceName),
+            version = coreFeature.packageVersion,
+            dd = SpanEvent.Dd(source = coreFeature.sourceName),
             span = SpanEvent.Span(),
             tracer = SpanEvent.Tracer(
-                version = CoreFeature.sdkVersion
+                version = coreFeature.sdkVersion
             ),
             usr = usrMeta,
             network = networkInfoMeta,

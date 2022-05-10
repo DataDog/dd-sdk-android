@@ -17,9 +17,9 @@ import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.rum.internal.net.RumOkHttpUploaderV2
 
-internal object WebViewRumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
-
-    internal const val WEB_RUM_FEATURE_NAME = "web-rum"
+internal class WebViewRumFeature(
+    coreFeature: CoreFeature
+) : SdkFeature<Any, Configuration.Feature.RUM>(coreFeature) {
 
     // region SdkFeature
 
@@ -28,11 +28,11 @@ internal object WebViewRumFeature : SdkFeature<Any, Configuration.Feature.RUM>()
         configuration: Configuration.Feature.RUM
     ): PersistenceStrategy<Any> {
         return WebViewRumFilePersistenceStrategy(
-            CoreFeature.trackingConsentProvider,
+            coreFeature.trackingConsentProvider,
             context,
-            CoreFeature.persistenceExecutorService,
+            coreFeature.persistenceExecutorService,
             sdkLogger,
-            CoreFeature.localDataEncryption,
+            coreFeature.localDataEncryption,
             DatadogNdkCrashHandler.getLastViewEventFile(context)
         )
     }
@@ -40,11 +40,18 @@ internal object WebViewRumFeature : SdkFeature<Any, Configuration.Feature.RUM>()
     override fun createUploader(configuration: Configuration.Feature.RUM): DataUploader {
         return RumOkHttpUploaderV2(
             configuration.endpointUrl,
-            CoreFeature.clientToken,
-            CoreFeature.sourceName,
-            CoreFeature.sdkVersion,
-            CoreFeature.okHttpClient,
-            StaticAndroidInfoProvider
+            coreFeature.clientToken,
+            coreFeature.sourceName,
+            coreFeature.sdkVersion,
+            coreFeature.okHttpClient,
+            StaticAndroidInfoProvider,
+            coreFeature
         )
+    }
+
+    // endregion
+
+    companion object {
+        internal const val WEB_RUM_FEATURE_NAME = "web-rum"
     }
 }

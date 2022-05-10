@@ -13,12 +13,14 @@ import android.os.Process
 import android.os.SystemClock
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.NoOpDataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
@@ -31,6 +33,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
+@Suppress("LongParameterList")
 internal class RumSessionScope(
     private val parentScope: RumScope,
     internal val samplingRate: Float,
@@ -42,6 +45,8 @@ internal class RumSessionScope(
     private val timeProvider: TimeProvider,
     internal val sessionListener: RumSessionListener?,
     private val rumEventSourceProvider: RumEventSourceProvider,
+    private val userInfoProvider: UserInfoProvider,
+    private val networkInfoProvider: NetworkInfoProvider,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
@@ -98,7 +103,9 @@ internal class RumSessionScope(
                 memoryVitalMonitor,
                 frameRateVitalMonitor,
                 timeProvider,
-                rumEventSourceProvider
+                rumEventSourceProvider,
+                userInfoProvider,
+                networkInfoProvider
             )
             onViewDisplayed(event, viewScope, actualWriter)
             childrenScopes.add(viewScope)
@@ -187,6 +194,8 @@ internal class RumSessionScope(
             NoOpVitalMonitor(),
             timeProvider,
             rumEventSourceProvider,
+            userInfoProvider,
+            networkInfoProvider,
             type = RumViewScope.RumViewType.BACKGROUND
         )
     }
@@ -204,6 +213,8 @@ internal class RumSessionScope(
             NoOpVitalMonitor(),
             timeProvider,
             rumEventSourceProvider,
+            userInfoProvider,
+            networkInfoProvider,
             type = RumViewScope.RumViewType.APPLICATION_LAUNCH
         )
     }

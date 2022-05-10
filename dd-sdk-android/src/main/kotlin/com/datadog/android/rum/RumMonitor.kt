@@ -12,13 +12,13 @@ import android.os.Looper
 import androidx.annotation.FloatRange
 import androidx.fragment.app.Fragment
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
+import com.datadog.android.v2.core.DatadogCore
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -262,7 +262,7 @@ interface RumMonitor {
      */
     class Builder {
 
-        private var samplingRate: Float = RumFeature.samplingRate
+        private var samplingRate: Float? = null
         private var sessionListener: RumSessionListener? = null
 
         /**
@@ -289,8 +289,11 @@ interface RumMonitor {
          * Builds a [RumMonitor] based on the current state of this Builder.
          */
         fun build(): RumMonitor {
-            val rumApplicationId = CoreFeature.rumApplicationId
-            return if (!RumFeature.isInitialized()) {
+            val datadogCore = Datadog.globalSDKCore as? DatadogCore
+            val coreFeature = datadogCore?.coreFeature
+            val rumFeature = datadogCore?.rumFeature as? RumFeature
+            val rumApplicationId = coreFeature?.rumApplicationId
+            return if (rumFeature == null || coreFeature == null) {
                 devLogger.e(
                     RUM_NOT_ENABLED_ERROR_MESSAGE + "\n" +
                         Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
@@ -302,23 +305,26 @@ interface RumMonitor {
             } else {
                 DatadogRumMonitor(
                     applicationId = rumApplicationId,
-                    samplingRate = samplingRate,
-                    writer = RumFeature.persistenceStrategy.getWriter(),
+                    samplingRate = samplingRate ?: rumFeature.samplingRate,
+                    writer = rumFeature.persistenceStrategy.getWriter(),
                     handler = Handler(Looper.getMainLooper()),
                     telemetryEventHandler = TelemetryEventHandler(
-                        CoreFeature.serviceName,
-                        CoreFeature.sdkVersion,
-                        RumEventSourceProvider(CoreFeature.sourceName),
-                        CoreFeature.timeProvider,
-                        RateBasedSampler(RumFeature.telemetrySamplingRate / 100)
+                        coreFeature.serviceName,
+                        coreFeature.sdkVersion,
+                        RumEventSourceProvider(coreFeature.sourceName),
+                        coreFeature.timeProvider,
+                        RateBasedSampler(rumFeature.telemetrySamplingRate / 100)
                     ),
-                    firstPartyHostDetector = CoreFeature.firstPartyHostDetector,
-                    cpuVitalMonitor = RumFeature.cpuVitalMonitor,
-                    memoryVitalMonitor = RumFeature.memoryVitalMonitor,
-                    frameRateVitalMonitor = RumFeature.frameRateVitalMonitor,
-                    backgroundTrackingEnabled = RumFeature.backgroundEventTracking,
-                    timeProvider = CoreFeature.timeProvider,
-                    sessionListener = sessionListener
+                    firstPartyHostDetector = coreFeature.firstPartyHostDetector,
+                    cpuVitalMonitor = rumFeature.cpuVitalMonitor,
+                    memoryVitalMonitor = rumFeature.memoryVitalMonitor,
+                    frameRateVitalMonitor = rumFeature.frameRateVitalMonitor,
+                    backgroundTrackingEnabled = rumFeature.backgroundEventTracking,
+                    timeProvider = coreFeature.timeProvider,
+                    sessionListener = sessionListener,
+                    sourceName = coreFeature.sourceName,
+                    userInfoProvider = coreFeature.userInfoProvider,
+                    networkInfoProvider = coreFeature.networkInfoProvider
                 )
             }
         }

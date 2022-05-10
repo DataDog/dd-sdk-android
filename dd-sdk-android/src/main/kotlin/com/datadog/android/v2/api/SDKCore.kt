@@ -78,4 +78,14 @@ interface SDKCore {
      * Stops all process for this instance of the Datadog SDK.
      */
     fun stop()
+
+    /**
+     * Clears all unsent data in all registered features.
+     */
+    fun clearAllData()
+
+    /**
+     * Flushes all stored data (send everything right now).
+     */
+    fun flushStoredData()
 }

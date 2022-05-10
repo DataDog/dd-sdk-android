@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.core.internal
 
 import android.content.Context
@@ -29,7 +31,9 @@ import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("TooManyFunctions")
-internal abstract class SdkFeature<T : Any, C : Configuration.Feature> {
+internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
+    val coreFeature: CoreFeature
+) {
 
     internal val initialized = AtomicBoolean(false)
 
@@ -53,11 +57,11 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature> {
             configuration.plugins,
             DatadogPluginConfig(
                 context = context,
-                envName = CoreFeature.envName,
-                serviceName = CoreFeature.serviceName,
-                trackingConsent = CoreFeature.trackingConsentProvider.getConsent()
+                envName = coreFeature.envName,
+                serviceName = coreFeature.serviceName,
+                trackingConsent = coreFeature.trackingConsentProvider.getConsent()
             ),
-            CoreFeature.trackingConsentProvider
+            coreFeature.trackingConsentProvider
         )
 
         onInitialize(context, configuration)
@@ -89,6 +93,7 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature> {
         }
     }
 
+    @Deprecated("Plugins won't work that way in SDK v2")
     fun getPlugins(): List<DatadogPlugin> {
         return featurePlugins
     }
@@ -136,15 +141,15 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature> {
     }
 
     private fun setupUploader(configuration: C) {
-        uploadScheduler = if (CoreFeature.isMainProcess) {
+        uploadScheduler = if (coreFeature.isMainProcess) {
             uploader = createUploader(configuration)
             DataUploadScheduler(
                 persistenceStrategy.getReader(),
                 uploader,
-                CoreFeature.networkInfoProvider,
-                CoreFeature.systemInfoProvider,
-                CoreFeature.uploadFrequency,
-                CoreFeature.uploadExecutorService
+                coreFeature.networkInfoProvider,
+                coreFeature.systemInfoProvider,
+                coreFeature.uploadFrequency,
+                coreFeature.uploadExecutorService
             )
         } else {
             NoOpUploadScheduler()
@@ -166,7 +171,7 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature> {
         val config = FilePersistenceConfig()
         val migrator = CacheFileMigrator(
             fileHandler,
-            CoreFeature.persistenceExecutorService,
+            coreFeature.persistenceExecutorService,
             internalLogger
         )
         val filesDir = File(

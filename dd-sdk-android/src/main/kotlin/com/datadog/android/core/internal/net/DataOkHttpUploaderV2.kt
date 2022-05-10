@@ -35,7 +35,7 @@ internal abstract class DataOkHttpUploaderV2(
     private val uploaderName = javaClass.simpleName
 
     private val userAgent by lazy {
-        System.getProperty(DataOkHttpUploader.SYSTEM_UA).let {
+        System.getProperty(SYSTEM_UA).let {
             if (it.isNullOrBlank()) {
                 "Datadog/$sdkVersion " +
                     "(Linux; U; Android ${androidInfoProvider.getDeviceVersion()}; " +
@@ -156,6 +156,8 @@ internal abstract class DataOkHttpUploaderV2(
 
         const val HTTP_INTERNAL_ERROR = 500
         const val HTTP_UNAVAILABLE = 503
+
+        const val SYSTEM_UA = "http.agent"
 
         internal const val HEADER_API_KEY = "DD-API-KEY"
         internal const val HEADER_EVP_ORIGIN = "DD-EVP-ORIGIN"

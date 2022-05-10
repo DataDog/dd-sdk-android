@@ -7,21 +7,22 @@
 package com.datadog.android.error.internal
 
 import android.content.Context
-import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.Datadog
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.triggerUploadWorker
-import com.datadog.android.log.internal.domain.LogGenerator
+import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.v2.core.DatadogCore
 import java.lang.ref.WeakReference
 import java.util.concurrent.ThreadPoolExecutor
 
 internal class DatadogExceptionHandler(
-    private val logGenerator: LogGenerator,
+    private val logGenerator: DatadogLogGenerator,
     private val writer: DataWriter<LogEvent>,
     appContext: Context?
 ) :
@@ -44,10 +45,13 @@ internal class DatadogExceptionHandler(
         )
 
         // give some time to the persistence executor service to finish its tasks
-        val idled = (CoreFeature.persistenceExecutorService as? ThreadPoolExecutor)
-            ?.waitToIdle(MAX_WAIT_FOR_IDLE_TIME_IN_MS) ?: true
-        if (!idled) {
-            devLogger.w(EXECUTOR_NOT_IDLED_WARNING_MESSAGE)
+        val coreFeature = (Datadog.globalSDKCore as? DatadogCore)?.coreFeature
+        if (coreFeature != null) {
+            val idled = (coreFeature.persistenceExecutorService as? ThreadPoolExecutor)
+                ?.waitToIdle(MAX_WAIT_FOR_IDLE_TIME_IN_MS) ?: true
+            if (!idled) {
+                devLogger.w(EXECUTOR_NOT_IDLED_WARNING_MESSAGE)
+            }
         }
 
         // trigger a task to send the logs ASAP
@@ -74,7 +78,7 @@ internal class DatadogExceptionHandler(
 
     private fun createLog(thread: Thread, throwable: Throwable): LogEvent {
         return logGenerator.generateLog(
-            LogGenerator.CRASH,
+            DatadogLogGenerator.CRASH,
             createCrashMessage(throwable),
             throwable,
             emptyMap(),

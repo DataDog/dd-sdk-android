@@ -4,20 +4,20 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.rum
 
+import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.error.internal.CrashReportsFeature
-import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.plugin.DatadogContext
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogRumContext
 import com.datadog.android.rum.GlobalRum.get
 import com.datadog.android.rum.GlobalRum.registerIfAbsent
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.tracing.internal.TracingFeature
+import com.datadog.android.v2.core.DatadogCore
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -163,10 +163,23 @@ object GlobalRum {
                 newContext.viewId
             )
         )
-        updateContextInPlugins(pluginContext, RumFeature.getPlugins())
-        updateContextInPlugins(pluginContext, CrashReportsFeature.getPlugins())
-        updateContextInPlugins(pluginContext, LogsFeature.getPlugins())
-        updateContextInPlugins(pluginContext, TracingFeature.getPlugins())
+        val datadogCore = (Datadog.globalSDKCore as? DatadogCore)
+        updateContextInPlugins(
+            pluginContext,
+            datadogCore?.rumFeature?.getPlugins().orEmpty()
+        )
+        updateContextInPlugins(
+            pluginContext,
+            datadogCore?.crashReportsFeature?.getPlugins().orEmpty()
+        )
+        updateContextInPlugins(
+            pluginContext,
+            datadogCore?.logsFeature?.getPlugins().orEmpty()
+        )
+        updateContextInPlugins(
+            pluginContext,
+            datadogCore?.tracingFeature?.getPlugins().orEmpty()
+        )
     }
 
     private fun updateContextInPlugins(

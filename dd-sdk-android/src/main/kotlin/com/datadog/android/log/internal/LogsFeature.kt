@@ -18,9 +18,9 @@ import com.datadog.android.log.internal.domain.LogFilePersistenceStrategy
 import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
 import com.datadog.android.log.model.LogEvent
 
-internal object LogsFeature : SdkFeature<LogEvent, Configuration.Feature.Logs>() {
-
-    internal const val LOGS_FEATURE_NAME = "logs"
+internal class LogsFeature(
+    coreFeature: CoreFeature
+) : SdkFeature<LogEvent, Configuration.Feature.Logs>(coreFeature) {
 
     // region SdkFeature
 
@@ -29,22 +29,22 @@ internal object LogsFeature : SdkFeature<LogEvent, Configuration.Feature.Logs>()
         configuration: Configuration.Feature.Logs
     ): PersistenceStrategy<LogEvent> {
         return LogFilePersistenceStrategy(
-            CoreFeature.trackingConsentProvider,
+            coreFeature.trackingConsentProvider,
             context,
-            CoreFeature.persistenceExecutorService,
+            coreFeature.persistenceExecutorService,
             sdkLogger,
             configuration.logsEventMapper,
-            CoreFeature.localDataEncryption
+            coreFeature.localDataEncryption
         )
     }
 
     override fun createUploader(configuration: Configuration.Feature.Logs): DataUploader {
         return LogsOkHttpUploaderV2(
             configuration.endpointUrl,
-            CoreFeature.clientToken,
-            CoreFeature.sourceName,
-            CoreFeature.sdkVersion,
-            CoreFeature.okHttpClient,
+            coreFeature.clientToken,
+            coreFeature.sourceName,
+            coreFeature.sdkVersion,
+            coreFeature.okHttpClient,
             StaticAndroidInfoProvider,
             sdkLogger
         )
@@ -55,4 +55,8 @@ internal object LogsFeature : SdkFeature<LogEvent, Configuration.Feature.Logs>()
     }
 
     // endregion
+
+    companion object {
+        internal const val LOGS_FEATURE_NAME = "logs"
+    }
 }

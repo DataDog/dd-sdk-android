@@ -19,7 +19,8 @@ internal open class RumOkHttpUploaderV2(
     source: String,
     sdkVersion: String,
     callFactory: Call.Factory,
-    androidInfoProvider: AndroidInfoProvider
+    androidInfoProvider: AndroidInfoProvider,
+    coreFeature: CoreFeature
 ) : DataOkHttpUploaderV2(
     buildUrl(endpoint, TrackType.RUM),
     clientToken,
@@ -33,14 +34,14 @@ internal open class RumOkHttpUploaderV2(
 
     private val tags: String by lazy {
         val elements = mutableListOf(
-            "${RumAttributes.SERVICE_NAME}:${CoreFeature.serviceName}",
-            "${RumAttributes.APPLICATION_VERSION}:${CoreFeature.packageVersion}",
+            "${RumAttributes.SERVICE_NAME}:${coreFeature.serviceName}",
+            "${RumAttributes.APPLICATION_VERSION}:${coreFeature.packageVersion}",
             "${RumAttributes.SDK_VERSION}:$sdkVersion",
-            "${RumAttributes.ENV}:${CoreFeature.envName}"
+            "${RumAttributes.ENV}:${coreFeature.envName}"
         )
 
-        if (CoreFeature.variant.isNotEmpty()) {
-            elements.add("${RumAttributes.VARIANT}:${CoreFeature.variant}")
+        if (coreFeature.variant.isNotEmpty()) {
+            elements.add("${RumAttributes.VARIANT}:${coreFeature.variant}")
         }
 
         elements.joinToString(",")

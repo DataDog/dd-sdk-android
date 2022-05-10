@@ -40,13 +40,14 @@ import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.domain.LogGenerator
+import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfoDeserializer
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.domain.event.RumEventDeserializer
+import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.rum.internal.ndk.NdkCrashHandler
 import com.datadog.android.rum.internal.ndk.NdkCrashLogDeserializer
@@ -69,51 +70,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.TlsVersion
 
-internal object CoreFeature {
-
-    // region Constants
-
-    internal val NETWORK_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(45)
-    private val THREAD_POOL_MAX_KEEP_ALIVE_MS = TimeUnit.SECONDS.toMillis(5)
-    private const val CORE_DEFAULT_POOL_SIZE = 1 // Only one thread will be kept alive
-
-    // this is a default source to be used when uploading RUM/Logs/Span data, however there is a
-    // possibility to override it which is useful when SDK is used via bridge, say
-    // from React Native integration
-    internal const val DEFAULT_SOURCE_NAME = "android"
-    internal const val DEFAULT_SDK_VERSION = BuildConfig.SDK_VERSION_NAME
-    internal const val DEFAULT_APP_VERSION = "?"
-
-    internal val RESTRICTED_CIPHER_SUITES = arrayOf(
-        // TLS 1.3
-
-        // these 3 are mandatory to implement by TLS 1.3 RFC
-        // https://datatracker.ietf.org/doc/html/rfc8446#section-9.1
-        CipherSuite.TLS_AES_128_GCM_SHA256,
-        CipherSuite.TLS_AES_256_GCM_SHA384,
-        CipherSuite.TLS_CHACHA20_POLY1305_SHA256,
-
-        // TLS 1.2
-
-        // these 4 are FIPS 140-2 compliant by OpenSSL
-
-        // GOV DC supports only that one and below
-        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-        CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-
-        CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-        CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-
-        // these 4 are not listed in OpenSSL (because of CBC), but
-        // claimed to be FIPS 140-2 compliant in other sources. Keep them for now, can be safely
-        // dropped once min API is 21 (TODO RUMM-1594).
-        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
-        CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
-        CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA256,
-        CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA256
-    )
-
-    // endregion
+internal class CoreFeature {
 
     internal val initialized = AtomicBoolean(false)
     internal var contextRef: WeakReference<Context?> = WeakReference(null)
@@ -136,8 +93,6 @@ internal object CoreFeature {
     internal var sdkVersion: String = DEFAULT_SDK_VERSION
     internal var rumApplicationId: String? = null
     internal var isMainProcess: Boolean = true
-    internal var processImportance: Int =
-        ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
     internal var envName: String = ""
     internal var variant: String = ""
     internal var batchSize: BatchSize = BatchSize.MEDIUM
@@ -245,7 +200,7 @@ internal object CoreFeature {
             ndkCrashHandler = DatadogNdkCrashHandler(
                 appContext,
                 persistenceExecutorService,
-                LogGenerator(
+                DatadogLogGenerator(
                     serviceName,
                     DatadogNdkCrashHandler.LOGGER_NAME,
                     networkInfoProvider,
@@ -261,7 +216,8 @@ internal object CoreFeature {
                 UserInfoDeserializer(sdkLogger),
                 sdkLogger,
                 timeProvider,
-                BatchFileHandler.create(sdkLogger, localDataEncryption)
+                BatchFileHandler.create(sdkLogger, localDataEncryption),
+                RumEventSourceProvider(sourceName)
             )
             ndkCrashHandler.prepareData()
         }
@@ -279,7 +235,11 @@ internal object CoreFeature {
             cacheExpirationMs = TimeUnit.MINUTES.toMillis(30),
             minWaitTimeBetweenSyncMs = TimeUnit.MINUTES.toMillis(5),
             syncListener = LoggingSyncListener()
-        ).apply { if (!disableKronosBackgroundSync) { syncInBackground() } }
+        ).apply {
+            if (!disableKronosBackgroundSync) {
+                syncInBackground()
+            }
+        }
     }
 
     private fun readApplicationInformation(appContext: Context, credentials: Credentials) {
@@ -466,4 +426,53 @@ internal object CoreFeature {
     }
 
     // endregion
+
+    companion object {
+        internal var processImportance: Int =
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+
+        // region Constants
+
+        internal val NETWORK_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(45)
+        private val THREAD_POOL_MAX_KEEP_ALIVE_MS = TimeUnit.SECONDS.toMillis(5)
+        private const val CORE_DEFAULT_POOL_SIZE = 1 // Only one thread will be kept alive
+
+        // this is a default source to be used when uploading RUM/Logs/Span data, however there is a
+        // possibility to override it which is useful when SDK is used via bridge, say
+        // from React Native integration
+        internal const val DEFAULT_SOURCE_NAME = "android"
+        internal const val DEFAULT_SDK_VERSION = BuildConfig.SDK_VERSION_NAME
+        internal const val DEFAULT_APP_VERSION = "?"
+
+        internal val RESTRICTED_CIPHER_SUITES = arrayOf(
+            // TLS 1.3
+
+            // these 3 are mandatory to implement by TLS 1.3 RFC
+            // https://datatracker.ietf.org/doc/html/rfc8446#section-9.1
+            CipherSuite.TLS_AES_128_GCM_SHA256,
+            CipherSuite.TLS_AES_256_GCM_SHA384,
+            CipherSuite.TLS_CHACHA20_POLY1305_SHA256,
+
+            // TLS 1.2
+
+            // these 4 are FIPS 140-2 compliant by OpenSSL
+
+            // GOV DC supports only that one and below
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+
+            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+
+            // these 4 are not listed in OpenSSL (because of CBC), but
+            // claimed to be FIPS 140-2 compliant in other sources. Keep them for now, can be safely
+            // dropped once min API is 21 (TODO RUMM-1594).
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+            CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA256,
+            CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA256
+        )
+
+        // endregion
+    }
 }

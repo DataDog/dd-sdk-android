@@ -9,16 +9,16 @@ package com.datadog.android.webview
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.annotation.MainThread
+import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
+import com.datadog.android.webview.internal.NoOpWebViewEventConsumer
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
-import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
-import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.google.gson.JsonArray
 
 /**
@@ -89,7 +89,8 @@ internal constructor(
         allowedHosts.forEach {
             origins.add(it)
         }
-        CoreFeature.webViewTrackingHosts.forEach {
+        val coreFeature = (Datadog.globalSDKCore as? DatadogCore)?.coreFeature
+        coreFeature?.webViewTrackingHosts?.forEach {
             origins.add(it)
         }
         return origins.toString()
@@ -129,19 +130,29 @@ internal constructor(
         }
 
         private fun buildWebViewEventConsumer(): WebViewEventConsumer<String> {
+            val datadogCore = Datadog.globalSDKCore as? DatadogCore
+            val coreFeature = datadogCore?.coreFeature
+            val webViewRumFeature = datadogCore?.webViewRumFeature
+            val webViewLogsFeature = datadogCore?.webViewLogsFeature
             val contextProvider = WebViewRumEventContextProvider()
-            return MixedWebViewEventConsumer(
-                WebViewRumEventConsumer(
-                    dataWriter = WebViewRumFeature.persistenceStrategy.getWriter(),
-                    timeProvider = CoreFeature.timeProvider,
-                    contextProvider = contextProvider
-                ),
-                WebViewLogEventConsumer(
-                    userLogsWriter = WebViewLogsFeature.persistenceStrategy.getWriter(),
-                    rumContextProvider = contextProvider,
-                    timeProvider = CoreFeature.timeProvider
+
+            if (coreFeature == null || webViewLogsFeature == null || webViewRumFeature == null) {
+                return NoOpWebViewEventConsumer()
+            } else {
+                return MixedWebViewEventConsumer(
+                    WebViewRumEventConsumer(
+                        dataWriter = webViewRumFeature.persistenceStrategy.getWriter(),
+                        timeProvider = coreFeature.timeProvider,
+                        contextProvider = contextProvider
+                    ),
+                    WebViewLogEventConsumer(
+                        userLogsWriter = webViewLogsFeature.persistenceStrategy.getWriter(),
+                        rumContextProvider = contextProvider,
+                        timeProvider = coreFeature.timeProvider,
+                        coreFeature = coreFeature
+                    )
                 )
-            )
+            }
         }
     }
 }

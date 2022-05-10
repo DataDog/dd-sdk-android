@@ -14,13 +14,13 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.system.StaticAndroidInfoProvider
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.domain.LogGenerator
+import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
 import com.datadog.android.log.model.LogEvent
 
-internal object CrashReportsFeature : SdkFeature<LogEvent, Configuration.Feature.CrashReport>() {
-
-    internal const val CRASH_FEATURE_NAME = "crash"
+internal class CrashReportsFeature(
+    coreFeature: CoreFeature
+) : SdkFeature<LogEvent, Configuration.Feature.CrashReport>(coreFeature) {
 
     internal var originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
 
@@ -39,21 +39,21 @@ internal object CrashReportsFeature : SdkFeature<LogEvent, Configuration.Feature
         configuration: Configuration.Feature.CrashReport
     ): PersistenceStrategy<LogEvent> {
         return CrashReportFilePersistenceStrategy(
-            CoreFeature.trackingConsentProvider,
+            coreFeature.trackingConsentProvider,
             context,
-            CoreFeature.persistenceExecutorService,
+            coreFeature.persistenceExecutorService,
             sdkLogger,
-            CoreFeature.localDataEncryption
+            coreFeature.localDataEncryption
         )
     }
 
     override fun createUploader(configuration: Configuration.Feature.CrashReport): DataUploader {
         return LogsOkHttpUploaderV2(
             configuration.endpointUrl,
-            CoreFeature.clientToken,
-            CoreFeature.sourceName,
-            CoreFeature.sdkVersion,
-            CoreFeature.okHttpClient,
+            coreFeature.clientToken,
+            coreFeature.sourceName,
+            coreFeature.sdkVersion,
+            coreFeature.okHttpClient,
             StaticAndroidInfoProvider,
             sdkLogger
         )
@@ -72,15 +72,15 @@ internal object CrashReportsFeature : SdkFeature<LogEvent, Configuration.Feature
     ) {
         originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
         DatadogExceptionHandler(
-            LogGenerator(
-                CoreFeature.serviceName,
+            DatadogLogGenerator(
+                coreFeature.serviceName,
                 DatadogExceptionHandler.LOGGER_NAME,
-                CoreFeature.networkInfoProvider,
-                CoreFeature.userInfoProvider,
-                CoreFeature.timeProvider,
-                CoreFeature.sdkVersion,
-                CoreFeature.envName,
-                CoreFeature.packageVersion
+                coreFeature.networkInfoProvider,
+                coreFeature.userInfoProvider,
+                coreFeature.timeProvider,
+                coreFeature.sdkVersion,
+                coreFeature.envName,
+                coreFeature.packageVersion
             ),
             writer = persistenceStrategy.getWriter(),
             appContext = appContext
@@ -92,4 +92,8 @@ internal object CrashReportsFeature : SdkFeature<LogEvent, Configuration.Feature
     }
 
     // endregion
+
+    companion object {
+        internal const val CRASH_FEATURE_NAME = "crash"
+    }
 }
