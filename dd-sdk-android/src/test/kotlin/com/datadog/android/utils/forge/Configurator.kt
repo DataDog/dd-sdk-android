@@ -70,6 +70,9 @@ internal class Configurator :
         forge.addFactory(OrgJSONObjectForgeryFactory())
         forge.addFactory(OrgJSONArrayForgeryFactory())
 
+        // Datadog SDK v2
+        forge.addFactory(SDKContextForgeryFactory())
+
         forge.useJvmFactories()
     }
 }
