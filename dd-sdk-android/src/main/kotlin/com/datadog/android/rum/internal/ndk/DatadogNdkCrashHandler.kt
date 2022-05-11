@@ -20,6 +20,7 @@ import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
+import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
@@ -34,7 +35,7 @@ import java.util.concurrent.TimeUnit
 internal class DatadogNdkCrashHandler(
     appContext: Context,
     private val dataPersistenceExecutorService: ExecutorService,
-    internal val logGenerator: DatadogLogGenerator,
+    private val logGenerator: LogGenerator,
     private val ndkCrashLogDeserializer: Deserializer<NdkCrashLog>,
     private val rumEventDeserializer: Deserializer<Any>,
     private val networkInfoDeserializer: Deserializer<NetworkInfo>,
@@ -240,7 +241,7 @@ internal class DatadogNdkCrashHandler(
             bundleWithRum = false,
             networkInfo = lastNetworkInfo,
             userInfo = lastUserInfo
-        )
+        ) ?: return
 
         logWriter.write(log)
     }

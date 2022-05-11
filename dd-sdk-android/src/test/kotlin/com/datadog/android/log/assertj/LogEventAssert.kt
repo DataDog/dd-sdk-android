@@ -8,7 +8,7 @@ package com.datadog.android.log.assertj
 
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
-import com.datadog.android.log.internal.domain.LogGenerator
+import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.model.LogEvent
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -227,7 +227,7 @@ internal class LogEventAssert(actual: LogEvent) :
     companion object {
 
         private val dateFormatter =
-            SimpleDateFormat(LogGenerator.ISO_8601, Locale.US).apply {
+            SimpleDateFormat(DatadogLogGenerator.ISO_8601, Locale.US).apply {
                 timeZone = TimeZone.getTimeZone("UTC")
             }
 
