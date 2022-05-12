@@ -15,7 +15,6 @@ import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.mkdirsSafe
 import com.datadog.android.core.internal.persistence.file.renameToSafe
-import com.datadog.android.core.internal.utils.copyTo
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.use
 import com.datadog.android.log.Logger
@@ -27,12 +26,14 @@ import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.nio.ByteBuffer
 import java.util.Locale
+import kotlin.math.max
 
 internal class BatchFileHandler(
     private val internalLogger: Logger,
     private val metaGenerator: (data: ByteArray) -> ByteArray = {
-        EventMeta(it.size).asBytes
+        EventMeta().asBytes
     },
     private val metaParser: (metaBytes: ByteArray) -> EventMeta = {
         EventMeta.fromBytes(it)
@@ -122,35 +123,23 @@ internal class BatchFileHandler(
             outputStream.channel.lock().use {
                 val meta = metaGenerator(data)
 
-                if (meta.size > MAX_META_SIZE_BYTES) {
-                    @Suppress("ThrowingInternalException")
-                    throw MetaTooBigException(
-                        "Meta size is bigger than limit of $MAX_META_SIZE_BYTES" +
-                            " bytes, cannot write data."
-                    )
-                }
+                val metaBlockSize = TYPE_SIZE_BYTES + LENGTH_SIZE_BYTES + meta.size
+                val dataBlockSize = TYPE_SIZE_BYTES + LENGTH_SIZE_BYTES + data.size
 
-                // 1 byte for version
-                // 1 byte for meta.size value
-                // rest is meta
-                val header = ByteArray(2 + meta.size).apply {
-                    set(0, HEADER_VERSION)
-                    // in Kotlin and Java byte type is signed, meaning it goes from -127 to 128.
-                    // It is completely fine to have size more than 128, it will be just stored
-                    // as negative value. Later at read() byte step we will get strictly positive
-                    // value, because read() returns int.
-                    set(1, meta.size.toByte())
-                    meta.copyTo(0, this, 2, meta.size)
-                }
+                // ByteBuffer by default has BigEndian ordering, which matches to how Java
+                // reads data, so no need to define it explicitly
+                val buffer = ByteBuffer
+                    .allocate(metaBlockSize + dataBlockSize)
+                    .putAsTlv(BlockType.META, meta)
+                    .putAsTlv(BlockType.EVENT, data)
 
-                outputStream.write(header)
-                outputStream.write(data)
+                outputStream.write(buffer.array())
             }
         }
     }
 
     @Throws(IOException::class)
-    @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
+    @Suppress("UnsafeThirdPartyFunctionCall", "ComplexMethod") // Called within a try/catch block
     private fun readFileData(
         file: File
     ): List<ByteArray> {
@@ -162,18 +151,27 @@ internal class BatchFileHandler(
         var remaining = inputLength
         file.inputStream().buffered().use {
             while (remaining > 0) {
-                val (meta, headerSize) = readEventHeader(it) ?: break
-
-                val eventBytes = ByteArray(meta.eventSize)
-                val readEventSize = it.read(eventBytes, 0, meta.eventSize)
-
-                if (!checkReadSizeExpected(meta.eventSize, readEventSize, "read event")) {
+                val metaReadResult = readBlock(it, BlockType.META)
+                if (metaReadResult.data == null) {
+                    remaining -= metaReadResult.bytesRead
                     break
                 }
 
-                result.add(eventBytes)
-                val read = headerSize + readEventSize
-                remaining -= read
+                val eventReadResult = readBlock(it, BlockType.EVENT)
+                remaining -= metaReadResult.bytesRead + eventReadResult.bytesRead
+
+                if (eventReadResult.data == null) break
+
+                // TODO RUMM-2172 bundle meta
+                @Suppress("UNUSED_VARIABLE")
+                val meta = try {
+                    metaParser(metaReadResult.data)
+                } catch (e: JsonParseException) {
+                    internalLogger.e(ERROR_FAILED_META_PARSE, e)
+                    continue
+                }
+
+                result.add(eventReadResult.data)
             }
         }
 
@@ -191,58 +189,104 @@ internal class BatchFileHandler(
         return file.renameToSafe(destFile)
     }
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
-    private fun readEventHeader(stream: InputStream): Pair<EventMeta, Int>? {
-        val version = stream.read()
-        if (version < 0) {
-            internalLogger.e(ERROR_EOF_AT_VERSION_BYTE)
-            return null
+    @Throws(IOException::class)
+    private fun readBlock(stream: InputStream, expectedBlockType: BlockType): BlockReadResult {
+        @Suppress("UnsafeThirdPartyFunctionCall") // allocation size is always positive
+        val headerBuffer = ByteBuffer.allocate(HEADER_SIZE_BYTES)
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // method declares throwing IOException
+        val headerReadBytes = stream.read(headerBuffer.array())
+
+        if (!checkReadExpected(
+                HEADER_SIZE_BYTES,
+                headerReadBytes,
+                "Block(${expectedBlockType.name}): Header read"
+            )
+        ) {
+            return BlockReadResult(null, max(0, headerReadBytes))
         }
 
-        val metaSize = stream.read()
-        if (metaSize < 0) {
-            internalLogger.e(ERROR_EOF_AT_META_SIZE_BYTE)
-            return null
+        val blockType = headerBuffer.short
+        if (blockType != expectedBlockType.identifier) {
+            internalLogger.e(
+                "Unexpected block type identifier=$blockType met," +
+                    " was expecting $expectedBlockType(${expectedBlockType.identifier})"
+            )
+            // in theory we could continue reading, because we still know data size,
+            // but unexpected type says that at least relationship between blocks is broken,
+            // so to not establish the wrong one, it is better to stop reading
+            return BlockReadResult(null, headerReadBytes)
         }
 
-        val metaBytes = ByteArray(metaSize)
-        val readMetaSize = stream.read(metaBytes, 0, metaBytes.size)
+        val dataSize = headerBuffer.int
+        val dataBuffer = ByteArray(dataSize)
 
-        if (!checkReadSizeExpected(metaSize, readMetaSize, "read meta")) {
-            return null
+        @Suppress("UnsafeThirdPartyFunctionCall") // method declares throwing IOException
+        val dataReadBytes = stream.read(dataBuffer)
+
+        return if (checkReadExpected(
+                dataSize,
+                dataReadBytes,
+                "Block(${expectedBlockType.name}):Data read"
+            )
+        ) {
+            BlockReadResult(dataBuffer, headerReadBytes + dataReadBytes)
+        } else {
+            BlockReadResult(null, headerReadBytes + max(0, dataReadBytes))
         }
-
-        val meta = try {
-            metaParser(metaBytes)
-        } catch (e: JsonParseException) {
-            internalLogger.e(ERROR_FAILED_META_PARSE, e)
-            return null
-        }
-
-        return meta to 2 + readMetaSize
     }
 
-    private fun checkReadSizeExpected(expected: Int, actual: Int, operation: String): Boolean {
+    private fun checkReadExpected(expected: Int, actual: Int, operation: String): Boolean {
         return if (expected != actual) {
-            internalLogger.e(
-                "Number of bytes read for operation='$operation' doesn't" +
-                    " match with expected: expected=$expected, actual=$actual"
-            )
+            if (actual != -1) {
+                internalLogger.e(
+                    "Number of bytes read for operation='$operation' doesn't" +
+                        " match with expected: expected=$expected, actual=$actual"
+                )
+            } else {
+                internalLogger.e(
+                    "Unexpected EOF at the operation=$operation"
+                )
+            }
             false
         } else {
             true
         }
     }
 
-    internal class MetaTooBigException(message: String) : IOException(message)
+    @Suppress("UnsafeThirdPartyFunctionCall")
+    // all calls here are safe: buffer is writable and it has a proper size calculated before
+    // Encoding specification is as following:
+    // +-  2 bytes -+-   4 bytes   -+- n bytes -|
+    // | block type | data size (n) |    data   |
+    // +------------+---------------+-----------+
+    // where block type is 0x00 for event, 0x01 for data
+    private fun ByteBuffer.putAsTlv(blockType: BlockType, data: ByteArray): ByteBuffer {
+        return this
+            .putShort(blockType.identifier)
+            .putInt(data.size)
+            .put(data)
+    }
+
+    private class BlockReadResult(
+        val data: ByteArray?,
+        val bytesRead: Int
+    )
+
+    private enum class BlockType(val identifier: Short) {
+        EVENT(0x00),
+        META(0x01),
+    }
 
     // endregion
 
     @Suppress("StringLiteralDuplication")
     companion object {
 
-        internal const val HEADER_VERSION: Byte = 1
-        internal const val MAX_META_SIZE_BYTES = 255
+        // TLV (Type-Length-Value) constants
+        internal const val TYPE_SIZE_BYTES: Int = 2
+        internal const val LENGTH_SIZE_BYTES: Int = 4
+        internal const val HEADER_SIZE_BYTES: Int = TYPE_SIZE_BYTES + LENGTH_SIZE_BYTES
 
         internal const val ERROR_WRITE = "Unable to write data to file: %s"
         internal const val ERROR_READ = "Unable to read data from file: %s"
@@ -254,10 +298,6 @@ internal class BatchFileHandler(
         internal const val ERROR_MOVE_NO_DST = "Unable to move files; " +
             "could not create directory: %s"
 
-        internal const val ERROR_EOF_AT_META_SIZE_BYTE =
-            "Cannot read meta size byte, because EOF reached."
-        internal const val ERROR_EOF_AT_VERSION_BYTE =
-            "Cannot read version byte, because EOF reached."
         internal const val ERROR_FAILED_META_PARSE =
             "Failed to parse meta bytes, stopping file read."
         internal const val WARNING_NOT_ALL_DATA_READ =

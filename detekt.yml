@@ -618,7 +618,13 @@ datadog:
       - "java.io.FileOutputStream.use(kotlin.Function1):java.io.IOException"
       - "java.io.FileOutputStream.write(kotlin.ByteArray):java.io.IOException"
       - "java.io.InputStream.read():java.io.IOException"
+      - "java.io.InputStream.read(kotlin.ByteArray):java.io.IOException"
       - "java.io.InputStream.read(kotlin.ByteArray, kotlin.Int, kotlin.Int):java.io.IOException"
+      - "java.nio.ByteBuffer.allocate(kotlin.Int):java.lang.IllegalArgumentException"
+      - "java.nio.ByteBuffer.array():java.nio.ReadOnlyBufferException,java.lang.UnsupportedOperationException"
+      - "java.nio.ByteBuffer.put(kotlin.ByteArray):java.nio.BufferOverflowException,java.nio.ReadOnlyBufferException"
+      - "java.nio.ByteBuffer.putInt(kotlin.Int):java.nio.BufferOverflowException,java.nio.ReadOnlyBufferException"
+      - "java.nio.ByteBuffer.putShort(kotlin.Short):java.nio.BufferOverflowException,java.nio.ReadOnlyBufferException"
       - "java.nio.channels.FileChannel.lock():java.io.IOException,java.lang.IllegalStateException"
       - "java.nio.channels.FileLock.release():java.io.IOException"
       # endregion
