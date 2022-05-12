@@ -9,9 +9,11 @@ package com.datadog.android.rum.internal
 import android.app.Application
 import android.view.Choreographer
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.core.internal.event.NoOpEventMapper
+import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
 import com.datadog.android.rum.internal.net.RumOkHttpUploaderV2
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
@@ -32,6 +34,7 @@ import com.nhaarman.mockitokotlin2.doNothing
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -44,6 +47,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -216,10 +221,16 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
         assertThat(testedFeature.rumEventMapper).isSameAs(fakeConfigurationFeature.rumEventMapper)
     }
 
-    @Test
-    fun `𝕄 setup vital monitors 𝕎 initialize()`() {
+    @ParameterizedTest
+    @EnumSource(VitalsUpdateFrequency::class, names = ["NEVER"], mode = EnumSource.Mode.EXCLUDE)
+    fun `𝕄 setup vital monitors 𝕎 initialize { frequency != NEVER }`(
+        fakeFrequency: VitalsUpdateFrequency
+    ) {
         // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeConfigurationFeature.copy(vitalsMonitorUpdateFrequency = fakeFrequency)
+        )
 
         // Then
         assertThat(testedFeature.cpuVitalMonitor)
@@ -235,20 +246,65 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
     }
 
     @Test
-    fun `𝕄 register choreographer callback safely 𝕎 initialize()`(
+    fun `M not initialize the vital monitors W initialize { frequency = NEVER }`() {
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeConfigurationFeature.copy(
+                vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER
+            )
+        )
+
+        // Then
+        assertThat(testedFeature.cpuVitalMonitor)
+            .isInstanceOf(NoOpVitalMonitor::class.java)
+        assertThat(testedFeature.memoryVitalMonitor)
+            .isInstanceOf(NoOpVitalMonitor::class.java)
+        assertThat(testedFeature.frameRateVitalMonitor)
+            .isInstanceOf(NoOpVitalMonitor::class.java)
+        assertThat(RumFeature.vitalExecutorService)
+            .isInstanceOf(NoOpScheduledExecutorService::class.java)
+    }
+
+    @ParameterizedTest
+    @EnumSource(VitalsUpdateFrequency::class, names = ["NEVER"], mode = EnumSource.Mode.EXCLUDE)
+    fun `𝕄 register choreographer callback safely 𝕎 initialize { frequency != NEVER }()`(
+        fakeFrequency: VitalsUpdateFrequency,
         @StringForgery message: String
     ) {
         // Given
         doThrow(IllegalStateException(message)).whenever(mockChoreographer).postFrameCallback(any())
 
         // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeConfigurationFeature.copy(vitalsMonitorUpdateFrequency = fakeFrequency)
+        )
 
         // Then
         argumentCaptor<Choreographer.FrameCallback> {
             verify(mockChoreographer).postFrameCallback(capture())
             assertThat(firstValue).isInstanceOf(VitalFrameCallback::class.java)
         }
+    }
+
+    @Test
+    fun `𝕄 not register choreographer callback 𝕎 initialize { frequency = NEVER }()`(
+        @StringForgery message: String
+    ) {
+        // Given
+        doThrow(IllegalStateException(message)).whenever(mockChoreographer).postFrameCallback(any())
+
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeConfigurationFeature.copy(
+                vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER
+            )
+        )
+
+        // Then
+        verifyZeroInteractions(mockChoreographer)
     }
 
     @Test
@@ -310,14 +366,37 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
         assertThat(testedFeature.rumEventMapper).isInstanceOf(NoOpEventMapper::class.java)
     }
 
-    @Test
-    fun `𝕄 initialize vital executor 𝕎 initialize()`() {
+    @ParameterizedTest
+    @EnumSource(VitalsUpdateFrequency::class, names = ["NEVER"], mode = EnumSource.Mode.EXCLUDE)
+    fun `𝕄 initialize vital executor 𝕎 initialize { frequency != NEVER }()`(
+        fakeFrequency: VitalsUpdateFrequency
+    ) {
         // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeConfigurationFeature.copy(
+                vitalsMonitorUpdateFrequency = fakeFrequency
+            )
+        )
 
         // Then
         val scheduledRunnables = testedFeature.vitalExecutorService.shutdownNow()
         assertThat(scheduledRunnables).isNotEmpty
+    }
+
+    @Test
+    fun `𝕄 not initialize vital executor 𝕎 initialize { frequency = NEVER }()`() {
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeConfigurationFeature.copy(
+                vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER
+            )
+        )
+
+        // Then
+        assertThat(RumFeature.vitalExecutorService)
+            .isInstanceOf(NoOpScheduledExecutorService::class.java)
     }
 
     @Test
@@ -332,6 +411,19 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
 
         // Then
         verify(mockVitalExecutorService).shutdownNow()
+    }
+
+    @Test
+    fun `𝕄 reset vital executor 𝕎 stop()`() {
+        // Given
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        assertThat(RumFeature.vitalExecutorService)
+            .isInstanceOf(NoOpScheduledExecutorService::class.java)
     }
 
     @Test

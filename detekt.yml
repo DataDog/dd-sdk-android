@@ -860,6 +860,7 @@ datadog:
       - "java.util.concurrent.ExecutorService.shutdownNow()"
       - "java.util.concurrent.Executors.newSingleThreadExecutor()"
       - "java.util.concurrent.LinkedBlockingDeque.constructor()"
+      - "java.util.concurrent.ScheduledExecutorService.shutdownNow()"
       - "java.util.concurrent.ScheduledThreadPoolExecutor.remove(java.lang.Runnable)"
       - "java.util.concurrent.ScheduledThreadPoolExecutor.shutdown()"
       - "java.util.concurrent.ScheduledThreadPoolExecutor.shutdownNow()"
