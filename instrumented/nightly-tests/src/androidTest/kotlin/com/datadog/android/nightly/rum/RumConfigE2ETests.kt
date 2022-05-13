@@ -6,17 +6,21 @@
 
 package com.datadog.android.nightly.rum
 
+import android.app.Activity
 import android.os.Handler
 import android.os.Looper
+import androidx.test.core.app.ActivityScenario.launch
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.SecurityConfig
+import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.nightly.TEST_METHOD_NAME_KEY
+import com.datadog.android.nightly.activities.ViewTrackingActivity
 import com.datadog.android.nightly.rules.NightlyTestRule
 import com.datadog.android.nightly.utils.TestEncryption
 import com.datadog.android.nightly.utils.aResourceKey
@@ -43,6 +47,8 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
+import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.junit.Rule
@@ -666,6 +672,108 @@ class RumConfigE2ETests {
             )
         }
         sendAllRumEvents(forge, testMethodName)
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setVitalsUpdateFrequency(VitalsUpdateFrequency): Builder
+     */
+    @Test
+    fun rum_config_set_vitals_update_frequency_never() {
+        val testMethodName = "rum_config_set_vitals_update_frequency_never"
+        val strategy = ActivityViewTrackingStrategy(
+            true,
+            componentPredicate = object : ComponentPredicate<Activity> {
+                override fun accept(component: Activity): Boolean {
+                    return true
+                }
+
+                override fun getViewName(component: Activity): String {
+                    return testMethodName
+                }
+            }
+        )
+        // we need to initialize the SDK on the Main Thread (Looper thread) otherwise the
+        // Choreographer Callback will not be registered
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            measureSdkInitialize {
+                val config = Configuration
+                    .Builder(
+                        logsEnabled = true,
+                        tracesEnabled = true,
+                        rumEnabled = true,
+                        crashReportsEnabled = true
+                    )
+                    .useViewTrackingStrategy(strategy)
+                    .setVitalsUpdateFrequency(VitalsUpdateFrequency.NEVER)
+                    .build()
+                initializeSdk(
+                    InstrumentationRegistry.getInstrumentation().targetContext,
+                    TrackingConsent.GRANTED,
+                    config
+                )
+            }
+        }
+        val scenario = launch(ViewTrackingActivity::class.java)
+        // Give some time to vitals monitors to be updated
+        Thread.sleep(5000)
+        scenario.onActivity {
+            InstrumentationRegistry.getInstrumentation().callActivityOnPause(it)
+            InstrumentationRegistry.getInstrumentation().callActivityOnResume(it)
+        }
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setVitalsUpdateFrequency(VitalsUpdateFrequency): Builder
+     */
+    @Test
+    fun rum_config_set_vitals_update_frequency() {
+        val fakeFrequency = forge.aValueFrom(
+            VitalsUpdateFrequency::class.java,
+            exclude = listOf(VitalsUpdateFrequency.NEVER)
+        )
+        val testMethodName = "rum_config_set_vitals_update_frequency"
+        val strategy = ActivityViewTrackingStrategy(
+            true,
+            componentPredicate = object : ComponentPredicate<Activity> {
+                override fun accept(component: Activity): Boolean {
+                    return true
+                }
+
+                override fun getViewName(component: Activity): String {
+                    return testMethodName
+                }
+            }
+        )
+        // we need to initialize the SDK on the Main Thread (Looper thread) otherwise the
+        // Choreographer Callback will not be registered
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            measureSdkInitialize {
+                val config = Configuration
+                    .Builder(
+                        logsEnabled = true,
+                        tracesEnabled = true,
+                        rumEnabled = true,
+                        crashReportsEnabled = true
+                    )
+                    .useViewTrackingStrategy(strategy)
+                    .setVitalsUpdateFrequency(fakeFrequency)
+                    .build()
+                initializeSdk(
+                    InstrumentationRegistry.getInstrumentation().targetContext,
+                    TrackingConsent.GRANTED,
+                    config
+                )
+            }
+        }
+        val scenario = launch(ViewTrackingActivity::class.java)
+        // Give some time to vitals monitors to be updated
+        Thread.sleep(5000)
+        scenario.onActivity {
+            InstrumentationRegistry.getInstrumentation().callActivityOnPause(it)
+            InstrumentationRegistry.getInstrumentation().callActivityOnResume(it)
+        }
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
     }
 
     // endregion
