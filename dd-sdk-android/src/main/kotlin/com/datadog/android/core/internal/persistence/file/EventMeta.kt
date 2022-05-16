@@ -11,32 +11,28 @@ import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import kotlin.jvm.Throws
 
-internal data class EventMeta(val eventSize: Int) {
+// TODO RUMM-2172 use meta.
+//  For now it has nothing (fake property just because data class requires it)
+internal data class EventMeta(private val fake: String = "") {
 
     val asBytes: ByteArray
         get() {
             return JsonObject()
-                .apply {
-                    addProperty(EVENT_SIZE_KEY, eventSize)
-                }
                 .toString()
                 .toByteArray(Charsets.UTF_8)
         }
 
     companion object {
 
-        private const val EVENT_SIZE_KEY = "ev_size"
-
         @Throws(JsonParseException::class)
         @Suppress("ThrowingInternalException", "TooGenericExceptionCaught")
         fun fromBytes(metaBytes: ByteArray): EventMeta {
             return try {
-                @Suppress("UnsafeThirdPartyFunctionCall") // there is Throws annotation
+                // there is Throws annotation
+                @Suppress("UnsafeThirdPartyFunctionCall", "UNUSED_VARIABLE")
                 val json = JsonParser.parseString(String(metaBytes, Charsets.UTF_8))
                     .asJsonObject
-                EventMeta(
-                    eventSize = json.get(EVENT_SIZE_KEY).asInt
-                )
+                EventMeta()
             } catch (e: IllegalStateException) {
                 throw JsonParseException(e)
             } catch (e: ClassCastException) {

@@ -8,7 +8,6 @@ package com.datadog.android.core.internal.persistence.file
 
 import com.google.gson.JsonParseException
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -23,11 +22,9 @@ import org.junit.jupiter.api.extension.Extensions
 internal class EventMetaTest {
 
     @Test
-    fun `𝕄 return original value 𝕎 asBytes + fromBytes()`(
-        @IntForgery(min = 0) eventSize: Int
-    ) {
+    fun `𝕄 return original value 𝕎 asBytes + fromBytes()`() {
         // Given
-        val originalMeta = EventMeta(eventSize)
+        val originalMeta = EventMeta()
 
         // When
         val restoredMeta = EventMeta.fromBytes(originalMeta.asBytes)
@@ -49,9 +46,7 @@ internal class EventMetaTest {
     ) {
         // Given
         val metaBytes = forge.anElementFrom(
-            "[]",
-            "{}",
-            "{\"ev_size\": \"string\"}"
+            "[]"
         ).toByteArray()
 
         // When + Then

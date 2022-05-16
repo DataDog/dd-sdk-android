@@ -32,6 +32,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
+import java.nio.ByteBuffer
 import java.util.Locale
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeFalse
@@ -95,7 +96,7 @@ internal class BatchFileHandlerTest {
 
         // Then
         assertThat(result).isTrue()
-        assertThat(file).exists().hasBinaryContent(headerBytes(contentBytes) + contentBytes)
+        assertThat(file).exists().hasBinaryContent(encode(contentBytes))
     }
 
     @Test
@@ -117,7 +118,7 @@ internal class BatchFileHandlerTest {
 
         // Then
         assertThat(result).isTrue()
-        assertThat(file).exists().hasBinaryContent(headerBytes(contentBytes) + contentBytes)
+        assertThat(file).exists().hasBinaryContent(encode(contentBytes))
     }
 
     @Test
@@ -140,7 +141,7 @@ internal class BatchFileHandlerTest {
 
         // Then
         assertThat(result).isTrue()
-        assertThat(file).exists().hasBinaryContent(headerBytes(contentBytes) + contentBytes)
+        assertThat(file).exists().hasBinaryContent(encode(contentBytes))
     }
 
     @Test
@@ -152,7 +153,7 @@ internal class BatchFileHandlerTest {
         // Given
         val file = File(fakeRootDirectory, fileName)
         val previousData = previousContent.toByteArray()
-        file.writeBytes(headerBytes(previousData) + previousData)
+        file.writeBytes(encode(previousData))
         val contentBytes = content.toByteArray()
 
         // When
@@ -166,8 +167,7 @@ internal class BatchFileHandlerTest {
         assertThat(result).isTrue()
         assertThat(file).exists()
             .hasBinaryContent(
-                headerBytes(previousData) + previousData +
-                    headerBytes(contentBytes) + contentBytes
+                encode(previousData) + encode(contentBytes)
             )
     }
 
@@ -224,42 +224,6 @@ internal class BatchFileHandlerTest {
             eq(ERROR_WITH_TELEMETRY_LEVEL),
             eq(BatchFileHandler.ERROR_WRITE.format(Locale.US, file.path)),
             any(),
-            eq(emptyMap()),
-            eq(emptySet()),
-            isNull()
-        )
-    }
-
-    @Test
-    fun `𝕄 return false and warn 𝕎 writeData() { meta is too big }`(
-        @StringForgery fileName: String,
-        @StringForgery content: String,
-        @BoolForgery append: Boolean,
-        forge: Forge
-    ) {
-        // Given
-        testedFileHandler = BatchFileHandler(
-            Logger(logger.mockSdkLogHandler),
-            metaGenerator = {
-                ByteArray(BatchFileHandler.MAX_META_SIZE_BYTES + forge.aTinyInt())
-            }
-        )
-        val file = File(fakeRootDirectory, fileName)
-        file.createNewFile()
-
-        // When
-        val result = testedFileHandler.writeData(
-            file,
-            content.toByteArray(),
-            append = append
-        )
-
-        // Then
-        assertThat(result).isFalse()
-        verify(logger.mockSdkLogHandler).handleLog(
-            eq(ERROR_WITH_TELEMETRY_LEVEL),
-            eq(BatchFileHandler.ERROR_WRITE.format(Locale.US, file.path)),
-            isA<BatchFileHandler.MetaTooBigException>(),
             eq(emptyMap()),
             eq(emptySet()),
             isNull()
@@ -342,7 +306,7 @@ internal class BatchFileHandlerTest {
     }
 
     @Test
-    fun `𝕄 return valid events read so far and warn 𝕎 readData() { stream cutoff at meta block }`(
+    fun `𝕄 return valid events read so far and warn 𝕎 readData() { stream cutoff }`(
         @StringForgery fileName: String,
         forge: Forge
     ) {
@@ -355,11 +319,11 @@ internal class BatchFileHandlerTest {
         file.writeBytes(
             events.mapIndexed { index, bytes ->
                 if (index == events.lastIndex) {
-                    headerBytes(bytes)
-                        .let { it.take(forge.anInt(min = 2, max = it.size - 1)) }
+                    encode(bytes)
+                        .let { it.take(forge.anInt(min = 1, max = it.size - 1)) }
                         .toByteArray()
                 } else {
-                    headerBytes(bytes) + bytes
+                    encode(bytes)
                 }
             }.reduce { acc, bytes -> acc + bytes }
         )
@@ -372,7 +336,7 @@ internal class BatchFileHandlerTest {
     }
 
     @Test
-    fun `𝕄 return valid events read so far and warn 𝕎 readData() { malformed meta }`(
+    fun `𝕄 return valid events read and warn 𝕎 readData() { malformed meta }`(
         @StringForgery fileName: String,
         forge: Forge
     ) {
@@ -384,7 +348,7 @@ internal class BatchFileHandlerTest {
 
         file.writeBytes(
             events.map {
-                headerBytes(it) + it
+                encode(it)
             }.reduce { acc, bytes -> acc + bytes }
         )
 
@@ -392,10 +356,12 @@ internal class BatchFileHandlerTest {
         testedFileHandler = BatchFileHandler(
             Logger(logger.mockSdkLogHandler),
             metaParser = object : (ByteArray) -> EventMeta {
+                // in case of malformed meta we should drop corresponding event and continue reading
                 var invocations = 0
 
                 override fun invoke(metaBytes: ByteArray): EventMeta {
                     return if (invocations == malformedMetaIndex) {
+                        invocations++
                         throw JsonParseException(forge.aString())
                     } else {
                         invocations++
@@ -409,7 +375,7 @@ internal class BatchFileHandlerTest {
         val result = testedFileHandler.readData(file)
 
         // Then
-        assertThat(result).containsExactlyElementsOf(events.take(malformedMetaIndex))
+        assertThat(result).containsExactlyElementsOf(events.minus(events[malformedMetaIndex]))
 
         verify(logger.mockSdkLogHandler).handleLog(
             eq(Log.ERROR),
@@ -422,7 +388,7 @@ internal class BatchFileHandlerTest {
     }
 
     @Test
-    fun `𝕄 return valid events read so far and warn 𝕎 readData() {stream cutoff at event block}`(
+    fun `𝕄 return valid events read so far and warn 𝕎 readData() { unexpected block type }`(
         @StringForgery fileName: String,
         forge: Forge
     ) {
@@ -432,12 +398,30 @@ internal class BatchFileHandlerTest {
             aString().toByteArray()
         }
 
+        val badEventIndex = forge.anInt(min = 0, max = events.size)
         file.writeBytes(
-            events.mapIndexed { index, bytes ->
-                headerBytes(bytes) + if (index == events.lastIndex) {
-                    bytes.let { it.take(forge.anInt(min = 0, max = it.size - 1)) }.toByteArray()
+            events.mapIndexed { index, item ->
+                val metaBytes = metaBytesAsTlv()
+                val eventBytes = dataBytesAsTlv(item)
+                if (index == badEventIndex) {
+                    val isBadBlockTypeInMeta = forge.aBool()
+                    if (isBadBlockTypeInMeta) {
+                        metaBytes.apply {
+                            set(
+                                1,
+                                forge.anElementFrom(
+                                    0,
+                                    forge.anInt(min = 2, max = Byte.MAX_VALUE + 1)
+                                ).toByte()
+                            )
+                        } + eventBytes
+                    } else {
+                        metaBytes + eventBytes.apply {
+                            set(1, forge.anInt(min = 0, max = Byte.MAX_VALUE + 1).toByte())
+                        }
+                    }
                 } else {
-                    bytes
+                    metaBytes + eventBytes
                 }
             }.reduce { acc, bytes -> acc + bytes }
         )
@@ -446,7 +430,16 @@ internal class BatchFileHandlerTest {
         val result = testedFileHandler.readData(file)
 
         // Then
-        assertThat(result).containsExactlyElementsOf(events.take(events.size - 1))
+        assertThat(result).containsExactlyElementsOf(events.take(badEventIndex))
+
+        verify(logger.mockDevLogHandler).handleLog(
+            Log.ERROR,
+            BatchFileHandler.WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)
+        )
+        verify(logger.mockSdkLogHandler).handleLog(
+            ERROR_WITH_TELEMETRY_LEVEL,
+            BatchFileHandler.WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)
+        )
     }
 
     @Test
@@ -457,7 +450,7 @@ internal class BatchFileHandlerTest {
         // Given
         val file = File(fakeRootDirectory, fileName)
         val eventBytes = event.toByteArray()
-        file.writeBytes(headerBytes(eventBytes) + eventBytes)
+        file.writeBytes(encode(eventBytes))
 
         // When
         val result = testedFileHandler.readData(file)
@@ -476,7 +469,7 @@ internal class BatchFileHandlerTest {
         val events = forge.aList {
             aString().toByteArray()
         }
-        file.writeBytes(events.map { headerBytes(it) + it }.reduce { acc, bytes -> acc + bytes })
+        file.writeBytes(events.map { encode(it) }.reduce { acc, bytes -> acc + bytes })
 
         // When
         val result = testedFileHandler.readData(file)
@@ -753,13 +746,31 @@ internal class BatchFileHandlerTest {
 
     // region private
 
-    private fun headerBytes(data: ByteArray): ByteArray {
-        val meta = EventMeta(eventSize = data.size).asBytes
+    // Encoding specification is as following:
+    // +-  2 bytes -+-   4 bytes   -+- n bytes -|
+    // | block type | data size (n) |    data   |
+    // +------------+---------------+-----------+
+    // where block type is 0x00 for event, 0x01 for data
+    private fun encode(data: ByteArray): ByteArray {
+        return metaBytesAsTlv() + dataBytesAsTlv(data)
+    }
 
-        return ByteArray(2).apply {
-            set(0, BatchFileHandler.HEADER_VERSION)
-            set(1, meta.size.toByte())
-        } + meta
+    private fun metaBytesAsTlv(): ByteArray {
+        val metaBytes = EventMeta().asBytes
+
+        return ByteBuffer.allocate(6 + metaBytes.size)
+            .putShort(0x01)
+            .putInt(metaBytes.size)
+            .put(metaBytes)
+            .array()
+    }
+
+    private fun dataBytesAsTlv(data: ByteArray): ByteArray {
+        return ByteBuffer.allocate(6 + data.size)
+            .putShort(0x00)
+            .putInt(data.size)
+            .put(data)
+            .array()
     }
 
     // endregion
