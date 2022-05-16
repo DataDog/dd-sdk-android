@@ -19,7 +19,7 @@ import com.datadog.android.privacy.TrackingConsent
  * @property featuresContext agnostic dictionary with information from all features registered to
  * the parent SDK instance
  */
-data class SDKContext(
+data class DatadogContext(
     val time: TimeInfo,
     val applicationInfo: ApplicationInfo,
     val processInfo: ProcessInfo,

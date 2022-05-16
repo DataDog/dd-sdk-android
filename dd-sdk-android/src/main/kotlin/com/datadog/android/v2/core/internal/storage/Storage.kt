@@ -1,0 +1,38 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.v2.core.internal.storage
+
+import com.datadog.android.v2.api.context.DatadogContext
+
+/**
+ * Main core api to interact with the local storage of events.
+ */
+internal interface Storage {
+
+    /**
+     * Utility to write data, asynchronously.
+     * @param datadogContext the current [DatadogContext]
+     * @param callback an operation to perform with a [BatchWriter] that will target the current
+     * writeable Batch
+     */
+    fun writeCurrentBatch(datadogContext: DatadogContext, callback: (BatchWriter) -> Unit)
+
+    /**
+     * Utility to read a batch, asynchronously.
+     * @param datadogContext the current [DatadogContext]
+     * @param callback an operation to perform with a [BatchId] and [BatchReader] that will target
+     * the next readable Batch
+     */
+    fun readNextBatch(datadogContext: DatadogContext, callback: (BatchId, BatchReader) -> Unit)
+
+    /**
+     * Utility to update the state of a batch, asynchronously.
+     * @param batchId the id of the Batch to confirm
+     * @param callback an operation to perform with a [BatchConfirmation]
+     */
+    fun confirmBatchRead(batchId: BatchId, callback: (BatchConfirmation) -> Unit)
+}
