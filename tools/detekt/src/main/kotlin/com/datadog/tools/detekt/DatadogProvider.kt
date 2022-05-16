@@ -9,6 +9,7 @@ package com.datadog.tools.detekt
 import com.datadog.tools.detekt.rules.CheckInternal
 import com.datadog.tools.detekt.rules.InvalidStringFormat
 import com.datadog.tools.detekt.rules.RequireInternal
+import com.datadog.tools.detekt.rules.ThreadSafety
 import com.datadog.tools.detekt.rules.ThrowingInternalException
 import com.datadog.tools.detekt.rules.TodoWithoutTask
 import com.datadog.tools.detekt.rules.UnsafeCallOnNullableType
@@ -34,7 +35,8 @@ class DatadogProvider : RuleSetProvider {
                 TodoWithoutTask(),
                 InvalidStringFormat(),
                 UnsafeThirdPartyFunctionCall(config),
-                UnsafeCallOnNullableType()
+                UnsafeCallOnNullableType(),
+                ThreadSafety()
             )
         )
     }

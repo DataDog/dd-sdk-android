@@ -20,6 +20,7 @@ plugins {
 dependencies {
     implementation(libs.kotlin)
     implementation(libs.kotlinReflect)
+    implementation(libs.androidXAnnotation)
     compileOnly(libs.detektApi)
 
     testImplementation(libs.bundles.jUnit5)
