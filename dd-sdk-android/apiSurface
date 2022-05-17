@@ -1494,6 +1494,20 @@ data class com.datadog.android.tracing.model.SpanEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): SimCarrier
+interface com.datadog.android.v2.api.EventBatchWriter
+  fun currentMetadata(): ByteArray?
+  fun write(ByteArray, String, ByteArray)
+interface com.datadog.android.v2.api.InternalLogger
+  enum Level
+    - DEBUG
+    - INFO
+    - WARN
+    - ERROR
+  enum Target
+    - USER
+    - MAINTAINER
+    - TELEMETRY
+  fun log(Level, Target, String, Throwable?, Map<String, Any>)
 interface com.datadog.android.v2.api.SDKCore
   fun registerFeature(String, SDKFeatureStorageConfiguration, SDKFeatureUploadConfiguration)
   fun getFeature(String): SDKFeature?
@@ -1510,6 +1524,33 @@ interface com.datadog.android.v2.api.SDKFeatureConfiguration
 class com.datadog.android.v2.api.SDKFeatureStorageConfiguration
 data class com.datadog.android.v2.api.SDKFeatureUploadConfiguration
   constructor(String)
+data class com.datadog.android.v2.api.context.ApplicationInfo
+  constructor(String, String, Int)
+data class com.datadog.android.v2.api.context.CarrierInfo
+  constructor(String?, String?)
+data class com.datadog.android.v2.api.context.DatadogContext
+  constructor(TimeInfo, ApplicationInfo, ProcessInfo, NetworkInfo, UserInfo, com.datadog.android.privacy.TrackingConsent, Map<String, Any>)
+data class com.datadog.android.v2.api.context.NetworkInfo
+  constructor(Connectivity, CarrierInfo?)
+  enum Connectivity
+    - NETWORK_NOT_CONNECTED
+    - NETWORK_ETHERNET
+    - NETWORK_WIFI
+    - NETWORK_WIMAX
+    - NETWORK_BLUETOOTH
+    - NETWORK_2G
+    - NETWORK_3G
+    - NETWORK_4G
+    - NETWORK_5G
+    - NETWORK_MOBILE_OTHER
+    - NETWORK_CELLULAR
+    - NETWORK_OTHER
+data class com.datadog.android.v2.api.context.ProcessInfo
+  constructor(Boolean, Int)
+data class com.datadog.android.v2.api.context.TimeInfo
+  constructor(Long, Long)
+data class com.datadog.android.v2.api.context.UserInfo
+  constructor(String?, String?, String?, Map<String, Any>)
 class com.datadog.android.v2.core.DatadogCore : com.datadog.android.v2.api.SDKCore
   constructor(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration)
   override fun registerFeature(String, com.datadog.android.v2.api.SDKFeatureStorageConfiguration, com.datadog.android.v2.api.SDKFeatureUploadConfiguration)

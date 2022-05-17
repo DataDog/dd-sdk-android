@@ -26,7 +26,7 @@ import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
-import com.datadog.android.log.internal.domain.LogGenerator
+import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
@@ -123,6 +123,15 @@ internal class DatadogExceptionHandlerTest {
     @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
     lateinit var fakeEnvName: String
 
+    @StringForgery(regex = "([a-z]{2,8}\\.){1,4}[a-z]{2,8}")
+    lateinit var fakeServiceName: String
+
+    @StringForgery(regex = "[0-9](\\.[0-9]{1,2}){1,3}")
+    lateinit var fakeAppVersion: String
+
+    @StringForgery(regex = "[0-9](\\.[0-9]{1,2}){1,3}")
+    lateinit var fakeSdkVersion: String
+
     @BeforeEach
     fun `set up`() {
         mockChoreographerInstance()
@@ -145,15 +154,15 @@ internal class DatadogExceptionHandlerTest {
         originalHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler(mockPreviousHandler)
         testedHandler = DatadogExceptionHandler(
-            LogGenerator(
-                CoreFeature.serviceName,
+            DatadogLogGenerator(
+                fakeServiceName,
                 DatadogExceptionHandler.LOGGER_NAME,
                 mockNetworkInfoProvider,
                 mockUserInfoProvider,
                 mockTimeProvider,
-                CoreFeature.sdkVersion,
-                CoreFeature.envName,
-                CoreFeature.packageVersion
+                fakeSdkVersion,
+                fakeEnvName,
+                appContext.fakeVersionName
             ),
             writer = mockLogWriter,
             appContext = appContext.mockInstance
