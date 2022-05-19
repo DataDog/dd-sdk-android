@@ -25,6 +25,7 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.setStaticValue
 import com.datadog.trace.api.interceptor.MutableSpan
+import com.datadog.trace.api.sampling.PrioritySampling
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -369,6 +370,76 @@ internal open class TracingInterceptorNotSendingSpanTest {
         }
         verify(mockSpanBuilder).asChildOf(parentSpanContext)
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
+    }
+
+    @Test
+    fun `𝕄 respect sampling decision 𝕎 intercept() {sampled in upstream interceptor}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int,
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        fakeRequest = forgeRequest(forge) {
+            it.addHeader(
+                TracingInterceptor.SAMPLING_PRIORITY_HEADER,
+                forge.anElementFrom(
+                    PrioritySampling.SAMPLER_KEEP.toString(),
+                    PrioritySampling.USER_KEEP.toString()
+                )
+            )
+        }
+        stubChain(mockChain, statusCode)
+        whenever(mockTraceSampler.sample()).thenReturn(false)
+        doAnswer { invocation ->
+            val carrier = invocation.arguments[2] as TextMapInject
+            carrier.put(key, value)
+        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(lastValue.header(key)).isEqualTo(value)
+        }
+    }
+
+    @Test
+    fun `𝕄 respect sampling decision 𝕎 intercept() {sampled out in upstream interceptor}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        fakeRequest = forgeRequest(forge) {
+            it.addHeader(
+                TracingInterceptor.SAMPLING_PRIORITY_HEADER,
+                forge.anElementFrom(
+                    PrioritySampling.SAMPLER_DROP.toString(),
+                    PrioritySampling.USER_DROP.toString()
+                )
+            )
+        }
+        stubChain(mockChain, statusCode)
+        whenever(mockTraceSampler.sample()).thenReturn(true)
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(lastValue.header(TracingInterceptor.SAMPLING_PRIORITY_HEADER))
+                .isEqualTo("0")
+            assertThat(lastValue.header(TracingInterceptor.TRACE_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.SPAN_ID_HEADER)).isNull()
+        }
+        verifyZeroInteractions(mockTracer, mockLocalTracer, mockSpanBuilder, mockSpan)
     }
 
     @Test

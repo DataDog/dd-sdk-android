@@ -482,6 +482,8 @@ final OkHttpClient okHttpClient =  new OkHttpClient.Builder()
 {{% /tab %}}
 {{< /tabs >}}
 
+In this case trace sampling decision made by the upstream interceptor for a particular request will be respected by the downstream interceptor.
+
 Because the way the OkHttp Request is executed (using a Thread pool), the request span won't be automatically linked with the span that triggered the request. You can manually provide a parent span in the `OkHttp Request.Builder` as follows:
 
 {{< tabs >}}

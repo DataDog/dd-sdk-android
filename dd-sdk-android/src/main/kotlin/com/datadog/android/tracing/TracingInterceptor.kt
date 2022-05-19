@@ -21,6 +21,7 @@ import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.opentracing.DDTracer
 import com.datadog.trace.api.DDTags
 import com.datadog.trace.api.interceptor.MutableSpan
+import com.datadog.trace.api.sampling.PrioritySampling
 import io.opentracing.Span
 import io.opentracing.SpanContext
 import io.opentracing.Tracer
@@ -195,7 +196,8 @@ internal constructor(
         request: Request,
         tracer: Tracer
     ): Response {
-        val span = if (traceSampler.sample()) {
+        val isSampled = extractSamplingDecision(request) ?: traceSampler.sample()
+        val span = if (isSampled) {
             buildSpan(tracer, request)
         } else {
             null
@@ -273,6 +275,14 @@ internal constructor(
         span.setTag(Tags.HTTP_METHOD.key, request.method())
 
         return span
+    }
+
+    private fun extractSamplingDecision(request: Request): Boolean? {
+        val samplingPriority = request.header(SAMPLING_PRIORITY_HEADER)?.toIntOrNull()
+            ?: return null
+        if (samplingPriority == PrioritySampling.UNSET) return null
+        return samplingPriority == PrioritySampling.USER_KEEP ||
+            samplingPriority == PrioritySampling.SAMPLER_KEEP
     }
 
     private fun extractParentContext(tracer: Tracer, request: Request): SpanContext? {
