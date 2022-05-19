@@ -34,7 +34,8 @@ internal class ResourceTrackingCustomAttributesActivity : ResourceTrackingActivi
                                 SPECIAL_NULL_ATTRIBUTE_NAME to null
                             )
                         }
-                    }
+                    },
+                    traceSamplingRate = 100f
                 )
             )
             .build()
