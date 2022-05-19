@@ -7,6 +7,14 @@
 package com.datadog.android.v2.api
 
 /**
- * Represents a Datadog feature.
+ * One of Datadog's official endpoints, related to our existing datacenters.
  */
-interface SDKFeature
+enum class SDKEndpoint {
+    US1,
+    US3,
+    US5,
+    US1_FED,
+    EU1
+    // DISCUSS should staging endpoints be available here
+    // DISCUSS What about custom endpoints?
+}
