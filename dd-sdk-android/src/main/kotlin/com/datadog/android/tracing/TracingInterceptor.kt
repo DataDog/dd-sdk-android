@@ -6,9 +6,13 @@
 
 package com.datadog.android.tracing
 
+import androidx.annotation.FloatRange
 import com.datadog.android.DatadogInterceptor
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.sampling.RateBasedSampler
+import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.sdkLogger
@@ -56,8 +60,9 @@ import okhttp3.Response
  * ```
  *
  * @param tracedHosts a list of all the hosts that you want to be automatically tracked
- * by this interceptor. If no host is provided the interceptor won't trace any OkHttpRequest,
- * nor propagate tracing information to the backend.
+ * by this interceptor. If no host is provided (via this argument or global
+ * configuration [Configuration.Builder.setFirstPartyHosts]) the interceptor won't trace
+ * any [okhttp3.Request], nor propagate tracing information to the backend.
  * @param tracedRequestListener a listener for automatically created [Span]s
  *
  */
@@ -68,6 +73,7 @@ internal constructor(
     internal val tracedRequestListener: TracedRequestListener,
     internal val firstPartyHostDetector: FirstPartyHostDetector,
     internal val traceOrigin: String?,
+    internal val traceSampler: Sampler,
     internal val localTracerFactory: () -> Tracer
 ) : Interceptor {
 
@@ -85,19 +91,25 @@ internal constructor(
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s.
      *
      * @param tracedHosts a list of all the hosts that you want to be automatically tracked
-     * by this interceptor. If no host is provided the interceptor won't trace any OkHttp [Request],
+     * by this interceptor. If no host is provided (via this argument or global
+     * configuration [Configuration.Builder.setFirstPartyHosts]) the interceptor won't trace any OkHttp [Request],
      * nor propagate tracing information to the backend.
      * @param tracedRequestListener a listener for automatically created [Span]s
+     * @param traceSamplingRate the sampling rate for APM traces created for auto-instrumented
+     * requests. It must be a value between `0.0` and `100.0`. A value of `0.0` means no trace will
+     * be kept, `100.0` means all traces will be kept (default value is `20.0`).
      */
     @JvmOverloads
     constructor(
         tracedHosts: List<String>,
-        tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
+        tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
+        @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
         tracedHosts,
         tracedRequestListener,
         CoreFeature.firstPartyHostDetector,
         null,
+        RateBasedSampler(traceSamplingRate / 100),
         { AndroidTracer.Builder().build() }
     )
 
@@ -105,15 +117,20 @@ internal constructor(
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s.
      *
      * @param tracedRequestListener a listener for automatically created [Span]s
+     * @param traceSamplingRate the sampling rate for APM traces created for auto-instrumented
+     * requests. It must be a value between `0.0` and `100.0`. A value of `0.0` means no trace will
+     * be kept, `100.0` means all traces will be kept (default value is `20.0`).
      */
     @JvmOverloads
     constructor(
-        tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
+        tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
+        @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
         emptyList(),
         tracedRequestListener,
         CoreFeature.firstPartyHostDetector,
         null,
+        RateBasedSampler(traceSamplingRate / 100),
         { AndroidTracer.Builder().build() }
     )
 
@@ -178,7 +195,12 @@ internal constructor(
         request: Request,
         tracer: Tracer
     ): Response {
-        val span = buildSpan(tracer, request)
+        val span = if (traceSampler.sample()) {
+            buildSpan(tracer, request)
+        } else {
+            null
+        }
+
         val updatedRequest = try {
             updateRequest(request, tracer, span).build()
         } catch (e: IllegalStateException) {
@@ -271,20 +293,31 @@ internal constructor(
     private fun updateRequest(
         request: Request,
         tracer: Tracer,
-        span: Span
+        span: Span?
     ): Request.Builder {
         val tracedRequestBuilder = request.newBuilder()
 
-        tracer.inject(
-            span.context(),
-            Format.Builtin.TEXT_MAP_INJECT,
-            TextMapInject { key, value ->
-                // By default the `addHeader` method adds a value and doesn't replace it
-                // We need to remove the old trace/span info to use the one for the current span
-                tracedRequestBuilder.removeHeader(key)
-                tracedRequestBuilder.addHeader(key, value)
+        if (span == null) {
+            listOf(
+                SAMPLING_PRIORITY_HEADER,
+                TRACE_ID_HEADER,
+                SPAN_ID_HEADER
+            ).forEach {
+                tracedRequestBuilder.removeHeader(it)
             }
-        )
+            tracedRequestBuilder.addHeader(SAMPLING_PRIORITY_HEADER, DROP_SAMPLING_DECISION)
+        } else {
+            tracer.inject(
+                span.context(),
+                Format.Builtin.TEXT_MAP_INJECT,
+                TextMapInject { key, value ->
+                    // By default the `addHeader` method adds a value and doesn't replace it
+                    // We need to remove the old trace/span info to use the one for the current span
+                    tracedRequestBuilder.removeHeader(key)
+                    tracedRequestBuilder.addHeader(key, value)
+                }
+            )
+        }
 
         return tracedRequestBuilder
     }
@@ -292,38 +325,46 @@ internal constructor(
     private fun handleResponse(
         request: Request,
         response: Response,
-        span: Span
+        span: Span?
     ) {
-        val statusCode = response.code()
-        span.setTag(Tags.HTTP_STATUS.key, statusCode)
-        if (statusCode in 400..499) {
-            (span as? MutableSpan)?.isError = true
-        }
-        if (statusCode == 404) {
-            (span as? MutableSpan)?.resourceName = RESOURCE_NAME_404
-        }
-        onRequestIntercepted(request, span, response, null)
-        if (canSendSpan()) {
-            span.finish()
+        if (span == null) {
+            onRequestIntercepted(request, null, response, null)
         } else {
-            (span as? MutableSpan)?.drop()
+            val statusCode = response.code()
+            span.setTag(Tags.HTTP_STATUS.key, statusCode)
+            if (statusCode in 400..499) {
+                (span as? MutableSpan)?.isError = true
+            }
+            if (statusCode == 404) {
+                (span as? MutableSpan)?.resourceName = RESOURCE_NAME_404
+            }
+            onRequestIntercepted(request, span, response, null)
+            if (canSendSpan()) {
+                span.finish()
+            } else {
+                (span as? MutableSpan)?.drop()
+            }
         }
     }
 
     private fun handleThrowable(
         request: Request,
         throwable: Throwable,
-        span: Span
+        span: Span?
     ) {
-        (span as? MutableSpan)?.isError = true
-        span.setTag(DDTags.ERROR_MSG, throwable.message)
-        span.setTag(DDTags.ERROR_TYPE, throwable.javaClass.name)
-        span.setTag(DDTags.ERROR_STACK, throwable.loggableStackTrace())
-        onRequestIntercepted(request, span, null, throwable)
-        if (canSendSpan()) {
-            span.finish()
+        if (span == null) {
+            onRequestIntercepted(request, null, null, throwable)
         } else {
-            (span as? MutableSpan)?.drop()
+            (span as? MutableSpan)?.isError = true
+            span.setTag(DDTags.ERROR_MSG, throwable.message)
+            span.setTag(DDTags.ERROR_TYPE, throwable.javaClass.name)
+            span.setTag(DDTags.ERROR_STACK, throwable.loggableStackTrace())
+            onRequestIntercepted(request, span, null, throwable)
+            if (canSendSpan()) {
+                span.finish()
+            } else {
+                (span as? MutableSpan)?.drop()
+            }
         }
     }
 
@@ -351,5 +392,14 @@ internal constructor(
             "You added a TracingInterceptor to your OkHttpClient, " +
                 "but you didn't register any Tracer. " +
                 "We automatically created a local tracer for you."
+
+        internal const val DEFAULT_TRACE_SAMPLING_RATE: Float = 20f
+
+        // taken from DatadogHttpCodec
+        internal const val TRACE_ID_HEADER = "x-datadog-trace-id"
+        internal const val SPAN_ID_HEADER = "x-datadog-parent-id"
+        internal const val SAMPLING_PRIORITY_HEADER = "x-datadog-sampling-priority"
+
+        internal const val DROP_SAMPLING_DECISION = "0"
     }
 }

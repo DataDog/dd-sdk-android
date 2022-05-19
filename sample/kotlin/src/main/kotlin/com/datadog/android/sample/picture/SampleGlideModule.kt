@@ -19,8 +19,6 @@ class SampleGlideModule : DatadogGlideModule(listOf("shopist.io")) {
     override fun applyOptions(context: Context, builder: GlideBuilder) {
         super.applyOptions(context, builder)
 
-        val size10mb = 10485760L
-        val factory = InternalCacheDiskCacheFactory(context, "glide", size10mb)
         builder.setMemoryCache(LruResourceCache(1))
         builder.setLogLevel(Log.VERBOSE)
     }

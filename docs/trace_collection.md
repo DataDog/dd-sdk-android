@@ -435,21 +435,28 @@ If you want to trace your OkHttp requests, you can add the provided [Interceptor
 {{< tabs >}}
 {{% tab "Kotlin" %}}
 ```kotlin
-val okHttpClient =  OkHttpClient.Builder() 
-        .addInterceptor(DatadogInterceptor(listOf("example.com", "example.eu")))
+val okHttpClient = OkHttpClient.Builder() 
+        .addInterceptor(
+            DatadogInterceptor(listOf("example.com", "example.eu"), traceSamplingRate = 20f)
+        )
         .build()
 ```
 {{% /tab %}}
 {{% tab "Java" %}}
 ```java
+float traceSamplingRate = 20f;
 final OkHttpClient okHttpClient =  new OkHttpClient.Builder() 
-        .addInterceptor(new DatadogInterceptor(Arrays.asList("example.com", "example.eu")))
+        .addInterceptor(
+                new DatadogInterceptor(Arrays.asList("example.com", "example.eu"), traceSamplingRate)
+        )
         .build();
 ```
 {{% /tab %}}
 {{< /tabs >}}
 
 This creates a span around each request processed by the OkHttpClient (matching the provided hosts), with all the relevant information automatically filled (URL, method, status code, error), and propagates the tracing information to your backend to get a unified trace within Datadog.
+
+Network traces are sampled with an adjustable sampling rate. A sampling of 20% is applied by default.
 
 The interceptor tracks requests at the application level. You can also add a `TracingInterceptor` at the network level to get more details, for example when following redirections.
 
@@ -458,17 +465,18 @@ The interceptor tracks requests at the application level. You can also add a `Tr
 ```kotlin
 val tracedHosts = listOf("example.com", "example.eu") 
 val okHttpClient =  OkHttpClient.Builder()
-        .addInterceptor(DatadogInterceptor(tracedHosts))
-        .addNetworkInterceptor(TracingInterceptor(tracedHosts))
+        .addInterceptor(DatadogInterceptor(tracedHosts, traceSamplingRate = 20f))
+        .addNetworkInterceptor(TracingInterceptor(tracedHosts, traceSamplingRate = 20f))
         .build()
 ```
 {{% /tab %}}
 {{% tab "Java" %}}
 ```java
+float traceSamplingRate = 20f;
 final List<String> tracedHosts = Arrays.asList("example.com", "example.eu"); 
 final OkHttpClient okHttpClient =  new OkHttpClient.Builder()
-        .addInterceptor(new DatadogInterceptor(tracedHosts))
-        .addNetworkInterceptor(new TracingInterceptor(tracedHosts))
+        .addInterceptor(new DatadogInterceptor(tracedHosts, traceSamplingRate))
+        .addNetworkInterceptor(new TracingInterceptor(tracedHosts, traceSamplingRate))
         .build();
 ```
 {{% /tab %}}

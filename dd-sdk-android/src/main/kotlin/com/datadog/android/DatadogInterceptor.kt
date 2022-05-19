@@ -6,10 +6,13 @@
 
 package com.datadog.android
 
+import androidx.annotation.FloatRange
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.identifyRequest
+import com.datadog.android.core.internal.sampling.RateBasedSampler
+import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.GlobalRum
@@ -65,8 +68,9 @@ import okhttp3.Response
  * ```
  *
  * @param tracedHosts a list of all the hosts that you want to be automatically tracked
- * by our APM [TracingInterceptor]. If no host provided the interceptor won't trace
- * any OkHttpRequest, nor propagate tracing information to the backend.
+ * by our APM [TracingInterceptor]. If no host provided (via this argument or global
+ * configuration [Configuration.Builder.setFirstPartyHosts]) the interceptor won't trace
+ * any [okhttp3.Request], nor propagate tracing information to the backend.
  * Please note that the host constraint will only be applied on the [TracingInterceptor] and we will
  * continue to dispatch RUM Resource events for each request without applying any host filtering.
  * @param tracedRequestListener which listens on the intercepted [okhttp3.Request] and offers
@@ -80,12 +84,14 @@ internal constructor(
     tracedRequestListener: TracedRequestListener,
     firstPartyHostDetector: FirstPartyHostDetector,
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
+    traceSampler: Sampler,
     localTracerFactory: () -> Tracer
 ) : TracingInterceptor(
     tracedHosts,
     tracedRequestListener,
     firstPartyHostDetector,
     ORIGIN_RUM,
+    traceSampler,
     localTracerFactory
 ) {
 
@@ -97,24 +103,30 @@ internal constructor(
      * Requests made to a URL with any one of these hosts (or any subdomain) will:
      * - be considered a first party RUM Resource and categorised as such in your RUM dashboard;
      * - be wrapped in a Span and have trace id injected to get a full flame-graph in APM.
-     * If no host provided the interceptor won't trace any OkHttp [Request], nor propagate tracing
+     * If no host provided (via this argument or global configuration [Configuration.Builder.setFirstPartyHosts])
+     * the interceptor won't trace any OkHttp [Request], nor propagate tracing
      * information to the backend, but RUM Resource events will still be sent for each request.
      * @param tracedRequestListener which listens on the intercepted [okhttp3.Request] and offers
      * the possibility to modify the created [io.opentracing.Span].
      * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
      * and offers the possibility to add custom attributes to the RUM resource events.
+     * @param traceSamplingRate the sampling rate for APM traces created for auto-instrumented
+     * requests. It must be a value between `0.0` and `100.0`. A value of `0.0` means no trace will
+     * be kept, `100.0` means all traces will be kept (default value is `20.0`).
      */
     @JvmOverloads
     constructor(
         firstPartyHosts: List<String>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         rumResourceAttributesProvider: RumResourceAttributesProvider =
-            NoOpRumResourceAttributesProvider()
+            NoOpRumResourceAttributesProvider(),
+        @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
         tracedHosts = firstPartyHosts,
         tracedRequestListener = tracedRequestListener,
         firstPartyHostDetector = CoreFeature.firstPartyHostDetector,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
+        traceSampler = RateBasedSampler(traceSamplingRate / 100),
         localTracerFactory = { AndroidTracer.Builder().build() }
     )
 
@@ -126,17 +138,22 @@ internal constructor(
      * the possibility to modify the created [io.opentracing.Span].
      * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
      * and offers the possibility to add custom attributes to the RUM resource events.
+     * @param traceSamplingRate the sampling rate for APM traces created for auto-instrumented
+     * requests. It must be a value between `0.0` and `100.0`. A value of `0.0` means no trace will
+     * be kept, `100.0` means all traces will be kept (default value is `20.0`).
      */
     @JvmOverloads
     constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         rumResourceAttributesProvider: RumResourceAttributesProvider =
-            NoOpRumResourceAttributesProvider()
+            NoOpRumResourceAttributesProvider(),
+        @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
         tracedHosts = emptyList(),
         tracedRequestListener = tracedRequestListener,
         firstPartyHostDetector = CoreFeature.firstPartyHostDetector,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
+        traceSampler = RateBasedSampler(traceSamplingRate / 100),
         localTracerFactory = { AndroidTracer.Builder().build() }
     )
 
@@ -169,7 +186,6 @@ internal constructor(
         throwable: Throwable?
     ) {
         super.onRequestIntercepted(request, span, response, throwable)
-
         if (RumFeature.isInitialized()) {
             if (response != null) {
                 handleResponse(request, response, span)
