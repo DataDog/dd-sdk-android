@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence
 
+import androidx.annotation.WorkerThread
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -19,10 +20,12 @@ internal interface DataWriter<T : Any> {
     /**
      * Writes the element into the relevant location.
      */
+    @WorkerThread
     fun write(element: T)
 
     /**
      * Writes a list of elements into the relevant location.
      */
+    @WorkerThread
     fun write(data: List<T>)
 }

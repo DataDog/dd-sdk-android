@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.privacy.ConsentProvider
@@ -23,6 +24,7 @@ internal open class ConsentAwareFileOrchestrator(
     private lateinit var delegateOrchestrator: FileOrchestrator
 
     init {
+        @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
         handleConsentChange(null, consentProvider.getConsent())
         @Suppress("LeakingThis")
         consentProvider.registerCallback(this)
@@ -30,22 +32,27 @@ internal open class ConsentAwareFileOrchestrator(
 
     // region FileOrchestrator
 
+    @WorkerThread
     override fun getWritableFile(dataSize: Int): File? {
         return delegateOrchestrator.getWritableFile(dataSize)
     }
 
+    @WorkerThread
     override fun getReadableFile(excludeFiles: Set<File>): File? {
         return grantedOrchestrator.getReadableFile(excludeFiles)
     }
 
+    @WorkerThread
     override fun getAllFiles(): List<File> {
         return pendingOrchestrator.getAllFiles() + grantedOrchestrator.getAllFiles()
     }
 
+    @WorkerThread
     override fun getRootDir(): File? {
         return null
     }
 
+    @WorkerThread
     override fun getFlushableFiles(): List<File> {
         return grantedOrchestrator.getFlushableFiles()
     }
@@ -58,6 +65,7 @@ internal open class ConsentAwareFileOrchestrator(
         previousConsent: TrackingConsent,
         newConsent: TrackingConsent
     ) {
+        @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
         handleConsentChange(previousConsent, newConsent)
     }
 
@@ -65,6 +73,7 @@ internal open class ConsentAwareFileOrchestrator(
 
     // region Internal
 
+    @WorkerThread
     private fun handleConsentChange(
         previousConsent: TrackingConsent?,
         newConsent: TrackingConsent

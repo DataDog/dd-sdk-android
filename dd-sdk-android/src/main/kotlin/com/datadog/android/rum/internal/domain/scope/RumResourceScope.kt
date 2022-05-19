@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
@@ -61,6 +62,7 @@ internal class RumResourceScope(
 
     // region RumScope
 
+    @WorkerThread
     override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope? {
         when (event) {
             is RumRawEvent.WaitForResourceTiming -> if (key == event.key) waitForTiming = true
@@ -88,6 +90,7 @@ internal class RumResourceScope(
 
     // region  Internal
 
+    @WorkerThread
     private fun onStopResource(
         event: RumRawEvent.StopResource,
         writer: DataWriter<Any>
@@ -105,6 +108,7 @@ internal class RumResourceScope(
         }
     }
 
+    @WorkerThread
     private fun onAddResourceTiming(
         event: RumRawEvent.AddResourceTiming,
         writer: DataWriter<Any>
@@ -117,6 +121,7 @@ internal class RumResourceScope(
         }
     }
 
+    @WorkerThread
     private fun onStopResourceWithError(
         event: RumRawEvent.StopResourceWithError,
         writer: DataWriter<Any>
@@ -135,6 +140,7 @@ internal class RumResourceScope(
         )
     }
 
+    @WorkerThread
     private fun onStopResourceWithStackTrace(
         event: RumRawEvent.StopResourceWithStackTrace,
         writer: DataWriter<Any>
@@ -154,6 +160,7 @@ internal class RumResourceScope(
     }
 
     @Suppress("LongMethod")
+    @WorkerThread
     private fun sendResource(
         kind: RumResourceKind,
         statusCode: Long?,
@@ -242,6 +249,7 @@ internal class RumResourceScope(
     }
 
     @SuppressWarnings("LongParameterList")
+    @WorkerThread
     private fun sendError(
         message: String,
         source: RumErrorSource,

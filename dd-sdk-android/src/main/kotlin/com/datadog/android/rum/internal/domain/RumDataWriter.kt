@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileHandler
@@ -40,6 +41,7 @@ internal class RumDataWriter(
     internalLogger
 ) {
 
+    @WorkerThread
     override fun onDataWritten(data: Any, rawData: ByteArray) {
         when (data) {
             is ViewEvent -> persistViewEvent(rawData)
@@ -64,6 +66,7 @@ internal class RumDataWriter(
 
     // region Internal
 
+    @WorkerThread
     private fun persistViewEvent(data: ByteArray) {
         // directory structure may not exist: currently it is a file which is located in NDK reports
         // folder, so if NDK reporting plugin is not initialized, this NDK reports dir won't exist

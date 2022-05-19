@@ -6,6 +6,9 @@
 
 package com.datadog.android.v2.core.internal.storage
 
-internal fun interface BatchConfirmation {
+import androidx.annotation.WorkerThread
+
+internal interface BatchConfirmation {
+    @WorkerThread
     fun markAsRead(deleteBatch: Boolean)
 }

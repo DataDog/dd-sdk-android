@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file
 
+import androidx.annotation.WorkerThread
 import com.datadog.tools.annotation.NoOpImplementation
 import java.io.File
 
@@ -24,28 +25,33 @@ internal interface FileOrchestrator {
      * @return a File with enough space to write `dataSize` bytes, or null if no space is available
      * or the disk can't be written to.
      */
+    @WorkerThread
     fun getWritableFile(dataSize: Int): File?
 
     /**
      * @param excludeFiles a set of files to exclude from the readable files
      * @return a File that can be read from, or null is no file is available yet.
      */
+    @WorkerThread
     fun getReadableFile(excludeFiles: Set<File>): File?
 
     /**
      * @return a List of all flushable files. A flushable file is any file (readable or writable)
      * which contains valid data and is ready to be uploaded to the events endpoint.
      */
+    @WorkerThread
     fun getFlushableFiles(): List<File>
 
     /**
      * @return a list of files in this orchestrator (both writable and readable)
      */
+    @WorkerThread
     fun getAllFiles(): List<File>
 
     /**
      * @return the root directory of this orchestrator, or null if the root directory is not
      * available (e.g.: because of a SecurityException)
      */
+    @WorkerThread
     fun getRootDir(): File?
 }

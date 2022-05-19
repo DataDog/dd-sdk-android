@@ -362,8 +362,10 @@ internal class DatadogRumMonitor(
 
     internal fun handleEvent(event: RumRawEvent) {
         if (event is RumRawEvent.AddError && event.isFatal) {
+            @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
             rootScope.handleEvent(event, writer)
         } else if (event is RumRawEvent.SendTelemetry) {
+            @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
             telemetryEventHandler.handleEvent(event, writer)
         } else {
             handler.removeCallbacks(keepAliveRunnable)
@@ -372,6 +374,7 @@ internal class DatadogRumMonitor(
                 try {
                     @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
                     executorService.submit {
+                        @Suppress("ThreadSafety")
                         synchronized(rootScope) {
                             rootScope.handleEvent(event, writer)
                             notifyDebugListenerWithState()

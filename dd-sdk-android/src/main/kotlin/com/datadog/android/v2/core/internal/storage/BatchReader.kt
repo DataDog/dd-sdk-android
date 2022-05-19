@@ -6,7 +6,9 @@
 
 package com.datadog.android.v2.core.internal.storage
 
-internal fun interface BatchReader {
+import androidx.annotation.WorkerThread
 
+internal interface BatchReader {
+    @WorkerThread
     fun read(batchId: BatchId): List<ByteArray>
 }

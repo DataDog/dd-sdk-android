@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.file.EncryptedFileHandler
 import com.datadog.android.core.internal.persistence.file.EventMeta
 import com.datadog.android.core.internal.persistence.file.FileHandler
@@ -42,6 +43,7 @@ internal class BatchFileHandler(
 
     // region FileHandler
 
+    @WorkerThread
     override fun writeData(
         file: File,
         data: ByteArray,
@@ -59,6 +61,7 @@ internal class BatchFileHandler(
         }
     }
 
+    @WorkerThread
     override fun readData(
         file: File
     ): List<ByteArray> {
@@ -73,6 +76,7 @@ internal class BatchFileHandler(
         }
     }
 
+    @WorkerThread
     override fun delete(target: File): Boolean {
         return try {
             target.deleteRecursively()
@@ -85,6 +89,7 @@ internal class BatchFileHandler(
         }
     }
 
+    @WorkerThread
     override fun moveFiles(srcDir: File, destDir: File): Boolean {
         if (!srcDir.existsSafe()) {
             internalLogger.i(INFO_MOVE_NO_SRC.format(Locale.US, srcDir.path))

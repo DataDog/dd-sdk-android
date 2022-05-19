@@ -17,6 +17,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.annotation.AnyThread
 import androidx.annotation.UiThread
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
@@ -115,6 +116,7 @@ internal class UiRumDebugListener :
 
     // region RumDebugListener
 
+    @AnyThread
     override fun onReceiveRumActiveViews(viewNames: List<String>) {
         synchronized(viewsSnapshot) {
             if (viewsSnapshot.isEmpty() ||
@@ -124,6 +126,7 @@ internal class UiRumDebugListener :
                 viewsSnapshot.clear()
                 viewsSnapshot.addAll(viewNames)
                 rumViewsContainer?.post {
+                    @Suppress("ThreadSafety") // View.post() ensures we are in the UI Thread
                     showRumViewsInfo(viewNames)
                 }
             }

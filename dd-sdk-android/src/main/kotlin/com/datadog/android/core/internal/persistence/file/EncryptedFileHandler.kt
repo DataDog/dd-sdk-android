@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.security.Encryption
 import java.io.File
@@ -15,6 +16,7 @@ internal class EncryptedFileHandler(
     internal val delegate: FileHandler
 ) : FileHandler by delegate {
 
+    @WorkerThread
     override fun writeData(
         file: File,
         data: ByteArray,
@@ -34,6 +36,7 @@ internal class EncryptedFileHandler(
         )
     }
 
+    @WorkerThread
     override fun readData(
         file: File
     ): List<ByteArray> {

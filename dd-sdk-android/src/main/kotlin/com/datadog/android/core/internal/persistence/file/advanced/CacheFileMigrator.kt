@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.log.Logger
@@ -20,6 +21,7 @@ internal class CacheFileMigrator(
 
     // region DataMigrator
 
+    @WorkerThread
     override fun migrateData(
         previousState: Boolean?,
         previousFileOrchestrator: FileOrchestrator,

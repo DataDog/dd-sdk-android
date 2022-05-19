@@ -18,11 +18,13 @@ import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.system.StaticAndroidInfoProvider
+import com.datadog.android.core.internal.utils.ERROR_TASK_REJECTED
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.event.EventMapper
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
 import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
@@ -43,8 +45,10 @@ import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -139,7 +143,18 @@ internal class RumFeature(
     }
 
     override fun onPostInitialized(context: Context) {
-        migrateToCacheDir(context, RUM_FEATURE_NAME, sdkLogger)
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            coreFeature.persistenceExecutorService.submit {
+                @Suppress("ThreadSafety")
+                migrateToCacheDir(context, RUM_FEATURE_NAME, sdkLogger)
+            }
+        } catch (e: RejectedExecutionException) {
+            sdkLogger.errorWithTelemetry(
+                ERROR_TASK_REJECTED.format(Locale.US, "postInitMigration"),
+                e
+            )
+        }
     }
 
     // endregion
