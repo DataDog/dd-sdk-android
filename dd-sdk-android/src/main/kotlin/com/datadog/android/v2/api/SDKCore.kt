@@ -23,8 +23,8 @@ interface SDKCore {
      */
     fun registerFeature(
         featureName: String,
-        storageConfiguration: SDKFeatureStorageConfiguration,
-        uploadConfiguration: SDKFeatureUploadConfiguration
+        storageConfiguration: FeatureStorageConfiguration,
+        uploadConfiguration: FeatureUploadConfiguration
     )
 
     /**
@@ -33,7 +33,7 @@ interface SDKCore {
      * @param featureName the name of the feature to retrieve
      * @return the registered feature with the given name, or null
      */
-    fun getFeature(featureName: String): SDKFeature?
+    fun getFeature(featureName: String): FeatureScope?
 
     /**
      * Sets the verbosity of this instance of the Datadog SDK.

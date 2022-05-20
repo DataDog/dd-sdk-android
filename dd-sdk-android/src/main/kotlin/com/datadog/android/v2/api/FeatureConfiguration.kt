@@ -7,9 +7,9 @@
 package com.datadog.android.v2.api
 
 /**
- * Interface describing the configuration for an [SDKFeature] instance.
+ * Interface describing the configuration for an [FeatureScope] instance.
  */
-interface SDKFeatureConfiguration {
+interface FeatureConfiguration {
     /**
      * Registers the feature linked with this configuration to the provided [SDKCore] instance.
      *

@@ -29,10 +29,10 @@ import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracingFeature
+import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.FeatureStorageConfiguration
+import com.datadog.android.v2.api.FeatureUploadConfiguration
 import com.datadog.android.v2.api.SDKCore
-import com.datadog.android.v2.api.SDKFeature
-import com.datadog.android.v2.api.SDKFeatureStorageConfiguration
-import com.datadog.android.v2.api.SDKFeatureUploadConfiguration
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.opentracing.DDSpan
@@ -75,14 +75,14 @@ class DatadogCore(
     /** @inheritDoc */
     override fun registerFeature(
         featureName: String,
-        storageConfiguration: SDKFeatureStorageConfiguration,
-        uploadConfiguration: SDKFeatureUploadConfiguration
+        storageConfiguration: FeatureStorageConfiguration,
+        uploadConfiguration: FeatureUploadConfiguration
     ) {
         // TODO-2138
     }
 
     /** @inheritDoc */
-    override fun getFeature(featureName: String): SDKFeature? {
+    override fun getFeature(featureName: String): FeatureScope? {
         // TODO-2138
         return null
     }
@@ -179,7 +179,7 @@ class DatadogCore(
 
         coreFeature.ndkCrashHandler.handleNdkCrash(
             logsFeature?.persistenceStrategy?.getWriter() ?: NoOpDataWriter(),
-            rumFeature?.persistenceStrategy?.getWriter() ?: NoOpDataWriter<Any>()
+            rumFeature?.persistenceStrategy?.getWriter() ?: NoOpDataWriter()
         )
 
         setupLifecycleMonitorCallback(appContext)

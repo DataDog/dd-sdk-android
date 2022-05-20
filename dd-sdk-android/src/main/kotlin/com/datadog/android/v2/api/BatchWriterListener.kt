@@ -9,6 +9,7 @@ package com.datadog.android.v2.api
 /**
  * A Listener to be notified when an event is actually written in the storage,
  * or when a write operation failed.
+ * @see [EventBatchWriter]
  */
 internal interface BatchWriterListener {
     /**
