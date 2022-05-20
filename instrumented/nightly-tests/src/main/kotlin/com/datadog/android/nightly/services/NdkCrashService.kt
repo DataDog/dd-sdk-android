@@ -16,7 +16,6 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.SecurityConfig
 import com.datadog.android.ndk.NdkCrashReportsPlugin
 import com.datadog.android.nightly.utils.NeverUseThatEncryption
-import com.datadog.android.nightly.utils.setSecurityConfig
 import com.datadog.android.plugin.Feature
 import com.datadog.android.privacy.TrackingConsent
 
