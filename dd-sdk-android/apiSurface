@@ -106,6 +106,7 @@ data class com.datadog.android.core.configuration.Configuration
     DEPRECATED fun setInternalLogsEnabled(String, String): Builder
     fun setAdditionalConfiguration(Map<String, Any>): Builder
     fun setProxy(java.net.Proxy, okhttp3.Authenticator?): Builder
+    fun setSecurityConfig(SecurityConfig): Builder
   companion object 
 data class com.datadog.android.core.configuration.Credentials
   constructor(String, String, String, String?, String? = null)

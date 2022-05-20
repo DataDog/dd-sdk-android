@@ -652,8 +652,7 @@ internal constructor(
          * @param config Security config to use. If not provided, default one will be used (no
          * encryption for local data storage).
          */
-        @Suppress("unused", "CommentOverPrivateFunction")
-        private fun setSecurityConfig(config: SecurityConfig): Builder {
+        fun setSecurityConfig(config: SecurityConfig): Builder {
             coreConfig = coreConfig.copy(
                 securityConfig = config
             )
