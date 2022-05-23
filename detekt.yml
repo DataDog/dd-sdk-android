@@ -1074,6 +1074,7 @@ datadog:
       - "kotlin.String.substringBefore(kotlin.Char, kotlin.String)"
       - "kotlin.String.toByteArray(java.nio.charset.Charset) "
       - "kotlin.String.toByteArray(java.nio.charset.Charset)"
+      - "kotlin.String.toIntOrNull()"
       - "kotlin.String.toDoubleOrNull()"
       - "kotlin.String.toLongOrNull()"
       - "kotlin.String.toMethod()"
