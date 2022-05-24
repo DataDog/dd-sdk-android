@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.canWriteSafe
@@ -40,6 +41,7 @@ internal class BatchFileOrchestrator(
 
     // region FileOrchestrator
 
+    @WorkerThread
     override fun getWritableFile(dataSize: Int): File? {
         if (!isRootDirValid()) {
             return null
@@ -64,6 +66,7 @@ internal class BatchFileOrchestrator(
         return reusableFile ?: createNewFile()
     }
 
+    @WorkerThread
     override fun getReadableFile(excludeFiles: Set<File>): File? {
         if (!isRootDirValid()) {
             return null
@@ -78,6 +81,7 @@ internal class BatchFileOrchestrator(
         }
     }
 
+    @WorkerThread
     override fun getAllFiles(): List<File> {
         if (!isRootDirValid()) {
             return emptyList()
@@ -86,10 +90,12 @@ internal class BatchFileOrchestrator(
         return listSortedBatchFiles()
     }
 
+    @WorkerThread
     override fun getFlushableFiles(): List<File> {
         return getAllFiles()
     }
 
+    @WorkerThread
     override fun getRootDir(): File? {
         if (!isRootDirValid()) {
             return null

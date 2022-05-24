@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.utils.sdkLogger
@@ -21,6 +22,7 @@ internal class ConsentAwareFileMigrator(
     private val internalLogger: Logger
 ) : DataMigrator<TrackingConsent> {
 
+    @WorkerThread
     override fun migrateData(
         previousState: TrackingConsent?,
         previousFileOrchestrator: FileOrchestrator,

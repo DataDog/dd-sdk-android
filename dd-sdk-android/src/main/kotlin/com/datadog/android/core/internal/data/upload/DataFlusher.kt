@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.data.upload
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.FileHandler
@@ -18,6 +19,7 @@ internal class DataFlusher(
     internal val handler: FileHandler
 ) : Flusher {
 
+    @WorkerThread
     override fun flush(uploader: DataUploader) {
         val toUploadFiles = fileOrchestrator.getFlushableFiles()
         toUploadFiles.forEach {

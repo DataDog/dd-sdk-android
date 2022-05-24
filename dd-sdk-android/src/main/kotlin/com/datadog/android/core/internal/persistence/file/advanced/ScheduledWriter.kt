@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.log.Logger
 import java.util.concurrent.ExecutorService
@@ -19,6 +20,7 @@ internal class ScheduledWriter<T : Any>(
 
     // region DataWriter
 
+    @WorkerThread
     override fun write(element: T) {
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
@@ -30,6 +32,7 @@ internal class ScheduledWriter<T : Any>(
         }
     }
 
+    @WorkerThread
     override fun write(data: List<T>) {
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here

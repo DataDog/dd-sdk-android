@@ -6,6 +6,8 @@
 
 package com.datadog.android.v2.api
 
+import androidx.annotation.WorkerThread
+
 /**
  * Utility allowing [FeatureScope] to write events in the storage to be uploaded asynchronously.
  */
@@ -14,6 +16,7 @@ interface EventBatchWriter {
     /**
      * @return the metadata of the current writeable file
      */
+    @WorkerThread
     fun currentMetadata(): ByteArray?
 
     /**
@@ -23,6 +26,7 @@ interface EventBatchWriter {
      * the [BatchWriterListener] callbacks).
      * @param newMetadata the updated metadata
      */
+    @WorkerThread
     fun write(
         event: ByteArray,
         eventId: String,

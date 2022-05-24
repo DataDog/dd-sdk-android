@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file.single
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.mkdirsSafe
 import java.io.File
@@ -16,11 +17,13 @@ internal class SingleFileOrchestrator(
 
     // region FileOrchestrator
 
+    @WorkerThread
     override fun getWritableFile(dataSize: Int): File? {
         file.parentFile?.mkdirsSafe()
         return file
     }
 
+    @WorkerThread
     override fun getReadableFile(excludeFiles: Set<File>): File? {
         file.parentFile?.mkdirsSafe()
         return if (file in excludeFiles) {
@@ -30,15 +33,18 @@ internal class SingleFileOrchestrator(
         }
     }
 
+    @WorkerThread
     override fun getAllFiles(): List<File> {
         file.parentFile?.mkdirsSafe()
         return listOf(file)
     }
 
+    @WorkerThread
     override fun getRootDir(): File? {
         return null
     }
 
+    @WorkerThread
     override fun getFlushableFiles(): List<File> {
         return getAllFiles()
     }

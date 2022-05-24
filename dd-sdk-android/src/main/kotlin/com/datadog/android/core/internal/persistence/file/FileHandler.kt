@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file
 
+import androidx.annotation.WorkerThread
 import java.io.File
 
 /**
@@ -20,6 +21,7 @@ internal interface FileHandler {
      * @param append whether to append data at the end of the file or overwrite
      * @return whether the write operation was successful
      */
+    @WorkerThread
     fun writeData(
         file: File,
         data: ByteArray,
@@ -31,6 +33,7 @@ internal interface FileHandler {
      *  @param file the file to read from
      *  @return the list of events as [ByteArray] data stored in a file.
      */
+    @WorkerThread
     fun readData(
         file: File
     ): List<ByteArray>
@@ -40,10 +43,12 @@ internal interface FileHandler {
      * @param target the target [File] to delete
      * @return whether the delete was successful
      */
+    @WorkerThread
     fun delete(target: File): Boolean
 
     /**
      * Move the children files from `srcDir` to the `destDir`.
      */
+    @WorkerThread
     fun moveFiles(srcDir: File, destDir: File): Boolean
 }

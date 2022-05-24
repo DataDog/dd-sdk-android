@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file.single
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileHandler
@@ -22,10 +23,12 @@ internal open class SingleItemDataWriter<T : Any>(
 
     // region DataWriter
 
+    @WorkerThread
     override fun write(element: T) {
         consume(element)
     }
 
+    @WorkerThread
     override fun write(data: List<T>) {
         val element = data.lastOrNull() ?: return
         consume(element)
@@ -35,6 +38,7 @@ internal open class SingleItemDataWriter<T : Any>(
 
     // region Internal
 
+    @WorkerThread
     private fun consume(data: T) {
         val byteArray = serializer.serializeToByteArray(data, internalLogger) ?: return
 
@@ -43,6 +47,7 @@ internal open class SingleItemDataWriter<T : Any>(
         }
     }
 
+    @WorkerThread
     private fun writeData(byteArray: ByteArray): Boolean {
         val file = fileOrchestrator.getWritableFile(byteArray.size) ?: return false
         return handler.writeData(file, byteArray, false)

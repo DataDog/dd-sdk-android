@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
@@ -51,6 +52,7 @@ internal class RumApplicationScope(
 
     // region RumScope
 
+    @WorkerThread
     override fun handleEvent(
         event: RumRawEvent,
         writer: DataWriter<Any>

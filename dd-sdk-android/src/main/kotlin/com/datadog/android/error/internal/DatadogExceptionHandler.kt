@@ -35,6 +35,7 @@ internal class DatadogExceptionHandler(
 
     override fun uncaughtException(t: Thread, e: Throwable) {
         // write the log immediately
+        @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
         writer.write(createLog(t, e))
 
         // write a RUM Error too

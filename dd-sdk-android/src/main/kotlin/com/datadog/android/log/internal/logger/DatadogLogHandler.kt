@@ -37,6 +37,7 @@ internal class DatadogLogHandler(
         if (sampler.sample()) {
             val log = createLog(level, message, throwable, attributes, tags, resolvedTimeStamp)
             if (log != null) {
+                @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
                 writer.write(log)
             }
         }

@@ -9,6 +9,7 @@
 package com.datadog.android.core.internal
 
 import android.content.Context
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
@@ -76,6 +77,7 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
     }
 
     fun clearAllData() {
+        @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
         persistenceStrategy.getReader().dropAll()
     }
 
@@ -162,6 +164,7 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
      * of the files directory. This migration ensures we don't lose any important data when
      * customers update their SDK.
      */
+    @WorkerThread
     protected fun migrateToCacheDir(
         context: Context,
         featureName: String,
@@ -190,6 +193,7 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
 
     // Used for nightly tests only
     internal fun flushStoredData() {
+        @Suppress("ThreadSafety")
         persistenceStrategy.getFlusher().flush(uploader)
     }
 

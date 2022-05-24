@@ -21,6 +21,7 @@ internal class TraceWriter(
 
     override fun write(trace: MutableList<DDSpan>?) {
         trace?.let {
+            @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
             writer.write(it)
         }
     }

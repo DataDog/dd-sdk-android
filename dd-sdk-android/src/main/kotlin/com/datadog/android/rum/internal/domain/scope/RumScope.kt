@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.tools.annotation.NoOpImplementation
@@ -19,6 +20,7 @@ internal interface RumScope {
      * @return this instance if this scope is still valid, or null if it no longer can process
      * events
      */
+    @WorkerThread
     fun handleEvent(
         event: RumRawEvent,
         writer: DataWriter<Any>

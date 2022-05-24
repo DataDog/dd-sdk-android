@@ -16,6 +16,7 @@ internal class DatadogUserInfoProvider(
     private var internalUserInfo = UserInfo()
         set(value) {
             field = value
+            @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
             dataWriter.write(field)
         }
 

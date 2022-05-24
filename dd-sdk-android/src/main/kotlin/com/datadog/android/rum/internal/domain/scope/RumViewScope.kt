@@ -11,6 +11,7 @@ import android.app.Activity
 import android.content.Context
 import android.os.Build
 import android.view.WindowManager
+import androidx.annotation.WorkerThread
 import androidx.fragment.app.Fragment
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -146,6 +147,7 @@ internal open class RumViewScope(
 
     // region RumScope
 
+    @WorkerThread
     override fun handleEvent(
         event: RumRawEvent,
         writer: DataWriter<Any>
@@ -208,6 +210,7 @@ internal open class RumViewScope(
 
     // region Internal
 
+    @WorkerThread
     private fun onStartView(
         event: RumRawEvent.StartView,
         writer: DataWriter<Any>
@@ -222,6 +225,7 @@ internal open class RumViewScope(
         }
     }
 
+    @WorkerThread
     private fun onStopView(
         event: RumRawEvent.StopView,
         writer: DataWriter<Any>
@@ -263,6 +267,7 @@ internal open class RumViewScope(
         }
     }
 
+    @WorkerThread
     private fun onStartAction(
         event: RumRawEvent.StartAction,
         writer: DataWriter<Any>
@@ -302,6 +307,7 @@ internal open class RumViewScope(
         pendingActionCount++
     }
 
+    @WorkerThread
     private fun onStartResource(
         event: RumRawEvent.StartResource,
         writer: DataWriter<Any>
@@ -325,6 +331,7 @@ internal open class RumViewScope(
     }
 
     @Suppress("ComplexMethod")
+    @WorkerThread
     private fun onAddError(
         event: RumRawEvent.AddError,
         writer: DataWriter<Any>
@@ -387,6 +394,7 @@ internal open class RumViewScope(
         }
     }
 
+    @WorkerThread
     private fun onAddCustomTiming(
         event: RumRawEvent.AddCustomTiming,
         writer: DataWriter<Any>
@@ -395,6 +403,7 @@ internal open class RumViewScope(
         sendViewUpdate(event, writer)
     }
 
+    @WorkerThread
     private fun onKeepAlive(
         event: RumRawEvent.KeepAlive,
         writer: DataWriter<Any>
@@ -405,6 +414,7 @@ internal open class RumViewScope(
         sendViewUpdate(event, writer)
     }
 
+    @WorkerThread
     private fun delegateEventToChildren(
         event: RumRawEvent,
         writer: DataWriter<Any>
@@ -413,6 +423,7 @@ internal open class RumViewScope(
         delegateEventToAction(event, writer)
     }
 
+    @WorkerThread
     private fun delegateEventToAction(
         event: RumRawEvent,
         writer: DataWriter<Any>
@@ -447,6 +458,7 @@ internal open class RumViewScope(
         })
     }
 
+    @WorkerThread
     private fun delegateEventToResources(
         event: RumRawEvent,
         writer: DataWriter<Any>
@@ -462,6 +474,7 @@ internal open class RumViewScope(
         }
     }
 
+    @WorkerThread
     private fun onResourceSent(
         event: RumRawEvent.ResourceSent,
         writer: DataWriter<Any>
@@ -473,6 +486,7 @@ internal open class RumViewScope(
         }
     }
 
+    @WorkerThread
     private fun onActionSent(
         event: RumRawEvent.ActionSent,
         writer: DataWriter<Any>
@@ -484,17 +498,7 @@ internal open class RumViewScope(
         }
     }
 
-    private fun onErrorSent(
-        event: RumRawEvent.ErrorSent,
-        writer: DataWriter<Any>
-    ) {
-        if (event.viewId == viewId) {
-            pendingErrorCount--
-            errorCount++
-            sendViewUpdate(event, writer)
-        }
-    }
-
+    @WorkerThread
     private fun onLongTaskSent(
         event: RumRawEvent.LongTaskSent,
         writer: DataWriter<Any>
@@ -506,6 +510,18 @@ internal open class RumViewScope(
                 pendingFrozenFrameCount--
                 frozenFrameCount++
             }
+            sendViewUpdate(event, writer)
+        }
+    }
+
+    @WorkerThread
+    private fun onErrorSent(
+        event: RumRawEvent.ErrorSent,
+        writer: DataWriter<Any>
+    ) {
+        if (event.viewId == viewId) {
+            pendingErrorCount--
+            errorCount++
             sendViewUpdate(event, writer)
         }
     }
@@ -538,6 +554,7 @@ internal open class RumViewScope(
     }
 
     @Suppress("LongMethod")
+    @WorkerThread
     private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<Any>) {
         val viewComplete = isViewComplete()
         if (!viewUpdatePredicate.canUpdateView(viewComplete, event)) {
@@ -629,6 +646,7 @@ internal open class RumViewScope(
             .apply { putAll(GlobalRum.globalAttributes) }
     }
 
+    @WorkerThread
     private fun onUpdateViewLoadingTime(
         event: RumRawEvent.UpdateViewLoadingTime,
         writer: DataWriter<Any>
@@ -642,6 +660,7 @@ internal open class RumViewScope(
         sendViewUpdate(event, writer)
     }
 
+    @WorkerThread
     private fun onApplicationStarted(
         event: RumRawEvent.ApplicationStarted,
         writer: DataWriter<Any>
@@ -686,6 +705,7 @@ internal open class RumViewScope(
         return max(now - startupTime, 1L)
     }
 
+    @WorkerThread
     private fun onAddLongTask(event: RumRawEvent.AddLongTask, writer: DataWriter<Any>) {
         delegateEventToChildren(event, writer)
         if (stopped) return

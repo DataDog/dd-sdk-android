@@ -6,6 +6,7 @@
 
 package com.datadog.android.v2.core.internal.storage
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.privacy.TrackingConsent
@@ -29,6 +30,7 @@ internal class ConsentAwareStorage(
     private val lockedFiles: MutableSet<File> = mutableSetOf()
 
     /** @inheritdoc */
+    @WorkerThread
     override fun writeCurrentBatch(
         datadogContext: DatadogContext,
         callback: (BatchWriter) -> Unit
@@ -40,11 +42,13 @@ internal class ConsentAwareStorage(
         }
 
         val writer = object : BatchWriter {
+            @WorkerThread
             override fun currentMetadata(): ByteArray? {
                 // TODO RUMM-2186 handle writing/updating batch metadata in separate file
                 return null
             }
 
+            @WorkerThread
             override fun write(event: ByteArray, eventId: String, newMetadata: ByteArray) {
                 // prevent useless operation for empty event / null orchestrator
                 if (event.isEmpty() || orchestrator == null) {
@@ -65,6 +69,7 @@ internal class ConsentAwareStorage(
     }
 
     /** @inheritdoc */
+    @WorkerThread
     override fun readNextBatch(
         datadogContext: DatadogContext,
         callback: (BatchId, BatchReader) -> Unit
@@ -76,30 +81,40 @@ internal class ConsentAwareStorage(
         }
 
         val batchId = BatchId.fromFile(batchFile)
-        val reader = BatchReader { handler.readData(batchFile) }
+        val reader = object : BatchReader {
+            @WorkerThread
+            override fun read(batchId: BatchId): List<ByteArray> {
+                // TODO RUMM-2186 check the batch id match this reader
+                return handler.readData(batchFile)
+            }
+        }
         callback(batchId, reader)
     }
 
     /** @inheritdoc */
+    @WorkerThread
     override fun confirmBatchRead(batchId: BatchId, callback: (BatchConfirmation) -> Unit) {
         val batchFile = synchronized(lockedFiles) {
             lockedFiles.firstOrNull { batchId.matchesFile(it) }
         } ?: return
-        val confirmation = BatchConfirmation { delete ->
-            if (delete) {
-                val result = handler.delete(batchFile)
-                if (!result) {
-                    internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.MAINTAINER,
-                        WARNING_DELETE_FAILED.format(Locale.US, batchFile.path),
-                        null,
-                        emptyMap()
-                    )
+        val confirmation = object : BatchConfirmation {
+            @WorkerThread
+            override fun markAsRead(deleteBatch: Boolean) {
+                if (deleteBatch) {
+                    val result = handler.delete(batchFile)
+                    if (!result) {
+                        internalLogger.log(
+                            InternalLogger.Level.WARN,
+                            InternalLogger.Target.MAINTAINER,
+                            WARNING_DELETE_FAILED.format(Locale.US, batchFile.path),
+                            null,
+                            emptyMap()
+                        )
+                    }
                 }
-            }
-            synchronized(lockedFiles) {
-                lockedFiles.remove(batchFile)
+                synchronized(lockedFiles) {
+                    lockedFiles.remove(batchFile)
+                }
             }
         }
         callback(confirmation)

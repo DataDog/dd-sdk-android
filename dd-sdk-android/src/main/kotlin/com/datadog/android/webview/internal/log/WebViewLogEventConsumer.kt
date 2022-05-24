@@ -6,6 +6,7 @@
 
 package com.datadog.android.webview.internal.log
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
@@ -28,6 +29,7 @@ internal class WebViewLogEventConsumer(
             ",${LogAttributes.ENV}:${coreFeature.envName}"
     }
 
+    @WorkerThread
     override fun consume(event: Pair<JsonObject, String>) {
         map(event.first).let {
             if (event.second == USER_LOG_EVENT_TYPE) {

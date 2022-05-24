@@ -6,6 +6,7 @@
 
 package com.datadog.android.v2.core.internal.storage
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.v2.api.context.DatadogContext
 
 /**
@@ -27,6 +28,7 @@ internal interface Storage {
      * @param callback an operation to perform with a [BatchId] and [BatchReader] that will target
      * the next readable Batch
      */
+    @WorkerThread
     fun readNextBatch(datadogContext: DatadogContext, callback: (BatchId, BatchReader) -> Unit)
 
     /**
@@ -34,5 +36,6 @@ internal interface Storage {
      * @param batchId the id of the Batch to confirm
      * @param callback an operation to perform with a [BatchConfirmation]
      */
+    @WorkerThread
     fun confirmBatchRead(batchId: BatchId, callback: (BatchConfirmation) -> Unit)
 }

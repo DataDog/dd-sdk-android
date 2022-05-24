@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.utils.retryWithDelay
 import com.datadog.android.log.Logger
@@ -21,6 +22,7 @@ internal class WipeDataMigrationOperation(
     internal val internalLogger: Logger
 ) : DataMigrationOperation {
 
+    @WorkerThread
     override fun run() {
         if (targetDir == null) {
             internalLogger.w(WARN_NULL_DIR)

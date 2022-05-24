@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
@@ -59,6 +60,7 @@ internal class RumActionScope(
 
     // endregion
 
+    @WorkerThread
     override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope? {
         val now = event.eventTime.nanoTime
         val isInactive = now - lastInteractionNanos > inactivityThresholdNs
@@ -97,6 +99,7 @@ internal class RumActionScope(
 
     // region Internal
 
+    @WorkerThread
     private fun onStartView(
         now: Long,
         writer: DataWriter<Any>
@@ -106,6 +109,7 @@ internal class RumActionScope(
         sendAction(now, writer)
     }
 
+    @WorkerThread
     private fun onStopView(
         now: Long,
         writer: DataWriter<Any>
@@ -145,6 +149,7 @@ internal class RumActionScope(
         }
     }
 
+    @WorkerThread
     private fun onError(
         event: RumRawEvent.AddError,
         now: Long,
@@ -155,7 +160,6 @@ internal class RumActionScope(
 
         if (event.isFatal) {
             crashCount++
-
             sendAction(now, writer)
         }
     }
@@ -175,6 +179,7 @@ internal class RumActionScope(
         longTaskCount++
     }
 
+    @WorkerThread
     private fun sendAction(
         endNanos: Long,
         writer: DataWriter<Any>

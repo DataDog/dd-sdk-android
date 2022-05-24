@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.data.upload
 
 import android.content.Context
+import androidx.annotation.WorkerThread
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.datadog.android.Datadog
@@ -25,6 +26,7 @@ internal class UploadWorker(
 
     // region Worker
 
+    @WorkerThread
     override fun doWork(): Result {
         if (!Datadog.isInitialized()) {
             devLogger.e(Datadog.MESSAGE_NOT_INITIALIZED)
@@ -51,6 +53,7 @@ internal class UploadWorker(
         return Result.success()
     }
 
+    @WorkerThread
     private fun uploadAllBatches(
         reader: DataReader,
         uploader: DataUploader

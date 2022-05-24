@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.ndk
 
 import android.content.Context
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.file.FileHandler
@@ -59,6 +60,7 @@ internal class DatadogNdkCrashHandler(
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             dataPersistenceExecutorService.submit {
+                @Suppress("ThreadSafety")
                 readCrashData()
             }
         } catch (e: RejectedExecutionException) {
@@ -73,6 +75,7 @@ internal class DatadogNdkCrashHandler(
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             dataPersistenceExecutorService.submit {
+                @Suppress("ThreadSafety")
                 checkAndHandleNdkCrashReport(logWriter, rumWriter)
             }
         } catch (e: RejectedExecutionException) {
@@ -84,6 +87,7 @@ internal class DatadogNdkCrashHandler(
 
     // region Internal
 
+    @WorkerThread
     private fun readCrashData() {
         if (!ndkCrashDataDirectory.existsSafe()) {
             return
@@ -111,6 +115,7 @@ internal class DatadogNdkCrashHandler(
         }
     }
 
+    @WorkerThread
     private fun readFileContent(file: File, fileHandler: FileHandler): String? {
         val content = fileHandler.readData(file)
         return if (content.isEmpty()) {
@@ -120,6 +125,7 @@ internal class DatadogNdkCrashHandler(
         }
     }
 
+    @WorkerThread
     private fun checkAndHandleNdkCrashReport(
         logWriter: DataWriter<LogEvent>,
         rumWriter: DataWriter<Any>
@@ -159,6 +165,7 @@ internal class DatadogNdkCrashHandler(
     }
 
     @SuppressWarnings("LongParameterList")
+    @WorkerThread
     private fun handleNdkCrashLog(
         logWriter: DataWriter<LogEvent>,
         rumWriter: DataWriter<Any>,
@@ -201,6 +208,7 @@ internal class DatadogNdkCrashHandler(
         )
     }
 
+    @WorkerThread
     private fun updateViewEventAndSendError(
         rumWriter: DataWriter<Any>,
         errorLogMessage: String,
@@ -222,6 +230,7 @@ internal class DatadogNdkCrashHandler(
     }
 
     @SuppressWarnings("LongParameterList")
+    @WorkerThread
     private fun sendCrashLogEvent(
         logWriter: DataWriter<LogEvent>,
         errorLogMessage: String,

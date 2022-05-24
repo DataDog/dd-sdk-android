@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
@@ -96,10 +97,12 @@ internal class BatchFileDataWriterTest {
             mockFileHandler,
             Logger(mockLogHandler)
         ) {
+            @WorkerThread
             override fun onDataWritten(data: String, rawData: ByteArray) {
                 successfulData.add(data)
             }
 
+            @WorkerThread
             override fun onDataWriteFailed(data: String) {
                 failedData.add(data)
             }

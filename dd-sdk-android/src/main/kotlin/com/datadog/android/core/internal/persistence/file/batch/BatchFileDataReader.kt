@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.Batch
 import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.persistence.PayloadDecoration
@@ -30,6 +31,7 @@ internal class BatchFileDataReader(
 
     // region DataReader
 
+    @WorkerThread
     override fun lockAndReadNext(): Batch? {
         val file = getAndLockReadableFile() ?: return null
         val data = handler.readData(file)
@@ -42,14 +44,17 @@ internal class BatchFileDataReader(
         return Batch(file.name, data)
     }
 
+    @WorkerThread
     override fun release(data: Batch) {
         releaseFile(data.id, delete = false)
     }
 
+    @WorkerThread
     override fun drop(data: Batch) {
         releaseFile(data.id, delete = true)
     }
 
+    @WorkerThread
     override fun dropAll() {
         synchronized(lockedFiles) {
             lockedFiles.toTypedArray().forEach {
@@ -66,6 +71,7 @@ internal class BatchFileDataReader(
 
     // region Internal
 
+    @WorkerThread
     private fun getAndLockReadableFile(): File? {
         synchronized(lockedFiles) {
             val readableFile = fileOrchestrator.getReadableFile(lockedFiles.toSet())
@@ -76,6 +82,7 @@ internal class BatchFileDataReader(
         }
     }
 
+    @WorkerThread
     private fun releaseFile(
         fileName: String,
         delete: Boolean
@@ -92,6 +99,7 @@ internal class BatchFileDataReader(
         }
     }
 
+    @WorkerThread
     private fun releaseFile(
         file: File,
         delete: Boolean
@@ -102,6 +110,7 @@ internal class BatchFileDataReader(
         }
     }
 
+    @WorkerThread
     private fun deleteFile(file: File) {
         if (!handler.delete(file)) {
             internalLogger.w(

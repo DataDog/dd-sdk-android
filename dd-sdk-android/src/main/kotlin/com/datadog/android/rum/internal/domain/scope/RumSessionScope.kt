@@ -11,6 +11,7 @@ import android.app.ActivityManager.RunningAppProcessInfo
 import android.os.Build
 import android.os.Process
 import android.os.SystemClock
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -72,6 +73,7 @@ internal class RumSessionScope(
 
     // region RumScope
 
+    @WorkerThread
     override fun handleEvent(
         event: RumRawEvent,
         writer: DataWriter<Any>
@@ -133,6 +135,7 @@ internal class RumSessionScope(
 
     // region Internal
 
+    @WorkerThread
     private fun handleOrphanEvent(
         event: RumRawEvent,
         writer: DataWriter<Any>
@@ -146,6 +149,7 @@ internal class RumSessionScope(
         }
     }
 
+    @WorkerThread
     private fun handleAppLaunchEvent(
         event: RumRawEvent,
         actualWriter: DataWriter<Any>
@@ -162,6 +166,7 @@ internal class RumSessionScope(
         }
     }
 
+    @WorkerThread
     private fun handleBackgroundEvent(
         event: RumRawEvent,
         writer: DataWriter<Any>
@@ -219,6 +224,7 @@ internal class RumSessionScope(
         )
     }
 
+    @WorkerThread
     internal fun onViewDisplayed(
         event: RumRawEvent.StartView,
         viewScope: RumViewScope,
