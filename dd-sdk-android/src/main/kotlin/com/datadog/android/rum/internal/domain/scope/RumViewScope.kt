@@ -43,6 +43,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
+@Suppress("LargeClass")
 internal open class RumViewScope(
     private val parentScope: RumScope,
     key: Any,
@@ -235,13 +236,21 @@ internal open class RumViewScope(
                     actionId = null
                 ),
                 applyOnlyIf = { currentContext ->
-                    if (currentContext.viewId == this.viewId) {
-                        true
-                    } else {
-                        sdkLogger.debugWithTelemetry(
-                            RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE
-                        )
-                        false
+                    when {
+                        currentContext.sessionId != this.sessionId -> {
+                            // we have a new session, so whatever is in the Global context is
+                            // not valid anyway
+                            true
+                        }
+                        currentContext.viewId == this.viewId -> {
+                            true
+                        }
+                        else -> {
+                            sdkLogger.debugWithTelemetry(
+                                RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE
+                            )
+                            false
+                        }
                     }
                 }
             )
@@ -414,13 +423,19 @@ internal open class RumViewScope(
         activeActionScope = scope
         // update the Rum Context to make it available for Logs/Trace bundling
         GlobalRum.updateRumContext(getRumContext(), applyOnlyIf = { currentContext ->
-            if (currentContext.viewId == this.viewId) {
-                true
-            } else {
-                sdkLogger.debugWithTelemetry(
-                    RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE
-                )
-                false
+            when {
+                currentContext.sessionId != this.sessionId -> {
+                    true
+                }
+                currentContext.viewId == this.viewId -> {
+                    true
+                }
+                else -> {
+                    sdkLogger.debugWithTelemetry(
+                        RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE
+                    )
+                    false
+                }
             }
         })
     }

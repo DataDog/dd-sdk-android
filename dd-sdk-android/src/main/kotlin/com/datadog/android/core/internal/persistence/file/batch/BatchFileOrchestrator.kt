@@ -121,13 +121,21 @@ internal class BatchFileOrchestrator(
                 return false
             }
         } else {
-            if (rootDir.mkdirsSafe()) {
-                return true
-            } else {
-                internalLogger.errorWithTelemetry(
-                    ERROR_CANT_CREATE_ROOT.format(Locale.US, rootDir.path)
-                )
-                return false
+            synchronized(rootDir) {
+                // double check if directory was already created by some other thread
+                // entered this branch
+                if (rootDir.existsSafe()) {
+                    return true
+                }
+
+                if (rootDir.mkdirsSafe()) {
+                    return true
+                } else {
+                    internalLogger.errorWithTelemetry(
+                        ERROR_CANT_CREATE_ROOT.format(Locale.US, rootDir.path)
+                    )
+                    return false
+                }
             }
         }
     }

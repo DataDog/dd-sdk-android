@@ -17,7 +17,7 @@ import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.net.SocketTimeoutException
+import java.io.IOException
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -39,7 +39,7 @@ internal class LoggingSyncListenerTest {
         // Given
         val throwable = forge.aThrowable()
 
-        assumeTrue { throwable !is SocketTimeoutException }
+        assumeTrue { throwable !is IOException }
 
         // When
         testableListener.onError(fakeHost, throwable)
@@ -59,7 +59,7 @@ internal class LoggingSyncListenerTest {
         @StringForgery(regex = "https://[a-z]+\\.com") fakeHost: String
     ) {
         // Given
-        val throwable = SocketTimeoutException()
+        val throwable = IOException()
 
         // When
         testableListener.onError(fakeHost, throwable)

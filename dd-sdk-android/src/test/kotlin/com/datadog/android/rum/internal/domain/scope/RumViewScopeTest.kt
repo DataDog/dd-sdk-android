@@ -366,7 +366,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 not update the context W handleEvent(StopView) { another view scope created before }`(
+    fun `𝕄 not update the context W handleEvent(StopView) { cur vs glob view ids don't match }`(
         forge: Forge
     ) {
         // Given
@@ -414,6 +414,37 @@ internal class RumViewScopeTest {
                 DEBUG_WITH_TELEMETRY_LEVEL,
                 RumViewScope.RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE
             )
+    }
+
+    @Test
+    fun `𝕄 update the context W handleEvent(StopView) { new session }`(
+        forge: Forge
+    ) {
+        // Given
+        val currentContext = testedScope.getRumContext()
+
+        val fakeNewSessionContext: RumContext = forge.getForgery()
+        whenever(mockParentScope.getRumContext()) doReturn fakeNewSessionContext
+
+        assumeTrue { currentContext.sessionId != fakeNewSessionContext.sessionId }
+
+        // When
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
+            mockWriter
+        )
+
+        // Then
+        val currentRumContext = GlobalRum.getRumContext()
+
+        assertThat(currentRumContext.viewType)
+            .isEqualTo(RumViewScope.RumViewType.NONE)
+        assertThat(currentRumContext.viewName).isNull()
+        assertThat(currentRumContext.viewId).isNull()
+        assertThat(currentRumContext.viewUrl).isNull()
+        assertThat(currentRumContext.actionId).isNull()
+
+        verifyZeroInteractions(logger.mockSdkLogHandler)
     }
 
     @Test
