@@ -6,6 +6,7 @@
 
 package com.datadog.android.nightly.server
 
+import io.ktor.application.ApplicationCall
 import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.features.ContentNegotiation
@@ -19,25 +20,31 @@ import io.ktor.server.netty.Netty
 
 internal class LocalServer {
 
-    var engine: ApplicationEngine? = null
+    private lateinit var engine: ApplicationEngine
 
     fun start(redirection: String) {
+        start {
+            it.respondRedirect(redirection, true)
+        }
+    }
+
+    fun start(callAction: suspend (call: ApplicationCall) -> Unit) {
         engine = embeddedServer(Netty, PORT) {
             install(ContentNegotiation) {
                 gson {}
             }
             routing {
                 get(PATH) {
-                    call.respondRedirect(redirection, true)
+                    callAction.invoke(call)
                 }
             }
         }
-        engine?.start(wait = false)
+        engine.start(wait = false)
     }
 
     fun stop() {
         Thread {
-            engine?.stop(SHUTDOWN_MS, STOP_TIMEOUT_MS)
+            engine.stop(SHUTDOWN_MS, STOP_TIMEOUT_MS)
         }.start()
     }
 

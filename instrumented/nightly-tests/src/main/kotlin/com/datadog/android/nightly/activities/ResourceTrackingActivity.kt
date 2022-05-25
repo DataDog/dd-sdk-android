@@ -23,7 +23,7 @@ internal open class ResourceTrackingActivity : AppCompatActivity() {
 
     open val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
-            .addInterceptor(RumInterceptor())
+            .addInterceptor(RumInterceptor(traceSamplingRate = 100f))
             .build()
     }
     open val randomUrl: String = RANDOM_URL

@@ -29,7 +29,7 @@ class SampleApplication : Application() {
 
 ### Setup for Europe
 
-If you're targetting our [Europe servers](https://datadoghq.eu), you can
+If you're targeting our [Europe servers](https://datadoghq.eu), you can
 initialize the library like this: 
 
 ```kotlin
@@ -139,12 +139,12 @@ do so by providing a map alongside the message, each entry being added as an att
 
 In Java you can do so as follows:
 ```java
-    mLogger.d(
+    Map<String, Object> attributes = new HashMap<>();
+    attributes.put("http.url", url);
+    logger.d(
             "onPageStarted",
             null, 
-            new HashMap<String, Object>() {{
-                put("http.url", url);
-            }}
+            attributes
     );
 ```
 

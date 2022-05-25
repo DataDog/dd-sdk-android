@@ -20,7 +20,8 @@ interface TracedRequestListener {
 
     /**
      * Notifies that a span was automatically created around an OkHttp [Request].
-     * You can update the given [Span] (e.g.: add custom tags / baggage items) before it is persisted.
+     * You can update the given [Span] (e.g.: add custom tags / baggage items) before it
+     * is persisted. Won't be called if [Request] wasn't sampled.
      * @param request the intercepted [Request]
      * @param span the [Span] created around the intercepted [Request]
      * @param response the [Request] response in case of any

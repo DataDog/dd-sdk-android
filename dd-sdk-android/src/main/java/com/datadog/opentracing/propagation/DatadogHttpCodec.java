@@ -26,7 +26,6 @@ class DatadogHttpCodec {
   private static final String TRACE_ID_KEY = "x-datadog-trace-id";
   private static final String SPAN_ID_KEY = "x-datadog-parent-id";
   private static final String SAMPLING_PRIORITY_KEY = "x-datadog-sampling-priority";
-  private static final String SELECTED_FOR_SAMPLE_KEY = "x-datadog-sampled";
   private static final String ORIGIN_KEY = "x-datadog-origin";
 
   private DatadogHttpCodec() {
@@ -50,8 +49,6 @@ class DatadogHttpCodec {
 
       // always use max sampling priority for Android traces
       carrier.put(SAMPLING_PRIORITY_KEY, "1");
-      // makes this request trace selected for sampling
-      carrier.put(SELECTED_FOR_SAMPLE_KEY, "1");
     }
   }
 
