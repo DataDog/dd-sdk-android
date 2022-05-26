@@ -82,7 +82,7 @@ In addition to [tracking actions automatically][5], you can also track specific 
 
 ### Enrich resources
 
-When [tracking resources automatically][6], you can provide a custom `RumResourceAttributesProvider` instance, allowing you to add custom attributes to each tracked network request. For example, if you want to track a network request's headers, you can create an implementation as follow, and pass it in the constructor of the `DatadogInterceptor`.
+When [tracking resources automatically][6], provide a custom `RumResourceAttributesProvider` instance to add custom attributes to each tracked network request. For example, if you want to track a network request's headers, create an implementation as follows, and pass it in the constructor of the `DatadogInterceptor`.
 
 {{< tabs >}}
 {{% tab "Kotlin" %}}
