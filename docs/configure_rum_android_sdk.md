@@ -80,6 +80,53 @@ In addition to [tracking actions automatically][5], you can also track specific 
 {{% /tab %}}
 {{< /tabs >}}
 
+### Enrich resources
+
+When [tracking resources automatically][6], you can provide a custom `RumResourceAttributesProvider` instance, allowing you to add custom attributes to each tracked network request. For example, if you want to track a network request's headers, you can create an implementation as follow, and pass it in the constructor of the `DatadogInterceptor`.
+
+{{< tabs >}}
+{{% tab "Kotlin" %}}
+```kotlin
+class CustomRumResourceAttributesProvider : RumResourceAttributesProvider {
+    override fun onProvideAttributes(
+        request: Request,
+        response: Response?,
+        throwable: Throwable?
+    ): Map<String, Any?> {
+        val headers = request.headers()
+        return headers.names().associate {
+            "headers.${it.lowercase(Locale.US)}" to headers.values(it).first()
+        }
+    }
+}
+```
+{{% /tab %}}
+{{% tab "Java" %}}
+```java
+
+public class CustomRumResourceAttributesProvider implements RumResourceAttributesProvider {
+    @NonNull
+    @Override
+    public Map<String, Object> onProvideAttributes(
+            @NonNull Request request,
+            @Nullable Response response,
+            @Nullable Throwable throwable
+    ) {
+        Map<String, Object> result = new HashMap<>();
+        Headers headers = request.headers();
+
+        for (String key : headers.names()) {
+            String attrName = "headers." + key.toLowerCase(Locale.US);
+            result.put(attrName, headers.values(key));
+        }
+        
+        return result;
+    }
+}
+```
+{{% /tab %}}
+{{< /tabs >}}
+
 ### Custom Resources
 
 In addition to [tracking resources automatically][6], you can also track specific custom resources (network requests, third party provider APIs, etc.) with methods (`GET`, `POST`, etc.) while loading the resource with `RumMonitor#startResource`. Stop tracking with `RumMonitor#stopResource` when it is fully loaded, or `RumMonitor#stopResourceWithError` if an error occurs while loading the resource.
