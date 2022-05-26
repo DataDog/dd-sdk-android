@@ -1,7 +1,7 @@
 ---
 beta: true
 dependencies: 
-- https://github.com/DataDog/dd-sdk-android/blob/master/docs/web_view_tracking.md
+- https://github.com/DataDog/dd-sdk-android/blob/alai97/android-rum-services-doc-update/docs/web_view_tracking.md
 title: Android Web View Tracking
 kind: documentation
 description: Monitor web views in your hybrid Android applications.
