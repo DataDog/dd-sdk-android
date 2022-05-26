@@ -9,7 +9,7 @@ Android RUM automatically tracks attributes such as user activity, screens, erro
 
 ### Custom Views
 
-In addition to [tracking views automatically][4], you can also track specific distinct views (activities, fragments, etc.) when they become visible and interactive in the `onResume()` lifecycle. Stop tracking when the view is no longer visible. Most often, this method should be called in the frontmost `Activity` or `Fragment`:
+In addition to [tracking views automatically][4], you can also track specific distinct views (such as activities and fragments) when they become visible and interactive in the `onResume()` lifecycle. Stop tracking when the view is no longer visible. Most often, this method should be called in the frontmost `Activity` or `Fragment`:
 
 
 {{< tabs >}}
@@ -61,7 +61,7 @@ Once the timing is sent, the timing will be accessible as `@view.custom_timings.
 
 ### Custom Actions
 
-In addition to [tracking actions automatically][5], you can also track specific custom user actions (taps, clicks, scrolls, etc.) with `RumMonitor#addUserAction`. For continuous action tracking (for example, tracking a user scrolling a list), use `RumMonitor#startUserAction` and `RumMonitor#stopUserAction`.
+In addition to [tracking actions automatically][5], you can also track specific custom user actions (such as taps, clicks, and scrolls) with `RumMonitor#addUserAction`. For continuous action tracking (for example, tracking a user scrolling a list), use `RumMonitor#startUserAction` and `RumMonitor#stopUserAction`.
 
 {{< tabs >}}
 {{% tab "Kotlin" %}}
