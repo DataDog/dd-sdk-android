@@ -117,7 +117,7 @@ public class CustomRumResourceAttributesProvider implements RumResourceAttribute
 
         for (String key : headers.names()) {
             String attrName = "headers." + key.toLowerCase(Locale.US);
-            result.put(attrName, headers.values(key));
+            result.put(attrName, headers.values(key).get(0));
         }
         
         return result;
