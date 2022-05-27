@@ -22,7 +22,6 @@ import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.tracking.AcceptAllNavDestinations
 import com.datadog.android.rum.tracking.ComponentPredicate
 
 internal class ComposeNavigationObserver(

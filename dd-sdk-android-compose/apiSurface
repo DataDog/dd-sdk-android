@@ -1,3 +1,8 @@
+open class com.datadog.android.compose.AcceptAllNavDestinations : com.datadog.android.rum.tracking.ComponentPredicate<androidx.navigation.NavDestination>
+  override fun accept(androidx.navigation.NavDestination): Boolean
+  override fun getViewName(androidx.navigation.NavDestination): String?
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
 class com.datadog.android.compose.ExperimentalTrackingApi
 fun trackClick(String, Map<String, Any?> = remember { emptyMap() }, () -> Unit): () -> Unit
 fun TrackInteractionEffect(String, androidx.compose.foundation.interaction.InteractionSource, InteractionType, Map<String, Any?> = emptyMap())

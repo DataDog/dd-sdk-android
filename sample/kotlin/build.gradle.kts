@@ -127,7 +127,6 @@ dependencies {
 
     // Android dependencies
     implementation(libs.androidXMultidex)
-    implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
     implementation(libs.androidXConstraintLayout)
     implementation(libs.androidXComposeNavigation)
@@ -143,6 +142,8 @@ dependencies {
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
     implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
     implementation("androidx.preference:preference-ktx:1.1.1")
+    implementation("androidx.navigation:navigation-fragment:2.3.0")
+    implementation("androidx.navigation:navigation-runtime-ktx:2.3.0")
     implementation("io.opentracing.contrib:opentracing-rxjava-3:0.1.4") {
         exclude(group = "io.opentracing")
     }

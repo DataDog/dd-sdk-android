@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.tracking
+package com.datadog.android.compose
 
 import androidx.navigation.NavDestination
 import com.datadog.tools.unit.ObjectTest

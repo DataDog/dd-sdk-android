@@ -25,10 +25,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.datadog.android.compose.AcceptAllNavDestinations
 import com.datadog.android.compose.ExperimentalTrackingApi
 import com.datadog.android.compose.NavigationViewTrackingEffect
 import com.datadog.android.compose.trackClick
-import com.datadog.android.rum.tracking.AcceptAllNavDestinations
 import java.lang.IllegalArgumentException
 import kotlin.random.Random
 
