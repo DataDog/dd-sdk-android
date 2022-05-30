@@ -38,6 +38,10 @@ data class Version(
         object Dev : Type() {
             override val suffix: String = "-dev"
         }
+
+        class Custom(val name: String) : Type() {
+            override val suffix: String = "-$name"
+        }
     }
 
     // endregion
