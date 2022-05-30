@@ -6,15 +6,16 @@
 
 package com.datadog.android.sample
 
+import androidx.fragment.app.Fragment
 import androidx.navigation.NavDestination
 import com.datadog.android.rum.tracking.ComponentPredicate
 
-class SampleNavigationPredicate : ComponentPredicate<NavDestination> {
-    override fun accept(component: NavDestination): Boolean {
+class SampleFragmentPredicate : ComponentPredicate<Fragment> {
+    override fun accept(component: Fragment): Boolean {
         return true
     }
 
-    override fun getViewName(component: NavDestination): String {
-        return component.label.toString()
+    override fun getViewName(component: Fragment): String? {
+        return null
     }
 }

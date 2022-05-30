@@ -133,7 +133,8 @@ dependencies {
 
     // Android Instrumentation
     implementation(libs.androidXCore)
-    implementation(libs.bundles.androidXNavigation)
+    implementation(libs.androidXCoreKtx)
+    implementation(libs.androidXFragment)
     implementation(libs.androidXRecyclerView)
     implementation(libs.androidXWorkManager)
 

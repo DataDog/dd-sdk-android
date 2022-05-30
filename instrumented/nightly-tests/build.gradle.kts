@@ -102,7 +102,6 @@ dependencies {
     implementation(project(":dd-sdk-android"))
     implementation(project(":dd-sdk-android-ndk"))
 
-    implementation(libs.bundles.androidXNavigation)
     implementation(libs.gson)
     implementation(libs.kotlin)
     implementation(libs.bundles.androidXSupportBase)

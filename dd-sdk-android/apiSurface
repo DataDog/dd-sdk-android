@@ -1239,11 +1239,6 @@ open class com.datadog.android.rum.tracking.AcceptAllDefaultFragment : Component
   override fun getViewName(android.app.Fragment): String?
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
-open class com.datadog.android.rum.tracking.AcceptAllNavDestinations : ComponentPredicate<androidx.navigation.NavDestination>
-  override fun accept(androidx.navigation.NavDestination): Boolean
-  override fun getViewName(androidx.navigation.NavDestination): String?
-  override fun equals(Any?): Boolean
-  override fun hashCode(): Int
 open class com.datadog.android.rum.tracking.AcceptAllSupportFragments : ComponentPredicate<androidx.fragment.app.Fragment>
   override fun accept(androidx.fragment.app.Fragment): Boolean
   override fun getViewName(androidx.fragment.app.Fragment): String?
@@ -1293,14 +1288,6 @@ class com.datadog.android.rum.tracking.MixedViewTrackingStrategy : ActivityLifec
   override fun onActivityDestroyed(android.app.Activity)
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
-class com.datadog.android.rum.tracking.NavigationViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy, androidx.navigation.NavController.OnDestinationChangedListener
-  constructor(Int, Boolean, ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations())
-  override fun onActivityStarted(android.app.Activity)
-  override fun onActivityStopped(android.app.Activity)
-  override fun onActivityPaused(android.app.Activity)
-  override fun onDestinationChanged(androidx.navigation.NavController, androidx.navigation.NavDestination, android.os.Bundle?)
-  fun startTracking()
-  fun stopTracking()
 interface com.datadog.android.rum.tracking.TrackingStrategy
   fun register(android.content.Context)
   fun unregister(android.content.Context?)

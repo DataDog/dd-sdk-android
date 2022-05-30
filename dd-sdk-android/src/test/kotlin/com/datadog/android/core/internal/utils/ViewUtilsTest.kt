@@ -6,14 +6,7 @@
 
 package com.datadog.android.core.internal.utils
 
-import android.content.ComponentName
-import androidx.navigation.ActivityNavigator
-import androidx.navigation.fragment.DialogFragmentNavigator
-import androidx.navigation.fragment.FragmentNavigator
 import com.datadog.android.utils.forge.Configurator
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -32,105 +25,6 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class ViewUtilsTest {
-
-    @Test
-    fun `𝕄 return class name 𝕎 resolveViewUrl() {FragmentNavigator}`(
-        @StringForgery name: String
-    ) {
-        // Given
-        val destination = mock<FragmentNavigator.Destination>().apply {
-            whenever(className) doReturn name
-        }
-
-        // When
-        val output = destination.resolveViewUrl()
-
-        // Then
-        assertThat(output).isEqualTo(name)
-    }
-
-    @Test
-    fun `𝕄 return class name 𝕎 resolveViewUrl() {DialogFragmentNavigator}`(
-        @StringForgery name: String
-    ) {
-        // Given
-        val destination = mock<DialogFragmentNavigator.Destination>().apply {
-            whenever(className) doReturn name
-        }
-
-        // When
-        val output = destination.resolveViewUrl()
-
-        // Then
-        assertThat(output).isEqualTo(name)
-    }
-
-    @Test
-    fun `𝕄 return class name 𝕎 resolveViewUrl() {ActivityNavigator}`(
-        @StringForgery packageName: String,
-        @StringForgery name: String
-    ) {
-        // Given
-        val destination = mock<ActivityNavigator.Destination>().apply {
-            whenever(component) doReturn ComponentName(packageName, name)
-        }
-
-        // When
-        val output = destination.resolveViewUrl()
-
-        // Then
-        assertThat(output).isEqualTo("$packageName.$name")
-    }
-
-    @Test
-    fun `𝕄 return class name 𝕎 resolveViewUrl() {ActivityNavigator redundant package}`(
-        @StringForgery packageName: String,
-        @StringForgery name: String
-    ) {
-        // Given
-        val fullClassName = "$packageName.$name"
-        val destination = mock<ActivityNavigator.Destination>().apply {
-            whenever(component) doReturn ComponentName(packageName, fullClassName)
-        }
-
-        // When
-        val output = destination.resolveViewUrl()
-
-        // Then
-        assertThat(output).isEqualTo(fullClassName)
-    }
-
-    @Test
-    fun `𝕄 return class name 𝕎 resolveViewUrl() {ActivityNavigator conflicting package}`(
-        @StringForgery packageName: String,
-        @StringForgery(regex = "\\w+\\.\\w+") name: String
-    ) {
-        // Given
-        val destination = mock<ActivityNavigator.Destination>().apply {
-            whenever(component) doReturn ComponentName(packageName, name)
-        }
-
-        // When
-        val output = destination.resolveViewUrl()
-
-        // Then
-        assertThat(output).isEqualTo(name)
-    }
-
-    @Test
-    fun `𝕄 return unknown name 𝕎 resolveViewUrl() {ActivityNavigator no component}`() {
-        // Given
-        val destination = mock<ActivityNavigator.Destination>().apply {
-            whenever(component) doReturn null
-        }
-
-        // When
-        val output = destination.resolveViewUrl()
-
-        // Then
-        assertThat(output).isEqualTo(UNKNOWN_DESTINATION_URL)
-    }
-
     @Test
     fun `𝕄 return the key value 𝕎 resolveViewUrl() { destination of type String }`(
         @StringForgery destination: String

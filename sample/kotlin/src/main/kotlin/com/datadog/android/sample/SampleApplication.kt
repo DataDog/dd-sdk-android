@@ -22,7 +22,7 @@ import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumInterceptor
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
+import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
 import com.datadog.android.sample.picture.CoilImageLoader
@@ -133,10 +133,9 @@ class SampleApplication : Application() {
             .addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
             .setWebViewTrackingHosts(webViewTrackingHosts)
             .useViewTrackingStrategy(
-                NavigationViewTrackingStrategy(
-                    R.id.nav_host_fragment,
+                FragmentViewTrackingStrategy(
                     true,
-                    SampleNavigationPredicate()
+                    SampleFragmentPredicate()
                 )
             )
             .trackInteractions()
