@@ -75,8 +75,7 @@ internal class BatchFileOrchestratorTest {
 
     @Test
     fun `𝕄 warn 𝕎 getWritableFile() {root is not a dir}`(
-        @StringForgery fileName: String,
-        @IntForgery(min = 1, max = MAX_ITEM_SIZE) dataSize: Int
+        @StringForgery fileName: String
     ) {
         // Given
         val notADir = File(fakeRootDir, fileName)
@@ -88,7 +87,7 @@ internal class BatchFileOrchestratorTest {
         )
 
         // When
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
 
         // Then
         assertThat(result).isNull()
@@ -99,9 +98,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 getWritableFile() {root can't be created}`(
-        @IntForgery(min = 1, max = MAX_ITEM_SIZE) dataSize: Int
-    ) {
+    fun `𝕄 warn 𝕎 getWritableFile() {root can't be created}`() {
         // Given
         val corruptedDir = mock<File>()
         whenever(corruptedDir.exists()).thenReturn(false)
@@ -114,7 +111,7 @@ internal class BatchFileOrchestratorTest {
         )
 
         // When
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
 
         // Then
         assertThat(result).isNull()
@@ -125,9 +122,7 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 getWritableFile() {root is not writeable}`(
-        @IntForgery(min = 1, max = MAX_ITEM_SIZE) dataSize: Int
-    ) {
+    fun `𝕄 warn 𝕎 getWritableFile() {root is not writeable}`() {
         // Given
         val restrictedDir = mock<File>()
         whenever(restrictedDir.exists()).thenReturn(true)
@@ -141,7 +136,7 @@ internal class BatchFileOrchestratorTest {
         )
 
         // When
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
 
         // Then
         assertThat(result).isNull()
@@ -152,29 +147,12 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 warn 𝕎 getWritableFile() {data is too big}`(
-        @IntForgery(min = MAX_ITEM_SIZE + 1, max = MAX_BATCH_SIZE) dataSize: Int
-    ) {
-        // When
-        val result = testedOrchestrator.getWritableFile(dataSize)
-
-        // Then
-        assertThat(result).isNull()
-        verify(mockLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
-            BatchFileOrchestrator.ERROR_LARGE_DATA.format(Locale.US, dataSize, MAX_ITEM_SIZE)
-        )
-    }
-
-    @Test
-    fun `𝕄 create the rootDirectory 𝕎 getWritableFile() {root does not exist}`(
-        @IntForgery(min = 1, max = MAX_ITEM_SIZE) logSize: Int
-    ) {
+    fun `𝕄 create the rootDirectory 𝕎 getWritableFile() {root does not exist}`() {
         // Given
         fakeRootDir.deleteRecursively()
 
         // When
-        testedOrchestrator.getWritableFile(logSize)
+        testedOrchestrator.getWritableFile()
 
         // Then
         assertThat(fakeRootDir).exists().isDirectory()
@@ -182,7 +160,6 @@ internal class BatchFileOrchestratorTest {
 
     @Test
     fun `𝕄 delete obsolete files 𝕎 getWritableFile()`(
-        @IntForgery(min = 1, max = MAX_ITEM_SIZE) dataSize: Int,
         @LongForgery(min = OLD_FILE_THRESHOLD, max = Int.MAX_VALUE.toLong()) oldFileAge: Long
     ) {
         // Given
@@ -196,7 +173,7 @@ internal class BatchFileOrchestratorTest {
 
         // When
         val start = System.currentTimeMillis()
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
         val end = System.currentTimeMillis()
 
         // Then
@@ -211,15 +188,13 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return new File 𝕎 getWritableFile() {no available file}`(
-        @IntForgery(min = 1, max = MAX_ITEM_SIZE) dataSize: Int
-    ) {
+    fun `𝕄 return new File 𝕎 getWritableFile() {no available file}`() {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
 
         // When
         val start = System.currentTimeMillis()
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
         val end = System.currentTimeMillis()
 
         // Then
@@ -233,18 +208,17 @@ internal class BatchFileOrchestratorTest {
 
     @Test
     fun `𝕄 return existing File 𝕎 getWritableFile() {recent file exist with spare space}`(
-        @StringForgery(size = SMALL_ITEM_SIZE) previousData: String,
-        @IntForgery(min = 1, max = SMALL_ITEM_SIZE) dataSize: Int
+        @StringForgery(size = SMALL_ITEM_SIZE) previousData: String
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val previousFile = testedOrchestrator.getWritableFile(previousData.length)
+        val previousFile = testedOrchestrator.getWritableFile()
         checkNotNull(previousFile)
         previousFile.writeText(previousData)
         Thread.sleep(1)
 
         // When
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
 
         // Then
         checkNotNull(result)
@@ -254,19 +228,18 @@ internal class BatchFileOrchestratorTest {
 
     @Test
     fun `𝕄 return new File 𝕎 getWritableFile() {previous file is too old}`(
-        @StringForgery(size = SMALL_ITEM_SIZE) previousData: String,
-        @IntForgery(min = 1, max = SMALL_ITEM_SIZE) dataSize: Int
+        @StringForgery(size = SMALL_ITEM_SIZE) previousData: String
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val previousFile = testedOrchestrator.getWritableFile(previousData.length)
+        val previousFile = testedOrchestrator.getWritableFile()
         checkNotNull(previousFile)
         previousFile.writeText(previousData)
         Thread.sleep(RECENT_DELAY_MS + 1)
 
         // When
         val start = System.currentTimeMillis()
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
         val end = System.currentTimeMillis()
 
         // Then
@@ -281,8 +254,7 @@ internal class BatchFileOrchestratorTest {
 
     @Test
     fun `𝕄 return new File 𝕎 getWritableFile() {previous file is unknown}`(
-        @StringForgery(size = SMALL_ITEM_SIZE) previousData: String,
-        @IntForgery(min = 1, max = SMALL_ITEM_SIZE) dataSize: Int
+        @StringForgery(size = SMALL_ITEM_SIZE) previousData: String
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
@@ -292,7 +264,7 @@ internal class BatchFileOrchestratorTest {
 
         // When
         val start = System.currentTimeMillis()
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
         val end = System.currentTimeMillis()
 
         // Then
@@ -306,13 +278,10 @@ internal class BatchFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return new File 𝕎 getWritableFile() {previous file is deleted}`(
-        @IntForgery(min = 1, max = SMALL_ITEM_SIZE) previousDataSize: Int,
-        @IntForgery(min = 1, max = SMALL_ITEM_SIZE) dataSize: Int
-    ) {
+    fun `𝕄 return new File 𝕎 getWritableFile() {previous file is deleted}`() {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val previousFile = testedOrchestrator.getWritableFile(previousDataSize)
+        val previousFile = testedOrchestrator.getWritableFile()
         checkNotNull(previousFile)
         previousFile.createNewFile()
         previousFile.delete()
@@ -320,7 +289,7 @@ internal class BatchFileOrchestratorTest {
 
         // When
         val start = System.currentTimeMillis()
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
         val end = System.currentTimeMillis()
 
         // Then
@@ -335,19 +304,18 @@ internal class BatchFileOrchestratorTest {
 
     @Test
     fun `𝕄 return new File 𝕎 getWritableFile() {previous file is too large}`(
-        @StringForgery(size = MAX_BATCH_SIZE) previousData: String,
-        @IntForgery(min = 1, max = SMALL_ITEM_SIZE) dataSize: Int
+        @StringForgery(size = MAX_BATCH_SIZE) previousData: String
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        val previousFile = testedOrchestrator.getWritableFile(1)
+        val previousFile = testedOrchestrator.getWritableFile()
         checkNotNull(previousFile)
         previousFile.writeText(previousData)
         Thread.sleep(1)
 
         // When
         val start = System.currentTimeMillis()
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
         val end = System.currentTimeMillis()
 
         // Then
@@ -362,31 +330,30 @@ internal class BatchFileOrchestratorTest {
 
     @Test
     fun `𝕄 return new File 𝕎 getWritableFile() {previous file has too many items}`(
-        @IntForgery(min = 1, max = MAX_ITEM_SIZE) dataSize: Int,
         forge: Forge
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
-        var previousFile = testedOrchestrator.getWritableFile(dataSize)
+        var previousFile = testedOrchestrator.getWritableFile()
 
         for (round in 1 until 5) {
             checkNotNull(previousFile)
 
             val previousData = forge.aList(MAX_ITEM_PER_BATCH) {
-                forge.anAlphabeticalString(size = dataSize)
+                forge.anAlphabeticalString()
             }
 
             previousFile.writeText(previousData[0])
 
             for (i in 1 until MAX_ITEM_PER_BATCH) {
-                val file = testedOrchestrator.getWritableFile(dataSize)
+                val file = testedOrchestrator.getWritableFile()
                 assumeTrue(file == previousFile)
                 file?.appendText(previousData[i])
             }
 
             // When
             val start = System.currentTimeMillis()
-            val nextFile = testedOrchestrator.getWritableFile(dataSize)
+            val nextFile = testedOrchestrator.getWritableFile()
             val end = System.currentTimeMillis()
 
             // Then
@@ -405,14 +372,13 @@ internal class BatchFileOrchestratorTest {
 
     @Test
     fun `𝕄 discard File 𝕎 getWritableFile() {previous files take too much disk space}`(
-        @StringForgery(size = MAX_BATCH_SIZE) previousData: String,
-        @IntForgery(min = 1, max = MAX_ITEM_SIZE) dataSize: Int
+        @StringForgery(size = MAX_BATCH_SIZE) previousData: String
     ) {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
         val filesCount = MAX_DISK_SPACE / MAX_BATCH_SIZE
         val files = (0..filesCount).map {
-            val file = testedOrchestrator.getWritableFile(1)
+            val file = testedOrchestrator.getWritableFile()
             checkNotNull(file)
             file.writeText(previousData)
             Thread.sleep(1)
@@ -421,7 +387,7 @@ internal class BatchFileOrchestratorTest {
 
         // When
         val start = System.currentTimeMillis()
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
         val end = System.currentTimeMillis()
 
         // Then

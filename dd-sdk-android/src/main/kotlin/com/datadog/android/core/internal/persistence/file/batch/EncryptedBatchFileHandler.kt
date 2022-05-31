@@ -4,17 +4,19 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.persistence.file
+package com.datadog.android.core.internal.persistence.file.batch
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.security.Encryption
 import java.io.File
 
-internal class EncryptedFileHandler(
+// TODO RUMM-2235 Rework file persistence classes/interfaces
+internal class EncryptedBatchFileHandler(
     internal val encryption: Encryption,
-    internal val delegate: FileHandler
-) : FileHandler by delegate {
+    internal val delegate: ChunkedFileHandler
+) : ChunkedFileHandler by delegate {
 
     @WorkerThread
     override fun writeData(

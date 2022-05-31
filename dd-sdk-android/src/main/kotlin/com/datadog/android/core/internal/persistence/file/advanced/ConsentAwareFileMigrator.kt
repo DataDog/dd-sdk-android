@@ -7,7 +7,7 @@
 package com.datadog.android.core.internal.persistence.file.advanced
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.Logger
@@ -17,7 +17,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
 
 internal class ConsentAwareFileMigrator(
-    private val fileHandler: FileHandler,
+    private val fileHandler: ChunkedFileHandler,
     private val executorService: ExecutorService,
     private val internalLogger: Logger
 ) : DataMigrator<TrackingConsent> {

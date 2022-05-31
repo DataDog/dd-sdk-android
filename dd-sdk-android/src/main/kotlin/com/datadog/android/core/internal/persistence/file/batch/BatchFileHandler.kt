@@ -7,9 +7,8 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.persistence.file.EncryptedFileHandler
+import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.EventMeta
-import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.isDirectorySafe
 import com.datadog.android.core.internal.persistence.file.lengthSafe
@@ -39,7 +38,7 @@ internal class BatchFileHandler(
     private val metaParser: (metaBytes: ByteArray) -> EventMeta = {
         EventMeta.fromBytes(it)
     }
-) : FileHandler {
+) : ChunkedFileHandler {
 
     // region FileHandler
 
@@ -310,13 +309,13 @@ internal class BatchFileHandler(
 
         /**
          * Creates either plain [BatchFileHandler] or [BatchFileHandler] wrapped in
-         * [EncryptedFileHandler] if encryption is provided.
+         * [EncryptedBatchFileHandler] if encryption is provided.
          */
-        fun create(internalLogger: Logger, encryption: Encryption?): FileHandler {
+        fun create(internalLogger: Logger, encryption: Encryption?): ChunkedFileHandler {
             return if (encryption == null) {
                 BatchFileHandler(internalLogger)
             } else {
-                EncryptedFileHandler(encryption, BatchFileHandler(internalLogger))
+                EncryptedBatchFileHandler(encryption, BatchFileHandler(internalLogger))
             }
         }
     }

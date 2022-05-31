@@ -8,7 +8,7 @@ package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PayloadDecoration
-import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.mock
@@ -47,7 +47,7 @@ internal class DataFlusherTest {
     lateinit var payloadDecoration: PayloadDecoration
 
     @Mock
-    lateinit var mockFileHandler: FileHandler
+    lateinit var mockFileHandler: ChunkedFileHandler
 
     @StringForgery
     lateinit var fakePrefix: String

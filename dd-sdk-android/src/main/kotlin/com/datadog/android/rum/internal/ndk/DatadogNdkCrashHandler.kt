@@ -10,7 +10,7 @@ import android.content.Context
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.readTextSafe
@@ -43,7 +43,7 @@ internal class DatadogNdkCrashHandler(
     private val userInfoDeserializer: Deserializer<UserInfo>,
     private val internalLogger: Logger,
     private val timeProvider: TimeProvider,
-    private val fileHandler: FileHandler,
+    private val fileHandler: ChunkedFileHandler,
     private val rumEventSourceProvider: RumEventSourceProvider
 ) : NdkCrashHandler {
 
@@ -116,7 +116,7 @@ internal class DatadogNdkCrashHandler(
     }
 
     @WorkerThread
-    private fun readFileContent(file: File, fileHandler: FileHandler): String? {
+    private fun readFileContent(file: File, fileHandler: ChunkedFileHandler): String? {
         val content = fileHandler.readData(file)
         return if (content.isEmpty()) {
             null

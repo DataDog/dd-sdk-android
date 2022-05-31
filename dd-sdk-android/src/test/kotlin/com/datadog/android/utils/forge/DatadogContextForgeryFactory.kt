@@ -8,20 +8,20 @@ package com.datadog.android.utils.forge
 
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.context.ApplicationInfo
+import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.ProcessInfo
-import com.datadog.android.v2.api.context.SDKContext
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.api.context.UserInfo
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-class SDKContextForgeryFactory : ForgeryFactory<SDKContext> {
+class DatadogContextForgeryFactory : ForgeryFactory<DatadogContext> {
     /**
      * TODO RUMM-000 implement all nested class factories
      */
-    override fun getForgery(forge: Forge): SDKContext {
-        return SDKContext(
+    override fun getForgery(forge: Forge): DatadogContext {
+        return DatadogContext(
             TimeInfo(forge.aLong(), forge.aLong()),
             ApplicationInfo(
                 forge.anAlphabeticalString(),

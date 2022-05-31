@@ -9,14 +9,14 @@ package com.datadog.android.core.internal.data.upload
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PayloadDecoration
-import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.utils.join
 
 internal class DataFlusher(
     internal val fileOrchestrator: FileOrchestrator,
     internal val decoration: PayloadDecoration,
-    internal val handler: FileHandler
+    internal val handler: ChunkedFileHandler
 ) : Flusher {
 
     @WorkerThread

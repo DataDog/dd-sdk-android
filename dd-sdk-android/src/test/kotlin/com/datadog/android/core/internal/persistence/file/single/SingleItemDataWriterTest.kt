@@ -8,8 +8,9 @@ package com.datadog.android.core.internal.persistence.file.single
 
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
@@ -56,7 +57,7 @@ internal class SingleItemDataWriterTest {
     lateinit var mockOrchestrator: FileOrchestrator
 
     @Mock
-    lateinit var mockFileHandler: FileHandler
+    lateinit var mockFileHandler: ChunkedFileHandler
 
     @Mock
     lateinit var mockLogHandler: LogHandler
@@ -64,7 +65,10 @@ internal class SingleItemDataWriterTest {
     @Forgery
     lateinit var fakeThrowable: Throwable
 
-    private val stubReverseSerializerAnswer = Answer<String?> { invocation ->
+    @Forgery
+    lateinit var fakeFilePersistenceConfig: FilePersistenceConfig
+
+    private val stubReverseSerializerAnswer = Answer { invocation ->
         (invocation.getArgument<String>(0)).reversed()
     }
 
@@ -82,7 +86,8 @@ internal class SingleItemDataWriterTest {
             mockOrchestrator,
             mockSerializer,
             mockFileHandler,
-            Logger(mockLogHandler)
+            Logger(mockLogHandler),
+            fakeFilePersistenceConfig.copy(maxItemSize = 0)
         )
     }
 
@@ -93,7 +98,7 @@ internal class SingleItemDataWriterTest {
     ) {
         // Given
         val serialized = data.reversed().toByteArray(Charsets.UTF_8)
-        whenever(mockOrchestrator.getWritableFile(any())) doReturn file
+        whenever(mockOrchestrator.getWritableFile()) doReturn file
 
         // When
         testedWriter.write(data)
@@ -114,7 +119,7 @@ internal class SingleItemDataWriterTest {
     ) {
         // Given
         val lastSerialized = data.last().reversed().toByteArray(Charsets.UTF_8)
-        whenever(mockOrchestrator.getWritableFile(any())) doReturn file
+        whenever(mockOrchestrator.getWritableFile()) doReturn file
 
         // When
         testedWriter.write(data)
@@ -161,6 +166,36 @@ internal class SingleItemDataWriterTest {
             eq(emptyMap()),
             eq(emptySet()),
             isNull()
+        )
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 write(element) { element is too big }`(
+        @StringForgery data: String
+    ) {
+        // When
+        val dataSize = data.toByteArray(Charsets.UTF_8).size
+        val maxLimit = (dataSize - 1).toLong()
+
+        // Given
+        testedWriter = SingleItemDataWriter(
+            mockOrchestrator,
+            mockSerializer,
+            mockFileHandler,
+            Logger(mockLogHandler),
+            fakeFilePersistenceConfig.copy(
+                maxItemSize = maxLimit
+            )
+        )
+
+        // When
+        testedWriter.write(data)
+
+        // Then
+        verifyZeroInteractions(mockFileHandler)
+        verify(mockLogHandler).handleLog(
+            ERROR_WITH_TELEMETRY_LEVEL,
+            SingleItemDataWriter.ERROR_LARGE_DATA.format(Locale.US, dataSize, maxLimit)
         )
     }
 }

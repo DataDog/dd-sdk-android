@@ -1497,7 +1497,7 @@ data class com.datadog.android.tracing.model.SpanEvent
       fun fromJson(kotlin.String): SimCarrier
 interface com.datadog.android.v2.api.EventBatchWriter
   fun currentMetadata(): ByteArray?
-  fun write(ByteArray, String, ByteArray)
+  fun write(ByteArray, String, ByteArray?)
 interface com.datadog.android.v2.api.FeatureConfiguration
   fun register(SDKCore)
 interface com.datadog.android.v2.api.FeatureScope

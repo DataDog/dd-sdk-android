@@ -10,7 +10,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.Batch
 import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.persistence.PayloadDecoration
-import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.log.Logger
@@ -23,7 +23,7 @@ import java.util.Locale
 internal class BatchFileDataReader(
     internal val fileOrchestrator: FileOrchestrator,
     internal val decoration: PayloadDecoration,
-    internal val handler: FileHandler,
+    internal val handler: ChunkedFileHandler,
     internal val internalLogger: Logger
 ) : DataReader {
 

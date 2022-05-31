@@ -10,5 +10,5 @@ import androidx.annotation.WorkerThread
 
 internal interface BatchReader {
     @WorkerThread
-    fun read(batchId: BatchId): List<ByteArray>
+    fun read(): List<ByteArray>
 }
