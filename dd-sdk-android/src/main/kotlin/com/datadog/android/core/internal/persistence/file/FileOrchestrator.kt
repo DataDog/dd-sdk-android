@@ -21,12 +21,11 @@ import java.io.File
 internal interface FileOrchestrator {
 
     /**
-     * @param dataSize the size of the data to write (in bytes)
-     * @return a File with enough space to write `dataSize` bytes, or null if no space is available
+     * @return a File with enough space to write data, or null if no space is available
      * or the disk can't be written to.
      */
     @WorkerThread
-    fun getWritableFile(dataSize: Int): File?
+    fun getWritableFile(): File?
 
     /**
      * @param excludeFiles a set of files to exclude from the readable files

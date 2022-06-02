@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.persistence.file
 import androidx.annotation.WorkerThread
 import java.io.File
 
+// TODO RUMM-2235 Rework file persistence classes/interfaces
 /**
  * A class used for direct file manipulation on disk.
  */
@@ -27,16 +28,6 @@ internal interface FileHandler {
         data: ByteArray,
         append: Boolean
     ): Boolean
-
-    /**
-     * Reads data from the given file.
-     *  @param file the file to read from
-     *  @return the list of events as [ByteArray] data stored in a file.
-     */
-    @WorkerThread
-    fun readData(
-        file: File
-    ): List<ByteArray>
 
     /**
      * Deletes the file or directory (recursively if needed).

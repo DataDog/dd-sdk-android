@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.domain
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileDataWriter
 import com.datadog.android.core.internal.persistence.file.existsSafe
@@ -30,7 +30,7 @@ internal class RumDataWriter(
     fileOrchestrator: FileOrchestrator,
     serializer: Serializer<Any>,
     decoration: PayloadDecoration,
-    handler: FileHandler,
+    handler: ChunkedFileHandler,
     internalLogger: Logger,
     private val lastViewEventFile: File
 ) : BatchFileDataWriter<Any>(

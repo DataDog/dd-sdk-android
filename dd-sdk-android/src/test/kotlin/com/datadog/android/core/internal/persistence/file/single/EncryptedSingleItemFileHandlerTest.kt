@@ -4,9 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.persistence.file
+package com.datadog.android.core.internal.persistence.file.single
 
 import android.util.Log
+import com.datadog.android.core.internal.persistence.file.SingleItemFileHandler
 import com.datadog.android.log.Logger
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.config.LoggerTestConfiguration
@@ -45,13 +46,13 @@ import org.mockito.quality.Strictness
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class EncryptedFileHandlerTest {
+internal class EncryptedSingleItemFileHandlerTest {
 
     @Mock
     lateinit var mockEncryption: Encryption
 
     @Mock
-    lateinit var mockFileHandlerDelegate: FileHandler
+    lateinit var mockFileHandlerDelegate: SingleItemFileHandler
 
     @Mock
     lateinit var mockFile: File
@@ -59,7 +60,7 @@ internal class EncryptedFileHandlerTest {
     @Mock
     lateinit var mockInternalLogger: Logger
 
-    private lateinit var testedFileHandler: EncryptedFileHandler
+    private lateinit var testedFileHandler: EncryptedSingleItemFileHandler
 
     @BeforeEach
     fun setUp() {
@@ -75,7 +76,7 @@ internal class EncryptedFileHandlerTest {
         }
 
         testedFileHandler =
-            EncryptedFileHandler(mockEncryption, mockFileHandlerDelegate)
+            EncryptedSingleItemFileHandler(mockEncryption, mockFileHandlerDelegate)
     }
 
     // region FileHandler#writeData tests
@@ -126,7 +127,7 @@ internal class EncryptedFileHandlerTest {
 
         verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
-            EncryptedFileHandler.BAD_ENCRYPTION_RESULT_MESSAGE
+            EncryptedSingleItemFileHandler.BAD_ENCRYPTION_RESULT_MESSAGE
         )
         verifyZeroInteractions(mockInternalLogger)
         verifyZeroInteractions(mockFileHandlerDelegate)
@@ -138,22 +139,18 @@ internal class EncryptedFileHandlerTest {
 
     @Test
     fun `𝕄 decrypt data 𝕎 readData()`(
-        forge: Forge
+        @StringForgery data: String
     ) {
         // Given
-        val events = forge.aList {
-            forge.aString().toByteArray()
-        }
-
         whenever(
             mockFileHandlerDelegate.readData(mockFile)
-        ) doReturn events.map { encrypt(it) }
+        ) doReturn encrypt(data.toByteArray())
 
         // When
         val result = testedFileHandler.readData(mockFile)
 
         // Then
-        assertThat(result).containsExactlyElementsOf(events)
+        assertThat(result).isEqualTo(data.toByteArray())
     }
 
     // endregion
@@ -162,21 +159,20 @@ internal class EncryptedFileHandlerTest {
 
     @Test
     fun `𝕄 return valid data 𝕎 writeData() + readData()`(
+        @StringForgery data: String,
         forge: Forge
     ) {
         // Given
-        val events = forge.aList { forge.aString().toByteArray() }
-
-        val storage = mutableListOf<ByteArray>()
+        var storage: ByteArray? = null
 
         whenever(
             mockFileHandlerDelegate.writeData(
                 eq(mockFile),
                 any(),
-                eq(true)
+                eq(false)
             )
         ) doAnswer {
-            storage.add(it.getArgument(1))
+            storage = it.getArgument(1)
             true
         }
 
@@ -185,15 +181,12 @@ internal class EncryptedFileHandlerTest {
         ) doAnswer { storage }
 
         // When
-        var writeResult = true
-        events.forEach {
-            writeResult = writeResult && testedFileHandler.writeData(mockFile, it, true)
-        }
+        val writeResult = testedFileHandler.writeData(mockFile, data.toByteArray(), false)
         val readResult = testedFileHandler.readData(mockFile)
 
         // Then
         assertThat(writeResult).isTrue()
-        assertThat(readResult).containsExactlyElementsOf(events)
+        assertThat(readResult).isEqualTo(data.toByteArray())
 
         verifyZeroInteractions(mockInternalLogger)
         verifyZeroInteractions(logger.mockDevLogHandler)

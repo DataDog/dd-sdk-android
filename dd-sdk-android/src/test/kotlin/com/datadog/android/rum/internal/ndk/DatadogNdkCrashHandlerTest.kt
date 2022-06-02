@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.ndk
 import android.content.Context
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
@@ -99,7 +99,7 @@ internal class DatadogNdkCrashHandlerTest {
     lateinit var mockLogHandler: LogHandler
 
     @Mock
-    lateinit var mockFileHandler: FileHandler
+    lateinit var mockFileHandler: ChunkedFileHandler
 
     lateinit var fakeNdkCacheDir: File
 

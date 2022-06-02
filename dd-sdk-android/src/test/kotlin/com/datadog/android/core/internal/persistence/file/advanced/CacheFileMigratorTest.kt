@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
-import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
@@ -50,7 +50,7 @@ internal class CacheFileMigratorTest {
     lateinit var mockNewOrchestrator: FileOrchestrator
 
     @Mock
-    lateinit var mockFileHandler: FileHandler
+    lateinit var mockFileHandler: ChunkedFileHandler
 
     @Mock
     lateinit var mockExecutorService: ExecutorService

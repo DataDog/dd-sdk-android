@@ -1023,6 +1023,7 @@ datadog:
       - "kotlin.collections.MutableMap.remove(com.datadog.android.rum.internal.vitals.VitalListener)"
       - "kotlin.collections.MutableMap.remove(kotlin.String)"
       - "kotlin.collections.MutableSet.add(com.datadog.android.telemetry.internal.TelemetryEventHandler.EventIdentity)"
+      - "kotlin.collections.MutableSet.add(com.datadog.android.v2.core.internal.storage.ConsentAwareStorage.Batch)"
       - "kotlin.collections.MutableSet.add(kotlin.String)"
       - "kotlin.collections.MutableSet.add(java.io.File)"
       - "kotlin.collections.MutableSet.clear()"
@@ -1031,7 +1032,9 @@ datadog:
       - "kotlin.collections.MutableSet.firstOrNull(kotlin.Function1)"
       - "kotlin.collections.MutableSet.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableSet.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
+      - "kotlin.collections.MutableSet.map(kotlin.Function1)"
       - "kotlin.collections.MutableSet.remove(java.io.File)"
+      - "kotlin.collections.MutableSet.remove(com.datadog.android.v2.core.internal.storage.ConsentAwareStorage.Batch)"
       - "kotlin.sequences.Sequence.filter(kotlin.Function1)"
       - "kotlin.sequences.Sequence.forEach(kotlin.Function1)"
       # endregion

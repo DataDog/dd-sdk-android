@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.domain
 import android.util.Log
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
@@ -66,7 +66,7 @@ internal class RumDataWriterTest {
     lateinit var mockOrchestrator: FileOrchestrator
 
     @Mock
-    lateinit var mockFileHandler: FileHandler
+    lateinit var mockFileHandler: ChunkedFileHandler
 
     @Mock
     lateinit var mockLogHandler: LogHandler

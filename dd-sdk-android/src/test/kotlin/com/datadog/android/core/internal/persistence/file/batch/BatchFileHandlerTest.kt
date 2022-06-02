@@ -7,9 +7,8 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import android.util.Log
-import com.datadog.android.core.internal.persistence.file.EncryptedFileHandler
+import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.EventMeta
-import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.security.Encryption
@@ -54,7 +53,7 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class BatchFileHandlerTest {
 
-    lateinit var testedFileHandler: FileHandler
+    lateinit var testedFileHandler: ChunkedFileHandler
 
     @StringForgery(regex = "([a-z]+)-([a-z]+)")
     lateinit var fakeSrcDirName: String
@@ -513,7 +512,13 @@ internal class BatchFileHandlerTest {
 
         // When
         var writeResult = true
-        data.forEach { writeResult = writeResult && testedFileHandler.writeData(file, it, true) }
+        data.forEach {
+            writeResult = writeResult && testedFileHandler.writeData(
+                file,
+                it,
+                true
+            )
+        }
         val readResult = testedFileHandler.readData(file)
 
         // Then
@@ -734,9 +739,9 @@ internal class BatchFileHandlerTest {
 
         // Then
         assertThat(fileHandler)
-            .isInstanceOf(EncryptedFileHandler::class.java)
+            .isInstanceOf(EncryptedBatchFileHandler::class.java)
 
-        (fileHandler as EncryptedFileHandler).let {
+        (fileHandler as EncryptedBatchFileHandler).let {
             assertThat(it.delegate).isInstanceOf(BatchFileHandler::class.java)
             assertThat(it.encryption).isEqualTo(mockEncryption)
         }

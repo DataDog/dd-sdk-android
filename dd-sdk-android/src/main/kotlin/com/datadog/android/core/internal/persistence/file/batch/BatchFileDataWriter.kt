@@ -10,10 +10,12 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.serializeToByteArray
 import com.datadog.android.log.Logger
+import java.util.Locale
 
 /**
  * A [DataWriter] storing data in batch files.
@@ -22,8 +24,10 @@ internal open class BatchFileDataWriter<T : Any>(
     internal val fileOrchestrator: FileOrchestrator,
     internal val serializer: Serializer<T>,
     internal val decoration: PayloadDecoration,
-    internal val handler: FileHandler,
-    internal val internalLogger: Logger
+    internal val handler: ChunkedFileHandler,
+    internal val internalLogger: Logger,
+    // TODO RUMM-0000 don't use default value
+    internal val filePersistenceConfig: FilePersistenceConfig = FilePersistenceConfig()
 ) : DataWriter<T> {
 
     // region DataWriter
@@ -76,9 +80,28 @@ internal open class BatchFileDataWriter<T : Any>(
 
     @WorkerThread
     private fun writeData(byteArray: ByteArray): Boolean {
-        val file = fileOrchestrator.getWritableFile(byteArray.size) ?: return false
+        if (!checkEventSize(byteArray.size)) return false
+
+        val file = fileOrchestrator.getWritableFile() ?: return false
         return handler.writeData(file, byteArray, true)
+    }
+    private fun checkEventSize(eventSize: Int): Boolean {
+        if (eventSize > filePersistenceConfig.maxItemSize) {
+            internalLogger.e(
+                ERROR_LARGE_DATA.format(
+                    Locale.US,
+                    eventSize,
+                    filePersistenceConfig.maxItemSize
+                )
+            )
+            return false
+        }
+        return true
     }
 
     // endregion
+
+    companion object {
+        internal const val ERROR_LARGE_DATA = "Can't write data with size %d (max item size is %d)"
+    }
 }

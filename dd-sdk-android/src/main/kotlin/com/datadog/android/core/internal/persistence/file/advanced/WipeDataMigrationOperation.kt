@@ -7,7 +7,7 @@
 package com.datadog.android.core.internal.persistence.file.advanced
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.utils.retryWithDelay
 import com.datadog.android.log.Logger
 import java.io.File
@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit
  */
 internal class WipeDataMigrationOperation(
     internal val targetDir: File?,
-    internal val fileHandler: FileHandler,
+    internal val fileHandler: ChunkedFileHandler,
     internal val internalLogger: Logger
 ) : DataMigrationOperation {
 

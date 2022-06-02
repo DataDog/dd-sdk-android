@@ -10,7 +10,7 @@ import com.datadog.android.core.internal.data.upload.DataFlusher
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.log.Logger
@@ -56,7 +56,7 @@ internal class BatchFilePersistenceStrategyTest {
     lateinit var mockExecutorService: ExecutorService
 
     @Mock
-    lateinit var mockFileHandler: FileHandler
+    lateinit var mockFileHandler: ChunkedFileHandler
 
     @Forgery
     lateinit var fakePayloadDecoration: PayloadDecoration
