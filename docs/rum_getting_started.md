@@ -41,6 +41,7 @@ dependencies {
 
 1. Navigate to [**UX Monitoring** > **RUM Applications** > **New Application**][2].
 2. Select `android` as the application type and enter an application name to generate a unique Datadog application ID and client token.
+3. To instrument your web views, click the **Instrument your webviews** toggle. For more information, see [Web View Tracking][13].
 
 {{< img src="real_user_monitoring/android/create_rum_application.png" alt="Create a RUM application in Datadog workflow" style="width:90%;">}}
 
@@ -344,3 +345,4 @@ You can also add an `EventListener` for the `OkHttpClient` to [automatically tra
 [10]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#custom-views
 [11]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#automatically-track-network-requests
 [12]: https://github.com/DataDog/dd-sdk-android-gradle-plugin
+[13]: https://docs.datadoghq.com/real_user_monitoring/android/web_view_tracking/
