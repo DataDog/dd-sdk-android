@@ -8,12 +8,12 @@ The Datadog Android SDK supports Android 4.4 (API level 19)+ and Android TV.
 
 ## Setup
 
-1. Declare SDK as a dependency.
-2. Specify application details in UI.
+1. Declare the SDK as a dependency.
+2. Specify application details in the UI.
 3. Initialize the library with application context.
-4. Initialize RUM Monitor, Interceptor and start sending data.
+4. Initialize the RUM Monitor and Interceptor to start sending data.
 
-### Declare SDK as dependency
+### Declare the SDK as dependency
 
 Declare [dd-sdk-android][1] and the [Gradle plugin][12] as a dependency in your **application module's** `build.gradle` file.
 
@@ -284,7 +284,7 @@ See [`ViewTrackingStrategy`][5] to enable automatic tracking of all your views (
 
 The credentials for initialization require your application's variant name and uses the value of `BuildConfig.FLAVOR` or an empty string if you don't have variants. This enables the correct ProGuard `mapping.txt` file to automatically upload at build time so you can view de-obfuscated RUM error stack traces. For more information, see the [guide to uploading Android source mapping files][8].
 
-### Initialize RUM Monitor and Interceptor
+### Initialize the RUM Monitor and Interceptor
 
 Configure and register the RUM Monitor. You only need to do it once in your application's `onCreate()` method.
 
