@@ -665,6 +665,7 @@ datadog:
       # endregion
       # region Kotlin Collections
       - "kotlin.collections.List.last():java.util.NoSuchElementException"
+      - "kotlin.collections.List.first():java.util.NoSuchElementException"
       - "kotlin.collections.List.get(kotlin.Int):java.util.NoSuchElementException"
       - "kotlin.collections.MutableIterator.next():java.util.NoSuchElementException"
       - "kotlin.collections.MutableIterator.remove():java.lang.UnsupportedOperationException,java.lang.IllegalStateException"
@@ -716,6 +717,7 @@ datadog:
       - "android.content.IntentFilter.addAction(kotlin.String)"
       - "android.content.IntentFilter.constructor()"
       - "android.content.IntentFilter.constructor(kotlin.String)"
+      - "android.content.pm.PackageManager.hasSystemFeature(kotlin.String)"
       - "android.content.res.AssetManager.open(kotlin.String, kotlin.Int)"
       - "android.database.DatabaseErrorHandler.onCorruption(android.database.sqlite.SQLiteDatabase)"
       - "android.database.DefaultDatabaseErrorHandler.constructor()"
@@ -1031,6 +1033,8 @@ datadog:
       - "kotlin.Boolean.hashCode()"
       - "kotlin.Byte.toInt()"
       - "kotlin.ByteArray.constructor(kotlin.Int)"
+      - "kotlin.Char.isLowerCase()"
+      - "kotlin.Char.titlecase(java.util.Locale)"
       - "kotlin.Double.isNaN()"
       - "kotlin.Double.pow(kotlin.Int)"
       - "kotlin.Double.rangeTo(kotlin.Double)"
@@ -1049,6 +1053,7 @@ datadog:
       # endregion
       # region Kotlin String
       - "kotlin.String.contains(kotlin.Char, kotlin.Boolean)"
+      - "kotlin.String.contains(kotlin.CharSequence, kotlin.Boolean)"
       - "kotlin.String.count(kotlin.Function1)"
       - "kotlin.String.endsWith(kotlin.Char, kotlin.Boolean)"
       - "kotlin.String.endsWith(kotlin.String, kotlin.Boolean)"
@@ -1067,6 +1072,7 @@ datadog:
       - "kotlin.String.plus(kotlin.Any?)"
       - "kotlin.String.replace(kotlin.Char, kotlin.Char, kotlin.Boolean)"
       - "kotlin.String.replace(kotlin.text.Regex, kotlin.String)"
+      - "kotlin.String.replaceFirstChar(kotlin.Function1)"
       - "kotlin.String.split(kotlin.Array, kotlin.Boolean, kotlin.Int)"
       - "kotlin.String.split(kotlin.CharArray, kotlin.Boolean, kotlin.Int)"
       - "kotlin.String.startsWith(kotlin.String, kotlin.Boolean)"

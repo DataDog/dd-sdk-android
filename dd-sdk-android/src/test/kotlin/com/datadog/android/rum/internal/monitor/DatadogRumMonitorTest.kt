@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.monitor
 import android.os.Handler
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -113,6 +114,9 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockTelemetryEventHandler: TelemetryEventHandler
 
+    @Mock
+    lateinit var mockAndroidInfoProvider: AndroidInfoProvider
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -142,7 +146,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
-            mockSessionListener
+            mockSessionListener,
+            androidInfoProvider = mockAndroidInfoProvider
         )
         testedMonitor.rootScope = mockScope
     }
@@ -161,7 +166,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
-            mockSessionListener
+            mockSessionListener,
+            androidInfoProvider = mockAndroidInfoProvider
         )
 
         val rootScope = testedMonitor.rootScope
@@ -1174,7 +1180,8 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
-            mockExecutor
+            mockExecutor,
+            mockAndroidInfoProvider
         )
 
         // When
@@ -1217,7 +1224,8 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockAndroidInfoProvider
         )
 
         // When
@@ -1247,7 +1255,8 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockAndroidInfoProvider
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 

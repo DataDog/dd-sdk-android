@@ -31,7 +31,10 @@ import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
+import com.datadog.android.core.internal.system.DefaultAndroidInfoProvider
+import com.datadog.android.core.internal.system.NoOpAndroidInfoProvider
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.KronosTimeProvider
@@ -148,6 +151,7 @@ internal object CoreFeature {
     internal lateinit var persistenceExecutorService: ExecutorService
     internal var localDataEncryption: Encryption? = null
     internal lateinit var webViewTrackingHosts: List<String>
+    internal lateinit var androidInfoProvider: AndroidInfoProvider
 
     // TESTS ONLY, to prevent Kronos spinning sync threads in unit-tests
     internal var disableKronosBackgroundSync = false
@@ -168,6 +172,7 @@ internal object CoreFeature {
         setupOkHttpClient(configuration)
         firstPartyHostDetector.addKnownHosts(configuration.firstPartyHosts)
         webViewTrackingHosts = configuration.webViewTrackingHosts
+        androidInfoProvider = DefaultAndroidInfoProvider(appContext)
         setupExecutors()
         // Time Provider
         timeProvider = KronosTimeProvider(kronosClock)
@@ -261,7 +266,8 @@ internal object CoreFeature {
                 UserInfoDeserializer(sdkLogger),
                 sdkLogger,
                 timeProvider,
-                BatchFileHandler.create(sdkLogger, localDataEncryption)
+                BatchFileHandler.create(sdkLogger, localDataEncryption),
+                androidInfoProvider = androidInfoProvider
             )
             ndkCrashHandler.prepareData()
         }
@@ -462,6 +468,7 @@ internal object CoreFeature {
         timeProvider = NoOpTimeProvider()
         trackingConsentProvider = NoOpConsentProvider()
         userInfoProvider = NoOpMutableUserInfoProvider()
+        androidInfoProvider = NoOpAndroidInfoProvider()
     }
 
     // endregion

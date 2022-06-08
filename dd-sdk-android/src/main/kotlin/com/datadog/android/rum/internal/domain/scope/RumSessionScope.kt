@@ -16,6 +16,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.NoOpDataWriter
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
@@ -44,7 +45,8 @@ internal class RumSessionScope(
     private val rumEventSourceProvider: RumEventSourceProvider,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
-    private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
+    private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
+    private val androidInfoProvider: AndroidInfoProvider
 ) : RumScope {
 
     internal val childrenScopes = mutableListOf<RumScope>()
@@ -98,7 +100,8 @@ internal class RumSessionScope(
                 memoryVitalMonitor,
                 frameRateVitalMonitor,
                 timeProvider,
-                rumEventSourceProvider
+                rumEventSourceProvider,
+                androidInfoProvider
             )
             onViewDisplayed(event, viewScope, actualWriter)
             childrenScopes.add(viewScope)
@@ -174,7 +177,7 @@ internal class RumSessionScope(
         }
     }
 
-    internal fun createBackgroundViewScope(event: RumRawEvent): RumViewScope {
+    private fun createBackgroundViewScope(event: RumRawEvent): RumViewScope {
         return RumViewScope(
             this,
             RUM_BACKGROUND_VIEW_URL,
@@ -187,11 +190,12 @@ internal class RumSessionScope(
             NoOpVitalMonitor(),
             timeProvider,
             rumEventSourceProvider,
-            type = RumViewScope.RumViewType.BACKGROUND
+            type = RumViewScope.RumViewType.BACKGROUND,
+            androidInfoProvider = androidInfoProvider
         )
     }
 
-    internal fun createAppLaunchViewScope(event: RumRawEvent): RumViewScope {
+    private fun createAppLaunchViewScope(event: RumRawEvent): RumViewScope {
         return RumViewScope(
             this,
             RUM_APP_LAUNCH_VIEW_URL,
@@ -204,7 +208,8 @@ internal class RumSessionScope(
             NoOpVitalMonitor(),
             timeProvider,
             rumEventSourceProvider,
-            type = RumViewScope.RumViewType.APPLICATION_LAUNCH
+            type = RumViewScope.RumViewType.APPLICATION_LAUNCH,
+            androidInfoProvider = androidInfoProvider
         )
     }
 

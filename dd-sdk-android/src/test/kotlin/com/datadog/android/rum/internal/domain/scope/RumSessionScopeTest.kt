@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.NoOpDataWriter
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
@@ -125,6 +126,9 @@ internal class RumSessionScopeTest {
     @Forgery
     lateinit var fakeNetworkInfo: NetworkInfo
 
+    @Forgery
+    lateinit var fakeAndroidInfoProvider: AndroidInfoProvider
+
     @FloatForgery(min = 0f, max = 100f)
     var fakeSamplingRate: Float = 0f
 
@@ -156,7 +160,8 @@ internal class RumSessionScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS
+            TEST_MAX_DURATION_NS,
+            fakeAndroidInfoProvider
         )
         val originalRumContext = testedScope.getRumContext()
         assertThat(GlobalRum.getRumContext()).isEqualTo(originalRumContext)
@@ -190,7 +195,8 @@ internal class RumSessionScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS
+            TEST_MAX_DURATION_NS,
+            fakeAndroidInfoProvider
         )
         val context = testedScope.getRumContext()
 
@@ -291,7 +297,8 @@ internal class RumSessionScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS
+            TEST_MAX_DURATION_NS,
+            fakeAndroidInfoProvider
         )
         var sessions = 0
         var sessionsKept = 0
@@ -387,7 +394,8 @@ internal class RumSessionScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS
+            TEST_MAX_DURATION_NS,
+            fakeAndroidInfoProvider
         )
         testedScope.childrenScopes.add(mockChildScope)
 
@@ -426,7 +434,8 @@ internal class RumSessionScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS
+            TEST_MAX_DURATION_NS,
+            fakeAndroidInfoProvider
         )
         testedScope.applicationDisplayed = true
 
@@ -649,7 +658,8 @@ internal class RumSessionScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS
+            TEST_MAX_DURATION_NS,
+            fakeAndroidInfoProvider
         )
         val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
 
@@ -678,7 +688,8 @@ internal class RumSessionScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS
+            TEST_MAX_DURATION_NS,
+            fakeAndroidInfoProvider
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.forgeValidBackgroundEvent()
@@ -717,7 +728,8 @@ internal class RumSessionScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS
+            TEST_MAX_DURATION_NS,
+            fakeAndroidInfoProvider
         )
         testedScope.applicationDisplayed = true
         testedScope.childrenScopes.add(mockChildScope)
@@ -773,7 +785,8 @@ internal class RumSessionScopeTest {
             sessionListener = mockSessionListener,
             rumEventSourceProvider = mockRumEventSourceProvider,
             sessionInactivityNanos = TEST_INACTIVITY_NS,
-            sessionMaxDurationNanos = TEST_MAX_DURATION_NS
+            sessionMaxDurationNanos = TEST_MAX_DURATION_NS,
+            androidInfoProvider = fakeAndroidInfoProvider
         )
         testedScope.applicationDisplayed = false
         val fakeEvent = forge.forgeValidBackgroundEvent()
@@ -850,7 +863,8 @@ internal class RumSessionScopeTest {
             rumEventSourceProvider = mockRumEventSourceProvider,
             sessionListener = mockSessionListener,
             sessionInactivityNanos = TEST_INACTIVITY_NS,
-            sessionMaxDurationNanos = TEST_MAX_DURATION_NS
+            sessionMaxDurationNanos = TEST_MAX_DURATION_NS,
+            androidInfoProvider = fakeAndroidInfoProvider
         )
         testedScope.applicationDisplayed = false
         val fakeEvent = forge.forgeValidAppLaunchEvent()
@@ -880,7 +894,8 @@ internal class RumSessionScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS
+            TEST_MAX_DURATION_NS,
+            fakeAndroidInfoProvider
         )
         val fakeEvent = forge.forgeInvalidAppLaunchEvent()
 
@@ -909,7 +924,8 @@ internal class RumSessionScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS
+            TEST_MAX_DURATION_NS,
+            fakeAndroidInfoProvider
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -942,7 +958,8 @@ internal class RumSessionScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS
+            TEST_MAX_DURATION_NS,
+            fakeAndroidInfoProvider
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.forgeValidBackgroundEvent()
