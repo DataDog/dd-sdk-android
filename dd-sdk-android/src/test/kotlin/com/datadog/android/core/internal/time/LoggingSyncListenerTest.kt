@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.time
 
 import android.util.Log
-import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -17,8 +16,6 @@ import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.IOException
-import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -32,34 +29,12 @@ internal class LoggingSyncListenerTest {
     private val testableListener = LoggingSyncListener()
 
     @Test
-    fun `𝕄 send error with telemetry 𝕎 onError() { non-network error }`(
+    fun `𝕄 log error 𝕎 onError()`(
         @StringForgery(regex = "https://[a-z]+\\.com") fakeHost: String,
         forge: Forge
     ) {
         // Given
         val throwable = forge.aThrowable()
-
-        assumeTrue { throwable !is IOException }
-
-        // When
-        testableListener.onError(fakeHost, throwable)
-
-        // Then
-        verify(logger.mockSdkLogHandler)
-            .handleLog(
-                ERROR_WITH_TELEMETRY_LEVEL,
-                "Kronos onError @host:$fakeHost",
-                throwable,
-                mapOf("kronos.sync.host" to fakeHost)
-            )
-    }
-
-    @Test
-    fun `𝕄 send error without telemetry 𝕎 onError() { network error }`(
-        @StringForgery(regex = "https://[a-z]+\\.com") fakeHost: String
-    ) {
-        // Given
-        val throwable = IOException()
 
         // When
         testableListener.onError(fakeHost, throwable)
