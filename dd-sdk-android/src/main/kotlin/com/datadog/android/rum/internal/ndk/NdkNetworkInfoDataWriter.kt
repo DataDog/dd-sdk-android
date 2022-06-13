@@ -8,7 +8,8 @@ package com.datadog.android.rum.internal.ndk
 
 import android.content.Context
 import com.datadog.android.core.internal.net.info.NetworkInfoSerializer
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
+import com.datadog.android.core.internal.persistence.file.FileMover
+import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.internal.persistence.file.advanced.ConsentAwareFileMigrator
 import com.datadog.android.core.internal.persistence.file.advanced.ConsentAwareFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.single.SingleFileOrchestrator
@@ -22,7 +23,8 @@ internal class NdkNetworkInfoDataWriter(
     context: Context,
     consentProvider: ConsentProvider,
     executorService: ExecutorService,
-    fileHandler: ChunkedFileHandler,
+    fileWriter: FileWriter,
+    fileMover: FileMover,
     internalLogger: Logger
 ) : SingleItemDataWriter<NetworkInfo>(
     ConsentAwareFileOrchestrator(
@@ -34,12 +36,12 @@ internal class NdkNetworkInfoDataWriter(
             DatadogNdkCrashHandler.getGrantedNetworkInfoFile(context)
         ),
         dataMigrator = ConsentAwareFileMigrator(
-            fileHandler,
+            fileMover,
             executorService,
             internalLogger
         )
     ),
     NetworkInfoSerializer(),
-    fileHandler,
+    fileWriter,
     internalLogger
 )

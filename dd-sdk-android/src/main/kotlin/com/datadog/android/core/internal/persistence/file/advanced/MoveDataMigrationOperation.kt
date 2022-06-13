@@ -7,7 +7,7 @@
 package com.datadog.android.core.internal.persistence.file.advanced
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.utils.retryWithDelay
 import com.datadog.android.log.Logger
 import java.io.File
@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit
 internal class MoveDataMigrationOperation(
     internal val fromDir: File?,
     internal val toDir: File?,
-    internal val fileHandler: ChunkedFileHandler,
+    internal val fileMover: FileMover,
     internal val internalLogger: Logger
 ) : DataMigrationOperation {
 
@@ -32,7 +32,7 @@ internal class MoveDataMigrationOperation(
             internalLogger.w(WARN_NULL_DEST_DIR)
         } else {
             retryWithDelay(MAX_RETRY, RETRY_DELAY_NS) {
-                fileHandler.moveFiles(fromDir, toDir)
+                fileMover.moveFiles(fromDir, toDir)
             }
         }
     }

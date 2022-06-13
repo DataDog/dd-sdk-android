@@ -9,12 +9,7 @@ package com.datadog.android.core.internal.persistence.file
 import androidx.annotation.WorkerThread
 import java.io.File
 
-// TODO RUMM-2235 Rework file persistence classes/interfaces
-/**
- * A sub-class of [FileHandler] dedicated to the reading files in a format which assumes file
- * contains single data chunk.
- */
-internal interface SingleItemFileHandler : FileHandler {
+internal interface FileReader {
 
     /**
      * Reads data from the given file.

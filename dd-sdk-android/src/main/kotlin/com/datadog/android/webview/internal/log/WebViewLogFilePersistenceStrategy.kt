@@ -8,9 +8,10 @@ package com.datadog.android.webview.internal.log
 
 import android.content.Context
 import com.datadog.android.core.internal.persistence.PayloadDecoration
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
-import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.Logger
@@ -38,5 +39,6 @@ internal class WebViewLogFilePersistenceStrategy(
         WebViewLogEventSerializer(),
         PayloadDecoration.JSON_ARRAY_DECORATION,
         sdkLogger,
-        BatchFileHandler.create(internalLogger, localDataEncryption)
+        BatchFileReaderWriter.create(internalLogger, localDataEncryption),
+        FileMover(internalLogger)
     )

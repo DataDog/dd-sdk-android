@@ -4,19 +4,17 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.persistence.file.single
+package com.datadog.android.core.internal.persistence.file.batch
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.persistence.file.SingleItemFileHandler
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.security.Encryption
 import java.io.File
 
-// TODO RUMM-2235 Rework file persistence classes/interfaces
-internal class EncryptedSingleItemFileHandler(
+internal class EncryptedBatchReaderWriter(
     internal val encryption: Encryption,
-    internal val delegate: SingleItemFileHandler
-) : SingleItemFileHandler by delegate {
+    internal val delegate: BatchFileReaderWriter
+) : BatchFileReaderWriter by delegate {
 
     @WorkerThread
     override fun writeData(
@@ -41,8 +39,11 @@ internal class EncryptedSingleItemFileHandler(
     @WorkerThread
     override fun readData(
         file: File
-    ): ByteArray {
-        return encryption.decrypt(delegate.readData(file))
+    ): List<ByteArray> {
+        return delegate.readData(file)
+            .map {
+                encryption.decrypt(it)
+            }
     }
 
     companion object {

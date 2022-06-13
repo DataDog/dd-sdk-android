@@ -9,9 +9,9 @@ package com.datadog.android.core.internal.persistence.file.single
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
+import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.internal.persistence.serializeToByteArray
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.utils.errorWithTelemetry
@@ -20,7 +20,7 @@ import java.util.Locale
 internal open class SingleItemDataWriter<T : Any>(
     internal val fileOrchestrator: FileOrchestrator,
     internal val serializer: Serializer<T>,
-    internal val handler: ChunkedFileHandler,
+    internal val fileWriter: FileWriter,
     internal val internalLogger: Logger,
     // TODO RUMM-0000 don't use default value
     internal val filePersistenceConfig: FilePersistenceConfig = FilePersistenceConfig()
@@ -57,7 +57,7 @@ internal open class SingleItemDataWriter<T : Any>(
         if (!checkEventSize(byteArray.size)) return false
 
         val file = fileOrchestrator.getWritableFile() ?: return false
-        return handler.writeData(file, byteArray, false)
+        return fileWriter.writeData(file, byteArray, false)
     }
 
     private fun checkEventSize(eventSize: Int): Boolean {

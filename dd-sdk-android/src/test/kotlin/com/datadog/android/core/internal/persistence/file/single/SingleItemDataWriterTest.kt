@@ -8,9 +8,9 @@ package com.datadog.android.core.internal.persistence.file.single
 
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
+import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
@@ -57,7 +57,7 @@ internal class SingleItemDataWriterTest {
     lateinit var mockOrchestrator: FileOrchestrator
 
     @Mock
-    lateinit var mockFileHandler: ChunkedFileHandler
+    lateinit var mockFileWriter: FileWriter
 
     @Mock
     lateinit var mockLogHandler: LogHandler
@@ -85,9 +85,9 @@ internal class SingleItemDataWriterTest {
         testedWriter = SingleItemDataWriter(
             mockOrchestrator,
             mockSerializer,
-            mockFileHandler,
+            mockFileWriter,
             Logger(mockLogHandler),
-            fakeFilePersistenceConfig.copy(maxItemSize = 0)
+            fakeFilePersistenceConfig.copy(maxItemSize = Long.MAX_VALUE)
         )
     }
 
@@ -104,7 +104,7 @@ internal class SingleItemDataWriterTest {
         testedWriter.write(data)
 
         // Then
-        verify(mockFileHandler)
+        verify(mockFileWriter)
             .writeData(
                 file,
                 serialized,
@@ -125,7 +125,7 @@ internal class SingleItemDataWriterTest {
         testedWriter.write(data)
 
         // Then
-        verify(mockFileHandler)
+        verify(mockFileWriter)
             .writeData(
                 file,
                 lastSerialized,
@@ -144,7 +144,7 @@ internal class SingleItemDataWriterTest {
         testedWriter.write(data)
 
         // Then
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockFileWriter)
     }
 
     @Test
@@ -158,7 +158,7 @@ internal class SingleItemDataWriterTest {
         testedWriter.write(data)
 
         // Then
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockFileWriter)
         verify(mockLogHandler).handleLog(
             eq(ERROR_WITH_TELEMETRY_LEVEL),
             eq(Serializer.ERROR_SERIALIZING.format(Locale.US, data.javaClass.simpleName)),
@@ -181,7 +181,7 @@ internal class SingleItemDataWriterTest {
         testedWriter = SingleItemDataWriter(
             mockOrchestrator,
             mockSerializer,
-            mockFileHandler,
+            mockFileWriter,
             Logger(mockLogHandler),
             fakeFilePersistenceConfig.copy(
                 maxItemSize = maxLimit
@@ -192,7 +192,7 @@ internal class SingleItemDataWriterTest {
         testedWriter.write(data)
 
         // Then
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockFileWriter)
         verify(mockLogHandler).handleLog(
             ERROR_WITH_TELEMETRY_LEVEL,
             SingleItemDataWriter.ERROR_LARGE_DATA.format(Locale.US, dataSize, maxLimit)

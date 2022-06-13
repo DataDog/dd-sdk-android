@@ -9,7 +9,8 @@ package com.datadog.android.rum.internal.ndk
 import android.content.Context
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
+import com.datadog.android.core.internal.persistence.file.FileReader
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
@@ -99,7 +100,10 @@ internal class DatadogNdkCrashHandlerTest {
     lateinit var mockLogHandler: LogHandler
 
     @Mock
-    lateinit var mockFileHandler: ChunkedFileHandler
+    lateinit var mockRumFileReader: BatchFileReader
+
+    @Mock
+    lateinit var mockEnvFileReader: FileReader
 
     lateinit var fakeNdkCacheDir: File
 
@@ -126,10 +130,13 @@ internal class DatadogNdkCrashHandlerTest {
             .thenReturn(fakeSourceErrorEvent)
         whenever(mockContext.cacheDir) doReturn fakeCacheDir
         fakeNdkCacheDir = File(fakeCacheDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME)
-        whenever(mockFileHandler.readData(any())) doAnswer {
+        whenever(mockRumFileReader.readData(any())) doAnswer {
             listOf(
                 it.getArgument<File>(0).readBytes()
             )
+        }
+        whenever(mockEnvFileReader.readData(any())) doAnswer {
+            it.getArgument<File>(0).readBytes()
         }
 
         testedHandler = DatadogNdkCrashHandler(
@@ -142,7 +149,8 @@ internal class DatadogNdkCrashHandlerTest {
             mockUserInfoDeserializer,
             Logger(mockLogHandler),
             mockTimeProvider,
-            mockFileHandler,
+            mockRumFileReader,
+            mockEnvFileReader,
             mockRumEventSourceProvider
         )
     }

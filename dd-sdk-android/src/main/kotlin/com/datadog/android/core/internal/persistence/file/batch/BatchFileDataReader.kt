@@ -10,8 +10,9 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.Batch
 import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.persistence.PayloadDecoration
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.log.Logger
 import java.io.File
@@ -23,7 +24,8 @@ import java.util.Locale
 internal class BatchFileDataReader(
     internal val fileOrchestrator: FileOrchestrator,
     internal val decoration: PayloadDecoration,
-    internal val handler: ChunkedFileHandler,
+    internal val fileReader: BatchFileReader,
+    internal val fileMover: FileMover,
     internal val internalLogger: Logger
 ) : DataReader {
 
@@ -34,7 +36,7 @@ internal class BatchFileDataReader(
     @WorkerThread
     override fun lockAndReadNext(): Batch? {
         val file = getAndLockReadableFile() ?: return null
-        val data = handler.readData(file)
+        val data = fileReader.readData(file)
             .join(
                 separator = decoration.separatorBytes,
                 prefix = decoration.prefixBytes,
@@ -63,7 +65,11 @@ internal class BatchFileDataReader(
         }
 
         fileOrchestrator.getAllFiles().forEach {
+            val metaFile = fileOrchestrator.getMetadataFile(it)
             deleteFile(it)
+            if (metaFile?.existsSafe() == true) {
+                deleteFile(metaFile)
+            }
         }
     }
 
@@ -104,7 +110,13 @@ internal class BatchFileDataReader(
         file: File,
         delete: Boolean
     ) {
-        if (delete) deleteFile(file)
+        if (delete) {
+            val metaFile = fileOrchestrator.getMetadataFile(file)
+            deleteFile(file)
+            if (metaFile?.existsSafe() == true) {
+                deleteFile(metaFile)
+            }
+        }
         synchronized(lockedFiles) {
             lockedFiles.remove(file)
         }
@@ -112,7 +124,7 @@ internal class BatchFileDataReader(
 
     @WorkerThread
     private fun deleteFile(file: File) {
-        if (!handler.delete(file)) {
+        if (!fileMover.delete(file)) {
             internalLogger.w(
                 WARNING_DELETE_FAILED.format(Locale.US, file.path)
             )

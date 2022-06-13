@@ -53,4 +53,10 @@ internal interface FileOrchestrator {
      */
     @WorkerThread
     fun getRootDir(): File?
+
+    /**
+     * @return the metadata file for a given file, or null if there is no such.
+     */
+    @WorkerThread
+    fun getMetadataFile(file: File): File?
 }

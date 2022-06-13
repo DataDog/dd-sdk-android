@@ -25,9 +25,11 @@ import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NetworkInfoDeserializer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
+import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
-import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
@@ -216,8 +218,9 @@ internal class CoreFeature {
                 UserInfoDeserializer(sdkLogger),
                 sdkLogger,
                 timeProvider,
-                BatchFileHandler.create(sdkLogger, localDataEncryption),
-                RumEventSourceProvider(sourceName)
+                rumFileReader = BatchFileReaderWriter.create(sdkLogger, localDataEncryption),
+                envFileReader = FileReaderWriter.create(sdkLogger, localDataEncryption),
+                rumEventSourceProvider = RumEventSourceProvider(sourceName)
             )
             ndkCrashHandler.prepareData()
         }
@@ -296,7 +299,8 @@ internal class CoreFeature {
                 appContext,
                 trackingConsentProvider,
                 persistenceExecutorService,
-                BatchFileHandler.create(sdkLogger, localDataEncryption),
+                FileReaderWriter.create(sdkLogger, localDataEncryption),
+                FileMover(sdkLogger),
                 sdkLogger
             ),
             persistenceExecutorService,
@@ -313,7 +317,8 @@ internal class CoreFeature {
                 appContext,
                 trackingConsentProvider,
                 persistenceExecutorService,
-                BatchFileHandler.create(sdkLogger, localDataEncryption),
+                FileReaderWriter.create(sdkLogger, localDataEncryption),
+                FileMover(sdkLogger),
                 sdkLogger
             ),
             persistenceExecutorService,

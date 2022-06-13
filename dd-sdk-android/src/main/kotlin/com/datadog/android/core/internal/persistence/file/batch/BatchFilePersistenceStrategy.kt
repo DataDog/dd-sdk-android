@@ -13,7 +13,7 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.log.Logger
@@ -25,38 +25,39 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
     serializer: Serializer<T>,
     private val payloadDecoration: PayloadDecoration,
     internalLogger: Logger,
-    internal val fileHandler: ChunkedFileHandler
+    internal val fileReaderWriter: BatchFileReaderWriter,
+    val fileMover: FileMover
 ) : PersistenceStrategy<T> {
 
-    private val fileWriter: DataWriter<T> by lazy {
+    private val dataWriter: DataWriter<T> by lazy {
         createWriter(
             fileOrchestrator,
             executorService,
             serializer,
-            payloadDecoration,
             internalLogger
         )
     }
 
-    private val fileReader = BatchFileDataReader(
+    private val dataReader = BatchFileDataReader(
         fileOrchestrator,
         payloadDecoration,
-        fileHandler,
+        fileReaderWriter,
+        fileMover,
         internalLogger
     )
 
     // region PersistenceStrategy
 
     override fun getWriter(): DataWriter<T> {
-        return fileWriter
+        return dataWriter
     }
 
     override fun getReader(): DataReader {
-        return fileReader
+        return dataReader
     }
 
     override fun getFlusher(): Flusher {
-        return DataFlusher(fileOrchestrator, payloadDecoration, fileHandler)
+        return DataFlusher(fileOrchestrator, payloadDecoration, fileReaderWriter, fileMover)
     }
 
     // endregion
@@ -67,15 +68,13 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
         fileOrchestrator: FileOrchestrator,
         executorService: ExecutorService,
         serializer: Serializer<T>,
-        payloadDecoration: PayloadDecoration,
         internalLogger: Logger
     ): DataWriter<T> {
         return ScheduledWriter(
             BatchFileDataWriter(
                 fileOrchestrator,
                 serializer,
-                payloadDecoration,
-                fileHandler,
+                fileReaderWriter,
                 internalLogger
             ),
             executorService,

@@ -4,19 +4,18 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.persistence.file.batch
+package com.datadog.android.core.internal.persistence.file
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.security.Encryption
 import java.io.File
 
-// TODO RUMM-2235 Rework file persistence classes/interfaces
-internal class EncryptedBatchFileHandler(
+internal class EncryptedFileReaderWriter(
     internal val encryption: Encryption,
-    internal val delegate: ChunkedFileHandler
-) : ChunkedFileHandler by delegate {
+    internal val delegate: FileReaderWriter
+) : FileReaderWriter by delegate {
 
     @WorkerThread
     override fun writeData(
@@ -24,6 +23,11 @@ internal class EncryptedBatchFileHandler(
         data: ByteArray,
         append: Boolean
     ): Boolean {
+        if (append) {
+            sdkLogger.e(APPEND_MODE_NOT_SUPPORTED_MESSAGE)
+            return false
+        }
+
         val encryptedData = encryption.encrypt(data)
 
         if (data.isNotEmpty() && encryptedData.isEmpty()) {
@@ -41,15 +45,14 @@ internal class EncryptedBatchFileHandler(
     @WorkerThread
     override fun readData(
         file: File
-    ): List<ByteArray> {
-        return delegate.readData(file)
-            .map {
-                encryption.decrypt(it)
-            }
+    ): ByteArray {
+        return encryption.decrypt(delegate.readData(file))
     }
 
     companion object {
         internal const val BAD_ENCRYPTION_RESULT_MESSAGE = "Encryption of non-empty data produced" +
             " empty result, aborting write operation."
+        internal const val APPEND_MODE_NOT_SUPPORTED_MESSAGE = "Append mode is not supported," +
+            " use EncryptedBatchFileReaderWriter instead."
     }
 }

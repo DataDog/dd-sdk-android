@@ -9,11 +9,7 @@ package com.datadog.android.core.internal.persistence.file
 import androidx.annotation.WorkerThread
 import java.io.File
 
-// TODO RUMM-2235 Rework file persistence classes/interfaces
-/**
- * A class used for direct file manipulation on disk.
- */
-internal interface FileHandler {
+internal interface FileWriter {
 
     /**
      * Writes data as a [ByteArray] into a file.
@@ -28,18 +24,4 @@ internal interface FileHandler {
         data: ByteArray,
         append: Boolean
     ): Boolean
-
-    /**
-     * Deletes the file or directory (recursively if needed).
-     * @param target the target [File] to delete
-     * @return whether the delete was successful
-     */
-    @WorkerThread
-    fun delete(target: File): Boolean
-
-    /**
-     * Move the children files from `srcDir` to the `destDir`.
-     */
-    @WorkerThread
-    fun moveFiles(srcDir: File, destDir: File): Boolean
 }

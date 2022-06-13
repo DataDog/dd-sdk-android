@@ -7,10 +7,9 @@
 package com.datadog.android.rum.internal.domain
 
 import android.util.Log
-import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.internal.monitor.EventType
@@ -66,13 +65,10 @@ internal class RumDataWriterTest {
     lateinit var mockOrchestrator: FileOrchestrator
 
     @Mock
-    lateinit var mockFileHandler: ChunkedFileHandler
+    lateinit var mockFileWriter: FileWriter
 
     @Mock
     lateinit var mockLogHandler: LogHandler
-
-    @Forgery
-    lateinit var fakeDecoration: PayloadDecoration
 
     @StringForgery
     lateinit var fakeSerializedEvent: String
@@ -88,8 +84,7 @@ internal class RumDataWriterTest {
         testedWriter = RumDataWriter(
             mockOrchestrator,
             mockSerializer,
-            fakeDecoration,
-            mockFileHandler,
+            mockFileWriter,
             Logger(mockLogHandler),
             fakeLastViewEventFile
         )
@@ -119,7 +114,7 @@ internal class RumDataWriterTest {
         testedWriter.onDataWritten(viewEvent, fakeSerializedData)
 
         // Then
-        verify(mockFileHandler)
+        verify(mockFileWriter)
             .writeData(fakeLastViewEventFile, fakeSerializedData, false)
         verifyZeroInteractions(logger.mockSdkLogHandler)
     }
@@ -135,7 +130,7 @@ internal class RumDataWriterTest {
         testedWriter.onDataWritten(viewEvent, fakeSerializedData)
 
         // Then
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockFileWriter)
         verify(logger.mockSdkLogHandler)
             .handleLog(
                 Log.INFO,
@@ -154,7 +149,7 @@ internal class RumDataWriterTest {
         testedWriter.onDataWriteFailed(viewEvent)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance, mockFileHandler)
+        verifyZeroInteractions(rumMonitor.mockInstance, mockFileWriter)
     }
 
     @Test
@@ -166,7 +161,7 @@ internal class RumDataWriterTest {
 
         // Then
         verify(rumMonitor.mockInstance).eventSent(actionEvent.view.id, EventType.ACTION)
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockFileWriter)
     }
 
     @Test
@@ -177,7 +172,7 @@ internal class RumDataWriterTest {
         testedWriter.onDataWriteFailed(actionEvent)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance, mockFileHandler)
+        verifyZeroInteractions(rumMonitor.mockInstance, mockFileWriter)
     }
 
     @Test
@@ -189,7 +184,7 @@ internal class RumDataWriterTest {
 
         // Then
         verify(rumMonitor.mockInstance).eventSent(resourceEvent.view.id, EventType.RESOURCE)
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockFileWriter)
     }
 
     @Test
@@ -200,7 +195,7 @@ internal class RumDataWriterTest {
         testedWriter.onDataWriteFailed(resourceEvent)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance, mockFileHandler)
+        verifyZeroInteractions(rumMonitor.mockInstance, mockFileWriter)
     }
 
     @Test
@@ -215,7 +210,7 @@ internal class RumDataWriterTest {
 
         // Then
         verify(rumMonitor.mockInstance).eventSent(fakeEvent.view.id, EventType.ERROR)
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockFileWriter)
     }
 
     @Test
@@ -230,7 +225,7 @@ internal class RumDataWriterTest {
 
         // Then
         verify(rumMonitor.mockInstance, never()).eventSent(eq(fakeEvent.view.id), any())
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockFileWriter)
     }
 
     @Test
@@ -241,7 +236,7 @@ internal class RumDataWriterTest {
         testedWriter.onDataWriteFailed(fakeEvent)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance, mockFileHandler)
+        verifyZeroInteractions(rumMonitor.mockInstance, mockFileWriter)
     }
 
     @Test
@@ -262,7 +257,7 @@ internal class RumDataWriterTest {
 
         // Then
         verify(rumMonitor.mockInstance).eventSent(longTaskEvent.view.id, EventType.LONG_TASK)
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockFileWriter)
     }
 
     @Test
@@ -283,7 +278,7 @@ internal class RumDataWriterTest {
 
         // Then
         verify(rumMonitor.mockInstance).eventSent(frozenFrameEvent.view.id, EventType.FROZEN_FRAME)
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockFileWriter)
     }
 
     @Test
@@ -294,7 +289,7 @@ internal class RumDataWriterTest {
         testedWriter.onDataWriteFailed(fakeEvent)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance, mockFileHandler)
+        verifyZeroInteractions(rumMonitor.mockInstance, mockFileWriter)
     }
 
     companion object {

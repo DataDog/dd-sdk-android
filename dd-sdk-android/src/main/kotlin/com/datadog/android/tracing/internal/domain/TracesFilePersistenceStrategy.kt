@@ -9,9 +9,10 @@ package com.datadog.android.tracing.internal.domain
 import android.content.Context
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.PayloadDecoration
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
-import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.log.Logger
@@ -51,5 +52,6 @@ internal class TracesFilePersistenceStrategy(
     ),
     PayloadDecoration.NEW_LINE_DECORATION,
     internalLogger,
-    BatchFileHandler.create(internalLogger, localDataEncryption)
+    BatchFileReaderWriter.create(internalLogger, localDataEncryption),
+    FileMover(internalLogger)
 )

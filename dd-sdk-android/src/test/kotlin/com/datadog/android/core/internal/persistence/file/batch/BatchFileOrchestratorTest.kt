@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
+import com.datadog.android.log.internal.utils.DEBUG_WITH_TELEMETRY_LEVEL
 import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.doReturn
@@ -167,6 +168,8 @@ internal class BatchFileOrchestratorTest {
         val oldTimestamp = System.currentTimeMillis() - oldFileAge
         val oldFile = File(fakeRootDir, oldTimestamp.toString())
         oldFile.createNewFile()
+        val oldFileMeta = File("${oldFile.path}_metadata")
+        oldFileMeta.createNewFile()
         val youngTimestamp = System.currentTimeMillis() - RECENT_DELAY_MS - 1
         val youngFile = File(fakeRootDir, youngTimestamp.toString())
         youngFile.createNewFile()
@@ -184,6 +187,7 @@ internal class BatchFileOrchestratorTest {
         assertThat(result.name.toLong())
             .isBetween(start, end)
         assertThat(oldFile).doesNotExist()
+        assertThat(oldFileMeta).doesNotExist()
         assertThat(youngFile).exists()
     }
 
@@ -495,6 +499,8 @@ internal class BatchFileOrchestratorTest {
         val oldTimestamp = System.currentTimeMillis() - oldFileAge
         val oldFile = File(fakeRootDir, oldTimestamp.toString())
         oldFile.createNewFile()
+        val oldFileMeta = File("${oldFile.path}_metadata")
+        oldFileMeta.createNewFile()
         val youngTimestamp = System.currentTimeMillis() - RECENT_DELAY_MS - 1
         val youngFile = File(fakeRootDir, youngTimestamp.toString())
         youngFile.createNewFile()
@@ -505,6 +511,7 @@ internal class BatchFileOrchestratorTest {
         // Then
         assertThat(result).isNull()
         assertThat(oldFile).doesNotExist()
+        assertThat(oldFileMeta).doesNotExist()
         assertThat(youngFile).exists()
     }
 
@@ -877,6 +884,64 @@ internal class BatchFileOrchestratorTest {
         // Then
         assertThat(results).containsExactlyElementsOf(List(4) { fakeRootDir })
         verifyZeroInteractions(mockLogHandler)
+    }
+
+    // endregion
+
+    // region getMetadataFile
+
+    @Test
+    fun `𝕄 return metadata file 𝕎 getMetadataFile()`() {
+        // Given
+        val fakeFileName = System.currentTimeMillis().toString()
+        val fakeFile = File(fakeRootDir.path, fakeFileName)
+
+        // When
+        val result = testedOrchestrator.getMetadataFile(fakeFile)
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(result!!.name).isEqualTo("${fakeFileName}_metadata")
+    }
+
+    @Test
+    fun `𝕄 log debug file 𝕎 getMetadataFile() { file is from another folder }`(
+        @StringForgery fakeSuffix: String
+    ) {
+        // Given
+        val fakeFileName = System.currentTimeMillis().toString()
+        val fakeFile = File("${fakeRootDir.parent}$fakeSuffix", fakeFileName)
+
+        // When
+        val result = testedOrchestrator.getMetadataFile(fakeFile)
+
+        // Then
+        assertThat(result).isNotNull()
+        verify(mockLogHandler)
+            .handleLog(
+                DEBUG_WITH_TELEMETRY_LEVEL,
+                BatchFileOrchestrator.DEBUG_DIFFERENT_ROOT
+                    .format(Locale.US, fakeFile.path, fakeRootDir.path)
+            )
+    }
+
+    @Test
+    fun `𝕄 log error file 𝕎 getMetadataFile() { not batch file argument }`(
+        @StringForgery fakeFileName: String
+    ) {
+        // Given
+        val fakeFile = File(fakeRootDir.path, fakeFileName)
+
+        // When
+        val result = testedOrchestrator.getMetadataFile(fakeFile)
+
+        // Then
+        assertThat(result).isNull()
+        verify(mockLogHandler)
+            .handleLog(
+                ERROR_WITH_TELEMETRY_LEVEL,
+                BatchFileOrchestrator.ERROR_NOT_BATCH_FILE.format(Locale.US, fakeFile.path)
+            )
     }
 
     // endregion

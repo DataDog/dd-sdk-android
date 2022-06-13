@@ -4,17 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.persistence.file
+package com.datadog.android.core.internal.persistence.file.batch
 
 import androidx.annotation.WorkerThread
 import java.io.File
 
-// TODO RUMM-2235 Rework file persistence classes/interfaces
-/**
- * A sub-class of [FileHandler] dedicated to the reading files in a format which assumes file
- * contains multiple data chunks.
- */
-internal interface ChunkedFileHandler : FileHandler {
+internal interface BatchFileReader {
 
     /**
      * Reads data from the given file.

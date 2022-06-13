@@ -7,14 +7,14 @@
 package com.datadog.android.core.internal.persistence.file.advanced
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.log.Logger
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
 
 internal class CacheFileMigrator(
-    private val fileHandler: ChunkedFileHandler,
+    private val fileMover: FileMover,
     private val executorService: ExecutorService,
     private val internalLogger: Logger
 ) : DataMigrator<Boolean> {
@@ -36,12 +36,12 @@ internal class CacheFileMigrator(
         val moveOperation = MoveDataMigrationOperation(
             sourceDir,
             cacheDir,
-            fileHandler,
+            fileMover,
             internalLogger
         )
         val deleteOperation = WipeDataMigrationOperation(
             sourceDir,
-            fileHandler,
+            fileMover,
             internalLogger
         )
 

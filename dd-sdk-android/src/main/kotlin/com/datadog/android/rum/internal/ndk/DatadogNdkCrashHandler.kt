@@ -10,7 +10,8 @@ import android.content.Context
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
+import com.datadog.android.core.internal.persistence.file.FileReader
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.readTextSafe
@@ -33,6 +34,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.TimeUnit
 
+@Suppress("LongParameterList")
 internal class DatadogNdkCrashHandler(
     appContext: Context,
     private val dataPersistenceExecutorService: ExecutorService,
@@ -43,7 +45,8 @@ internal class DatadogNdkCrashHandler(
     private val userInfoDeserializer: Deserializer<UserInfo>,
     private val internalLogger: Logger,
     private val timeProvider: TimeProvider,
-    private val fileHandler: ChunkedFileHandler,
+    private val rumFileReader: BatchFileReader,
+    private val envFileReader: FileReader,
     private val rumEventSourceProvider: RumEventSourceProvider
 ) : NdkCrashHandler {
 
@@ -99,13 +102,13 @@ internal class DatadogNdkCrashHandler(
                     CRASH_DATA_FILE_NAME -> lastSerializedNdkCrashLog = it.readTextSafe()
                     RUM_VIEW_EVENT_FILE_NAME ->
                         lastSerializedRumViewEvent =
-                            readFileContent(it, fileHandler)
+                            readRumFileContent(it, rumFileReader)
                     USER_INFO_FILE_NAME ->
                         lastSerializedUserInformation =
-                            readFileContent(it, fileHandler)
+                            readFileContent(it, envFileReader)
                     NETWORK_INFO_FILE_NAME ->
                         lastSerializedNetworkInformation =
-                            readFileContent(it, fileHandler)
+                            readFileContent(it, envFileReader)
                 }
             }
         } catch (e: SecurityException) {
@@ -116,8 +119,18 @@ internal class DatadogNdkCrashHandler(
     }
 
     @WorkerThread
-    private fun readFileContent(file: File, fileHandler: ChunkedFileHandler): String? {
-        val content = fileHandler.readData(file)
+    private fun readFileContent(file: File, fileReader: FileReader): String? {
+        val content = fileReader.readData(file)
+        return if (content.isEmpty()) {
+            null
+        } else {
+            String(content)
+        }
+    }
+
+    @WorkerThread
+    private fun readRumFileContent(file: File, fileReader: BatchFileReader): String? {
+        val content = fileReader.readData(file)
         return if (content.isEmpty()) {
             null
         } else {

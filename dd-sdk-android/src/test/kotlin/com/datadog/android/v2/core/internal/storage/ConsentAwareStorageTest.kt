@@ -6,10 +6,11 @@
 
 package com.datadog.android.v2.core.internal.storage
 
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
-import com.datadog.android.core.internal.persistence.file.SingleItemFileHandler
+import com.datadog.android.core.internal.persistence.file.FileReaderWriter
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.BatchWriterListener
@@ -18,9 +19,7 @@ import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
@@ -40,7 +39,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.fail
-import org.mockito.ArgumentMatcher
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -68,10 +66,13 @@ internal class ConsentAwareStorageTest {
     lateinit var mockGrantedOrchestrator: FileOrchestrator
 
     @Mock
-    lateinit var mockBatchFileHandler: ChunkedFileHandler
+    lateinit var mockBatchReaderWriter: BatchFileReaderWriter
 
     @Mock
-    lateinit var mockBatchMetadataFileHandler: SingleItemFileHandler
+    lateinit var mockMetaReaderWriter: FileReaderWriter
+
+    @Mock
+    lateinit var mockFileMover: FileMover
 
     @Mock
     lateinit var mockListener: BatchWriterListener
@@ -87,8 +88,9 @@ internal class ConsentAwareStorageTest {
         testedStorage = ConsentAwareStorage(
             mockGrantedOrchestrator,
             mockPendingOrchestrator,
-            mockBatchFileHandler,
-            mockBatchMetadataFileHandler,
+            mockBatchReaderWriter,
+            mockMetaReaderWriter,
+            mockFileMover,
             mockListener,
             mockInternalLogger,
             mockFilePersistenceConfig
@@ -110,9 +112,10 @@ internal class ConsentAwareStorageTest {
         val serializedMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
         whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
-        whenever(mockBatchMetadataFileHandler.readData(argThatIsMetaOf(file))) doReturn
-            serializedMetadata
-        whenever(mockBatchFileHandler.writeData(file, serializedData, true)) doReturn true
+        val mockMetaFile: File = mock()
+        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
+        whenever(mockMetaReaderWriter.readData(mockMetaFile)) doReturn serializedMetadata
+        whenever(mockBatchReaderWriter.writeData(file, serializedData, true)) doReturn true
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
@@ -123,23 +126,24 @@ internal class ConsentAwareStorageTest {
 
         // Then
         verify(mockGrantedOrchestrator).getWritableFile()
-        verify(mockBatchFileHandler).writeData(
+        verify(mockGrantedOrchestrator).getMetadataFile(file)
+        verify(mockBatchReaderWriter).writeData(
             file,
             serializedData,
             append = true
         )
-        verify(mockBatchMetadataFileHandler).writeData(
-            argThatIsMetaOf(file),
-            eq(serializedMetadata.reversedArray()),
-            append = eq(false)
+        verify(mockMetaReaderWriter).writeData(
+            mockMetaFile,
+            serializedMetadata.reversedArray(),
+            append = false
         )
-        verify(mockBatchMetadataFileHandler).readData(argThatIsMetaOf(file))
+        verify(mockMetaReaderWriter).readData(mockMetaFile)
 
         verifyNoMoreInteractions(
             mockGrantedOrchestrator,
             mockPendingOrchestrator,
-            mockBatchFileHandler,
-            mockBatchMetadataFileHandler
+            mockBatchReaderWriter,
+            mockMetaReaderWriter
         )
     }
 
@@ -153,6 +157,8 @@ internal class ConsentAwareStorageTest {
         val serializedData = ByteArray(0)
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
+        val mockMetaFile: File = mock()
+        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
         whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
 
         // When
@@ -162,10 +168,11 @@ internal class ConsentAwareStorageTest {
 
         // Then
         verify(mockGrantedOrchestrator).getWritableFile()
+        verify(mockGrantedOrchestrator).getMetadataFile(file)
 
         verifyZeroInteractions(
-            mockBatchFileHandler,
-            mockBatchMetadataFileHandler,
+            mockBatchReaderWriter,
+            mockMetaReaderWriter,
             mockPendingOrchestrator
         )
         verifyNoMoreInteractions(mockGrantedOrchestrator)
@@ -183,7 +190,7 @@ internal class ConsentAwareStorageTest {
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
         whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
-        whenever(mockBatchFileHandler.writeData(file, serializedData, true)) doReturn true
+        whenever(mockBatchReaderWriter.writeData(file, serializedData, true)) doReturn true
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
@@ -285,7 +292,7 @@ internal class ConsentAwareStorageTest {
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
         whenever(mockGrantedOrchestrator.getWritableFile()) doReturn batchFile
-        whenever(mockBatchFileHandler.writeData(batchFile, serializedData, true)) doReturn false
+        whenever(mockBatchReaderWriter.writeData(batchFile, serializedData, true)) doReturn false
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
@@ -311,7 +318,7 @@ internal class ConsentAwareStorageTest {
 
         // Then
         assertThat(meta).isNull()
-        verifyZeroInteractions(mockBatchFileHandler, mockBatchMetadataFileHandler)
+        verifyZeroInteractions(mockBatchReaderWriter, mockMetaReaderWriter)
     }
 
     @Test
@@ -332,7 +339,7 @@ internal class ConsentAwareStorageTest {
         }
 
         // Then
-        verifyZeroInteractions(mockBatchFileHandler, mockBatchMetadataFileHandler)
+        verifyZeroInteractions(mockBatchReaderWriter, mockMetaReaderWriter)
     }
 
     @Test
@@ -345,6 +352,8 @@ internal class ConsentAwareStorageTest {
         // Given
         val serializedData = data.toByteArray(Charsets.UTF_8)
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
+        val mockMetaFile: File = mock()
+        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
         whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
 
         // When
@@ -353,13 +362,13 @@ internal class ConsentAwareStorageTest {
         }
 
         // Then
-        verify(mockBatchFileHandler).writeData(
+        verify(mockBatchReaderWriter).writeData(
             file,
             serializedData,
             true
         )
-        verifyNoMoreInteractions(mockBatchFileHandler)
-        verifyZeroInteractions(mockBatchMetadataFileHandler)
+        verifyNoMoreInteractions(mockBatchReaderWriter)
+        verifyZeroInteractions(mockMetaReaderWriter)
     }
 
     @Test
@@ -373,6 +382,8 @@ internal class ConsentAwareStorageTest {
         val serializedData = data.toByteArray(Charsets.UTF_8)
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
+        val mockMetaFile: File = mock()
+        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
         whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
         val maxItemSize = serializedData.size - 1
         whenever(mockFilePersistenceConfig.maxItemSize) doReturn maxItemSize.toLong()
@@ -383,7 +394,7 @@ internal class ConsentAwareStorageTest {
         }
 
         // Then
-        verifyZeroInteractions(mockBatchMetadataFileHandler)
+        verifyZeroInteractions(mockMetaReaderWriter)
     }
 
     @Test
@@ -397,8 +408,10 @@ internal class ConsentAwareStorageTest {
         val serializedData = data.toByteArray(Charsets.UTF_8)
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
+        val mockMetaFile: File = mock()
+        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
         whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
-        whenever(mockBatchFileHandler.writeData(file, serializedData, true)) doReturn false
+        whenever(mockBatchReaderWriter.writeData(file, serializedData, true)) doReturn false
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
@@ -406,7 +419,7 @@ internal class ConsentAwareStorageTest {
         }
 
         // Then
-        verifyZeroInteractions(mockBatchMetadataFileHandler)
+        verifyZeroInteractions(mockMetaReaderWriter)
     }
 
     @Test
@@ -421,10 +434,11 @@ internal class ConsentAwareStorageTest {
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
 
+        val mockMetaFile: File = mock()
+        whenever(mockPendingOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
         whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
-        whenever(mockBatchMetadataFileHandler.readData(argThatIsMetaOf(file))) doReturn
-            serializedBatchMetadata
-        whenever(mockBatchFileHandler.writeData(file, serializedData, true)) doReturn true
+        whenever(mockMetaReaderWriter.readData(mockMetaFile)) doReturn serializedBatchMetadata
+        whenever(mockBatchReaderWriter.writeData(file, serializedData, true)) doReturn true
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
@@ -435,22 +449,23 @@ internal class ConsentAwareStorageTest {
 
         // Then
         verify(mockPendingOrchestrator).getWritableFile()
-        verify(mockBatchMetadataFileHandler).readData(argThatIsMetaOf(file))
-        verify(mockBatchFileHandler).writeData(
+        verify(mockPendingOrchestrator).getMetadataFile(file)
+        verify(mockMetaReaderWriter).readData(mockMetaFile)
+        verify(mockBatchReaderWriter).writeData(
             file,
             serializedData,
             append = true
         )
-        verify(mockBatchMetadataFileHandler).writeData(
-            argThatIsMetaOf(file),
-            eq(serializedBatchMetadata.reversedArray()),
-            append = eq(false)
+        verify(mockMetaReaderWriter).writeData(
+            mockMetaFile,
+            serializedBatchMetadata.reversedArray(),
+            append = false
         )
         verifyNoMoreInteractions(
             mockGrantedOrchestrator,
             mockPendingOrchestrator,
-            mockBatchFileHandler,
-            mockBatchMetadataFileHandler
+            mockBatchReaderWriter,
+            mockMetaReaderWriter
         )
     }
 
@@ -471,8 +486,8 @@ internal class ConsentAwareStorageTest {
 
         // Then
         verifyZeroInteractions(
-            mockBatchFileHandler,
-            mockBatchMetadataFileHandler,
+            mockBatchReaderWriter,
+            mockMetaReaderWriter,
             mockGrantedOrchestrator
         )
     }
@@ -489,7 +504,7 @@ internal class ConsentAwareStorageTest {
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
         whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
-        whenever(mockBatchFileHandler.writeData(file, serializedData, true)) doReturn true
+        whenever(mockBatchReaderWriter.writeData(file, serializedData, true)) doReturn true
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
@@ -591,7 +606,7 @@ internal class ConsentAwareStorageTest {
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
         whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
-        whenever(mockBatchFileHandler.writeData(file, serializedData, true)) doReturn false
+        whenever(mockBatchReaderWriter.writeData(file, serializedData, true)) doReturn false
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
@@ -617,7 +632,7 @@ internal class ConsentAwareStorageTest {
 
         // Then
         assertThat(meta).isNull()
-        verifyZeroInteractions(mockBatchFileHandler, mockBatchMetadataFileHandler)
+        verifyZeroInteractions(mockBatchReaderWriter, mockMetaReaderWriter)
     }
 
     @Test
@@ -638,7 +653,7 @@ internal class ConsentAwareStorageTest {
         }
 
         // Then
-        verifyZeroInteractions(mockBatchFileHandler, mockBatchMetadataFileHandler)
+        verifyZeroInteractions(mockBatchReaderWriter, mockMetaReaderWriter)
     }
 
     @Test
@@ -651,6 +666,8 @@ internal class ConsentAwareStorageTest {
         // Given
         val serializedData = data.toByteArray(Charsets.UTF_8)
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
+        val mockMetaFile: File = mock()
+        whenever(mockPendingOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
         whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
 
         // When
@@ -659,13 +676,13 @@ internal class ConsentAwareStorageTest {
         }
 
         // Then
-        verify(mockBatchFileHandler).writeData(
+        verify(mockBatchReaderWriter).writeData(
             file,
             serializedData,
             true
         )
-        verifyNoMoreInteractions(mockBatchFileHandler)
-        verifyZeroInteractions(mockBatchMetadataFileHandler)
+        verifyNoMoreInteractions(mockBatchReaderWriter)
+        verifyZeroInteractions(mockMetaReaderWriter)
     }
 
     @Test
@@ -679,6 +696,8 @@ internal class ConsentAwareStorageTest {
         val serializedData = data.toByteArray(Charsets.UTF_8)
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
+        val mockMetaFile: File = mock()
+        whenever(mockPendingOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
         whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
         val maxItemSize = serializedData.size - 1
         whenever(mockFilePersistenceConfig.maxItemSize) doReturn maxItemSize.toLong()
@@ -689,7 +708,7 @@ internal class ConsentAwareStorageTest {
         }
 
         // Then
-        verifyZeroInteractions(mockBatchMetadataFileHandler)
+        verifyZeroInteractions(mockMetaReaderWriter)
     }
 
     @Test
@@ -703,8 +722,10 @@ internal class ConsentAwareStorageTest {
         val serializedData = data.toByteArray(Charsets.UTF_8)
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
-        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
-        whenever(mockBatchFileHandler.writeData(file, serializedData, true)) doReturn false
+        val mockMetaFile: File = mock()
+        whenever(mockPendingOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
+        whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
+        whenever(mockBatchReaderWriter.writeData(file, serializedData, true)) doReturn false
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
@@ -712,7 +733,7 @@ internal class ConsentAwareStorageTest {
         }
 
         // Then
-        verifyZeroInteractions(mockBatchMetadataFileHandler)
+        verifyZeroInteractions(mockMetaReaderWriter)
     }
 
     @Test
@@ -733,8 +754,8 @@ internal class ConsentAwareStorageTest {
 
         // Then
         verifyZeroInteractions(
-            mockBatchFileHandler,
-            mockBatchMetadataFileHandler,
+            mockBatchReaderWriter,
+            mockMetaReaderWriter,
             mockGrantedOrchestrator,
             mockPendingOrchestrator
         )
@@ -757,8 +778,8 @@ internal class ConsentAwareStorageTest {
 
         // Then
         verifyZeroInteractions(
-            mockBatchFileHandler,
-            mockBatchMetadataFileHandler,
+            mockBatchReaderWriter,
+            mockMetaReaderWriter,
             mockGrantedOrchestrator,
             mockPendingOrchestrator
         )
@@ -818,7 +839,7 @@ internal class ConsentAwareStorageTest {
 
         // Then
         assertThat(meta).isNull()
-        verifyZeroInteractions(mockBatchFileHandler, mockBatchMetadataFileHandler)
+        verifyZeroInteractions(mockBatchReaderWriter, mockMetaReaderWriter)
     }
 
     // endregion
@@ -833,7 +854,7 @@ internal class ConsentAwareStorageTest {
         // Given
         val mockData = data.map { it.toByteArray() }
         whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturn file
-        whenever(mockBatchFileHandler.readData(file)) doReturn mockData
+        whenever(mockBatchReaderWriter.readData(file)) doReturn mockData
 
         // Whenever
         var readData: List<ByteArray>? = null
@@ -854,9 +875,9 @@ internal class ConsentAwareStorageTest {
         val mockData = data.map { it.toByteArray() }
         whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn file
         whenever(mockGrantedOrchestrator.getReadableFile(setOf(file))) doReturn null
-        whenever(mockBatchFileHandler.readData(file)) doReturn mockData
+        whenever(mockBatchReaderWriter.readData(file)) doReturn mockData
 
-        // Whenever
+        // When
         var readData: List<ByteArray>? = null
         testedStorage.readNextBatch(fakeDatadogContext) { _, reader ->
             readData = reader.read()
@@ -886,28 +907,28 @@ internal class ConsentAwareStorageTest {
 
     @Test
     fun `𝕄 delete batch files 𝕎 readNextBatch()+confirmBatchRead() {delete=true}`(
-        @Forgery file: File
+        @Forgery file: File,
+        @StringForgery fakeMetaFilePath: String
     ) {
         // Given
         testedStorage = ConsentAwareStorage(
             mockGrantedOrchestrator,
             mockPendingOrchestrator,
-            mockBatchFileHandler,
-            mockBatchMetadataFileHandler,
+            mockBatchReaderWriter,
+            mockMetaReaderWriter,
+            mockFileMover,
             mockListener,
             mockInternalLogger,
-            mockFilePersistenceConfig,
-            batchMetadataFileProvider = {
-                val batchMetadataFileMock = mock<File>()
-                whenever(batchMetadataFileMock.path) doReturn "${file.path}_metadata"
-                whenever(batchMetadataFileMock.exists()) doReturn true
-                batchMetadataFileMock
-            }
+            mockFilePersistenceConfig
         )
 
         whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn file
-        whenever(mockBatchFileHandler.delete(file)) doReturn true
-        whenever(mockBatchMetadataFileHandler.delete(argThatIsMetaOf(file))) doReturn true
+        val mockMetaFile: File = mock()
+        whenever(mockMetaFile.exists()) doReturn true
+        whenever(mockMetaFile.path) doReturn fakeMetaFilePath
+        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
+        whenever(mockFileMover.delete(file)) doReturn true
+        doReturn(true).whenever(mockFileMover).delete(mockMetaFile)
 
         // When
         var batchId: BatchId? = null
@@ -919,8 +940,8 @@ internal class ConsentAwareStorageTest {
         }
 
         // Then
-        verify(mockBatchFileHandler).delete(file)
-        verify(mockBatchMetadataFileHandler).delete(argThatIsMetaOf(file))
+        verify(mockFileMover).delete(file)
+        verify(mockFileMover).delete(mockMetaFile)
     }
 
     @Test
@@ -929,6 +950,9 @@ internal class ConsentAwareStorageTest {
     ) {
         // Given
         whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn file
+        val mockMetaFile: File = mock()
+        whenever(mockMetaFile.exists()) doReturn true
+        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
         whenever(mockGrantedOrchestrator.getReadableFile(setOf(file))) doReturn null
 
         // When
@@ -948,8 +972,8 @@ internal class ConsentAwareStorageTest {
         }
 
         // Then
-        verify(mockBatchFileHandler, never()).delete(file)
-        verify(mockBatchMetadataFileHandler, never()).delete(argThatIsMetaOf(file))
+        verify(mockFileMover, never()).delete(file)
+        verify(mockFileMover, never()).delete(mockMetaFile)
         assertThat(batchId1).isEqualTo(batchId2)
     }
 
@@ -960,6 +984,9 @@ internal class ConsentAwareStorageTest {
     ) {
         // Given
         whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn file
+        val mockMetaFile: File = mock()
+        whenever(mockMetaFile.exists()) doReturn true
+        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
 
         // When
         testedStorage.readNextBatch(fakeDatadogContext) { _, _ ->
@@ -973,8 +1000,8 @@ internal class ConsentAwareStorageTest {
         }
 
         // Then
-        verify(mockBatchFileHandler, never()).delete(file)
-        verify(mockBatchMetadataFileHandler, never()).delete(argThatIsMetaOf(file))
+        verify(mockFileMover, never()).delete(file)
+        verify(mockFileMover, never()).delete(mockMetaFile)
     }
 
     @Test
@@ -983,7 +1010,7 @@ internal class ConsentAwareStorageTest {
     ) {
         // Given
         whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn file
-        whenever(mockBatchFileHandler.delete(file)) doReturn false
+        whenever(mockFileMover.delete(file)) doReturn false
 
         // When
         var batchId: BatchId? = null
@@ -995,7 +1022,7 @@ internal class ConsentAwareStorageTest {
         }
 
         // Then
-        verify(mockBatchFileHandler).delete(file)
+        verify(mockFileMover).delete(file)
         verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
@@ -1008,28 +1035,17 @@ internal class ConsentAwareStorageTest {
 
     @Test
     fun `𝕄 warn 𝕎 readNextBatch() + confirmBatchRead() {delete batch meta fails}`(
-        @Forgery file: File
+        @Forgery file: File,
+        @StringForgery fakeMetaFilePath: String
     ) {
         // Given
-        testedStorage = ConsentAwareStorage(
-            mockGrantedOrchestrator,
-            mockPendingOrchestrator,
-            mockBatchFileHandler,
-            mockBatchMetadataFileHandler,
-            mockListener,
-            mockInternalLogger,
-            mockFilePersistenceConfig,
-            batchMetadataFileProvider = {
-                val batchMetadataFileMock = mock<File>()
-                whenever(batchMetadataFileMock.path) doReturn "${file.path}_metadata"
-                whenever(batchMetadataFileMock.exists()) doReturn true
-                batchMetadataFileMock
-            }
-        )
-
         whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn file
-        whenever(mockBatchFileHandler.delete(file)) doReturn true
-        whenever(mockBatchMetadataFileHandler.delete(argThatIsMetaOf(file))) doReturn false
+        val mockMetaFile: File = mock()
+        whenever(mockMetaFile.exists()) doReturn true
+        whenever(mockMetaFile.path) doReturn fakeMetaFilePath
+        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
+        whenever(mockFileMover.delete(file)) doReturn true
+        doReturn(false).whenever(mockFileMover).delete(mockMetaFile)
 
         // When
         var batchId: BatchId? = null
@@ -1041,39 +1057,15 @@ internal class ConsentAwareStorageTest {
         }
 
         // Then
-        verify(mockBatchFileHandler).delete(file)
+        verify(mockFileMover).delete(file)
         verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
-            ConsentAwareStorage.WARNING_DELETE_FAILED.format(Locale.US, "${file.path}_metadata"),
+            ConsentAwareStorage.WARNING_DELETE_FAILED.format(Locale.US, mockMetaFile.path),
             null,
             emptyMap()
         )
         verifyNoMoreInteractions(mockInternalLogger)
-    }
-
-    // endregion
-
-    // region private
-
-    private fun argThatIsMetaOf(file: File): File {
-        val wantedPath = "${file.path}_metadata"
-        return argThat(object : ArgumentMatcher<File> {
-            lateinit var capture: File
-
-            override fun matches(argument: File): Boolean {
-                capture = argument
-                return wantedPath == argument.path
-            }
-
-            override fun toString(): String {
-                return if (this::capture.isInitialized) {
-                    "Wanted $wantedPath, but got ${capture.path}"
-                } else {
-                    wantedPath
-                }
-            }
-        })
     }
 
     // endregion
