@@ -21,7 +21,6 @@ import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import java.util.Locale
 
 internal class TelemetryEventHandler(
-    internal val serviceName: String,
     internal val sdkVersion: String,
     private val sourceProvider: RumEventSourceProvider,
     private val timeProvider: TimeProvider,
@@ -90,7 +89,7 @@ internal class TelemetryEventHandler(
             date = timestamp,
             source = sourceProvider.telemetryDebugEventSource
                 ?: TelemetryDebugEvent.Source.ANDROID,
-            service = serviceName,
+            service = TELEMETRY_SERVICE_NAME,
             version = sdkVersion,
             application = TelemetryDebugEvent.Application(rumContext.applicationId),
             session = TelemetryDebugEvent.Session(rumContext.sessionId),
@@ -113,7 +112,7 @@ internal class TelemetryEventHandler(
             date = timestamp,
             source = sourceProvider.telemetryErrorEventSource
                 ?: TelemetryErrorEvent.Source.ANDROID,
-            service = serviceName,
+            service = TELEMETRY_SERVICE_NAME,
             version = sdkVersion,
             application = TelemetryErrorEvent.Application(rumContext.applicationId),
             session = TelemetryErrorEvent.Session(rumContext.sessionId),
@@ -147,5 +146,6 @@ internal class TelemetryEventHandler(
             "Already seen telemetry event with identity=%s, rejecting."
         const val MAX_EVENT_NUMBER_REACHED_MESSAGE =
             "Max number of telemetry events per session reached, rejecting."
+        const val TELEMETRY_SERVICE_NAME = "dd-sdk-android"
     }
 }
