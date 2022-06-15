@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
@@ -43,7 +44,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
-@Suppress("LargeClass")
+@Suppress("LargeClass", "LongParameterList")
 internal open class RumViewScope(
     private val parentScope: RumScope,
     key: Any,
@@ -58,7 +59,8 @@ internal open class RumViewScope(
     private val rumEventSourceProvider: RumEventSourceProvider,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val viewUpdatePredicate: ViewUpdatePredicate = DefaultViewUpdatePredicate(),
-    internal val type: RumViewType = RumViewType.FOREGROUND
+    internal val type: RumViewType = RumViewType.FOREGROUND,
+    private val androidInfoProvider: AndroidInfoProvider
 ) : RumScope {
 
     internal val url = key.resolveViewUrl().replace('.', '/')
@@ -275,7 +277,8 @@ internal open class RumViewScope(
                     this,
                     event,
                     serverTimeOffsetInMs,
-                    rumEventSourceProvider
+                    rumEventSourceProvider,
+                    androidInfoProvider
                 )
                 pendingActionCount++
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), writer)
@@ -291,7 +294,8 @@ internal open class RumViewScope(
                 this,
                 event,
                 serverTimeOffsetInMs,
-                rumEventSourceProvider
+                rumEventSourceProvider,
+                androidInfoProvider
             )
         )
         pendingActionCount++
@@ -312,12 +316,13 @@ internal open class RumViewScope(
             updatedEvent,
             firstPartyHostDetector,
             serverTimeOffsetInMs,
-            rumEventSourceProvider
+            rumEventSourceProvider,
+            androidInfoProvider
         )
         pendingResourceCount++
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "LongMethod")
     private fun onAddError(
         event: RumRawEvent.AddError,
         writer: DataWriter<Any>
@@ -366,6 +371,17 @@ internal open class RumViewScope(
                 type = ErrorEvent.ErrorEventSessionType.USER
             ),
             source = rumEventSourceProvider.errorEventSource,
+            os = ErrorEvent.Os(
+                name = androidInfoProvider.osName,
+                version = androidInfoProvider.osVersion,
+                versionMajor = androidInfoProvider.osMajorVersion
+            ),
+            device = ErrorEvent.Device(
+                type = androidInfoProvider.deviceType.toErrorSchemaType(),
+                name = androidInfoProvider.deviceName,
+                model = androidInfoProvider.deviceModel,
+                brand = androidInfoProvider.deviceBrand
+            ),
             context = ErrorEvent.Context(additionalProperties = updatedAttributes),
             dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
         )
@@ -579,9 +595,20 @@ internal open class RumViewScope(
             application = ViewEvent.Application(context.applicationId),
             session = ViewEvent.ViewEventSession(
                 id = context.sessionId,
-                type = ViewEvent.Type.USER
+                type = ViewEvent.ViewEventSessionType.USER
             ),
             source = rumEventSourceProvider.viewEventSource,
+            os = ViewEvent.Os(
+                name = androidInfoProvider.osName,
+                version = androidInfoProvider.osVersion,
+                versionMajor = androidInfoProvider.osMajorVersion
+            ),
+            device = ViewEvent.Device(
+                type = androidInfoProvider.deviceType.toViewSchemaType(),
+                name = androidInfoProvider.deviceName,
+                model = androidInfoProvider.deviceModel,
+                brand = androidInfoProvider.deviceBrand
+            ),
             context = ViewEvent.Context(additionalProperties = attributes),
             dd = ViewEvent.Dd(
                 documentVersion = version,
@@ -667,6 +694,17 @@ internal open class RumViewScope(
                 type = ActionEvent.ActionEventSessionType.USER
             ),
             source = rumEventSourceProvider.actionEventSource,
+            os = ActionEvent.Os(
+                name = androidInfoProvider.osName,
+                version = androidInfoProvider.osVersion,
+                versionMajor = androidInfoProvider.osMajorVersion
+            ),
+            device = ActionEvent.Device(
+                type = androidInfoProvider.deviceType.toActionSchemaType(),
+                name = androidInfoProvider.deviceName,
+                model = androidInfoProvider.deviceModel,
+                brand = androidInfoProvider.deviceBrand
+            ),
             context = ActionEvent.Context(additionalProperties = GlobalRum.globalAttributes),
             dd = ActionEvent.Dd(session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1))
         )
@@ -713,9 +751,20 @@ internal open class RumViewScope(
             application = LongTaskEvent.Application(context.applicationId),
             session = LongTaskEvent.LongTaskEventSession(
                 id = context.sessionId,
-                type = LongTaskEvent.Type.USER
+                type = LongTaskEvent.LongTaskEventSessionType.USER
             ),
             source = rumEventSourceProvider.longTaskEventSource,
+            os = LongTaskEvent.Os(
+                name = androidInfoProvider.osName,
+                version = androidInfoProvider.osVersion,
+                versionMajor = androidInfoProvider.osMajorVersion
+            ),
+            device = LongTaskEvent.Device(
+                type = androidInfoProvider.deviceType.toLongTaskSchemaType(),
+                name = androidInfoProvider.deviceName,
+                model = androidInfoProvider.deviceModel,
+                brand = androidInfoProvider.deviceBrand
+            ),
             context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
             dd = LongTaskEvent.Dd(session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1))
         )
@@ -793,7 +842,8 @@ internal open class RumViewScope(
             memoryVitalMonitor: VitalMonitor,
             frameRateVitalMonitor: VitalMonitor,
             timeProvider: TimeProvider,
-            rumEventSourceProvider: RumEventSourceProvider
+            rumEventSourceProvider: RumEventSourceProvider,
+            androidInfoProvider: AndroidInfoProvider
         ): RumViewScope {
             return RumViewScope(
                 parentScope,
@@ -806,7 +856,8 @@ internal open class RumViewScope(
                 memoryVitalMonitor,
                 frameRateVitalMonitor,
                 timeProvider,
-                rumEventSourceProvider
+                rumEventSourceProvider,
+                androidInfoProvider = androidInfoProvider
             )
         }
     }

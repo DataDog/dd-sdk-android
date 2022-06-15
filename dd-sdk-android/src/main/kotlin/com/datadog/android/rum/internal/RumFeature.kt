@@ -18,7 +18,6 @@ import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
-import com.datadog.android.core.internal.system.StaticAndroidInfoProvider
 import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.executeSafe
@@ -138,7 +137,7 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
             CoreFeature.sourceName,
             CoreFeature.sdkVersion,
             CoreFeature.okHttpClient,
-            StaticAndroidInfoProvider
+            CoreFeature.androidInfoProvider
         )
     }
 

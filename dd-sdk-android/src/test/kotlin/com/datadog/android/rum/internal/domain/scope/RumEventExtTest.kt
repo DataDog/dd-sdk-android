@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.core.internal.system.DeviceType
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
@@ -597,4 +598,68 @@ internal class RumEventExtTest {
             )
         )
     }
+
+    // region device type conversion
+
+    @ParameterizedTest
+    @EnumSource(DeviceType::class)
+    fun `𝕄 return schema device type 𝕎 toViewSchemaType()`(
+        deviceType: DeviceType
+    ) {
+        // When
+        val schemaDeviceType = deviceType.toViewSchemaType()
+
+        // Then
+        assertThat(schemaDeviceType.name).isEqualTo(deviceType.name)
+    }
+
+    @ParameterizedTest
+    @EnumSource(DeviceType::class)
+    fun `𝕄 return schema device type 𝕎 toActionSchemaType()`(
+        deviceType: DeviceType
+    ) {
+        // When
+        val schemaDeviceType = deviceType.toActionSchemaType()
+
+        // Then
+        assertThat(schemaDeviceType.name).isEqualTo(deviceType.name)
+    }
+
+    @ParameterizedTest
+    @EnumSource(DeviceType::class)
+    fun `𝕄 return schema device type 𝕎 toLongTaskSchemaType()`(
+        deviceType: DeviceType
+    ) {
+        // When
+        val schemaDeviceType = deviceType.toLongTaskSchemaType()
+
+        // Then
+        assertThat(schemaDeviceType.name).isEqualTo(deviceType.name)
+    }
+
+    @ParameterizedTest
+    @EnumSource(DeviceType::class)
+    fun `𝕄 return schema device type 𝕎 toResourceSchemaType()`(
+        deviceType: DeviceType
+    ) {
+        // When
+        val schemaDeviceType = deviceType.toResourceSchemaType()
+
+        // Then
+        assertThat(schemaDeviceType.name).isEqualTo(deviceType.name)
+    }
+
+    @ParameterizedTest
+    @EnumSource(DeviceType::class)
+    fun `𝕄 return schema device type 𝕎 toErrorSchemaType()`(
+        deviceType: DeviceType
+    ) {
+        // When
+        val schemaDeviceType = deviceType.toErrorSchemaType()
+
+        // Then
+        assertThat(schemaDeviceType.name).isEqualTo(deviceType.name)
+    }
+
+    // endregion
 }

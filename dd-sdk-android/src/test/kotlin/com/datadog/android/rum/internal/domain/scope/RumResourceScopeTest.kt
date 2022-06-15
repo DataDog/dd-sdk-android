@@ -10,6 +10,7 @@ import android.content.Context
 import android.util.Log
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
@@ -104,6 +105,9 @@ internal class RumResourceScopeTest {
     @Forgery
     lateinit var fakeNetworkInfo: NetworkInfo
 
+    @Forgery
+    lateinit var fakeAndroidInfoProvider: AndroidInfoProvider
+
     var fakeServerOffset: Long = 0L
 
     private lateinit var fakeEventTime: Time
@@ -148,7 +152,8 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockDetector,
-            mockRumEventSourceProvider
+            mockRumEventSourceProvider,
+            fakeAndroidInfoProvider
         )
     }
 
@@ -218,6 +223,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -269,6 +285,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -294,7 +321,8 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockDetector,
-            mockRumEventSourceProvider
+            mockRumEventSourceProvider,
+            fakeAndroidInfoProvider
         )
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -332,6 +360,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -386,6 +425,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -437,6 +487,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -479,6 +540,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceResourceEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -513,6 +585,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceResourceEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -585,7 +668,8 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockDetector,
-            mockRumEventSourceProvider
+            mockRumEventSourceProvider,
+            fakeAndroidInfoProvider
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
 
@@ -618,6 +702,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -670,6 +765,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -723,6 +829,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -777,6 +894,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -832,6 +960,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceErrorEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -887,6 +1026,17 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -912,7 +1062,8 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockDetector,
-            mockRumEventSourceProvider
+            mockRumEventSourceProvider,
+            fakeAndroidInfoProvider
         )
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -956,6 +1107,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceErrorEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -982,7 +1144,8 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockDetector,
-            mockRumEventSourceProvider
+            mockRumEventSourceProvider,
+            fakeAndroidInfoProvider
         )
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -1026,6 +1189,17 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1084,6 +1258,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceErrorEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1142,6 +1327,17 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1199,6 +1395,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceErrorEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1257,6 +1464,17 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1320,6 +1538,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceErrorEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1384,6 +1613,17 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1525,6 +1765,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1574,6 +1825,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1625,6 +1887,17 @@ internal class RumResourceScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1724,6 +1997,17 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     hasSource(fakeSourceResourceEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1772,6 +2056,17 @@ internal class RumResourceScopeTest {
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     hasSource(fakeSourceResourceEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())

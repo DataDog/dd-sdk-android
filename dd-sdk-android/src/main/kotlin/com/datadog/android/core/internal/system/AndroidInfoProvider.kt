@@ -8,9 +8,19 @@ package com.datadog.android.core.internal.system
 
 internal interface AndroidInfoProvider {
 
-    fun getDeviceModel(): String
+    val deviceName: String
 
-    fun getDeviceBuildId(): String
+    val deviceBrand: String
 
-    fun getDeviceVersion(): String
+    val deviceModel: String
+
+    val deviceType: DeviceType
+
+    val deviceBuildId: String
+
+    val osName: String
+
+    val osMajorVersion: String
+
+    val osVersion: String
 }

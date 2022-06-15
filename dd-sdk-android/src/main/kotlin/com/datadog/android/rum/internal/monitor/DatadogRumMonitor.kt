@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.monitor
 import android.os.Handler
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.RumActionType
@@ -53,7 +54,8 @@ internal class DatadogRumMonitor(
     frameRateVitalMonitor: VitalMonitor,
     timeProvider: TimeProvider,
     sessionListener: RumSessionListener?,
-    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
+    private val executorService: ExecutorService = Executors.newSingleThreadExecutor(),
+    androidInfoProvider: AndroidInfoProvider
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -69,7 +71,8 @@ internal class DatadogRumMonitor(
             CombinedRumSessionListener(sessionListener, telemetryEventHandler)
         } else {
             telemetryEventHandler
-        }
+        },
+        androidInfoProvider
     )
 
     internal val keepAliveRunnable = Runnable {
