@@ -273,7 +273,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 keep session context 𝕎 handleEvent(non interactive) {before expiration threshold}`(
+    fun `𝕄 keep session context 𝕎 handleEvent(non interactive) {before expiration}`(
         forge: Forge
     ) {
         // Given
@@ -291,7 +291,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 keep session context 𝕎 handleEvent(action) {before expiration threshold}`(
+    fun `𝕄 keep session context 𝕎 handleEvent(action) {before expiration}`(
         forge: Forge
     ) {
         // Given
@@ -309,7 +309,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 keep session context 𝕎 handleEvent(view) {before expiration threshold}`(
+    fun `𝕄 keep session context 𝕎 handleEvent(view) {before expiration}`(
         forge: Forge
     ) {
         // Given
@@ -327,10 +327,11 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 update session context 𝕎 handleEvent(non interactive) {after expiration threshold}`(
+    fun `𝕄 update context 𝕎 handleEvent(non interactive) {after expiration, background enabled}`(
         forge: Forge
     ) {
         // Given
+        initializeTestedScope(backgroundTrackingEnabled = true)
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
         val initialContext = testedScope.getRumContext()
 
@@ -346,7 +347,27 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 update session context 𝕎 handleEvent(action) {after expiration threshold}`(
+    fun `𝕄 update context 𝕎 handleEvent(non interactive) {after expiration, background disabled}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(backgroundTrackingEnabled = false)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+
+        // When
+        Thread.sleep(TEST_INACTIVITY_MS)
+        val result = testedScope.handleEvent(mock(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId).isEqualTo(initialContext.sessionId)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)
+    }
+
+    @Test
+    fun `𝕄 update context 𝕎 handleEvent(action) {after expiration}`(
         forge: Forge
     ) {
         // Given
@@ -367,7 +388,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 update session context 𝕎 handleEvent(view) {after expiration threshold}`(
+    fun `𝕄 update context 𝕎 handleEvent(view) {after expiration}`(
         forge: Forge
     ) {
         // Given
@@ -388,7 +409,91 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 update session context 𝕎 handleEvent(non interactive) {after timeout threshold}`(
+    fun `𝕄 update context 𝕎 handleEvent(resource) {after expiration, background enabled}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(backgroundTrackingEnabled = true)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+
+        // When
+        Thread.sleep(TEST_INACTIVITY_MS)
+        val result = testedScope.handleEvent(forge.startResourceEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId)
+            .isNotEqualTo(initialContext.sessionId)
+            .isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+    }
+
+    @Test
+    fun `𝕄 update context 𝕎 handleEvent(error) {after expiration, background enabled}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(backgroundTrackingEnabled = true)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+
+        // When
+        Thread.sleep(TEST_INACTIVITY_MS)
+        val result = testedScope.handleEvent(forge.addErrorEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId)
+            .isNotEqualTo(initialContext.sessionId)
+            .isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+    }
+
+    @Test
+    fun `𝕄 update context 𝕎 handleEvent(resource) {after expiration, background disabled}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(backgroundTrackingEnabled = false)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+
+        // When
+        Thread.sleep(TEST_INACTIVITY_MS)
+        val result = testedScope.handleEvent(forge.startResourceEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId).isEqualTo(initialContext.sessionId)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)
+    }
+
+    @Test
+    fun `𝕄 update context 𝕎 handleEvent(error) {after expiration, background disabled}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(backgroundTrackingEnabled = false)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+
+        // When
+        Thread.sleep(TEST_INACTIVITY_MS)
+        val result = testedScope.handleEvent(forge.addErrorEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId).isEqualTo(initialContext.sessionId)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)
+    }
+
+    @Test
+    fun `𝕄 update context 𝕎 handleEvent(non interactive) {after timeout threshold}`(
         forge: Forge
     ) {
         // Given
@@ -414,7 +519,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 update session context 𝕎 handleEvent(action) {after timeout threshold}`(
+    fun `𝕄 update context 𝕎 handleEvent(action) {after timeout threshold}`(
         forge: Forge
     ) {
         // Given
@@ -440,7 +545,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 update session context 𝕎 handleEvent(view) {after timeout threshold}`(
+    fun `𝕄 update context 𝕎 handleEvent(view) {after timeout threshold}`(
         forge: Forge
     ) {
         // Given
@@ -642,12 +747,13 @@ internal class RumSessionScopeTest {
 
     private fun initializeTestedScope(
         samplingRate: Float = 100f,
-        withMockChildScope: Boolean = true
+        withMockChildScope: Boolean = true,
+        backgroundTrackingEnabled: Boolean? = null
     ) {
         testedScope = RumSessionScope(
             mockParentScope,
             samplingRate,
-            fakeBackgroundTrackingEnabled,
+            backgroundTrackingEnabled ?: fakeBackgroundTrackingEnabled,
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,

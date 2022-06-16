@@ -28,13 +28,13 @@ internal class RumSessionScope(
     internal val samplingRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val firstPartyHostDetector: FirstPartyHostDetector,
-    private val cpuVitalMonitor: VitalMonitor,
-    private val memoryVitalMonitor: VitalMonitor,
-    private val frameRateVitalMonitor: VitalMonitor,
-    private val timeProvider: TimeProvider,
+    cpuVitalMonitor: VitalMonitor,
+    memoryVitalMonitor: VitalMonitor,
+    frameRateVitalMonitor: VitalMonitor,
+    timeProvider: TimeProvider,
     internal val sessionListener: RumSessionListener?,
-    private val rumEventSourceProvider: RumEventSourceProvider,
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
+    rumEventSourceProvider: RumEventSourceProvider,
+    buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
     private val androidInfoProvider: AndroidInfoProvider
@@ -107,6 +107,7 @@ internal class RumSessionScope(
 
     // region Internal
 
+    @Suppress("ComplexMethod")
     private fun updateSession(event: RumRawEvent) {
         val nanoTime = System.nanoTime()
         val isNewSession = sessionId == RumContext.NULL_UUID
@@ -117,18 +118,22 @@ internal class RumSessionScope(
         val isTimedOut = timeSinceSessionStartNs >= sessionMaxDurationNanos
 
         val isInteraction = (event is RumRawEvent.StartView) || (event is RumRawEvent.StartAction)
+        val isBackgroundEvent = (event.javaClass in RumViewManagerScope.validBackgroundEventTypes)
 
         if (isInteraction) {
             if (isNewSession || isExpired || isTimedOut) {
                 renewSession(nanoTime)
             }
             lastUserInteractionNs.set(nanoTime)
-        } else {
-            if (isExpired) {
-                sessionState = State.EXPIRED
-            } else if (isTimedOut) {
+        } else if (isExpired) {
+            if (backgroundTrackingEnabled && isBackgroundEvent) {
                 renewSession(nanoTime)
+                lastUserInteractionNs.set(nanoTime)
+            } else {
+                sessionState = State.EXPIRED
             }
+        } else if (isTimedOut) {
+            renewSession(nanoTime)
         }
     }
 
