@@ -249,6 +249,26 @@ object Datadog {
     }
 
     /**
+     * Sets additional information on the [UserInfo] object
+     *
+     * If properties had originally been set with [Datadog.setUserInfo], they will be preserved.
+     * In the event of a conflict on key, the new property will prevail.
+     *
+     * @param extraInfo additional information. An extra information can be
+     * nested up to 8 levels deep. Keys using more than 8 levels will be sanitized by SDK.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun setExtraInfo(
+        extraInfo: Map<String, Any?> = emptyMap()
+    ) {
+        CoreFeature.userInfoProvider.setExtraProperties(
+            extraInfo
+        )
+    }
+
+
+    /**
      * Utility setting to inspect the active RUM View.
      * If set, a debugging outline will be displayed on top of the application, describing the name
      * of the active RUM View. May be used to debug issues with RUM instrumentation in your app.
