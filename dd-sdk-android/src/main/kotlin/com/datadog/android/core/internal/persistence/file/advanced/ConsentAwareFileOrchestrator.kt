@@ -57,6 +57,11 @@ internal open class ConsentAwareFileOrchestrator(
         return grantedOrchestrator.getFlushableFiles()
     }
 
+    @WorkerThread
+    override fun getMetadataFile(file: File): File? {
+        return delegateOrchestrator.getMetadataFile(file)
+    }
+
     // endregion
 
     // region TrackingConsentProviderCallback

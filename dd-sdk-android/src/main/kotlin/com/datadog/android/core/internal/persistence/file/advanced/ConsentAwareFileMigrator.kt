@@ -7,7 +7,7 @@
 package com.datadog.android.core.internal.persistence.file.advanced
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.Logger
@@ -17,7 +17,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
 
 internal class ConsentAwareFileMigrator(
-    private val fileHandler: ChunkedFileHandler,
+    private val fileMover: FileMover,
     private val executorService: ExecutorService,
     private val internalLogger: Logger
 ) : DataMigrator<TrackingConsent> {
@@ -36,7 +36,7 @@ internal class ConsentAwareFileMigrator(
             TrackingConsent.PENDING to TrackingConsent.NOT_GRANTED -> {
                 WipeDataMigrationOperation(
                     previousFileOrchestrator.getRootDir(),
-                    fileHandler,
+                    fileMover,
                     internalLogger
                 )
             }
@@ -45,7 +45,7 @@ internal class ConsentAwareFileMigrator(
             TrackingConsent.NOT_GRANTED to TrackingConsent.PENDING -> {
                 WipeDataMigrationOperation(
                     newFileOrchestrator.getRootDir(),
-                    fileHandler,
+                    fileMover,
                     internalLogger
                 )
             }
@@ -54,7 +54,7 @@ internal class ConsentAwareFileMigrator(
                 MoveDataMigrationOperation(
                     previousFileOrchestrator.getRootDir(),
                     newFileOrchestrator.getRootDir(),
-                    fileHandler,
+                    fileMover,
                     internalLogger
                 )
             }

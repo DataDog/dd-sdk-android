@@ -49,5 +49,10 @@ internal class SingleFileOrchestrator(
         return getAllFiles()
     }
 
+    @WorkerThread
+    override fun getMetadataFile(file: File): File? {
+        return null
+    }
+
     // endregion
 }

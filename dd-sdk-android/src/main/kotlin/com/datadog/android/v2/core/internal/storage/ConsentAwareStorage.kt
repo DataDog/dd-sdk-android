@@ -7,10 +7,11 @@
 package com.datadog.android.v2.core.internal.storage
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
-import com.datadog.android.core.internal.persistence.file.SingleItemFileHandler
+import com.datadog.android.core.internal.persistence.file.FileReaderWriter
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.BatchWriterListener
@@ -22,14 +23,12 @@ import java.util.Locale
 internal class ConsentAwareStorage(
     private val grantedOrchestrator: FileOrchestrator,
     private val pendingOrchestrator: FileOrchestrator,
-    private val batchEventsFileHandler: ChunkedFileHandler,
-    private val batchMetadataFileHandler: SingleItemFileHandler,
+    private val batchEventsReaderWriter: BatchFileReaderWriter,
+    private val batchMetadataReaderWriter: FileReaderWriter,
+    private val fileMover: FileMover,
     private val listener: BatchWriterListener,
     private val internalLogger: InternalLogger,
-    private val filePersistenceConfig: FilePersistenceConfig,
-    // only for the test
-    private val batchMetadataFileProvider: (batchFile: File) -> File =
-        { File("${it.path}_metadata") }
+    private val filePersistenceConfig: FilePersistenceConfig
 ) : Storage {
 
     /**
@@ -50,14 +49,14 @@ internal class ConsentAwareStorage(
         }
 
         val batchFile = orchestrator?.getWritableFile()
-        val metadataFile = if (batchFile != null) batchMetadataFileProvider(batchFile) else null
+        val metadataFile = if (batchFile != null) orchestrator.getMetadataFile(batchFile) else null
 
         val writer = object : BatchWriter {
             @WorkerThread
             override fun currentMetadata(): ByteArray? {
                 if (orchestrator == null || metadataFile == null) return null
 
-                return batchMetadataFileHandler.readData(metadataFile)
+                return batchMetadataReaderWriter.readData(metadataFile)
             }
 
             @WorkerThread
@@ -73,7 +72,9 @@ internal class ConsentAwareStorage(
                     return
                 }
 
-                if (batchFile != null && batchEventsFileHandler.writeData(batchFile, event, true)) {
+                if (batchFile != null &&
+                    batchEventsReaderWriter.writeData(batchFile, event, true)
+                ) {
                     if (newMetadata?.isNotEmpty() == true && metadataFile != null) {
                         writeBatchMetadata(metadataFile, newMetadata)
                     }
@@ -94,7 +95,7 @@ internal class ConsentAwareStorage(
     ) {
         val batchFile = synchronized(lockedBatches) {
             grantedOrchestrator.getReadableFile(lockedBatches.map { it.file }.toSet())?.also {
-                lockedBatches.add(Batch(it, batchMetadataFileProvider(it)))
+                lockedBatches.add(Batch(it, grantedOrchestrator.getMetadataFile(it)))
             } ?: return
         }
 
@@ -102,7 +103,7 @@ internal class ConsentAwareStorage(
         val reader = object : BatchReader {
             @WorkerThread
             override fun read(): List<ByteArray> {
-                return batchEventsFileHandler.readData(batchFile)
+                return batchEventsReaderWriter.readData(batchFile)
             }
         }
         callback(batchId, reader)
@@ -119,7 +120,7 @@ internal class ConsentAwareStorage(
             override fun markAsRead(deleteBatch: Boolean) {
                 if (deleteBatch) {
                     deleteBatchFile(batch.file)
-                    if (batch.metaFile.existsSafe()) {
+                    if (batch.metaFile?.existsSafe() == true) {
                         deleteBatchMetadataFile(batch.metaFile)
                     }
                 }
@@ -152,7 +153,7 @@ internal class ConsentAwareStorage(
     @WorkerThread
     private fun writeBatchMetadata(metadataFile: File, metadata: ByteArray) {
         val result =
-            batchMetadataFileHandler.writeData(metadataFile, metadata, false)
+            batchMetadataReaderWriter.writeData(metadataFile, metadata, false)
         if (!result) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -166,7 +167,7 @@ internal class ConsentAwareStorage(
 
     @WorkerThread
     private fun deleteBatchFile(batchFile: File) {
-        val result = batchEventsFileHandler.delete(batchFile)
+        val result = fileMover.delete(batchFile)
         if (!result) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -180,7 +181,7 @@ internal class ConsentAwareStorage(
 
     @WorkerThread
     private fun deleteBatchMetadataFile(metadataFile: File) {
-        val result = batchMetadataFileHandler.delete(metadataFile)
+        val result = fileMover.delete(metadataFile)
         if (!result) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -192,7 +193,7 @@ internal class ConsentAwareStorage(
         }
     }
 
-    private data class Batch(val file: File, val metaFile: File)
+    private data class Batch(val file: File, val metaFile: File?)
 
     companion object {
         internal const val WARNING_DELETE_FAILED = "Unable to delete file: %s"

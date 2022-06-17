@@ -10,11 +10,12 @@ import android.content.Context
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
-import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.log.Logger
 import com.datadog.android.rum.internal.domain.RumDataWriter
@@ -42,22 +43,21 @@ internal class WebViewRumFilePersistenceStrategy(
     RumEventSerializer(),
     PayloadDecoration.NEW_LINE_DECORATION,
     internalLogger,
-    BatchFileHandler.create(internalLogger, localDataEncryption)
+    BatchFileReaderWriter.create(internalLogger, localDataEncryption),
+    FileMover(internalLogger)
 ) {
 
     override fun createWriter(
         fileOrchestrator: FileOrchestrator,
         executorService: ExecutorService,
         serializer: Serializer<Any>,
-        payloadDecoration: PayloadDecoration,
         internalLogger: Logger
     ): DataWriter<Any> {
         return ScheduledWriter(
             RumDataWriter(
                 fileOrchestrator,
                 serializer,
-                payloadDecoration,
-                fileHandler,
+                fileReaderWriter,
                 internalLogger,
                 lastViewEventFile
             ),

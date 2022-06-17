@@ -10,7 +10,7 @@ import com.datadog.android.core.internal.data.upload.DataFlusher
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.log.Logger
@@ -56,7 +56,10 @@ internal class BatchFilePersistenceStrategyTest {
     lateinit var mockExecutorService: ExecutorService
 
     @Mock
-    lateinit var mockFileHandler: ChunkedFileHandler
+    lateinit var mockFileReaderWriter: BatchFileReaderWriter
+
+    @Mock
+    lateinit var mockFileMover: FileMover
 
     @Forgery
     lateinit var fakePayloadDecoration: PayloadDecoration
@@ -73,7 +76,8 @@ internal class BatchFilePersistenceStrategyTest {
             mockSerializer,
             fakePayloadDecoration,
             Logger(mockLogHandler),
-            mockFileHandler
+            mockFileReaderWriter,
+            mockFileMover
         )
     }
 
@@ -117,7 +121,7 @@ internal class BatchFilePersistenceStrategyTest {
         check(flusher is DataFlusher)
         assertThat(flusher.fileOrchestrator).isSameAs(mockFileOrchestrator)
         assertThat(flusher.decoration).isSameAs(fakePayloadDecoration)
-        assertThat(flusher.handler).isSameAs(mockFileHandler)
+        assertThat(flusher.fileReader).isSameAs(mockFileReaderWriter)
     }
 
     @Test
@@ -147,22 +151,6 @@ internal class BatchFilePersistenceStrategyTest {
     }
 
     @Test
-    fun `𝕄 share decoration 𝕎 getWriter() + getReader()`() {
-        // Given
-
-        // When
-        val writer = testedStrategy.getWriter()
-        val reader = testedStrategy.getReader()
-
-        // Then
-        check(writer is ScheduledWriter)
-        check(reader is BatchFileDataReader)
-        val delegateWriter = writer.delegateWriter
-        check(delegateWriter is BatchFileDataWriter)
-        assertThat(delegateWriter.decoration).isSameAs(reader.decoration)
-    }
-
-    @Test
     fun `𝕄 share handler 𝕎 getWriter() + getReader()`() {
         // Given
 
@@ -175,6 +163,6 @@ internal class BatchFilePersistenceStrategyTest {
         check(reader is BatchFileDataReader)
         val delegateWriter = writer.delegateWriter
         check(delegateWriter is BatchFileDataWriter)
-        assertThat(delegateWriter.handler).isSameAs(reader.handler)
+        assertThat(delegateWriter.fileWriter).isSameAs(reader.fileReader)
     }
 }

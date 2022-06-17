@@ -4,10 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.persistence.file.single
+package com.datadog.android.core.internal.persistence.file.batch
 
 import android.util.Log
-import com.datadog.android.core.internal.persistence.file.SingleItemFileHandler
 import com.datadog.android.log.Logger
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.config.LoggerTestConfiguration
@@ -46,13 +45,13 @@ import org.mockito.quality.Strictness
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class EncryptedSingleItemFileHandlerTest {
+internal class EncryptedBatchFileReaderWriterTest {
 
     @Mock
     lateinit var mockEncryption: Encryption
 
     @Mock
-    lateinit var mockFileHandlerDelegate: SingleItemFileHandler
+    lateinit var mockBatchFileReaderWriter: BatchFileReaderWriter
 
     @Mock
     lateinit var mockFile: File
@@ -60,11 +59,11 @@ internal class EncryptedSingleItemFileHandlerTest {
     @Mock
     lateinit var mockInternalLogger: Logger
 
-    private lateinit var testedFileHandler: EncryptedSingleItemFileHandler
+    private lateinit var testedReaderWriter: EncryptedBatchReaderWriter
 
     @BeforeEach
     fun setUp() {
-        whenever(mockFileHandlerDelegate.writeData(any(), any(), any())) doReturn true
+        whenever(mockBatchFileReaderWriter.writeData(any(), any(), any())) doReturn true
 
         whenever(mockEncryption.encrypt(any())) doAnswer {
             val bytes = it.getArgument<ByteArray>(0)
@@ -75,11 +74,11 @@ internal class EncryptedSingleItemFileHandlerTest {
             decrypt(bytes)
         }
 
-        testedFileHandler =
-            EncryptedSingleItemFileHandler(mockEncryption, mockFileHandlerDelegate)
+        testedReaderWriter =
+            EncryptedBatchReaderWriter(mockEncryption, mockBatchFileReaderWriter)
     }
 
-    // region FileHandler#writeData tests
+    // region BatchFileReaderWriter#writeData tests
 
     @Test
     fun `𝕄 encrypt data and return true 𝕎 writeData()`(
@@ -87,7 +86,7 @@ internal class EncryptedSingleItemFileHandlerTest {
         @BoolForgery append: Boolean
     ) {
         // When
-        val result = testedFileHandler.writeData(
+        val result = testedReaderWriter.writeData(
             mockFile,
             data.toByteArray(),
             append = append
@@ -96,7 +95,7 @@ internal class EncryptedSingleItemFileHandlerTest {
 
         // Then
         assertThat(result).isTrue()
-        verify(mockFileHandlerDelegate)
+        verify(mockBatchFileReaderWriter)
             .writeData(
                 mockFile,
                 encryptedData,
@@ -116,7 +115,7 @@ internal class EncryptedSingleItemFileHandlerTest {
         whenever(mockEncryption.encrypt(data.toByteArray())) doReturn ByteArray(0)
 
         // When
-        val result = testedFileHandler.writeData(
+        val result = testedReaderWriter.writeData(
             mockFile,
             data.toByteArray(),
             append = append
@@ -127,30 +126,34 @@ internal class EncryptedSingleItemFileHandlerTest {
 
         verify(logger.mockDevLogHandler).handleLog(
             Log.ERROR,
-            EncryptedSingleItemFileHandler.BAD_ENCRYPTION_RESULT_MESSAGE
+            EncryptedBatchReaderWriter.BAD_ENCRYPTION_RESULT_MESSAGE
         )
         verifyZeroInteractions(mockInternalLogger)
-        verifyZeroInteractions(mockFileHandlerDelegate)
+        verifyZeroInteractions(mockBatchFileReaderWriter)
     }
 
     // endregion
 
-    // region FileHandler#readData tests
+    // region BatchFileReader#readData tests
 
     @Test
     fun `𝕄 decrypt data 𝕎 readData()`(
-        @StringForgery data: String
+        forge: Forge
     ) {
         // Given
+        val events = forge.aList {
+            forge.aString().toByteArray()
+        }
+
         whenever(
-            mockFileHandlerDelegate.readData(mockFile)
-        ) doReturn encrypt(data.toByteArray())
+            mockBatchFileReaderWriter.readData(mockFile)
+        ) doReturn events.map { encrypt(it) }
 
         // When
-        val result = testedFileHandler.readData(mockFile)
+        val result = testedReaderWriter.readData(mockFile)
 
         // Then
-        assertThat(result).isEqualTo(data.toByteArray())
+        assertThat(result).containsExactlyElementsOf(events)
     }
 
     // endregion
@@ -159,34 +162,38 @@ internal class EncryptedSingleItemFileHandlerTest {
 
     @Test
     fun `𝕄 return valid data 𝕎 writeData() + readData()`(
-        @StringForgery data: String,
         forge: Forge
     ) {
         // Given
-        var storage: ByteArray? = null
+        val events = forge.aList { forge.aString().toByteArray() }
+
+        val storage = mutableListOf<ByteArray>()
 
         whenever(
-            mockFileHandlerDelegate.writeData(
+            mockBatchFileReaderWriter.writeData(
                 eq(mockFile),
                 any(),
-                eq(false)
+                eq(true)
             )
         ) doAnswer {
-            storage = it.getArgument(1)
+            storage.add(it.getArgument(1))
             true
         }
 
         whenever(
-            mockFileHandlerDelegate.readData(mockFile)
+            mockBatchFileReaderWriter.readData(mockFile)
         ) doAnswer { storage }
 
         // When
-        val writeResult = testedFileHandler.writeData(mockFile, data.toByteArray(), false)
-        val readResult = testedFileHandler.readData(mockFile)
+        var writeResult = true
+        events.forEach {
+            writeResult = writeResult && testedReaderWriter.writeData(mockFile, it, true)
+        }
+        val readResult = testedReaderWriter.readData(mockFile)
 
         // Then
         assertThat(writeResult).isTrue()
-        assertThat(readResult).isEqualTo(data.toByteArray())
+        assertThat(readResult).containsExactlyElementsOf(events)
 
         verifyZeroInteractions(mockInternalLogger)
         verifyZeroInteractions(logger.mockDevLogHandler)

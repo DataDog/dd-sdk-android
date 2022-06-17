@@ -7,10 +7,9 @@
 package com.datadog.android.rum.internal.domain
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileDataWriter
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.utils.sdkLogger
@@ -29,15 +28,13 @@ import java.util.Locale
 internal class RumDataWriter(
     fileOrchestrator: FileOrchestrator,
     serializer: Serializer<Any>,
-    decoration: PayloadDecoration,
-    handler: ChunkedFileHandler,
+    fileWriter: FileWriter,
     internalLogger: Logger,
     private val lastViewEventFile: File
 ) : BatchFileDataWriter<Any>(
     fileOrchestrator,
     serializer,
-    decoration,
-    handler,
+    fileWriter,
     internalLogger
 ) {
 
@@ -72,7 +69,7 @@ internal class RumDataWriter(
         // folder, so if NDK reporting plugin is not initialized, this NDK reports dir won't exist
         // as well (and no need to write).
         if (lastViewEventFile.parentFile?.existsSafe() == true) {
-            handler.writeData(lastViewEventFile, data, false)
+            fileWriter.writeData(lastViewEventFile, data, false)
         } else {
             sdkLogger.i(
                 LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(Locale.US, lastViewEventFile.parent)

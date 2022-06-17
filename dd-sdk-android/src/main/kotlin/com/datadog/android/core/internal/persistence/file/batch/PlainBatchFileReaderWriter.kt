@@ -7,22 +7,14 @@
 package com.datadog.android.core.internal.persistence.file.batch
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.EventMeta
-import com.datadog.android.core.internal.persistence.file.existsSafe
-import com.datadog.android.core.internal.persistence.file.isDirectorySafe
 import com.datadog.android.core.internal.persistence.file.lengthSafe
-import com.datadog.android.core.internal.persistence.file.listFilesSafe
-import com.datadog.android.core.internal.persistence.file.mkdirsSafe
-import com.datadog.android.core.internal.persistence.file.renameToSafe
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.use
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.utils.errorWithTelemetry
-import com.datadog.android.security.Encryption
 import com.google.gson.JsonParseException
 import java.io.File
-import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
@@ -30,7 +22,10 @@ import java.nio.ByteBuffer
 import java.util.Locale
 import kotlin.math.max
 
-internal class BatchFileHandler(
+/**
+ * Stores data in the TLV format as meta+data, use only for RUM/Log/Trace events.
+ */
+internal class PlainBatchFileReaderWriter(
     private val internalLogger: Logger,
     private val metaGenerator: (data: ByteArray) -> ByteArray = {
         EventMeta().asBytes
@@ -38,9 +33,9 @@ internal class BatchFileHandler(
     private val metaParser: (metaBytes: ByteArray) -> EventMeta = {
         EventMeta.fromBytes(it)
     }
-) : ChunkedFileHandler {
+) : BatchFileReaderWriter {
 
-    // region FileHandler
+    // region FileWriter+FileReader
 
     @WorkerThread
     override fun writeData(
@@ -73,43 +68,6 @@ internal class BatchFileHandler(
             internalLogger.errorWithTelemetry(ERROR_READ.format(Locale.US, file.path), e)
             emptyList()
         }
-    }
-
-    @WorkerThread
-    override fun delete(target: File): Boolean {
-        return try {
-            target.deleteRecursively()
-        } catch (e: FileNotFoundException) {
-            internalLogger.errorWithTelemetry(ERROR_DELETE.format(Locale.US, target.path), e)
-            false
-        } catch (e: SecurityException) {
-            internalLogger.errorWithTelemetry(ERROR_DELETE.format(Locale.US, target.path), e)
-            false
-        }
-    }
-
-    @WorkerThread
-    override fun moveFiles(srcDir: File, destDir: File): Boolean {
-        if (!srcDir.existsSafe()) {
-            internalLogger.i(INFO_MOVE_NO_SRC.format(Locale.US, srcDir.path))
-            return true
-        }
-        if (!srcDir.isDirectorySafe()) {
-            internalLogger.errorWithTelemetry(ERROR_MOVE_NOT_DIR.format(Locale.US, srcDir.path))
-            return false
-        }
-        if (!destDir.existsSafe()) {
-            if (!destDir.mkdirsSafe()) {
-                internalLogger.errorWithTelemetry(ERROR_MOVE_NO_DST.format(Locale.US, srcDir.path))
-                return false
-            }
-        } else if (!destDir.isDirectorySafe()) {
-            internalLogger.errorWithTelemetry(ERROR_MOVE_NOT_DIR.format(Locale.US, destDir.path))
-            return false
-        }
-
-        val srcFiles = srcDir.listFilesSafe().orEmpty()
-        return srcFiles.all { file -> moveFile(file, destDir) }
     }
 
     // endregion
@@ -179,18 +137,13 @@ internal class BatchFileHandler(
             }
         }
 
-        if (remaining != 0) {
+        if (remaining != 0 || (inputLength > 0 && result.isEmpty())) {
             val message = WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)
             devLogger.e(message)
             internalLogger.errorWithTelemetry(message)
         }
 
         return result
-    }
-
-    private fun moveFile(file: File, destDir: File): Boolean {
-        val destFile = File(destDir, file.name)
-        return file.renameToSafe(destFile)
     }
 
     @Throws(IOException::class)
@@ -284,7 +237,6 @@ internal class BatchFileHandler(
 
     // endregion
 
-    @Suppress("StringLiteralDuplication")
     companion object {
 
         // TLV (Type-Length-Value) constants
@@ -294,29 +246,10 @@ internal class BatchFileHandler(
 
         internal const val ERROR_WRITE = "Unable to write data to file: %s"
         internal const val ERROR_READ = "Unable to read data from file: %s"
-        internal const val ERROR_DELETE = "Unable to delete file: %s"
-        internal const val INFO_MOVE_NO_SRC = "Unable to move files; " +
-            "source directory does not exist: %s"
-        internal const val ERROR_MOVE_NOT_DIR = "Unable to move files; " +
-            "file is not a directory: %s"
-        internal const val ERROR_MOVE_NO_DST = "Unable to move files; " +
-            "could not create directory: %s"
 
         internal const val ERROR_FAILED_META_PARSE =
             "Failed to parse meta bytes, stopping file read."
         internal const val WARNING_NOT_ALL_DATA_READ =
             "File %s is probably corrupted, not all content was read."
-
-        /**
-         * Creates either plain [BatchFileHandler] or [BatchFileHandler] wrapped in
-         * [EncryptedBatchFileHandler] if encryption is provided.
-         */
-        fun create(internalLogger: Logger, encryption: Encryption?): ChunkedFileHandler {
-            return if (encryption == null) {
-                BatchFileHandler(internalLogger)
-            } else {
-                EncryptedBatchFileHandler(encryption, BatchFileHandler(internalLogger))
-            }
-        }
     }
 }

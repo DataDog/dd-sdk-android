@@ -149,4 +149,17 @@ internal class SingleFileOrchestratorTest {
     }
 
     // endregion
+
+    // region getMetadataFile
+
+    @Test
+    fun `𝕄 return null 𝕎 getMetadataFile()`() {
+        // When
+        val result = testedOrchestrator.getMetadataFile(fakeFile)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    // endregion
 }

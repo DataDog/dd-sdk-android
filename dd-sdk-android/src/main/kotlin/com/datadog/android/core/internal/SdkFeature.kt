@@ -18,10 +18,10 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.advanced.CacheFileMigrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
-import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.log.Logger
@@ -170,10 +170,9 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
         featureName: String,
         internalLogger: Logger
     ) {
-        val fileHandler = BatchFileHandler(internalLogger)
         val config = FilePersistenceConfig()
         val migrator = CacheFileMigrator(
-            fileHandler,
+            FileMover(internalLogger),
             coreFeature.persistenceExecutorService,
             internalLogger
         )

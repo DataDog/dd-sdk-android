@@ -8,11 +8,10 @@ package com.datadog.android.core.internal.persistence.file.batch
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
+import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
@@ -63,13 +62,10 @@ internal class BatchFileDataWriterTest {
     lateinit var mockOrchestrator: FileOrchestrator
 
     @Mock
-    lateinit var mockFileHandler: ChunkedFileHandler
+    lateinit var mockFileWriter: FileWriter
 
     @Mock
     lateinit var mockLogHandler: LogHandler
-
-    @Forgery
-    lateinit var fakeDecoration: PayloadDecoration
 
     @Forgery
     lateinit var fakeThrowable: Throwable
@@ -97,10 +93,9 @@ internal class BatchFileDataWriterTest {
         testedWriter = object : BatchFileDataWriter<String>(
             mockOrchestrator,
             mockSerializer,
-            fakeDecoration,
-            mockFileHandler,
+            mockFileWriter,
             Logger(mockLogHandler),
-            fakeFilePersistenceConfig.copy(maxItemSize = 0)
+            fakeFilePersistenceConfig.copy(maxItemSize = Long.MAX_VALUE)
         ) {
             @WorkerThread
             override fun onDataWritten(data: String, rawData: ByteArray) {
@@ -133,7 +128,7 @@ internal class BatchFileDataWriterTest {
         testedWriter.write(data)
 
         // Then
-        verify(mockFileHandler)
+        verify(mockFileWriter)
             .writeData(
                 file,
                 serialized,
@@ -154,7 +149,7 @@ internal class BatchFileDataWriterTest {
 
         // Then
         argumentCaptor<ByteArray> {
-            verify(mockFileHandler, times(data.size))
+            verify(mockFileWriter, times(data.size))
                 .writeData(
                     same(file),
                     capture(),
@@ -175,7 +170,7 @@ internal class BatchFileDataWriterTest {
         @Forgery file: File
     ) {
         // Given
-        whenever(mockFileHandler.writeData(any(), any(), any())) doReturn true
+        whenever(mockFileWriter.writeData(any(), any(), any())) doReturn true
         whenever(mockOrchestrator.getWritableFile()) doReturn file
 
         // When
@@ -192,7 +187,7 @@ internal class BatchFileDataWriterTest {
         @Forgery file: File
     ) {
         // Given
-        whenever(mockFileHandler.writeData(any(), any(), any())) doReturn false
+        whenever(mockFileWriter.writeData(any(), any(), any())) doReturn false
         whenever(mockOrchestrator.getWritableFile()) doReturn file
 
         // When
@@ -216,7 +211,7 @@ internal class BatchFileDataWriterTest {
         // Then
         assertThat(successfulData).isEmpty()
         assertThat(failedData).isEmpty()
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockFileWriter)
     }
 
     @Test
@@ -232,7 +227,7 @@ internal class BatchFileDataWriterTest {
         // Then
         assertThat(successfulData).isEmpty()
         assertThat(failedData).isEmpty()
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockFileWriter)
         verify(mockLogHandler).handleLog(
             eq(ERROR_WITH_TELEMETRY_LEVEL),
             eq(Serializer.ERROR_SERIALIZING.format(Locale.US, data.javaClass.simpleName)),
@@ -255,8 +250,7 @@ internal class BatchFileDataWriterTest {
         testedWriter = BatchFileDataWriter(
             mockOrchestrator,
             mockSerializer,
-            fakeDecoration,
-            mockFileHandler,
+            mockFileWriter,
             Logger(mockLogHandler),
             fakeFilePersistenceConfig.copy(
                 maxItemSize = maxLimit
@@ -267,7 +261,7 @@ internal class BatchFileDataWriterTest {
         testedWriter.write(data)
 
         // Then
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockFileWriter)
         verify(mockLogHandler).handleLog(
             ERROR_WITH_TELEMETRY_LEVEL,
             BatchFileDataWriter.ERROR_LARGE_DATA.format(Locale.US, dataSize, maxLimit)

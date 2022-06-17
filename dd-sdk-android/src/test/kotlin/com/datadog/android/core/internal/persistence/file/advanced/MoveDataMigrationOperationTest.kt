@@ -7,7 +7,7 @@
 package com.datadog.android.core.internal.persistence.file.advanced
 
 import android.util.Log
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
@@ -20,7 +20,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.File
 import kotlin.system.measureTimeMillis
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -47,7 +47,7 @@ internal class MoveDataMigrationOperationTest {
     lateinit var fakeToDirectory: File
 
     @Mock
-    lateinit var mockFileHandler: ChunkedFileHandler
+    lateinit var mockFileMover: FileMover
 
     @Mock
     lateinit var mockLogHander: LogHandler
@@ -57,7 +57,7 @@ internal class MoveDataMigrationOperationTest {
         testedOperation = MoveDataMigrationOperation(
             fakeFromDirectory,
             fakeToDirectory,
-            mockFileHandler,
+            mockFileMover,
             Logger(mockLogHander)
         )
     }
@@ -68,7 +68,7 @@ internal class MoveDataMigrationOperationTest {
         testedOperation = MoveDataMigrationOperation(
             null,
             fakeToDirectory,
-            mockFileHandler,
+            mockFileMover,
             Logger(mockLogHander)
         )
 
@@ -76,7 +76,7 @@ internal class MoveDataMigrationOperationTest {
         testedOperation.run()
 
         // Then
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockFileMover)
         verify(mockLogHander).handleLog(
             Log.WARN,
             MoveDataMigrationOperation.WARN_NULL_SOURCE_DIR
@@ -89,16 +89,16 @@ internal class MoveDataMigrationOperationTest {
         testedOperation = MoveDataMigrationOperation(
             fakeFromDirectory,
             null,
-            mockFileHandler,
+            mockFileMover,
             Logger(mockLogHander)
         )
-        whenever(mockFileHandler.delete(fakeFromDirectory)) doReturn true
+        whenever(mockFileMover.delete(fakeFromDirectory)) doReturn true
 
         // When
         testedOperation.run()
 
         // Then
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockFileMover)
         verify(mockLogHander).handleLog(
             Log.WARN,
             MoveDataMigrationOperation.WARN_NULL_DEST_DIR
@@ -108,32 +108,32 @@ internal class MoveDataMigrationOperationTest {
     @Test
     fun `𝕄 move data 𝕎 run()`() {
         // Given
-        whenever(mockFileHandler.moveFiles(fakeFromDirectory, fakeToDirectory)) doReturn true
+        whenever(mockFileMover.moveFiles(fakeFromDirectory, fakeToDirectory)) doReturn true
 
         // When
         testedOperation.run()
 
         // Then
-        verify(mockFileHandler).moveFiles(fakeFromDirectory, fakeToDirectory)
+        verify(mockFileMover).moveFiles(fakeFromDirectory, fakeToDirectory)
     }
 
     @Test
     fun `𝕄 retry 𝕎 run() {move fails once}`() {
         // Given
-        whenever(mockFileHandler.moveFiles(fakeFromDirectory, fakeToDirectory))
+        whenever(mockFileMover.moveFiles(fakeFromDirectory, fakeToDirectory))
             .doReturn(false, true)
 
         // When
         testedOperation.run()
 
         // Then
-        verify(mockFileHandler, times(2)).moveFiles(fakeFromDirectory, fakeToDirectory)
+        verify(mockFileMover, times(2)).moveFiles(fakeFromDirectory, fakeToDirectory)
     }
 
     @Test
     fun `𝕄 retry with 500ms delay 𝕎 run() {move fails once}`() {
         // Given
-        whenever(mockFileHandler.moveFiles(fakeFromDirectory, fakeToDirectory))
+        whenever(mockFileMover.moveFiles(fakeFromDirectory, fakeToDirectory))
             .doReturn(false, true)
 
         // When
@@ -142,27 +142,27 @@ internal class MoveDataMigrationOperationTest {
         }
 
         // Then
-        verify(mockFileHandler, times(2)).moveFiles(fakeFromDirectory, fakeToDirectory)
-        Assertions.assertThat(duration).isBetween(500L, 550L)
+        verify(mockFileMover, times(2)).moveFiles(fakeFromDirectory, fakeToDirectory)
+        assertThat(duration).isBetween(500L, 550L)
     }
 
     @Test
     fun `𝕄 try 3 times maximum 𝕎 run() {move always fails}`() {
         // Given
-        whenever(mockFileHandler.moveFiles(fakeFromDirectory, fakeToDirectory))
+        whenever(mockFileMover.moveFiles(fakeFromDirectory, fakeToDirectory))
             .doReturn(false)
 
         // When
         testedOperation.run()
 
         // Then
-        verify(mockFileHandler, times(3)).moveFiles(fakeFromDirectory, fakeToDirectory)
+        verify(mockFileMover, times(3)).moveFiles(fakeFromDirectory, fakeToDirectory)
     }
 
     @Test
     fun `𝕄 retry with 500ms delay 𝕎 run() {move always fails}`() {
         // Given
-        whenever(mockFileHandler.moveFiles(fakeFromDirectory, fakeToDirectory))
+        whenever(mockFileMover.moveFiles(fakeFromDirectory, fakeToDirectory))
             .doReturn(false)
 
         // When
@@ -171,7 +171,7 @@ internal class MoveDataMigrationOperationTest {
         }
 
         // Then
-        verify(mockFileHandler, times(3)).moveFiles(fakeFromDirectory, fakeToDirectory)
-        Assertions.assertThat(duration).isBetween(1000L, 1100L)
+        verify(mockFileMover, times(3)).moveFiles(fakeFromDirectory, fakeToDirectory)
+        assertThat(duration).isBetween(1000L, 1100L)
     }
 }

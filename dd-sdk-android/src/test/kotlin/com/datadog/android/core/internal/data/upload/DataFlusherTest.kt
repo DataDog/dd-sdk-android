@@ -8,9 +8,11 @@ package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PayloadDecoration
-import com.datadog.android.core.internal.persistence.file.ChunkedFileHandler
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
 import com.datadog.android.utils.forge.Configurator
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -47,7 +49,10 @@ internal class DataFlusherTest {
     lateinit var payloadDecoration: PayloadDecoration
 
     @Mock
-    lateinit var mockFileHandler: ChunkedFileHandler
+    lateinit var mockFileReader: BatchFileReader
+
+    @Mock
+    lateinit var mockFileMover: FileMover
 
     @StringForgery
     lateinit var fakePrefix: String
@@ -64,7 +69,8 @@ internal class DataFlusherTest {
         testedFlusher = DataFlusher(
             mockFileOrchestrator,
             payloadDecoration,
-            mockFileHandler
+            mockFileReader,
+            mockFileMover
         )
     }
 
@@ -85,7 +91,7 @@ internal class DataFlusherTest {
         whenever(mockFileOrchestrator.getFlushableFiles()).thenReturn(fakeFiles)
         fakeFiles.forEachIndexed { index, file ->
             whenever(
-                mockFileHandler.readData(file)
+                mockFileReader.readData(file)
             ).thenReturn(fakeBatches[index])
         }
 
@@ -109,6 +115,9 @@ internal class DataFlusherTest {
     ) {
         // Given
         val fakeFiles = forge.aList { mock<File>() }
+        val fakeMetaFiles =
+            forge.aList(fakeFiles.size) { mock<File>().apply { whenever(exists()) doReturn true } }
+
         val fakeBatches = forge
             .aList(fakeFiles.size) {
                 forge
@@ -120,8 +129,11 @@ internal class DataFlusherTest {
         whenever(mockFileOrchestrator.getFlushableFiles()).thenReturn(fakeFiles)
         fakeFiles.forEachIndexed { index, file ->
             whenever(
-                mockFileHandler.readData(file)
+                mockFileReader.readData(file)
             ).thenReturn(fakeBatches[index])
+            whenever(
+                mockFileOrchestrator.getMetadataFile(file)
+            ).thenReturn(fakeMetaFiles[index])
         }
 
         // When
@@ -129,7 +141,10 @@ internal class DataFlusherTest {
 
         // Then
         fakeFiles.forEach {
-            verify(mockFileHandler).delete(it)
+            verify(mockFileMover).delete(it)
+        }
+        fakeMetaFiles.forEach {
+            verify(mockFileMover).delete(it)
         }
     }
 
@@ -142,7 +157,7 @@ internal class DataFlusherTest {
         testedFlusher.flush(mockDataUploader)
 
         // Then
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockFileReader)
         verifyZeroInteractions(mockDataUploader)
     }
 }
