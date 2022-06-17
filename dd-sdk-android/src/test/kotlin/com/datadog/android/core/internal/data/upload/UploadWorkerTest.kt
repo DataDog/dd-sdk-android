@@ -29,10 +29,13 @@ import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.webview.internal.log.WebViewLogsFeature
+import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.never
@@ -79,6 +82,12 @@ internal class UploadWorkerTest {
     lateinit var mockRumStrategy: PersistenceStrategy<Any>
 
     @Mock
+    lateinit var mockWebViewRumStrategy: PersistenceStrategy<Any>
+
+    @Mock
+    lateinit var mockWebViewLogsStrategy: PersistenceStrategy<JsonObject>
+
+    @Mock
     lateinit var mockLogsReader: DataReader
 
     @Mock
@@ -89,6 +98,12 @@ internal class UploadWorkerTest {
 
     @Mock
     lateinit var mockRumReader: DataReader
+
+    @Mock
+    lateinit var mockWebViewRumReader: DataReader
+
+    @Mock
+    lateinit var mockWebViewLogsReader: DataReader
 
     @Mock
     lateinit var mockLogsUploader: DataUploader
@@ -102,6 +117,12 @@ internal class UploadWorkerTest {
     @Mock
     lateinit var mockRumUploader: DataUploader
 
+    @Mock
+    lateinit var mockWebViewRumUploader: DataUploader
+
+    @Mock
+    lateinit var mockWebViewLogsUploader: DataUploader
+
     @Forgery
     lateinit var fakeWorkerParameters: WorkerParameters
 
@@ -111,6 +132,8 @@ internal class UploadWorkerTest {
         whenever(mockTracesStrategy.getReader()) doReturn mockTracesReader
         whenever(mockCrashReportsStrategy.getReader()) doReturn mockCrashReader
         whenever(mockRumStrategy.getReader()) doReturn mockRumReader
+        whenever(mockWebViewRumStrategy.getReader()) doReturn mockWebViewRumReader
+        whenever(mockWebViewLogsStrategy.getReader()) doReturn mockWebViewLogsReader
 
         // Prevent crash when initializing RumFeature
         mockChoreographerInstance()
@@ -135,6 +158,10 @@ internal class UploadWorkerTest {
         CrashReportsFeature.uploader = mockCrashUploader
         RumFeature.persistenceStrategy = mockRumStrategy
         RumFeature.uploader = mockRumUploader
+        WebViewRumFeature.persistenceStrategy = mockWebViewRumStrategy
+        WebViewRumFeature.uploader = mockWebViewRumUploader
+        WebViewLogsFeature.persistenceStrategy = mockWebViewLogsStrategy
+        WebViewLogsFeature.uploader = mockWebViewLogsUploader
 
         testedWorker = UploadWorker(
             appContext.mockInstance,
@@ -152,7 +179,9 @@ internal class UploadWorkerTest {
         @Forgery logsBatch: Batch,
         @Forgery tracesBatch: Batch,
         @Forgery rumBatch: Batch,
-        @Forgery crashReportsBatch: Batch
+        @Forgery crashReportsBatch: Batch,
+        @Forgery webViewRumBatch: Batch,
+        @Forgery webViewLogsBatch: Batch
     ) {
         // Given
         whenever(mockLogsReader.lockAndReadNext()).doReturn(logsBatch, null)
@@ -163,6 +192,11 @@ internal class UploadWorkerTest {
         whenever(mockRumUploader.upload(rumBatch.data)) doReturn UploadStatus.SUCCESS
         whenever(mockCrashReader.lockAndReadNext()).doReturn(crashReportsBatch, null)
         whenever(mockCrashUploader.upload(crashReportsBatch.data)).doReturn(UploadStatus.SUCCESS)
+        whenever(mockWebViewRumReader.lockAndReadNext()).doReturn(webViewRumBatch, null)
+        whenever(mockWebViewRumUploader.upload(webViewRumBatch.data)) doReturn UploadStatus.SUCCESS
+        whenever(mockWebViewLogsReader.lockAndReadNext()).doReturn(webViewLogsBatch, null)
+        whenever(mockWebViewLogsUploader.upload(webViewLogsBatch.data)) doReturn
+            UploadStatus.SUCCESS
 
         // When
         val result = testedWorker.doWork()
@@ -176,6 +210,10 @@ internal class UploadWorkerTest {
         verify(mockRumReader, never()).release(rumBatch)
         verify(mockCrashReader).drop(crashReportsBatch)
         verify(mockCrashReader, never()).release(crashReportsBatch)
+        verify(mockWebViewRumReader).drop(webViewRumBatch)
+        verify(mockWebViewRumReader, never()).release(webViewRumBatch)
+        verify(mockWebViewLogsReader).drop(webViewLogsBatch)
+        verify(mockWebViewLogsReader, never()).release(webViewLogsBatch)
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
     }
@@ -187,7 +225,9 @@ internal class UploadWorkerTest {
         @Forgery logsBatch: Batch,
         @Forgery tracesBatch: Batch,
         @Forgery rumBatch: Batch,
-        @Forgery crashReportsBatch: Batch
+        @Forgery crashReportsBatch: Batch,
+        @Forgery webViewRumBatch: Batch,
+        @Forgery webViewLogsBatch: Batch
     ) {
         whenever(mockLogsReader.lockAndReadNext()).doReturn(logsBatch, null)
         whenever(mockLogsUploader.upload(logsBatch.data)) doReturn status
@@ -197,6 +237,10 @@ internal class UploadWorkerTest {
         whenever(mockRumUploader.upload(rumBatch.data)) doReturn status
         whenever(mockCrashReader.lockAndReadNext()).doReturn(crashReportsBatch, null)
         whenever(mockCrashUploader.upload(crashReportsBatch.data)) doReturn status
+        whenever(mockWebViewRumReader.lockAndReadNext()).doReturn(webViewRumBatch, null)
+        whenever(mockWebViewRumUploader.upload(webViewRumBatch.data)) doReturn status
+        whenever(mockWebViewLogsReader.lockAndReadNext()).doReturn(webViewLogsBatch, null)
+        whenever(mockWebViewLogsUploader.upload(webViewLogsBatch.data)) doReturn status
 
         val result = testedWorker.doWork()
 
@@ -208,6 +252,10 @@ internal class UploadWorkerTest {
         verify(mockRumReader).release(rumBatch)
         verify(mockCrashReader, never()).drop(crashReportsBatch)
         verify(mockCrashReader).release(crashReportsBatch)
+        verify(mockWebViewRumReader, never()).drop(webViewRumBatch)
+        verify(mockWebViewRumReader).release(webViewRumBatch)
+        verify(mockWebViewLogsReader, never()).drop(webViewLogsBatch)
+        verify(mockWebViewLogsReader).release(webViewLogsBatch)
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
     }
@@ -236,6 +284,10 @@ internal class UploadWorkerTest {
         verify(mockRumReader, never()).release(any())
         verify(mockCrashReader, never()).drop(any())
         verify(mockCrashReader, never()).release(any())
+        verify(mockWebViewRumReader, never()).drop(any())
+        verify(mockWebViewRumReader, never()).release(any())
+        verify(mockWebViewLogsReader, never()).drop(any())
+        verify(mockWebViewLogsReader, never()).release(any())
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
     }
@@ -264,6 +316,10 @@ internal class UploadWorkerTest {
         verify(mockRumReader, never()).release(any())
         verify(mockCrashReader, never()).drop(any())
         verify(mockCrashReader, never()).release(any())
+        verify(mockWebViewRumReader, never()).drop(any())
+        verify(mockWebViewRumReader, never()).release(any())
+        verify(mockWebViewLogsReader, never()).drop(any())
+        verify(mockWebViewLogsReader, never()).release(any())
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
     }
@@ -292,6 +348,10 @@ internal class UploadWorkerTest {
         verify(mockTracesReader, never()).release(any())
         verify(mockCrashReader, never()).drop(any())
         verify(mockCrashReader, never()).release(any())
+        verify(mockWebViewRumReader, never()).drop(any())
+        verify(mockWebViewRumReader, never()).release(any())
+        verify(mockWebViewLogsReader, never()).drop(any())
+        verify(mockWebViewLogsReader, never()).release(any())
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
     }
@@ -321,6 +381,76 @@ internal class UploadWorkerTest {
         verify(mockTracesReader, never()).release(any())
         verify(mockRumReader, never()).drop(any())
         verify(mockRumReader, never()).release(any())
+        verify(mockWebViewRumReader, never()).drop(any())
+        verify(mockWebViewRumReader, never()).release(any())
+        verify(mockWebViewLogsReader, never()).drop(any())
+        verify(mockWebViewLogsReader, never()).release(any())
+        assertThat(result)
+            .isEqualTo(ListenableWorker.Result.success())
+    }
+
+    @Test
+    fun `𝕄 send batches 𝕎 doWork() {multiple WebView RUM batches, all Success}`(forge: Forge) {
+        val batches = forge.aBatchList()
+        val firstBatch = batches.first()
+        val otherBatchesThenNull = Array(batches.size) {
+            batches.getOrNull(it + 1)
+        }
+        whenever(mockWebViewRumReader.lockAndReadNext())
+            .doReturn(firstBatch, *otherBatchesThenNull)
+        batches.forEach {
+            whenever(mockWebViewRumUploader.upload(it.data)) doReturn UploadStatus.SUCCESS
+        }
+
+        val result = testedWorker.doWork()
+
+        batches.forEach {
+            verify(mockWebViewRumReader).drop(it)
+            verify(mockWebViewRumReader, never()).release(it)
+        }
+        verify(mockLogsReader, never()).drop(any())
+        verify(mockLogsReader, never()).release(any())
+        verify(mockTracesReader, never()).drop(any())
+        verify(mockTracesReader, never()).release(any())
+        verify(mockRumReader, never()).drop(any())
+        verify(mockRumReader, never()).release(any())
+        verify(mockCrashReader, never()).drop(any())
+        verify(mockCrashReader, never()).release(any())
+        verify(mockWebViewLogsReader, never()).drop(any())
+        verify(mockWebViewLogsReader, never()).release(any())
+        assertThat(result)
+            .isEqualTo(ListenableWorker.Result.success())
+    }
+
+    @Test
+    fun `𝕄 send batches 𝕎 doWork() {multiple WebView Logs batches, all Success}`(forge: Forge) {
+        val batches = forge.aBatchList()
+        val firstBatch = batches.first()
+        val otherBatchesThenNull = Array(batches.size) {
+            batches.getOrNull(it + 1)
+        }
+        whenever(mockWebViewLogsReader.lockAndReadNext())
+            .doReturn(firstBatch, *otherBatchesThenNull)
+        batches.forEach {
+            whenever(mockWebViewLogsUploader.upload(it.data)) doReturn UploadStatus.SUCCESS
+        }
+
+        val result = testedWorker.doWork()
+
+        batches.forEach {
+            verify(mockWebViewLogsReader).drop(it)
+            verify(mockWebViewLogsReader, never()).release(it)
+        }
+        verify(mockLogsReader, never()).drop(any())
+        verify(mockLogsReader, never()).release(any())
+        verify(mockTracesReader, never()).drop(any())
+        verify(mockTracesReader, never()).release(any())
+        verify(mockRumReader, never()).drop(any())
+        verify(mockRumReader, never()).release(any())
+        verify(mockCrashReader, never()).drop(any())
+        verify(mockCrashReader, never()).release(any())
+        verify(mockWebViewRumReader, never()).drop(any())
+        verify(mockWebViewRumReader, never()).release(any())
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
     }
@@ -357,6 +487,10 @@ internal class UploadWorkerTest {
         verify(mockRumReader, never()).release(any())
         verify(mockCrashReader, never()).drop(any())
         verify(mockCrashReader, never()).release(any())
+        verify(mockWebViewRumReader, never()).drop(any())
+        verify(mockWebViewRumReader, never()).release(any())
+        verify(mockWebViewLogsReader, never()).drop(any())
+        verify(mockWebViewLogsReader, never()).release(any())
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
     }
@@ -393,6 +527,10 @@ internal class UploadWorkerTest {
         verify(mockRumReader, never()).release(any())
         verify(mockCrashReader, never()).drop(any())
         verify(mockCrashReader, never()).release(any())
+        verify(mockWebViewRumReader, never()).drop(any())
+        verify(mockWebViewRumReader, never()).release(any())
+        verify(mockWebViewLogsReader, never()).drop(any())
+        verify(mockWebViewLogsReader, never()).release(any())
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
     }
@@ -429,6 +567,10 @@ internal class UploadWorkerTest {
         verify(mockTracesReader, never()).release(any())
         verify(mockCrashReader, never()).drop(any())
         verify(mockCrashReader, never()).release(any())
+        verify(mockWebViewRumReader, never()).drop(any())
+        verify(mockWebViewRumReader, never()).release(any())
+        verify(mockWebViewLogsReader, never()).drop(any())
+        verify(mockWebViewLogsReader, never()).release(any())
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
     }
@@ -466,6 +608,92 @@ internal class UploadWorkerTest {
         verify(mockTracesReader, never()).release(any())
         verify(mockRumReader, never()).drop(any())
         verify(mockRumReader, never()).release(any())
+        verify(mockWebViewRumReader, never()).drop(any())
+        verify(mockWebViewRumReader, never()).release(any())
+        verify(mockWebViewLogsReader, never()).drop(any())
+        verify(mockWebViewLogsReader, never()).release(any())
+        assertThat(result)
+            .isEqualTo(ListenableWorker.Result.success())
+    }
+
+    @ParameterizedTest
+    @EnumSource(UploadStatus::class, names = ["SUCCESS"], mode = EnumSource.Mode.EXCLUDE)
+    fun `𝕄 send batches 𝕎 doWork() {multiple WebView RUM batches, first fails}`(
+        status: UploadStatus,
+        forge: Forge
+    ) {
+        val batches = forge.aBatchList()
+        val firstBatch = batches.first()
+        val otherBatchesThenNull = Array(batches.size) {
+            batches.getOrNull(it + 1)
+        }
+        whenever(mockWebViewRumReader.lockAndReadNext())
+            .doReturn(firstBatch, *otherBatchesThenNull)
+        whenever(mockWebViewRumUploader.upload(any())) doReturn UploadStatus.SUCCESS
+        whenever(mockWebViewRumUploader.upload(firstBatch.data)) doReturn status
+
+        val result = testedWorker.doWork()
+
+        batches.forEach {
+            if (it == firstBatch) {
+                verify(mockWebViewRumReader, never()).drop(it)
+                verify(mockWebViewRumReader).release(it)
+            } else {
+                verify(mockWebViewRumReader).drop(it)
+                verify(mockWebViewRumReader, never()).release(it)
+            }
+        }
+        verify(mockLogsReader, never()).drop(any())
+        verify(mockLogsReader, never()).release(any())
+        verify(mockTracesReader, never()).drop(any())
+        verify(mockTracesReader, never()).release(any())
+        verify(mockRumReader, never()).drop(any())
+        verify(mockRumReader, never()).release(any())
+        verify(mockCrashReader, never()).drop(any())
+        verify(mockCrashReader, never()).release(any())
+        verify(mockWebViewLogsReader, never()).drop(any())
+        verify(mockWebViewLogsReader, never()).release(any())
+        assertThat(result)
+            .isEqualTo(ListenableWorker.Result.success())
+    }
+
+    @ParameterizedTest
+    @EnumSource(UploadStatus::class, names = ["SUCCESS"], mode = EnumSource.Mode.EXCLUDE)
+    fun `𝕄 send batches 𝕎 doWork() {multiple WebView Logs batches, first fails}`(
+        status: UploadStatus,
+        forge: Forge
+    ) {
+        val batches = forge.aBatchList()
+        val firstBatch = batches.first()
+        val otherBatchesThenNull = Array(batches.size) {
+            batches.getOrNull(it + 1)
+        }
+        whenever(mockWebViewLogsReader.lockAndReadNext())
+            .doReturn(firstBatch, *otherBatchesThenNull)
+        whenever(mockWebViewLogsUploader.upload(any())) doReturn UploadStatus.SUCCESS
+        whenever(mockWebViewLogsUploader.upload(firstBatch.data)) doReturn status
+
+        val result = testedWorker.doWork()
+
+        batches.forEach {
+            if (it == firstBatch) {
+                verify(mockWebViewLogsReader, never()).drop(it)
+                verify(mockWebViewLogsReader).release(it)
+            } else {
+                verify(mockWebViewLogsReader).drop(it)
+                verify(mockWebViewLogsReader, never()).release(it)
+            }
+        }
+        verify(mockLogsReader, never()).drop(any())
+        verify(mockLogsReader, never()).release(any())
+        verify(mockTracesReader, never()).drop(any())
+        verify(mockTracesReader, never()).release(any())
+        verify(mockRumReader, never()).drop(any())
+        verify(mockRumReader, never()).release(any())
+        verify(mockCrashReader, never()).drop(any())
+        verify(mockCrashReader, never()).release(any())
+        verify(mockWebViewRumReader, never()).drop(any())
+        verify(mockWebViewRumReader, never()).release(any())
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
     }
