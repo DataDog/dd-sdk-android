@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "_common-shape-wireframe-schema.json",
+  "title": "CommonShapeWireframe",
+  "type": "object",
+  "description": "Schema of common properties for ShapeWireframe events type and all its sub - types.",
+  "allOf": [
+    {
+      "$ref": "_common-wireframe-schema.json"
+    },
+    {
+      "properties": {
+        "shapeStyle": {
+          "type": "object",
+          "description": "The style of this wireframe.",
+          "$ref": "shape-style-schema.json",
+          "readOnly": true
+        },
+        "border": {
+          "type": "object",
+          "description": "The border properties of this wireframe. The default value is null (no-border).",
+          "$ref": "shape-border-schema.json",
+          "readOnly": true
+        }
+      }
+    }
+  ]
+}
