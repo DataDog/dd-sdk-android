@@ -259,10 +259,10 @@ object Datadog {
      */
     @JvmStatic
     @JvmOverloads
-    fun setExtraInfo(
+    fun addUserExtraInfo(
         extraInfo: Map<String, Any?> = emptyMap()
     ) {
-        CoreFeature.userInfoProvider.setExtraProperties(
+        CoreFeature.userInfoProvider.addUserProperties(
             extraInfo
         )
     }

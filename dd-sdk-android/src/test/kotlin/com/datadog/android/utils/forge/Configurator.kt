@@ -26,6 +26,7 @@ internal class Configurator :
         forge.addFactory(CredentialsForgeryFactory())
         forge.addFactory(NetworkInfoForgeryFactory())
         forge.addFactory(UserInfoForgeryFactory())
+        forge.addFactory(UserAdditionalPropertiesForgeryFactory())
         forge.addFactory(FilePersistenceConfigForgeryFactory())
         forge.addFactory(AndroidInfoProviderForgeryFactory())
 
@@ -68,6 +69,7 @@ internal class Configurator :
         forge.addFactory(GsonJsonPrimitiveForgeryFactory())
         forge.addFactory(OrgJSONObjectForgeryFactory())
         forge.addFactory(OrgJSONArrayForgeryFactory())
+        forge.addFactory(StringForgeryFactory())
 
         forge.useJvmFactories()
     }

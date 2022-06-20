@@ -6,16 +6,11 @@
 
 package com.datadog.android.log.internal.user
 
-import com.datadog.android.Datadog
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.utils.forge.Configurator
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -73,22 +68,20 @@ internal class DatadogUserInfoProviderTest {
 
     @Test
     fun `𝕄 keep existing properties 𝕎 setExtraProperties() is called`(
-        @Forgery userInfo: UserInfo
+        @Forgery userInfo: UserInfo,
+        @Forgery additionalProperties: Map<String, Any?>,
     ) {
         // When
         val originalProperties = mapOf(
             "key1" to 1,
             "key2" to "one",
         )
-        val newProperties = mapOf(
-            "key3" to 1.0,
-        )
         testedProvider.setUserInfo(
             userInfo.copy(
                 additionalProperties = originalProperties,
             )
         )
-        testedProvider.setExtraProperties(newProperties)
+        testedProvider.addUserProperties(additionalProperties)
 
 
         // Then
@@ -98,8 +91,7 @@ internal class DatadogUserInfoProviderTest {
             mapOf(
                 "key1" to 1,
                 "key2" to "one",
-                "key3" to 1.0,
-            )
+            ) + additionalProperties
         )
     }
 
@@ -121,7 +113,7 @@ internal class DatadogUserInfoProviderTest {
                 additionalProperties = originalProperties,
             )
         )
-        testedProvider.setExtraProperties(newProperties)
+        testedProvider.addUserProperties(newProperties)
 
 
         // Then

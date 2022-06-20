@@ -204,7 +204,7 @@ internal class DatadogTest {
 
         // When
         Datadog.setUserInfo(id, name, email)
-        Datadog.setExtraInfo(
+        Datadog.addUserExtraInfo(
             mapOf(
                 "key1" to 1,
                 "key2" to "one",
@@ -219,7 +219,7 @@ internal class DatadogTest {
                 email
             )
         )
-        verify(mockUserInfoProvider).setExtraProperties(
+        verify(mockUserInfoProvider).addUserProperties(
             properties = mapOf(
                 "key1" to 1,
                 "key2" to "one",
