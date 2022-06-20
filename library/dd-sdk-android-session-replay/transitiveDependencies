@@ -1,8 +1,9 @@
 Dependencies List
 
+com.google.code.gson:gson:2.8.8                                 :  236 Kb
 org.jetbrains.kotlin:kotlin-stdlib-common:1.6.10                :  195 Kb
 org.jetbrains.kotlin:kotlin-stdlib:1.6.10                       : 1472 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb
 
-Total transitive dependencies size                              : 1685 Kb
+Total transitive dependencies size                              : 1922 Kb
 
