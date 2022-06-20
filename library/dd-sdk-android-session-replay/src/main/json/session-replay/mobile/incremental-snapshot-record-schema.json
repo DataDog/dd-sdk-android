@@ -1,0 +1,31 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "incremental-snapshot-record-schema.json",
+    "title": "IncrementalSnapshotRecord",
+    "type": "object",
+    "description": "Schema of a Record type which contains mutations of a screen.",
+    "allOf": [
+        {
+            "$ref": "../_common-record-schema.json"
+        },
+        {
+            "required": [
+                "type",
+                "data"
+            ],
+            "properties": {
+                "type": {
+                    "type": "integer",
+                    "description": "The type of this Record.",
+                    "const": 3,
+                    "readOnly": true
+                },
+                "data": {
+                    "$ref": "incremental-data-schema.json",
+                    "description": "The IncrementalData contained by this Record.",
+                    "readOnly": true
+                }
+            }
+        }
+    ]
+}

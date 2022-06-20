@@ -75,6 +75,7 @@ android {
 
 dependencies {
     implementation(libs.kotlin)
+    implementation(libs.gson)
 
     testImplementation(project(":tools:unit"))
     testImplementation(libs.bundles.jUnit5)
@@ -84,8 +85,15 @@ dependencies {
     detekt(libs.detektCli)
 }
 
+apply(from = "clone_session_replay_schema.gradle.kts")
+apply(from = "generate_session_replay_models.gradle.kts")
+
 kotlinConfig()
-detektConfig()
+detektConfig(
+    excludes = listOf(
+        "**/com/datadog/android/sessionreplay/model/**"
+    )
+)
 ktLintConfig()
 junitConfig()
 javadocConfig()
