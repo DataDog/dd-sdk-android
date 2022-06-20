@@ -1,0 +1,133 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "segment-schema.json",
+    "title": "Segment",
+    "type": "object",
+    "description": "Schema of a Session Replay data Segment.",
+    "allOf": [
+        {
+            "required": [
+                "application",
+                "session",
+                "view",
+                "source",
+                "start",
+                "end",
+                "has_full_snapshot_record",
+                "records_count",
+                "creation_reason",
+                "index_in_view",
+                "records"
+            ],
+            "properties": {
+                "application": {
+                    "type": "object",
+                    "description": "Application properties",
+                    "required": [
+                        "id"
+                    ],
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "UUID of the application",
+                            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+                            "readOnly": true
+                        }
+                    },
+                    "readOnly": true
+                },
+                "session": {
+                    "type": "object",
+                    "description": "Session properties",
+                    "required": [
+                        "id"
+                    ],
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "UUID of the session",
+                            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+                            "readOnly": true
+                        }
+                    },
+                    "readOnly": true
+                },
+                "view": {
+                    "type": "object",
+                    "description": "View properties",
+                    "required": [
+                        "id"
+                    ],
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "description": "UUID of the view",
+                            "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+                            "readOnly": true
+                        }
+                    },
+                    "readOnly": true
+                },
+                "source": {
+                    "type": "string",
+                    "description": "The source of this record",
+                    "enum": [
+                        "android",
+                        "ios",
+                        "browser",
+                        "flutter",
+                        "react-native"
+                    ],
+                    "readOnly": true
+                },
+                "start": {
+                    "type": "integer",
+                    "description": "The start UTC timestamp in milliseconds corresponding to the first record in the Segment data. Each timestamp is computed as the UTC interval since 00:00:00.000 01.01.1970.",
+                    "readOnly": true
+                },
+                "end": {
+                    "type": "integer",
+                    "description": "The end UTC timestamp in milliseconds corresponding to the last record in the Segment data. Each timestamp is computed as the UTC interval since 00:00:00.000 01.01.1970.",
+                    "readOnly": true
+                },
+                "has_full_snapshot_record": {
+                    "type": "boolean",
+                    "description": "Whether this Segment contains a full snapshot record or not.",
+                    "readOnly": true
+                },
+                "records_count": {
+                    "type": "integer",
+                    "description": "The number of records in this Segment.",
+                    "readOnly": true
+                },
+                "creation_reason": {
+                    "type": "string",
+                    "description": "The reason this Segment was created. For mobile there is only one possible value for this, which is always the default value.",
+                    "enum": [
+                        "init",
+                        "segment_duration_limit",
+                        "segment_bytes_limit",
+                        "view_change",
+                        "before_unload",
+                        "visibility_hidden"
+                    ],
+                    "default": "init",
+                    "readOnly": true
+                },
+                "index_in_view": {
+                    "type": "integer",
+                    "description": "The index of this Segment in the segments list that was recorded for this view ID. Starts from 0.",
+                    "readOnly": true
+                },
+                "records": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "record-schema.json"
+                    },
+                    "description": "The records contained by this Segment.",
+                    "readOnly": true
+                }
+            }
+        }
+    ]
+}
