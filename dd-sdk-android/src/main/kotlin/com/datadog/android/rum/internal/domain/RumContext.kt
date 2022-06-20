@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain
 
+import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import java.util.UUID
 
@@ -16,6 +17,7 @@ internal data class RumContext(
     val viewName: String? = null,
     val viewUrl: String? = null,
     val actionId: String? = null,
+    val sessionState: RumSessionScope.State = RumSessionScope.State.NOT_TRACKED,
     val viewType: RumViewScope.RumViewType = RumViewScope.RumViewType.NONE
 ) {
 

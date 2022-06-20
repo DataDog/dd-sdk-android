@@ -6,61 +6,41 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import android.app.ActivityManager.RunningAppProcessInfo
 import android.content.Context
-import android.os.Build
-import android.util.Log
-import com.datadog.android.Datadog
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.NoOpDataWriter
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.core.model.UserInfo
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.RumActionType
-import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
-import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.same
-import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.net.URL
-import java.util.UUID
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.data.Offset
+import org.assertj.core.api.Assertions.offset
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -79,16 +59,13 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class RumSessionScopeTest {
 
-    lateinit var testedScope: RumSessionScope
+    lateinit var testedScope: RumScope
 
     @Mock
     lateinit var mockParentScope: RumScope
 
     @Mock
     lateinit var mockChildScope: RumScope
-
-    @Mock
-    lateinit var fakeEvent: RumRawEvent
 
     @Mock
     lateinit var mockWriter: DataWriter<Any>
@@ -112,19 +89,13 @@ internal class RumSessionScopeTest {
     lateinit var mockSessionListener: RumSessionListener
 
     @Mock
-    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+    lateinit var mockRumEventSourceProvider: RumEventSourceProvider
 
     @Mock
-    lateinit var mockRumEventSourceProvider: RumEventSourceProvider
+    lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
     @Forgery
     lateinit var fakeParentContext: RumContext
-
-    @Forgery
-    lateinit var fakeUserInfo: UserInfo
-
-    @Forgery
-    lateinit var fakeNetworkInfo: NetworkInfo
 
     @Forgery
     lateinit var fakeAndroidInfoProvider: AndroidInfoProvider
@@ -135,256 +106,654 @@ internal class RumSessionScopeTest {
     @BoolForgery
     var fakeBackgroundTrackingEnabled: Boolean = false
 
+    lateinit var fakeInitialViewEvent: RumRawEvent
+
     @BeforeEach
-    fun `set up`() {
-        whenever(coreFeature.mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
-        whenever(coreFeature.mockNetworkInfoProvider.getLatestNetworkInfo())
-            .thenReturn(fakeNetworkInfo)
+    fun `set up`(forge: Forge) {
+        fakeInitialViewEvent = forge.startViewEvent()
+
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
-        whenever(mockChildScope.isActive()) doReturn true
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
 
-        CoreFeature.processImportance = RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-
-        testedScope = RumSessionScope(
-            mockParentScope,
-            100f,
-            fakeBackgroundTrackingEnabled,
-            mockDetector,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockTimeProvider,
-            mockSessionListener,
-            mockRumEventSourceProvider,
-            mockBuildSdkVersionProvider,
-            TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS,
-            fakeAndroidInfoProvider
-        )
-        val originalRumContext = testedScope.getRumContext()
-        assertThat(GlobalRum.getRumContext()).isEqualTo(originalRumContext)
+        initializeTestedScope()
     }
 
-    // region Session management
+    @AfterEach
+    fun `tear down`() {
+        // whatever happens
+        assertThat(testedScope.isActive()).isTrue()
+    }
+
+    // region childScope
 
     @Test
-    fun `updates sessionId if first call`() {
+    fun `𝕄 have a ViewManager child scope 𝕎 init()`() {
+        // Given
+        initializeTestedScope(fakeSamplingRate, false)
+
+        // When
+        val childScope = (testedScope as RumSessionScope).childScope
+
+        // Then
+        assertThat(childScope).isInstanceOf(RumViewManagerScope::class.java)
+    }
+
+    @Test
+    fun `𝕄 delegate events to child scope 𝕎 handleViewEvent() {TRACKED}`(
+        forge: Forge
+    ) {
+        // Given
+        (testedScope as RumSessionScope).sessionState = RumSessionScope.State.TRACKED
+        val event = forge.interactiveRumRawEvent()
+
+        // When
+        val result = testedScope.handleEvent(event, mockWriter)
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        verify(mockChildScope).handleEvent(event, mockWriter)
+    }
+
+    @Test
+    fun `𝕄 delegate events to child scope 𝕎 handleViewEvent() {NOT TRACKED}`() {
+        // Given
+        (testedScope as RumSessionScope).sessionState = RumSessionScope.State.NOT_TRACKED
+        val mockEvent: RumRawEvent = mock()
+
+        // When
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        verify(mockChildScope).handleEvent(same(mockEvent), isA<NoOpDataWriter<Any>>())
+    }
+
+    @Test
+    fun `𝕄 delegate events to child scope 𝕎 handleViewEvent() {EXPIRED}`() {
+        // Given
+        (testedScope as RumSessionScope).sessionState = RumSessionScope.State.EXPIRED
+        val mockEvent: RumRawEvent = mock()
+
+        // When
+        val result = testedScope.handleEvent(mockEvent, mockWriter)
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        verify(mockChildScope).handleEvent(same(mockEvent), isA<NoOpDataWriter<Any>>())
+    }
+
+    // endregion
+
+    // region getRumContext()
+
+    @Test
+    fun `𝕄 have empty session context 𝕎 init()+getRumContext()`() {
+        // Given
+
+        // When
         val context = testedScope.getRumContext()
 
+        // Then
+        assertThat(context.sessionId).isEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.NOT_TRACKED)
+        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
+        assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
+    }
+
+    @Test
+    fun `𝕄 create new session context 𝕎 handleEvent(view)+getRumContext() {sampling = 100}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(100f)
+
+        // When
+        val result = testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId).isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
+        assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
+    }
+
+    @Test
+    fun `𝕄 create new untracked context 𝕎 handleEvent(view)+getRumContext() {sampling = 0}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(0f)
+
+        // When
+        val result = testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId).isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.NOT_TRACKED)
+        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
+        assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
+    }
+
+    @Test
+    fun `𝕄 create new context 𝕎 handleEvent(view)+getRumContext() {sampling = x}`(
+        forge: Forge
+    ) {
+        var tracked = 0
+        var untracked = 0
+        var other = 0
+        val knownSessionId = mutableSetOf<String>()
+
+        repeat(1000) {
+            // Given
+            initializeTestedScope(fakeSamplingRate)
+
+            // When
+            testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+            val context = testedScope.getRumContext()
+
+            // Then
+            assertThat(context.sessionId).isNotEqualTo(RumContext.NULL_UUID)
+            assertThat(knownSessionId).doesNotContain(context.sessionId)
+            knownSessionId.add(context.sessionId)
+            when (context.sessionState) {
+                RumSessionScope.State.NOT_TRACKED -> untracked++
+                RumSessionScope.State.TRACKED -> tracked++
+                RumSessionScope.State.EXPIRED -> other++
+            }
+        }
+
+        assertThat(other).isZero()
+        val sampledRate = tracked.toFloat() * 100f / (tracked + untracked).toFloat()
+        // because sampling is random based we can't guarantee exactly 75%
+        assertThat(sampledRate).isCloseTo(fakeSamplingRate, offset(5f))
+    }
+
+    @Test
+    fun `𝕄 keep session context 𝕎 handleEvent(non interactive) {before expiration}`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+
+        // When
+        val result = testedScope.handleEvent(mock(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId).isEqualTo(initialContext.sessionId)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+    }
+
+    @Test
+    fun `𝕄 keep session context 𝕎 handleEvent(action) {before expiration}`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+
+        // When
+        val result = testedScope.handleEvent(forge.startActionEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId).isEqualTo(initialContext.sessionId)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+    }
+
+    @Test
+    fun `𝕄 keep session context 𝕎 handleEvent(view) {before expiration}`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+
+        // When
+        val result = testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId).isEqualTo(initialContext.sessionId)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+    }
+
+    @Test
+    fun `𝕄 update context 𝕎 handleEvent(non interactive) {after expiration, background enabled}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(backgroundTrackingEnabled = true)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+
+        // When
+        Thread.sleep(TEST_INACTIVITY_MS)
+        val result = testedScope.handleEvent(mock(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId).isEqualTo(initialContext.sessionId)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)
+    }
+
+    @Test
+    fun `𝕄 update context 𝕎 handleEvent(non interactive) {after expiration, background disabled}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(backgroundTrackingEnabled = false)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+
+        // When
+        Thread.sleep(TEST_INACTIVITY_MS)
+        val result = testedScope.handleEvent(mock(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId).isEqualTo(initialContext.sessionId)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)
+    }
+
+    @Test
+    fun `𝕄 update context 𝕎 handleEvent(action) {after expiration}`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+
+        // When
+        Thread.sleep(TEST_INACTIVITY_MS)
+        val result = testedScope.handleEvent(forge.startActionEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId)
+            .isNotEqualTo(initialContext.sessionId)
+            .isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+    }
+
+    @Test
+    fun `𝕄 update context 𝕎 handleEvent(view) {after expiration}`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+
+        // When
+        Thread.sleep(TEST_INACTIVITY_MS)
+        val result = testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId)
+            .isNotEqualTo(initialContext.sessionId)
+            .isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+    }
+
+    @Test
+    fun `𝕄 update context 𝕎 handleEvent(resource) {after expiration, background enabled}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(backgroundTrackingEnabled = true)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+
+        // When
+        Thread.sleep(TEST_INACTIVITY_MS)
+        val result = testedScope.handleEvent(forge.startResourceEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId)
+            .isNotEqualTo(initialContext.sessionId)
+            .isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+    }
+
+    @Test
+    fun `𝕄 update context 𝕎 handleEvent(error) {after expiration, background enabled}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(backgroundTrackingEnabled = true)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+
+        // When
+        Thread.sleep(TEST_INACTIVITY_MS)
+        val result = testedScope.handleEvent(forge.addErrorEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId)
+            .isNotEqualTo(initialContext.sessionId)
+            .isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+    }
+
+    @Test
+    fun `𝕄 update context 𝕎 handleEvent(resource) {after expiration, background disabled}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(backgroundTrackingEnabled = false)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+
+        // When
+        Thread.sleep(TEST_INACTIVITY_MS)
+        val result = testedScope.handleEvent(forge.startResourceEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId).isEqualTo(initialContext.sessionId)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)
+    }
+
+    @Test
+    fun `𝕄 update context 𝕎 handleEvent(error) {after expiration, background disabled}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(backgroundTrackingEnabled = false)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+
+        // When
+        Thread.sleep(TEST_INACTIVITY_MS)
+        val result = testedScope.handleEvent(forge.addErrorEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId).isEqualTo(initialContext.sessionId)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.EXPIRED)
+    }
+
+    @Test
+    fun `𝕄 update context 𝕎 handleEvent(non interactive) {after timeout threshold}`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+        val repeatCount = (TEST_MAX_DURATION_MS / TEST_SLEEP_MS) + 1
+        for (i in 0..repeatCount) {
+            Thread.sleep(TEST_SLEEP_MS)
+            testedScope.handleEvent(forge.startActionEvent(false), mockWriter)
+        }
+
+        // When
+        Thread.sleep(TEST_SLEEP_MS)
+        val result = testedScope.handleEvent(mock(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId)
+            .isNotEqualTo(initialContext.sessionId)
+            .isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+    }
+
+    @Test
+    fun `𝕄 update context 𝕎 handleEvent(action) {after timeout threshold}`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+        val repeatCount = (TEST_MAX_DURATION_MS / TEST_SLEEP_MS) + 1
+        for (i in 0..repeatCount) {
+            Thread.sleep(TEST_SLEEP_MS)
+            testedScope.handleEvent(forge.startActionEvent(), mockWriter)
+        }
+
+        // When
+        Thread.sleep(TEST_SLEEP_MS)
+        val result = testedScope.handleEvent(forge.startActionEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId)
+            .isNotEqualTo(initialContext.sessionId)
+            .isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+    }
+
+    @Test
+    fun `𝕄 update context 𝕎 handleEvent(view) {after timeout threshold}`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+        val repeatCount = (TEST_MAX_DURATION_MS / TEST_SLEEP_MS) + 1
+        for (i in 0..repeatCount) {
+            Thread.sleep(TEST_SLEEP_MS)
+            testedScope.handleEvent(forge.startActionEvent(), mockWriter)
+        }
+
+        // When
+        Thread.sleep(TEST_SLEEP_MS)
+        val result = testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId)
+            .isNotEqualTo(initialContext.sessionId)
+            .isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+    }
+
+    @Test
+    fun `𝕄 create new context 𝕎 handleEvent(ResetSession)+getRumContext()`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+
+        // When
+        val result = testedScope.handleEvent(RumRawEvent.ResetSession(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId)
+            .isNotEqualTo(initialContext.sessionId)
+            .isNotEqualTo(RumContext.NULL_UUID)
+        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
+        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
+        assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
+    }
+
+    // endregion
+
+    // region Session Listener
+
+    @Test
+    fun `𝕄 notify listener 𝕎 session is updated {tracked, timed out}`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+        val repeatCount = (TEST_MAX_DURATION_MS / TEST_SLEEP_MS) + 1
+        for (i in 0..repeatCount) {
+            Thread.sleep(TEST_SLEEP_MS)
+            testedScope.handleEvent(forge.startActionEvent(false), mockWriter)
+        }
+
+        // When
+        Thread.sleep(TEST_MAX_DURATION_MS)
+        val result = testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
             .isNotEqualTo(RumContext.NULL_UUID)
-            .isEqualTo(testedScope.sessionId)
-        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
-        assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
+            .isNotEqualTo(initialContext.sessionId)
+        verify(mockSessionListener).onSessionStarted(initialContext.sessionId, false)
+        verify(mockSessionListener).onSessionStarted(context.sessionId, false)
     }
 
     @Test
-    fun `returns context with null IDs if session not kept`() {
-        testedScope = RumSessionScope(
-            mockParentScope,
-            0f,
-            fakeBackgroundTrackingEnabled,
-            mockDetector,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockTimeProvider,
-            mockSessionListener,
-            mockRumEventSourceProvider,
-            mockBuildSdkVersionProvider,
-            TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS,
-            fakeAndroidInfoProvider
-        )
-        val context = testedScope.getRumContext()
+    fun `𝕄 notify listener 𝕎 session is updated {tracked, expired}`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
 
-        assertThat(context.sessionId).isEqualTo(RumContext.NULL_UUID)
-        assertThat(context.applicationId).isEqualTo(RumContext.NULL_UUID)
-    }
-
-    @Test
-    fun `updates sessionId if last interaction too old`() {
-        val firstSessionId = testedScope.getRumContext().sessionId
-
+        // When
         Thread.sleep(TEST_INACTIVITY_MS)
+        val result = testedScope.handleEvent(forge.startViewEvent(), mockWriter)
         val context = testedScope.getRumContext()
 
+        // Then
+        assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
-            .isNotEqualTo(UUID(0, 0))
-            .isNotEqualTo(firstSessionId)
-        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
-        assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
+            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotEqualTo(initialContext.sessionId)
+        verify(mockSessionListener).onSessionStarted(initialContext.sessionId, false)
+        verify(mockSessionListener).onSessionStarted(context.sessionId, false)
     }
 
     @Test
-    fun `updates sessionId if duration is too long`() {
-        val firstSessionId = testedScope.getRumContext().sessionId
+    fun `𝕄 notify listener 𝕎 session is updated {tracked, manual reset}`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
 
-        Thread.sleep(TEST_MAX_DURATION_MS)
+        // When
+        val result = testedScope.handleEvent(RumRawEvent.ResetSession(), mockWriter)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
         val context = testedScope.getRumContext()
 
+        // Then
+        assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
-            .isNotEqualTo(UUID(0, 0))
-            .isNotEqualTo(firstSessionId)
-        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
-        assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
+            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotEqualTo(initialContext.sessionId)
+        verify(mockSessionListener).onSessionStarted(initialContext.sessionId, false)
+        verify(mockSessionListener).onSessionStarted(context.sessionId, false)
     }
 
     @Test
-    fun `updates sessionId if duration is too long with updates`() {
+    fun `𝕄 notify listener 𝕎 session is updated {not tracked, timed out}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(0f)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
         val repeatCount = (TEST_MAX_DURATION_MS / TEST_SLEEP_MS) + 1
-        val firstSessionId = testedScope.getRumContext().sessionId
-
         for (i in 0..repeatCount) {
             Thread.sleep(TEST_SLEEP_MS)
-            testedScope.handleEvent(fakeEvent, mockWriter)
+            testedScope.handleEvent(forge.startActionEvent(false), mockWriter)
         }
-        Thread.sleep(TEST_SLEEP_MS)
+
+        // When
+        Thread.sleep(TEST_MAX_DURATION_MS)
+        val result = testedScope.handleEvent(forge.startViewEvent(), mockWriter)
         val context = testedScope.getRumContext()
 
+        // Then
+        assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
-            .isNotEqualTo(UUID(0, 0))
-            .isNotEqualTo(firstSessionId)
-        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
-        assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
+            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotEqualTo(initialContext.sessionId)
+        verify(mockSessionListener).onSessionStarted(initialContext.sessionId, true)
+        verify(mockSessionListener).onSessionStarted(context.sessionId, true)
     }
 
     @Test
-    fun `updates sessionId on ResetSession event `() {
-        val firstSessionId = testedScope.getRumContext().sessionId
-        fakeEvent = RumRawEvent.ResetSession()
-
-        testedScope.handleEvent(fakeEvent, mockWriter)
-        val context = testedScope.getRumContext()
-
-        assertThat(context.sessionId)
-            .isNotEqualTo(UUID(0, 0))
-            .isNotEqualTo(firstSessionId)
-        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
-        assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
-    }
-
-    @Test
-    fun `keeps sessionId if last interaction is recent`() {
-        val repeatCount = (TEST_INACTIVITY_MS / TEST_SLEEP_MS) + 1
-        val firstSessionId = testedScope.getRumContext().sessionId
-
-        for (i in 0..repeatCount) {
-            Thread.sleep(TEST_SLEEP_MS)
-            testedScope.handleEvent(fakeEvent, mockWriter)
-        }
-        val context = testedScope.getRumContext()
-
-        assertThat(context.sessionId).isEqualTo(firstSessionId)
-        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
-        assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
-    }
-
-    @Test
-    fun `updates keepSession state based on sampling rate`() {
-        testedScope = RumSessionScope(
-            mockParentScope,
-            fakeSamplingRate,
-            fakeBackgroundTrackingEnabled,
-            mockDetector,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockTimeProvider,
-            mockSessionListener,
-            mockRumEventSourceProvider,
-            mockBuildSdkVersionProvider,
-            TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS,
-            fakeAndroidInfoProvider
-        )
-        var sessions = 0
-        var sessionsKept = 0
-
-        repeat(1024) {
-            testedScope.handleEvent(RumRawEvent.ResetSession(), mockWriter)
-            val context = testedScope.getRumContext()
-            if (testedScope.keepSession) {
-                assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
-                assertThat(context.sessionId).isEqualTo(testedScope.sessionId)
-            } else {
-                assertThat(context.applicationId).isEqualTo(RumContext.NULL_UUID)
-                assertThat(context.sessionId).isEqualTo(RumContext.NULL_UUID)
-            }
-            sessions++
-            if (testedScope.keepSession) sessionsKept++
-        }
-
-        val actualRate = (sessionsKept.toFloat() * 100f) / sessions
-        assertThat(actualRate).isCloseTo(fakeSamplingRate, Offset.offset(5f))
-    }
-
-    // endregion
-
-    // region Listener
-
-    @Test
-    fun `𝕄 notify listener 𝕎 session is updated`() {
+    fun `𝕄 notify listener 𝕎 session is updated {not tracked, expired}`(
+        forge: Forge
+    ) {
         // Given
-        val firstSessionId = testedScope.getRumContext().sessionId
-        val isFirstSessionDiscarded = !testedScope.keepSession
+        initializeTestedScope(0f)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
 
         // When
         Thread.sleep(TEST_INACTIVITY_MS)
+        val result = testedScope.handleEvent(forge.startViewEvent(), mockWriter)
         val context = testedScope.getRumContext()
 
         // Then
+        assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId)
-            .isNotEqualTo(UUID(0, 0))
-            .isNotEqualTo(firstSessionId)
-        verify(mockSessionListener).onSessionStarted(firstSessionId, isFirstSessionDiscarded)
-        verify(mockSessionListener).onSessionStarted(context.sessionId, !testedScope.keepSession)
+            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotEqualTo(initialContext.sessionId)
+        verify(mockSessionListener).onSessionStarted(initialContext.sessionId, true)
+        verify(mockSessionListener).onSessionStarted(context.sessionId, true)
+    }
+
+    @Test
+    fun `𝕄 notify listener 𝕎 session is updated {not tracked, manual reset}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(0f)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val initialContext = testedScope.getRumContext()
+
+        // When
+        val result = testedScope.handleEvent(RumRawEvent.ResetSession(), mockWriter)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(result).isSameAs(testedScope)
+        assertThat(context.sessionId)
+            .isNotEqualTo(RumContext.NULL_UUID)
+            .isNotEqualTo(initialContext.sessionId)
+        verify(mockSessionListener).onSessionStarted(initialContext.sessionId, true)
+        verify(mockSessionListener).onSessionStarted(context.sessionId, true)
     }
 
     // endregion
 
-    @Test
-    fun `M return true W isActive()`() {
-        val isActive = testedScope.isActive()
+    // region Internal
 
-        assertThat(isActive).isTrue()
-    }
-
-    @Test
-    fun `M log warning W handleEvent() without child scope`() {
-        // Given
-        Datadog.setVerbosity(Log.VERBOSE)
-
-        // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // Then
-        assertThat(testedScope.childrenScopes).isEmpty()
-        assertThat(result).isSameAs(testedScope)
-        verify(logger.mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
-        verifyNoMoreInteractions(logger.mockDevLogHandler, mockWriter)
-    }
-
-    @Test
-    fun `M delegate to child scope W handleEvent()`() {
-        testedScope.childrenScopes.add(mockChildScope)
-
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
-
-        verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
-        assertThat(testedScope.childrenScopes).containsExactly(mockChildScope)
-        assertThat(result).isSameAs(testedScope)
-        verifyZeroInteractions(mockWriter, logger.mockDevLogHandler)
-    }
-
-    @Test
-    fun `M delegate to child scope with noop writer W handleEvent() and session not kept`() {
+    private fun initializeTestedScope(
+        samplingRate: Float = 100f,
+        withMockChildScope: Boolean = true,
+        backgroundTrackingEnabled: Boolean? = null
+    ) {
         testedScope = RumSessionScope(
             mockParentScope,
-            0f,
-            fakeBackgroundTrackingEnabled,
+            samplingRate,
+            backgroundTrackingEnabled ?: fakeBackgroundTrackingEnabled,
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -397,851 +766,13 @@ internal class RumSessionScopeTest {
             TEST_MAX_DURATION_NS,
             fakeAndroidInfoProvider
         )
-        testedScope.childrenScopes.add(mockChildScope)
 
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
-
-        argumentCaptor<DataWriter<Any>> {
-            verify(mockChildScope).handleEvent(same(fakeEvent), capture())
-
-            assertThat(firstValue)
-                .isNotSameAs(mockWriter)
-                .isInstanceOf(NoOpDataWriter::class.java)
+        if (withMockChildScope) {
+            (testedScope as RumSessionScope).childScope = mockChildScope
         }
-        assertThat(testedScope.childrenScopes).containsExactly(mockChildScope)
-        assertThat(result).isSameAs(testedScope)
-        verifyZeroInteractions(mockWriter, logger.mockDevLogHandler)
     }
 
-    @Test
-    fun `M start a foreground ViewScope W handleEvent(StartView) { app displayed }`(
-        @StringForgery key: String,
-        @StringForgery name: String,
-        forge: Forge
-    ) {
-        // GIVEN
-        val fakeAttributes = forge.exhaustiveAttributes()
-        testedScope = RumSessionScope(
-            mockParentScope,
-            100f,
-            true,
-            mockDetector,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockTimeProvider,
-            mockSessionListener,
-            mockRumEventSourceProvider,
-            mockBuildSdkVersionProvider,
-            TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS,
-            fakeAndroidInfoProvider
-        )
-        testedScope.applicationDisplayed = true
-
-        fakeEvent = RumRawEvent.StartView(key, name, fakeAttributes)
-
-        // When
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // THEN
-        assertThat(testedScope.childrenScopes).hasSize(1)
-        assertThat(testedScope.childrenScopes[0])
-            .isInstanceOfSatisfying(RumViewScope::class.java) {
-                assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
-                assertThat(it.keyRef.get()).isEqualTo(key)
-                assertThat(it.name).isEqualTo(name)
-                assertThat(it.type).isEqualTo(RumViewScope.RumViewType.FOREGROUND)
-            }
-    }
-
-    @Test
-    fun `M update child scope W handleEvent(StartView)`(
-        @StringForgery key: String,
-        @StringForgery name: String,
-        forge: Forge
-    ) {
-        val attributes = forge.exhaustiveAttributes()
-        fakeEvent = RumRawEvent.StartView(key, name, attributes)
-
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
-
-        assertThat(testedScope.childrenScopes).hasSize(1)
-        val viewScope = testedScope.childrenScopes.first() as RumViewScope
-        assertThat(viewScope.keyRef.get()).isEqualTo(key)
-        assertThat(viewScope.name).isEqualTo(name)
-        assertThat(viewScope.attributes).isEqualTo(attributes)
-        assertThat(viewScope.firstPartyHostDetector).isSameAs(mockDetector)
-        assertThat(result).isSameAs(testedScope)
-    }
-
-    @Test
-    fun `M update child scope W handleEvent(StartView) event with existing children`(
-        @StringForgery key: String,
-        @StringForgery name: String,
-        forge: Forge
-    ) {
-        testedScope.childrenScopes.add(mockChildScope)
-        val attributes = forge.exhaustiveAttributes()
-        fakeEvent = RumRawEvent.StartView(key, name, attributes)
-
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
-
-        verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
-        assertThat(testedScope.childrenScopes).hasSize(2)
-        val viewScope = testedScope.childrenScopes.last() as RumViewScope
-        assertThat(viewScope.keyRef.get()).isEqualTo(key)
-        assertThat(viewScope.name).isEqualTo(name)
-        assertThat(viewScope.attributes).containsAllEntriesOf(attributes)
-        assertThat(viewScope.firstPartyHostDetector).isSameAs(mockDetector)
-        assertThat(result).isSameAs(testedScope)
-    }
-
-    @Test
-    fun `M keep children scope W handleEvent child returns non null`() {
-        testedScope.childrenScopes.add(mockChildScope)
-        whenever(mockChildScope.handleEvent(fakeEvent, mockWriter)) doReturn mockChildScope
-
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
-
-        assertThat(testedScope.childrenScopes).containsExactly(mockChildScope)
-        assertThat(result).isSameAs(testedScope)
-        verifyZeroInteractions(mockWriter)
-    }
-
-    @Test
-    fun `M remove children scope W handleEvent child returns null`() {
-        testedScope.childrenScopes.add(mockChildScope)
-        whenever(mockChildScope.handleEvent(fakeEvent, mockWriter)) doReturn null
-
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
-
-        assertThat(testedScope.childrenScopes).isEmpty()
-        assertThat(result).isSameAs(testedScope)
-        verifyZeroInteractions(mockWriter)
-    }
-
-    @Test
-    fun `M send ApplicationStarted event W applicationDisplayed`(
-        @StringForgery key: String,
-        @StringForgery name: String
-    ) {
-        // Given
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.KITKAT
-        val childView: RumViewScope = mock()
-        val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
-
-        // When
-        testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
-
-        // Then
-        argumentCaptor<RumRawEvent> {
-            verify(childView).handleEvent(capture(), same(mockWriter))
-
-            val event = firstValue as RumRawEvent.ApplicationStarted
-            assertThat(event.applicationStartupNanos).isEqualTo(Datadog.startupTimeNs)
-        }
-        verifyZeroInteractions(mockWriter)
-    }
-
-    @Test
-    fun `M send ApplicationStarted event W applicationDisplayed {API 24+}`(
-        @StringForgery key: String,
-        @StringForgery name: String
-    ) {
-        // Given
-        whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.N
-        val childView: RumViewScope = mock()
-        val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
-
-        // When
-        testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
-
-        // Then
-        argumentCaptor<RumRawEvent> {
-            verify(childView).handleEvent(capture(), same(mockWriter))
-
-            val event = firstValue as RumRawEvent.ApplicationStarted
-            assertThat(event.applicationStartupNanos)
-                .isCloseTo(System.nanoTime(), Offset.offset(TimeUnit.MILLISECONDS.toNanos(100)))
-        }
-        verifyZeroInteractions(mockWriter)
-    }
-
-    @Test
-    fun `M send ApplicationStarted event only once W applicationDisplayed`(
-        @StringForgery key: String,
-        @StringForgery name: String
-    ) {
-        val childView: RumViewScope = mock()
-        val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
-
-        testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
-        testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
-
-        argumentCaptor<RumRawEvent> {
-            verify(childView).handleEvent(capture(), same(mockWriter))
-
-            val event = firstValue as RumRawEvent.ApplicationStarted
-            assertThat(event.applicationStartupNanos).isEqualTo(Datadog.startupTimeNs)
-        }
-        verifyZeroInteractions(mockWriter)
-    }
-
-    @Test
-    fun `M send ApplicationStarted event W applicationDisplayed after ResetSession`(
-        @StringForgery key: String,
-        @StringForgery name: String
-    ) {
-        val childView: RumViewScope = mock()
-        val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
-
-        testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
-        val resetNanos = System.nanoTime()
-        testedScope.handleEvent(RumRawEvent.ResetSession(), mockWriter)
-        testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
-
-        argumentCaptor<RumRawEvent> {
-            verify(childView, times(2)).handleEvent(capture(), same(mockWriter))
-
-            val event = firstValue as RumRawEvent.ApplicationStarted
-            assertThat(event.applicationStartupNanos).isEqualTo(Datadog.startupTimeNs)
-            val event2 = lastValue as RumRawEvent.ApplicationStarted
-            assertThat(event2.applicationStartupNanos).isGreaterThanOrEqualTo(resetNanos)
-        }
-        verifyZeroInteractions(mockWriter)
-    }
-
-    @Test
-    fun `M not send ApplicationStarted event W applicationDisplayed {not a foreground process}`(
-        @StringForgery key: String,
-        @StringForgery name: String,
-        forge: Forge
-    ) {
-        CoreFeature.processImportance = forge.anElementFrom(
-            RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
-            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
-            @Suppress("DEPRECATION")
-            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING_PRE_28,
-            RunningAppProcessInfo.IMPORTANCE_VISIBLE,
-            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE,
-            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE_PRE_26,
-            RunningAppProcessInfo.IMPORTANCE_CANT_SAVE_STATE,
-            RunningAppProcessInfo.IMPORTANCE_SERVICE,
-            RunningAppProcessInfo.IMPORTANCE_CACHED,
-            RunningAppProcessInfo.IMPORTANCE_GONE
-        )
-        val childView: RumViewScope = mock()
-        val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
-
-        testedScope.onViewDisplayed(startViewEvent, childView, mockWriter)
-
-        verify(childView, never()).handleEvent(any(), same(mockWriter))
-        verifyZeroInteractions(mockWriter)
-    }
-
-    @Test
-    fun `M do nothing W applicationDisplayed if session not kept`(
-        @StringForgery key: String,
-        @StringForgery name: String
-    ) {
-        testedScope = RumSessionScope(
-            mockParentScope,
-            0f,
-            fakeBackgroundTrackingEnabled,
-            mockDetector,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockTimeProvider,
-            mockSessionListener,
-            mockRumEventSourceProvider,
-            mockBuildSdkVersionProvider,
-            TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS,
-            fakeAndroidInfoProvider
-        )
-        val startViewEvent = RumRawEvent.StartView(key, name, emptyMap())
-
-        val result = testedScope.handleEvent(startViewEvent, mockWriter)
-
-        assertThat(testedScope.childrenScopes).isNotEmpty()
-        assertThat(result).isSameAs(testedScope)
-        verifyZeroInteractions(mockWriter)
-    }
-
-    @Test
-    fun `M start a background ViewScope W handleEvent { app displayed, event is relevant }`(
-        forge: Forge
-    ) {
-        // GIVEN
-        testedScope = RumSessionScope(
-            mockParentScope,
-            100f,
-            true,
-            mockDetector,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockTimeProvider,
-            mockSessionListener,
-            mockRumEventSourceProvider,
-            mockBuildSdkVersionProvider,
-            TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS,
-            fakeAndroidInfoProvider
-        )
-        testedScope.applicationDisplayed = true
-        val fakeEvent = forge.forgeValidBackgroundEvent()
-
-        // WHEN
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // THEN
-        assertThat(testedScope.childrenScopes).hasSize(1)
-        assertThat(testedScope.childrenScopes[0])
-            .isInstanceOfSatisfying(RumViewScope::class.java) {
-                assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
-                assertThat(it.keyRef.get()).isEqualTo(RumSessionScope.RUM_BACKGROUND_VIEW_URL)
-                assertThat(it.name).isEqualTo(RumSessionScope.RUM_BACKGROUND_VIEW_NAME)
-                assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
-                assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
-                assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
-            }
-    }
-
-    @Test
-    fun `M start a background ViewScope W handleEvent { stopped view, event is relevant }`(
-        forge: Forge
-    ) {
-        // GIVEN
-        testedScope = RumSessionScope(
-            mockParentScope,
-            100f,
-            true,
-            mockDetector,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockTimeProvider,
-            mockSessionListener,
-            mockRumEventSourceProvider,
-            mockBuildSdkVersionProvider,
-            TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS,
-            fakeAndroidInfoProvider
-        )
-        testedScope.applicationDisplayed = true
-        testedScope.childrenScopes.add(mockChildScope)
-        whenever(mockChildScope.isActive()) doReturn false
-        whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
-        val fakeEvent = forge.forgeValidBackgroundEvent()
-
-        // WHEN
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // THEN
-        assertThat(testedScope.childrenScopes).hasSize(2)
-        assertThat(testedScope.childrenScopes[0]).isSameAs(mockChildScope)
-        assertThat(testedScope.childrenScopes[1])
-            .isInstanceOfSatisfying(RumViewScope::class.java) {
-                assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
-                assertThat(it.keyRef.get()).isEqualTo(RumSessionScope.RUM_BACKGROUND_VIEW_URL)
-                assertThat(it.name).isEqualTo(RumSessionScope.RUM_BACKGROUND_VIEW_NAME)
-                assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
-                assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
-                assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
-                assertThat(it.type).isEqualTo(RumViewScope.RumViewType.BACKGROUND)
-            }
-    }
-
-    @Test
-    fun `M start a Background ViewScope W handleEvent { event is relevant, not foreground }`(
-        forge: Forge
-    ) {
-        // GIVEN
-        CoreFeature.processImportance = forge.anElementFrom(
-            RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
-            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
-            @Suppress("DEPRECATION")
-            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING_PRE_28,
-            RunningAppProcessInfo.IMPORTANCE_VISIBLE,
-            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE,
-            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE_PRE_26,
-            RunningAppProcessInfo.IMPORTANCE_CANT_SAVE_STATE,
-            RunningAppProcessInfo.IMPORTANCE_SERVICE,
-            RunningAppProcessInfo.IMPORTANCE_CACHED,
-            RunningAppProcessInfo.IMPORTANCE_GONE
-        )
-        testedScope = RumSessionScope(
-            parentScope = mockParentScope,
-            samplingRate = 100f,
-            backgroundTrackingEnabled = true,
-            firstPartyHostDetector = mockDetector,
-            cpuVitalMonitor = mockCpuVitalMonitor,
-            memoryVitalMonitor = mockMemoryVitalMonitor,
-            frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            timeProvider = mockTimeProvider,
-            sessionListener = mockSessionListener,
-            rumEventSourceProvider = mockRumEventSourceProvider,
-            sessionInactivityNanos = TEST_INACTIVITY_NS,
-            sessionMaxDurationNanos = TEST_MAX_DURATION_NS,
-            androidInfoProvider = fakeAndroidInfoProvider
-        )
-        testedScope.applicationDisplayed = false
-        val fakeEvent = forge.forgeValidBackgroundEvent()
-
-        // WHEN
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // THEN
-        assertThat(testedScope.childrenScopes).hasSize(1)
-        assertThat(testedScope.childrenScopes[0])
-            .isInstanceOfSatisfying(RumViewScope::class.java) {
-                assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
-                assertThat(it.keyRef.get()).isEqualTo(RumSessionScope.RUM_BACKGROUND_VIEW_URL)
-                assertThat(it.name).isEqualTo(RumSessionScope.RUM_BACKGROUND_VIEW_NAME)
-                assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
-                assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
-                assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
-                assertThat(it.type).isEqualTo(RumViewScope.RumViewType.BACKGROUND)
-            }
-    }
-
-    @Test
-    fun `M start an AppLaunch ViewScope W handleEvent { app not displayed, event is relevant }`(
-        forge: Forge
-    ) {
-        // GIVEN
-        testedScope.applicationDisplayed = false
-        val fakeEvent = forge.forgeValidAppLaunchEvent()
-
-        // WHEN
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // THEN
-        assertThat(testedScope.childrenScopes).hasSize(1)
-        assertThat(testedScope.childrenScopes[0])
-            .isInstanceOfSatisfying(RumViewScope::class.java) {
-                assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
-                assertThat(it.keyRef.get()).isEqualTo(RumSessionScope.RUM_APP_LAUNCH_VIEW_URL)
-                assertThat(it.name).isEqualTo(RumSessionScope.RUM_APP_LAUNCH_VIEW_NAME)
-                assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
-                assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
-                assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
-                assertThat(it.type).isEqualTo(RumViewScope.RumViewType.APPLICATION_LAUNCH)
-            }
-    }
-
-    @Test
-    fun `M not start an AppLaunch ViewScope W handleEvent { event is relevant, not foreground }`(
-        forge: Forge
-    ) {
-        // GIVEN
-        CoreFeature.processImportance = forge.anElementFrom(
-            RunningAppProcessInfo.IMPORTANCE_FOREGROUND_SERVICE,
-            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING,
-            @Suppress("DEPRECATION")
-            RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING_PRE_28,
-            RunningAppProcessInfo.IMPORTANCE_VISIBLE,
-            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE,
-            RunningAppProcessInfo.IMPORTANCE_PERCEPTIBLE_PRE_26,
-            RunningAppProcessInfo.IMPORTANCE_CANT_SAVE_STATE,
-            RunningAppProcessInfo.IMPORTANCE_SERVICE,
-            RunningAppProcessInfo.IMPORTANCE_CACHED,
-            RunningAppProcessInfo.IMPORTANCE_GONE
-        )
-        testedScope = RumSessionScope(
-            parentScope = mockParentScope,
-            samplingRate = 100f,
-            backgroundTrackingEnabled = false,
-            firstPartyHostDetector = mockDetector,
-            cpuVitalMonitor = mockCpuVitalMonitor,
-            memoryVitalMonitor = mockMemoryVitalMonitor,
-            frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            timeProvider = mockTimeProvider,
-            rumEventSourceProvider = mockRumEventSourceProvider,
-            sessionListener = mockSessionListener,
-            sessionInactivityNanos = TEST_INACTIVITY_NS,
-            sessionMaxDurationNanos = TEST_MAX_DURATION_NS,
-            androidInfoProvider = fakeAndroidInfoProvider
-        )
-        testedScope.applicationDisplayed = false
-        val fakeEvent = forge.forgeValidAppLaunchEvent()
-
-        // WHEN
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // THEN
-        assertThat(testedScope.childrenScopes).hasSize(0)
-    }
-
-    @Test
-    fun `M ignore event W handleEvent { app displayed, event is relevant, background disabled }`(
-        forge: Forge
-    ) {
-        // GIVEN
-        testedScope = RumSessionScope(
-            mockParentScope,
-            100f,
-            false,
-            mockDetector,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockTimeProvider,
-            mockSessionListener,
-            mockRumEventSourceProvider,
-            mockBuildSdkVersionProvider,
-            TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS,
-            fakeAndroidInfoProvider
-        )
-        val fakeEvent = forge.forgeInvalidAppLaunchEvent()
-
-        // WHEN
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // THEN
-        assertThat(testedScope.childrenScopes).hasSize(0)
-    }
-
-    @Test
-    fun `M ignore event W handleEvent { app displayed, event is relevant, active view }`(
-        forge: Forge
-    ) {
-        // GIVEN
-        testedScope = RumSessionScope(
-            mockParentScope,
-            100f,
-            false,
-            mockDetector,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockTimeProvider,
-            mockSessionListener,
-            mockRumEventSourceProvider,
-            mockBuildSdkVersionProvider,
-            TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS,
-            fakeAndroidInfoProvider
-        )
-        testedScope.childrenScopes.add(mockChildScope)
-        whenever(mockChildScope.isActive()) doReturn true
-        whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
-        val fakeEvent = forge.forgeInvalidAppLaunchEvent()
-
-        // WHEN
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // THEN
-        assertThat(testedScope.childrenScopes).hasSize(1)
-        assertThat(testedScope.childrenScopes[0]).isSameAs(mockChildScope)
-    }
-
-    @Test
-    fun `M send warn dev log W handleEvent { app displayed, event is relevant, bg disabled }`(
-        forge: Forge
-    ) {
-        // GIVEN
-        testedScope = RumSessionScope(
-            mockParentScope,
-            100f,
-            false,
-            mockDetector,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockTimeProvider,
-            mockSessionListener,
-            mockRumEventSourceProvider,
-            mockBuildSdkVersionProvider,
-            TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS,
-            fakeAndroidInfoProvider
-        )
-        testedScope.applicationDisplayed = true
-        val fakeEvent = forge.forgeValidBackgroundEvent()
-
-        // WHEN
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // THEN
-        verify(logger.mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
-    }
-
-    @Test
-    fun `M not start a background ViewScope W handleEvent { app displayed, event not relevant}`(
-        forge: Forge
-    ) {
-        // GIVEN
-        testedScope.applicationDisplayed = true
-        val fakeEvent = forge.forgeInvalidBackgroundEvent()
-
-        // WHEN
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // THEN
-        assertThat(testedScope.childrenScopes).hasSize(0)
-    }
-
-    @Test
-    fun `M not start an appLaunch ViewScope W handleEvent { app not displayed, event not relevant}`(
-        forge: Forge
-    ) {
-        // GIVEN
-        testedScope.applicationDisplayed = false
-        val fakeEvent = forge.forgeInvalidAppLaunchEvent()
-
-        // WHEN
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // THEN
-        assertThat(testedScope.childrenScopes).hasSize(0)
-    }
-
-    @Test
-    fun `M send warn dev log W handleEvent { app displayed, bg event not relevant}`(
-        forge: Forge
-    ) {
-        // GIVEN
-        testedScope.applicationDisplayed = true
-        val fakeEvent = forge.forgeInvalidBackgroundEvent()
-
-        // WHEN
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // THEN
-        verify(logger.mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
-    }
-
-    @Test
-    fun `M not send warn dev log W handleEvent { app displayed, bg event silent}`(
-        forge: Forge
-    ) {
-        // GIVEN
-        testedScope.applicationDisplayed = true
-        val fakeEvent = forge.forgeSilentOrphanEvent()
-
-        // WHEN
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // THEN
-        verifyZeroInteractions(logger.mockDevLogHandler)
-    }
-
-    @Test
-    fun `M send warn dev log W handleEvent { app not displayed, app launch event not relevant}`(
-        forge: Forge
-    ) {
-        // GIVEN
-        testedScope.applicationDisplayed = false
-        val fakeEvent = forge.forgeInvalidAppLaunchEvent()
-
-        // WHEN
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // THEN
-        verify(logger.mockDevLogHandler).handleLog(Log.WARN, RumSessionScope.MESSAGE_MISSING_VIEW)
-    }
-
-    @Test
-    fun `M not send warn dev log W handleEvent { app not displayed, bg event silent}`(
-        forge: Forge
-    ) {
-        // GIVEN
-        testedScope.applicationDisplayed = false
-        val fakeEvent = forge.forgeSilentOrphanEvent()
-
-        // WHEN
-        testedScope.handleEvent(fakeEvent, mockWriter)
-
-        // THEN
-        verifyZeroInteractions(logger.mockDevLogHandler)
-    }
-
-    private fun Forge.forgeValidBackgroundEvent(): RumRawEvent {
-        val fakeEventTime = Time()
-        val fakeName = this.anAlphabeticalString()
-
-        return this.anElementFrom(
-            listOf(
-                RumRawEvent.StartAction(
-                    this.aValueFrom(RumActionType::class.java),
-                    fakeName,
-                    this.aBool(),
-                    emptyMap(),
-                    fakeEventTime
-                ),
-                RumRawEvent.AddError(
-                    fakeName,
-                    this.aValueFrom(RumErrorSource::class.java),
-                    stacktrace = null,
-                    throwable = null,
-                    isFatal = this.aBool(),
-                    attributes = emptyMap(),
-                    eventTime = fakeEventTime
-                ),
-                RumRawEvent.StartResource(
-                    fakeName,
-                    getForgery<URL>().toString(),
-                    anElementFrom("POST", "GET", "PUT", "DELETE", "HEAD"),
-                    emptyMap(),
-                    fakeEventTime
-                )
-            )
-        )
-    }
-
-    private fun Forge.forgeValidAppLaunchEvent(): RumRawEvent {
-        val fakeEventTime = Time()
-        val fakeName = this.anAlphabeticalString()
-
-        return this.anElementFrom(
-            listOf(
-                RumRawEvent.StartAction(
-                    this.aValueFrom(RumActionType::class.java),
-                    fakeName,
-                    this.aBool(),
-                    emptyMap(),
-                    fakeEventTime
-                ),
-                RumRawEvent.AddLongTask(System.nanoTime(), fakeName, fakeEventTime),
-                RumRawEvent.AddError(
-                    fakeName,
-                    this.aValueFrom(RumErrorSource::class.java),
-                    stacktrace = null,
-                    throwable = null,
-                    isFatal = this.aBool(),
-                    attributes = emptyMap(),
-                    eventTime = fakeEventTime
-                ),
-                RumRawEvent.StartResource(
-                    fakeName,
-                    getForgery<URL>().toString(),
-                    anElementFrom("POST", "GET", "PUT", "DELETE", "HEAD"),
-                    emptyMap(),
-                    fakeEventTime
-                )
-            )
-        )
-    }
-
-    private fun Forge.forgeInvalidBackgroundEvent(): RumRawEvent {
-        val fakeEventTime = Time()
-        val fakeKey = anAlphabeticalString()
-        val fakeName = anAlphabeticalString()
-
-        return this.anElementFrom(
-            listOf(
-                RumRawEvent.AddLongTask(System.nanoTime(), fakeName, fakeEventTime),
-                RumRawEvent.StopAction(
-                    this.aValueFrom(RumActionType::class.java),
-                    fakeKey,
-                    emptyMap(),
-                    fakeEventTime
-                ),
-                RumRawEvent.StopResource(
-                    fakeKey,
-                    statusCode = null,
-                    size = null,
-                    kind = this.aValueFrom(RumResourceKind::class.java),
-                    attributes = emptyMap(),
-                    eventTime = fakeEventTime
-                ),
-                RumRawEvent.StopResourceWithError(
-                    fakeKey,
-                    message = this.aString(),
-                    statusCode = null,
-                    source = this.aValueFrom(RumErrorSource::class.java),
-                    throwable = this.getForgery(),
-                    attributes = emptyMap(),
-                    eventTime = fakeEventTime
-                ),
-                RumRawEvent.StopResourceWithStackTrace(
-                    fakeKey,
-                    message = this.aString(),
-                    statusCode = null,
-                    source = this.aValueFrom(RumErrorSource::class.java),
-                    stackTrace = this.anAlphaNumericalString(),
-                    errorType = aNullable { anAlphabeticalString() },
-                    attributes = emptyMap(),
-                    eventTime = fakeEventTime
-                )
-            )
-        )
-    }
-
-    private fun Forge.forgeInvalidAppLaunchEvent(): RumRawEvent {
-        val fakeEventTime = Time()
-        val fakeKey = this.anAlphabeticalString()
-
-        return this.anElementFrom(
-            listOf(
-                RumRawEvent.StopAction(
-                    this.aValueFrom(RumActionType::class.java),
-                    fakeKey,
-                    emptyMap(),
-                    fakeEventTime
-                ),
-                RumRawEvent.StopResource(
-                    fakeKey,
-                    statusCode = null,
-                    size = null,
-                    kind = this.aValueFrom(RumResourceKind::class.java),
-                    attributes = emptyMap(),
-                    eventTime = fakeEventTime
-                ),
-                RumRawEvent.StopResourceWithError(
-                    fakeKey,
-                    message = this.aString(),
-                    statusCode = null,
-                    source = this.aValueFrom(RumErrorSource::class.java),
-                    throwable = this.getForgery(),
-                    attributes = emptyMap(),
-                    eventTime = fakeEventTime
-                ),
-                RumRawEvent.StopResourceWithStackTrace(
-                    fakeKey,
-                    message = this.aString(),
-                    statusCode = null,
-                    source = this.aValueFrom(RumErrorSource::class.java),
-                    stackTrace = this.anAlphaNumericalString(),
-                    errorType = aNullable { anAlphabeticalString() },
-                    attributes = emptyMap(),
-                    eventTime = fakeEventTime
-                )
-            )
-        )
-    }
-
-    private fun Forge.forgeSilentOrphanEvent(): RumRawEvent {
-        val fakeEventTime = Time()
-        val fakeKey = anAlphabeticalString()
-        val fakeId = getForgery<UUID>().toString()
-
-        return this.anElementFrom(
-            listOf(
-                RumRawEvent.ApplicationStarted(fakeEventTime, aLong()),
-                RumRawEvent.ResetSession(),
-                RumRawEvent.KeepAlive(),
-                RumRawEvent.StopView(
-                    fakeKey,
-                    emptyMap(),
-                    fakeEventTime
-                ),
-                RumRawEvent.ActionSent(fakeId),
-                RumRawEvent.ErrorSent(fakeId),
-                RumRawEvent.LongTaskSent(fakeId),
-                RumRawEvent.ResourceSent(fakeId),
-                RumRawEvent.ActionDropped(fakeId),
-                RumRawEvent.ErrorDropped(fakeId),
-                RumRawEvent.LongTaskDropped(fakeId),
-                RumRawEvent.ResourceDropped(fakeId)
-            )
-        )
-    }
+    // endregion
 
     companion object {
 

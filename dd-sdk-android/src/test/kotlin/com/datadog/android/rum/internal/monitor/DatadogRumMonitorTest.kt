@@ -26,6 +26,7 @@ import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumResourceScope
 import com.datadog.android.rum.internal.domain.scope.RumScope
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
+import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
@@ -1286,8 +1287,8 @@ internal class DatadogRumMonitorTest {
         // Given
         val mockRumApplicationScope = mock<RumApplicationScope>()
         testedMonitor.rootScope = mockRumApplicationScope
-
         val mockSessionScope = mock<RumSessionScope>()
+        val mockViewManagerScope = mock<RumViewManagerScope>()
 
         val listener = mock<RumDebugListener>()
         testedMonitor.debugListener = listener
@@ -1300,16 +1301,14 @@ internal class DatadogRumMonitorTest {
                 whenever(isActive()) doReturn true
             }
         }
-
         val expectedViewNames = viewScopes.mapNotNull { it.getRumContext().viewName }
-
         val otherScopes = forge.aList {
             forge.anElementFrom(mock(), mock<RumActionScope>(), mock<RumResourceScope>())
         }
-
         whenever(mockRumApplicationScope.childScope) doReturn mockSessionScope
-        whenever(mockSessionScope.childrenScopes) doReturn
-            (viewScopes + otherScopes).toMutableList()
+        whenever(mockSessionScope.childScope) doReturn mockViewManagerScope
+        whenever(mockViewManagerScope.childrenScopes)
+            .thenReturn((viewScopes + otherScopes).toMutableList())
 
         // When
         testedMonitor.notifyDebugListenerWithState()
@@ -1325,12 +1324,11 @@ internal class DatadogRumMonitorTest {
         // Given
         val mockRumApplicationScope = mock<RumApplicationScope>()
         testedMonitor.rootScope = mockRumApplicationScope
-
         val mockSessionScope = mock<RumSessionScope>()
+        val mockViewManagerScope = mock<RumViewManagerScope>()
 
         val listener = mock<RumDebugListener>()
         testedMonitor.debugListener = listener
-
         val viewScopes = forge.aList {
             mock<RumViewScope>().apply {
                 whenever(getRumContext()) doReturn
@@ -1339,16 +1337,14 @@ internal class DatadogRumMonitorTest {
                 whenever(isActive()) doReturn false
             }
         }
-
         val expectedViewNames = emptyList<String>()
-
         val otherScopes = forge.aList {
             forge.anElementFrom(mock(), mock<RumActionScope>(), mock<RumResourceScope>())
         }
-
         whenever(mockRumApplicationScope.childScope) doReturn mockSessionScope
-        whenever(mockSessionScope.childrenScopes) doReturn
-            (viewScopes + otherScopes).toMutableList()
+        whenever(mockSessionScope.childScope) doReturn mockViewManagerScope
+        whenever(mockViewManagerScope.childrenScopes)
+            .thenReturn((viewScopes + otherScopes).toMutableList())
 
         // When
         testedMonitor.notifyDebugListenerWithState()
