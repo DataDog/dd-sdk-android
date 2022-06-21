@@ -5,6 +5,7 @@ object com.datadog.android.Datadog
   fun setVerbosity(Int)
   fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
   fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
+  fun addUserExtraInfo(Map<String, Any?> = emptyMap())
   fun enableRumDebugging(Boolean)
 object com.datadog.android.DatadogEndpoint
   const val LOGS_US1: String
