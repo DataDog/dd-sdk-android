@@ -9,8 +9,11 @@ package com.datadog.android.log.internal.user
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.nhaarman.mockitokotlin2.verify
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -69,61 +72,44 @@ internal class DatadogUserInfoProviderTest {
     @Test
     fun `𝕄 keep existing properties 𝕎 setExtraProperties() is called`(
         @Forgery userInfo: UserInfo,
-        @Forgery additionalProperties: Map<String, Any?>,
+        @StringForgery forge: Forge
     ) {
-        // When
-        val originalProperties = mapOf(
-            "key1" to 1,
-            "key2" to "one",
-        )
+        // Given
+        val customProperties = forge.exhaustiveAttributes()
         testedProvider.setUserInfo(
             userInfo.copy(
-                additionalProperties = originalProperties,
+                additionalProperties = customProperties
             )
         )
-        testedProvider.addUserProperties(additionalProperties)
 
-
+        // When
+        testedProvider.addUserProperties(customProperties)
         // Then
         assertThat(
             testedProvider.getUserInfo().additionalProperties
-        ).isEqualTo(
-            mapOf(
-                "key1" to 1,
-                "key2" to "one",
-            ) + additionalProperties
-        )
+        ).isEqualTo(customProperties)
     }
 
     @Test
-    fun `𝕄 keep new property key 𝕎 setExtraProperties() is called and there already exists that key`(
-        @Forgery userInfo: UserInfo
+    fun `𝕄 keep new property key 𝕎 setExtraProperties() is called and the key already exists`(
+        @Forgery userInfo: UserInfo,
+        @StringForgery key: String,
+        @StringForgery value1: String,
+        @StringForgery value2: String
     ) {
-        // When
-        val originalProperties = mapOf(
-            "key1" to 1,
-            "key2" to "one",
-        )
-        // this map has a conflicting key with the original properties map
-        val newProperties = mapOf(
-            "key1" to 1.0,
-        )
+        // Given
         testedProvider.setUserInfo(
-            userInfo.copy(
-                additionalProperties = originalProperties,
-            )
+            userInfo.copy(additionalProperties = mapOf(key to value1))
         )
-        testedProvider.addUserProperties(newProperties)
 
+        // When
+        testedProvider.addUserProperties(mapOf(key to value2))
 
         // Then
         assertThat(
             testedProvider.getUserInfo().additionalProperties
         ).isEqualTo(
-            mapOf(
-                "key1" to 1.0,
-                "key2" to "one",
-            )
+            mapOf(key to value2)
         )
     }
 }

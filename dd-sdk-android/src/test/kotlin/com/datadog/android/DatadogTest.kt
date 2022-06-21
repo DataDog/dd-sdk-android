@@ -196,7 +196,7 @@ internal class DatadogTest {
     fun `𝕄 set additionalProperties 𝕎 setExtraProperties() is called`(
         @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
         @StringForgery name: String,
-        @StringForgery(regex = "\\w+@\\w+") email: String,
+        @StringForgery(regex = "\\w+@\\w+") email: String
     ) {
         // Given
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
@@ -207,7 +207,7 @@ internal class DatadogTest {
         Datadog.addUserExtraInfo(
             mapOf(
                 "key1" to 1,
-                "key2" to "one",
+                "key2" to "one"
             )
         )
 
@@ -222,7 +222,7 @@ internal class DatadogTest {
         verify(mockUserInfoProvider).addUserProperties(
             properties = mapOf(
                 "key1" to 1,
-                "key2" to "one",
+                "key2" to "one"
             )
         )
     }
