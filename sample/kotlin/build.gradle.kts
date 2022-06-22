@@ -26,6 +26,7 @@ plugins {
     id("org.jetbrains.dokka")
     id("realm-android")
     id("com.squareup.sqldelight")
+    id("com.google.devtools.ksp")
 }
 
 sqldelight {
@@ -160,7 +161,7 @@ dependencies {
     // Local Storage
     implementation(libs.sqlDelight)
     implementation(libs.room)
-    kapt(libs.roomCompiler)
+    ksp(libs.roomCompiler)
 
     // Multithreading
     implementation(libs.rxJava3)
