@@ -1505,7 +1505,7 @@ interface com.datadog.android.v2.api.FeatureScope
 data class com.datadog.android.v2.api.FeatureStorageConfiguration
   constructor(Int, Int, Int, Long)
 data class com.datadog.android.v2.api.FeatureUploadConfiguration
-  constructor(String, PayloadFormat)
+  constructor(RequestFactory)
 interface com.datadog.android.v2.api.InternalLogger
   enum Level
     - DEBUG
@@ -1521,6 +1521,10 @@ interface com.datadog.android.v2.api.PayloadFormat
   fun prefixBytes(): ByteArray
   fun suffixBytes(): ByteArray
   fun separatorBytes(): ByteArray
+data class com.datadog.android.v2.api.Request
+  constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
+interface com.datadog.android.v2.api.RequestFactory
+  fun create(com.datadog.android.v2.api.context.DatadogContext, List<ByteArray>, ByteArray?): Request
 interface com.datadog.android.v2.api.SDKCore
   fun registerFeature(String, FeatureStorageConfiguration, FeatureUploadConfiguration)
   fun getFeature(String): FeatureScope?
@@ -1564,18 +1568,6 @@ data class com.datadog.android.v2.api.context.TimeInfo
   constructor(Long, Long)
 data class com.datadog.android.v2.api.context.UserInfo
   constructor(String?, String?, String?, Map<String, Any>)
-class com.datadog.android.v2.core.DatadogCore : com.datadog.android.v2.api.SDKCore
-  constructor(android.content.Context, com.datadog.android.core.configuration.Credentials, com.datadog.android.core.configuration.Configuration)
-  override fun registerFeature(String, com.datadog.android.v2.api.FeatureStorageConfiguration, com.datadog.android.v2.api.FeatureUploadConfiguration)
-  override fun getFeature(String): com.datadog.android.v2.api.FeatureScope?
-  override fun setVerbosity(Int)
-  override fun getVerbosity(): Int
-  override fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
-  override fun setUserInfo(com.datadog.android.core.model.UserInfo)
-  override fun clearAllData()
-  override fun stop()
-  override fun flushStoredData()
-  companion object 
 class com.datadog.android.webview.DatadogEventBridge
   constructor()
   constructor(List<String>)

@@ -8,10 +8,12 @@ package com.datadog.android.v2.core.internal.storage
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.tools.annotation.NoOpImplementation
 
 /**
  * Main core api to interact with the local storage of events.
  */
+@NoOpImplementation
 internal interface Storage {
 
     /**

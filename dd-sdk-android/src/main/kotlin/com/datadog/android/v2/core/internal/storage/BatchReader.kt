@@ -9,6 +9,13 @@ package com.datadog.android.v2.core.internal.storage
 import androidx.annotation.WorkerThread
 
 internal interface BatchReader {
+
+    /**
+     * @return the metadata of the current readable file
+     */
+    @WorkerThread
+    fun currentMetadata(): ByteArray?
+
     @WorkerThread
     fun read(): List<ByteArray>
 }
