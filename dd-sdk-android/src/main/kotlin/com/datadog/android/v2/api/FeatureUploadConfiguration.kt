@@ -9,10 +9,8 @@ package com.datadog.android.v2.api
 /**
  * Contains the upload configuration for an [FeatureScope] instance.
  *
- * @property endpointUrl the url endpoint data should be uploaded to
- * @property payloadFormat the expected format of the payload
+ * @property requestFactory creates a request from a given batch and its metadata
  */
 data class FeatureUploadConfiguration(
-    val endpointUrl: String,
-    val payloadFormat: PayloadFormat
+    val requestFactory: RequestFactory
 )

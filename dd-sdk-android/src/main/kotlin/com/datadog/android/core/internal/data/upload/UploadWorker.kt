@@ -11,13 +11,13 @@ import androidx.annotation.WorkerThread
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.UploadStatus
-import com.datadog.android.core.internal.persistence.Batch
-import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.DatadogFeature
+import com.datadog.android.v2.core.internal.net.DataUploader
+import com.datadog.android.v2.core.internal.storage.Storage
 
 internal class UploadWorker(
     appContext: Context,
@@ -33,46 +33,49 @@ internal class UploadWorker(
             return Result.success()
         }
 
-        // Upload Crash reports
         val globalSDKCore: DatadogCore? = (Datadog.globalSDKCore as? DatadogCore)
-        listOfNotNull(
-            globalSDKCore?.crashReportsFeature,
-            globalSDKCore?.logsFeature,
-            globalSDKCore?.tracingFeature,
-            globalSDKCore?.rumFeature,
-            globalSDKCore?.webViewLogsFeature,
-            globalSDKCore?.webViewRumFeature
-        )
-            .forEach {
-                uploadAllBatches(
-                    it.persistenceStrategy.getReader(),
+
+        if (globalSDKCore != null) {
+            val features =
+                globalSDKCore.getAllFeatures().mapNotNull { it as? DatadogFeature }
+
+            features.forEach {
+                // TODO RUMM-2296 do interleaving/randomization for the upload sequence, because
+                //  if some feature upload is slow, all other feature uploads will wait until
+                //  feature completes with all its batches
+                uploadNextBatch(
+                    globalSDKCore,
+                    it.storage,
                     it.uploader
                 )
             }
+        }
 
         return Result.success()
     }
 
     @WorkerThread
-    private fun uploadAllBatches(
-        reader: DataReader,
+    private fun uploadNextBatch(
+        datadogCore: DatadogCore,
+        storage: Storage,
         uploader: DataUploader
     ) {
-        val failedBatches = mutableListOf<Batch>()
-        var batch: Batch?
-        do {
-            batch = reader.lockAndReadNext()
-            if (batch != null) {
-                if (consumeBatch(batch, uploader)) {
-                    reader.drop(batch)
-                } else {
-                    failedBatches.add(batch)
-                }
-            }
-        } while (batch != null)
+        // context is unique for each batch query instead of using the same one for all the batches
+        // which will be uploaded, because it can change by the time the upload of the next batch
+        // is requested.
+        val context = datadogCore.context ?: return
 
-        failedBatches.forEach {
-            reader.release(it)
+        storage.readNextBatch(context) { batchId, reader ->
+            val batch = reader.read()
+            val batchMeta = reader.currentMetadata()
+
+            val success = consumeBatch(context, batch, batchMeta, uploader)
+            storage.confirmBatchRead(batchId) { confirmation ->
+                confirmation.markAsRead(deleteBatch = success)
+            }
+
+            // TODO RUMM-2295 stack overflow protection?
+            uploadNextBatch(datadogCore, storage, uploader)
         }
     }
 
@@ -81,30 +84,14 @@ internal class UploadWorker(
     // region Internal
 
     private fun consumeBatch(
-        batch: Batch,
+        context: DatadogContext,
+        batch: List<ByteArray>,
+        batchMeta: ByteArray?,
         uploader: DataUploader
     ): Boolean {
-        val status = uploader.upload(batch.data)
-        status.logStatus(
-            uploader.javaClass.simpleName,
-            batch.data.size,
-            devLogger,
-            ignoreInfo = false,
-            sendToTelemetry = false
-        )
-        status.logStatus(
-            uploader.javaClass.simpleName,
-            batch.data.size,
-            sdkLogger,
-            ignoreInfo = true,
-            sendToTelemetry = true
-        )
+        val status = uploader.upload(context, batch, batchMeta)
         return status == UploadStatus.SUCCESS
     }
 
     // endregion
-
-    companion object {
-        private const val TAG = "UploadWorker"
-    }
 }

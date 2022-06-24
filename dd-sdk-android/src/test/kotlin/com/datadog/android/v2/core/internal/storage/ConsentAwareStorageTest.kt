@@ -849,21 +849,85 @@ internal class ConsentAwareStorageTest {
     @Test
     fun `𝕄 provide reader 𝕎 readNextBatch()`(
         @StringForgery data: List<String>,
-        @Forgery file: File
+        @StringForgery metadata: String,
+        @Forgery batchFile: File
     ) {
         // Given
         val mockData = data.map { it.toByteArray() }
-        whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturn file
-        whenever(mockBatchReaderWriter.readData(file)) doReturn mockData
+        whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturn batchFile
+        whenever(mockBatchReaderWriter.readData(batchFile)) doReturn mockData
+
+        val mockMetaFile = mock<File>().apply {
+            whenever(exists()) doReturn true
+        }
+
+        whenever(mockGrantedOrchestrator.getMetadataFile(batchFile)) doReturn mockMetaFile
+        val mockMetadata = metadata.toByteArray()
+        whenever(mockMetaReaderWriter.readData(mockMetaFile)) doReturn mockMetadata
 
         // Whenever
         var readData: List<ByteArray>? = null
+        var readMetadata: ByteArray? = null
         testedStorage.readNextBatch(fakeDatadogContext) { _, reader ->
+            readMetadata = reader.currentMetadata()
             readData = reader.read()
         }
 
         // Then
         assertThat(readData).isEqualTo(mockData)
+        assertThat(readMetadata).isEqualTo(mockMetadata)
+    }
+
+    @Test
+    fun `𝕄 provide reader 𝕎 readNextBatch() { no metadata file provided }`(
+        @StringForgery data: List<String>,
+        @Forgery batchFile: File
+    ) {
+        // Given
+        val mockData = data.map { it.toByteArray() }
+        whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturn batchFile
+        whenever(mockBatchReaderWriter.readData(batchFile)) doReturn mockData
+
+        // Whenever
+        var readData: List<ByteArray>? = null
+        var readMetadata: ByteArray? = null
+        testedStorage.readNextBatch(fakeDatadogContext) { _, reader ->
+            readMetadata = reader.currentMetadata()
+            readData = reader.read()
+        }
+
+        // Then
+        assertThat(readData).isEqualTo(mockData)
+        assertThat(readMetadata).isNull()
+    }
+
+    @Test
+    fun `𝕄 provide reader 𝕎 readNextBatch() { metadata file doesn't exist }`(
+        @StringForgery data: List<String>,
+        @Forgery batchFile: File
+    ) {
+        // Given
+        val mockData = data.map { it.toByteArray() }
+        whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturn batchFile
+        whenever(mockBatchReaderWriter.readData(batchFile)) doReturn mockData
+
+        val mockMetaFile = mock<File>().apply {
+            whenever(exists()) doReturn false
+        }
+
+        whenever(mockGrantedOrchestrator.getMetadataFile(batchFile)) doReturn mockMetaFile
+
+        // Whenever
+        var readData: List<ByteArray>? = null
+        var readMetadata: ByteArray? = null
+        testedStorage.readNextBatch(fakeDatadogContext) { _, reader ->
+            readMetadata = reader.currentMetadata()
+            readData = reader.read()
+        }
+
+        // Then
+        assertThat(readData).isEqualTo(mockData)
+        assertThat(readMetadata).isNull()
     }
 
     @Test
