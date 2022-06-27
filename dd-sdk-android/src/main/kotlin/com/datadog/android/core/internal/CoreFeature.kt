@@ -184,7 +184,7 @@ internal object CoreFeature {
         // having corrupted data (data from previous process over - written in this process into the
         // ndk crash folder before the crash was actually handled)
         prepareNdkCrashData(appContext)
-        setupInfoProviders(appContext, consent)
+        setupInfoProviders(appContext, consent, configuration)
         initialized.set(true)
     }
 
@@ -318,13 +318,17 @@ internal object CoreFeature {
 
     private fun setupInfoProviders(
         appContext: Context,
-        consent: TrackingConsent
+        consent: TrackingConsent,
+        configuration: Configuration.Core
     ) {
         // Tracking Consent Provider
         trackingConsentProvider = TrackingConsentProvider(consent)
 
         // System Info Provider
-        systemInfoProvider = BroadcastReceiverSystemInfoProvider()
+        systemInfoProvider = configuration.batteryIntentHandler?.let{ batteryIntentHandler ->
+            BroadcastReceiverSystemInfoProvider(batteryIntentHandler = batteryIntentHandler)
+        }?: BroadcastReceiverSystemInfoProvider()
+
         systemInfoProvider.register(appContext)
 
         // Network Info Provider
