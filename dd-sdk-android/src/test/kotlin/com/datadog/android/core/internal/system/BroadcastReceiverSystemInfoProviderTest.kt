@@ -12,6 +12,8 @@ import android.os.BatteryManager
 import android.os.Build
 import android.os.PowerManager
 import com.datadog.android.log.assertj.SystemInfoAssert.Companion.assertThat
+import com.datadog.android.plugin.BatteryIntentHandler
+import com.datadog.android.plugin.BatteryIntentResults
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
@@ -38,6 +40,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
+import org.mockito.internal.verification.Times
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -450,6 +453,35 @@ internal class BroadcastReceiverSystemInfoProviderTest {
 
         // Then
         assertThat(systemInfo).hasOnExternalPowerSource(false)
+    }
+    @Test
+    fun `M call custom battery intent handler W custom battery intent handler provided`(
+        @IntForgery(
+            min = 0,
+            max = 100
+        ) level: Int,
+        @IntForgery(min = 50, max = 10000) scale: Int
+    ) {
+        //Given
+        val scaledLevel = (level * scale) / 100
+        val mockHandler:BatteryIntentHandler = mock()
+        val batteryIntent: Intent = mock()
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_SCALE), any())) doReturn scale
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_LEVEL), any())) doReturn scaledLevel
+        whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_PLUGGED), any())).doReturn(0)
+        whenever(batteryIntent.action) doReturn Intent.ACTION_BATTERY_CHANGED
+        whenever(mockHandler.handleBatteryIntent(any())) doReturn BatteryIntentResults(true, scaledLevel, true)
+        testedProvider = BroadcastReceiverSystemInfoProvider(mockBuildSdkVersionProvider, batteryIntentHandler = mockHandler)
+
+        //When
+        testedProvider.onReceive(mockContext, batteryIntent)
+        val systemInfo = testedProvider.getLatestSystemInfo()
+
+        // Then
+        verify(mockHandler, Times(1)).handleBatteryIntent(batteryIntent)
+        assertThat(systemInfo).hasOnExternalPowerSource(true)
+        assertThat(systemInfo).hasBatteryLevel(scaledLevel)
+        assertThat(systemInfo).hasBatteryFullOrCharging(true)
     }
 
     // endregion
