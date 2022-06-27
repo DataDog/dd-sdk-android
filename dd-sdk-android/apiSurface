@@ -78,6 +78,7 @@ data class com.datadog.android.core.configuration.Configuration
     constructor(Boolean, Boolean, Boolean, Boolean)
     fun build(): Configuration
     fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
+    fun setBatteryIntentHandler(com.datadog.android.plugin.BatteryIntentHandler)
     fun setFirstPartyHosts(List<String>): Builder
     fun setWebViewTrackingHosts(List<String>): Builder
     fun useSite(com.datadog.android.DatadogSite): Builder
@@ -287,6 +288,10 @@ data class com.datadog.android.log.model.LogEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Status
+data class com.datadog.android.plugin.BatteryIntentResults
+  constructor(Boolean, Int, Boolean)
+interface com.datadog.android.plugin.BatteryIntentHandler
+  fun handleBatteryIntent(android.content.Intent): BatteryIntentResults
 data class com.datadog.android.plugin.DatadogContext
   constructor(DatadogRumContext? = null)
 interface com.datadog.android.plugin.DatadogPlugin : com.datadog.android.privacy.TrackingConsentProviderCallback
