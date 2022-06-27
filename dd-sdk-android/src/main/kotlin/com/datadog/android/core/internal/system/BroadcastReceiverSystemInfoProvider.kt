@@ -10,15 +10,16 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.os.BatteryManager
 import android.os.Build
 import android.os.PowerManager
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.utils.debugWithTelemetry
+import com.datadog.android.plugin.BatteryIntentHandler
 
 internal class BroadcastReceiverSystemInfoProvider(
-    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
+    private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
+    private val batteryIntentHandler: BatteryIntentHandler = DefaultBatteryIntentHandler()
 ) :
     ThreadSafeReceiver(), SystemInfoProvider {
 
@@ -71,21 +72,12 @@ internal class BroadcastReceiverSystemInfoProvider(
     }
 
     private fun handleBatteryIntent(intent: Intent) {
-        val status = intent.getIntExtra(
-            BatteryManager.EXTRA_STATUS,
-            BatteryManager.BATTERY_STATUS_UNKNOWN
-        )
-        val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-        val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100)
-        val pluggedStatus = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)
-        val batteryStatus = SystemInfo.BatteryStatus.fromAndroidStatus(status)
-        val batteryLevel = (level * 100) / scale
-        val onExternalPowerSource = pluggedStatus in PLUGGED_IN_STATUS_VALUES
-        val batteryFullOrCharging = batteryStatus in batteryFullOrChargingStatus
+        val results = batteryIntentHandler.handleBatteryIntent(intent)
+
         systemInfo = systemInfo.copy(
-            batteryFullOrCharging = batteryFullOrCharging,
-            batteryLevel = batteryLevel,
-            onExternalPowerSource = onExternalPowerSource
+            batteryFullOrCharging = results.batteryFullOrCharging,
+            batteryLevel = results.batteryLevel,
+            onExternalPowerSource = results.onExternalPowerSource
         )
     }
 
@@ -102,17 +94,4 @@ internal class BroadcastReceiverSystemInfoProvider(
 
     // endregion
 
-    companion object {
-
-        private val batteryFullOrChargingStatus = setOf(
-            SystemInfo.BatteryStatus.CHARGING,
-            SystemInfo.BatteryStatus.FULL
-        )
-
-        private val PLUGGED_IN_STATUS_VALUES = setOf(
-            BatteryManager.BATTERY_PLUGGED_AC,
-            BatteryManager.BATTERY_PLUGGED_WIRELESS,
-            BatteryManager.BATTERY_PLUGGED_USB
-        )
-    }
 }
