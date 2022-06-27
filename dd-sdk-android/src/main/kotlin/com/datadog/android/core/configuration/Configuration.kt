@@ -21,6 +21,7 @@ import com.datadog.android.event.NoOpSpanEventMapper
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.log.model.LogEvent
+import com.datadog.android.plugin.BatteryIntentHandler
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.Feature as PluginFeature
 import com.datadog.android.rum.RumMonitor
@@ -70,7 +71,8 @@ internal constructor(
         val proxy: Proxy?,
         val proxyAuth: Authenticator,
         val securityConfig: SecurityConfig,
-        val webViewTrackingHosts: List<String>
+        val webViewTrackingHosts: List<String>,
+        val batteryIntentHandler: BatteryIntentHandler? = null
     )
 
     internal sealed class Feature {
@@ -162,6 +164,16 @@ internal constructor(
         fun setUseDeveloperModeWhenDebuggable(developerModeEnabled: Boolean): Builder {
             coreConfig = coreConfig.copy(enableDeveloperModeWhenDebuggable = developerModeEnabled)
             return this
+        }
+
+        /**
+         * Sets the battery intent handler for interrogating battery state.
+         * Modifications of this intent processing could have negative effects on the users battery life and it is highly recommended to
+         * not provide your own BatteryIntentHandler unless there are very specific needs to override the default functionality.
+         * @param batteryIntentHandler processes battery state which is used to determine if logs are synced
+         */
+        fun setBatteryIntentHandler(batteryIntentHandler: BatteryIntentHandler){
+            coreConfig = coreConfig.copy(batteryIntentHandler = batteryIntentHandler)
         }
 
         /**
@@ -721,7 +733,8 @@ internal constructor(
             proxy = null,
             proxyAuth = Authenticator.NONE,
             securityConfig = SecurityConfig.DEFAULT,
-            webViewTrackingHosts = emptyList()
+            webViewTrackingHosts = emptyList(),
+            batteryIntentHandler = null
         )
         internal val DEFAULT_LOGS_CONFIG = Feature.Logs(
             endpointUrl = DatadogEndpoint.LOGS_US1,
