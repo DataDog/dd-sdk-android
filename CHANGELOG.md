@@ -1,4 +1,4 @@
-# 1.13.0 / 2022-05-24
+# 1.13.0 / 2022-06-27
 
 * [BUGFIX] Core: Prevent a rare race condition in the features folder creation
 * [BUGFIX] RUM: Update Global RUM context when view is stopped
