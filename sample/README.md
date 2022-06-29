@@ -38,13 +38,3 @@ If you need to target a site that is not part of the `DatadogSite` enum, configu
     "rumEndpoint": "http://api.example.com/rum"
 }
 ```
-
-### Internal Monitoring
-
-If you want to enable the internal monitoring, you need to add the relevant `clientToken` in the following attribute: 
-
-```json
-{
-    "internalMonitoringToken": "INTERNAL TOKEN"
-}
-```
