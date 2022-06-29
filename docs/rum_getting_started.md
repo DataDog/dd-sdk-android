@@ -285,7 +285,9 @@ public class SampleApplication extends Application {
 {{< /tabs >}}
 {{< /site-region >}}
 
-The credentials for initialization require your application's variant name and uses the value of `BuildConfig.FLAVOR` or an empty string if you don't have variants. This enables the correct ProGuard `mapping.txt` file to automatically upload at build time so you can view de-obfuscated RUM error stack traces. For more information, see the [guide to uploading Android source mapping files][8].
+The initialization credentials require your application's variant name and uses the value of `BuildConfig.FLAVOR`. If you do not have variants, the credentials uses an empty string. 
+
+This enables the appropriate ProGuard `mapping.txt` file to automatically upload at build time so you can view deobfuscated RUM error stack traces. For more information, see the [Track Android Errors][8].
 
 ### Initialize the RUM Monitor and Interceptor
 
@@ -300,8 +302,8 @@ GlobalRum.registerIfAbsent(monitor)
 {{% /tab %}}
 {{% tab "Java" %}}
 ```java
-    final RumMonitor monitor = new RumMonitor.Builder().build();
-    GlobalRum.registerIfAbsent(monitor);
+final RumMonitor monitor = new RumMonitor.Builder().build();
+GlobalRum.registerIfAbsent(monitor);
 ```
 {{% /tab %}}
 {{< /tabs >}}
@@ -311,16 +313,16 @@ To track your OkHttp requests as resources, add the provided [Interceptor][9]:
 {{< tabs >}}
 {{% tab "Kotlin" %}}
 ```kotlin
-    val okHttpClient =  OkHttpClient.Builder()
-        .addInterceptor(DatadogInterceptor())
-        .build()
+val okHttpClient =  OkHttpClient.Builder()
+    .addInterceptor(DatadogInterceptor())
+    .build()
 ```
 {{% /tab %}}
 {{% tab "Java" %}}
 ```java
-    final OkHttpClient okHttpClient =  new OkHttpClient.Builder()
-        .addInterceptor(new DatadogInterceptor())
-        .build();
+final OkHttpClient okHttpClient =  new OkHttpClient.Builder()
+    .addInterceptor(new DatadogInterceptor())
+    .build();
 ```
 {{% /tab %}}
 {{< /tabs >}}
@@ -337,17 +339,16 @@ You can track events such as crashes and network requests when your application 
 
 Add the following snippet during initialization in your Datadog configuration:
 
- {{< tabs >}}
+{{< tabs >}}
 {{% tab "Kotlin" %}}
-   ```kotlin
-        .trackBackgroundRumEvents(true)
-   ```
+```kotlin
+.trackBackgroundRumEvents(true)
+```
 {{% /tab %}}
- {{% tab "Java" %}}
- ```java
- .trackBackgroundRumEvents(true)
-
- ```
+{{% tab "Java" %}}
+```java
+.trackBackgroundRumEvents(true)
+```
 {{% /tab %}}
 {{< /tabs >}}
 <div class="alert alert-info"><p>Tracking background events may lead to additional sessions, which can impact billing. For questions, <a href="https://docs.datadoghq.com/help/">contact Datadog support.</a></p>
