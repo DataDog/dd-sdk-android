@@ -285,9 +285,9 @@ public class SampleApplication extends Application {
 {{< /tabs >}}
 {{< /site-region >}}
 
-The initialization credentials require your application's variant name and uses the value of `BuildConfig.FLAVOR`. If you do not have variants, the credentials uses an empty string. 
+The initialization credentials require your application's variant name and uses the value of `BuildConfig.FLAVOR`. With the variant, RUM can match the errors reported from your application with the mapping files uploaded by the Gradle plugin. If you do not have variants, the credentials uses an empty string. 
 
-This enables the appropriate ProGuard `mapping.txt` file to automatically upload at build time so you can view deobfuscated RUM error stack traces. For more information, see the [Track Android Errors][8].
+The Gradle plugin automatically uploads the appropriate ProGuard `mapping.txt` file at build time so you can view deobfuscated RUM error stack traces. For more information, see the [Track Android Errors][8].
 
 ### Initialize the RUM Monitor and Interceptor
 
