@@ -542,6 +542,7 @@ To provide a continuous trace inside a RxJava stream you need to follow the step
 {{< tabs >}}
 {{% tab "Kotlin" %}}
 ```kotlin
+var spanScope: Scope? = null
 Single.fromSupplier{} 
         .subscribeOn(Schedulers.io())
         .map {  
@@ -553,17 +554,20 @@ Single.fromSupplier{}
             val span = GlobalTracer.get()
                     .buildSpan("<YOUR_OP_NAME>")
                     .start()
-            GlobalTracer.get().scopeManager().activate(span)
+            spanScope = GlobalTracer.get().scopeManager().activate(span)
         }
         .doFinally {
             GlobalTracer.get().scopeManager().activeSpan()?.let {
                 it.finish()
             }
+            spanScope?.close()
         }
 ```
 {{% /tab %}}
 {{% tab "Java" %}}
 ```java
+ThreadLocal<Scope> scopeStorage = new ThreadLocal<>();
+...
 Single.fromSupplier({})
         .subscribeOn(Schedulers.io())
         .map(data -> {
@@ -574,12 +578,18 @@ Single.fromSupplier({})
          })
         .doOnSubscribe(disposable -> {
             final Span span = GlobalTracer.get().buildSpan("<YOUR_OP_NAME>").start();
-            GlobalTracer.get().scopeManager().activate(span);
+            Scope spanScope = GlobalTracer.get().scopeManager().activate(span);
+            scopeStorage.set(spanScope);
         })
         .doFinally(() -> {
             final Span activeSpan = GlobalTracer.get().scopeManager().activeSpan();
             if (activeSpan != null) {
                 activeSpan.finish();
+            }
+            Scope spanScope = scopeStorage.get();
+            if (spanScope != null) {
+                spanScope.close();
+                scopeStorage.remove();
             }
         })
     };
@@ -618,6 +628,7 @@ new Retrofit.Builder()
 {{< tabs >}}
 {{% tab "Kotlin" %}}
 ```kotlin
+var spanScope: Scope? = null
 remoteDataSource.getData(query)
     .subscribeOn(Schedulers.io())
     .map { // ... } 
@@ -626,17 +637,20 @@ remoteDataSource.getData(query)
     }
     .doOnSubscribe {
         val span = GlobalTracer.get().buildSpan("<YOUR_OP_NAME>").start()
-        GlobalTracer.get().scopeManager().activate(span)
+        spanScope = GlobalTracer.get().scopeManager().activate(span)
     }
     .doFinally {
         GlobalTracer.get().scopeManager().activeSpan()?.let {
             it.finish()
         }
+        spanScope?.close()
     }
 ```
 {{% /tab %}}
 {{% tab "Java" %}}
 ```java
+ThreadLocal<Scope> scopeStorage = new ThreadLocal<>();
+...
 remoteDataSource.getData(query)
     .subscribeOn(Schedulers.io())
     .map(data -> { // ... })
@@ -645,12 +659,18 @@ remoteDataSource.getData(query)
     })
     .doOnSubscribe(disposable -> {
         final Span span = GlobalTracer.get().buildSpan("<YOUR_OP_NAME>").start();
-        GlobalTracer.get().scopeManager().activate(span);
+        Scope spanScope = GlobalTracer.get().scopeManager().activate(span);
+        scopeStorage.set(spanScope);
     })
     .doFinally(() -> { 
         final Span activeSpan = GlobalTracer.get().scopeManager().activeSpan();
         if (activeSpan != null) {
             activeSpan.finish();
+        }
+        Scope spanScope = scopeStorage.get();
+        if (spanScope != null) {
+            spanScope.close();
+            scopeStorage.remove();
         }
     });
  ```
