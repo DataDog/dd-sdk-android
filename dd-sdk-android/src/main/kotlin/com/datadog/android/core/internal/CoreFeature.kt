@@ -285,7 +285,16 @@ internal object CoreFeature {
             cacheExpirationMs = TimeUnit.MINUTES.toMillis(30),
             minWaitTimeBetweenSyncMs = TimeUnit.MINUTES.toMillis(5),
             syncListener = LoggingSyncListener()
-        ).apply { if (!disableKronosBackgroundSync) { syncInBackground() } }
+        ).apply {
+            if (!disableKronosBackgroundSync) {
+                try {
+                    syncInBackground()
+                } catch (ise: IllegalStateException) {
+                    // should never happen
+                    sdkLogger.e("Cannot launch time sync", ise)
+                }
+            }
+        }
     }
 
     private fun readApplicationInformation(appContext: Context, credentials: Credentials) {
