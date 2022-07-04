@@ -72,7 +72,10 @@ internal fun Collection<ByteArray>.join(
  * @return An index of the first occurrence of [b] or `-1` if none is found.
  */
 internal fun ByteArray.indexOf(b: Byte, startIndex: Int = 0): Int {
+    if (startIndex < 0) return -1
+
     for (i in startIndex until size) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // iteration over indexes which exist
         if (get(i) == b) {
             return i
         }
