@@ -835,19 +835,14 @@ internal class DatadogTest {
         assertThat(RumFeature.debugActivityLifecycleListener).isNull()
     }
 
-    @Suppress("DEPRECATION")
     @Test
-    fun `𝕄 clear data in all features 𝕎 clearAllData()`(
-        @StringForgery internalLogsToken: String,
-        @StringForgery internalLogsUrl: String
-    ) {
+    fun `𝕄 clear data in all features 𝕎 clearAllData()`() {
         val config = Configuration.Builder(
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
         )
-            .setInternalLogsEnabled(internalLogsToken, internalLogsUrl)
             .build()
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
         val dataReaders: Array<DataReader> = Array(6) { mock() }
