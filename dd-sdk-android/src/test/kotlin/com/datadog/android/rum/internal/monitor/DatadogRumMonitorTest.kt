@@ -247,23 +247,6 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W stopUserAction()`() {
-        @Suppress("DEPRECATION")
-        testedMonitor.stopUserAction(fakeAttributes)
-        Thread.sleep(PROCESSING_DELAY)
-
-        argumentCaptor<RumRawEvent> {
-            verify(mockScope).handleEvent(capture(), same(mockWriter))
-
-            val event = firstValue as RumRawEvent.StopAction
-            assertThat(event.type).isNull()
-            assertThat(event.name).isNull()
-            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
-        }
-        verifyNoMoreInteractions(mockScope, mockWriter)
-    }
-
-    @Test
     fun `M delegate event to rootScope W stopUserAction()`(
         @Forgery type: RumActionType,
         @StringForgery name: String

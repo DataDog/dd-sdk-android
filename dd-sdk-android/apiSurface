@@ -12,25 +12,16 @@ object com.datadog.android.DatadogEndpoint
   const val LOGS_US5: String
   const val LOGS_US1_FED: String
   const val LOGS_EU1: String
-  DEPRECATED const val LOGS_US: String
-  DEPRECATED const val LOGS_EU: String
-  DEPRECATED const val LOGS_GOV: String
   const val TRACES_US1: String
   const val TRACES_US3: String
   const val TRACES_US5: String
   const val TRACES_US1_FED: String
   const val TRACES_EU1: String
-  DEPRECATED const val TRACES_US: String
-  DEPRECATED const val TRACES_EU: String
-  DEPRECATED const val TRACES_GOV: String
   const val RUM_US1: String
   const val RUM_US3: String
   const val RUM_US5: String
   const val RUM_US1_FED: String
   const val RUM_EU1: String
-  DEPRECATED const val RUM_US: String
-  DEPRECATED const val RUM_EU: String
-  DEPRECATED const val RUM_GOV: String
   const val NTP_0: String
   const val NTP_1: String
   const val NTP_2: String
@@ -80,9 +71,6 @@ data class com.datadog.android.core.configuration.Configuration
     fun setFirstPartyHosts(List<String>): Builder
     fun setWebViewTrackingHosts(List<String>): Builder
     fun useSite(com.datadog.android.DatadogSite): Builder
-    DEPRECATED fun useEUEndpoints(): Builder
-    DEPRECATED fun useUSEndpoints(): Builder
-    DEPRECATED fun useGovEndpoints(): Builder
     fun useCustomLogsEndpoint(String): Builder
     fun useCustomTracesEndpoint(String): Builder
     fun useCustomCrashReportsEndpoint(String): Builder
@@ -103,7 +91,6 @@ data class com.datadog.android.core.configuration.Configuration
     fun setRumLongTaskEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.rum.model.LongTaskEvent>): Builder
     fun setSpanEventMapper(com.datadog.android.event.SpanEventMapper): Builder
     fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
-    DEPRECATED fun setInternalLogsEnabled(String, String): Builder
     fun setAdditionalConfiguration(Map<String, Any>): Builder
     fun setProxy(java.net.Proxy, okhttp3.Authenticator?): Builder
     fun setSecurityConfig(SecurityConfig): Builder
@@ -364,7 +351,6 @@ interface com.datadog.android.rum.RumMonitor
   fun stopView(Any, Map<String, Any?> = emptyMap())
   fun addUserAction(RumActionType, String, Map<String, Any?>)
   fun startUserAction(RumActionType, String, Map<String, Any?>)
-  DEPRECATED fun stopUserAction(Map<String, Any?> = emptyMap())
   fun stopUserAction(RumActionType, String, Map<String, Any?> = emptyMap())
   fun startResource(String, String, String, Map<String, Any?> = emptyMap())
   fun stopResource(String, Int?, Long?, RumResourceKind, Map<String, Any?>)

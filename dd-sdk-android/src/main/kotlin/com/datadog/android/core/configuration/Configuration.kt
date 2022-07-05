@@ -17,7 +17,6 @@ import com.datadog.android.DatadogInterceptor
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpSpanEventMapper
 import com.datadog.android.event.SpanEventMapper
@@ -209,93 +208,6 @@ internal constructor(
             tracesConfig = tracesConfig.copy(endpointUrl = site.tracesEndpoint())
             crashReportConfig = crashReportConfig.copy(endpointUrl = site.logsEndpoint())
             rumConfig = rumConfig.copy(endpointUrl = site.rumEndpoint())
-            coreConfig = coreConfig.copy(needsClearTextHttp = false)
-            return this
-        }
-
-        /**
-         * Let the SDK target Datadog's Europe server.
-         *
-         * Call this if you log on [app.datadoghq.eu](https://app.datadoghq.eu/).
-         * @deprecated use the [useSite] method instead.
-         */
-        @Deprecated(
-            "Use the `useSite()` method instead.",
-            ReplaceWith(
-                "useSite(DatadogSite.EU1)",
-                "com.datadog.android.DatadogSite"
-            )
-        )
-        @Suppress("DEPRECATION", "StringLiteralDuplication")
-        fun useEUEndpoints(): Builder {
-            warnDeprecated(
-                target = "Configuration.Builder.useEUEndpoints()",
-                deprecatedSince = "1.10.0",
-                removedInVersion = "1.12.0",
-                alternative = "Configuration.Builder.useSite(DatadogSite.EU1)"
-            )
-            logsConfig = logsConfig.copy(endpointUrl = DatadogEndpoint.LOGS_EU)
-            tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_EU)
-            crashReportConfig = crashReportConfig.copy(endpointUrl = DatadogEndpoint.LOGS_EU)
-            rumConfig = rumConfig.copy(endpointUrl = DatadogEndpoint.RUM_EU)
-            coreConfig = coreConfig.copy(needsClearTextHttp = false)
-            return this
-        }
-
-        /**
-         * Let the SDK target Datadog's US server.
-         *
-         * Call this if you log on [app.datadoghq.com](https://app.datadoghq.com/).
-         * @deprecated use the [useSite] method instead.
-         */
-        @Deprecated(
-            "Use the `useSite()` method instead.",
-            ReplaceWith(
-                "useSite(DatadogSite.US1)",
-                "com.datadog.android.DatadogSite"
-            )
-        )
-        @Suppress("DEPRECATION", "StringLiteralDuplication")
-        fun useUSEndpoints(): Builder {
-            warnDeprecated(
-                target = "Configuration.Builder.useUSEndpoints()",
-                deprecatedSince = "1.10.0",
-                removedInVersion = "1.12.0",
-                alternative = "Configuration.Builder.useSite(DatadogSite.US1)"
-            )
-            logsConfig = logsConfig.copy(endpointUrl = DatadogEndpoint.LOGS_US)
-            tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_US)
-            crashReportConfig = crashReportConfig.copy(endpointUrl = DatadogEndpoint.LOGS_US)
-            rumConfig = rumConfig.copy(endpointUrl = DatadogEndpoint.RUM_US)
-            coreConfig = coreConfig.copy(needsClearTextHttp = false)
-            return this
-        }
-
-        /**
-         * Let the SDK target Datadog's Gov server.
-         *
-         * Call this if you log on [app.ddog-gov.com/](https://app.ddog-gov.com/).
-         * @deprecated use the [useSite] method instead.
-         */
-        @Deprecated(
-            "Use the `useSite()` method instead.",
-            ReplaceWith(
-                "useSite(DatadogSite.US1_FED)",
-                "com.datadog.android.DatadogSite"
-            )
-        )
-        @Suppress("DEPRECATION", "StringLiteralDuplication")
-        fun useGovEndpoints(): Builder {
-            warnDeprecated(
-                target = "Configuration.Builder.useGovEndpoints()",
-                deprecatedSince = "1.10.0",
-                removedInVersion = "1.12.0",
-                alternative = "Configuration.Builder.useSite(DatadogSite.US1_FED)"
-            )
-            logsConfig = logsConfig.copy(endpointUrl = DatadogEndpoint.LOGS_GOV)
-            tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_GOV)
-            crashReportConfig = crashReportConfig.copy(endpointUrl = DatadogEndpoint.LOGS_GOV)
-            rumConfig = rumConfig.copy(endpointUrl = DatadogEndpoint.RUM_GOV)
             coreConfig = coreConfig.copy(needsClearTextHttp = false)
             return this
         }
@@ -596,30 +508,6 @@ internal constructor(
             applyIfFeatureEnabled(PluginFeature.LOG, "setLogEventMapper") {
                 logsConfig = logsConfig.copy(logsEventMapper = eventMapper)
             }
-            return this
-        }
-
-        /**
-         * Enables the internal logs to be sent to a dedicated Datadog Org.
-         * @param clientToken the client token to use for internal logs
-         * @param endpointUrl the endpoint url to sent the internal logs to
-         * (one of [DatadogEndpoint.LOGS_US], [DatadogEndpoint.LOGS_EU], [DatadogEndpoint.LOGS_GOV])
-         *
-         * @deprecated This method has no effect and will be removed in the next version.
-         */
-        @Suppress("UNUSED_PARAMETER")
-        @Deprecated(
-            message = "This method has no effect and will be removed in the next version."
-        )
-        fun setInternalLogsEnabled(
-            clientToken: String,
-            endpointUrl: String
-        ): Builder {
-            warnDeprecated(
-                target = "Configuration.Builder.setInternalLogsEnabled()",
-                deprecatedSince = "1.13.0",
-                removedInVersion = "1.14.0"
-            )
             return this
         }
 
