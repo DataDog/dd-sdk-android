@@ -9,7 +9,6 @@
 package com.datadog.android.core.internal
 
 import android.content.Context
-import androidx.annotation.WorkerThread
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
@@ -18,17 +17,9 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
-import com.datadog.android.core.internal.persistence.file.FileMover
-import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
-import com.datadog.android.core.internal.persistence.file.advanced.CacheFileMigrator
-import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
-import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
 import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.log.Logger
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
-import java.io.File
-import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("TooManyFunctions")
@@ -157,37 +148,6 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
             NoOpUploadScheduler()
         }
         uploadScheduler.startScheduling()
-    }
-
-    /**
-     * Since SDK v1.12.0, the Android SDK stores batch files in the cache directory instead
-     * of the files directory. This migration ensures we don't lose any important data when
-     * customers update their SDK.
-     */
-    @WorkerThread
-    protected fun migrateToCacheDir(
-        context: Context,
-        featureName: String,
-        internalLogger: Logger
-    ) {
-        val config = FilePersistenceConfig()
-        val migrator = CacheFileMigrator(
-            FileMover(internalLogger),
-            coreFeature.persistenceExecutorService,
-            internalLogger
-        )
-        val filesDir = File(
-            context.filesDir,
-            FeatureFileOrchestrator.GRANTED_DIR.format(Locale.US, featureName)
-        )
-        val previousOrchestrator = BatchFileOrchestrator(filesDir, config, internalLogger)
-        val cacheDir = File(
-            context.cacheDir,
-            FeatureFileOrchestrator.GRANTED_DIR.format(Locale.US, featureName)
-        )
-        val newOrchestrator = BatchFileOrchestrator(cacheDir, config, internalLogger)
-
-        migrator.migrateData(null, previousOrchestrator, true, newOrchestrator)
     }
 
     // Used for nightly tests only

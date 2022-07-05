@@ -13,14 +13,10 @@ import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.system.StaticAndroidInfoProvider
-import com.datadog.android.core.internal.utils.ERROR_TASK_REJECTED
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.domain.LogFilePersistenceStrategy
 import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
-import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.log.model.LogEvent
-import java.util.Locale
-import java.util.concurrent.RejectedExecutionException
 
 internal class LogsFeature(
     coreFeature: CoreFeature
@@ -54,20 +50,7 @@ internal class LogsFeature(
         )
     }
 
-    override fun onPostInitialized(context: Context) {
-        try {
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            coreFeature.persistenceExecutorService.submit {
-                @Suppress("ThreadSafety")
-                migrateToCacheDir(context, LOGS_FEATURE_NAME, sdkLogger)
-            }
-        } catch (e: RejectedExecutionException) {
-            sdkLogger.errorWithTelemetry(
-                ERROR_TASK_REJECTED.format(Locale.US, "postInitMigration"),
-                e
-            )
-        }
-    }
+    override fun onPostInitialized(context: Context) { }
 
     // endregion
 
