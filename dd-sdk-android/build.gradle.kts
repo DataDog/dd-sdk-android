@@ -124,6 +124,7 @@ android {
 }
 
 dependencies {
+    api(project(":library:dd-sdk-android-session-replay"))
     implementation(libs.kotlin)
 
     // Network
