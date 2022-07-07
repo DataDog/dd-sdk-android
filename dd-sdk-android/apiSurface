@@ -27,6 +27,10 @@ object com.datadog.android.DatadogEndpoint
   const val NTP_1: String
   const val NTP_2: String
   const val NTP_3: String
+  const val SESSION_REPLAY_US1: String
+  const val SESSION_REPLAY_US3: String
+  const val SESSION_REPLAY_US5: String
+  const val SESSION_REPLAY_EU1: String
 class com.datadog.android.DatadogEventListener : okhttp3.EventListener
   override fun callStart(okhttp3.Call)
   override fun dnsStart(okhttp3.Call, String)
@@ -67,7 +71,7 @@ enum com.datadog.android.core.configuration.BatchSize
   - LARGE
 data class com.datadog.android.core.configuration.Configuration
   class Builder
-    constructor(Boolean, Boolean, Boolean, Boolean)
+    constructor(Boolean, Boolean, Boolean, Boolean, Boolean)
     fun build(): Configuration
     fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
     fun setFirstPartyHosts(List<String>): Builder
@@ -292,6 +296,7 @@ enum com.datadog.android.plugin.Feature
   - CRASH
   - TRACE
   - RUM
+  - SESSION_REPLAY
 enum com.datadog.android.privacy.TrackingConsent
   - GRANTED
   - NOT_GRANTED
