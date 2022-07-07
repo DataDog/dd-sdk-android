@@ -54,7 +54,7 @@ import okhttp3.Authenticator
  */
 data class Configuration
 internal constructor(
-    internal var coreConfig: Core,
+    internal val coreConfig: Core,
     internal val logsConfig: Feature.Logs?,
     internal val tracesConfig: Feature.Tracing?,
     internal val crashReportConfig: Feature.CrashReport?,
@@ -63,7 +63,7 @@ internal constructor(
 ) {
 
     internal data class Core(
-        var needsClearTextHttp: Boolean,
+        val needsClearTextHttp: Boolean,
         val enableDeveloperModeWhenDebuggable: Boolean,
         val firstPartyHosts: List<String>,
         val batchSize: BatchSize,
@@ -71,7 +71,8 @@ internal constructor(
         val proxy: Proxy?,
         val proxyAuth: Authenticator,
         val securityConfig: SecurityConfig,
-        val webViewTrackingHosts: List<String>
+        val webViewTrackingHosts: List<String>,
+        val site: DatadogSite
     )
 
     internal sealed class Feature {
@@ -208,7 +209,7 @@ internal constructor(
             tracesConfig = tracesConfig.copy(endpointUrl = site.tracesEndpoint())
             crashReportConfig = crashReportConfig.copy(endpointUrl = site.logsEndpoint())
             rumConfig = rumConfig.copy(endpointUrl = site.rumEndpoint())
-            coreConfig = coreConfig.copy(needsClearTextHttp = false)
+            coreConfig = coreConfig.copy(needsClearTextHttp = false, site = site)
             return this
         }
 
@@ -598,7 +599,8 @@ internal constructor(
             proxy = null,
             proxyAuth = Authenticator.NONE,
             securityConfig = SecurityConfig.DEFAULT,
-            webViewTrackingHosts = emptyList()
+            webViewTrackingHosts = emptyList(),
+            site = DatadogSite.US1
         )
         internal val DEFAULT_LOGS_CONFIG = Feature.Logs(
             endpointUrl = DatadogEndpoint.LOGS_US1,

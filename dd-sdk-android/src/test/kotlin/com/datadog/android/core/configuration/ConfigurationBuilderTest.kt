@@ -104,7 +104,8 @@ internal class ConfigurationBuilderTest {
                 proxy = null,
                 proxyAuth = Authenticator.NONE,
                 securityConfig = SecurityConfig.DEFAULT,
-                webViewTrackingHosts = emptyList()
+                webViewTrackingHosts = emptyList(),
+                site = DatadogSite.US1
             )
         )
         assertThat(config.logsConfig).isEqualTo(
@@ -245,7 +246,9 @@ internal class ConfigurationBuilderTest {
         val config = testedBuilder.useSite(site).build()
 
         // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(site = site)
+        )
         assertThat(config.logsConfig).isEqualTo(
             Configuration.DEFAULT_LOGS_CONFIG.copy(endpointUrl = site.logsEndpoint())
         )

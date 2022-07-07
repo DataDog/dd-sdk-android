@@ -7,7 +7,6 @@
 package com.datadog.android.utils.config
 
 import android.content.Context
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
@@ -19,6 +18,7 @@ import com.lyft.kronos.KronosClock
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
+import java.io.File
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
@@ -37,6 +37,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var mockOkHttpClient: OkHttpClient
     lateinit var mockPersistenceExecutor: ExecutorService
     lateinit var mockKronosClock: KronosClock
+    lateinit var mockStorageDir: File
 
     lateinit var mockTimeProvider: TimeProvider
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
@@ -77,6 +78,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         mockUploadExecutor = mock()
         mockOkHttpClient = mock()
         mockKronosClock = mock()
+        mockStorageDir = mock()
 
         mockTimeProvider = mock()
         mockNetworkInfoProvider = mock()

@@ -159,6 +159,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
             }
             allValues.forEach {
                 assertThat(it.context).isEqualTo(appContext.mockInstance)
+                assertThat(it.storageDir).isSameAs(coreFeature.mockStorageDir)
                 assertThat(it.serviceName).isEqualTo(coreFeature.fakeServiceName)
                 assertThat(it.envName).isEqualTo(coreFeature.fakeEnvName)
                 assertThat(it.context).isEqualTo(appContext.mockInstance)
@@ -262,7 +263,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 not setup uploader 𝕎 initialize() in secondary process`() {
         // Given
-        CoreFeature.isMainProcess = false
+        testedFeature.coreFeature.isMainProcess = false
 
         // When
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)

@@ -30,7 +30,7 @@ internal class LogsFeature(
     ): PersistenceStrategy<LogEvent> {
         return LogFilePersistenceStrategy(
             coreFeature.trackingConsentProvider,
-            context,
+            coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
             sdkLogger,
             configuration.logsEventMapper,

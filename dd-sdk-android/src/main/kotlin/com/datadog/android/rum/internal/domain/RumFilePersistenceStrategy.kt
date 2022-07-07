@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.domain
 
-import android.content.Context
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
@@ -28,7 +27,7 @@ import java.util.concurrent.ExecutorService
 
 internal class RumFilePersistenceStrategy(
     consentProvider: ConsentProvider,
-    context: Context,
+    storageDir: File,
     eventMapper: EventMapper<Any>,
     executorService: ExecutorService,
     internalLogger: Logger,
@@ -37,7 +36,7 @@ internal class RumFilePersistenceStrategy(
 ) : BatchFilePersistenceStrategy<Any>(
     FeatureFileOrchestrator(
         consentProvider,
-        context,
+        storageDir,
         RumFeature.RUM_FEATURE_NAME,
         executorService,
         internalLogger

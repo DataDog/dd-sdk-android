@@ -8,32 +8,35 @@ package com.datadog.android
 
 /**
  * Defines the Datadog sites you can send tracked data to.
+ *
+ * @property siteName Explicit site name property introduced in order to have a consistent SDK
+ * instance ID (because this value is used there) in case if enum values are renamed.
  */
-enum class DatadogSite {
+enum class DatadogSite(val siteName: String) {
     /**
      *  The US1 site: [app.datadoghq.com](https://app.datadoghq.com).
      */
-    US1,
+    US1("us1"),
 
     /**
      *  The US3 site: [us3.datadoghq.com](https://us3.datadoghq.com).
      */
-    US3,
+    US3("us3"),
 
     /**
      *  The US5 site: [us5.datadoghq.com](https://us5.datadoghq.com).
      */
-    US5,
+    US5("us5"),
 
     /**
      *  The US1_FED site (FedRAMP compatible): [app.ddog-gov.com](https://app.ddog-gov.com).
      */
-    US1_FED,
+    US1_FED("us1_fed"),
 
     /**
      *  The EU1 site: [app.datadoghq.eu](https://app.datadoghq.eu).
      */
-    EU1;
+    EU1("eu1");
 
     /**
      * Returns the endpoint to use to upload Logs to this site.

@@ -30,7 +30,7 @@ internal class TracingFeature(
     ): PersistenceStrategy<DDSpan> {
         return TracesFilePersistenceStrategy(
             coreFeature.trackingConsentProvider,
-            context,
+            coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
             coreFeature,
             coreFeature.envName,

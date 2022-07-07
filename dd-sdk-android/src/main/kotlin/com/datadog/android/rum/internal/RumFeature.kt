@@ -117,12 +117,12 @@ internal class RumFeature(
     ): PersistenceStrategy<Any> {
         return RumFilePersistenceStrategy(
             coreFeature.trackingConsentProvider,
-            context,
+            coreFeature.storageDir,
             configuration.rumEventMapper,
             coreFeature.persistenceExecutorService,
             sdkLogger,
             coreFeature.localDataEncryption,
-            DatadogNdkCrashHandler.getLastViewEventFile(context)
+            DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir)
         )
     }
 

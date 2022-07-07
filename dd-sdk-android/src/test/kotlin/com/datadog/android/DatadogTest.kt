@@ -29,6 +29,10 @@ import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.NoOpSDKCore
+import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.internal.HashGenerator
+import com.datadog.android.v2.core.internal.Sha256HashGenerator
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.opentracing.DDSpan
@@ -68,15 +72,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-@ProhibitLeavingStaticMocksIn(
-    CoreFeature::class,
-    RumFeature::class,
-    LogsFeature::class,
-    TracingFeature::class,
-    WebViewLogsFeature::class,
-    WebViewRumFeature::class,
-    CrashReportsFeature::class
-)
+@ProhibitLeavingStaticMocksIn(Datadog::class)
 internal class DatadogTest {
 
     @Mock
@@ -115,7 +111,7 @@ internal class DatadogTest {
     @AfterEach
     fun `tear down`() {
         Datadog.setVerbosity(Int.MAX_VALUE)
-
+        Datadog.hashGenerator = Sha256HashGenerator()
         Datadog.stop()
     }
 
@@ -207,6 +203,56 @@ internal class DatadogTest {
 
         // Then
         assertThat(initialized).isFalse()
+    }
+
+    @Test
+    fun `𝕄 create instance ID 𝕎 initialize()`(
+        @Forgery fakeCredentials: Credentials,
+        @Forgery fakeConfiguration: Configuration,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeHash: String
+    ) {
+        // Given
+        val mockHashGenerator: HashGenerator = mock()
+        whenever(
+            mockHashGenerator.generate(
+                fakeCredentials.clientToken + fakeConfiguration.coreConfig.site.siteName
+            )
+        ) doReturn fakeHash
+        Datadog.hashGenerator = mockHashGenerator
+
+        // When
+        Datadog.initialize(appContext.mockInstance, fakeCredentials, fakeConfiguration, fakeConsent)
+
+        // Then
+        assertThat(Datadog.isInitialized()).isTrue()
+        assertThat((Datadog.globalSDKCore as DatadogCore).instanceId).isEqualTo(fakeHash)
+    }
+
+    @Test
+    fun `𝕄 stop initialization and log error 𝕎 initialize() { cannot create instance id }`(
+        @Forgery fakeCredentials: Credentials,
+        @Forgery fakeConfiguration: Configuration,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeHash: String
+    ) {
+        // Given
+        val mockHashGenerator: HashGenerator = mock()
+        whenever(
+            mockHashGenerator.generate(
+                fakeCredentials.clientToken + fakeConfiguration.coreConfig.site.siteName
+            )
+        ) doReturn null
+        Datadog.hashGenerator = mockHashGenerator
+
+        // When
+        Datadog.initialize(appContext.mockInstance, fakeCredentials, fakeConfiguration, fakeConsent)
+
+        // Then
+        assertThat(Datadog.isInitialized()).isFalse()
+        assertThat(Datadog.globalSDKCore).isInstanceOf(NoOpSDKCore::class.java)
+        verify(logger.mockDevLogHandler).handleLog(
+            AndroidLog.ERROR,
+            Datadog.CANNOT_CREATE_SDK_INSTANCE_ID_ERROR
+        )
     }
 
     @Test

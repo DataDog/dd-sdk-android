@@ -28,6 +28,7 @@ import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -64,6 +65,9 @@ internal class DatadogCoreInitializationTest {
     @Forgery
     lateinit var fakeCredentials: Credentials
 
+    @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
+    lateinit var fakeInstanceId: String
+
     @BeforeEach
     fun `set up`() {
         // Prevent crash when initializing RumFeature
@@ -93,7 +97,8 @@ internal class DatadogCoreInitializationTest {
         ).build()
 
         // When
-        testedCore = DatadogCore(appContext.mockInstance, fakeCredentials, configuration)
+        testedCore =
+            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
 
         // Then
         // assertThat(CoreFeature.initialized.get()).isTrue()
@@ -117,7 +122,8 @@ internal class DatadogCoreInitializationTest {
         ).build()
 
         // When
-        testedCore = DatadogCore(appContext.mockInstance, fakeCredentials, configuration)
+        testedCore =
+            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
 
         // Then
         // assertThat(CoreFeature.initialized.get()).isTrue()
@@ -141,7 +147,8 @@ internal class DatadogCoreInitializationTest {
         ).build()
 
         // When
-        testedCore = DatadogCore(appContext.mockInstance, fakeCredentials, configuration)
+        testedCore =
+            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
 
         // Then
         // assertThat(CoreFeature.initialized.get()).isTrue()
@@ -168,7 +175,8 @@ internal class DatadogCoreInitializationTest {
         // Then
         assertThrows<IllegalArgumentException>(DatadogCore.MESSAGE_ENV_NAME_NOT_VALID) {
             // When
-            testedCore = DatadogCore(appContext.mockInstance, fakeCredentials, configuration)
+            testedCore =
+                DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
         }
     }
 
@@ -190,7 +198,8 @@ internal class DatadogCoreInitializationTest {
         // When
         var caughtException: Exception? = null
         try {
-            testedCore = DatadogCore(appContext.mockInstance, fakeCredentials, configuration)
+            testedCore =
+                DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
         } catch (e: Exception) {
             caughtException = e
         }
@@ -212,7 +221,8 @@ internal class DatadogCoreInitializationTest {
         ).build()
 
         // When
-        testedCore = DatadogCore(appContext.mockInstance, fakeCredentials, configuration)
+        testedCore =
+            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
 
         // Then
         // assertThat(CoreFeature.trackingConsentProvider.getConsent())
@@ -235,7 +245,8 @@ internal class DatadogCoreInitializationTest {
             .build()
 
         // When
-        testedCore = DatadogCore(appContext.mockInstance, fakeCredentials, configuration)
+        testedCore =
+            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
 
         // Then
         assertThat((testedCore as DatadogCore).libraryVerbosity)
@@ -258,7 +269,8 @@ internal class DatadogCoreInitializationTest {
             .build()
 
         // When
-        testedCore = DatadogCore(appContext.mockInstance, fakeCredentials, configuration)
+        testedCore =
+            DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
 
         // Then
         assertThat((testedCore as DatadogCore).libraryVerbosity)

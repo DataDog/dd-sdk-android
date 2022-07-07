@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
-import android.content.Context
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
@@ -32,19 +31,19 @@ internal class FeatureFileOrchestrator(
 
     constructor(
         consentProvider: ConsentProvider,
-        context: Context,
+        storageDir: File,
         featureName: String,
         executorService: ExecutorService,
         internalLogger: Logger
     ) : this(
         consentProvider,
         BatchFileOrchestrator(
-            File(context.cacheDir, PENDING_DIR.format(Locale.US, featureName)),
+            File(storageDir, PENDING_DIR.format(Locale.US, featureName)),
             PERSISTENCE_CONFIG,
             internalLogger
         ),
         BatchFileOrchestrator(
-            File(context.cacheDir, GRANTED_DIR.format(Locale.US, featureName)),
+            File(storageDir, GRANTED_DIR.format(Locale.US, featureName)),
             PERSISTENCE_CONFIG,
             internalLogger
         ),
@@ -57,8 +56,8 @@ internal class FeatureFileOrchestrator(
 
     companion object {
         internal const val VERSION = 2
-        internal const val PENDING_DIR = "dd-%s-pending-v$VERSION"
-        internal const val GRANTED_DIR = "dd-%s-v$VERSION"
+        internal const val PENDING_DIR = "%s-pending-v$VERSION"
+        internal const val GRANTED_DIR = "%s-v$VERSION"
 
         private val PERSISTENCE_CONFIG = FilePersistenceConfig()
     }

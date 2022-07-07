@@ -6,7 +6,6 @@
 
 package com.datadog.android.webview.internal.rum
 
-import android.content.Context
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
@@ -26,7 +25,7 @@ import java.util.concurrent.ExecutorService
 
 internal class WebViewRumFilePersistenceStrategy(
     consentProvider: ConsentProvider,
-    context: Context,
+    storageDir: File,
     executorService: ExecutorService,
     internalLogger: Logger,
     localDataEncryption: Encryption?,
@@ -34,7 +33,7 @@ internal class WebViewRumFilePersistenceStrategy(
 ) : BatchFilePersistenceStrategy<Any>(
     FeatureFileOrchestrator(
         consentProvider,
-        context,
+        storageDir,
         WebViewRumFeature.WEB_RUM_FEATURE_NAME,
         executorService,
         internalLogger

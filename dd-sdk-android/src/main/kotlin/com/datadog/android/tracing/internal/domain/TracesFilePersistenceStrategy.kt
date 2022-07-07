@@ -6,7 +6,6 @@
 
 package com.datadog.android.tracing.internal.domain
 
-import android.content.Context
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.FileMover
@@ -23,11 +22,12 @@ import com.datadog.android.tracing.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.tracing.internal.domain.event.SpanEventSerializer
 import com.datadog.android.tracing.internal.domain.event.SpanMapperSerializer
 import com.datadog.opentracing.DDSpan
+import java.io.File
 import java.util.concurrent.ExecutorService
 
 internal class TracesFilePersistenceStrategy(
     consentProvider: ConsentProvider,
-    context: Context,
+    storageDir: File,
     executorService: ExecutorService,
     coreFeature: CoreFeature,
     envName: String,
@@ -37,7 +37,7 @@ internal class TracesFilePersistenceStrategy(
 ) : BatchFilePersistenceStrategy<DDSpan>(
     FeatureFileOrchestrator(
         consentProvider,
-        context,
+        storageDir,
         TracingFeature.TRACING_FEATURE_NAME,
         executorService,
         internalLogger

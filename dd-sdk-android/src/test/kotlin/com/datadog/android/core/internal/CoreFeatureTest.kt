@@ -54,8 +54,10 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.io.File
 import java.net.Proxy
 import java.util.Locale
 import java.util.concurrent.ExecutorService
@@ -74,6 +76,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -89,6 +92,8 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class CoreFeatureTest {
 
+    private lateinit var testedFeature: CoreFeature
+
     @Mock
     lateinit var mockConnectivityMgr: ConnectivityManager
 
@@ -101,61 +106,70 @@ internal class CoreFeatureTest {
     @Forgery
     lateinit var fakeConsent: TrackingConsent
 
+    @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
+    lateinit var fakeSdkInstanceId: String
+
     @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
     lateinit var fakeEnvName: String
 
     @BeforeEach
     fun `set up`() {
+        testedFeature = CoreFeature()
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
     }
 
     @AfterEach
     fun `tear down`() {
-        CoreFeature.stop()
+        testedFeature.stop()
     }
+
+    // region initialization
 
     @Test
     fun `𝕄 initialize time sync 𝕎 initialize`() {
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.kronosClock).isNotNull()
+        assertThat(testedFeature.kronosClock).isNotNull()
     }
 
     @Test
     fun `𝕄 initialize time provider 𝕎 initialize`() {
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.timeProvider)
+        assertThat(testedFeature.timeProvider)
             .isInstanceOf(KronosTimeProvider::class.java)
     }
 
     @Test
     fun `𝕄 initialize system info provider 𝕎 initialize`() {
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.systemInfoProvider)
+        assertThat(testedFeature.systemInfoProvider)
             .isInstanceOf(BroadcastReceiverSystemInfoProvider::class.java)
     }
 
@@ -163,8 +177,9 @@ internal class CoreFeatureTest {
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     fun `𝕄 initialize network info provider 𝕎 initialize {LOLLIPOP}`() {
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -185,8 +200,9 @@ internal class CoreFeatureTest {
     @TestTargetApi(Build.VERSION_CODES.N)
     fun `𝕄 initialize network info provider 𝕎 initialize {N}`() {
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig,
             fakeConsent
@@ -208,117 +224,123 @@ internal class CoreFeatureTest {
     @Test
     fun `𝕄 initialize user info provider 𝕎 initialize`() {
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.userInfoProvider)
+        assertThat(testedFeature.userInfoProvider)
             .isInstanceOf(DatadogUserInfoProvider::class.java)
     }
 
     @Test
     fun `𝕄 initialise the consent provider 𝕎 initialize`() {
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.trackingConsentProvider)
+        assertThat(testedFeature.trackingConsentProvider)
             .isInstanceOf(TrackingConsentProvider::class.java)
-        assertThat(CoreFeature.trackingConsentProvider.getConsent())
+        assertThat(testedFeature.trackingConsentProvider.getConsent())
             .isEqualTo(fakeConsent)
     }
 
     @Test
     fun `𝕄 initializes first party hosts detector 𝕎 initialize`() {
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.firstPartyHostDetector.knownHosts)
+        assertThat(testedFeature.firstPartyHostDetector.knownHosts)
             .containsAll(fakeConfig.firstPartyHosts.map { it.lowercase(Locale.US) })
     }
 
     @Test
     fun `𝕄 initializes app info 𝕎 initialize()`() {
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
-        assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
-        assertThat(CoreFeature.packageVersion).isEqualTo(appContext.fakeVersionName)
-        assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
-        assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
-        assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
-        assertThat(CoreFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
-        assertThat(CoreFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
-        assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
-        assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
+        assertThat(testedFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
+        assertThat(testedFeature.packageVersion).isEqualTo(appContext.fakeVersionName)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
+        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
+        assertThat(testedFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
+        assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
+        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
     }
 
     @Test
     fun `𝕄 initializes app info 𝕎 initialize() {null serviceName}`() {
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials.copy(serviceName = null),
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
-        assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
-        assertThat(CoreFeature.packageVersion).isEqualTo(appContext.fakeVersionName)
-        assertThat(CoreFeature.serviceName).isEqualTo(appContext.fakePackageName)
-        assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
-        assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
-        assertThat(CoreFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
-        assertThat(CoreFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
-        assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
-        assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
+        assertThat(testedFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
+        assertThat(testedFeature.packageVersion).isEqualTo(appContext.fakeVersionName)
+        assertThat(testedFeature.serviceName).isEqualTo(appContext.fakePackageName)
+        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
+        assertThat(testedFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
+        assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
+        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
     }
 
     @Test
     fun `𝕄 initializes app info 𝕎 initialize() {null rumApplicationId}`() {
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials.copy(rumApplicationId = null),
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
-        assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
-        assertThat(CoreFeature.packageVersion).isEqualTo(appContext.fakeVersionName)
-        assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
-        assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
-        assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
-        assertThat(CoreFeature.rumApplicationId).isNull()
-        assertThat(CoreFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
-        assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
-        assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
+        assertThat(testedFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
+        assertThat(testedFeature.packageVersion).isEqualTo(appContext.fakeVersionName)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
+        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
+        assertThat(testedFeature.rumApplicationId).isNull()
+        assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
+        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
     }
 
     @Test
@@ -329,24 +351,25 @@ internal class CoreFeatureTest {
             .doReturn(mockConnectivityMgr)
 
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials.copy(rumApplicationId = null),
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
-        assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
-        assertThat(CoreFeature.packageVersion).isEqualTo(appContext.fakeVersionCode.toString())
-        assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
-        assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
-        assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
-        assertThat(CoreFeature.rumApplicationId).isNull()
-        assertThat(CoreFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
-        assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
-        assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
+        assertThat(testedFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
+        assertThat(testedFeature.packageVersion).isEqualTo(appContext.fakeVersionCode.toString())
+        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
+        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
+        assertThat(testedFeature.rumApplicationId).isNull()
+        assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
+        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
     }
 
     @Test
@@ -358,38 +381,40 @@ internal class CoreFeatureTest {
             .doReturn(mockConnectivityMgr)
 
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials.copy(rumApplicationId = null),
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
-        assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
-        assertThat(CoreFeature.packageVersion).isEqualTo(CoreFeature.DEFAULT_APP_VERSION)
-        assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
-        assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
-        assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
-        assertThat(CoreFeature.rumApplicationId).isNull()
-        assertThat(CoreFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
-        assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
-        assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
+        assertThat(testedFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
+        assertThat(testedFeature.packageVersion).isEqualTo(CoreFeature.DEFAULT_APP_VERSION)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
+        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
+        assertThat(testedFeature.rumApplicationId).isNull()
+        assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
+        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
     }
 
     @Test
     fun `𝕄 initialize okhttp with strict network policy 𝕎 initialize()`() {
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig.copy(needsClearTextHttp = false),
             fakeConsent
         )
 
         // Then
-        val okHttpClient = CoreFeature.okHttpClient
+        val okHttpClient = testedFeature.okHttpClient
         assertThat(okHttpClient.protocols())
             .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
         assertThat(okHttpClient.callTimeoutMillis())
@@ -421,15 +446,16 @@ internal class CoreFeatureTest {
     @Test
     fun `𝕄 initialize okhttp with no network policy 𝕎 initialize() {needsClearText}`() {
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig.copy(needsClearTextHttp = true),
             fakeConsent
         )
 
         // Then
-        val okHttpClient = CoreFeature.okHttpClient
+        val okHttpClient = testedFeature.okHttpClient
         assertThat(okHttpClient.protocols())
             .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
         assertThat(okHttpClient.callTimeoutMillis())
@@ -443,15 +469,16 @@ internal class CoreFeatureTest {
         // When
         val proxy: Proxy = mock()
         val proxyAuth: Authenticator = mock()
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig.copy(proxy = proxy, proxyAuth = proxyAuth),
             fakeConsent
         )
 
         // Then
-        val okHttpClient = CoreFeature.okHttpClient
+        val okHttpClient = testedFeature.okHttpClient
         assertThat(okHttpClient.proxy()).isSameAs(proxy)
         assertThat(okHttpClient.proxyAuthenticator()).isSameAs(proxyAuth)
     }
@@ -459,15 +486,16 @@ internal class CoreFeatureTest {
     @Test
     fun `𝕄 initialize okhttp without proxy 𝕎 initialize() {proxy not configured}`() {
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig.copy(proxy = null),
             fakeConsent
         )
 
         // Then
-        val okHttpClient = CoreFeature.okHttpClient
+        val okHttpClient = testedFeature.okHttpClient
         assertThat(okHttpClient.proxy()).isNull()
         assertThat(okHttpClient.proxyAuthenticator()).isEqualTo(Authenticator.NONE)
     }
@@ -475,16 +503,17 @@ internal class CoreFeatureTest {
     @Test
     fun `𝕄 initialize executors 𝕎 initialize()`() {
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.uploadExecutorService).isNotNull()
-        assertThat(CoreFeature.persistenceExecutorService).isNotNull()
+        assertThat(testedFeature.uploadExecutorService).isNotNull()
+        assertThat(testedFeature.persistenceExecutorService).isNotNull()
     }
 
     @Test
@@ -492,32 +521,34 @@ internal class CoreFeatureTest {
         @Forgery otherCredentials: Credentials
     ) {
         // Given
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             otherCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
-        assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
-        assertThat(CoreFeature.packageVersion).isEqualTo(appContext.fakeVersionName)
-        assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
-        assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
-        assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
-        assertThat(CoreFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
-        assertThat(CoreFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
-        assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
-        assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
+        assertThat(testedFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
+        assertThat(testedFeature.packageVersion).isEqualTo(appContext.fakeVersionName)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
+        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
+        assertThat(testedFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
+        assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
+        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
     }
 
     @Test
@@ -544,15 +575,16 @@ internal class CoreFeatureTest {
             .thenReturn(listOf(myProcess, otherProcess))
 
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.isMainProcess).isTrue()
+        assertThat(testedFeature.isMainProcess).isTrue()
         assertThat(CoreFeature.processImportance).isEqualTo(processImportance)
     }
 
@@ -576,15 +608,16 @@ internal class CoreFeatureTest {
             .thenReturn(listOf(myProcess, otherProcess))
 
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.isMainProcess).isFalse()
+        assertThat(testedFeature.isMainProcess).isFalse()
         assertThat(CoreFeature.processImportance).isEqualTo(processImportance)
     }
 
@@ -607,141 +640,33 @@ internal class CoreFeatureTest {
             .thenReturn(listOf(otherProcess))
 
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.isMainProcess).isTrue()
+        assertThat(testedFeature.isMainProcess).isTrue()
         assertThat(CoreFeature.processImportance)
             .isEqualTo(ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
     }
 
     @Test
-    fun `𝕄 cleanup NdkCrashHandler 𝕎 stop()`() {
-        // Given
-        CoreFeature.initialize(
-            appContext.mockInstance,
-            fakeCredentials,
-            fakeConfig,
-            fakeConsent
-        )
-
-        // When
-        CoreFeature.stop()
-
-        // Then
-        assertThat(CoreFeature.ndkCrashHandler).isInstanceOf(NoOpNdkCrashHandler::class.java)
-    }
-
-    @Test
-    fun `𝕄 cleanup app info 𝕎 stop()`() {
-        // Given
-        CoreFeature.initialize(
-            appContext.mockInstance,
-            fakeCredentials,
-            fakeConfig,
-            fakeConsent
-        )
-
-        // When
-        CoreFeature.stop()
-
-        // Then
-        assertThat(CoreFeature.clientToken).isEqualTo("")
-        assertThat(CoreFeature.packageName).isEqualTo("")
-        assertThat(CoreFeature.packageVersion).isEqualTo("")
-        assertThat(CoreFeature.serviceName).isEqualTo("")
-        assertThat(CoreFeature.envName).isEqualTo("")
-        assertThat(CoreFeature.variant).isEqualTo("")
-        assertThat(CoreFeature.rumApplicationId).isNull()
-        assertThat(CoreFeature.contextRef.get()).isNull()
-    }
-
-    @Test
-    fun `𝕄 cleanup providers 𝕎 stop()`() {
-        // Given
-        CoreFeature.initialize(
-            appContext.mockInstance,
-            fakeCredentials,
-            fakeConfig,
-            fakeConsent
-        )
-
-        // When
-        CoreFeature.stop()
-
-        // Then
-        assertThat(CoreFeature.firstPartyHostDetector.knownHosts)
-            .isEmpty()
-        assertThat(CoreFeature.networkInfoProvider)
-            .isInstanceOf(NoOpNetworkInfoProvider::class.java)
-        assertThat(CoreFeature.systemInfoProvider)
-            .isInstanceOf(NoOpSystemInfoProvider::class.java)
-        assertThat(CoreFeature.timeProvider)
-            .isInstanceOf(NoOpTimeProvider::class.java)
-        assertThat(CoreFeature.trackingConsentProvider)
-            .isInstanceOf(NoOpConsentProvider::class.java)
-        assertThat(CoreFeature.userInfoProvider)
-            .isInstanceOf(NoOpMutableUserInfoProvider::class.java)
-    }
-
-    @Test
-    fun `𝕄 shut down executors 𝕎 stop()`() {
-        // Given
-        CoreFeature.initialize(
-            appContext.mockInstance,
-            fakeCredentials,
-            fakeConfig,
-            fakeConsent
-        )
-        val mockUploadExecutorService: ScheduledThreadPoolExecutor = mock()
-        CoreFeature.uploadExecutorService = mockUploadExecutorService
-        val mockPersistenceExecutorService: ExecutorService = mock()
-        CoreFeature.persistenceExecutorService = mockPersistenceExecutorService
-
-        // When
-        CoreFeature.stop()
-
-        // Then
-        verify(mockUploadExecutorService).shutdownNow()
-        verify(mockPersistenceExecutorService).shutdownNow()
-    }
-
-    @Test
-    fun `𝕄 unregister tracking consent callbacks 𝕎 stop()`() {
-        // Given
-        CoreFeature.initialize(
-            appContext.mockInstance,
-            fakeCredentials,
-            fakeConfig,
-            fakeConsent
-        )
-        val mockConsentProvider: ConsentProvider = mock()
-        CoreFeature.trackingConsentProvider = mockConsentProvider
-
-        // When
-        CoreFeature.stop()
-
-        // Then
-        verify(mockConsentProvider).unregisterAllCallbacks()
-    }
-
-    @Test
     fun `𝕄 build config 𝕎 buildFilePersistenceConfig()`() {
         // Given
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // When
-        val config = CoreFeature.buildFilePersistenceConfig()
+        val config = testedFeature.buildFilePersistenceConfig()
 
         // Then
         assertThat(config.maxBatchSize)
@@ -758,6 +683,7 @@ internal class CoreFeatureTest {
 
     @Test
     fun `𝕄 initialize the NdkCrashHandler data 𝕎 initialize() {main process}`(
+        @TempDir tempDir: File,
         @StringForgery otherProcessName: String,
         @IntForgery processImportance: Int
     ) {
@@ -778,19 +704,27 @@ internal class CoreFeatureTest {
         )
         whenever(mockActivityManager.runningAppProcesses)
             .thenReturn(listOf(myProcess, otherProcess))
+        whenever(appContext.mockInstance.cacheDir) doReturn tempDir
 
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.ndkCrashHandler)
+        assertThat(testedFeature.ndkCrashHandler)
             .isInstanceOfSatisfying(DatadogNdkCrashHandler::class.java) {
-                assertThat(it.logGenerator.timeProvider)
+                assertThat(it.ndkCrashDataDirectory.parentFile).isEqualTo(
+                    File(
+                        tempDir,
+                        CoreFeature.DATADOG_STORAGE_DIR_NAME.format(Locale.US, fakeSdkInstanceId)
+                    )
+                )
+                assertThat(it.timeProvider)
                     .isInstanceOf(KronosTimeProvider::class.java)
             }
     }
@@ -810,27 +744,195 @@ internal class CoreFeatureTest {
             .thenReturn(listOf(myProcess))
 
         // When
-        CoreFeature.initialize(
+        testedFeature.initialize(
             appContext.mockInstance,
+            fakeSdkInstanceId,
             fakeCredentials,
             fakeConfig,
             fakeConsent
         )
 
         // Then
-        assertThat(CoreFeature.ndkCrashHandler).isInstanceOf(NoOpNdkCrashHandler::class.java)
+        assertThat(testedFeature.ndkCrashHandler).isInstanceOf(NoOpNdkCrashHandler::class.java)
+    }
+
+    @Test
+    fun `M initialize webViewTrackingHosts W initialize()`() {
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.webViewTrackingHosts).isEqualTo(fakeConfig.webViewTrackingHosts)
+    }
+
+    @Test
+    fun `M initialize storage directory W initialize()`(
+        @TempDir tempDir: File
+    ) {
+        // Given
+        whenever(appContext.mockInstance.cacheDir) doReturn tempDir
+
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.storageDir).isEqualTo(
+            File(
+                tempDir,
+                CoreFeature.DATADOG_STORAGE_DIR_NAME.format(Locale.US, fakeSdkInstanceId)
+            )
+        )
+    }
+
+    // endregion
+
+    // region shutdown
+
+    @Test
+    fun `𝕄 cleanup NdkCrashHandler 𝕎 stop()`() {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        assertThat(testedFeature.ndkCrashHandler).isInstanceOf(NoOpNdkCrashHandler::class.java)
+    }
+
+    @Test
+    fun `𝕄 cleanup app info 𝕎 stop()`() {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        assertThat(testedFeature.clientToken).isEqualTo("")
+        assertThat(testedFeature.packageName).isEqualTo("")
+        assertThat(testedFeature.packageVersion).isEqualTo("")
+        assertThat(testedFeature.serviceName).isEqualTo("")
+        assertThat(testedFeature.envName).isEqualTo("")
+        assertThat(testedFeature.variant).isEqualTo("")
+        assertThat(testedFeature.rumApplicationId).isNull()
+        assertThat(testedFeature.contextRef.get()).isNull()
+    }
+
+    @Test
+    fun `𝕄 cleanup providers 𝕎 stop()`() {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        assertThat(testedFeature.firstPartyHostDetector.knownHosts)
+            .isEmpty()
+        assertThat(testedFeature.networkInfoProvider)
+            .isInstanceOf(NoOpNetworkInfoProvider::class.java)
+        assertThat(testedFeature.systemInfoProvider)
+            .isInstanceOf(NoOpSystemInfoProvider::class.java)
+        assertThat(testedFeature.timeProvider)
+            .isInstanceOf(NoOpTimeProvider::class.java)
+        assertThat(testedFeature.trackingConsentProvider)
+            .isInstanceOf(NoOpConsentProvider::class.java)
+        assertThat(testedFeature.userInfoProvider)
+            .isInstanceOf(NoOpMutableUserInfoProvider::class.java)
+    }
+
+    @Test
+    fun `𝕄 shut down executors 𝕎 stop()`() {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+        val mockUploadExecutorService: ScheduledThreadPoolExecutor = mock()
+        testedFeature.uploadExecutorService = mockUploadExecutorService
+        val mockPersistenceExecutorService: ExecutorService = mock()
+        testedFeature.persistenceExecutorService = mockPersistenceExecutorService
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        verify(mockUploadExecutorService).shutdownNow()
+        verify(mockPersistenceExecutorService).shutdownNow()
+    }
+
+    @Test
+    fun `𝕄 unregister tracking consent callbacks 𝕎 stop()`() {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+        val mockConsentProvider: ConsentProvider = mock()
+        testedFeature.trackingConsentProvider = mockConsentProvider
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        verify(mockConsentProvider).unregisterAllCallbacks()
     }
 
     @Test
     fun `M drain the persistence executor queue W drainAndShutdownExecutors()`(forge: Forge) {
         // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
         val blockingQueue = LinkedBlockingQueue<Runnable>(forge.aList { mock() })
         val persistenceExecutor =
             ThreadPoolExecutor(1, 1, 1, TimeUnit.SECONDS, blockingQueue)
-        CoreFeature.persistenceExecutorService = persistenceExecutor
+        testedFeature.persistenceExecutorService = persistenceExecutor
 
         // When
-        CoreFeature.drainAndShutdownExecutors()
+        testedFeature.drainAndShutdownExecutors()
 
         // Then
         blockingQueue.forEach {
@@ -841,13 +943,21 @@ internal class CoreFeatureTest {
     @Test
     fun `M drain the upload executor queue W drainAndShutdownExecutors()`(forge: Forge) {
         // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
         val blockingQueue = LinkedBlockingQueue<Runnable>(forge.aList { mock() })
         val mockUploadExecutor: ScheduledThreadPoolExecutor = mock()
         whenever(mockUploadExecutor.queue).thenReturn(blockingQueue)
-        CoreFeature.uploadExecutorService = mockUploadExecutor
+        testedFeature.uploadExecutorService = mockUploadExecutor
 
         // When
-        CoreFeature.drainAndShutdownExecutors()
+        testedFeature.drainAndShutdownExecutors()
 
         // Then
         blockingQueue.forEach {
@@ -858,11 +968,19 @@ internal class CoreFeatureTest {
     @Test
     fun `M shutdown with wait the persistence executor W drainAndShutdownExecutors()`() {
         // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
         val mockPersistenceExecutorService: ExecutorService = mock()
-        CoreFeature.persistenceExecutorService = mockPersistenceExecutorService
+        testedFeature.persistenceExecutorService = mockPersistenceExecutorService
 
         // When
-        CoreFeature.drainAndShutdownExecutors()
+        testedFeature.drainAndShutdownExecutors()
 
         // Then
         inOrder(mockPersistenceExecutorService) {
@@ -874,13 +992,21 @@ internal class CoreFeatureTest {
     @Test
     fun `M shutdown with wait the upload executor W drainAndShutdownExecutors()`() {
         // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
         val blockingQueue = LinkedBlockingQueue<Runnable>()
         val mockUploadService: ScheduledThreadPoolExecutor = mock()
         whenever(mockUploadService.queue).thenReturn(blockingQueue)
-        CoreFeature.uploadExecutorService = mockUploadService
+        testedFeature.uploadExecutorService = mockUploadService
 
         // When
-        CoreFeature.drainAndShutdownExecutors()
+        testedFeature.drainAndShutdownExecutors()
 
         // Then
         inOrder(mockUploadService) {
@@ -889,19 +1015,7 @@ internal class CoreFeatureTest {
         }
     }
 
-    @Test
-    fun `M initialize webViewTrackingHosts W initialize()`() {
-        // When
-        CoreFeature.initialize(
-            appContext.mockInstance,
-            fakeCredentials,
-            fakeConfig,
-            fakeConsent
-        )
-
-        // Then
-        assertThat(CoreFeature.webViewTrackingHosts).isEqualTo(fakeConfig.webViewTrackingHosts)
-    }
+    // endregion
 
     // region Internal
 

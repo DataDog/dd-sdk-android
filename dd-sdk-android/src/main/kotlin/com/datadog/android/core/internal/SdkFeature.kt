@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("TooManyFunctions")
 internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
-    val coreFeature: CoreFeature
+    internal val coreFeature: CoreFeature
 ) {
 
     internal val initialized = AtomicBoolean(false)
@@ -49,6 +49,7 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
             configuration.plugins,
             DatadogPluginConfig(
                 context = context,
+                storageDir = coreFeature.storageDir,
                 envName = coreFeature.envName,
                 serviceName = coreFeature.serviceName,
                 trackingConsent = coreFeature.trackingConsentProvider.getConsent()

@@ -40,7 +40,7 @@ internal class CrashReportsFeature(
     ): PersistenceStrategy<LogEvent> {
         return CrashReportFilePersistenceStrategy(
             coreFeature.trackingConsentProvider,
-            context,
+            coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
             sdkLogger,
             coreFeature.localDataEncryption

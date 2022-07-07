@@ -29,7 +29,7 @@ internal class WebViewLogsFeature(
     ): PersistenceStrategy<JsonObject> {
         return WebViewLogFilePersistenceStrategy(
             coreFeature.trackingConsentProvider,
-            context,
+            coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
             sdkLogger,
             coreFeature.localDataEncryption

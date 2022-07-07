@@ -59,7 +59,9 @@ import com.datadog.android.rum.internal.ndk.NoOpNdkCrashHandler
 import com.datadog.android.security.Encryption
 import com.lyft.kronos.AndroidClockFactory
 import com.lyft.kronos.KronosClock
+import java.io.File
 import java.lang.ref.WeakReference
+import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.ScheduledThreadPoolExecutor
@@ -105,12 +107,14 @@ internal class CoreFeature {
     internal lateinit var persistenceExecutorService: ExecutorService
     internal var localDataEncryption: Encryption? = null
     internal lateinit var webViewTrackingHosts: List<String>
+    internal lateinit var storageDir: File
 
     // TESTS ONLY, to prevent Kronos spinning sync threads in unit-tests
     internal var disableKronosBackgroundSync = false
 
     fun initialize(
         appContext: Context,
+        sdkInstanceId: String,
         credentials: Credentials,
         configuration: Configuration.Core,
         consent: TrackingConsent
@@ -126,6 +130,10 @@ internal class CoreFeature {
         firstPartyHostDetector.addKnownHosts(configuration.firstPartyHosts)
         webViewTrackingHosts = configuration.webViewTrackingHosts
         setupExecutors()
+        storageDir = File(
+            appContext.cacheDir,
+            DATADOG_STORAGE_DIR_NAME.format(Locale.US, sdkInstanceId)
+        )
         // Time Provider
         timeProvider = KronosTimeProvider(kronosClock)
         // BIG NOTE !!
@@ -135,7 +143,7 @@ internal class CoreFeature {
         // Because all our persisting components are working asynchronously this will avoid
         // having corrupted data (data from previous process over - written in this process into the
         // ndk crash folder before the crash was actually handled)
-        prepareNdkCrashData(appContext)
+        prepareNdkCrashData()
         setupInfoProviders(appContext, consent)
         initialized.set(true)
     }
@@ -197,10 +205,10 @@ internal class CoreFeature {
 
     // region Internal
 
-    private fun prepareNdkCrashData(appContext: Context) {
+    private fun prepareNdkCrashData() {
         if (isMainProcess) {
             ndkCrashHandler = DatadogNdkCrashHandler(
-                appContext,
+                storageDir,
                 persistenceExecutorService,
                 DatadogLogGenerator(
                     serviceName,
@@ -288,15 +296,13 @@ internal class CoreFeature {
         setupNetworkInfoProviders(appContext)
 
         // User Info Provider
-        setupUserInfoProvider(appContext)
+        setupUserInfoProvider()
     }
 
-    private fun setupUserInfoProvider(
-        appContext: Context
-    ) {
+    private fun setupUserInfoProvider() {
         val userInfoWriter = ScheduledWriter(
             NdkUserInfoDataWriter(
-                appContext,
+                storageDir,
                 trackingConsentProvider,
                 persistenceExecutorService,
                 FileReaderWriter.create(sdkLogger, localDataEncryption),
@@ -309,12 +315,10 @@ internal class CoreFeature {
         userInfoProvider = DatadogUserInfoProvider(userInfoWriter)
     }
 
-    private fun setupNetworkInfoProviders(
-        appContext: Context
-    ) {
+    private fun setupNetworkInfoProviders(appContext: Context) {
         val networkInfoWriter = ScheduledWriter(
             NdkNetworkInfoDataWriter(
-                appContext,
+                storageDir,
                 trackingConsentProvider,
                 persistenceExecutorService,
                 FileReaderWriter.create(sdkLogger, localDataEncryption),
@@ -441,6 +445,7 @@ internal class CoreFeature {
         internal val NETWORK_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(45)
         private val THREAD_POOL_MAX_KEEP_ALIVE_MS = TimeUnit.SECONDS.toMillis(5)
         private const val CORE_DEFAULT_POOL_SIZE = 1 // Only one thread will be kept alive
+        internal const val DATADOG_STORAGE_DIR_NAME = "datadog-%s"
 
         // this is a default source to be used when uploading RUM/Logs/Span data, however there is a
         // possibility to override it which is useful when SDK is used via bridge, say

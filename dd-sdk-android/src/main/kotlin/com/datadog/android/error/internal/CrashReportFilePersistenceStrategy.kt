@@ -6,7 +6,6 @@
 
 package com.datadog.android.error.internal
 
-import android.content.Context
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
@@ -18,18 +17,19 @@ import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.event.LogEventSerializer
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.security.Encryption
+import java.io.File
 import java.util.concurrent.ExecutorService
 
 internal class CrashReportFilePersistenceStrategy(
     consentProvider: ConsentProvider,
-    context: Context,
+    storageDir: File,
     executorService: ExecutorService,
     internalLogger: Logger,
     localDataEncryption: Encryption?
 ) : BatchFilePersistenceStrategy<LogEvent>(
     FeatureFileOrchestrator(
         consentProvider,
-        context,
+        storageDir,
         CrashReportsFeature.CRASH_FEATURE_NAME,
         executorService,
         internalLogger
