@@ -14,13 +14,14 @@ include(":dd-sdk-android-glide")
 include(":dd-sdk-android-ktx")
 include(":dd-sdk-android-ndk")
 include(":dd-sdk-android-rx")
-include(":dd-sdk-android-session-replay")
 include(":dd-sdk-android-sqldelight")
 include(":dd-sdk-android-timber")
 include(":dd-sdk-android-tv")
 
 include(":instrumented:integration")
 include(":instrumented:nightly-tests")
+
+include(":library:dd-sdk-android-session-replay")
 
 include(":sample:kotlin")
 

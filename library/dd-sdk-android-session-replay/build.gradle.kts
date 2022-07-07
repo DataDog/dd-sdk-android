@@ -74,7 +74,6 @@ android {
 }
 
 dependencies {
-    api(project(":dd-sdk-android"))
     implementation(libs.kotlin)
 
     testImplementation(project(":tools:unit"))
