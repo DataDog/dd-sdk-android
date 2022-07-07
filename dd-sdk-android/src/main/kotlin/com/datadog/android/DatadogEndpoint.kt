@@ -153,4 +153,40 @@ object DatadogEndpoint {
     const val NTP_3: String = "3.datadog.pool.ntp.org"
 
     // endregion
+
+    // region Session Replay
+
+    /**
+     * The US1 endpoint for Session Replay (US based servers).
+     * Use this in your [Configuration] if you want to point to
+     * [app.datadoghq.com](https://app.datadoghq.com)
+     * @see [Configuration]
+     */
+    const val SESSION_REPLAY_US1: String = "https://session-replay.browser-intake-datadoghq.com"
+
+    /**
+     * The US3 endpoint for Session Replay (US based servers).
+     * Use this in your [Configuration] if you want to point to
+     * [us3.datadoghq.com](https://us3.datadoghq.com)
+     * @see [Configuration]
+     */
+    const val SESSION_REPLAY_US3: String = "https://session-replay.browser-intake-us3-datadoghq.com"
+
+    /**
+     * The US5 endpoint for Session replay (US based servers).
+     * Use this in your [Configuration] if you want to point to
+     * [us5.datadoghq.com](https://us5.datadoghq.com)
+     * @see [Configuration]
+     */
+    const val SESSION_REPLAY_US5: String = "https://session-replay.browser-intake-us5-datadoghq.com"
+
+    /**
+     * The EU1 endpoint for Session Replay (EU based servers).
+     * Use this in your [Configuration] if you want to point to
+     * [app.datadoghq.eu](https://app.datadoghq.eu)
+     * @see [Configuration]
+     */
+    const val SESSION_REPLAY_EU1: String = "https://session-replay.browser-intake-datadoghq.eu"
+
+    // endregion
 }

@@ -13,5 +13,6 @@ enum class Feature(internal val featureName: String) {
     LOG("Logging"),
     CRASH("Crash Reporting"),
     TRACE("Tracing"),
-    RUM("RUM")
+    RUM("RUM"),
+    SESSION_REPLAY("Session Replay")
 }
