@@ -76,10 +76,10 @@ tasks.register("assembleAll") {
         ":dd-sdk-android-ktx:assemble",
         ":dd-sdk-android-ndk:assemble",
         ":dd-sdk-android-rx:assemble",
-        ":dd-sdk-android-session-replay:assemble",
         ":dd-sdk-android-sqldelight:assemble",
         ":dd-sdk-android-timber:assemble",
-        ":dd-sdk-android-tv:assemble"
+        ":dd-sdk-android-tv:assemble",
+        ":library:dd-sdk-android-session-replay:assemble"
     )
 }
 
@@ -93,10 +93,10 @@ tasks.register("unitTestRelease") {
         ":dd-sdk-android-ktx:testReleaseUnitTest",
         ":dd-sdk-android-ndk:testReleaseUnitTest",
         ":dd-sdk-android-rx:testReleaseUnitTest",
-        ":dd-sdk-android-session-replay:testReleaseUnitTest",
         ":dd-sdk-android-sqldelight:testReleaseUnitTest",
         ":dd-sdk-android-timber:testReleaseUnitTest",
-        ":dd-sdk-android-tv:testReleaseUnitTest"
+        ":dd-sdk-android-tv:testReleaseUnitTest",
+        ":library:dd-sdk-android-session-replay:testReleaseUnitTest"
     )
 }
 
@@ -110,10 +110,10 @@ tasks.register("unitTestDebug") {
         ":dd-sdk-android-ktx:testDebugUnitTest",
         ":dd-sdk-android-ndk:testDebugUnitTest",
         ":dd-sdk-android-rx:testDebugUnitTest",
-        ":dd-sdk-android-session-replay:testDebugUnitTest",
         ":dd-sdk-android-sqldelight:testDebugUnitTest",
         ":dd-sdk-android-timber:testDebugUnitTest",
-        ":dd-sdk-android-tv:testDebugUnitTest"
+        ":dd-sdk-android-tv:testDebugUnitTest",
+        ":library:dd-sdk-android-session-replay:testDebugUnitTest"
     )
 }
 
@@ -143,12 +143,12 @@ tasks.register("ktlintCheckAll") {
         ":dd-sdk-android-ktx:ktlintCheck",
         ":dd-sdk-android-ndk:ktlintCheck",
         ":dd-sdk-android-rx:ktlintCheck",
-        ":dd-sdk-android-session-replay:ktlintCheck",
         ":dd-sdk-android-sqldelight:ktlintCheck",
         ":dd-sdk-android-timber:ktlintCheck",
         ":dd-sdk-android-tv:ktlintCheck",
         ":instrumented:integration:ktlintCheck",
         ":instrumented:nightly-tests:ktlintCheck",
+        ":library:dd-sdk-android-session-replay:ktlintCheck",
         ":tools:detekt:ktlintCheck",
         ":tools:unit:ktlintCheck"
     )
@@ -164,10 +164,10 @@ tasks.register("lintCheckAll") {
         ":dd-sdk-android-ktx:lintRelease",
         ":dd-sdk-android-ndk:lintRelease",
         ":dd-sdk-android-rx:lintRelease",
-        ":dd-sdk-android-session-replay:lintRelease",
         ":dd-sdk-android-sqldelight:lintRelease",
         ":dd-sdk-android-timber:lintRelease",
-        ":dd-sdk-android-tv:lintRelease"
+        ":dd-sdk-android-tv:lintRelease",
+        ":library:dd-sdk-android-session-replay:lintRelease"
     )
 }
 
@@ -181,10 +181,10 @@ tasks.register("checkThirdPartyLicensesAll") {
         ":dd-sdk-android-ktx:checkThirdPartyLicences",
         ":dd-sdk-android-ndk:checkThirdPartyLicences",
         ":dd-sdk-android-rx:checkThirdPartyLicences",
-        ":dd-sdk-android-session-replay:checkThirdPartyLicences",
         ":dd-sdk-android-sqldelight:checkThirdPartyLicences",
         ":dd-sdk-android-timber:checkThirdPartyLicences",
-        ":dd-sdk-android-tv:checkThirdPartyLicences"
+        ":dd-sdk-android-tv:checkThirdPartyLicences",
+        ":library:dd-sdk-android-session-replay:checkThirdPartyLicences"
     )
 }
 
@@ -198,10 +198,10 @@ tasks.register("checkApiSurfaceChangesAll") {
         ":dd-sdk-android-ktx:checkApiSurfaceChanges",
         ":dd-sdk-android-ndk:checkApiSurfaceChanges",
         ":dd-sdk-android-rx:checkApiSurfaceChanges",
-        ":dd-sdk-android-session-replay:checkApiSurfaceChanges",
         ":dd-sdk-android-sqldelight:checkApiSurfaceChanges",
         ":dd-sdk-android-timber:checkApiSurfaceChanges",
-        ":dd-sdk-android-tv:checkApiSurfaceChanges"
+        ":dd-sdk-android-tv:checkApiSurfaceChanges",
+        ":library:dd-sdk-android-session-replay:checkApiSurfaceChanges"
     )
 }
 
@@ -220,11 +220,11 @@ tasks.register("detektAll") {
         ":dd-sdk-android-ndk:detektMain",
         ":dd-sdk-android-rx:detektMain",
         ":dd-sdk-android-sqldelight:detektMain",
-        ":dd-sdk-android-session-replay:detektMain",
         ":dd-sdk-android-timber:detektMain",
         ":dd-sdk-android-tv:detektMain",
         ":instrumented:integration:detekt",
         ":instrumented:nightly-tests:detekt",
+        ":library:dd-sdk-android-session-replay:detektMain",
         ":tools:unit:detekt"
     )
 }
@@ -242,8 +242,9 @@ tasks.register("koverReportAll") {
         ":dd-sdk-android-session-replay:koverXmlReport",
         ":dd-sdk-android-sqldelight:koverXmlReport",
         ":dd-sdk-android-timber:koverXmlReport",
-        ":dd-sdk-android-tv:koverXmlReport"
-    )
+        ":dd-sdk-android-tv:koverXmlReport",
+        ":library:dd-sdk-android-session-replay:koverXmlReport",
+        )
 }
 
 tasks.register("instrumentTestAll") {
