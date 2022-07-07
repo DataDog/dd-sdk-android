@@ -59,6 +59,7 @@ internal constructor(
     internal val tracesConfig: Feature.Tracing?,
     internal val crashReportConfig: Feature.CrashReport?,
     internal val rumConfig: Feature.RUM?,
+    internal val sessionReplayConfig: Feature.SessionReplay?,
     internal val additionalConfig: Map<String, Any>
 ) {
 
@@ -108,6 +109,11 @@ internal constructor(
             val backgroundEventTracking: Boolean,
             val vitalsMonitorUpdateFrequency: VitalsUpdateFrequency
         ) : Feature()
+
+        internal data class SessionReplay(
+            override val endpointUrl: String,
+            override val plugins: List<DatadogPlugin>
+        ) : Feature()
     }
 
     // region Builder
@@ -118,18 +124,21 @@ internal constructor(
      * @param tracesEnabled whether Spans are tracked and sent to Datadog
      * @param crashReportsEnabled whether crashes are tracked and sent to Datadog
      * @param rumEnabled whether RUM events are tracked and sent to Datadog
+     * @param sessionReplayEnabled whether RUM Session Replay is enabled or not
      */
     @Suppress("TooManyFunctions")
     class Builder(
         val logsEnabled: Boolean,
         val tracesEnabled: Boolean,
         val crashReportsEnabled: Boolean,
-        val rumEnabled: Boolean
+        val rumEnabled: Boolean,
+        val sessionReplayEnabled: Boolean
     ) {
         private var logsConfig: Feature.Logs = DEFAULT_LOGS_CONFIG
         private var tracesConfig: Feature.Tracing = DEFAULT_TRACING_CONFIG
         private var crashReportConfig: Feature.CrashReport = DEFAULT_CRASH_CONFIG
         private var rumConfig: Feature.RUM = DEFAULT_RUM_CONFIG
+        private var sessionReplayConfig: Feature.SessionReplay = DEFAULT_SESSION_REPLAY_CONFIG
         private var additionalConfig: Map<String, Any> = emptyMap()
 
         private var coreConfig = DEFAULT_CORE_CONFIG
@@ -146,6 +155,7 @@ internal constructor(
                 tracesConfig = if (tracesEnabled) tracesConfig else null,
                 crashReportConfig = if (crashReportsEnabled) crashReportConfig else null,
                 rumConfig = if (rumEnabled) rumConfig else null,
+                sessionReplayConfig = if (sessionReplayEnabled) sessionReplayConfig else null,
                 additionalConfig = additionalConfig
             )
         }
@@ -345,6 +355,9 @@ internal constructor(
                     PluginFeature.CRASH -> crashReportConfig = crashReportConfig.copy(
                         plugins = crashReportConfig.plugins + plugin
                     )
+                    PluginFeature.SESSION_REPLAY ->
+                        sessionReplayConfig =
+                            sessionReplayConfig.copy(plugins = sessionReplayConfig.plugins + plugin)
                 }
             }
             return this
@@ -574,6 +587,7 @@ internal constructor(
                 PluginFeature.TRACE -> tracesEnabled
                 PluginFeature.CRASH -> crashReportsEnabled
                 PluginFeature.RUM -> rumEnabled
+                PluginFeature.SESSION_REPLAY -> sessionReplayEnabled
             }
             if (featureEnabled) {
                 @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
@@ -642,6 +656,10 @@ internal constructor(
             rumEventMapper = NoOpEventMapper(),
             backgroundEventTracking = false,
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE
+        )
+        internal val DEFAULT_SESSION_REPLAY_CONFIG = Feature.SessionReplay(
+            endpointUrl = DatadogEndpoint.SESSION_REPLAY_US1,
+            plugins = emptyList()
         )
 
         internal const val ERROR_FEATURE_DISABLED = "The %s feature has been disabled in your " +

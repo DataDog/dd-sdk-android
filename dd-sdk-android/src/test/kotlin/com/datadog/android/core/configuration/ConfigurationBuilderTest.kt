@@ -86,7 +86,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
     }
 
@@ -164,7 +165,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = false,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -185,7 +187,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = false,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -206,7 +209,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = false,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -227,7 +231,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -750,7 +755,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -776,7 +782,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -800,7 +807,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
         val viewStrategy: ViewTrackingStrategy = mock()
 
@@ -827,7 +835,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -851,7 +860,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
         val eventMapper: ViewEventMapper = mock()
 
@@ -876,7 +886,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
         val eventMapper: EventMapper<ResourceEvent> = mock()
 
@@ -901,7 +912,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
         val eventMapper: EventMapper<ActionEvent> = mock()
 
@@ -926,7 +938,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
         val eventMapper: EventMapper<ErrorEvent> = mock()
 
@@ -951,7 +964,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
         val eventMapper: EventMapper<LongTaskEvent> = mock()
 
@@ -976,7 +990,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = false,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
         val logsPlugin: DatadogPlugin = mock()
 
@@ -1001,7 +1016,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = false,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
         val tracesPlugin: DatadogPlugin = mock()
 
@@ -1026,7 +1042,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = false,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
         val crashPlugin: DatadogPlugin = mock()
 
@@ -1051,7 +1068,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
         val rumPlugin: DatadogPlugin = mock()
 
@@ -1078,7 +1096,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = false,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -1104,7 +1123,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = false,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -1130,7 +1150,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = false,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -1156,7 +1177,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
 
         // When
