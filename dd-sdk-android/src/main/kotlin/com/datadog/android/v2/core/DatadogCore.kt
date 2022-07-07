@@ -28,6 +28,7 @@ import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.FeatureStorageConfiguration
@@ -61,6 +62,7 @@ internal class DatadogCore(
         null
     internal var webViewLogsFeature: SdkFeature<JsonObject, Configuration.Feature.Logs>? = null
     internal var webViewRumFeature: SdkFeature<Any, Configuration.Feature.RUM>? = null
+    internal var sessionReplayFeature: SdkFeature<Any, Configuration.Feature.SessionReplay>? = null
 
     // TODO RUMM-0000 handle context
     internal val contextProvider: ContextProvider?
@@ -214,6 +216,7 @@ internal class DatadogCore(
         initializeTracingFeature(mutableConfig.tracesConfig, appContext)
         initializeRumFeature(mutableConfig.rumConfig, appContext)
         initializeCrashReportFeature(mutableConfig.crashReportConfig, appContext)
+        initializeSessionReplayFeature(mutableConfig.sessionReplayConfig, appContext)
 
         coreFeature.ndkCrashHandler.handleNdkCrash(
             logsFeature?.persistenceStrategy?.getWriter() ?: NoOpDataWriter(),
@@ -287,6 +290,16 @@ internal class DatadogCore(
             webViewRumFeature = WebViewRumFeature(coreFeature)
             rumFeature?.initialize(appContext, configuration)
             webViewRumFeature?.initialize(appContext, configuration)
+        }
+    }
+
+    private fun initializeSessionReplayFeature(
+        configuration: Configuration.Feature.SessionReplay?,
+        appContext: Context
+    ) {
+        if (configuration != null) {
+            sessionReplayFeature = SessionReplayFeature(coreFeature)
+            sessionReplayFeature?.initialize(appContext, configuration)
         }
     }
 
