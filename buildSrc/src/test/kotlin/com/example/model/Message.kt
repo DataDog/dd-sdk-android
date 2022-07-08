@@ -6,6 +6,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.lang.IllegalStateException
+import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.Boolean
 import kotlin.String
@@ -29,24 +30,32 @@ public data class Message(
         destination.forEach { destinationArray.add(it) }
         json.add("destination", destinationArray)
         json.addProperty("origin", origin)
-        subject?.let { json.addProperty("subject", it) }
-        message?.let { json.addProperty("message", it) }
-        labels?.let { temp ->
-            val labelsArray = JsonArray(temp.size)
-            temp.forEach { labelsArray.add(it) }
+        subject?.let { subjectNonNull ->
+            json.addProperty("subject", subjectNonNull)
+        }
+        message?.let { messageNonNull ->
+            json.addProperty("message", messageNonNull)
+        }
+        labels?.let { labelsNonNull ->
+            val labelsArray = JsonArray(labelsNonNull.size)
+            labelsNonNull.forEach { labelsArray.add(it) }
             json.add("labels", labelsArray)
         }
-        read?.let { json.addProperty("read", it) }
-        important?.let { json.addProperty("important", it) }
+        read?.let { readNonNull ->
+            json.addProperty("read", readNonNull)
+        }
+        important?.let { importantNonNull ->
+            json.addProperty("important", importantNonNull)
+        }
         return json
     }
 
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(serializedObject: String): Message {
+        public fun fromJson(jsonString: String): Message {
             try {
-                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val destination = jsonObject.get("destination").asJsonArray.let { jsonArray ->
                     val collection = ArrayList<String>(jsonArray.size())
                     jsonArray.forEach {
@@ -68,9 +77,11 @@ public data class Message(
                 val important = jsonObject.get("important")?.asBoolean
                 return Message(destination, origin, subject, message, labels, read, important)
             } catch (e: IllegalStateException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Message", e)
             } catch (e: NumberFormatException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Message", e)
+            } catch (e: NullPointerException) {
+                throw JsonParseException("Unable to parse json into type Message", e)
             }
         }
     }

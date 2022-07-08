@@ -6,6 +6,7 @@ import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import java.lang.IllegalStateException
+import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.Number
 import kotlin.String
@@ -24,17 +25,17 @@ public data class Jacket(
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(serializedObject: String): Jacket {
+        public fun fromJson(jsonString: String): Jacket {
             try {
-                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
-                val size = jsonObject.get("size").asString.let {
-                    Size.fromJson(it)
-                }
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                val size = Size.fromJson(jsonObject.get("size").asString)
                 return Jacket(size)
             } catch (e: IllegalStateException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Jacket", e)
             } catch (e: NumberFormatException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Jacket", e)
+            } catch (e: NullPointerException) {
+                throw JsonParseException("Unable to parse json into type Jacket", e)
             }
         }
     }
@@ -52,8 +53,8 @@ public data class Jacket(
 
         public companion object {
             @JvmStatic
-            public fun fromJson(serializedObject: String): Size = values().first {
-                it.jsonValue.toString() == serializedObject
+            public fun fromJson(jsonString: String): Size = values().first {
+                it.jsonValue.toString() == jsonString
             }
         }
     }

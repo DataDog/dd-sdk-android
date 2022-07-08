@@ -1,10 +1,13 @@
 package com.example.model
 
+import com.datadog.android.core.`internal`.utils.fromJsonElement
+import com.datadog.android.core.`internal`.utils.toJsonElement
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.lang.IllegalStateException
+import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.Any
 import kotlin.Array
@@ -22,11 +25,19 @@ public data class Company(
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
-        name?.let { json.addProperty("name", it) }
-        ratings?.let { json.add("ratings", it.toJson()) }
-        information?.let { json.add("information", it.toJson()) }
+        name?.let { nameNonNull ->
+            json.addProperty("name", nameNonNull)
+        }
+        ratings?.let { ratingsNonNull ->
+            json.add("ratings", ratingsNonNull.toJson())
+        }
+        information?.let { informationNonNull ->
+            json.add("information", informationNonNull.toJson())
+        }
         additionalProperties.forEach { (k, v) ->
-            json.add(k, v.toJsonElement())
+            if (k !in RESERVED_PROPERTIES) {
+                json.add(k, v.toJsonElement())
+            }
         }
         return json
     }
@@ -36,9 +47,9 @@ public data class Company(
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(serializedObject: String): Company {
+        public fun fromJson(jsonString: String): Company {
             try {
-                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val name = jsonObject.get("name")?.asString
                 val ratings = jsonObject.get("ratings")?.toString()?.let {
                     Ratings.fromJson(it)
@@ -49,14 +60,16 @@ public data class Company(
                 val additionalProperties = mutableMapOf<String, Any?>()
                 for (entry in jsonObject.entrySet()) {
                     if (entry.key !in RESERVED_PROPERTIES) {
-                        additionalProperties[entry.key] = entry.value
+                        additionalProperties[entry.key] = entry.value.fromJsonElement()
                     }
                 }
                 return Company(name, ratings, information, additionalProperties)
             } catch (e: IllegalStateException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Company", e)
             } catch (e: NumberFormatException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Company", e)
+            } catch (e: NullPointerException) {
+                throw JsonParseException("Unable to parse json into type Company", e)
             }
         }
     }
@@ -69,7 +82,9 @@ public data class Company(
             val json = JsonObject()
             json.addProperty("global", global)
             additionalProperties.forEach { (k, v) ->
-                json.addProperty(k, v)
+                if (k !in RESERVED_PROPERTIES) {
+                    json.addProperty(k, v)
+                }
             }
             return json
         }
@@ -79,9 +94,9 @@ public data class Company(
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJson(serializedObject: String): Ratings {
+            public fun fromJson(jsonString: String): Ratings {
                 try {
-                    val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val global = jsonObject.get("global").asLong
                     val additionalProperties = mutableMapOf<String, Long>()
                     for (entry in jsonObject.entrySet()) {
@@ -91,9 +106,11 @@ public data class Company(
                     }
                     return Ratings(global, additionalProperties)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException("Unable to parse json into type Ratings", e)
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException("Unable to parse json into type Ratings", e)
+                } catch (e: NullPointerException) {
+                    throw JsonParseException("Unable to parse json into type Ratings", e)
                 }
             }
         }
@@ -102,14 +119,20 @@ public data class Company(
     public data class Information(
         public val date: Long? = null,
         public val priority: Long? = null,
-        public val additionalProperties: Map<String, Map<String, Any?>> = emptyMap(),
+        public val additionalProperties: Map<String, Any?> = emptyMap(),
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()
-            date?.let { json.addProperty("date", it) }
-            priority?.let { json.addProperty("priority", it) }
+            date?.let { dateNonNull ->
+                json.addProperty("date", dateNonNull)
+            }
+            priority?.let { priorityNonNull ->
+                json.addProperty("priority", priorityNonNull)
+            }
             additionalProperties.forEach { (k, v) ->
-                json.add(k, v.toJsonElement())
+                if (k !in RESERVED_PROPERTIES) {
+                    json.add(k, v.toJsonElement())
+                }
             }
             return json
         }
@@ -119,22 +142,24 @@ public data class Company(
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJson(serializedObject: String): Information {
+            public fun fromJson(jsonString: String): Information {
                 try {
-                    val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val date = jsonObject.get("date")?.asLong
                     val priority = jsonObject.get("priority")?.asLong
-                    val additionalProperties = mutableMapOf<String, Map<String, Any?>>()
+                    val additionalProperties = mutableMapOf<String, Any?>()
                     for (entry in jsonObject.entrySet()) {
                         if (entry.key !in RESERVED_PROPERTIES) {
-                            additionalProperties[entry.key] = entry.value.asMap()
+                            additionalProperties[entry.key] = entry.value.fromJsonElement()
                         }
                     }
                     return Information(date, priority, additionalProperties)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException("Unable to parse json into type Information", e)
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException("Unable to parse json into type Information", e)
+                } catch (e: NullPointerException) {
+                    throw JsonParseException("Unable to parse json into type Information", e)
                 }
             }
         }

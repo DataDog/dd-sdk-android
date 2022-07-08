@@ -15,6 +15,40 @@ val Address = TypeDefinition.Class(
     )
 )
 
+val Animal = TypeDefinition.MultiClass(
+    name = "Animal",
+    type = TypeDefinition.MultiClass.Type.ONE_OF,
+    options = listOf(
+        TypeDefinition.Class(
+            name = "Fish",
+            properties = listOf(
+                TypeProperty(
+                    "water",
+                    TypeDefinition.Enum("Water", JsonType.STRING, listOf("salt", "fresh")),
+                    false
+                ),
+                TypeProperty("size", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), true)
+            )
+        ),
+        TypeDefinition.Class(
+            name = "Bird",
+            properties = listOf(
+                TypeProperty(
+                    "food",
+                    TypeDefinition.Enum(
+                        "Food",
+                        JsonType.STRING,
+                        listOf("fish", "bird", "rodent", "insect", "fruit", "seeds", "pollen")
+                    ),
+                    false
+                ),
+                TypeProperty("can_fly", TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN), false)
+            )
+        )
+    ),
+    description = "A representation of the animal kingdom"
+)
+
 val Article = TypeDefinition.Class(
     name = "Article",
     properties = listOf(
@@ -505,8 +539,8 @@ val Style = TypeDefinition.Class(
             "color",
             TypeDefinition.Enum(
                 "Color",
-                JsonType.STRING,
-                listOf("red", "amber", "green", "dark_blue", "lime green", "sunburst-yellow")
+                null,
+                listOf("red", "amber", "green", "dark_blue", "lime green", "sunburst-yellow", null)
             ),
             false
         )

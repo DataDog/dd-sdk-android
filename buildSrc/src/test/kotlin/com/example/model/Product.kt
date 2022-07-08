@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.lang.IllegalStateException
+import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.Long
 import kotlin.Number
@@ -28,17 +29,19 @@ public data class Product(
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(serializedObject: String): Product {
+        public fun fromJson(jsonString: String): Product {
             try {
-                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val productId = jsonObject.get("productId").asLong
                 val productName = jsonObject.get("productName").asString
                 val price = jsonObject.get("price").asNumber
                 return Product(productId, productName, price)
             } catch (e: IllegalStateException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Product", e)
             } catch (e: NumberFormatException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Product", e)
+            } catch (e: NullPointerException) {
+                throw JsonParseException("Unable to parse json into type Product", e)
             }
         }
     }

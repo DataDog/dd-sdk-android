@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.lang.IllegalStateException
+import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.Long
 import kotlin.String
@@ -18,26 +19,34 @@ public data class Person(
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
-        firstName?.let { json.addProperty("firstName", it) }
-        lastName?.let { json.addProperty("lastName", it) }
-        age?.let { json.addProperty("age", it) }
+        firstName?.let { firstNameNonNull ->
+            json.addProperty("firstName", firstNameNonNull)
+        }
+        lastName?.let { lastNameNonNull ->
+            json.addProperty("lastName", lastNameNonNull)
+        }
+        age?.let { ageNonNull ->
+            json.addProperty("age", ageNonNull)
+        }
         return json
     }
 
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(serializedObject: String): Person {
+        public fun fromJson(jsonString: String): Person {
             try {
-                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val firstName = jsonObject.get("firstName")?.asString
                 val lastName = jsonObject.get("lastName")?.asString
                 val age = jsonObject.get("age")?.asLong
                 return Person(firstName, lastName, age)
             } catch (e: IllegalStateException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Person", e)
             } catch (e: NumberFormatException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Person", e)
+            } catch (e: NullPointerException) {
+                throw JsonParseException("Unable to parse json into type Person", e)
             }
         }
     }

@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.lang.IllegalStateException
+import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.String
 import kotlin.jvm.JvmStatic
@@ -17,18 +18,24 @@ public data class Customer(
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
-        name?.let { json.addProperty("name", it) }
-        billingAddress?.let { json.add("billing_address", it.toJson()) }
-        shippingAddress?.let { json.add("shipping_address", it.toJson()) }
+        name?.let { nameNonNull ->
+            json.addProperty("name", nameNonNull)
+        }
+        billingAddress?.let { billingAddressNonNull ->
+            json.add("billing_address", billingAddressNonNull.toJson())
+        }
+        shippingAddress?.let { shippingAddressNonNull ->
+            json.add("shipping_address", shippingAddressNonNull.toJson())
+        }
         return json
     }
 
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(serializedObject: String): Customer {
+        public fun fromJson(jsonString: String): Customer {
             try {
-                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val name = jsonObject.get("name")?.asString
                 val billingAddress = jsonObject.get("billing_address")?.toString()?.let {
                     Address.fromJson(it)
@@ -38,9 +45,11 @@ public data class Customer(
                 }
                 return Customer(name, billingAddress, shippingAddress)
             } catch (e: IllegalStateException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Customer", e)
             } catch (e: NumberFormatException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Customer", e)
+            } catch (e: NullPointerException) {
+                throw JsonParseException("Unable to parse json into type Customer", e)
             }
         }
     }
@@ -61,17 +70,19 @@ public data class Customer(
         public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJson(serializedObject: String): Address {
+            public fun fromJson(jsonString: String): Address {
                 try {
-                    val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val streetAddress = jsonObject.get("street_address").asString
                     val city = jsonObject.get("city").asString
                     val state = jsonObject.get("state").asString
                     return Address(streetAddress, city, state)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException("Unable to parse json into type Address", e)
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException("Unable to parse json into type Address", e)
+                } catch (e: NullPointerException) {
+                    throw JsonParseException("Unable to parse json into type Address", e)
                 }
             }
         }
