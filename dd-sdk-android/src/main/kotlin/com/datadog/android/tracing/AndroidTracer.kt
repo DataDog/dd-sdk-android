@@ -58,7 +58,11 @@ class AndroidTracer internal constructor(
     internal constructor(private val logsHandler: LogHandler) {
 
         private var bundleWithRumEnabled: Boolean = true
-        private var serviceName: String? = null
+
+        // TODO RUMM-0000 should have a nicer call chain
+        private var serviceName: String? = (Datadog.globalSDKCore as? DatadogCore)
+            ?.coreFeature
+            ?.serviceName
         private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
         private var random: Random = SecureRandom()
 
@@ -87,7 +91,7 @@ class AndroidTracer internal constructor(
                 )
             }
 
-            if (bundleWithRumEnabled && rumFeature != null) {
+            if (bundleWithRumEnabled && rumFeature == null) {
                 devLogger.e(RUM_NOT_ENABLED_ERROR_MESSAGE)
                 bundleWithRumEnabled = false
             }
@@ -153,7 +157,10 @@ class AndroidTracer internal constructor(
 
         internal fun properties(): Properties {
             val properties = Properties()
-            properties.setProperty(Config.SERVICE_NAME, serviceName)
+            // TODO RUMM-0000 remove null assertion once we read serviceName in non-null way
+            if (serviceName != null) {
+                properties.setProperty(Config.SERVICE_NAME, serviceName)
+            }
             properties.setProperty(
                 Config.PARTIAL_FLUSH_MIN_SPANS,
                 partialFlushThreshold.toString()

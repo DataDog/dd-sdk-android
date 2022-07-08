@@ -19,7 +19,6 @@ import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.SDKCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -59,7 +58,7 @@ internal class DatadogCoreTest {
 
     // TODO RUMM-2206 handle all commented lines on this class
 
-    lateinit var testedCore: SDKCore
+    lateinit var testedCore: DatadogCore
 
     @Forgery
     lateinit var fakeCredentials: Credentials
@@ -84,7 +83,7 @@ internal class DatadogCoreTest {
     }
 
     @AfterEach
-    fun `tearDown`() {
+    fun `tear down`() {
         testedCore.stop()
     }
 
@@ -92,6 +91,7 @@ internal class DatadogCoreTest {
     @EnumSource(TrackingConsent::class)
     fun `M update the ConsentProvider W setConsent`(fakeConsent: TrackingConsent) {
         // Given
+        @Suppress("UNUSED_VARIABLE")
         val mockedConsentProvider: ConsentProvider = mock()
         // CoreFeature.trackingConsentProvider = mockedConsentProvider
 
@@ -108,7 +108,7 @@ internal class DatadogCoreTest {
     ) {
         // Given
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
-        (testedCore as DatadogCore).coreFeature.userInfoProvider = mockUserInfoProvider
+        testedCore.coreFeature.userInfoProvider = mockUserInfoProvider
 
         // When
         testedCore.setUserInfo(userInfo)
@@ -127,6 +127,28 @@ internal class DatadogCoreTest {
 
         // Then
         assertThat(result).isEqualTo(level)
+    }
+
+    @Test
+    fun `𝕄 clear data in all features 𝕎 clearAllData()`() {
+        // Given
+        testedCore.rumFeature = mock()
+        testedCore.tracingFeature = mock()
+        testedCore.logsFeature = mock()
+        testedCore.webViewLogsFeature = mock()
+        testedCore.webViewRumFeature = mock()
+        testedCore.crashReportsFeature = mock()
+
+        // When
+        testedCore.clearAllData()
+
+        // Then
+        verify(testedCore.rumFeature)!!.clearAllData()
+        verify(testedCore.tracingFeature)!!.clearAllData()
+        verify(testedCore.logsFeature)!!.clearAllData()
+        verify(testedCore.webViewLogsFeature)!!.clearAllData()
+        verify(testedCore.webViewRumFeature)!!.clearAllData()
+        verify(testedCore.crashReportsFeature)!!.clearAllData()
     }
 
     companion object {

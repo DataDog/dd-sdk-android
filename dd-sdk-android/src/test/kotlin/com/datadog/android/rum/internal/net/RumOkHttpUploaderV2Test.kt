@@ -41,7 +41,8 @@ internal class RumOkHttpUploaderV2Test : DataOkHttpUploaderV2Test<RumOkHttpUploa
             fakeSource,
             fakeSdkVersion,
             callFactory,
-            mockAndroidInfoProvider
+            mockAndroidInfoProvider,
+            coreFeature.mockInstance
         )
     }
 

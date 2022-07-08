@@ -305,9 +305,7 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `M not send batch W run() { no datadog context }`(
-        @IntForgery(min = 0, max = DataUploadRunnable.LOW_BATTERY_THRESHOLD) batteryLevel: Int
-    ) {
+    fun `M not send batch W run() { no datadog context }`() {
         // Given
         whenever(mockContextProvider.context) doReturn null
 

@@ -7,7 +7,6 @@
 package com.datadog.android.error.internal
 
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
 import com.datadog.android.log.model.LogEvent
@@ -47,11 +46,11 @@ internal class CrashReportsFeatureTest :
     @AfterEach
     fun `tear down crash reports`() {
         Thread.setDefaultUncaughtExceptionHandler(jvmExceptionHandler)
-        CrashReportsFeature.originalUncaughtExceptionHandler = jvmExceptionHandler
+        testedFeature.originalUncaughtExceptionHandler = jvmExceptionHandler
     }
 
     override fun createTestedFeature(): CrashReportsFeature {
-        return CrashReportsFeature
+        return CrashReportsFeature(coreFeature.mockInstance)
     }
 
     override fun forgeConfiguration(forge: Forge): Configuration.Feature.CrashReport {
@@ -61,8 +60,6 @@ internal class CrashReportsFeatureTest :
     override fun featureDirName(): String {
         return "crash"
     }
-
-    override fun doesFeatureNeedMigration(): Boolean = true
 
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
@@ -84,7 +81,7 @@ internal class CrashReportsFeatureTest :
         val crashReportsUploader = uploader as LogsOkHttpUploaderV2
         assertThat(crashReportsUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
         assertThat(crashReportsUploader.intakeUrl).endsWith("/api/v2/logs")
-        assertThat(crashReportsUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
+        assertThat(crashReportsUploader.callFactory).isSameAs(coreFeature.mockInstance.okHttpClient)
     }
 
     @Test

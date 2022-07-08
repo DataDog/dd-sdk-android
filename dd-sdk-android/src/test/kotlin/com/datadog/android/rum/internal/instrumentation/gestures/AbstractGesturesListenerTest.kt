@@ -13,7 +13,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.Window
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -28,7 +27,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.lang.ref.WeakReference
 import kotlin.math.abs
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -67,13 +65,11 @@ internal abstract class AbstractGesturesListenerTest {
     open fun `set up`() {
         Datadog.setVerbosity(Log.VERBOSE)
         whenever(mockAppContext.resources).thenReturn(mockResources)
-        CoreFeature.contextRef = WeakReference(mockAppContext)
     }
 
     @AfterEach
     fun `tear down`() {
         Datadog.setVerbosity(Integer.MAX_VALUE)
-        CoreFeature.contextRef = WeakReference(null)
     }
 
     // endregion

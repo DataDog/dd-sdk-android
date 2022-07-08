@@ -7,8 +7,10 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.forge.Configurator
@@ -68,8 +70,17 @@ internal class RumApplicationScopeTest {
     @Mock
     lateinit var mockSessionListener: RumSessionListener
 
+    @Mock
+    lateinit var mockUserInfoProvider: UserInfoProvider
+
+    @Mock
+    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
+
+    @StringForgery
+    lateinit var fakeSourceName: String
 
     @FloatForgery(min = 0f, max = 100f)
     var fakeSamplingRate: Float = 0f
@@ -88,7 +99,10 @@ internal class RumApplicationScopeTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
-            mockSessionListener
+            mockSessionListener,
+            fakeSourceName,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider
         )
     }
 

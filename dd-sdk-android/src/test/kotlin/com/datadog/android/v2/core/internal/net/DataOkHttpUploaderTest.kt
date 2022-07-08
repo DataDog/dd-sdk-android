@@ -137,6 +137,11 @@ internal class DataOkHttpUploaderTest {
         } else {
             fakeEndpoint.plus("?" + fakeQueryParams.map { "${it.key}=${it.value}" })
         }
+        // We need to remove duplicates from the map using case-insensitive comparison,
+        // because OkHttp will lowecase headers
+        fakeHeaders = fakeHeaders.entries
+            .groupBy { it.key.lowercase(Locale.US) }
+            .mapValues { it.value.first().value }
         fakeDatadogRequest = DatadogRequest(
             id = fakeRequestId,
             description = fakeRequestContext,

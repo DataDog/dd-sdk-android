@@ -8,8 +8,10 @@ package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -113,8 +115,17 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockTelemetryEventHandler: TelemetryEventHandler
 
+    @Mock
+    lateinit var mockUserInfoProvider: UserInfoProvider
+
+    @Mock
+    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
+
+    @StringForgery
+    lateinit var fakeSourceName: String
 
     lateinit var fakeAttributes: Map<String, Any?>
 
@@ -142,7 +153,10 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
-            mockSessionListener
+            mockSessionListener,
+            fakeSourceName,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider
         )
         testedMonitor.rootScope = mockScope
     }
@@ -161,7 +175,10 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
-            mockSessionListener
+            mockSessionListener,
+            fakeSourceName,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider
         )
 
         val rootScope = testedMonitor.rootScope
@@ -1157,6 +1174,9 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            fakeSourceName,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockExecutor
         )
 
@@ -1200,6 +1220,9 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            fakeSourceName,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockExecutorService
         )
 
@@ -1230,6 +1253,9 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
+            fakeSourceName,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockExecutorService
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)

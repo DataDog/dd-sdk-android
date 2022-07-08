@@ -25,6 +25,8 @@ import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
+import com.datadog.android.v2.api.NoOpSDKCore
+import com.datadog.android.v2.core.DatadogCore
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
@@ -37,6 +39,7 @@ import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.inOrder
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -159,14 +162,11 @@ internal class DatadogInterceptorWithoutTracesTest {
             firstPartyHostDetector = mockDetector,
             rumResourceAttributesProvider = mockRumAttributesProvider
         ) { mockLocalTracer }
-        TracingFeature.initialize(
-            appContext.mockInstance,
-            fakeConfig
-        )
-        RumFeature.initialize(
-            appContext.mockInstance,
-            fakeRumConfig
-        )
+        Datadog.globalSDKCore = mock<DatadogCore>()
+        whenever((Datadog.globalSDKCore as DatadogCore).tracingFeature) doReturn
+            TracingFeature(coreFeature.mockInstance)
+        whenever((Datadog.globalSDKCore as DatadogCore).rumFeature) doReturn
+            RumFeature(coreFeature.mockInstance)
 
         fakeResourceAttributes = forge.exhaustiveAttributes()
 
@@ -181,8 +181,7 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     @AfterEach
     fun `tear down`() {
-        TracingFeature.stop()
-        RumFeature.stop()
+        Datadog.globalSDKCore = NoOpSDKCore()
     }
 
     @Test

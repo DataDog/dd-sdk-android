@@ -11,7 +11,6 @@ import android.os.Looper
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumFeature
@@ -22,11 +21,15 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.NoOpSDKCore
+import com.datadog.android.v2.core.DatadogCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -55,16 +58,25 @@ internal class RumMonitorBuilderTest {
     @Forgery
     lateinit var fakeConfig: Configuration.Feature.RUM
 
+    private lateinit var rumFeature: RumFeature
+
     @BeforeEach
     fun `set up`() {
-        RumFeature.initialize(appContext.mockInstance, fakeConfig)
+        val mockCore = mock<DatadogCore>()
+        whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
+
+        rumFeature = RumFeature(coreFeature.mockInstance)
+        rumFeature.initialize(appContext.mockInstance, fakeConfig)
+        whenever(mockCore.rumFeature) doReturn rumFeature
+
+        Datadog.globalSDKCore = mockCore
 
         testedBuilder = RumMonitor.Builder()
     }
 
     @AfterEach
     fun `tear down`() {
-        RumFeature.stop()
+        Datadog.globalSDKCore = NoOpSDKCore()
     }
 
     @Test
@@ -88,14 +100,16 @@ internal class RumMonitorBuilderTest {
         assertThat(monitor.samplingRate).isEqualTo(fakeConfig.samplingRate)
         assertThat(monitor.backgroundTrackingEnabled).isEqualTo(fakeConfig.backgroundEventTracking)
 
-        assertThat(monitor.telemetryEventHandler.sdkVersion).isEqualTo(CoreFeature.sdkVersion)
-        assertThat(monitor.telemetryEventHandler.serviceName).isEqualTo(CoreFeature.serviceName)
+        assertThat(monitor.telemetryEventHandler.sdkVersion)
+            .isEqualTo(coreFeature.mockInstance.sdkVersion)
+        assertThat(monitor.telemetryEventHandler.serviceName)
+            .isEqualTo(coreFeature.mockInstance.serviceName)
 
         val telemetrySampler = monitor.telemetryEventHandler.eventSampler
         check(telemetrySampler is RateBasedSampler)
 
         assertThat(telemetrySampler.sampleRate)
-            .isEqualTo(RumFeature.telemetrySamplingRate / 100)
+            .isEqualTo(rumFeature.telemetrySamplingRate / 100)
     }
 
     @Test
@@ -163,7 +177,7 @@ internal class RumMonitorBuilderTest {
     @Test
     fun `𝕄 builds nothing 𝕎 build() and RumFeature is not initialized`() {
         // Given
-        RumFeature.stop()
+        Datadog.globalSDKCore = NoOpSDKCore()
 
         // When
         val monitor = testedBuilder.build()
@@ -180,7 +194,7 @@ internal class RumMonitorBuilderTest {
     @Test
     fun `𝕄 builds nothing 𝕎 build() { rumApplicationId is null }`() {
         // Given
-        CoreFeature.rumApplicationId = null
+        whenever(coreFeature.mockInstance.rumApplicationId) doReturn null
 
         // When
         val monitor = testedBuilder.build()

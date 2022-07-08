@@ -22,6 +22,8 @@ import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.NoOpSDKCore
+import com.datadog.android.v2.core.DatadogCore
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
 import com.datadog.opentracing.scopemanager.ScopeTestHelper
@@ -30,9 +32,11 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.trace.api.Config
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -77,6 +81,10 @@ internal class AndroidTracerTest {
     @Mock
     lateinit var mockLogsHandler: LogHandler
 
+    lateinit var tracingFeature: TracingFeature
+
+    lateinit var rumFeature: RumFeature
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         // Prevent crash when initializing RumFeature
@@ -85,14 +93,26 @@ internal class AndroidTracerTest {
         fakeServiceName = forge.anAlphabeticalString()
         fakeEnvName = forge.anAlphabeticalString()
         fakeToken = forge.anHexadecimalString()
-        TracingFeature.initialize(appContext.mockInstance, Configuration.DEFAULT_TRACING_CONFIG)
-        RumFeature.initialize(appContext.mockInstance, Configuration.DEFAULT_RUM_CONFIG)
+
+        val mockCore = mock<DatadogCore>()
+        tracingFeature = TracingFeature(coreFeature.mockInstance)
+        rumFeature = RumFeature(coreFeature.mockInstance)
+
+        whenever(mockCore.tracingFeature) doReturn tracingFeature
+        whenever(mockCore.rumFeature) doReturn rumFeature
+        whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
+
+        tracingFeature.initialize(appContext.mockInstance, Configuration.DEFAULT_TRACING_CONFIG)
+        rumFeature.initialize(appContext.mockInstance, Configuration.DEFAULT_RUM_CONFIG)
+
+        Datadog.globalSDKCore = mockCore
+
         testedTracerBuilder = AndroidTracer.Builder(mockLogsHandler)
     }
 
     @AfterEach
     fun `tear down`() {
-        Datadog.stop()
+        Datadog.globalSDKCore = NoOpSDKCore()
 
         val tracer = GlobalTracer.get()
         val activeSpan = tracer?.activeSpan()
@@ -103,7 +123,6 @@ internal class AndroidTracerTest {
         activeScope?.close()
 
         ScopeTestHelper.removeThreadLocalScope()
-        RumFeature.stop()
     }
 
     // region Tracer
@@ -111,7 +130,7 @@ internal class AndroidTracerTest {
     @Test
     fun `M log a developer error W buildTracer { TracingFeature not enabled }`() {
         // GIVEN
-        TracingFeature.stop()
+        whenever((Datadog.globalSDKCore as DatadogCore).tracingFeature) doReturn null
 
         // WHEN
         testedTracerBuilder.build()
@@ -127,7 +146,7 @@ internal class AndroidTracerTest {
     @Test
     fun `M log a developer error W buildTracer { RumFeature not enabled, bundleWithRum true }`() {
         // GIVEN
-        RumFeature.stop()
+        whenever((Datadog.globalSDKCore as DatadogCore).rumFeature) doReturn null
 
         // WHEN
         testedTracerBuilder.build()
@@ -189,6 +208,7 @@ internal class AndroidTracerTest {
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String
     ) {
         val tracer = AndroidTracer.Builder()
+            .setServiceName(fakeServiceName)
             .build()
 
         val span = tracer.buildSpan(operationName).start() as DDSpan
@@ -294,7 +314,7 @@ internal class AndroidTracerTest {
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String
     ) {
         // GIVEN
-        RumFeature.stop()
+        whenever((Datadog.globalSDKCore as DatadogCore).rumFeature) doReturn null
         val tracer = AndroidTracer.Builder()
             .build()
 

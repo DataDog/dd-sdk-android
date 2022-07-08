@@ -12,6 +12,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
@@ -21,10 +22,15 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.NoOpSDKCore
+import com.datadog.android.v2.core.DatadogCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -53,17 +59,24 @@ internal class LoggerBuilderTest {
 
     @BeforeEach
     fun `set up`() {
-        LogsFeature.initialize(appContext.mockInstance, fakeConfig)
+        val mockCore = mock<DatadogCore>()
+        whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
+        val logsFeature = LogsFeature(coreFeature.mockInstance)
+        logsFeature.initialize(appContext.mockInstance, fakeConfig)
+        whenever(mockCore.logsFeature) doReturn logsFeature
+
+        Datadog.globalSDKCore = mockCore
     }
 
     @AfterEach
     fun `tear down`() {
-        LogsFeature.stop()
+        Datadog.globalSDKCore = NoOpSDKCore()
     }
 
     @Test
     fun `builder returns no op if SDK is not initialized`() {
-        LogsFeature.stop()
+        Datadog.globalSDKCore = NoOpSDKCore()
+
         val testedLogger = Logger.Builder().build()
 
         val handler: LogHandler = testedLogger.handler
@@ -82,13 +95,17 @@ internal class LoggerBuilderTest {
             .build()
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
-        assertThat(handler.logGenerator.serviceName).isEqualTo(coreFeature.fakeServiceName)
-        assertThat(handler.logGenerator.loggerName).isEqualTo(appContext.fakePackageName)
-        assertThat(handler.logGenerator.networkInfoProvider).isNull()
-        assertThat(handler.writer).isSameAs(LogsFeature.persistenceStrategy.getWriter())
+        assertThat(handler.writer).isSameAs(
+            (Datadog.globalSDKCore as DatadogCore).logsFeature!!.persistenceStrategy.getWriter()
+        )
         assertThat(handler.bundleWithTraces).isTrue()
         assertThat(handler.sampler).isInstanceOf(RateBasedSampler::class.java)
         assertThat((handler.sampler as RateBasedSampler).sampleRate).isEqualTo(1.0f)
+
+        val logGenerator: DatadogLogGenerator = handler.logGenerator as DatadogLogGenerator
+        assertThat(logGenerator.serviceName).isEqualTo(coreFeature.fakeServiceName)
+        assertThat(logGenerator.loggerName).isEqualTo(appContext.fakePackageName)
+        assertThat(logGenerator.networkInfoProvider).isNull()
     }
 
     @Test
@@ -100,7 +117,8 @@ internal class LoggerBuilderTest {
             .build()
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
-        assertThat(handler.logGenerator.serviceName).isEqualTo(serviceName)
+        val logGenerator: DatadogLogGenerator = handler.logGenerator as DatadogLogGenerator
+        assertThat(logGenerator.serviceName).isEqualTo(serviceName)
     }
 
     @Test
@@ -162,7 +180,8 @@ internal class LoggerBuilderTest {
             .build()
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
-        assertThat(handler.logGenerator.networkInfoProvider).isNotNull()
+        val logGenerator: DatadogLogGenerator = handler.logGenerator as DatadogLogGenerator
+        assertThat(logGenerator.networkInfoProvider).isNotNull()
     }
 
     @Test
@@ -174,11 +193,12 @@ internal class LoggerBuilderTest {
             .build()
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
-        assertThat(handler.logGenerator.loggerName).isEqualTo(loggerName)
+        val logGenerator: DatadogLogGenerator = handler.logGenerator as DatadogLogGenerator
+        assertThat(logGenerator.loggerName).isEqualTo(loggerName)
     }
 
     @Test
-    fun `buider can disable the bundle with trace feature`() {
+    fun `builder can disable the bundle with trace feature`() {
         val logger = Logger.Builder()
             .setBundleWithTraceEnabled(false)
             .build()

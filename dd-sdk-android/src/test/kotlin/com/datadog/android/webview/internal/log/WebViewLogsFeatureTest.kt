@@ -7,7 +7,6 @@
 package com.datadog.android.webview.internal.log
 
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
 import com.datadog.android.utils.forge.Configurator
@@ -37,7 +36,7 @@ internal class WebViewLogsFeatureTest :
     SdkFeatureTest<JsonObject, Configuration.Feature.Logs, WebViewLogsFeature>() {
 
     override fun createTestedFeature(): WebViewLogsFeature {
-        return WebViewLogsFeature
+        return WebViewLogsFeature(coreFeature.mockInstance)
     }
 
     override fun forgeConfiguration(forge: Forge): Configuration.Feature.Logs {
@@ -47,8 +46,6 @@ internal class WebViewLogsFeatureTest :
     override fun featureDirName(): String {
         return "web-logs"
     }
-
-    override fun doesFeatureNeedMigration(): Boolean = false
 
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
@@ -70,6 +67,6 @@ internal class WebViewLogsFeatureTest :
         val logsUploader = uploader as LogsOkHttpUploaderV2
         assertThat(logsUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
         assertThat(logsUploader.intakeUrl).endsWith("/api/v2/logs")
-        assertThat(logsUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
+        assertThat(logsUploader.callFactory).isSameAs(coreFeature.mockInstance.okHttpClient)
     }
 }
