@@ -6,6 +6,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.lang.IllegalStateException
+import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.String
 import kotlin.collections.ArrayList
@@ -21,9 +22,9 @@ public data class Article(
     public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("title", title)
-        tags?.let { temp ->
-            val tagsArray = JsonArray(temp.size)
-            temp.forEach { tagsArray.add(it) }
+        tags?.let { tagsNonNull ->
+            val tagsArray = JsonArray(tagsNonNull.size)
+            tagsNonNull.forEach { tagsArray.add(it) }
             json.add("tags", tagsArray)
         }
         val authorsArray = JsonArray(authors.size)
@@ -35,9 +36,9 @@ public data class Article(
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(serializedObject: String): Article {
+        public fun fromJson(jsonString: String): Article {
             try {
-                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val title = jsonObject.get("title").asString
                 val tags = jsonObject.get("tags")?.asJsonArray?.let { jsonArray ->
                     val collection = ArrayList<String>(jsonArray.size())
@@ -55,9 +56,11 @@ public data class Article(
                 }
                 return Article(title, tags, authors)
             } catch (e: IllegalStateException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Article", e)
             } catch (e: NumberFormatException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Article", e)
+            } catch (e: NullPointerException) {
+                throw JsonParseException("Unable to parse json into type Article", e)
             }
         }
     }

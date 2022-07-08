@@ -4,8 +4,35 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.gradle.plugin.jsonschema
+package com.datadog.gradle.plugin.jsonschema.generator
 
+import com.datadog.gradle.plugin.jsonschema.Animal
+import com.datadog.gradle.plugin.jsonschema.Article
+import com.datadog.gradle.plugin.jsonschema.Bike
+import com.datadog.gradle.plugin.jsonschema.Book
+import com.datadog.gradle.plugin.jsonschema.Comment
+import com.datadog.gradle.plugin.jsonschema.Company
+import com.datadog.gradle.plugin.jsonschema.Conflict
+import com.datadog.gradle.plugin.jsonschema.Customer
+import com.datadog.gradle.plugin.jsonschema.DateTime
+import com.datadog.gradle.plugin.jsonschema.Delivery
+import com.datadog.gradle.plugin.jsonschema.Demo
+import com.datadog.gradle.plugin.jsonschema.Foo
+import com.datadog.gradle.plugin.jsonschema.Jacket
+import com.datadog.gradle.plugin.jsonschema.Location
+import com.datadog.gradle.plugin.jsonschema.Message
+import com.datadog.gradle.plugin.jsonschema.NoOpLogger
+import com.datadog.gradle.plugin.jsonschema.Opus
+import com.datadog.gradle.plugin.jsonschema.Order
+import com.datadog.gradle.plugin.jsonschema.Person
+import com.datadog.gradle.plugin.jsonschema.Product
+import com.datadog.gradle.plugin.jsonschema.Shipping
+import com.datadog.gradle.plugin.jsonschema.Style
+import com.datadog.gradle.plugin.jsonschema.TypeDefinition
+import com.datadog.gradle.plugin.jsonschema.User
+import com.datadog.gradle.plugin.jsonschema.UserMerged
+import com.datadog.gradle.plugin.jsonschema.Version
+import com.datadog.gradle.plugin.jsonschema.Video
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -16,9 +43,9 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
-class PokoGeneratorTest(
-    internal val inputType: TypeDefinition,
-    internal val outputFile: String
+class FileGeneratorTest(
+    private val inputType: TypeDefinition,
+    private val outputFile: String
 ) {
 
     @get:Rule
@@ -29,9 +56,9 @@ class PokoGeneratorTest(
     @Test
     fun `generates a Poko file`() {
         tempDir = tempFolderRule.newFolder()
-        val clazz = PokoGeneratorTest::class.java
+        val clazz = FileGeneratorTest::class.java
         val outputPath = clazz.getResource("/output/$outputFile.kt").file
-        val testedGenerator = PokoGenerator(tempDir, "com.example.model")
+        val testedGenerator = FileGenerator(tempDir, "com.example.model", NoOpLogger())
 
         testedGenerator.generate(inputType)
 
@@ -49,6 +76,7 @@ class PokoGeneratorTest(
             val expLines = expectedContent.lines()
             for (i in 0 until minOf(genLines.size, expLines.size)) {
                 if (genLines[i] != expLines[i]) {
+                    System.err.println("--- GENERATED $outputFile.kt \n")
                     System.err.println(generatedContent)
                     throw AssertionError(
                         "File $outputFile generated from \n$inputType didn't match expectation:\n" +
@@ -70,14 +98,18 @@ class PokoGeneratorTest(
         fun data(): Collection<Array<Any>> {
             return listOf(
                 arrayOf(Article, "Article"),
+                arrayOf(Animal, "Animal"),
+                arrayOf(Bike, "Bike"),
                 arrayOf(Book, "Book"),
                 arrayOf(Comment, "Comment"),
+                arrayOf(Company, "Company"),
                 arrayOf(Conflict, "Conflict"),
                 arrayOf(Customer, "Customer"),
                 arrayOf(DateTime, "DateTime"),
                 arrayOf(Delivery, "Delivery"),
                 arrayOf(Demo, "Demo"),
                 arrayOf(Foo, "Foo"),
+                arrayOf(Jacket, "Jacket"),
                 arrayOf(Person, "Person"),
                 arrayOf(Location, "Location"),
                 arrayOf(Message, "Message"),
@@ -87,12 +119,10 @@ class PokoGeneratorTest(
                 arrayOf(Shipping, "Shipping"),
                 arrayOf(Style, "Style"),
                 arrayOf(Order, "Order"),
-                arrayOf(Version, "Version"),
-                arrayOf(Video, "Video"),
                 arrayOf(User, "User"),
                 arrayOf(UserMerged, "UserMerged"),
-                arrayOf(Bike, "Bike"),
-                arrayOf(Jacket, "Jacket")
+                arrayOf(Version, "Version"),
+                arrayOf(Video, "Video")
             )
         }
     }

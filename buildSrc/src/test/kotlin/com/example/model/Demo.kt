@@ -1,10 +1,12 @@
 package com.example.model
 
 import com.google.gson.JsonElement
+import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.lang.IllegalStateException
+import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.Boolean
 import kotlin.Long
@@ -32,20 +34,29 @@ public data class Demo(
         json.addProperty("i", i)
         json.addProperty("n", n)
         json.addProperty("b", b)
-        json.add("l", null)
-        ns?.let { json.addProperty("ns", it) }
-        ni?.let { json.addProperty("ni", it) }
-        nn?.let { json.addProperty("nn", it) }
-        nb?.let { json.addProperty("nb", it) }
+        json.add("l", JsonNull.INSTANCE)
+        ns?.let { nsNonNull ->
+            json.addProperty("ns", nsNonNull)
+        }
+        ni?.let { niNonNull ->
+            json.addProperty("ni", niNonNull)
+        }
+        nn?.let { nnNonNull ->
+            json.addProperty("nn", nnNonNull)
+        }
+        nb?.let { nbNonNull ->
+            json.addProperty("nb", nbNonNull)
+        }
+        json.add("nl", JsonNull.INSTANCE)
         return json
     }
 
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(serializedObject: String): Demo {
+        public fun fromJson(jsonString: String): Demo {
             try {
-                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val s = jsonObject.get("s").asString
                 val i = jsonObject.get("i").asLong
                 val n = jsonObject.get("n").asNumber
@@ -58,9 +69,11 @@ public data class Demo(
                 val nl = null
                 return Demo(s, i, n, b, l, ns, ni, nn, nb, nl)
             } catch (e: IllegalStateException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Demo", e)
             } catch (e: NumberFormatException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Demo", e)
+            } catch (e: NullPointerException) {
+                throw JsonParseException("Unable to parse json into type Demo", e)
             }
         }
     }

@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.lang.IllegalStateException
+import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.Long
 import kotlin.String
@@ -17,24 +18,30 @@ public data class Foo(
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
-        bar?.let { json.addProperty("bar", it) }
-        baz?.let { json.addProperty("baz", it) }
+        bar?.let { barNonNull ->
+            json.addProperty("bar", barNonNull)
+        }
+        baz?.let { bazNonNull ->
+            json.addProperty("baz", bazNonNull)
+        }
         return json
     }
 
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(serializedObject: String): Foo {
+        public fun fromJson(jsonString: String): Foo {
             try {
-                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val bar = jsonObject.get("bar")?.asString
                 val baz = jsonObject.get("baz")?.asLong
                 return Foo(bar, baz)
             } catch (e: IllegalStateException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Foo", e)
             } catch (e: NumberFormatException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Foo", e)
+            } catch (e: NullPointerException) {
+                throw JsonParseException("Unable to parse json into type Foo", e)
             }
         }
     }

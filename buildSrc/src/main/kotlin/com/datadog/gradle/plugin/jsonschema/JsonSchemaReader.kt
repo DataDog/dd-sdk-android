@@ -9,9 +9,11 @@ package com.datadog.gradle.plugin.jsonschema
 import com.datadog.gradle.utils.toCamelCase
 import com.google.gson.Gson
 import java.io.File
+import org.gradle.api.logging.Logger
 
 class JsonSchemaReader(
-    internal val nameMapping: Map<String, String>
+    internal val nameMapping: Map<String, String>,
+    internal val logger: Logger
 ) {
 
     private val gson = Gson()
@@ -22,7 +24,7 @@ class JsonSchemaReader(
     // region JsonSchemaReader
 
     fun readSchema(schemaFile: File): TypeDefinition {
-        println("Reading schema ${schemaFile.name}")
+        logger.info("Reading schema ${schemaFile.name}")
         val schema = loadSchema(schemaFile)
         require(schema.type == JsonType.OBJECT) {
             "Top level schema with type ${schema.type} is not supported."
@@ -131,14 +133,14 @@ class JsonSchemaReader(
         definition: JsonDefinition
     ): TypeDefinition? {
         return when (val additional = definition.additionalProperties) {
-            null -> null
+            null -> null // TODO additionalProperties is true by default !
             is Map<*, *> -> {
                 val value = additional["type"]?.toString()
                 if (value == null) {
                     throw IllegalStateException("additionalProperties object is missing a `type`")
                 } else {
                     val type = JsonType.values().firstOrNull { it.name.equals(value, true) }
-                    transform(JsonDefinition.EMPTY.copy(type = type), "?")
+                    transform(JsonDefinition.ANY.copy(type = type), "?")
                 }
             }
             is Boolean -> {
@@ -169,7 +171,8 @@ class JsonSchemaReader(
             JsonType.INTEGER -> transformPrimitive(definition, JsonPrimitiveType.INTEGER, typeName)
             JsonType.STRING -> transformPrimitive(definition, JsonPrimitiveType.STRING, typeName)
             JsonType.ARRAY -> transformArray(definition, typeName)
-            JsonType.OBJECT, null -> transformType(definition, typeName)
+            JsonType.OBJECT,
+            null -> transformType(definition, typeName)
         }
     }
 
@@ -193,7 +196,7 @@ class JsonSchemaReader(
     private fun transformEnum(
         typeName: String,
         type: JsonType?,
-        values: List<String>,
+        values: List<String?>,
         description: String?
     ): TypeDefinition.Enum {
         return TypeDefinition.Enum(
@@ -243,6 +246,8 @@ class JsonSchemaReader(
             generateDataClass(typeName, definition)
         } else if (!definition.allOf.isNullOrEmpty()) {
             generateTypeAllOf(typeName, definition.allOf)
+        } else if (!definition.oneOf.isNullOrEmpty()) {
+            generateTypeOneOf(typeName, definition.oneOf, definition.description)
         } else if (!definition.ref.isNullOrBlank()) {
             val refDefinition = findDefinitionReference(definition.ref)
             if (refDefinition != null) {
@@ -257,6 +262,21 @@ class JsonSchemaReader(
         } else {
             throw UnsupportedOperationException("Unsupported schema definition\n$definition")
         }
+    }
+
+    private fun generateTypeOneOf(
+        typeName: String,
+        oneOf: List<JsonDefinition>,
+        description: String?
+    ): TypeDefinition {
+        return TypeDefinition.MultiClass(
+            typeName,
+            TypeDefinition.MultiClass.Type.ONE_OF,
+            oneOf.mapIndexed { i, it ->
+                transform(it, it.title ?: "${typeName}_$i")
+            },
+            description.orEmpty()
+        )
     }
 
     private fun generateTypeAllOf(

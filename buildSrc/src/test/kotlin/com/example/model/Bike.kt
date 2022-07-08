@@ -6,6 +6,7 @@ import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import java.lang.IllegalStateException
+import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.Boolean
 import kotlin.Long
@@ -27,9 +28,13 @@ public data class Bike(
         val json = JsonObject()
         json.addProperty("productId", productId)
         json.addProperty("productName", productName)
-        type?.let { json.addProperty("type", it) }
+        type?.let { typeNonNull ->
+            json.addProperty("type", typeNonNull)
+        }
         json.addProperty("price", price)
-        frameMaterial?.let { json.add("frameMaterial", it.toJson()) }
+        frameMaterial?.let { frameMaterialNonNull ->
+            json.add("frameMaterial", frameMaterialNonNull.toJson())
+        }
         json.addProperty("inStock", inStock)
         json.add("color", color.toJson())
         return json
@@ -38,9 +43,9 @@ public data class Bike(
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(serializedObject: String): Bike {
+        public fun fromJson(jsonString: String): Bike {
             try {
-                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val productId = jsonObject.get("productId").asLong
                 val productName = jsonObject.get("productName").asString
                 val type = jsonObject.get("type")?.asString
@@ -49,14 +54,14 @@ public data class Bike(
                     FrameMaterial.fromJson(it)
                 }
                 val inStock = jsonObject.get("inStock").asBoolean
-                val color = jsonObject.get("color").asString.let {
-                    Color.fromJson(it)
-                }
+                val color = Color.fromJson(jsonObject.get("color").asString)
                 return Bike(productId, productName, type, price, frameMaterial, inStock, color)
             } catch (e: IllegalStateException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Bike", e)
             } catch (e: NumberFormatException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Bike", e)
+            } catch (e: NullPointerException) {
+                throw JsonParseException("Unable to parse json into type Bike", e)
             }
         }
     }
@@ -73,8 +78,8 @@ public data class Bike(
 
         public companion object {
             @JvmStatic
-            public fun fromJson(serializedObject: String): FrameMaterial = values().first {
-                it.jsonValue == serializedObject
+            public fun fromJson(jsonString: String): FrameMaterial = values().first {
+                it.jsonValue == jsonString
             }
         }
     }
@@ -94,8 +99,8 @@ public data class Bike(
 
         public companion object {
             @JvmStatic
-            public fun fromJson(serializedObject: String): Color = values().first {
-                it.jsonValue == serializedObject
+            public fun fromJson(jsonString: String): Color = values().first {
+                it.jsonValue == jsonString
             }
         }
     }

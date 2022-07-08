@@ -7,6 +7,7 @@ import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import java.lang.IllegalStateException
+import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.Long
 import kotlin.String
@@ -30,23 +31,29 @@ public data class Opus(
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
-        title?.let { json.addProperty("title", it) }
-        composer?.let { json.addProperty("composer", it) }
-        artists?.let { temp ->
-            val artistsArray = JsonArray(temp.size)
-            temp.forEach { artistsArray.add(it.toJson()) }
+        title?.let { titleNonNull ->
+            json.addProperty("title", titleNonNull)
+        }
+        composer?.let { composerNonNull ->
+            json.addProperty("composer", composerNonNull)
+        }
+        artists?.let { artistsNonNull ->
+            val artistsArray = JsonArray(artistsNonNull.size)
+            artistsNonNull.forEach { artistsArray.add(it.toJson()) }
             json.add("artists", artistsArray)
         }
-        duration?.let { json.addProperty("duration", it) }
+        duration?.let { durationNonNull ->
+            json.addProperty("duration", durationNonNull)
+        }
         return json
     }
 
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(serializedObject: String): Opus {
+        public fun fromJson(jsonString: String): Opus {
             try {
-                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val title = jsonObject.get("title")?.asString
                 val composer = jsonObject.get("composer")?.asString
                 val artists = jsonObject.get("artists")?.asJsonArray?.let { jsonArray ->
@@ -59,9 +66,11 @@ public data class Opus(
                 val duration = jsonObject.get("duration")?.asLong
                 return Opus(title, composer, artists, duration)
             } catch (e: IllegalStateException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Opus", e)
             } catch (e: NumberFormatException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Opus", e)
+            } catch (e: NullPointerException) {
+                throw JsonParseException("Unable to parse json into type Opus", e)
             }
         }
     }
@@ -77,26 +86,32 @@ public data class Opus(
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()
-            name?.let { json.addProperty("name", it) }
-            role?.let { json.add("role", it.toJson()) }
+            name?.let { nameNonNull ->
+                json.addProperty("name", nameNonNull)
+            }
+            role?.let { roleNonNull ->
+                json.add("role", roleNonNull.toJson())
+            }
             return json
         }
 
         public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJson(serializedObject: String): Artist {
+            public fun fromJson(jsonString: String): Artist {
                 try {
-                    val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val name = jsonObject.get("name")?.asString
                     val role = jsonObject.get("role")?.asString?.let {
                         Role.fromJson(it)
                     }
                     return Artist(name, role)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException("Unable to parse json into type Artist", e)
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException("Unable to parse json into type Artist", e)
+                } catch (e: NullPointerException) {
+                    throw JsonParseException("Unable to parse json into type Artist", e)
                 }
             }
         }
@@ -123,8 +138,8 @@ public data class Opus(
 
         public companion object {
             @JvmStatic
-            public fun fromJson(serializedObject: String): Role = values().first {
-                it.jsonValue == serializedObject
+            public fun fromJson(jsonString: String): Role = values().first {
+                it.jsonValue == jsonString
             }
         }
     }

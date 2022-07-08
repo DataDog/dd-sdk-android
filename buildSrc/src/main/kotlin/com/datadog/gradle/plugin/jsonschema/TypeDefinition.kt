@@ -6,6 +6,9 @@
 
 package com.datadog.gradle.plugin.jsonschema
 
+import java.util.Locale
+import kotlin.reflect.KClass
+
 sealed class TypeDefinition {
 
     abstract val description: String
@@ -41,6 +44,16 @@ sealed class TypeDefinition {
                 throw IllegalStateException("Can't merge Primitive with type $other")
             }
         }
+
+        fun asPrimitiveType(): String {
+            return when (type) {
+                JsonPrimitiveType.BOOLEAN -> "asBoolean"
+                JsonPrimitiveType.DOUBLE -> "asDouble"
+                JsonPrimitiveType.STRING -> "asString"
+                JsonPrimitiveType.INTEGER -> "asLong"
+                JsonPrimitiveType.NUMBER -> "asNumber"
+            }
+        }
     }
 
     data class Array(
@@ -57,8 +70,10 @@ sealed class TypeDefinition {
         val name: String,
         val properties: List<TypeProperty>,
         override val description: String = "",
-        val additionalProperties: TypeDefinition? = null
+        val additionalProperties: TypeDefinition? = null,
+        val parentType: MultiClass? = null
     ) : TypeDefinition() {
+
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
             check(other is Class) { "Cannot merge Class with ${other.javaClass}" }
 
@@ -86,7 +101,17 @@ sealed class TypeDefinition {
             )
         }
 
-        internal fun getChildrenTypeNames(): List<Pair<String, String>> {
+        fun isConstantClass(): Boolean {
+            // all the properties are of type Constant and the additionalProperties is null
+            this.properties.forEach {
+                if (it.type !is Constant) {
+                    return false
+                }
+            }
+            return this.additionalProperties == null // TODO false
+        }
+
+        fun getChildrenTypeNames(): List<Pair<String, String>> {
             val direct = properties.map { it.type }
                 .mapNotNull {
                     when (it) {
@@ -124,11 +149,20 @@ sealed class TypeDefinition {
     data class Enum(
         val name: String,
         val type: JsonType?,
-        val values: List<String>,
+        val values: List<String?>,
         override val description: String = ""
     ) : TypeDefinition() {
+
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
             TODO("Not yet implemented")
+        }
+
+        fun jsonValueType(): KClass<*> {
+            return when (type) {
+                JsonType.NUMBER -> Number::class
+                JsonType.STRING, JsonType.OBJECT, null -> String::class
+                else -> throw IllegalStateException("Not yet implemented")
+            }
         }
 
         internal fun rename(duplicates: Set<String>, parentName: String): TypeDefinition {
@@ -137,6 +171,39 @@ sealed class TypeDefinition {
             } else {
                 this
             }
+        }
+
+        internal fun allowsNull(): Boolean = values.any { it == null }
+
+        internal fun enumConstantName(constantName: String?): String {
+            return if (constantName == null) {
+                "${name.toUpperCase(Locale.US)}_NULL"
+            } else if (type == JsonType.NUMBER) {
+                "${name.toUpperCase(Locale.US)}_${constantName.sanitizedName()}"
+            } else {
+                constantName.sanitizedName()
+            }
+        }
+
+        private fun String.sanitizedName(): String {
+            return toUpperCase(Locale.US).replace(Regex("[^A-Z0-9]+"), "_")
+        }
+    }
+
+    data class MultiClass(
+        val name: String,
+        val type: Type,
+        val options: List<TypeDefinition>,
+        override val description: String = ""
+    ) : TypeDefinition() {
+
+        enum class Type {
+            // TODO ANY_OF,
+            ONE_OF
+        }
+
+        override fun mergedWith(other: TypeDefinition): TypeDefinition {
+            TODO("Not yet implemented")
         }
     }
 }

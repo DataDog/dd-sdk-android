@@ -7,6 +7,7 @@ import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import java.lang.IllegalStateException
+import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.String
 import kotlin.collections.HashSet
@@ -28,9 +29,9 @@ public data class Order(
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(serializedObject: String): Order {
+        public fun fromJson(jsonString: String): Order {
             try {
-                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val sizes = jsonObject.get("sizes").asJsonArray.let { jsonArray ->
                     val collection = HashSet<Size>(jsonArray.size())
                     jsonArray.forEach {
@@ -40,9 +41,11 @@ public data class Order(
                 }
                 return Order(sizes)
             } catch (e: IllegalStateException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Order", e)
             } catch (e: NumberFormatException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException("Unable to parse json into type Order", e)
+            } catch (e: NullPointerException) {
+                throw JsonParseException("Unable to parse json into type Order", e)
             }
         }
     }
@@ -61,8 +64,8 @@ public data class Order(
 
         public companion object {
             @JvmStatic
-            public fun fromJson(serializedObject: String): Size = values().first {
-                it.jsonValue == serializedObject
+            public fun fromJson(jsonString: String): Size = values().first {
+                it.jsonValue == jsonString
             }
         }
     }

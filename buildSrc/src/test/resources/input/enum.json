@@ -4,8 +4,7 @@
   "type": "object",
   "properties": {
     "color": {
-      "type": "string",
-      "enum": ["red", "amber", "green", "dark_blue", "lime green", "sunburst-yellow"]
+      "enum": ["red", "amber", "green", "dark_blue", "lime green", "sunburst-yellow", null]
     }
   },
   "required": [ "color"]

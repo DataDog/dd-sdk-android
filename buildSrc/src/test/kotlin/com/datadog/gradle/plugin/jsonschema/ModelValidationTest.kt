@@ -8,7 +8,7 @@ package com.datadog.gradle.plugin.jsonschema
 
 import com.example.forgery.ForgeryConfiguration
 import com.example.model.Company
-import com.example.model.fromJsonElement
+import com.datadog.android.core.internal.utils.fromJsonElement
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
@@ -58,7 +58,7 @@ class ModelValidationTest(
                 validator.validate(JSONObject(json.toString()))
             } catch (e: Exception) {
                 throw RuntimeException(
-                    "Failed to validate $schemaResourcePath:\n$entity\n$json\n", e
+                    "Failed to validate $schemaResourcePath (#$it):\n$entity\n$json\n", e
                 )
             }
         }
@@ -176,6 +176,8 @@ class ModelValidationTest(
         fun data(): Collection<Array<Any>> {
             return listOf(
                 arrayOf("arrays", OutputInfo("Article")),
+                arrayOf("one_of", OutputInfo("Animal")),
+                arrayOf("defaults_with_optionals", OutputInfo("Bike")),
                 arrayOf("nested", OutputInfo("Book")),
                 arrayOf("additional_props", OutputInfo("Comment")),
                 arrayOf("additional_props_any", OutputInfo("Company")),
@@ -186,6 +188,7 @@ class ModelValidationTest(
                 arrayOf("external_description", OutputInfo("Delivery")),
                 arrayOf("types", OutputInfo("Demo")),
                 arrayOf("top_level_definition", OutputInfo("Foo")),
+                arrayOf("enum_number", OutputInfo("Jacket")),
                 arrayOf("constant", OutputInfo("Location", true)),
                 arrayOf("read_only", OutputInfo("Message")),
                 arrayOf("enum_array", OutputInfo("Order")),
@@ -197,9 +200,7 @@ class ModelValidationTest(
                 arrayOf("all_of", OutputInfo("User")),
                 arrayOf("all_of_merged", OutputInfo("UserMerged")),
                 arrayOf("constant_number", OutputInfo("Version")),
-                arrayOf("sets", OutputInfo("Video")),
-                arrayOf("defaults_with_optionals", OutputInfo("Bike")),
-                arrayOf("enum_number", OutputInfo("Jacket"))
+                arrayOf("sets", OutputInfo("Video"))
             )
         }
     }
