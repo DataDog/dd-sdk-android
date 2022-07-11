@@ -289,7 +289,6 @@ interface RumMonitor {
                     writer = RumFeature.persistenceStrategy.getWriter(),
                     handler = Handler(Looper.getMainLooper()),
                     telemetryEventHandler = TelemetryEventHandler(
-                        CoreFeature.serviceName,
                         CoreFeature.sdkVersion,
                         RumEventSourceProvider(CoreFeature.sourceName),
                         CoreFeature.timeProvider,

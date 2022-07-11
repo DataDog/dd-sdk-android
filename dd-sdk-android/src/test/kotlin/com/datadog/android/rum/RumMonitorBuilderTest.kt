@@ -89,7 +89,6 @@ internal class RumMonitorBuilderTest {
         assertThat(monitor.backgroundTrackingEnabled).isEqualTo(fakeConfig.backgroundEventTracking)
 
         assertThat(monitor.telemetryEventHandler.sdkVersion).isEqualTo(CoreFeature.sdkVersion)
-        assertThat(monitor.telemetryEventHandler.serviceName).isEqualTo(CoreFeature.serviceName)
 
         val telemetrySampler = monitor.telemetryEventHandler.eventSampler
         check(telemetrySampler is RateBasedSampler)
