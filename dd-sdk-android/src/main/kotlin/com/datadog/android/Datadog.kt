@@ -18,15 +18,18 @@ import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.v2.api.NoOpSDKCore
 import com.datadog.android.v2.api.SDKCore
 import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.internal.HashGenerator
+import com.datadog.android.v2.core.internal.Sha256HashGenerator
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * This class initializes the Datadog SDK, and sets up communication with the server.
  */
-@Suppress("TooManyFunctions")
 object Datadog {
 
     internal var globalSDKCore: SDKCore = NoOpSDKCore()
+
+    internal var hashGenerator: HashGenerator = Sha256HashGenerator()
 
     internal val initialized = AtomicBoolean(false)
 
@@ -44,7 +47,6 @@ object Datadog {
      * @throws IllegalArgumentException if the env name is using illegal characters and your
      * application is in debug mode otherwise returns false and stops initializing the SDK
      */
-    @Suppress("LongMethod")
     @JvmStatic
     fun initialize(
         context: Context,
@@ -57,7 +59,16 @@ object Datadog {
             return
         }
 
-        globalSDKCore = DatadogCore(context, credentials, configuration)
+        val sdkInstanceId = hashGenerator.generate(
+            "${credentials.clientToken}${configuration.coreConfig.site.siteName}"
+        )
+
+        if (sdkInstanceId == null) {
+            devLogger.e(CANNOT_CREATE_SDK_INSTANCE_ID_ERROR)
+            return
+        }
+
+        globalSDKCore = DatadogCore(context, credentials, configuration, sdkInstanceId)
         globalSDKCore.setTrackingConsent(trackingConsent)
 
         initialized.set(true)
@@ -89,6 +100,7 @@ object Datadog {
         if (initialized.get()) {
             globalSDKCore.stop()
             initialized.set(false)
+            globalSDKCore = NoOpSDKCore()
         }
     }
 
@@ -197,6 +209,9 @@ object Datadog {
 
     internal const val MESSAGE_NOT_INITIALIZED = "Datadog has not been initialized.\n " +
         MESSAGE_SDK_INITIALIZATION_GUIDE
+
+    internal const val CANNOT_CREATE_SDK_INSTANCE_ID_ERROR =
+        "Cannot create SDK instance ID, stopping SDK initialization."
 
     internal const val DD_SOURCE_TAG = "_dd.source"
     internal const val DD_SDK_VERSION_TAG = "_dd.sdk_version"

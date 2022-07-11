@@ -49,7 +49,6 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.net.Proxy
@@ -105,7 +104,8 @@ internal class ConfigurationBuilderTest {
                 proxy = null,
                 proxyAuth = Authenticator.NONE,
                 securityConfig = SecurityConfig.DEFAULT,
-                webViewTrackingHosts = emptyList()
+                webViewTrackingHosts = emptyList(),
+                site = DatadogSite.US1
             )
         )
         assertThat(config.logsConfig).isEqualTo(
@@ -246,7 +246,9 @@ internal class ConfigurationBuilderTest {
         val config = testedBuilder.useSite(site).build()
 
         // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(site = site)
+        )
         assertThat(config.logsConfig).isEqualTo(
             Configuration.DEFAULT_LOGS_CONFIG.copy(endpointUrl = site.logsEndpoint())
         )
@@ -258,75 +260,6 @@ internal class ConfigurationBuilderTest {
         )
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = site.rumEndpoint())
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Suppress("DEPRECATION")
-    @Test
-    fun `𝕄 build config with US endpoints 𝕎 useUSEndpoints() and build()`() {
-        // When
-        val config = testedBuilder.useUSEndpoints().build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(
-            Configuration.DEFAULT_LOGS_CONFIG.copy(endpointUrl = DatadogEndpoint.LOGS_US)
-        )
-        assertThat(config.tracesConfig).isEqualTo(
-            Configuration.DEFAULT_TRACING_CONFIG.copy(endpointUrl = DatadogEndpoint.TRACES_US)
-        )
-        assertThat(config.crashReportConfig).isEqualTo(
-            Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = DatadogEndpoint.LOGS_US)
-        )
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = DatadogEndpoint.RUM_US)
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Suppress("DEPRECATION")
-    @Test
-    fun `𝕄 build config with EU endpoints 𝕎 useEUEndpoints() and build()`() {
-        // When
-        val config = testedBuilder.useEUEndpoints().build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(
-            Configuration.DEFAULT_LOGS_CONFIG.copy(endpointUrl = DatadogEndpoint.LOGS_EU)
-        )
-        assertThat(config.tracesConfig).isEqualTo(
-            Configuration.DEFAULT_TRACING_CONFIG.copy(endpointUrl = DatadogEndpoint.TRACES_EU)
-        )
-        assertThat(config.crashReportConfig).isEqualTo(
-            Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = DatadogEndpoint.LOGS_EU)
-        )
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = DatadogEndpoint.RUM_EU)
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Suppress("DEPRECATION")
-    @Test
-    fun `𝕄 build config with GOV endpoints 𝕎 useGOVEndpoints() and build()`() {
-        // When
-        val config = testedBuilder.useGovEndpoints().build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(
-            Configuration.DEFAULT_LOGS_CONFIG.copy(endpointUrl = DatadogEndpoint.LOGS_GOV)
-        )
-        assertThat(config.tracesConfig).isEqualTo(
-            Configuration.DEFAULT_TRACING_CONFIG.copy(endpointUrl = DatadogEndpoint.TRACES_GOV)
-        )
-        assertThat(config.crashReportConfig).isEqualTo(
-            Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = DatadogEndpoint.LOGS_GOV)
-        )
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = DatadogEndpoint.RUM_GOV)
         )
         assertThat(config.additionalConfig).isEmpty()
     }
@@ -1486,26 +1419,6 @@ internal class ConfigurationBuilderTest {
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(uploadFrequency = uploadFrequency)
         )
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
-        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Suppress("DEPRECATION")
-    @Test
-    fun `𝕄 not change anything 𝕎 setInternalLogsEnabled()`(
-        @StringForgery(StringForgeryType.HEXADECIMAL) clientToken: String,
-        @StringForgery(regex = "https://[a-z]+\\.com") url: String
-    ) {
-        // When
-        val config = testedBuilder
-            .setInternalLogsEnabled(clientToken, url)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)

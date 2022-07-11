@@ -6,6 +6,7 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
@@ -32,7 +33,8 @@ internal class ConfigurationCoreForgeryFactory :
             proxy = proxy,
             proxyAuth = auth,
             securityConfig = forge.getForgery(),
-            webViewTrackingHosts = forge.aList { getForgery<URL>().host }
+            webViewTrackingHosts = forge.aList { getForgery<URL>().host },
+            site = forge.aValueFrom(DatadogSite::class.java)
         )
     }
 }

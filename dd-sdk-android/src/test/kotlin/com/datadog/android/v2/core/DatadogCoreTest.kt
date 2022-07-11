@@ -28,6 +28,8 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -65,6 +67,9 @@ internal class DatadogCoreTest {
     @Forgery
     lateinit var fakeConfiguration: Configuration
 
+    @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
+    lateinit var fakeInstanceId: String
+
     @BeforeEach
     fun `set up`() {
         // Prevent crash when initializing RumFeature
@@ -73,7 +78,8 @@ internal class DatadogCoreTest {
         testedCore = DatadogCore(
             appContext.mockInstance,
             fakeCredentials,
-            fakeConfiguration
+            fakeConfiguration,
+            fakeInstanceId
         )
     }
 

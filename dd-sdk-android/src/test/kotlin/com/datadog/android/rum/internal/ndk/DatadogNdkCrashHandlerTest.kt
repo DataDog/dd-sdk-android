@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.ndk
 
-import android.content.Context
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.file.FileReader
@@ -16,6 +15,7 @@ import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.model.LogEvent
@@ -66,12 +66,6 @@ internal class DatadogNdkCrashHandlerTest {
 
     lateinit var testedHandler: DatadogNdkCrashHandler
 
-    @TempDir
-    lateinit var fakeCacheDir: File
-
-    @Mock
-    lateinit var mockContext: Context
-
     @Mock
     lateinit var mockExecutorService: ExecutorService
 
@@ -121,6 +115,9 @@ internal class DatadogNdkCrashHandlerTest {
     @Mock
     lateinit var mockRumEventSourceProvider: RumEventSourceProvider
 
+    @TempDir
+    lateinit var tempDir: File
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeSourceErrorEvent = forge.aNullable {
@@ -128,8 +125,7 @@ internal class DatadogNdkCrashHandlerTest {
         }
         whenever(mockRumEventSourceProvider.errorEventSource)
             .thenReturn(fakeSourceErrorEvent)
-        whenever(mockContext.cacheDir) doReturn fakeCacheDir
-        fakeNdkCacheDir = File(fakeCacheDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME)
+        fakeNdkCacheDir = File(tempDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME)
         whenever(mockRumFileReader.readData(any())) doAnswer {
             listOf(
                 it.getArgument<File>(0).readBytes()
@@ -140,7 +136,7 @@ internal class DatadogNdkCrashHandlerTest {
         }
 
         testedHandler = DatadogNdkCrashHandler(
-            mockContext,
+            tempDir,
             mockExecutorService,
             mockLogGenerator,
             mockNdkCrashLogDeserializer,
@@ -530,7 +526,7 @@ internal class DatadogNdkCrashHandlerTest {
         }
         whenever(
             mockLogGenerator.generateLog(
-                LogGenerator.CRASH,
+                DatadogLogGenerator.CRASH,
                 DatadogNdkCrashHandler.LOG_CRASH_MSG.format(Locale.US, ndkCrashLog.signalName),
                 throwable = null,
                 attributes = attributes,

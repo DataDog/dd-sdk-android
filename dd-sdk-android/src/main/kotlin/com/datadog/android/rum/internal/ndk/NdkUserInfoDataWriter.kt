@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.ndk
 
-import android.content.Context
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.internal.persistence.file.advanced.ConsentAwareFileMigrator
@@ -17,10 +16,11 @@ import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.user.UserInfoSerializer
+import java.io.File
 import java.util.concurrent.ExecutorService
 
 internal class NdkUserInfoDataWriter(
-    context: Context,
+    storageDir: File,
     consentProvider: ConsentProvider,
     executorService: ExecutorService,
     fileWriter: FileWriter,
@@ -30,10 +30,10 @@ internal class NdkUserInfoDataWriter(
     ConsentAwareFileOrchestrator(
         consentProvider = consentProvider,
         pendingOrchestrator = SingleFileOrchestrator(
-            DatadogNdkCrashHandler.getPendingUserInfoFile(context)
+            DatadogNdkCrashHandler.getPendingUserInfoFile(storageDir)
         ),
         grantedOrchestrator = SingleFileOrchestrator(
-            DatadogNdkCrashHandler.getGrantedUserInfoFile(context)
+            DatadogNdkCrashHandler.getGrantedUserInfoFile(storageDir)
         ),
         dataMigrator = ConsentAwareFileMigrator(
             fileMover,

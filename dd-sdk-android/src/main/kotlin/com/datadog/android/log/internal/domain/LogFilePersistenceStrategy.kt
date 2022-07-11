@@ -6,7 +6,6 @@
 
 package com.datadog.android.log.internal.domain
 
-import android.content.Context
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
@@ -22,11 +21,12 @@ import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.internal.domain.event.LogEventSerializer
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.security.Encryption
+import java.io.File
 import java.util.concurrent.ExecutorService
 
 internal class LogFilePersistenceStrategy(
     consentProvider: ConsentProvider,
-    context: Context,
+    storageDir: File,
     executorService: ExecutorService,
     internalLogger: Logger,
     logEventMapper: EventMapper<LogEvent>,
@@ -35,7 +35,7 @@ internal class LogFilePersistenceStrategy(
     BatchFilePersistenceStrategy<LogEvent>(
         FeatureFileOrchestrator(
             consentProvider,
-            context,
+            storageDir,
             LogsFeature.LOGS_FEATURE_NAME,
             executorService,
             internalLogger

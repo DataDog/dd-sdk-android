@@ -29,11 +29,11 @@ internal class WebViewRumFeature(
     ): PersistenceStrategy<Any> {
         return WebViewRumFilePersistenceStrategy(
             coreFeature.trackingConsentProvider,
-            context,
+            coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
             sdkLogger,
             coreFeature.localDataEncryption,
-            DatadogNdkCrashHandler.getLastViewEventFile(context)
+            DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir)
         )
     }
 

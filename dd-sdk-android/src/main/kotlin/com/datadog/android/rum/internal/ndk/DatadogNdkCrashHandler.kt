@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.ndk
 
-import android.content.Context
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Deserializer
@@ -36,21 +35,21 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 internal class DatadogNdkCrashHandler(
-    appContext: Context,
+    storageDir: File,
     private val dataPersistenceExecutorService: ExecutorService,
-    private val logGenerator: LogGenerator,
+    internal val logGenerator: LogGenerator,
     private val ndkCrashLogDeserializer: Deserializer<NdkCrashLog>,
     private val rumEventDeserializer: Deserializer<Any>,
     private val networkInfoDeserializer: Deserializer<NetworkInfo>,
     private val userInfoDeserializer: Deserializer<UserInfo>,
     private val internalLogger: Logger,
-    private val timeProvider: TimeProvider,
+    internal val timeProvider: TimeProvider,
     private val rumFileReader: BatchFileReader,
     private val envFileReader: FileReader,
     private val rumEventSourceProvider: RumEventSourceProvider
 ) : NdkCrashHandler {
 
-    private val ndkCrashDataDirectory: File = getNdkGrantedDir(appContext)
+    internal val ndkCrashDataDirectory: File = getNdkGrantedDir(storageDir)
 
     internal var lastSerializedRumViewEvent: String? = null
     internal var lastSerializedUserInformation: String? = null
@@ -372,32 +371,32 @@ internal class DatadogNdkCrashHandler(
         private const val NDK_CRASH_REPORTS_PENDING_FOLDER_NAME =
             "ndk_crash_reports_intermediary_v$STORAGE_VERSION"
 
-        internal fun getNdkGrantedDir(context: Context): File {
-            return File(context.cacheDir, NDK_CRASH_REPORTS_FOLDER_NAME)
+        private fun getNdkGrantedDir(storageDir: File): File {
+            return File(storageDir, NDK_CRASH_REPORTS_FOLDER_NAME)
         }
 
-        internal fun getNdkPendingDir(context: Context): File {
-            return File(context.cacheDir, NDK_CRASH_REPORTS_PENDING_FOLDER_NAME)
+        private fun getNdkPendingDir(storageDir: File): File {
+            return File(storageDir, NDK_CRASH_REPORTS_PENDING_FOLDER_NAME)
         }
 
-        internal fun getLastViewEventFile(context: Context): File {
-            return File(getNdkGrantedDir(context), RUM_VIEW_EVENT_FILE_NAME)
+        internal fun getLastViewEventFile(storageDir: File): File {
+            return File(getNdkGrantedDir(storageDir), RUM_VIEW_EVENT_FILE_NAME)
         }
 
-        internal fun getPendingNetworkInfoFile(context: Context): File {
-            return File(getNdkPendingDir(context), NETWORK_INFO_FILE_NAME)
+        internal fun getPendingNetworkInfoFile(storageDir: File): File {
+            return File(getNdkPendingDir(storageDir), NETWORK_INFO_FILE_NAME)
         }
 
-        internal fun getGrantedNetworkInfoFile(context: Context): File {
-            return File(getNdkGrantedDir(context), NETWORK_INFO_FILE_NAME)
+        internal fun getGrantedNetworkInfoFile(storageDir: File): File {
+            return File(getNdkGrantedDir(storageDir), NETWORK_INFO_FILE_NAME)
         }
 
-        internal fun getPendingUserInfoFile(context: Context): File {
-            return File(getNdkPendingDir(context), USER_INFO_FILE_NAME)
+        internal fun getPendingUserInfoFile(storageDir: File): File {
+            return File(getNdkPendingDir(storageDir), USER_INFO_FILE_NAME)
         }
 
-        internal fun getGrantedUserInfoFile(context: Context): File {
-            return File(getNdkGrantedDir(context), USER_INFO_FILE_NAME)
+        internal fun getGrantedUserInfoFile(storageDir: File): File {
+            return File(getNdkGrantedDir(storageDir), USER_INFO_FILE_NAME)
         }
     }
 }

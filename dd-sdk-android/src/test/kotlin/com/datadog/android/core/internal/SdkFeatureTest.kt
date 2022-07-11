@@ -37,16 +37,13 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.File
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -162,6 +159,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
             }
             allValues.forEach {
                 assertThat(it.context).isEqualTo(appContext.mockInstance)
+                assertThat(it.storageDir).isSameAs(coreFeature.mockStorageDir)
                 assertThat(it.serviceName).isEqualTo(coreFeature.fakeServiceName)
                 assertThat(it.envName).isEqualTo(coreFeature.fakeEnvName)
                 assertThat(it.context).isEqualTo(appContext.mockInstance)
@@ -265,7 +263,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 not setup uploader 𝕎 initialize() in secondary process`() {
         // Given
-        CoreFeature.isMainProcess = false
+        testedFeature.coreFeature.isMainProcess = false
 
         // When
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
@@ -298,41 +296,6 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
 
         // Then
         verify(mockDataFlusher).flush(testedFeature.uploader)
-    }
-
-    @Test
-    fun `𝕄 migrate batch files 𝕎 initialize()`(
-        @StringForgery message: String
-    ) {
-        if (!doesFeatureNeedMigration()) {
-            return
-        }
-
-        // Given
-        val fileName = System.currentTimeMillis().toString()
-        val oldFilesDir = File(appContext.fakeFilesDir, "dd-${featureDirName()}-v2")
-        oldFilesDir.mkdirs()
-        val oldBatchFile = File(oldFilesDir, fileName)
-        val content = "{\"message\":\"$message\"}"
-        oldBatchFile.writeText(content)
-
-        // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
-
-        // Then
-        val newFilesDir = File(appContext.fakeCacheDir, "dd-${featureDirName()}-v2")
-        val newBatchFile = File(newFilesDir, fileName)
-
-        val captor = argumentCaptor<Runnable>()
-        // we expect one operation for the ConsentAware mechanism, and two for this migration
-        verify(coreFeature.mockPersistenceExecutor, times(3)).submit(captor.capture())
-        assertThat(newBatchFile).doesNotExist()
-        captor.secondValue.run()
-        assertThat(newBatchFile).exists().hasContent(content)
-        assertThat(oldBatchFile).doesNotExist()
-        assertThat(oldFilesDir).exists()
-        captor.thirdValue.run()
-        assertThat(oldFilesDir).doesNotExist()
     }
 
     companion object {

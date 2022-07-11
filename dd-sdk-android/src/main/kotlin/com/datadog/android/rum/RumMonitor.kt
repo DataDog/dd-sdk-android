@@ -95,23 +95,6 @@ interface RumMonitor {
     )
 
     /**
-     * Notifies that a User Action stopped.
-     * This is used to stop tracking long running user actions (e.g.: scroll), started
-     * with [startUserAction].
-     * @param attributes additional custom attributes to attach to the action
-     * @see [addUserAction]
-     * @see [startUserAction]
-     * @deprecated Use [stopUserAction] with name parameter instead.
-     */
-    @Deprecated(
-        "This method is deprecated. Please" +
-            " use RumMonitor#stopUserAction(type, name, attributes) instead"
-    )
-    fun stopUserAction(
-        attributes: Map<String, Any?> = emptyMap()
-    )
-
-    /**
      * Notifies that a User Action stopped, and update the action's type and name.
      * This is used to stop tracking long running user actions (e.g.: scroll), started
      * with [startUserAction].

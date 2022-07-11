@@ -46,7 +46,8 @@ import com.google.gson.JsonObject
 internal class DatadogCore(
     context: Context,
     internal val credentials: Credentials,
-    configuration: Configuration
+    configuration: Configuration,
+    internal val instanceId: String
 ) : SDKCore {
 
     internal var libraryVerbosity = Int.MAX_VALUE
@@ -179,6 +180,7 @@ internal class DatadogCore(
         coreFeature = CoreFeature()
         coreFeature.initialize(
             appContext,
+            instanceId,
             credentials,
             mutableConfig.coreConfig,
             TrackingConsent.PENDING

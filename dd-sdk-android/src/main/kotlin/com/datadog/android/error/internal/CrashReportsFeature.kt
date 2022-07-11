@@ -13,14 +13,10 @@ import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.system.StaticAndroidInfoProvider
-import com.datadog.android.core.internal.utils.ERROR_TASK_REJECTED
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
-import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.log.model.LogEvent
-import java.util.Locale
-import java.util.concurrent.RejectedExecutionException
 
 internal class CrashReportsFeature(
     coreFeature: CoreFeature
@@ -44,7 +40,7 @@ internal class CrashReportsFeature(
     ): PersistenceStrategy<LogEvent> {
         return CrashReportFilePersistenceStrategy(
             coreFeature.trackingConsentProvider,
-            context,
+            coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
             sdkLogger,
             coreFeature.localDataEncryption
@@ -63,20 +59,7 @@ internal class CrashReportsFeature(
         )
     }
 
-    override fun onPostInitialized(context: Context) {
-        try {
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            coreFeature.persistenceExecutorService.submit {
-                @Suppress("ThreadSafety")
-                migrateToCacheDir(context, CRASH_FEATURE_NAME, sdkLogger)
-            }
-        } catch (e: RejectedExecutionException) {
-            sdkLogger.errorWithTelemetry(
-                ERROR_TASK_REJECTED.format(Locale.US, "postInitMigration"),
-                e
-            )
-        }
-    }
+    override fun onPostInitialized(context: Context) { }
 
     // endregion
 
