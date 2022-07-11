@@ -50,6 +50,7 @@ class RumResourceInputStream(
     override fun read(): Int {
         if (firstByte == 0L) firstByte = System.nanoTime()
         return callWithErrorTracking(ERROR_READ) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // caller should handle the exception
             read().also {
                 if (it >= 0) size++
                 lastByte = System.nanoTime()
@@ -61,6 +62,7 @@ class RumResourceInputStream(
     override fun read(b: ByteArray): Int {
         if (firstByte == 0L) firstByte = System.nanoTime()
         return callWithErrorTracking(ERROR_READ) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // caller should handle the exception
             read(b).also {
                 if (it >= 0) size += it
                 lastByte = System.nanoTime()
@@ -72,6 +74,7 @@ class RumResourceInputStream(
     override fun read(b: ByteArray, off: Int, len: Int): Int {
         if (firstByte == 0L) firstByte = System.nanoTime()
         return callWithErrorTracking(ERROR_READ) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // caller should handle the exception
             read(b, off, len).also {
                 if (it >= 0) size += it
                 lastByte = System.nanoTime()
@@ -82,12 +85,14 @@ class RumResourceInputStream(
     /** @inheritdoc */
     override fun available(): Int {
         return callWithErrorTracking(ERROR_READ) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // caller should handle the exception
             available()
         }
     }
 
     /** @inheritdoc */
     override fun skip(n: Long): Long {
+        @Suppress("UnsafeThirdPartyFunctionCall") // caller should handle the exception
         return callWithErrorTracking(ERROR_SKIP) {
             skip(n)
         }
@@ -109,6 +114,7 @@ class RumResourceInputStream(
 
     /** @inheritdoc */
     override fun reset() {
+        @Suppress("UnsafeThirdPartyFunctionCall") // caller should handle the exception
         return callWithErrorTracking(ERROR_RESET) {
             reset()
         }
@@ -117,6 +123,7 @@ class RumResourceInputStream(
     /** @inheritdoc */
     override fun close() {
         return callWithErrorTracking(ERROR_CLOSE) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // caller should handle the exception
             close()
             val monitor = GlobalRum.get()
             (monitor as? AdvancedRumMonitor)?.addResourceTiming(

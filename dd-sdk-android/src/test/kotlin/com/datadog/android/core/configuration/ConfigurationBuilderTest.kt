@@ -150,7 +150,8 @@ internal class ConfigurationBuilderTest {
                 viewTrackingStrategy = ActivityViewTrackingStrategy(false),
                 rumEventMapper = NoOpEventMapper(),
                 longTaskTrackingStrategy = MainLooperLongTaskStrategy(100L),
-                backgroundEventTracking = false
+                backgroundEventTracking = false,
+                vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE
             )
         )
         assertThat(config.additionalConfig).isEmpty()
@@ -1556,6 +1557,21 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+    }
+
+    @Test
+    fun `M use the given frequency W setVitalsMonitorUpdateFrequency`(
+        @Forgery fakeFrequency: VitalsUpdateFrequency
+    ) {
+        // When
+        val config = testedBuilder
+            .setVitalsUpdateFrequency(fakeFrequency)
+            .build()
+
+        // Then
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(vitalsMonitorUpdateFrequency = fakeFrequency)
+        )
     }
 
     companion object {

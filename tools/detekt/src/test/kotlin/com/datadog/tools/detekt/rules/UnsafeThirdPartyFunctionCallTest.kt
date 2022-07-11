@@ -83,6 +83,67 @@ internal class UnsafeThirdPartyFunctionCallTest {
     }
 
     @Test
+    fun `detekt unsafe call on unknown third party function`() {
+        // Given
+        val code =
+            """
+                import java.io.File
+                
+                fun test(f: File): Any {
+                    return f.inputStream()
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(TestConfig())
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(1)
+    }
+
+    @Test
+    fun `detekt unsafe call on unknown third party function { implicit receiver }`() {
+        // Given
+        val code =
+            """
+                import java.io.File
+                
+                fun test(f: File): Any {
+                    return with(f) { inputStream() }
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(TestConfig())
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(1)
+    }
+
+    @Test
+    fun `detekt unsafe call on unknown third party function { explicit it receiver }`() {
+        // Given
+        @Suppress("SimpleRedundantLet")
+        val code =
+            """
+                import java.io.File
+                
+                fun test(f: File): Any {
+                    return f.let { it.inputStream() }
+                }
+            """.trimIndent()
+
+        // When
+        val findings = UnsafeThirdPartyFunctionCall(TestConfig())
+            .compileAndLintWithContext(kotlinEnv.env, code)
+
+        // Then
+        assertThat(findings).hasSize(1)
+    }
+
+    @Test
     fun `detekt unsafe call on known third party function {disambiguate signatures}`() {
         // Given
         val knownThrowingCalls = listOf(

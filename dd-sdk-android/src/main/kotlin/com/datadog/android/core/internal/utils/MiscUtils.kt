@@ -109,6 +109,7 @@ internal fun Map<*, *>.toJsonObject(): JsonElement {
 internal fun JSONObject.toJsonObject(): JsonElement {
     val obj = JsonObject()
     for (key in keys()) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // iteration over keys which exist
         obj.add(key, get(key).toJsonElement())
     }
     return obj
@@ -117,6 +118,7 @@ internal fun JSONObject.toJsonObject(): JsonElement {
 internal fun JSONArray.toJsonArray(): JsonElement {
     val obj = JsonArray()
     for (index in 0 until length()) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // iteration over indexes which exist
         obj.add(get(index).toJsonElement())
     }
     return obj

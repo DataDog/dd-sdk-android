@@ -6,6 +6,8 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.core.internal.system.AndroidInfoProvider
+import com.datadog.android.rum.internal.domain.scope.toLongTaskSchemaType
 import com.datadog.android.rum.model.LongTaskEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -60,12 +62,29 @@ internal class LongTaskEventForgeryFactory :
             service = forge.aNullable { anAlphabeticalString() },
             session = LongTaskEvent.LongTaskEventSession(
                 id = forge.getForgery<UUID>().toString(),
-                type = LongTaskEvent.Type.USER,
+                type = LongTaskEvent.LongTaskEventSessionType.USER,
                 hasReplay = forge.aNullable { aBool() }
             ),
             source = forge.aNullable { aValueFrom(LongTaskEvent.Source::class.java) },
             ciTest = forge.aNullable {
                 LongTaskEvent.CiTest(anHexadecimalString())
+            },
+            os = forge.aNullable {
+                val androidInfoProvider = getForgery(AndroidInfoProvider::class.java)
+                LongTaskEvent.Os(
+                    name = androidInfoProvider.osName,
+                    version = androidInfoProvider.osVersion,
+                    versionMajor = androidInfoProvider.osMajorVersion
+                )
+            },
+            device = forge.aNullable {
+                val androidInfoProvider = getForgery(AndroidInfoProvider::class.java)
+                LongTaskEvent.Device(
+                    name = androidInfoProvider.deviceName,
+                    model = androidInfoProvider.deviceModel,
+                    brand = androidInfoProvider.deviceBrand,
+                    type = androidInfoProvider.deviceType.toLongTaskSchemaType()
+                )
             },
             context = forge.aNullable {
                 LongTaskEvent.Context(

@@ -6,6 +6,7 @@
 
 package com.datadog.android.nightly.logs
 
+import android.util.Log
 import com.datadog.android.log.Logger
 import com.datadog.android.nightly.utils.defaultTestAttributes
 import com.datadog.tools.unit.forge.aThrowable
@@ -17,17 +18,19 @@ fun initializeLogger() = Logger.Builder()
 
 fun Logger.sendRandomLog(
     testMethodName: String,
-    forge: Forge
+    forge: Forge,
+    minLogLevel: Int = Log.VERBOSE,
+    maxLogLevel: Int = Log.ASSERT
 ) {
     val message = forge.anAlphabeticalString()
     val throwable = forge.aNullable { forge.aThrowable() }
     val attributes = defaultTestAttributes(testMethodName)
-    when (forge.anInt(min = 1, max = 7)) {
-        1 -> v(message, throwable, attributes)
-        2 -> d(message, throwable, attributes)
-        3 -> w(message, throwable, attributes)
-        4 -> e(message, throwable, attributes)
-        5 -> i(message, throwable, attributes)
-        6 -> wtf(message, throwable, attributes)
+    when (forge.anInt(min = minLogLevel, max = maxLogLevel + 1)) {
+        Log.VERBOSE -> v(message, throwable, attributes)
+        Log.DEBUG -> d(message, throwable, attributes)
+        Log.INFO -> i(message, throwable, attributes)
+        Log.WARN -> w(message, throwable, attributes)
+        Log.ERROR -> e(message, throwable, attributes)
+        Log.ASSERT -> wtf(message, throwable, attributes)
     }
 }

@@ -11,6 +11,7 @@ import android.util.Log
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.identifyRequest
+import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
@@ -41,6 +42,7 @@ import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -108,6 +110,9 @@ internal class DatadogInterceptorWithoutTracesTest {
     @Mock
     lateinit var mockSpan: DDSpan
 
+    @Mock
+    lateinit var mockTraceSampler: Sampler
+
     // endregion
 
     // region Fakes
@@ -151,6 +156,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         whenever(mockSpan.context()) doReturn mockSpanContext
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
         whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId
+        whenever(mockTraceSampler.sample()) doReturn true
 
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()
@@ -160,7 +166,8 @@ internal class DatadogInterceptorWithoutTracesTest {
             tracedHosts = emptyList(),
             tracedRequestListener = mockRequestListener,
             firstPartyHostDetector = mockDetector,
-            rumResourceAttributesProvider = mockRumAttributesProvider
+            rumResourceAttributesProvider = mockRumAttributesProvider,
+            traceSampler = mockTraceSampler
         ) { mockLocalTracer }
         Datadog.globalSDKCore = mock<DatadogCore>()
         whenever((Datadog.globalSDKCore as DatadogCore).tracingFeature) doReturn
@@ -318,6 +325,23 @@ internal class DatadogInterceptorWithoutTracesTest {
         verify(mockSpan as MutableSpan).setResourceName(fakeUrl)
         verify(mockSpan as MutableSpan).setError(true)
         verify(mockSpan).drop()
+        Assertions.assertThat(response).isSameAs(fakeResponse)
+    }
+
+    @Test
+    fun `𝕄 not create a Span 𝕎 intercept() for completed request {not sampled}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int
+    ) {
+        // Given
+        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        stubChain(mockChain, statusCode)
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        verifyZeroInteractions(mockSpan, mockSpanBuilder, mockLocalTracer)
         Assertions.assertThat(response).isSameAs(fakeResponse)
     }
 

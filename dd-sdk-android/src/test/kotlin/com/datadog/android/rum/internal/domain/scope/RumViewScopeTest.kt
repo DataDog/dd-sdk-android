@@ -15,6 +15,7 @@ import androidx.fragment.app.FragmentActivity
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
@@ -150,6 +151,9 @@ internal class RumViewScopeTest {
     @Forgery
     lateinit var fakeNetworkInfo: NetworkInfo
 
+    @Forgery
+    lateinit var fakeAndroidInfoProvider: AndroidInfoProvider
+
     lateinit var fakeEventTime: Time
 
     var fakeServerOffset: Long = 0L
@@ -236,7 +240,8 @@ internal class RumViewScopeTest {
             mockUserInfoProvider,
             mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
-            mockViewUpdatePredicate
+            mockViewUpdatePredicate,
+            androidInfoProvider = fakeAndroidInfoProvider
         )
 
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
@@ -326,7 +331,8 @@ internal class RumViewScopeTest {
             mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
-            type = fakeViewEventType
+            type = fakeViewEventType,
+            androidInfoProvider = fakeAndroidInfoProvider
         )
 
         // Then
@@ -397,7 +403,8 @@ internal class RumViewScopeTest {
             mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
-            type = expectedViewType
+            type = expectedViewType,
+            androidInfoProvider = fakeAndroidInfoProvider
         )
 
         // When
@@ -564,7 +571,8 @@ internal class RumViewScopeTest {
             mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
-            type = viewType
+            type = viewType,
+            androidInfoProvider = fakeAndroidInfoProvider
         )
 
         // When
@@ -610,7 +618,8 @@ internal class RumViewScopeTest {
             mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
-            type = viewType
+            type = viewType,
+            androidInfoProvider = fakeAndroidInfoProvider
         )
 
         // When
@@ -682,6 +691,17 @@ internal class RumViewScopeTest {
                 hasLiteSessionPlan()
                 hasSource(fakeSourceViewEvent)
                 containsExactlyContextAttributes(fakeAttributes)
+                hasDeviceInfo(
+                    fakeAndroidInfoProvider.deviceName,
+                    fakeAndroidInfoProvider.deviceModel,
+                    fakeAndroidInfoProvider.deviceBrand,
+                    fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                )
+                hasOsInfo(
+                    fakeAndroidInfoProvider.osName,
+                    fakeAndroidInfoProvider.osVersion,
+                    fakeAndroidInfoProvider.osMajorVersion
+                )
             }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -734,6 +754,17 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -786,6 +817,17 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(expectedAttributes)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -844,6 +886,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -899,6 +952,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -954,6 +1018,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -996,6 +1071,17 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1031,7 +1117,8 @@ internal class RumViewScopeTest {
             rumEventSourceProvider = mockRumEventSourceProvider,
             mockUserInfoProvider,
             mockNetworkInfoProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate
+            viewUpdatePredicate = mockViewUpdatePredicate,
+            androidInfoProvider = fakeAndroidInfoProvider
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
 
@@ -1070,6 +1157,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1124,6 +1222,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1157,7 +1266,8 @@ internal class RumViewScopeTest {
             rumEventSourceProvider = mockRumEventSourceProvider,
             mockUserInfoProvider,
             mockNetworkInfoProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate
+            viewUpdatePredicate = mockViewUpdatePredicate,
+            androidInfoProvider = fakeAndroidInfoProvider
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -1199,6 +1309,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1234,7 +1355,8 @@ internal class RumViewScopeTest {
             rumEventSourceProvider = mockRumEventSourceProvider,
             mockUserInfoProvider,
             mockNetworkInfoProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate
+            viewUpdatePredicate = mockViewUpdatePredicate,
+            androidInfoProvider = fakeAndroidInfoProvider
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -1276,6 +1398,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1331,6 +1464,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1385,6 +1529,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1432,6 +1587,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1522,6 +1688,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1589,6 +1766,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1656,6 +1844,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1725,6 +1924,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1775,6 +1985,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1837,6 +2058,17 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1882,6 +2114,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1949,6 +2192,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2016,6 +2270,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2083,6 +2348,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2145,6 +2421,17 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2185,6 +2472,17 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2244,6 +2542,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2492,6 +2801,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2927,6 +3247,17 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2976,6 +3307,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3026,6 +3368,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3078,6 +3431,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3175,6 +3539,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3226,6 +3601,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3276,6 +3662,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
             assertThat(lastValue as ViewEvent)
                 .apply {
@@ -3305,6 +3702,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3359,6 +3767,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3411,6 +3830,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
             assertThat(lastValue as ViewEvent)
                 .apply {
@@ -3440,6 +3870,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3493,6 +3934,17 @@ internal class RumViewScopeTest {
                     hasErrorSourceType(sourceType.toSchemaSourceType())
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3547,6 +3999,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3602,6 +4065,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3655,6 +4129,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
             assertThat(lastValue as ViewEvent)
                 .apply {
@@ -3684,6 +4169,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes + attributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3861,6 +4357,17 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceLongTaskEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toLongTaskSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3896,6 +4403,17 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceLongTaskEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toLongTaskSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3941,6 +4459,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceLongTaskEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toLongTaskSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3986,6 +4515,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceLongTaskEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toLongTaskSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4203,6 +4743,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4255,6 +4806,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4325,6 +4887,17 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4380,6 +4953,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
             assertThat(lastValue)
                 .apply {
@@ -4413,6 +4997,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4478,6 +5073,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4531,6 +5137,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4594,6 +5211,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4657,6 +5285,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4695,7 +5334,8 @@ internal class RumViewScopeTest {
             mockUserInfoProvider,
             mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate
+            viewUpdatePredicate = mockViewUpdatePredicate,
+            androidInfoProvider = fakeAndroidInfoProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -4736,6 +5376,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4774,7 +5425,8 @@ internal class RumViewScopeTest {
             mockUserInfoProvider,
             mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate
+            viewUpdatePredicate = mockViewUpdatePredicate,
+            androidInfoProvider = fakeAndroidInfoProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -4815,6 +5467,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4855,7 +5518,8 @@ internal class RumViewScopeTest {
             mockUserInfoProvider,
             mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate
+            viewUpdatePredicate = mockViewUpdatePredicate,
+            androidInfoProvider = fakeAndroidInfoProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -4896,6 +5560,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4936,7 +5611,8 @@ internal class RumViewScopeTest {
             mockUserInfoProvider,
             mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate
+            viewUpdatePredicate = mockViewUpdatePredicate,
+            androidInfoProvider = fakeAndroidInfoProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -4977,6 +5653,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5018,7 +5705,8 @@ internal class RumViewScopeTest {
             mockUserInfoProvider,
             mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate
+            viewUpdatePredicate = mockViewUpdatePredicate,
+            androidInfoProvider = fakeAndroidInfoProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5059,6 +5747,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5100,7 +5799,8 @@ internal class RumViewScopeTest {
             mockUserInfoProvider,
             mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate
+            viewUpdatePredicate = mockViewUpdatePredicate,
+            androidInfoProvider = fakeAndroidInfoProvider
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5141,6 +5841,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5249,6 +5960,17 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5285,6 +6007,17 @@ internal class RumViewScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceLongTaskEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toLongTaskSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
 
@@ -5336,6 +6069,17 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5367,7 +6111,8 @@ internal class RumViewScopeTest {
             mockUserInfoProvider,
             mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate
+            viewUpdatePredicate = mockViewUpdatePredicate,
+            androidInfoProvider = fakeAndroidInfoProvider
         )
 
         // When

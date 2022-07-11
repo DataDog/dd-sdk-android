@@ -77,6 +77,7 @@ internal class UiRumDebugListener :
             orientation = LinearLayout.VERTICAL
         }
 
+        @Suppress("UnsafeThirdPartyFunctionCall") // view added is not null
         contentView.addView(
             rumViewsContainer,
             FrameLayout.LayoutParams(
@@ -142,9 +143,11 @@ internal class UiRumDebugListener :
         rumViewsContainer?.run {
             removeAllViews()
             if (viewNames.isEmpty()) {
+                @Suppress("UnsafeThirdPartyFunctionCall") // view added is not null
                 addView(createDebugTextView(context, "No active RUM View", DEFAULT_ALPHA))
             } else {
                 for (viewName in viewNames.reversed().withIndex()) {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // view added is not null
                     addView(
                         createDebugTextView(
                             context,

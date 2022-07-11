@@ -33,18 +33,6 @@ To update the tracking consent after the SDK is initialized, call `Datadog.setTr
 - `TrackingConsent.GRANTED`: The SDK sends all current batched data and future data directly to the data collection endpoint.
 - `TrackingConsent.NOT_GRANTED`: The SDK wipes all batched data and does not collect any future data.
 
-## Sample RUM sessions
-
-To control the data your application sends to Datadog RUM, you can specify a sampling rate for RUM sessions while [initializing the RumMonitor][1] as a percentage between 0 and 100.
-
-```kotlin
-val monitor = RumMonitor.Builder()
-        // Here 75% of the RUM sessions are sent to Datadog
-        .sampleRumSessions(75.0f)
-        .build()
-GlobalRum.registerIfAbsent(monitor)
-```
-
 ## Sending data when device is offline
 
 RUM ensures availability of data when your user device is offline. In cases of low-network areas, or when the device battery is too low, all the RUM events are first stored on the local device in batches. 
@@ -94,7 +82,5 @@ methods. These methods were renamed for consistency purposes, and are now `Logge
 ## Further Reading
 
 {{< partial name="whats-next/whats-next.html" >}}
-
-[1]: https://docs.datadoghq.com/real_user_monitoring/android/
 
  

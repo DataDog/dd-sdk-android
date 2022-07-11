@@ -6,12 +6,14 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.connect
 import com.datadog.android.rum.internal.domain.scope.dns
 import com.datadog.android.rum.internal.domain.scope.download
 import com.datadog.android.rum.internal.domain.scope.firstByte
 import com.datadog.android.rum.internal.domain.scope.ssl
+import com.datadog.android.rum.internal.domain.scope.toResourceSchemaType
 import com.datadog.android.rum.model.ResourceEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -95,6 +97,23 @@ internal class ResourceEventForgeryFactory :
             source = forge.aNullable { aValueFrom(ResourceEvent.Source::class.java) },
             ciTest = forge.aNullable {
                 ResourceEvent.CiTest(anHexadecimalString())
+            },
+            os = forge.aNullable {
+                val androidInfoProvider = getForgery(AndroidInfoProvider::class.java)
+                ResourceEvent.Os(
+                    name = androidInfoProvider.osName,
+                    version = androidInfoProvider.osVersion,
+                    versionMajor = androidInfoProvider.osMajorVersion
+                )
+            },
+            device = forge.aNullable {
+                val androidInfoProvider = getForgery(AndroidInfoProvider::class.java)
+                ResourceEvent.Device(
+                    name = androidInfoProvider.deviceName,
+                    model = androidInfoProvider.deviceModel,
+                    brand = androidInfoProvider.deviceBrand,
+                    type = androidInfoProvider.deviceType.toResourceSchemaType()
+                )
             },
             context = forge.aNullable {
                 ResourceEvent.Context(

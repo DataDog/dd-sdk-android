@@ -14,7 +14,6 @@ import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
@@ -23,8 +22,10 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -130,6 +131,42 @@ internal class DatadogCoreTest {
     }
 
     @Test
+    fun `𝕄 set additional user info 𝕎 addUserProperties() is called`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery name: String,
+        @StringForgery(regex = "\\w+@\\w+") email: String
+    ) {
+        // Given
+        testedCore.coreFeature = mock()
+        val mockUserInfoProvider = mock<MutableUserInfoProvider>()
+        whenever(testedCore.coreFeature.userInfoProvider) doReturn mockUserInfoProvider
+
+        // When
+        testedCore.setUserInfo(UserInfo(id, name, email))
+        testedCore.addUserProperties(
+            mapOf(
+                "key1" to 1,
+                "key2" to "one"
+            )
+        )
+
+        // Then
+        verify(mockUserInfoProvider).setUserInfo(
+            UserInfo(
+                id,
+                name,
+                email
+            )
+        )
+        verify(mockUserInfoProvider).addUserProperties(
+            properties = mapOf(
+                "key1" to 1,
+                "key2" to "one"
+            )
+        )
+    }
+
+    @Test
     fun `𝕄 clear data in all features 𝕎 clearAllData()`() {
         // Given
         testedCore.rumFeature = mock()
@@ -155,12 +192,11 @@ internal class DatadogCoreTest {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val mainLooper = MainLooperTestConfiguration()
         val logger = LoggerTestConfiguration()
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, mainLooper, coreFeature)
+            return listOf(logger, appContext, mainLooper)
         }
     }
 }

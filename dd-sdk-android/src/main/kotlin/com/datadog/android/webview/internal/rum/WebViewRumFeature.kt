@@ -12,7 +12,6 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
-import com.datadog.android.core.internal.system.StaticAndroidInfoProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.rum.internal.net.RumOkHttpUploaderV2
@@ -44,7 +43,7 @@ internal class WebViewRumFeature(
             coreFeature.sourceName,
             coreFeature.sdkVersion,
             coreFeature.okHttpClient,
-            StaticAndroidInfoProvider,
+            coreFeature.androidInfoProvider,
             coreFeature
         )
     }

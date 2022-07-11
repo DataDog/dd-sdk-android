@@ -56,6 +56,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
             tracedRequestListener = mockRequestListener,
             firstPartyHostDetector = mockDetector,
             rumResourceAttributesProvider = mockRumAttributesProvider,
+            traceSampler = mockTraceSampler,
             localTracerFactory = factory
         )
     }

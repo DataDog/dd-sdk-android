@@ -51,7 +51,6 @@ internal class DatadogCore(
 ) : SDKCore {
 
     internal var libraryVerbosity = Int.MAX_VALUE
-    internal val startupTimeNs: Long = System.nanoTime()
 
     internal lateinit var coreFeature: CoreFeature
 
@@ -111,6 +110,11 @@ internal class DatadogCore(
     /** @inheritDoc */
     override fun setUserInfo(userInfo: UserInfo) {
         coreFeature.userInfoProvider.setUserInfo(userInfo)
+    }
+
+    /** @inheritDoc */
+    override fun addUserProperties(extraInfo: Map<String, Any?>) {
+        coreFeature.userInfoProvider.addUserProperties(extraInfo)
     }
 
     /** @inheritDoc */

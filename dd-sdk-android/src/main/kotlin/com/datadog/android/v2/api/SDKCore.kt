@@ -6,6 +6,7 @@
 
 package com.datadog.android.v2.api
 
+import com.datadog.android.Datadog
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.tools.annotation.NoOpImplementation
@@ -13,6 +14,7 @@ import com.datadog.tools.annotation.NoOpImplementation
 /**
  * SDKCore is the entry point to register Datadog features to the core registry.
  */
+@Suppress("ComplexInterface")
 @NoOpImplementation
 interface SDKCore {
 
@@ -73,6 +75,17 @@ interface SDKCore {
      * @param userInfo the new user info to set, or null
      */
     fun setUserInfo(userInfo: UserInfo)
+
+    /**
+     * Sets additional information on the [UserInfo] object
+     *
+     * If properties had originally been set with [Datadog.setUserInfo], they will be preserved.
+     * In the event of a conflict on key, the new property will prevail.
+     *
+     * @param extraInfo additional information. An extra information can be
+     * nested up to 8 levels deep. Keys using more than 8 levels will be sanitized by SDK.
+     */
+    fun addUserProperties(extraInfo: Map<String, Any?>)
 
     /**
      * Stops all process for this instance of the Datadog SDK.

@@ -9,8 +9,11 @@ package com.datadog.android.log.internal.user
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.nhaarman.mockitokotlin2.verify
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -64,5 +67,49 @@ internal class DatadogUserInfoProviderTest {
 
         // Then
         verify(mockWriter).write(userInfo)
+    }
+
+    @Test
+    fun `𝕄 keep existing properties 𝕎 setExtraProperties() is called`(
+        @Forgery userInfo: UserInfo,
+        @StringForgery forge: Forge
+    ) {
+        // Given
+        val customProperties = forge.exhaustiveAttributes()
+        testedProvider.setUserInfo(
+            userInfo.copy(
+                additionalProperties = customProperties
+            )
+        )
+
+        // When
+        testedProvider.addUserProperties(customProperties)
+        // Then
+        assertThat(
+            testedProvider.getUserInfo().additionalProperties
+        ).isEqualTo(customProperties)
+    }
+
+    @Test
+    fun `𝕄 keep new property key 𝕎 setExtraProperties() is called and the key already exists`(
+        @Forgery userInfo: UserInfo,
+        @StringForgery key: String,
+        @StringForgery value1: String,
+        @StringForgery value2: String
+    ) {
+        // Given
+        testedProvider.setUserInfo(
+            userInfo.copy(additionalProperties = mapOf(key to value1))
+        )
+
+        // When
+        testedProvider.addUserProperties(mapOf(key to value2))
+
+        // Then
+        assertThat(
+            testedProvider.getUserInfo().additionalProperties
+        ).isEqualTo(
+            mapOf(key to value2)
+        )
     }
 }

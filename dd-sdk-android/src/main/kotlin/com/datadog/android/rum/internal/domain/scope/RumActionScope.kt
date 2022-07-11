@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
@@ -31,7 +32,8 @@ internal class RumActionScope(
     inactivityThresholdMs: Long = ACTION_INACTIVITY_MS,
     maxDurationMs: Long = ACTION_MAX_DURATION_MS,
     private val rumEventSourceProvider: RumEventSourceProvider,
-    private val userInfoProvider: UserInfoProvider
+    private val userInfoProvider: UserInfoProvider,
+    private val androidInfoProvider: AndroidInfoProvider
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
@@ -221,6 +223,17 @@ internal class RumActionScope(
                 email = user.email,
                 additionalProperties = user.additionalProperties
             ),
+            os = ActionEvent.Os(
+                name = androidInfoProvider.osName,
+                version = androidInfoProvider.osVersion,
+                versionMajor = androidInfoProvider.osMajorVersion
+            ),
+            device = ActionEvent.Device(
+                type = androidInfoProvider.deviceType.toActionSchemaType(),
+                name = androidInfoProvider.deviceName,
+                model = androidInfoProvider.deviceModel,
+                brand = androidInfoProvider.deviceBrand
+            ),
             context = ActionEvent.Context(additionalProperties = attributes),
             dd = ActionEvent.Dd(session = ActionEvent.DdSession(plan = ActionEvent.Plan.PLAN_1))
         )
@@ -235,12 +248,14 @@ internal class RumActionScope(
         internal const val ACTION_INACTIVITY_MS = 100L
         internal const val ACTION_MAX_DURATION_MS = 5000L
 
+        @Suppress("LongParameterList")
         fun fromEvent(
             parentScope: RumScope,
             event: RumRawEvent.StartAction,
             timestampOffset: Long,
             eventSourceProvider: RumEventSourceProvider,
-            userInfoProvider: UserInfoProvider
+            userInfoProvider: UserInfoProvider,
+            androidInfoProvider: AndroidInfoProvider
         ): RumScope {
             return RumActionScope(
                 parentScope,
@@ -251,7 +266,8 @@ internal class RumActionScope(
                 event.attributes,
                 timestampOffset,
                 rumEventSourceProvider = eventSourceProvider,
-                userInfoProvider = userInfoProvider
+                userInfoProvider = userInfoProvider,
+                androidInfoProvider = androidInfoProvider
             )
         }
     }

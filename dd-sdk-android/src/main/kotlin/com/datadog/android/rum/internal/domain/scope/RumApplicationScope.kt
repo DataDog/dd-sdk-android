@@ -10,6 +10,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.RumSessionListener
@@ -30,7 +31,8 @@ internal class RumApplicationScope(
     sessionListener: RumSessionListener?,
     sourceName: String,
     userInfoProvider: UserInfoProvider,
-    networkInfoProvider: NetworkInfoProvider
+    networkInfoProvider: NetworkInfoProvider,
+    androidInfoProvider: AndroidInfoProvider
 ) : RumScope {
 
     private val rumEventSourceProvider = RumEventSourceProvider(sourceName)
@@ -47,7 +49,8 @@ internal class RumApplicationScope(
         sessionListener,
         rumEventSourceProvider,
         userInfoProvider,
-        networkInfoProvider
+        networkInfoProvider,
+        androidInfoProvider = androidInfoProvider
     )
 
     // region RumScope

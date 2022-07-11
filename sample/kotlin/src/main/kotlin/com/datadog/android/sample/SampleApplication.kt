@@ -56,8 +56,8 @@ class SampleApplication : Application() {
     )
 
     private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(RumInterceptor())
-        .addNetworkInterceptor(TracingInterceptor())
+        .addInterceptor(RumInterceptor(traceSamplingRate = 100f))
+        .addNetworkInterceptor(TracingInterceptor(traceSamplingRate = 100f))
         .eventListenerFactory(DatadogEventListener.Factory())
         .build()
 

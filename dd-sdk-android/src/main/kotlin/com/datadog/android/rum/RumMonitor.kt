@@ -307,7 +307,8 @@ interface RumMonitor {
                     sessionListener = sessionListener,
                     sourceName = coreFeature.sourceName,
                     userInfoProvider = coreFeature.userInfoProvider,
-                    networkInfoProvider = coreFeature.networkInfoProvider
+                    networkInfoProvider = coreFeature.networkInfoProvider,
+                    androidInfoProvider = coreFeature.androidInfoProvider
                 )
             }
         }

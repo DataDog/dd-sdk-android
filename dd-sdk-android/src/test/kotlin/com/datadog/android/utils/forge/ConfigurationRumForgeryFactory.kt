@@ -7,6 +7,7 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -23,7 +24,8 @@ internal class ConfigurationRumForgeryFactory :
             viewTrackingStrategy = mock(),
             rumEventMapper = mock(),
             longTaskTrackingStrategy = mock(),
-            backgroundEventTracking = forge.aBool()
+            backgroundEventTracking = forge.aBool(),
+            vitalsMonitorUpdateFrequency = forge.aValueFrom(VitalsUpdateFrequency::class.java)
         )
     }
 }

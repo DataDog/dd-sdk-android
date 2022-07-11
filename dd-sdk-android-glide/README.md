@@ -48,9 +48,11 @@ Doing so will automatically track Glide's network requests (creating both APM Tr
 @GlideModule
 class CustomGlideModule : 
     DatadogGlideModule(
-        listOf("example.com", "example.eu")
+        listOf("example.com", "example.eu"), traceSamplingRate = 20f
     )
 ```
+
+Network requests are sampled with an adjustable sampling rate. A sampling of 20% is applied by default.
 
 
 ## Contributing

@@ -10,6 +10,7 @@ import android.os.Handler
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.internal.user.UserInfoProvider
@@ -29,6 +30,7 @@ import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
+import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
@@ -58,7 +60,8 @@ internal class DatadogRumMonitor(
     sourceName: String,
     userInfoProvider: UserInfoProvider,
     networkInfoProvider: NetworkInfoProvider,
-    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
+    private val executorService: ExecutorService = Executors.newSingleThreadExecutor(),
+    androidInfoProvider: AndroidInfoProvider
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -77,7 +80,8 @@ internal class DatadogRumMonitor(
         },
         sourceName,
         userInfoProvider,
-        networkInfoProvider
+        networkInfoProvider,
+        androidInfoProvider
     )
 
     internal val keepAliveRunnable = Runnable {
@@ -390,9 +394,10 @@ internal class DatadogRumMonitor(
         debugListener?.let {
             val applicationScope = rootScope as? RumApplicationScope
             val sessionScope = applicationScope?.childScope as? RumSessionScope
-            if (sessionScope != null) {
+            val viewManagerScope = sessionScope?.childScope as? RumViewManagerScope
+            if (viewManagerScope != null) {
                 it.onReceiveRumActiveViews(
-                    sessionScope.childrenScopes
+                    viewManagerScope.childrenScopes
                         .filterIsInstance<RumViewScope>()
                         .filter { viewScope -> viewScope.isActive() }
                         .mapNotNull { viewScope -> viewScope.getRumContext().viewName }

@@ -40,10 +40,11 @@ internal fun Collection<ByteArray>.join(
     prefix: ByteArray = ByteArray(0),
     suffix: ByteArray = ByteArray(0)
 ): ByteArray {
-    val result = ByteArray(
-        this.sumOf { it.size } +
-            prefix.size + suffix.size + separator.size * (this.size - 1)
-    )
+    val dataSize = this.sumOf { it.size }
+    val separatorsSize = if (this.isNotEmpty()) separator.size * (this.size - 1) else 0
+    val resultSize = prefix.size + dataSize + separatorsSize + suffix.size
+
+    val result = ByteArray(resultSize)
 
     var offset = 0
 
@@ -71,7 +72,10 @@ internal fun Collection<ByteArray>.join(
  * @return An index of the first occurrence of [b] or `-1` if none is found.
  */
 internal fun ByteArray.indexOf(b: Byte, startIndex: Int = 0): Int {
+    if (startIndex < 0) return -1
+
     for (i in startIndex until size) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // iteration over indexes which exist
         if (get(i) == b) {
             return i
         }
