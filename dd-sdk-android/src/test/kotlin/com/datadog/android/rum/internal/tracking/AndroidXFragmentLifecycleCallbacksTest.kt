@@ -89,7 +89,8 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        RumFeature.actionTrackingStrategy = mockUserActionTrackingStrategy
+        val mockRumFeature = mock<RumFeature>()
+        whenever(mockRumFeature.actionTrackingStrategy) doReturn mockUserActionTrackingStrategy
         whenever(mockUserActionTrackingStrategy.getGesturesTracker()) doReturn mockGesturesTracker
 
         whenever(mockFragmentActivity.supportFragmentManager).thenReturn(mockFragmentManager)
@@ -99,7 +100,8 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
             mockPredicate,
             viewLoadingTimer = mockViewLoadingTimer,
             rumMonitor = mockRumMonitor,
-            advancedRumMonitor = mockAdvancedRumMonitor
+            advancedRumMonitor = mockAdvancedRumMonitor,
+            rumFeature = mockRumFeature
         )
     }
 

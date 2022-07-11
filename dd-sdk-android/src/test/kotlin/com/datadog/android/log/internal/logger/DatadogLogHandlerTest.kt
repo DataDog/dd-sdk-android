@@ -12,7 +12,6 @@ import android.view.Choreographer
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.sampling.Sampler
@@ -21,7 +20,7 @@ import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
-import com.datadog.android.log.internal.domain.LogGenerator
+import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
@@ -47,6 +46,8 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.noop.NoopTracerFactory
@@ -135,14 +136,11 @@ internal class DatadogLogHandlerTest {
         fakeAttributes = forge.aMap { anAlphabeticalString() to anInt() }
         fakeTags = forge.aList { anAlphabeticalString() }.toSet()
         fakeSdkVersion = forge.anAlphabeticalString()
-        CoreFeature.sdkVersion = fakeSdkVersion
-        CoreFeature.envName = fakeEnvName
-        CoreFeature.packageVersion = fakeAppVersion
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
 
         testedHandler = DatadogLogHandler(
-            LogGenerator(
+            DatadogLogGenerator(
                 fakeServiceName,
                 fakeLoggerName,
                 mockNetworkInfoProvider,
@@ -402,7 +400,7 @@ internal class DatadogLogHandlerTest {
     fun `forward log to LogWriter without network info`() {
         val now = System.currentTimeMillis()
         testedHandler = DatadogLogHandler(
-            LogGenerator(
+            DatadogLogGenerator(
                 fakeServiceName,
                 fakeLoggerName,
                 null,
@@ -456,7 +454,7 @@ internal class DatadogLogHandlerTest {
         val now = System.currentTimeMillis()
         GlobalRum.isRegistered.set(false)
         testedHandler = DatadogLogHandler(
-            LogGenerator(
+            DatadogLogGenerator(
                 fakeServiceName,
                 fakeLoggerName,
                 null,
@@ -500,7 +498,10 @@ internal class DatadogLogHandlerTest {
     }
 
     @Test
-    fun `it will add the span id and trace id if we active an active tracer`(forge: Forge) {
+    fun `it will add the span id and trace id if we active an active tracer`(
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeServiceName: String,
+        forge: Forge
+    ) {
         // Given
         Datadog.initialize(
             appContext.mockInstance,
@@ -518,7 +519,7 @@ internal class DatadogLogHandlerTest {
             ).build(),
             TrackingConsent.GRANTED
         )
-        val tracer = AndroidTracer.Builder().build()
+        val tracer = AndroidTracer.Builder().setServiceName(fakeServiceName).build()
         val span = tracer.buildSpan(forge.anAlphabeticalString()).start()
         tracer.activateSpan(span)
         GlobalTracer.registerIfAbsent(tracer)
@@ -613,7 +614,7 @@ internal class DatadogLogHandlerTest {
     fun `it will not add trace deps if the flag was set to false`() {
         // Given
         testedHandler = DatadogLogHandler(
-            LogGenerator(
+            DatadogLogGenerator(
                 fakeServiceName,
                 fakeLoggerName,
                 mockNetworkInfoProvider,
@@ -650,7 +651,7 @@ internal class DatadogLogHandlerTest {
         // Given
         whenever(mockSampler.sample()).thenReturn(false)
         testedHandler = DatadogLogHandler(
-            LogGenerator(
+            DatadogLogGenerator(
                 fakeServiceName,
                 fakeLoggerName,
                 mockNetworkInfoProvider,
@@ -684,7 +685,7 @@ internal class DatadogLogHandlerTest {
         val now = System.currentTimeMillis()
         whenever(mockSampler.sample()).thenReturn(true)
         testedHandler = DatadogLogHandler(
-            LogGenerator(
+            DatadogLogGenerator(
                 fakeServiceName,
                 fakeLoggerName,
                 mockNetworkInfoProvider,

@@ -12,17 +12,9 @@ import android.net.ConnectivityManager
 import android.util.Log as AndroidLog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.persistence.DataReader
-import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.model.UserInfo
-import com.datadog.android.error.internal.CrashReportsFeature
-import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.log.internal.user.MutableUserInfoProvider
-import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
@@ -33,15 +25,11 @@ import com.datadog.android.v2.api.NoOpSDKCore
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.internal.HashGenerator
 import com.datadog.android.v2.core.internal.Sha256HashGenerator
-import com.datadog.android.webview.internal.log.WebViewLogsFeature
-import com.datadog.android.webview.internal.rum.WebViewRumFeature
-import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.annotations.ProhibitLeavingStaticMocksIn
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -102,10 +90,6 @@ internal class DatadogTest {
 
         // Prevent crash when initializing RumFeature
         mockChoreographerInstance()
-
-        CoreFeature.disableKronosBackgroundSync = true
-        CoreFeature.sdkVersion = CoreFeature.DEFAULT_SDK_VERSION
-        CoreFeature.sourceName = CoreFeature.DEFAULT_SOURCE_NAME
     }
 
     @AfterEach
@@ -131,22 +115,22 @@ internal class DatadogTest {
         @StringForgery(regex = "\\w+@\\w+") email: String
     ) {
         // Given
-        val mockUserInfoProvider = mock<MutableUserInfoProvider>()
-        CoreFeature.userInfoProvider = mockUserInfoProvider
+        val mockCore = mock<DatadogCore>()
+        Datadog.globalSDKCore = mockCore
 
         // When
         Datadog.setUserInfo(id, name, email)
         Datadog.setUserInfo()
 
         // Then
-        verify(mockUserInfoProvider).setUserInfo(
+        verify(mockCore).setUserInfo(
             UserInfo(
                 id,
                 name,
                 email
             )
         )
-        verify(mockUserInfoProvider).setUserInfo(
+        verify(mockCore).setUserInfo(
             UserInfo(
                 null,
                 null,
@@ -231,8 +215,7 @@ internal class DatadogTest {
     @Test
     fun `𝕄 stop initialization and log error 𝕎 initialize() { cannot create instance id }`(
         @Forgery fakeCredentials: Credentials,
-        @Forgery fakeConfiguration: Configuration,
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeHash: String
+        @Forgery fakeConfiguration: Configuration
     ) {
         // Given
         val mockHashGenerator: HashGenerator = mock()
@@ -266,13 +249,15 @@ internal class DatadogTest {
         )
             .build()
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+        val mockRumFeature = mock<RumFeature>()
 
         // When
         Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
+        (Datadog.globalSDKCore as DatadogCore).rumFeature = mockRumFeature
         Datadog.enableRumDebugging(true)
 
         // Then
-        assertThat(RumFeature.debugActivityLifecycleListener).isNotNull
+        verify(mockRumFeature).enableDebugging()
     }
 
     @Test
@@ -286,53 +271,28 @@ internal class DatadogTest {
         )
             .build()
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+        val mockRumFeature = mock<RumFeature>()
 
         // When
         Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
+        (Datadog.globalSDKCore as DatadogCore).rumFeature = mockRumFeature
         Datadog.enableRumDebugging(false)
 
         // Then
-        assertThat(RumFeature.debugActivityLifecycleListener).isNull()
+        verify(mockRumFeature).disableDebugging()
     }
 
     @Test
     fun `𝕄 clear data in all features 𝕎 clearAllData()`() {
-        val config = Configuration.Builder(
-            logsEnabled = true,
-            tracesEnabled = true,
-            crashReportsEnabled = true,
-            rumEnabled = true
-        )
-            .build()
-        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
-        val dataReaders: Array<DataReader> = Array(6) { mock() }
+        // Given
+        val mockCore = mock<DatadogCore>()
+        Datadog.globalSDKCore = mockCore
 
         // When
-        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
-        LogsFeature.persistenceStrategy = mock<PersistenceStrategy<LogEvent>>().apply {
-            whenever(getReader()) doReturn dataReaders[0]
-        }
-        CrashReportsFeature.persistenceStrategy = mock<PersistenceStrategy<LogEvent>>().apply {
-            whenever(getReader()) doReturn dataReaders[1]
-        }
-        RumFeature.persistenceStrategy = mock<PersistenceStrategy<Any>>().apply {
-            whenever(getReader()) doReturn dataReaders[2]
-        }
-        TracingFeature.persistenceStrategy = mock<PersistenceStrategy<DDSpan>>().apply {
-            whenever(getReader()) doReturn dataReaders[3]
-        }
-        WebViewLogsFeature.persistenceStrategy = mock<PersistenceStrategy<JsonObject>>().apply {
-            whenever(getReader()) doReturn dataReaders[4]
-        }
-        WebViewRumFeature.persistenceStrategy = mock<PersistenceStrategy<Any>>().apply {
-            whenever(getReader()) doReturn dataReaders[5]
-        }
         Datadog.clearAllData()
 
         // Then
-        dataReaders.forEach {
-            verify(it).dropAll()
-        }
+        verify(mockCore).clearAllData()
     }
 
     companion object {

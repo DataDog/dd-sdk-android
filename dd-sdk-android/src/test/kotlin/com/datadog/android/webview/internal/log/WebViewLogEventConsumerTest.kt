@@ -24,6 +24,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -72,6 +73,9 @@ internal class WebViewLogEventConsumerTest {
     @Mock
     lateinit var mockTimeProvider: TimeProvider
 
+    @Mock
+    lateinit var mockCoreFeature: CoreFeature
+
     lateinit var fakeWebLogEvent: JsonObject
 
     var fakeTimeOffset: Long = 0L
@@ -82,13 +86,14 @@ internal class WebViewLogEventConsumerTest {
     fun `set up`(forge: Forge) {
         fakeWebLogEvent = forge.aWebLogEvent()
         fakeTimeOffset = forge.aLong()
-        CoreFeature.envName = fakeEnvName
-        CoreFeature.packageVersion = fakePackageVersion
+        whenever(mockCoreFeature.envName) doReturn fakeEnvName
+        whenever(mockCoreFeature.packageVersion) doReturn fakePackageVersion
 
         testedConsumer = WebViewLogEventConsumer(
             mockUserLogsWriter,
             mockRumContextProvider,
-            mockTimeProvider
+            mockTimeProvider,
+            mockCoreFeature
         )
         whenever(mockTimeProvider.getServerOffsetMillis()).thenReturn(fakeTimeOffset)
     }

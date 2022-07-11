@@ -12,7 +12,7 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
-import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.tracing.assertj.SpanEventAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentracing.DDSpan
@@ -56,10 +56,13 @@ internal class DdSpanToSpanEventMapperTest {
     lateinit var mockTimeProvider: TimeProvider
 
     @Mock
-    lateinit var mockUserInfoProvider: UserInfoProvider
+    lateinit var mockUserInfoProvider: MutableUserInfoProvider
 
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+
+    @Mock
+    lateinit var mockCoreFeature: CoreFeature
 
     @StringForgery(regex = "[0-9]\\.[0-9]\\.[0-9]")
     lateinit var fakeClientPackageVersion: String
@@ -75,17 +78,18 @@ internal class DdSpanToSpanEventMapperTest {
 
     @BeforeEach
     fun `set up`() {
-        CoreFeature.packageVersion = fakeClientPackageVersion
-        CoreFeature.sdkVersion = fakeSdkVersion
-        CoreFeature.sourceName = fakeSource
+        whenever(mockCoreFeature.packageVersion) doReturn fakeClientPackageVersion
+        whenever(mockCoreFeature.sdkVersion) doReturn fakeSdkVersion
+        whenever(mockCoreFeature.sourceName) doReturn fakeSource
+
+        whenever(mockCoreFeature.timeProvider) doReturn mockTimeProvider
+        whenever(mockCoreFeature.networkInfoProvider) doReturn mockNetworkInfoProvider
+        whenever(mockCoreFeature.userInfoProvider) doReturn mockUserInfoProvider
+
         whenever(mockTimeProvider.getServerOffsetNanos()).thenReturn(fakeServerOffsetNanos)
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
-        testedMapper = DdSpanToSpanEventMapper(
-            mockTimeProvider,
-            mockNetworkInfoProvider,
-            mockUserInfoProvider
-        )
+        testedMapper = DdSpanToSpanEventMapper(mockCoreFeature)
     }
 
     @RepeatedTest(4)

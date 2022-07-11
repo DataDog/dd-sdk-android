@@ -46,7 +46,6 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -101,22 +100,11 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
         testedFeature = createTestedFeature()
     }
 
-    @AfterEach
-    fun `tear down`() {
-        if (!testedFeature.isInitialized()) {
-            // need for the stop to succeed and restore some static fields
-            testedFeature.initialized.set(true)
-        }
-        testedFeature.stop()
-    }
-
     abstract fun createTestedFeature(): F
 
     abstract fun forgeConfiguration(forge: Forge): C
 
     abstract fun featureDirName(): String
-
-    abstract fun doesFeatureNeedMigration(): Boolean
 
     @Test
     fun `𝕄 mark itself as initialized 𝕎 initialize()`() {
@@ -159,7 +147,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
             }
             allValues.forEach {
                 assertThat(it.context).isEqualTo(appContext.mockInstance)
-                assertThat(it.storageDir).isSameAs(coreFeature.mockStorageDir)
+                assertThat(it.storageDir).isSameAs(coreFeature.fakeStorageDir)
                 assertThat(it.serviceName).isEqualTo(coreFeature.fakeServiceName)
                 assertThat(it.envName).isEqualTo(coreFeature.fakeEnvName)
                 assertThat(it.context).isEqualTo(appContext.mockInstance)
@@ -263,7 +251,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 not setup uploader 𝕎 initialize() in secondary process`() {
         // Given
-        testedFeature.coreFeature.isMainProcess = false
+        whenever(testedFeature.coreFeature.isMainProcess) doReturn false
 
         // When
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)

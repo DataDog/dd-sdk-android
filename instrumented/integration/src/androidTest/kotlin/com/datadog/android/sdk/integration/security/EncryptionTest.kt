@@ -73,7 +73,7 @@ internal class EncryptionTest {
 
         // this part is flaky, because we make an assumption on the internal folder/file structure
         val isPendingDirectory = { file: File ->
-            file.name.startsWith("dd") && file.name.contains("pending")
+            file.name.contains("pending")
         }
         val isNdkPendingDirectory = { file: File ->
             file.name == "ndk_crash_reports_intermediary_v2"
@@ -81,12 +81,15 @@ internal class EncryptionTest {
 
         val dataDirectories =
             targetContext.cacheDir.listFiles()
+                ?.filter { it.isDirectory && it.name.startsWith("datadog") }
+                ?.flatMap { it.listFiles()?.asIterable() ?: emptyList() }
                 ?.filter {
-                    it.isDirectory &&
-                        (
-                            (isPendingDirectory(it) && !it.name.contains("crash")) ||
-                                isNdkPendingDirectory(it)
-                            )
+                    if (it.isDirectory) {
+                        (isPendingDirectory(it) && !it.name.contains("crash")) ||
+                            isNdkPendingDirectory(it)
+                    } else {
+                        false
+                    }
                 }!!
 
         assertThat(dataDirectories).isNotEmpty()

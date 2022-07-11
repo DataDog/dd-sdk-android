@@ -7,7 +7,6 @@
 package com.datadog.android.tracing.internal
 
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileDataWriter
@@ -40,7 +39,7 @@ internal class TracingFeatureTest :
     SdkFeatureTest<DDSpan, Configuration.Feature.Tracing, TracingFeature>() {
 
     override fun createTestedFeature(): TracingFeature {
-        return TracingFeature
+        return TracingFeature(coreFeature.mockInstance)
     }
 
     override fun forgeConfiguration(forge: Forge): Configuration.Feature.Tracing {
@@ -50,8 +49,6 @@ internal class TracingFeatureTest :
     override fun featureDirName(): String {
         return "tracing"
     }
-
-    override fun doesFeatureNeedMigration(): Boolean = true
 
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
@@ -88,6 +85,6 @@ internal class TracingFeatureTest :
         val tracesUploader = uploader as TracesOkHttpUploaderV2
         assertThat(tracesUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
         assertThat(tracesUploader.intakeUrl).endsWith("/api/v2/spans")
-        assertThat(tracesUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
+        assertThat(tracesUploader.callFactory).isSameAs(coreFeature.mockInstance.okHttpClient)
     }
 }

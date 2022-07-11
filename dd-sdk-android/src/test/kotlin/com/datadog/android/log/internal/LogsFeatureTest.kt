@@ -7,7 +7,6 @@
 package com.datadog.android.log.internal
 
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileDataWriter
@@ -40,7 +39,7 @@ internal class LogsFeatureTest :
     SdkFeatureTest<LogEvent, Configuration.Feature.Logs, LogsFeature>() {
 
     override fun createTestedFeature(): LogsFeature {
-        return LogsFeature
+        return LogsFeature(coreFeature.mockInstance)
     }
 
     override fun forgeConfiguration(forge: Forge): Configuration.Feature.Logs {
@@ -50,8 +49,6 @@ internal class LogsFeatureTest :
     override fun featureDirName(): String {
         return "logs"
     }
-
-    override fun doesFeatureNeedMigration(): Boolean = true
 
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
@@ -73,7 +70,7 @@ internal class LogsFeatureTest :
         val logsUploader = uploader as LogsOkHttpUploaderV2
         assertThat(logsUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
         assertThat(logsUploader.intakeUrl).endsWith("/api/v2/logs")
-        assertThat(logsUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
+        assertThat(logsUploader.callFactory).isSameAs(coreFeature.mockInstance.okHttpClient)
     }
 
     @Test

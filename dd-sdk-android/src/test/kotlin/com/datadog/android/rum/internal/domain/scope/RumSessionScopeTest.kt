@@ -7,18 +7,19 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import android.app.ActivityManager.RunningAppProcessInfo
-import android.content.Context
 import android.os.Build
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.NoOpDataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
@@ -30,8 +31,6 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
-import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
@@ -117,6 +116,12 @@ internal class RumSessionScopeTest {
     @Mock
     lateinit var mockRumEventSourceProvider: RumEventSourceProvider
 
+    @Mock
+    lateinit var mockUserInfoProvider: UserInfoProvider
+
+    @Mock
+    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+
     @Forgery
     lateinit var fakeParentContext: RumContext
 
@@ -134,8 +139,8 @@ internal class RumSessionScopeTest {
 
     @BeforeEach
     fun `set up`() {
-        whenever(coreFeature.mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
-        whenever(coreFeature.mockNetworkInfoProvider.getLatestNetworkInfo())
+        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
             .thenReturn(fakeNetworkInfo)
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
@@ -155,6 +160,8 @@ internal class RumSessionScopeTest {
             mockTimeProvider,
             mockSessionListener,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -189,6 +196,8 @@ internal class RumSessionScopeTest {
             mockTimeProvider,
             mockSessionListener,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -290,6 +299,8 @@ internal class RumSessionScopeTest {
             mockTimeProvider,
             mockSessionListener,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -386,6 +397,8 @@ internal class RumSessionScopeTest {
             mockTimeProvider,
             mockSessionListener,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -425,6 +438,8 @@ internal class RumSessionScopeTest {
             mockTimeProvider,
             mockSessionListener,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -654,6 +669,8 @@ internal class RumSessionScopeTest {
             mockTimeProvider,
             mockSessionListener,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -683,6 +700,8 @@ internal class RumSessionScopeTest {
             mockTimeProvider,
             mockSessionListener,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -722,6 +741,8 @@ internal class RumSessionScopeTest {
             mockTimeProvider,
             mockSessionListener,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -779,6 +800,8 @@ internal class RumSessionScopeTest {
             timeProvider = mockTimeProvider,
             sessionListener = mockSessionListener,
             rumEventSourceProvider = mockRumEventSourceProvider,
+            userInfoProvider = mockUserInfoProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
             sessionInactivityNanos = TEST_INACTIVITY_NS,
             sessionMaxDurationNanos = TEST_MAX_DURATION_NS
         )
@@ -855,6 +878,8 @@ internal class RumSessionScopeTest {
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
             timeProvider = mockTimeProvider,
             rumEventSourceProvider = mockRumEventSourceProvider,
+            userInfoProvider = mockUserInfoProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
             sessionListener = mockSessionListener,
             sessionInactivityNanos = TEST_INACTIVITY_NS,
             sessionMaxDurationNanos = TEST_MAX_DURATION_NS
@@ -885,6 +910,8 @@ internal class RumSessionScopeTest {
             mockTimeProvider,
             mockSessionListener,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -914,6 +941,8 @@ internal class RumSessionScopeTest {
             mockTimeProvider,
             mockSessionListener,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -947,6 +976,8 @@ internal class RumSessionScopeTest {
             mockTimeProvider,
             mockSessionListener,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
             TEST_MAX_DURATION_NS
@@ -1242,14 +1273,12 @@ internal class RumSessionScopeTest {
         private val TEST_INACTIVITY_NS = TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS)
         private val TEST_MAX_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(TEST_MAX_DURATION_MS)
 
-        val appContext = ApplicationContextTestConfiguration(Context::class.java)
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
         val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, coreFeature)
+            return listOf(logger)
         }
     }
 }

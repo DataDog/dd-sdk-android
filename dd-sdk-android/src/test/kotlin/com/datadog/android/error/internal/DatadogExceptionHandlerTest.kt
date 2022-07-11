@@ -14,7 +14,6 @@ import androidx.work.impl.WorkManagerImpl
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
@@ -39,6 +38,7 @@ import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.core.DatadogCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -125,9 +125,6 @@ internal class DatadogExceptionHandlerTest {
 
     @StringForgery(regex = "([a-z]{2,8}\\.){1,4}[a-z]{2,8}")
     lateinit var fakeServiceName: String
-
-    @StringForgery(regex = "[0-9](\\.[0-9]{1,2}){1,3}")
-    lateinit var fakeAppVersion: String
 
     @StringForgery(regex = "[0-9](\\.[0-9]{1,2}){1,3}")
     lateinit var fakeSdkVersion: String
@@ -218,7 +215,8 @@ internal class DatadogExceptionHandlerTest {
     @Test
     fun `M wait for the executor to idle W exception caught`() {
         val mockScheduledThreadExecutor: ThreadPoolExecutor = mock()
-        CoreFeature.persistenceExecutorService = mockScheduledThreadExecutor
+        (Datadog.globalSDKCore as DatadogCore).coreFeature
+            .persistenceExecutorService = mockScheduledThreadExecutor
         Thread.setDefaultUncaughtExceptionHandler(null)
         testedHandler.register()
         val currentThread = Thread.currentThread()
@@ -239,7 +237,8 @@ internal class DatadogExceptionHandlerTest {
             whenever(it.taskCount).thenReturn(2)
             whenever(it.completedTaskCount).thenReturn(0)
         }
-        CoreFeature.persistenceExecutorService = mockScheduledThreadExecutor
+        (Datadog.globalSDKCore as DatadogCore).coreFeature
+            .persistenceExecutorService = mockScheduledThreadExecutor
         Thread.setDefaultUncaughtExceptionHandler(null)
         testedHandler.register()
         val currentThread = Thread.currentThread()

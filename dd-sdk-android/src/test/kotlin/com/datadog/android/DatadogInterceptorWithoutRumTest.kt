@@ -134,7 +134,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, coreFeature, rumMonitor)
+            return listOf(logger, rumMonitor)
         }
     }
 }

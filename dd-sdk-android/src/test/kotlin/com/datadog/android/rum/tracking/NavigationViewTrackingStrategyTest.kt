@@ -21,10 +21,14 @@ import androidx.navigation.R
 import androidx.navigation.fragment.DialogFragmentNavigator
 import androidx.navigation.fragment.FragmentNavigator
 import androidx.navigation.fragment.NavHostFragment
+import com.datadog.android.Datadog
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.NoOpSDKCore
+import com.datadog.android.v2.core.DatadogCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -42,6 +46,7 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -107,7 +112,16 @@ internal class NavigationViewTrackingStrategyTest {
         whenever(mockNavView.getTag(R.id.nav_controller_view_tag)) doReturn mockNavController
         mockNavDestination = mockNavDestination(forge, fakeDestinationName)
 
+        val mockCore = mock<DatadogCore>()
+        whenever(mockCore.rumFeature) doReturn mock<RumFeature>()
+        Datadog.globalSDKCore = mockCore
+
         testedStrategy = NavigationViewTrackingStrategy(fakeNavViewId, true, mockPredicate)
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        Datadog.globalSDKCore = NoOpSDKCore()
     }
 
     // region ActivityLifecycleTrackingStrategy

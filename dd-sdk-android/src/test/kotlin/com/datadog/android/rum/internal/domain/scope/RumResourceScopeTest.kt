@@ -6,13 +6,14 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import android.content.Context
 import android.util.Log
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -26,8 +27,6 @@ import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.utils.asTimingsPayload
-import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -89,6 +88,12 @@ internal class RumResourceScopeTest {
     @Mock
     lateinit var mockDetector: FirstPartyHostDetector
 
+    @Mock
+    lateinit var mockUserInfoProvider: UserInfoProvider
+
+    @Mock
+    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+
     @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+")
     lateinit var fakeUrl: String
     lateinit var fakeKey: String
@@ -133,8 +138,8 @@ internal class RumResourceScopeTest {
         fakeMethod = forge.anElementFrom("PUT", "POST", "GET", "DELETE")
         mockEvent = mockEvent()
 
-        whenever(coreFeature.mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
-        whenever(coreFeature.mockNetworkInfoProvider.getLatestNetworkInfo())
+        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
             .doReturn(fakeNetworkInfo)
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         doAnswer { false }.whenever(mockDetector).isFirstPartyUrl(any<String>())
@@ -148,7 +153,9 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockDetector,
-            mockRumEventSourceProvider
+            mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider
         )
     }
 
@@ -294,7 +301,9 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockDetector,
-            mockRumEventSourceProvider
+            mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider
         )
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -585,7 +594,9 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockDetector,
-            mockRumEventSourceProvider
+            mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
 
@@ -912,7 +923,9 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockDetector,
-            mockRumEventSourceProvider
+            mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider
         )
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -982,7 +995,9 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockDetector,
-            mockRumEventSourceProvider
+            mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider
         )
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -1800,15 +1815,13 @@ internal class RumResourceScopeTest {
     companion object {
         private const val RESOURCE_DURATION_MS = 50L
 
-        val appContext = ApplicationContextTestConfiguration(Context::class.java)
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
         val loggerTestConfiguration = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, rumMonitor, coreFeature, loggerTestConfiguration)
+            return listOf(rumMonitor, loggerTestConfiguration)
         }
     }
 }

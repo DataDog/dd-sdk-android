@@ -7,7 +7,6 @@
 package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.rum.internal.net.RumOkHttpUploaderV2
 import com.datadog.android.utils.forge.Configurator
@@ -36,7 +35,7 @@ internal class WebViewRumFeatureTest : SdkFeatureTest<Any,
     Configuration.Feature.RUM, WebViewRumFeature>() {
 
     override fun createTestedFeature(): WebViewRumFeature {
-        return WebViewRumFeature
+        return WebViewRumFeature(coreFeature.mockInstance)
     }
 
     override fun forgeConfiguration(forge: Forge): Configuration.Feature.RUM {
@@ -46,8 +45,6 @@ internal class WebViewRumFeatureTest : SdkFeatureTest<Any,
     override fun featureDirName(): String {
         return "web-rum"
     }
-
-    override fun doesFeatureNeedMigration(): Boolean = false
 
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
@@ -60,7 +57,7 @@ internal class WebViewRumFeatureTest : SdkFeatureTest<Any,
     }
 
     @Test
-    fun `𝕄 create a logs uploader 𝕎 createUploader()`() {
+    fun `𝕄 create a rum uploader 𝕎 createUploader()`() {
         // When
         val uploader = testedFeature.createUploader(fakeConfigurationFeature)
 
@@ -69,6 +66,6 @@ internal class WebViewRumFeatureTest : SdkFeatureTest<Any,
         val rumUploader = uploader as RumOkHttpUploaderV2
         assertThat(rumUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
         assertThat(rumUploader.intakeUrl).endsWith("/api/v2/rum")
-        assertThat(rumUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
+        assertThat(rumUploader.callFactory).isSameAs(coreFeature.mockInstance.okHttpClient)
     }
 }

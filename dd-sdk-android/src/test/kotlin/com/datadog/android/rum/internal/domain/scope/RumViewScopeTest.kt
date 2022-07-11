@@ -7,13 +7,13 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import android.app.Activity
-import android.content.Context
 import android.os.Build
 import android.util.Log
 import android.view.Display
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
@@ -21,6 +21,7 @@ import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
+import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.log.internal.utils.DEBUG_WITH_TELEMETRY_LEVEL
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
@@ -41,8 +42,6 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -126,6 +125,12 @@ internal class RumViewScopeTest {
     @Mock
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
 
+    @Mock
+    lateinit var mockUserInfoProvider: UserInfoProvider
+
+    @Mock
+    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+
     @StringForgery(regex = "([a-z]+\\.)+[A-Z][a-z]+")
     lateinit var fakeName: String
 
@@ -206,8 +211,8 @@ internal class RumViewScopeTest {
         fakeEvent = mockEvent()
         fakeUrl = fakeKey.resolveViewUrl().replace('.', '/')
 
-        whenever(coreFeature.mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
-        whenever(coreFeature.mockNetworkInfoProvider.getLatestNetworkInfo())
+        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
             .doReturn(fakeNetworkInfo)
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
@@ -228,6 +233,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate
         )
@@ -315,6 +322,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             type = fakeViewEventType
@@ -384,6 +393,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             type = expectedViewType
@@ -549,6 +560,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             type = viewType
@@ -593,6 +606,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             type = viewType
@@ -1014,6 +1029,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             rumEventSourceProvider = mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             viewUpdatePredicate = mockViewUpdatePredicate
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
@@ -1138,6 +1155,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             rumEventSourceProvider = mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             viewUpdatePredicate = mockViewUpdatePredicate
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
@@ -1213,6 +1232,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             rumEventSourceProvider = mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             viewUpdatePredicate = mockViewUpdatePredicate
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
@@ -4671,6 +4692,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate
         )
@@ -4748,6 +4771,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate
         )
@@ -4827,6 +4852,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate
         )
@@ -4906,6 +4933,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate
         )
@@ -4986,6 +5015,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate
         )
@@ -5066,6 +5097,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate
         )
@@ -5331,6 +5364,8 @@ internal class RumViewScopeTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockRumEventSourceProvider,
+            mockUserInfoProvider,
+            mockNetworkInfoProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate
         )
@@ -5381,15 +5416,13 @@ internal class RumViewScopeTest {
     data class RumRawEventData(val event: RumRawEvent, val viewKey: String)
 
     companion object {
-        val appContext = ApplicationContextTestConfiguration(Context::class.java)
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
         val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, coreFeature, rumMonitor)
+            return listOf(logger, rumMonitor)
         }
 
         @Suppress("unused")

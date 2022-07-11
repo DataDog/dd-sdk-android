@@ -8,7 +8,6 @@ package com.datadog.android.core.internal.utils
 
 import android.util.Log
 import com.datadog.android.Datadog
-import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.logger.ConditionalLogHandler
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.v2.api.SDKCore
@@ -41,13 +40,11 @@ internal class RuntimeUtilsTest {
     @BeforeEach
     fun `set up`() {
         Datadog.initialized.set(true)
-        LogsFeature.initialized.set(true)
     }
 
     @AfterEach
     fun `tear down`() {
         Datadog.initialized.set(false)
-        LogsFeature.initialized.set(false)
     }
 
     // region devLogger

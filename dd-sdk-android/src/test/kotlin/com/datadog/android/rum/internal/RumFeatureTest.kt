@@ -9,7 +9,6 @@ package com.datadog.android.rum.internal
 import android.app.Application
 import android.view.Choreographer
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
@@ -37,7 +36,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.lang.ref.WeakReference
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -62,7 +60,7 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
     lateinit var mockChoreographer: Choreographer
 
     override fun createTestedFeature(): RumFeature {
-        return RumFeature
+        return RumFeature(coreFeature.mockInstance)
     }
 
     override fun forgeConfiguration(forge: Forge): Configuration.Feature.RUM {
@@ -72,8 +70,6 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
     override fun featureDirName(): String {
         return "rum"
     }
-
-    override fun doesFeatureNeedMigration(): Boolean = true
 
     @BeforeEach
     fun `set up RUM`() {
@@ -93,6 +89,9 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
 
     @Test
     fun `𝕄 create a logs uploader 𝕎 createUploader()`() {
+        // Given
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+
         // When
         val uploader = testedFeature.createUploader(fakeConfigurationFeature)
 
@@ -101,7 +100,7 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
         val rumUploader = uploader as RumOkHttpUploaderV2
         assertThat(rumUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
         assertThat(rumUploader.intakeUrl).endsWith("/api/v2/rum")
-        assertThat(rumUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
+        assertThat(rumUploader.callFactory).isSameAs(coreFeature.mockInstance.okHttpClient)
     }
 
     @Test
@@ -281,7 +280,6 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
     fun `𝕄 unregister strategies 𝕎 stop()`() {
         // Given
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
-        CoreFeature.contextRef = WeakReference(appContext.mockInstance)
         val mockActionTrackingStrategy: UserActionTrackingStrategy = mock()
         val mockViewTrackingStrategy: ViewTrackingStrategy = mock()
         val mockLongTaskTrackingStrategy: TrackingStrategy = mock()
@@ -325,7 +323,7 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
         // Given
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
         val mockVitalExecutorService: ScheduledThreadPoolExecutor = mock()
-        RumFeature.vitalExecutorService = mockVitalExecutorService
+        testedFeature.vitalExecutorService = mockVitalExecutorService
 
         // When
         testedFeature.stop()
