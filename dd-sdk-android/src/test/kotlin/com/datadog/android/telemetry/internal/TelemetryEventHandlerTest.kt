@@ -75,9 +75,6 @@ internal class TelemetryEventHandlerTest {
     lateinit var mockSampler: Sampler
 
     @StringForgery
-    lateinit var mockServiceName: String
-
-    @StringForgery
     lateinit var mockSdkVersion: String
 
     private var fakeServerOffset: Long = 0L
@@ -97,7 +94,6 @@ internal class TelemetryEventHandlerTest {
 
         testedTelemetryHandler =
             TelemetryEventHandler(
-                mockServiceName,
                 mockSdkVersion,
                 mockSourceProvider,
                 mockTimeProvider,
@@ -122,7 +118,7 @@ internal class TelemetryEventHandlerTest {
                 hasDate(debugRawEvent.eventTime.timestamp + fakeServerOffset)
                 hasSource(TelemetryDebugEvent.Source.ANDROID)
                 hasMessage(debugRawEvent.message)
-                hasService(mockServiceName)
+                hasService(TelemetryEventHandler.TELEMETRY_SERVICE_NAME)
                 hasVersion(mockSdkVersion)
                 hasApplicationId(rumContext.applicationId)
                 hasSessionId(rumContext.sessionId)
@@ -149,7 +145,7 @@ internal class TelemetryEventHandlerTest {
                 hasDate(errorRawEvent.eventTime.timestamp + fakeServerOffset)
                 hasSource(TelemetryErrorEvent.Source.ANDROID)
                 hasMessage(errorRawEvent.message)
-                hasService(mockServiceName)
+                hasService(TelemetryEventHandler.TELEMETRY_SERVICE_NAME)
                 hasVersion(mockSdkVersion)
                 hasApplicationId(rumContext.applicationId)
                 hasSessionId(rumContext.sessionId)
@@ -208,7 +204,7 @@ internal class TelemetryEventHandlerTest {
                         hasDate(rawEvent.eventTime.timestamp + fakeServerOffset)
                         hasSource(TelemetryDebugEvent.Source.ANDROID)
                         hasMessage(rawEvent.message)
-                        hasService(mockServiceName)
+                        hasService(TelemetryEventHandler.TELEMETRY_SERVICE_NAME)
                         hasVersion(mockSdkVersion)
                         hasApplicationId(rumContext.applicationId)
                         hasSessionId(rumContext.sessionId)
@@ -221,7 +217,7 @@ internal class TelemetryEventHandlerTest {
                         hasDate(rawEvent.eventTime.timestamp + fakeServerOffset)
                         hasSource(TelemetryErrorEvent.Source.ANDROID)
                         hasMessage(rawEvent.message)
-                        hasService(mockServiceName)
+                        hasService(TelemetryEventHandler.TELEMETRY_SERVICE_NAME)
                         hasVersion(mockSdkVersion)
                         hasApplicationId(rumContext.applicationId)
                         hasSessionId(rumContext.sessionId)
@@ -275,7 +271,7 @@ internal class TelemetryEventHandlerTest {
                             hasDate(events[it.index].eventTime.timestamp + fakeServerOffset)
                             hasSource(TelemetryDebugEvent.Source.ANDROID)
                             hasMessage(events[it.index].message)
-                            hasService(mockServiceName)
+                            hasService(TelemetryEventHandler.TELEMETRY_SERVICE_NAME)
                             hasVersion(mockSdkVersion)
                             hasApplicationId(rumContext.applicationId)
                             hasSessionId(rumContext.sessionId)
@@ -288,7 +284,7 @@ internal class TelemetryEventHandlerTest {
                             hasDate(events[it.index].eventTime.timestamp + fakeServerOffset)
                             hasSource(TelemetryErrorEvent.Source.ANDROID)
                             hasMessage(events[it.index].message)
-                            hasService(mockServiceName)
+                            hasService(TelemetryEventHandler.TELEMETRY_SERVICE_NAME)
                             hasVersion(mockSdkVersion)
                             hasApplicationId(rumContext.applicationId)
                             hasSessionId(rumContext.sessionId)
@@ -358,7 +354,7 @@ internal class TelemetryEventHandlerTest {
                             hasDate(expectedEvents[it.index].eventTime.timestamp + fakeServerOffset)
                             hasSource(TelemetryDebugEvent.Source.ANDROID)
                             hasMessage(expectedEvents[it.index].message)
-                            hasService(mockServiceName)
+                            hasService(TelemetryEventHandler.TELEMETRY_SERVICE_NAME)
                             hasVersion(mockSdkVersion)
                             hasApplicationId(rumContext.applicationId)
                             hasSessionId(rumContext.sessionId)
@@ -371,7 +367,7 @@ internal class TelemetryEventHandlerTest {
                             hasDate(expectedEvents[it.index].eventTime.timestamp + fakeServerOffset)
                             hasSource(TelemetryErrorEvent.Source.ANDROID)
                             hasMessage(expectedEvents[it.index].message)
-                            hasService(mockServiceName)
+                            hasService(TelemetryEventHandler.TELEMETRY_SERVICE_NAME)
                             hasVersion(mockSdkVersion)
                             hasApplicationId(rumContext.applicationId)
                             hasSessionId(rumContext.sessionId)
