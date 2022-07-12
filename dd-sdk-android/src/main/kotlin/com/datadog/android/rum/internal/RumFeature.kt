@@ -98,7 +98,7 @@ internal class RumFeature(
     }
 
     override fun onStop() {
-        unregisterTrackingStrategies(coreFeature.contextRef.get())
+        unregisterTrackingStrategies(appContext)
 
         viewTrackingStrategy = NoOpViewTrackingStrategy()
         actionTrackingStrategy = NoOpUserActionTrackingStrategy()
