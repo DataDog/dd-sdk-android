@@ -511,6 +511,26 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
+    fun `𝕄 build config without view strategy 𝕎 useViewTrackingStrategy(null) and build()`() {
+        // When
+        val config = testedBuilder
+            .useViewTrackingStrategy(null)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(
+                viewTrackingStrategy = null
+            )
+        )
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
     fun `𝕄 build config with sampling rate 𝕎 sampleRumSessions() and build()`(
         @FloatForgery(min = 0f, max = 100f) sampling: Float
     ) {
