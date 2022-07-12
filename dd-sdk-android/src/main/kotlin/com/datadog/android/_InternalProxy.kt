@@ -19,6 +19,13 @@ import com.datadog.android.telemetry.internal.Telemetry
  * Methods, members, and functionality of this class  are subject to change without notice, as they
  * are not considered part of the public interface of the Datadog SDK.
  */
+@Suppress(
+    "UndocumentedPublicClass",
+    "UndocumentedPublicFunction",
+    "UndocumentedPublicProperty",
+    "ClassNaming",
+    "VariableNaming"
+)
 class _InternalProxy {
     class _TelemetryProxy {
         private val telemetry: Telemetry = Telemetry()

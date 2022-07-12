@@ -9,7 +9,6 @@ package com.datadog.android.telemetry.internal
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumSessionListener
@@ -48,7 +47,7 @@ internal class TelemetryEventHandler(
                     rumContext,
                     event.message,
                     event.stack,
-                    event.kind,
+                    event.kind
                 )
             }
         }
@@ -107,7 +106,7 @@ internal class TelemetryEventHandler(
         rumContext: RumContext,
         message: String,
         stack: String?,
-        kind: String?,
+        kind: String?
     ): TelemetryErrorEvent {
         return TelemetryErrorEvent(
             dd = TelemetryErrorEvent.Dd(),

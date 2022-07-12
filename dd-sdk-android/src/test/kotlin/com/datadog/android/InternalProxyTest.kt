@@ -37,7 +37,7 @@ internal class InternalProxyTest {
     @Test
     fun `M proxy addLongTask to RumMonitor W addLongTask()`(
         @LongForgery time: Long,
-        @StringForgery target: String,
+        @StringForgery target: String
     ) {
         // Given
         val proxy = _InternalProxy(GlobalRum.get() as? AdvancedRumMonitor)

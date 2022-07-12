@@ -290,6 +290,7 @@ object Datadog {
      * @see _InternalProxy
      */
     @JvmStatic
+    @Suppress("ObjectPropertyNaming")
     val _internal: _InternalProxy by lazy {
         _InternalProxy(
             GlobalRum.get() as? AdvancedRumMonitor
