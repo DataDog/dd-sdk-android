@@ -33,6 +33,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -101,6 +102,7 @@ internal class LoggerBuilderTest {
         assertThat(handler.bundleWithTraces).isTrue()
         assertThat(handler.sampler).isInstanceOf(RateBasedSampler::class.java)
         assertThat((handler.sampler as RateBasedSampler).sampleRate).isEqualTo(1.0f)
+        assertThat(handler.minLogPriority).isEqualTo(-1)
 
         val logGenerator: DatadogLogGenerator = handler.logGenerator as DatadogLogGenerator
         assertThat(logGenerator.serviceName).isEqualTo(coreFeature.fakeServiceName)
@@ -131,6 +133,18 @@ internal class LoggerBuilderTest {
 
         val handler: LogHandler = logger.handler
         assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
+    }
+
+    @Test
+    fun `builder can set min datadog logs priority`(
+        @IntForgery minLogPriority: Int
+    ) {
+        val logger: Logger = Logger.Builder()
+            .setDatadogLogsMinPriority(minLogPriority)
+            .build()
+
+        val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
+        assertThat(handler.minLogPriority).isEqualTo(minLogPriority)
     }
 
     @Test

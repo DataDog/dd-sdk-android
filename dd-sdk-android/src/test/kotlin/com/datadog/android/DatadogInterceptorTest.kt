@@ -7,6 +7,7 @@
 package com.datadog.android
 
 import com.datadog.android.core.internal.net.identifyRequest
+import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -81,6 +82,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             tracedRequestListener = mockRequestListener,
             firstPartyHostDetector = mockDetector,
             rumResourceAttributesProvider = mockRumAttributesProvider,
+            traceSampler = mockTraceSampler,
             localTracerFactory = factory
         )
     }
@@ -109,7 +111,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
-    fun `M instantiate with default callbacks W init()`() {
+    fun `M instantiate with default values W init() { no tracing hosts specified }`() {
         // When
         val interceptor = DatadogInterceptor()
 
@@ -119,10 +121,16 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             .isInstanceOf(NoOpRumResourceAttributesProvider::class.java)
         assertThat(interceptor.tracedRequestListener)
             .isInstanceOf(NoOpTracedRequestListener::class.java)
+        assertThat(interceptor.traceSampler)
+            .isInstanceOf(RateBasedSampler::class.java)
+        val traceSampler = interceptor.traceSampler as RateBasedSampler
+        assertThat(traceSampler.sampleRate).isEqualTo(
+            TracingInterceptor.DEFAULT_TRACE_SAMPLING_RATE / 100
+        )
     }
 
     @Test
-    fun `M instantiate with default callbacks W init()`(
+    fun `M instantiate with default values W init() { traced hosts specified }`(
         @StringForgery(regex = "[a-z]+\\.[a-z]{3}") hosts: List<String>
     ) {
         // When
@@ -134,6 +142,12 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             .isInstanceOf(NoOpRumResourceAttributesProvider::class.java)
         assertThat(interceptor.tracedRequestListener)
             .isInstanceOf(NoOpTracedRequestListener::class.java)
+        assertThat(interceptor.traceSampler)
+            .isInstanceOf(RateBasedSampler::class.java)
+        val traceSampler = interceptor.traceSampler as RateBasedSampler
+        assertThat(traceSampler.sampleRate).isEqualTo(
+            TracingInterceptor.DEFAULT_TRACE_SAMPLING_RATE / 100
+        )
     }
 
     @Test
@@ -147,6 +161,44 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             RumAttributes.TRACE_ID to fakeTraceId,
             RumAttributes.SPAN_ID to fakeSpanId
         ) + fakeAttributes
+        val requestId = identifyRequest(fakeRequest)
+        val mimeType = fakeMediaType?.type()
+        val kind = when {
+            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
+            else -> RumResourceKind.NATIVE
+        }
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
+                requestId,
+                fakeMethod,
+                fakeUrl,
+                expectedStartAttrs
+            )
+            verify(rumMonitor.mockInstance).stopResource(
+                requestId,
+                statusCode,
+                fakeResponseBody.toByteArray().size.toLong(),
+                kind,
+                expectedStopAttrs
+            )
+        }
+    }
+
+    @Test
+    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {successful request + not sampled}`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        whenever(mockTraceSampler.sample()).thenReturn(false)
+        stubChain(mockChain, statusCode)
+        val expectedStartAttrs = emptyMap<String, Any?>()
+        // no span -> shouldn't have trace/spans IDs
+        val expectedStopAttrs = fakeAttributes
         val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type()
         val kind = when {
@@ -194,6 +246,52 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             RumAttributes.TRACE_ID to fakeTraceId,
             RumAttributes.SPAN_ID to fakeSpanId
         ) + fakeAttributes
+        val requestId = identifyRequest(fakeRequest)
+        val mimeType = fakeMediaType?.type()
+        val kind = when {
+            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
+            else -> RumResourceKind.NATIVE
+        }
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
+                requestId,
+                fakeMethod,
+                fakeUrl,
+                emptyMap()
+            )
+            verify(rumMonitor.mockInstance).stopResource(
+                requestId,
+                statusCode,
+                null,
+                kind,
+                expectedStopAttrs
+            )
+        }
+    }
+
+    @Test
+    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {successful request empty response + !smp}`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        whenever(mockTraceSampler.sample()).thenReturn(false)
+        stubChain(mockChain) {
+            Response.Builder()
+                .request(fakeRequest)
+                .protocol(Protocol.HTTP_2)
+                .code(statusCode)
+                .message("HTTP $statusCode")
+                .body(ResponseBody.create(fakeMediaType, ""))
+                .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type().orEmpty())
+                .build()
+        }
+        // no span -> shouldn't have trace/spans IDs
+        val expectedStopAttrs = fakeAttributes
         val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type()
         val kind = when {
@@ -281,6 +379,63 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
+    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {success request throwing response + !smp}`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        whenever(mockTraceSampler.sample()).thenReturn(false)
+        stubChain(mockChain) {
+            Response.Builder()
+                .request(fakeRequest)
+                .protocol(Protocol.HTTP_2)
+                .code(statusCode)
+                .message("HTTP $statusCode")
+                .header(TracingInterceptor.HEADER_CT, fakeMediaType?.type().orEmpty())
+                .body(object : ResponseBody() {
+                    override fun contentType(): MediaType? = fakeMediaType
+
+                    override fun contentLength(): Long = fakeResponseBody.length.toLong()
+
+                    override fun source(): BufferedSource {
+                        return mock<BufferedSource>().apply {
+                            whenever(this.request(any())) doThrow IOException()
+                        }
+                    }
+                })
+                .build()
+        }
+        val expectedStartAttrs = emptyMap<String, Any?>()
+        // no span -> shouldn't have trace/spans IDs
+        val expectedStopAttrs = fakeAttributes
+        val requestId = identifyRequest(fakeRequest)
+        val mimeType = fakeMediaType?.type()
+        val kind = when {
+            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
+            else -> RumResourceKind.NATIVE
+        }
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
+                requestId,
+                fakeMethod,
+                fakeUrl,
+                expectedStartAttrs
+            )
+            verify(rumMonitor.mockInstance).stopResource(
+                requestId,
+                statusCode,
+                null,
+                kind,
+                expectedStopAttrs
+            )
+        }
+    }
+
+    @Test
     fun `𝕄 start and stop RUM Resource 𝕎 intercept() {failing request}`(
         @IntForgery(min = 400, max = 500) statusCode: Int
     ) {
@@ -291,6 +446,44 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             RumAttributes.TRACE_ID to fakeTraceId,
             RumAttributes.SPAN_ID to fakeSpanId
         ) + fakeAttributes
+        val requestId = identifyRequest(fakeRequest)
+        val mimeType = fakeMediaType?.type()
+        val kind = when {
+            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
+            else -> RumResourceKind.NATIVE
+        }
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        inOrder(rumMonitor.mockInstance) {
+            verify(rumMonitor.mockInstance).startResource(
+                requestId,
+                fakeMethod,
+                fakeUrl,
+                expectedStartAttrs
+            )
+            verify(rumMonitor.mockInstance).stopResource(
+                requestId,
+                statusCode,
+                fakeResponseBody.toByteArray().size.toLong(),
+                kind,
+                expectedStopAttrs
+            )
+        }
+    }
+
+    @Test
+    fun `𝕄 start and stop RUM Resource 𝕎 intercept() {failing request + not sampled}`(
+        @IntForgery(min = 400, max = 500) statusCode: Int
+    ) {
+        // Given
+        whenever(mockTraceSampler.sample()).thenReturn(false)
+        stubChain(mockChain, statusCode)
+        val expectedStartAttrs = emptyMap<String, Any?>()
+        // no span -> shouldn't have trace/spans IDs
+        val expectedStopAttrs = fakeAttributes
         val requestId = identifyRequest(fakeRequest)
         val mimeType = fakeMediaType?.type()
         val kind = when {

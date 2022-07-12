@@ -103,7 +103,9 @@ class ProhibitLeavingStaticMocksExtension : AfterEachCallback {
     }
 
     private fun findFieldsToWatch(visitedClass: KClass<*>): List<FieldCallSpec> {
-        val kotlinObjectFields = if (visitedClass.objectInstance != null) {
+        val kotlinObjectFields = if (visitedClass.simpleName != null &&
+            visitedClass.objectInstance != null
+        ) {
             findTargetFieldsInKotlin(
                 visitedClass,
                 visitedClass.objectInstance
@@ -112,7 +114,9 @@ class ProhibitLeavingStaticMocksExtension : AfterEachCallback {
             emptyList()
         }
 
-        val kotlinCompanionObjectFields = if (visitedClass.companionObjectInstance != null) {
+        val kotlinCompanionObjectFields = if (visitedClass.simpleName != null &&
+            visitedClass.companionObjectInstance != null
+        ) {
             findTargetFieldsInKotlin(
                 visitedClass.companionObject!!,
                 visitedClass.companionObjectInstance

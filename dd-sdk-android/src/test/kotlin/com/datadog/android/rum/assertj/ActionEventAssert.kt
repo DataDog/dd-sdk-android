@@ -288,6 +288,59 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
+    fun hasDeviceInfo(
+        name: String,
+        model: String,
+        brand: String,
+        type: ActionEvent.DeviceType
+    ): ActionEventAssert {
+        assertThat(actual.device?.name)
+            .overridingErrorMessage(
+                "Expected event data to have device.name $name but was ${actual.device?.name}"
+            )
+            .isEqualTo(name)
+        assertThat(actual.device?.model)
+            .overridingErrorMessage(
+                "Expected event data to have device.model $model but was ${actual.device?.model}"
+            )
+            .isEqualTo(model)
+        assertThat(actual.device?.brand)
+            .overridingErrorMessage(
+                "Expected event data to have device.brand $brand but was ${actual.device?.brand}"
+            )
+            .isEqualTo(brand)
+        assertThat(actual.device?.type)
+            .overridingErrorMessage(
+                "Expected event data to have device.type $type but was ${actual.device?.type}"
+            )
+            .isEqualTo(type)
+        return this
+    }
+
+    fun hasOsInfo(
+        name: String,
+        version: String,
+        versionMajor: String
+    ): ActionEventAssert {
+        assertThat(actual.os?.name)
+            .overridingErrorMessage(
+                "Expected event data to have os.name $name but was ${actual.os?.name}"
+            )
+            .isEqualTo(name)
+        assertThat(actual.os?.version)
+            .overridingErrorMessage(
+                "Expected event data to have os.version $version but was ${actual.os?.version}"
+            )
+            .isEqualTo(version)
+        assertThat(actual.os?.versionMajor)
+            .overridingErrorMessage(
+                "Expected event data to have os.version_major $versionMajor" +
+                    " but was ${actual.os?.versionMajor}"
+            )
+            .isEqualTo(versionMajor)
+        return this
+    }
+
     companion object {
         internal const val TIMESTAMP_THRESHOLD_MS = 50L
         internal fun assertThat(actual: ActionEvent): ActionEventAssert =

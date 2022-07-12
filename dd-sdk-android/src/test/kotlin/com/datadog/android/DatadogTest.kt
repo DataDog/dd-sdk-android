@@ -140,6 +140,41 @@ internal class DatadogTest {
     }
 
     @Test
+    fun `𝕄 set additional user info 𝕎 addUserExtraInfo() is called`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery name: String,
+        @StringForgery(regex = "\\w+@\\w+") email: String
+    ) {
+        // Given
+        val mockCore = mock<DatadogCore>()
+        Datadog.globalSDKCore = mockCore
+
+        // When
+        Datadog.setUserInfo(id, name, email)
+        Datadog.addUserExtraInfo(
+            mapOf(
+                "key1" to 1,
+                "key2" to "one"
+            )
+        )
+
+        // Then
+        verify(mockCore).setUserInfo(
+            UserInfo(
+                id,
+                name,
+                email
+            )
+        )
+        verify(mockCore).addUserProperties(
+            extraInfo = mapOf(
+                "key1" to 1,
+                "key2" to "one"
+            )
+        )
+    }
+
+    @Test
     fun `𝕄 return true 𝕎 initialize(context, credential, , consent) + isInitialized()`() {
         // Given
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)

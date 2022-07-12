@@ -92,9 +92,9 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
     open fun `set up`(forge: Forge) {
         whenever(mockCallFactory.newCall(any())) doReturn mockCall
 
-        whenever(mockAndroidInfoProvider.getDeviceVersion()) doReturn fakeDeviceVersion
-        whenever(mockAndroidInfoProvider.getDeviceModel()) doReturn fakeDeviceModel
-        whenever(mockAndroidInfoProvider.getDeviceBuildId()) doReturn fakeDeviceBuildId
+        whenever(mockAndroidInfoProvider.osVersion) doReturn fakeDeviceVersion
+        whenever(mockAndroidInfoProvider.deviceModel) doReturn fakeDeviceModel
+        whenever(mockAndroidInfoProvider.deviceBuildId) doReturn fakeDeviceBuildId
 
         fakeUserAgent = if (forge.aBool()) forge.anAlphaNumericalString() else ""
         System.setProperty("http.agent", fakeUserAgent)

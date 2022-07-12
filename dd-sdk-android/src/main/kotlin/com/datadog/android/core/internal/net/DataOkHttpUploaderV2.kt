@@ -38,9 +38,9 @@ internal abstract class DataOkHttpUploaderV2(
         System.getProperty(SYSTEM_UA).let {
             if (it.isNullOrBlank()) {
                 "Datadog/$sdkVersion " +
-                    "(Linux; U; Android ${androidInfoProvider.getDeviceVersion()}; " +
-                    "${androidInfoProvider.getDeviceModel()} " +
-                    "Build/${androidInfoProvider.getDeviceBuildId()})"
+                    "(Linux; U; Android ${androidInfoProvider.osVersion}; " +
+                    "${androidInfoProvider.deviceModel} " +
+                    "Build/${androidInfoProvider.deviceBuildId})"
             } else {
                 it
             }
@@ -145,6 +145,8 @@ internal abstract class DataOkHttpUploaderV2(
 
     companion object {
 
+        const val SYSTEM_UA = "http.agent"
+
         const val HTTP_ACCEPTED = 202
 
         const val HTTP_BAD_REQUEST = 400
@@ -156,8 +158,6 @@ internal abstract class DataOkHttpUploaderV2(
 
         const val HTTP_INTERNAL_ERROR = 500
         const val HTTP_UNAVAILABLE = 503
-
-        const val SYSTEM_UA = "http.agent"
 
         internal const val HEADER_API_KEY = "DD-API-KEY"
         internal const val HEADER_EVP_ORIGIN = "DD-EVP-ORIGIN"

@@ -6,11 +6,13 @@
 
 package com.datadog.tools.detekt.ext
 
+import io.gitlab.arturbosch.detekt.rules.fqNameOrNull
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.callUtil.getType
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 import org.jetbrains.kotlin.resolve.scopes.receivers.ClassQualifier
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
+import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.Receiver
 import org.jetbrains.kotlin.types.FlexibleType
 import org.jetbrains.kotlin.types.lowerIfFlexible
@@ -30,6 +32,8 @@ internal fun Receiver?.type(bindingContext: BindingContext): String? {
         }
     } else if (this is ClassQualifier) {
         return descriptor.fqNameOrNull()?.toString()
+    } else if (this is ImplicitReceiver) {
+        return type.fqNameOrNull()?.toString()
     } else {
         println("DD: Unknown receiver type ${this.javaClass}")
         return null

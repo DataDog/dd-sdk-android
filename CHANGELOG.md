@@ -1,3 +1,15 @@
+# 1.13.0 / 2022-06-27
+
+* [BUGFIX] Core: Prevent a rare race condition in the features folder creation
+* [BUGFIX] RUM: Update Global RUM context when view is stopped
+* [BUGFIX] RUM: Interactions use the window coordinates, and not the screen ones
+* [FEATURE] RUM: Add compatibility with Android TV application (see our dedicated artifact to track TV actions)
+* [FEATURE] Global: Provide an internal observability mechanism
+* [IMPROVEMENT] Global: improve the local LogCat messages from the SDK
+* [IMPROVEMENT] RUM: allow client side sampling for RUM Resource tracing
+* [IMPROVEMENT] RUM: Disable Vitals collection when app's in background
+* [IMPROVEMENT] RUM: Reduce the size of events sent
+
 # 1.12.0 / 2022-04-11
 
 * [BUGFIX] Core: Internal attributes coming from cross-platform are removed after being read

@@ -16,6 +16,7 @@ import androidx.fragment.app.Fragment
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
@@ -62,7 +63,8 @@ internal open class RumViewScope(
     private val networkInfoProvider: NetworkInfoProvider,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val viewUpdatePredicate: ViewUpdatePredicate = DefaultViewUpdatePredicate(),
-    internal val type: RumViewType = RumViewType.FOREGROUND
+    internal val type: RumViewType = RumViewType.FOREGROUND,
+    private val androidInfoProvider: AndroidInfoProvider
 ) : RumScope {
 
     internal val url = key.resolveViewUrl().replace('.', '/')
@@ -284,7 +286,8 @@ internal open class RumViewScope(
                     event,
                     serverTimeOffsetInMs,
                     rumEventSourceProvider,
-                    userInfoProvider
+                    userInfoProvider,
+                    androidInfoProvider
                 )
                 pendingActionCount++
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), writer)
@@ -301,7 +304,8 @@ internal open class RumViewScope(
                 event,
                 serverTimeOffsetInMs,
                 rumEventSourceProvider,
-                userInfoProvider
+                userInfoProvider,
+                androidInfoProvider
             )
         )
         pendingActionCount++
@@ -325,12 +329,13 @@ internal open class RumViewScope(
             serverTimeOffsetInMs,
             rumEventSourceProvider,
             userInfoProvider,
-            networkInfoProvider
+            networkInfoProvider,
+            androidInfoProvider
         )
         pendingResourceCount++
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "LongMethod")
     @WorkerThread
     private fun onAddError(
         event: RumRawEvent.AddError,
@@ -380,6 +385,17 @@ internal open class RumViewScope(
                 type = ErrorEvent.ErrorEventSessionType.USER
             ),
             source = rumEventSourceProvider.errorEventSource,
+            os = ErrorEvent.Os(
+                name = androidInfoProvider.osName,
+                version = androidInfoProvider.osVersion,
+                versionMajor = androidInfoProvider.osMajorVersion
+            ),
+            device = ErrorEvent.Device(
+                type = androidInfoProvider.deviceType.toErrorSchemaType(),
+                name = androidInfoProvider.deviceName,
+                model = androidInfoProvider.deviceModel,
+                brand = androidInfoProvider.deviceBrand
+            ),
             context = ErrorEvent.Context(additionalProperties = updatedAttributes),
             dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
         )
@@ -603,9 +619,20 @@ internal open class RumViewScope(
             application = ViewEvent.Application(context.applicationId),
             session = ViewEvent.ViewEventSession(
                 id = context.sessionId,
-                type = ViewEvent.Type.USER
+                type = ViewEvent.ViewEventSessionType.USER
             ),
             source = rumEventSourceProvider.viewEventSource,
+            os = ViewEvent.Os(
+                name = androidInfoProvider.osName,
+                version = androidInfoProvider.osVersion,
+                versionMajor = androidInfoProvider.osMajorVersion
+            ),
+            device = ViewEvent.Device(
+                type = androidInfoProvider.deviceType.toViewSchemaType(),
+                name = androidInfoProvider.deviceName,
+                model = androidInfoProvider.deviceModel,
+                brand = androidInfoProvider.deviceBrand
+            ),
             context = ViewEvent.Context(additionalProperties = attributes),
             dd = ViewEvent.Dd(
                 documentVersion = version,
@@ -693,6 +720,17 @@ internal open class RumViewScope(
                 type = ActionEvent.ActionEventSessionType.USER
             ),
             source = rumEventSourceProvider.actionEventSource,
+            os = ActionEvent.Os(
+                name = androidInfoProvider.osName,
+                version = androidInfoProvider.osVersion,
+                versionMajor = androidInfoProvider.osMajorVersion
+            ),
+            device = ActionEvent.Device(
+                type = androidInfoProvider.deviceType.toActionSchemaType(),
+                name = androidInfoProvider.deviceName,
+                model = androidInfoProvider.deviceModel,
+                brand = androidInfoProvider.deviceBrand
+            ),
             context = ActionEvent.Context(additionalProperties = GlobalRum.globalAttributes),
             dd = ActionEvent.Dd(session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1))
         )
@@ -740,9 +778,20 @@ internal open class RumViewScope(
             application = LongTaskEvent.Application(context.applicationId),
             session = LongTaskEvent.LongTaskEventSession(
                 id = context.sessionId,
-                type = LongTaskEvent.Type.USER
+                type = LongTaskEvent.LongTaskEventSessionType.USER
             ),
             source = rumEventSourceProvider.longTaskEventSource,
+            os = LongTaskEvent.Os(
+                name = androidInfoProvider.osName,
+                version = androidInfoProvider.osVersion,
+                versionMajor = androidInfoProvider.osMajorVersion
+            ),
+            device = LongTaskEvent.Device(
+                type = androidInfoProvider.deviceType.toLongTaskSchemaType(),
+                name = androidInfoProvider.deviceName,
+                model = androidInfoProvider.deviceModel,
+                brand = androidInfoProvider.deviceBrand
+            ),
             context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
             dd = LongTaskEvent.Dd(session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1))
         )
@@ -822,7 +871,8 @@ internal open class RumViewScope(
             timeProvider: TimeProvider,
             rumEventSourceProvider: RumEventSourceProvider,
             userInfoProvider: UserInfoProvider,
-            networkInfoProvider: NetworkInfoProvider
+            networkInfoProvider: NetworkInfoProvider,
+            androidInfoProvider: AndroidInfoProvider
         ): RumViewScope {
             return RumViewScope(
                 parentScope,
@@ -837,7 +887,8 @@ internal open class RumViewScope(
                 timeProvider,
                 rumEventSourceProvider,
                 userInfoProvider,
-                networkInfoProvider
+                networkInfoProvider,
+                androidInfoProvider = androidInfoProvider
             )
         }
     }

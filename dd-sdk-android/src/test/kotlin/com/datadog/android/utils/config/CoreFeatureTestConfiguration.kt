@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
@@ -56,6 +57,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var mockSystemInfoProvider: SystemInfoProvider
     lateinit var mockUserInfoProvider: MutableUserInfoProvider
     lateinit var mockTrackingConsentProvider: ConsentProvider
+    lateinit var mockAndroidInfoProvider: AndroidInfoProvider
 
     // region CoreFeatureTestConfiguration
 
@@ -98,6 +100,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         mockNetworkInfoProvider = mock()
         mockSystemInfoProvider = mock()
         mockUserInfoProvider = mock()
+        mockAndroidInfoProvider = mock()
         mockTrackingConsentProvider = mock { on { getConsent() } doReturn TrackingConsent.PENDING }
     }
 
@@ -128,6 +131,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         whenever(mockInstance.systemInfoProvider) doReturn mockSystemInfoProvider
         whenever(mockInstance.userInfoProvider) doReturn mockUserInfoProvider
         whenever(mockInstance.trackingConsentProvider) doReturn mockTrackingConsentProvider
+        whenever(mockInstance.androidInfoProvider) doReturn mockAndroidInfoProvider
     }
 
     // endregion

@@ -33,7 +33,10 @@ import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderW
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
+import com.datadog.android.core.internal.system.DefaultAndroidInfoProvider
+import com.datadog.android.core.internal.system.NoOpAndroidInfoProvider
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.KronosTimeProvider
@@ -108,6 +111,7 @@ internal class CoreFeature {
     internal var localDataEncryption: Encryption? = null
     internal lateinit var webViewTrackingHosts: List<String>
     internal lateinit var storageDir: File
+    internal lateinit var androidInfoProvider: AndroidInfoProvider
 
     // TESTS ONLY, to prevent Kronos spinning sync threads in unit-tests
     internal var disableKronosBackgroundSync = false
@@ -129,6 +133,7 @@ internal class CoreFeature {
         setupOkHttpClient(configuration)
         firstPartyHostDetector.addKnownHosts(configuration.firstPartyHosts)
         webViewTrackingHosts = configuration.webViewTrackingHosts
+        androidInfoProvider = DefaultAndroidInfoProvider(appContext)
         setupExecutors()
         storageDir = File(
             appContext.cacheDir,
@@ -228,7 +233,8 @@ internal class CoreFeature {
                 timeProvider,
                 rumFileReader = BatchFileReaderWriter.create(sdkLogger, localDataEncryption),
                 envFileReader = FileReaderWriter.create(sdkLogger, localDataEncryption),
-                rumEventSourceProvider = RumEventSourceProvider(sourceName)
+                rumEventSourceProvider = RumEventSourceProvider(sourceName),
+                androidInfoProvider = androidInfoProvider
             )
             ndkCrashHandler.prepareData()
         }
@@ -248,7 +254,12 @@ internal class CoreFeature {
             syncListener = LoggingSyncListener()
         ).apply {
             if (!disableKronosBackgroundSync) {
-                syncInBackground()
+                try {
+                    syncInBackground()
+                } catch (ise: IllegalStateException) {
+                    // should never happen
+                    sdkLogger.e("Cannot launch time sync", ise)
+                }
             }
         }
     }
@@ -432,6 +443,7 @@ internal class CoreFeature {
         timeProvider = NoOpTimeProvider()
         trackingConsentProvider = NoOpConsentProvider()
         userInfoProvider = NoOpMutableUserInfoProvider()
+        androidInfoProvider = NoOpAndroidInfoProvider()
     }
 
     // endregion

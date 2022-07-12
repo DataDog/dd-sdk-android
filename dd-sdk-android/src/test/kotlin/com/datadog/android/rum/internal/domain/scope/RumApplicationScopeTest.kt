@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.RumSessionListener
@@ -23,7 +24,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -76,6 +76,9 @@ internal class RumApplicationScopeTest {
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
 
+    @Mock
+    lateinit var mockAndroidInfoProvider: AndroidInfoProvider
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -102,12 +105,9 @@ internal class RumApplicationScopeTest {
             mockSessionListener,
             fakeSourceName,
             mockUserInfoProvider,
-            mockNetworkInfoProvider
+            mockNetworkInfoProvider,
+            mockAndroidInfoProvider
         )
-    }
-
-    @AfterEach
-    fun `tear down`() {
     }
 
     @Test
@@ -124,7 +124,7 @@ internal class RumApplicationScopeTest {
     fun `always returns the same applicationId`() {
         val context = testedScope.getRumContext()
 
-        assertThat(context.applicationId).isEqualTo(fakeApplicationId.toString())
+        assertThat(context.applicationId).isEqualTo(fakeApplicationId)
     }
 
     @Test

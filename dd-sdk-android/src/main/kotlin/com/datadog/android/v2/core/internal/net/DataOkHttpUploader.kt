@@ -72,9 +72,9 @@ internal class DataOkHttpUploader(
         System.getProperty(SYSTEM_UA).let {
             if (it.isNullOrBlank()) {
                 "Datadog/$sdkVersion " +
-                    "(Linux; U; Android ${androidInfoProvider.getDeviceVersion()}; " +
-                    "${androidInfoProvider.getDeviceModel()} " +
-                    "Build/${androidInfoProvider.getDeviceBuildId()})"
+                    "(Linux; U; Android ${androidInfoProvider.osVersion}; " +
+                    "${androidInfoProvider.deviceModel} " +
+                    "Build/${androidInfoProvider.deviceBuildId})"
             } else {
                 it
             }

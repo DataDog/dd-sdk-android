@@ -123,9 +123,9 @@ internal class DataOkHttpUploaderTest {
     fun `set up`(forge: Forge) {
         whenever(mockCallFactory.newCall(any())) doReturn mockCall
 
-        whenever(mockAndroidInfoProvider.getDeviceVersion()) doReturn fakeDeviceVersion
-        whenever(mockAndroidInfoProvider.getDeviceModel()) doReturn fakeDeviceModel
-        whenever(mockAndroidInfoProvider.getDeviceBuildId()) doReturn fakeDeviceBuildId
+        whenever(mockAndroidInfoProvider.osVersion) doReturn fakeDeviceVersion
+        whenever(mockAndroidInfoProvider.deviceModel) doReturn fakeDeviceModel
+        whenever(mockAndroidInfoProvider.deviceBuildId) doReturn fakeDeviceBuildId
 
         val fakeContentType = forge.anElementFrom(
             "multipart/form-data",
@@ -138,7 +138,7 @@ internal class DataOkHttpUploaderTest {
             fakeEndpoint.plus("?" + fakeQueryParams.map { "${it.key}=${it.value}" })
         }
         // We need to remove duplicates from the map using case-insensitive comparison,
-        // because OkHttp will lowecase headers
+        // because OkHttp will lowercase headers
         fakeHeaders = fakeHeaders.entries
             .groupBy { it.key.lowercase(Locale.US) }
             .mapValues { it.value.first().value }

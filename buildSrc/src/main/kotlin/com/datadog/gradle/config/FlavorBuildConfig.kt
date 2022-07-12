@@ -62,11 +62,6 @@ fun configureFlavorForSampleApp(flavor: ApplicationProductFlavor, rootDir: File)
         "\"${config.applicationKey}\""
     )
     flavor.buildConfigField(
-        "String",
-        "DD_INTERNAL_MONITORING_CLIENT_TOKEN",
-        "\"${config.internalMonitoringToken}\""
-    )
-    flavor.buildConfigField(
             "String",
             "DD_SITE_NAME",
             "\"${flavor.name.toUpperCase(Locale.US)}\""

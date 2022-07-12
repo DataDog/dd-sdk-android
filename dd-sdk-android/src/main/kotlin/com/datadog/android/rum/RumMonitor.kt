@@ -292,7 +292,6 @@ interface RumMonitor {
                     writer = rumFeature.persistenceStrategy.getWriter(),
                     handler = Handler(Looper.getMainLooper()),
                     telemetryEventHandler = TelemetryEventHandler(
-                        coreFeature.serviceName,
                         coreFeature.sdkVersion,
                         RumEventSourceProvider(coreFeature.sourceName),
                         coreFeature.timeProvider,
@@ -307,7 +306,8 @@ interface RumMonitor {
                     sessionListener = sessionListener,
                     sourceName = coreFeature.sourceName,
                     userInfoProvider = coreFeature.userInfoProvider,
-                    networkInfoProvider = coreFeature.networkInfoProvider
+                    networkInfoProvider = coreFeature.networkInfoProvider,
+                    androidInfoProvider = coreFeature.androidInfoProvider
                 )
             }
         }

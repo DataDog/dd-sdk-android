@@ -102,8 +102,6 @@ internal class RumMonitorBuilderTest {
 
         assertThat(monitor.telemetryEventHandler.sdkVersion)
             .isEqualTo(coreFeature.mockInstance.sdkVersion)
-        assertThat(monitor.telemetryEventHandler.serviceName)
-            .isEqualTo(coreFeature.mockInstance.serviceName)
 
         val telemetrySampler = monitor.telemetryEventHandler.eventSampler
         check(telemetrySampler is RateBasedSampler)

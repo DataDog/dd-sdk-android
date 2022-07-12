@@ -105,7 +105,8 @@ internal constructor(
             val viewTrackingStrategy: ViewTrackingStrategy?,
             val longTaskTrackingStrategy: TrackingStrategy?,
             val rumEventMapper: EventMapper<Any>,
-            val backgroundEventTracking: Boolean
+            val backgroundEventTracking: Boolean,
+            val vitalsMonitorUpdateFrequency: VitalsUpdateFrequency
         ) : Feature()
     }
 
@@ -581,6 +582,17 @@ internal constructor(
                 devLogger.e(ERROR_FEATURE_DISABLED.format(Locale.US, feature.featureName, method))
             }
         }
+
+        /**
+         * Allows to specify the frequency at which to update the mobile vitals
+         * data provided in the RUM [ViewEvent].
+         * @param frequency as [VitalsUpdateFrequency]
+         * @see [VitalsUpdateFrequency]
+         */
+        fun setVitalsUpdateFrequency(frequency: VitalsUpdateFrequency): Builder {
+            rumConfig = rumConfig.copy(vitalsMonitorUpdateFrequency = frequency)
+            return this
+        }
     }
 
     // endregion
@@ -628,7 +640,8 @@ internal constructor(
             viewTrackingStrategy = ActivityViewTrackingStrategy(false),
             longTaskTrackingStrategy = MainLooperLongTaskStrategy(DEFAULT_LONG_TASK_THRESHOLD_MS),
             rumEventMapper = NoOpEventMapper(),
-            backgroundEventTracking = false
+            backgroundEventTracking = false,
+            vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE
         )
 
         internal const val ERROR_FEATURE_DISABLED = "The %s feature has been disabled in your " +

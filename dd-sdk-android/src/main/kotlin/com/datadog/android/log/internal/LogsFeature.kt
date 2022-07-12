@@ -12,7 +12,6 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
-import com.datadog.android.core.internal.system.StaticAndroidInfoProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.domain.LogFilePersistenceStrategy
 import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
@@ -45,7 +44,7 @@ internal class LogsFeature(
             coreFeature.sourceName,
             coreFeature.sdkVersion,
             coreFeature.okHttpClient,
-            StaticAndroidInfoProvider,
+            coreFeature.androidInfoProvider,
             sdkLogger
         )
     }

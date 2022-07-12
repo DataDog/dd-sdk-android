@@ -435,21 +435,28 @@ If you want to trace your OkHttp requests, you can add the provided [Interceptor
 {{< tabs >}}
 {{% tab "Kotlin" %}}
 ```kotlin
-val okHttpClient =  OkHttpClient.Builder() 
-        .addInterceptor(DatadogInterceptor(listOf("example.com", "example.eu")))
+val okHttpClient = OkHttpClient.Builder() 
+        .addInterceptor(
+            DatadogInterceptor(listOf("example.com", "example.eu"), traceSamplingRate = 20f)
+        )
         .build()
 ```
 {{% /tab %}}
 {{% tab "Java" %}}
 ```java
+float traceSamplingRate = 20f;
 final OkHttpClient okHttpClient =  new OkHttpClient.Builder() 
-        .addInterceptor(new DatadogInterceptor(Arrays.asList("example.com", "example.eu")))
+        .addInterceptor(
+                new DatadogInterceptor(Arrays.asList("example.com", "example.eu"), traceSamplingRate)
+        )
         .build();
 ```
 {{% /tab %}}
 {{< /tabs >}}
 
 This creates a span around each request processed by the OkHttpClient (matching the provided hosts), with all the relevant information automatically filled (URL, method, status code, error), and propagates the tracing information to your backend to get a unified trace within Datadog.
+
+Network traces are sampled with an adjustable sampling rate. A sampling of 20% is applied by default.
 
 The interceptor tracks requests at the application level. You can also add a `TracingInterceptor` at the network level to get more details, for example when following redirections.
 
@@ -458,21 +465,24 @@ The interceptor tracks requests at the application level. You can also add a `Tr
 ```kotlin
 val tracedHosts = listOf("example.com", "example.eu") 
 val okHttpClient =  OkHttpClient.Builder()
-        .addInterceptor(DatadogInterceptor(tracedHosts))
-        .addNetworkInterceptor(TracingInterceptor(tracedHosts))
+        .addInterceptor(DatadogInterceptor(tracedHosts, traceSamplingRate = 20f))
+        .addNetworkInterceptor(TracingInterceptor(tracedHosts, traceSamplingRate = 20f))
         .build()
 ```
 {{% /tab %}}
 {{% tab "Java" %}}
 ```java
+float traceSamplingRate = 20f;
 final List<String> tracedHosts = Arrays.asList("example.com", "example.eu"); 
 final OkHttpClient okHttpClient =  new OkHttpClient.Builder()
-        .addInterceptor(new DatadogInterceptor(tracedHosts))
-        .addNetworkInterceptor(new TracingInterceptor(tracedHosts))
+        .addInterceptor(new DatadogInterceptor(tracedHosts, traceSamplingRate))
+        .addNetworkInterceptor(new TracingInterceptor(tracedHosts, traceSamplingRate))
         .build();
 ```
 {{% /tab %}}
 {{< /tabs >}}
+
+In this case trace sampling decision made by the upstream interceptor for a particular request will be respected by the downstream interceptor.
 
 Because the way the OkHttp Request is executed (using a Thread pool), the request span won't be automatically linked with the span that triggered the request. You can manually provide a parent span in the `OkHttp Request.Builder` as follows:
 
@@ -532,6 +542,7 @@ To provide a continuous trace inside a RxJava stream you need to follow the step
 {{< tabs >}}
 {{% tab "Kotlin" %}}
 ```kotlin
+var spanScope: Scope? = null
 Single.fromSupplier{} 
         .subscribeOn(Schedulers.io())
         .map {  
@@ -543,17 +554,20 @@ Single.fromSupplier{}
             val span = GlobalTracer.get()
                     .buildSpan("<YOUR_OP_NAME>")
                     .start()
-            GlobalTracer.get().scopeManager().activate(span)
+            spanScope = GlobalTracer.get().scopeManager().activate(span)
         }
         .doFinally {
             GlobalTracer.get().scopeManager().activeSpan()?.let {
                 it.finish()
             }
+            spanScope?.close()
         }
 ```
 {{% /tab %}}
 {{% tab "Java" %}}
 ```java
+ThreadLocal<Scope> scopeStorage = new ThreadLocal<>();
+...
 Single.fromSupplier({})
         .subscribeOn(Schedulers.io())
         .map(data -> {
@@ -564,12 +578,18 @@ Single.fromSupplier({})
          })
         .doOnSubscribe(disposable -> {
             final Span span = GlobalTracer.get().buildSpan("<YOUR_OP_NAME>").start();
-            GlobalTracer.get().scopeManager().activate(span);
+            Scope spanScope = GlobalTracer.get().scopeManager().activate(span);
+            scopeStorage.set(spanScope);
         })
         .doFinally(() -> {
             final Span activeSpan = GlobalTracer.get().scopeManager().activeSpan();
             if (activeSpan != null) {
                 activeSpan.finish();
+            }
+            Scope spanScope = scopeStorage.get();
+            if (spanScope != null) {
+                spanScope.close();
+                scopeStorage.remove();
             }
         })
     };
@@ -608,6 +628,7 @@ new Retrofit.Builder()
 {{< tabs >}}
 {{% tab "Kotlin" %}}
 ```kotlin
+var spanScope: Scope? = null
 remoteDataSource.getData(query)
     .subscribeOn(Schedulers.io())
     .map { // ... } 
@@ -616,17 +637,20 @@ remoteDataSource.getData(query)
     }
     .doOnSubscribe {
         val span = GlobalTracer.get().buildSpan("<YOUR_OP_NAME>").start()
-        GlobalTracer.get().scopeManager().activate(span)
+        spanScope = GlobalTracer.get().scopeManager().activate(span)
     }
     .doFinally {
         GlobalTracer.get().scopeManager().activeSpan()?.let {
             it.finish()
         }
+        spanScope?.close()
     }
 ```
 {{% /tab %}}
 {{% tab "Java" %}}
 ```java
+ThreadLocal<Scope> scopeStorage = new ThreadLocal<>();
+...
 remoteDataSource.getData(query)
     .subscribeOn(Schedulers.io())
     .map(data -> { // ... })
@@ -635,12 +659,18 @@ remoteDataSource.getData(query)
     })
     .doOnSubscribe(disposable -> {
         final Span span = GlobalTracer.get().buildSpan("<YOUR_OP_NAME>").start();
-        GlobalTracer.get().scopeManager().activate(span);
+        Scope spanScope = GlobalTracer.get().scopeManager().activate(span);
+        scopeStorage.set(spanScope);
     })
     .doFinally(() -> { 
         final Span activeSpan = GlobalTracer.get().scopeManager().activeSpan();
         if (activeSpan != null) {
             activeSpan.finish();
+        }
+        Scope spanScope = scopeStorage.get();
+        if (spanScope != null) {
+            spanScope.close();
+            scopeStorage.remove();
         }
     });
  ```

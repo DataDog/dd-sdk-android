@@ -9,7 +9,6 @@ package com.datadog.android.rum.assertj
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.internal.domain.scope.isConnected
-import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
@@ -187,37 +186,6 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
-    fun hasConnectivityStatus(expected: ErrorEvent.Status?): LongTaskEventAssert {
-        assertThat(actual.connectivity?.status)
-            .overridingErrorMessage(
-                "Expected event data to have connectivity status: $expected" +
-                    " but was: ${actual.connectivity?.status} "
-            )
-            .isEqualTo(expected)
-        return this
-    }
-
-    fun hasConnectivityInterface(expected: List<ErrorEvent.Interface>?): LongTaskEventAssert {
-        val interfaces = actual.connectivity?.interfaces
-        assertThat(interfaces)
-            .overridingErrorMessage(
-                "Expected event data to have connectivity interfaces: $expected" +
-                    " but was: $interfaces "
-            )
-            .isEqualTo(expected)
-        return this
-    }
-
-    fun hasConnectivityCellular(expected: ErrorEvent.Cellular?): LongTaskEventAssert {
-        assertThat(actual.connectivity?.cellular)
-            .overridingErrorMessage(
-                "Expected event data to have connectivity cellular: $expected" +
-                    " but was: ${actual.connectivity?.cellular} "
-            )
-            .isEqualTo(expected)
-        return this
-    }
-
     fun hasLiteSessionPlan(): LongTaskEventAssert {
         assertThat(actual.dd.session?.plan)
             .overridingErrorMessage(
@@ -237,6 +205,59 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
                 actual.source ?: "null"
             )
             .isEqualTo(source)
+        return this
+    }
+
+    fun hasDeviceInfo(
+        name: String,
+        model: String,
+        brand: String,
+        type: LongTaskEvent.DeviceType
+    ): LongTaskEventAssert {
+        assertThat(actual.device?.name)
+            .overridingErrorMessage(
+                "Expected event data to have device.name $name but was ${actual.device?.name}"
+            )
+            .isEqualTo(name)
+        assertThat(actual.device?.model)
+            .overridingErrorMessage(
+                "Expected event data to have device.model $model but was ${actual.device?.model}"
+            )
+            .isEqualTo(model)
+        assertThat(actual.device?.brand)
+            .overridingErrorMessage(
+                "Expected event data to have device.brand $brand but was ${actual.device?.brand}"
+            )
+            .isEqualTo(brand)
+        assertThat(actual.device?.type)
+            .overridingErrorMessage(
+                "Expected event data to have device.type $type but was ${actual.device?.type}"
+            )
+            .isEqualTo(type)
+        return this
+    }
+
+    fun hasOsInfo(
+        name: String,
+        version: String,
+        versionMajor: String
+    ): LongTaskEventAssert {
+        assertThat(actual.os?.name)
+            .overridingErrorMessage(
+                "Expected event data to have os.name $name but was ${actual.os?.name}"
+            )
+            .isEqualTo(name)
+        assertThat(actual.os?.version)
+            .overridingErrorMessage(
+                "Expected event data to have os.version $version but was ${actual.os?.version}"
+            )
+            .isEqualTo(version)
+        assertThat(actual.os?.versionMajor)
+            .overridingErrorMessage(
+                "Expected event data to have os.version_major $versionMajor" +
+                    " but was ${actual.os?.versionMajor}"
+            )
+            .isEqualTo(versionMajor)
         return this
     }
 

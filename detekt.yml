@@ -587,14 +587,21 @@ datadog:
     treatUnknownConstructorAsThrowing: true
     knownThrowingCalls:
       # region Android
+      - "android.app.Activity.findNavController(kotlin.Int):java.lang.IllegalStateException"
       - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, kotlin.Int):android.content.pm.PackageManager.NameNotFoundException"
       - "android.content.res.Resources.getResourceEntryName(kotlin.Int):android.content.res.Resources.NotFoundException"
+      - "android.database.sqlite.SQLiteDatabase.beginTransaction():java.lang.IllegalStateException"
+      - "android.database.sqlite.SQLiteDatabase.beginTransactionNonExclusive():java.lang.IllegalStateException"
+      - "android.database.sqlite.SQLiteDatabase.endTransaction():java.lang.IllegalStateException"
+      - "android.database.sqlite.SQLiteDatabase.setTransactionSuccessful():java.lang.IllegalStateException"
       - "android.net.ConnectivityManager.registerDefaultNetworkCallback(android.net.ConnectivityManager.NetworkCallback):java.lang.IllegalArgumentException,java.lang.SecurityException"
       - "android.net.ConnectivityManager.unregisterNetworkCallback(android.net.ConnectivityManager.NetworkCallback):java.lang.SecurityException"
       - "android.view.Choreographer.getInstance():java.lang.IllegalStateException"
       - "android.view.Choreographer.postFrameCallback():java.lang.IllegalArgumentException"
       - "android.view.MotionEvent.obtain(android.view.MotionEvent):java.lang.IllegalArgumentException"
       - "android.view.View.getLocationInWindow(kotlin.IntArray):java.lang.IllegalArgumentException"
+      - "android.widget.FrameLayout.addView(android.view.View, android.view.ViewGroup.LayoutParams):java.lang.IllegalArgumentException"
+      - "android.widget.LinearLayout.addView(android.view.View):java.lang.IllegalArgumentException"
       - "androidx.work.WorkManager.enqueueUniqueWork(kotlin.String, androidx.work.ExistingWorkPolicy, androidx.work.OneTimeWorkRequest):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       - "android.content.res.Resources.getResourceName(kotlin.Int):android.content.res.Resources.NotFoundException"
       - "android.content.res.Resources.openRawResource(kotlin.Int):android.content.res.Resources.NotFoundException"
@@ -618,9 +625,13 @@ datadog:
       - "java.io.FileInputStream.use(kotlin.Function1):java.io.IOException"
       - "java.io.FileOutputStream.use(kotlin.Function1):java.io.IOException"
       - "java.io.FileOutputStream.write(kotlin.ByteArray):java.io.IOException"
+      - "java.io.InputStream.available():java.io.IOException"
+      - "java.io.InputStream.close():java.io.IOException"
       - "java.io.InputStream.read():java.io.IOException"
       - "java.io.InputStream.read(kotlin.ByteArray):java.io.IOException"
       - "java.io.InputStream.read(kotlin.ByteArray, kotlin.Int, kotlin.Int):java.io.IOException"
+      - "java.io.InputStream.reset():java.io.IOException"
+      - "java.io.InputStream.skip(kotlin.Long):java.io.IOException"
       - "java.nio.ByteBuffer.allocate(kotlin.Int):java.lang.IllegalArgumentException"
       - "java.nio.ByteBuffer.array():java.nio.ReadOnlyBufferException,java.lang.UnsupportedOperationException"
       - "java.nio.ByteBuffer.put(kotlin.ByteArray):java.nio.BufferOverflowException,java.nio.ReadOnlyBufferException"
@@ -669,10 +680,12 @@ datadog:
       - "kotlin.String.toLong():java.lang.NumberFormatException"
       - "kotlin.ByteArray.copyOf(kotlin.Int):java.lang.NegativeArraySizeException"
       - "kotlin.ByteArray.copyOfRange(kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException,java.lang.IllegalArgumentException"
+      - "kotlin.ByteArray.get(kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "kotlin.collections.MutableSet.first():java.util.NoSuchElementException"
       # endregion
       # region Kotlin Collections
       - "kotlin.collections.List.last():java.util.NoSuchElementException"
+      - "kotlin.collections.List.first():java.util.NoSuchElementException"
       - "kotlin.collections.List.get(kotlin.Int):java.util.NoSuchElementException"
       - "kotlin.collections.MutableIterator.next():java.util.NoSuchElementException"
       - "kotlin.collections.MutableIterator.remove():java.lang.UnsupportedOperationException,java.lang.IllegalStateException"
@@ -697,11 +710,18 @@ datadog:
       - "okio.Okio.buffer(okio.Sink):java.lang.NullPointerException"
       - "okio.Buffer.readString(java.nio.charset.Charset):java.lang.IllegalArgumentException,java.io.IOException"
       # endregion
+      # region org.json
+      - "org.json.JSONArray.get(kotlin.Int):org.json.JSONException"
+      - "org.json.JSONObject.get(kotlin.String):org.json.JSONException"
+      # endregion
       # region OpenTracing
       - "io.opentracing.Scope.close():java.io.IOException"
       # endregion
       # region Gson
       - "com.google.gson.JsonParser.parseString(kotlin.String):com.google.gson.JsonParseException"
+      # endregion
+      # region Kronos
+      - "com.lyft.kronos.KronosClock.syncInBackground():java.lang.IllegalStateException"
       # endregion
     knownSafeCalls:
       # region Android APIs
@@ -724,6 +744,7 @@ datadog:
       - "android.content.IntentFilter.addAction(kotlin.String)"
       - "android.content.IntentFilter.constructor()"
       - "android.content.IntentFilter.constructor(kotlin.String)"
+      - "android.content.pm.PackageManager.hasSystemFeature(kotlin.String)"
       - "android.content.res.AssetManager.open(kotlin.String, kotlin.Int)"
       - "android.database.DatabaseErrorHandler.onCorruption(android.database.sqlite.SQLiteDatabase)"
       - "android.database.DefaultDatabaseErrorHandler.constructor()"
@@ -776,14 +797,18 @@ datadog:
       # endregion
       # region Android View APIs
       - "android.widget.FrameLayout.LayoutParams.constructor(kotlin.Int, kotlin.Int)"
-      - "android.widget.FrameLayout.addView(android.view.View, android.view.ViewGroup.LayoutParams)"
       - "android.widget.FrameLayout.removeView(android.view.View)"
       - "android.widget.LinearLayout.constructor(android.content.Context)"
       - "android.widget.LinearLayout.post(java.lang.Runnable)"
+      - "android.widget.LinearLayout.removeAllViews()"
       - "android.widget.TextView.constructor(android.content.Context)"
+      - "android.widget.TextView.setBackgroundColor(kotlin.Int)"
+      - "android.widget.TextView.setPadding(kotlin.Int)"
+      - "android.widget.TextView.setTextColor(kotlin.Int)"
       # endregion
       # region Androidx APIs
       - "androidx.compose.foundation.interaction.DragInteraction.Start.constructor()"
+      - "androidx.compose.runtime.DisposableEffectScope.onDispose(kotlin.Function0)"
       - "androidx.core.view.GestureDetectorCompat.constructor(android.content.Context, android.view.GestureDetector.OnGestureListener)"
       - "androidx.core.view.GestureDetectorCompat.onTouchEvent(android.view.MotionEvent)"
       - "androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentActivityCreated(androidx.fragment.app.FragmentManager, androidx.fragment.app.Fragment, android.os.Bundle?)"
@@ -798,6 +823,7 @@ datadog:
       - "androidx.lifecycle.Lifecycle.removeObserver(androidx.lifecycle.LifecycleObserver)"
       - "androidx.navigation.NavController.addOnDestinationChangedListener(androidx.navigation.NavController.OnDestinationChangedListener)"
       - "androidx.navigation.NavController.removeOnDestinationChangedListener(androidx.navigation.NavController.OnDestinationChangedListener)"
+      - "androidx.recyclerview.widget.RecyclerView.findContainingViewHolder(android.view.View)"
       - "androidx.recyclerview.widget.RecyclerView.getChildAdapterPosition(android.view.View)"
       - "androidx.work.Constraints.Builder()"
       - "androidx.work.Constraints.Builder.build()"
@@ -868,6 +894,7 @@ datadog:
       - "java.util.concurrent.ExecutorService.shutdownNow()"
       - "java.util.concurrent.Executors.newSingleThreadExecutor()"
       - "java.util.concurrent.LinkedBlockingDeque.constructor()"
+      - "java.util.concurrent.ScheduledExecutorService.shutdownNow()"
       - "java.util.concurrent.ScheduledThreadPoolExecutor.remove(java.lang.Runnable)"
       - "java.util.concurrent.ScheduledThreadPoolExecutor.shutdown()"
       - "java.util.concurrent.ScheduledThreadPoolExecutor.shutdownNow()"
@@ -902,6 +929,8 @@ datadog:
       # region Java I/O
       - "java.io.File.constructor(java.io.File, kotlin.String)"
       - "java.io.File.constructor(kotlin.String)"
+      - "java.io.InputStream.mark(kotlin.Int)"
+      - "java.io.InputStream.markSupported()"
       - "java.io.StringWriter.constructor()"
       # endregion
       # region Java misc
@@ -954,9 +983,11 @@ datadog:
       - "kotlin.ByteArray.joinToString(kotlin.CharSequence, kotlin.Function1?, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence)"
       - "kotlin.ByteArray.isEmpty()"
       - "kotlin.ByteArray.isNotEmpty()"
+      - "kotlin.collections.Collection.isNotEmpty()"
       - "kotlin.collections.Collection.sumOf(kotlin.Function1)"
       - "kotlin.collections.Collection.withIndex()"
       - "kotlin.collections.Iterable.any(kotlin.Function1)"
+      - "kotlin.collections.Iterable.forEach(kotlin.Function1)"
       - "kotlin.collections.List.any(kotlin.Function1)"
       - "kotlin.collections.List.asSequence()"
       - "kotlin.collections.List.associateWith(kotlin.Function1)"
@@ -1031,6 +1062,7 @@ datadog:
       - "kotlin.collections.MutableSet.add(com.datadog.android.v2.core.internal.storage.ConsentAwareStorage.Batch)"
       - "kotlin.collections.MutableSet.add(kotlin.String)"
       - "kotlin.collections.MutableSet.add(java.io.File)"
+      - "kotlin.collections.MutableSet.addAll(kotlin.collections.Collection)"
       - "kotlin.collections.MutableSet.clear()"
       - "kotlin.collections.MutableSet.contains(com.datadog.android.telemetry.internal.TelemetryEventHandler.EventIdentity)"
       - "kotlin.collections.MutableSet.filter(kotlin.Function1)"
@@ -1049,6 +1081,8 @@ datadog:
       - "kotlin.Boolean.hashCode()"
       - "kotlin.Byte.toInt()"
       - "kotlin.ByteArray.constructor(kotlin.Int)"
+      - "kotlin.Char.isLowerCase()"
+      - "kotlin.Char.titlecase(java.util.Locale)"
       - "kotlin.Double.isNaN()"
       - "kotlin.Double.pow(kotlin.Int)"
       - "kotlin.Double.rangeTo(kotlin.Double)"
@@ -1067,6 +1101,7 @@ datadog:
       # endregion
       # region Kotlin String
       - "kotlin.String.contains(kotlin.Char, kotlin.Boolean)"
+      - "kotlin.String.contains(kotlin.CharSequence, kotlin.Boolean)"
       - "kotlin.String.count(kotlin.Function1)"
       - "kotlin.String.endsWith(kotlin.Char, kotlin.Boolean)"
       - "kotlin.String.endsWith(kotlin.String, kotlin.Boolean)"
@@ -1085,6 +1120,7 @@ datadog:
       - "kotlin.String.plus(kotlin.Any?)"
       - "kotlin.String.replace(kotlin.Char, kotlin.Char, kotlin.Boolean)"
       - "kotlin.String.replace(kotlin.text.Regex, kotlin.String)"
+      - "kotlin.String.replaceFirstChar(kotlin.Function1)"
       - "kotlin.String.split(kotlin.Array, kotlin.Boolean, kotlin.Int)"
       - "kotlin.String.split(kotlin.CharArray, kotlin.Boolean, kotlin.Int)"
       - "kotlin.String.startsWith(kotlin.String, kotlin.Boolean)"
@@ -1093,6 +1129,7 @@ datadog:
       - "kotlin.String.substringBefore(kotlin.Char, kotlin.String)"
       - "kotlin.String.toByteArray(java.nio.charset.Charset) "
       - "kotlin.String.toByteArray(java.nio.charset.Charset)"
+      - "kotlin.String.toIntOrNull()"
       - "kotlin.String.toDoubleOrNull()"
       - "kotlin.String.toLongOrNull()"
       - "kotlin.String.toMethod()"
@@ -1104,6 +1141,11 @@ datadog:
       - "kotlin.Throwable.stackTraceToString()"
       - "kotlin.text.Regex.constructor(kotlin.String)"
       - "kotlin.text.Regex.matchEntire(kotlin.CharSequence)"
+      # region Kotlin Coroutines
+      - "kotlinx.coroutines.CoroutineScope.async(kotlin.coroutines.CoroutineContext, kotlinx.coroutines.CoroutineStart, kotlin.coroutines.SuspendFunction1)"
+      - "kotlinx.coroutines.CoroutineScope.launch(kotlin.coroutines.CoroutineContext, kotlinx.coroutines.CoroutineStart, kotlin.coroutines.SuspendFunction1)"
+      - "kotlinx.coroutines.flow.FlowCollector.emit(kotlin.Any?)"
+      # endregion
       # region Gson
       - "com.google.gson.JsonArray.add(kotlin.String)"
       - "com.google.gson.JsonParseException.constructor(kotlin.Throwable)"
@@ -1155,6 +1197,7 @@ datadog:
       - "okhttp3.Request.Builder.addHeader(kotlin.String, kotlin.String)"
       - "okhttp3.Request.Builder.header(kotlin.String, kotlin.String)"
       - "okhttp3.Request.Builder.removeHeader(kotlin.String)"
+      - "okhttp3.Request.Builder.tag(java.lang.Class, io.opentracing.Span)"
       - "okhttp3.Request.body()"
       - "okhttp3.Request.header(kotlin.String)"
       - "okhttp3.Request.headers()"
@@ -1169,6 +1212,10 @@ datadog:
       - "okhttp3.Response.header(kotlin.String)"
       - "okhttp3.ResponseBody.contentLength()"
       - "okio.Buffer.constructor()"
+      # endregion
+      # region org.json
+      - "org.json.JSONArray.length()"
+      - "org.json.JSONObject.keys()"
       # endregion
       # region OpenTracing
       - "io.opentracing.Span.context()"

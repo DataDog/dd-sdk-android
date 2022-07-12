@@ -17,7 +17,7 @@ import okhttp3.Response
 internal class ResourceTrackingCustomSpanAttributesActivity : ResourceTrackingActivity() {
     override val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
-            .addInterceptor(RumInterceptor())
+            .addInterceptor(RumInterceptor(traceSamplingRate = 100f))
             .addNetworkInterceptor(
                 TracingInterceptor(
                     listOf(HOST),
@@ -30,7 +30,8 @@ internal class ResourceTrackingCustomSpanAttributesActivity : ResourceTrackingAc
                         ) {
                             span.setOperationName(TEST_METHOD_NAME)
                         }
-                    }
+                    },
+                    traceSamplingRate = 100f
                 )
             )
             .build()

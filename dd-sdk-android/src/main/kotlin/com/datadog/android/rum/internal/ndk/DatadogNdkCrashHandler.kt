@@ -14,6 +14,7 @@ import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.readTextSafe
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.core.model.NetworkInfo
@@ -25,6 +26,7 @@ import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
+import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import java.io.File
@@ -46,7 +48,8 @@ internal class DatadogNdkCrashHandler(
     internal val timeProvider: TimeProvider,
     private val rumFileReader: BatchFileReader,
     private val envFileReader: FileReader,
-    private val rumEventSourceProvider: RumEventSourceProvider
+    private val rumEventSourceProvider: RumEventSourceProvider,
+    private val androidInfoProvider: AndroidInfoProvider
 ) : NdkCrashHandler {
 
     internal val ndkCrashDataDirectory: File = getNdkGrantedDir(storageDir)
@@ -320,6 +323,17 @@ internal class DatadogNdkCrashHandler(
                 additionalUserProperties
             ),
             connectivity = connectivity,
+            os = ErrorEvent.Os(
+                name = androidInfoProvider.osName,
+                version = androidInfoProvider.osVersion,
+                versionMajor = androidInfoProvider.osMajorVersion
+            ),
+            device = ErrorEvent.Device(
+                type = androidInfoProvider.deviceType.toErrorSchemaType(),
+                name = androidInfoProvider.deviceName,
+                model = androidInfoProvider.deviceModel,
+                brand = androidInfoProvider.deviceBrand
+            ),
             dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1)),
             context = ErrorEvent.Context(additionalProperties = additionalProperties),
             error = ErrorEvent.Error(

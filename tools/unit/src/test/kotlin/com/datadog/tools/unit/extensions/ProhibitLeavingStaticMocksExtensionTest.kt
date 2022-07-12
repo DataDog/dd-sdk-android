@@ -148,6 +148,12 @@ class ProhibitLeavingStaticMocksExtensionTest {
         assertDoesNotThrow { testedExtension.scanForStaticMocksLeft(roots, PACKAGE_PREFIXES) }
     }
 
+    @Test
+    fun `M not throw error W object with synthetic field`() {
+        val roots = listOf(ObjectWithLambdaMember::class)
+        assertDoesNotThrow { testedExtension.scanForStaticMocksLeft(roots, PACKAGE_PREFIXES) }
+    }
+
     // region fake classes for test
 
     @Suppress("unused")
@@ -238,6 +244,11 @@ class ProhibitLeavingStaticMocksExtensionTest {
     class MockInNonObjectClass(
         @Suppress("unused") val mock: Any = mock()
     )
+
+    object ObjectWithLambdaMember {
+        @Suppress("unused")
+        val lambda = { println("foobar") }
+    }
 
     companion object {
         val PACKAGE_PREFIXES = listOf("com.datadog")

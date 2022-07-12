@@ -6,10 +6,10 @@
 
 package com.datadog.gradle.config
 
+import com.android.build.gradle.LibraryExtension
 import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
-import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.plugins.signing.SigningExtension
 
@@ -18,23 +18,21 @@ object MavenConfig {
     const val PUBLICATION = "release"
 }
 
-@Suppress("UnstableApiUsage")
 fun Project.publishingConfig(projectDescription: String) {
     val projectName = name
 
-    @Suppress("UnstableApiUsage")
-    tasks.register("generateJavadocJar", Jar::class.java) {
-        group = "publishing"
-        dependsOn("dokkaJavadoc")
-        archiveClassifier.convention("javadoc")
-        from("${buildDir.canonicalPath}/reports/javadoc")
+    val androidExtension =
+        extensions.findByType(LibraryExtension::class.java)
+    if (androidExtension == null) {
+        logger.error("Missing android library extension for $projectName")
+        return
     }
 
-    @Suppress("UnstableApiUsage")
-    tasks.register("generateSourcesJar", Jar::class.java) {
-        group = "publishing"
-        archiveClassifier.convention("sources")
-        from("${projectDir.canonicalPath}/src/main")
+    androidExtension.publishing {
+        singleVariant(MavenConfig.PUBLICATION) {
+            withSourcesJar()
+            withJavadocJar()
+        }
     }
 
     afterEvaluate {
@@ -49,8 +47,6 @@ fun Project.publishingConfig(projectDescription: String) {
 
             publications.create(MavenConfig.PUBLICATION, MavenPublication::class.java) {
                 from(components.getByName("release"))
-                artifact(tasks.findByName("generateSourcesJar"))
-                artifact(tasks.findByName("generateJavadocJar"))
 
                 groupId = MavenConfig.GROUP_ID
                 artifactId = projectName
