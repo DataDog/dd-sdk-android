@@ -44,4 +44,6 @@ internal interface AdvancedRumMonitor : RumMonitor {
     fun sendDebugTelemetryEvent(message: String)
 
     fun sendErrorTelemetryEvent(message: String, throwable: Throwable?)
+
+    fun sendErrorTelemetryEvent(message: String, stack: String?, kind: String?)
 }

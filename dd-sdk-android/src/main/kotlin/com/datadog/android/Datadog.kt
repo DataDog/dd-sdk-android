@@ -25,6 +25,7 @@ import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
@@ -281,6 +282,18 @@ object Datadog {
         } else {
             RumFeature.disableDebugging()
         }
+    }
+
+    /**
+     * For Datadog internal use only.
+     *
+     * @see _InternalProxy
+     */
+    @JvmStatic
+    val _internal: _InternalProxy by lazy {
+        _InternalProxy(
+            GlobalRum.get() as? AdvancedRumMonitor
+        )
     }
 
     // endregion

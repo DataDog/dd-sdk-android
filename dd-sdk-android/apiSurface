@@ -7,6 +7,7 @@ object com.datadog.android.Datadog
   fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
   fun addUserExtraInfo(Map<String, Any?> = emptyMap())
   fun enableRumDebugging(Boolean)
+  val _internal: _InternalProxy
 object com.datadog.android.DatadogEndpoint
   const val LOGS_US1: String
   const val LOGS_US3: String
@@ -59,6 +60,14 @@ enum com.datadog.android.DatadogSite
   fun logsEndpoint(): String
   fun tracesEndpoint(): String
   fun rumEndpoint(): String
+class com.datadog.android._InternalProxy
+  class _TelemetryProxy
+    fun debug(String)
+    fun error(String, String?, String?)
+  class _RumProxy
+    fun addLongTask(Long, String)
+  val _telemetry: _TelemetryProxy
+  val _rumProxy: _RumProxy?
 enum com.datadog.android.core.configuration.BatchSize
   constructor(Long)
   - SMALL

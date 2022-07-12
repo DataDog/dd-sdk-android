@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -325,11 +326,21 @@ internal class DatadogRumMonitor(
     }
 
     override fun sendDebugTelemetryEvent(message: String) {
-        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.DEBUG, message, null))
+        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.DEBUG, message, null, null))
     }
 
     override fun sendErrorTelemetryEvent(message: String, throwable: Throwable?) {
-        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, throwable))
+        var stack: String? = null
+        var kind: String? = null
+        throwable?.let {
+            stack = it.loggableStackTrace()
+            kind = it.javaClass.canonicalName ?: it.javaClass.simpleName
+        }
+        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, stack, kind))
+    }
+
+    override fun sendErrorTelemetryEvent(message: String, stack: String?, kind: String?) {
+        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, stack, kind))
     }
 
     // endregion

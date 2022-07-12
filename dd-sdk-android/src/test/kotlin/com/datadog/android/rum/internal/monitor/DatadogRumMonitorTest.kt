@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -1399,7 +1400,8 @@ internal class DatadogRumMonitorTest {
             )
             assertThat(lastValue.message).isEqualTo(message)
             assertThat(lastValue.type).isEqualTo(TelemetryType.DEBUG)
-            assertThat(lastValue.throwable).isNull()
+            assertThat(lastValue.stack).isNull()
+            assertThat(lastValue.kind).isNull()
         }
     }
 
@@ -1420,7 +1422,8 @@ internal class DatadogRumMonitorTest {
             )
             assertThat(lastValue.message).isEqualTo(message)
             assertThat(lastValue.type).isEqualTo(TelemetryType.ERROR)
-            assertThat(lastValue.throwable).isEqualTo(throwable)
+            assertThat(lastValue.stack).isEqualTo(throwable?.loggableStackTrace())
+            assertThat(lastValue.kind).isEqualTo(throwable?.javaClass?.canonicalName)
         }
     }
 
