@@ -308,6 +308,7 @@ enum com.datadog.android.rum.RumActionType
   - SCROLL
   - SWIPE
   - CLICK
+  - BACK
   - CUSTOM
 object com.datadog.android.rum.RumAttributes
   const val APPLICATION_VERSION: String

@@ -114,6 +114,7 @@ internal fun RumActionType.toSchemaType(): ActionEvent.ActionType {
         RumActionType.SCROLL -> ActionEvent.ActionType.SCROLL
         RumActionType.SWIPE -> ActionEvent.ActionType.SWIPE
         RumActionType.CLICK -> ActionEvent.ActionType.CLICK
+        RumActionType.BACK -> ActionEvent.ActionType.BACK
         RumActionType.CUSTOM -> ActionEvent.ActionType.CUSTOM
     }
 }
