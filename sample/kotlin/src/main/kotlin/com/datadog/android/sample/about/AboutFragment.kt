@@ -29,7 +29,6 @@ class AboutFragment :
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-
         val rootView = inflater.inflate(R.layout.fragment_about, container, false)
 
         aboutText = rootView.findViewById(R.id.about_text)

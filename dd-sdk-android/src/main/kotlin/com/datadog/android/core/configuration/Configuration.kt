@@ -112,7 +112,7 @@ internal constructor(
 
         internal data class SessionReplay(
             override val endpointUrl: String,
-            override val plugins: List<DatadogPlugin>
+            override val plugins: List<DatadogPlugin> = emptyList()
         ) : Feature()
     }
 
@@ -221,6 +221,9 @@ internal constructor(
             crashReportConfig = crashReportConfig.copy(endpointUrl = site.logsEndpoint())
             rumConfig = rumConfig.copy(endpointUrl = site.rumEndpoint())
             coreConfig = coreConfig.copy(needsClearTextHttp = false, site = site)
+            sessionReplayConfig = sessionReplayConfig.copy(
+                endpointUrl = site.sessionReplayEndpoint()
+            )
             return this
         }
 
@@ -263,6 +266,20 @@ internal constructor(
         fun useCustomRumEndpoint(endpoint: String): Builder {
             applyIfFeatureEnabled(PluginFeature.RUM, "useCustomRumEndpoint") {
                 rumConfig = rumConfig.copy(endpointUrl = endpoint)
+                checkCustomEndpoint(endpoint)
+            }
+            return this
+        }
+
+        /**
+         * Let the SDK target a custom server for the Session Replay feature.
+         */
+        fun useSessionReplayEndpoint(endpoint: String): Builder {
+            applyIfFeatureEnabled(
+                PluginFeature.SESSION_REPLAY,
+                "useCustomSessionReplayEndpoint"
+            ) {
+                sessionReplayConfig = sessionReplayConfig.copy(endpointUrl = endpoint)
                 checkCustomEndpoint(endpoint)
             }
             return this
@@ -340,6 +357,7 @@ internal constructor(
          * @see [Feature.Tracing]
          * @see [Feature.RUM]
          */
+        @Deprecated(message = PLUGINS_DEPRECATED_WARN_MESSAGE)
         fun addPlugin(plugin: DatadogPlugin, feature: PluginFeature): Builder {
             applyIfFeatureEnabled(feature, "addPlugin") {
                 when (feature) {
@@ -355,9 +373,9 @@ internal constructor(
                     PluginFeature.CRASH -> crashReportConfig = crashReportConfig.copy(
                         plugins = crashReportConfig.plugins + plugin
                     )
-                    PluginFeature.SESSION_REPLAY ->
-                        sessionReplayConfig =
-                            sessionReplayConfig.copy(plugins = sessionReplayConfig.plugins + plugin)
+                    else -> {
+                        devLogger.w(PLUGINS_DEPRECATED_WARN_MESSAGE)
+                    }
                 }
             }
             return this
@@ -615,6 +633,8 @@ internal constructor(
         internal const val DEFAULT_SAMPLING_RATE: Float = 100f
         internal const val DEFAULT_TELEMETRY_SAMPLING_RATE: Float = 20f
         internal const val DEFAULT_LONG_TASK_THRESHOLD_MS = 100L
+        internal const val PLUGINS_DEPRECATED_WARN_MESSAGE = "Datadog Plugins won't work in SDK " +
+            "v2, you'll need to write your own Feature"
 
         internal val DEFAULT_CORE_CONFIG = Core(
             needsClearTextHttp = false,
@@ -652,7 +672,9 @@ internal constructor(
                 NoOpInteractionPredicate()
             ),
             viewTrackingStrategy = ActivityViewTrackingStrategy(false),
-            longTaskTrackingStrategy = MainLooperLongTaskStrategy(DEFAULT_LONG_TASK_THRESHOLD_MS),
+            longTaskTrackingStrategy = MainLooperLongTaskStrategy(
+                DEFAULT_LONG_TASK_THRESHOLD_MS
+            ),
             rumEventMapper = NoOpEventMapper(),
             backgroundEventTracking = false,
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE

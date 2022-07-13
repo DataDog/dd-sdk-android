@@ -25,7 +25,7 @@ internal class SessionReplayFeature(coreFeature: CoreFeature) :
     ): PersistenceStrategy<Any> {
         return SessionReplayRecordPersistenceStrategy(
             coreFeature.trackingConsentProvider,
-            context,
+            coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
             sdkLogger,
             coreFeature.localDataEncryption

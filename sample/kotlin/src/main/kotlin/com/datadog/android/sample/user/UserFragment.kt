@@ -70,7 +70,7 @@ class UserFragment : Fragment(), View.OnClickListener {
             setUserInfo(
                 id,
                 name,
-                email,
+                email
             )
             addUserExtraInfo(
                 mapOf(
