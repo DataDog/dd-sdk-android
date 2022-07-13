@@ -84,14 +84,16 @@ internal class DatadogCoreInitializationTest {
         @BoolForgery logsEnabled: Boolean,
         @BoolForgery tracingEnabled: Boolean,
         @BoolForgery crashReportEnabled: Boolean,
-        @BoolForgery rumEnabled: Boolean
+        @BoolForgery rumEnabled: Boolean,
+        @BoolForgery sessionReplayEnabled: Boolean
     ) {
         // Given
         val configuration = Configuration.Builder(
             logsEnabled = logsEnabled,
             tracesEnabled = tracingEnabled,
             crashReportsEnabled = crashReportEnabled,
-            rumEnabled = rumEnabled
+            rumEnabled = rumEnabled,
+            sessionReplayEnabled = sessionReplayEnabled
         ).build()
 
         // When
@@ -136,7 +138,8 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = false,
             tracesEnabled = false,
             crashReportsEnabled = false,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = false
         ).build()
 
         // When
@@ -161,7 +164,8 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = false,
             crashReportsEnabled = false,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = false
         ).build()
 
         // When
@@ -187,14 +191,20 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         ).build()
 
         // Then
         assertThrows<IllegalArgumentException>(DatadogCore.MESSAGE_ENV_NAME_NOT_VALID) {
             // When
             testedCore =
-                DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+                DatadogCore(
+                    appContext.mockInstance,
+                    fakeCredentials,
+                    configuration,
+                    fakeInstanceId
+                )
         }
     }
 
@@ -210,14 +220,20 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         ).build()
 
         // When
         var caughtException: Exception? = null
         try {
             testedCore =
-                DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
+                DatadogCore(
+                    appContext.mockInstance,
+                    fakeCredentials,
+                    configuration,
+                    fakeInstanceId
+                )
         } catch (e: Exception) {
             caughtException = e
         }
@@ -235,7 +251,8 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         ).build()
 
         // When
@@ -257,7 +274,8 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
             .setUseDeveloperModeWhenDebuggable(true)
             .build()
@@ -281,7 +299,8 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
             .setUseDeveloperModeWhenDebuggable(true)
             .build()

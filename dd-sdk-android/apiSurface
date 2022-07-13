@@ -31,6 +31,7 @@ object com.datadog.android.DatadogEndpoint
   const val SESSION_REPLAY_US1: String
   const val SESSION_REPLAY_US3: String
   const val SESSION_REPLAY_US5: String
+  const val SESSION_REPLAY_US1_FED: String
   const val SESSION_REPLAY_EU1: String
 class com.datadog.android.DatadogEventListener : okhttp3.EventListener
   override fun callStart(okhttp3.Call)
@@ -72,6 +73,7 @@ class com.datadog.android._InternalProxy
     fun error(String, String?, String?)
   val _telemetry: _TelemetryProxy
   fun setCustomAppVersion(String)
+  fun sessionReplayEndpoint(): String
 enum com.datadog.android.core.configuration.BatchSize
   constructor(Long)
   - SMALL
@@ -89,11 +91,12 @@ data class com.datadog.android.core.configuration.Configuration
     fun useCustomTracesEndpoint(String): Builder
     fun useCustomCrashReportsEndpoint(String): Builder
     fun useCustomRumEndpoint(String): Builder
+    fun useSessionReplayEndpoint(String): Builder
     fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
     fun disableInteractionTracking(): Builder
     fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
     fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
-    fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
+    DEPRECATED fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
     fun setBatchSize(BatchSize): Builder
     fun setUploadFrequency(UploadFrequency): Builder
     fun sampleRumSessions(Float): Builder
@@ -446,7 +449,7 @@ data class com.datadog.android.rum.model.ActionEvent
   data class Display
     constructor(Viewport? = null)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): Display
   data class Synthetics
     constructor(kotlin.String, kotlin.String, kotlin.Boolean? = null)
@@ -492,7 +495,7 @@ data class com.datadog.android.rum.model.ActionEvent
   data class Viewport
     constructor(kotlin.Number, kotlin.Number)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): Viewport
   data class DdSession
     constructor(Plan)
@@ -502,7 +505,7 @@ data class com.datadog.android.rum.model.ActionEvent
   data class DdAction
     constructor(Position? = null, DdActionTarget? = null)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): DdAction
   data class ActionEventActionTarget
     constructor(kotlin.String)
@@ -512,7 +515,7 @@ data class com.datadog.android.rum.model.ActionEvent
   data class Frustration
     constructor(kotlin.collections.List<Type>)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): Frustration
   data class Error
     constructor(kotlin.Long)
@@ -537,12 +540,12 @@ data class com.datadog.android.rum.model.ActionEvent
   data class Position
     constructor(kotlin.Long, kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): Position
   data class DdActionTarget
     constructor(kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): DdActionTarget
   enum Source
     constructor(kotlin.String)
@@ -623,7 +626,7 @@ data class com.datadog.android.rum.model.ActionEvent
     - RAGE_TAP
     - ERROR_TAP
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): Type
 data class com.datadog.android.rum.model.ErrorEvent
   constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, ErrorEventSession, ErrorEventSource? = null, View, Usr? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Error, Action? = null)
@@ -659,7 +662,7 @@ data class com.datadog.android.rum.model.ErrorEvent
   data class Display
     constructor(Viewport? = null)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): Display
   data class Synthetics
     constructor(kotlin.String, kotlin.String, kotlin.Boolean? = null)
@@ -710,7 +713,7 @@ data class com.datadog.android.rum.model.ErrorEvent
   data class Viewport
     constructor(kotlin.Number, kotlin.Number)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): Viewport
   data class DdSession
     constructor(Plan)
@@ -880,7 +883,7 @@ data class com.datadog.android.rum.model.LongTaskEvent
   data class Display
     constructor(Viewport? = null)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): Display
   data class Synthetics
     constructor(kotlin.String, kotlin.String, kotlin.Boolean? = null)
@@ -931,7 +934,7 @@ data class com.datadog.android.rum.model.LongTaskEvent
   data class Viewport
     constructor(kotlin.Number, kotlin.Number)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): Viewport
   data class DdSession
     constructor(Plan)
@@ -1031,7 +1034,7 @@ data class com.datadog.android.rum.model.ResourceEvent
   data class Display
     constructor(Viewport? = null)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): Display
   data class Synthetics
     constructor(kotlin.String, kotlin.String, kotlin.Boolean? = null)
@@ -1082,7 +1085,7 @@ data class com.datadog.android.rum.model.ResourceEvent
   data class Viewport
     constructor(kotlin.Number, kotlin.Number)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): Viewport
   data class DdSession
     constructor(Plan)
@@ -1263,7 +1266,7 @@ data class com.datadog.android.rum.model.ViewEvent
   data class Display
     constructor(Viewport? = null)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): Display
   data class Synthetics
     constructor(kotlin.String, kotlin.String, kotlin.Boolean? = null)
@@ -1334,7 +1337,7 @@ data class com.datadog.android.rum.model.ViewEvent
   data class Frustration
     constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): Frustration
   data class InForegroundPeriod
     constructor(kotlin.Long, kotlin.Long)
@@ -1349,7 +1352,7 @@ data class com.datadog.android.rum.model.ViewEvent
   data class Viewport
     constructor(kotlin.Number, kotlin.Number)
     fun toJson(): com.google.gson.JsonElement
-    companion object 
+    companion object
       fun fromJson(kotlin.String): Viewport
   data class DdSession
     constructor(Plan)
