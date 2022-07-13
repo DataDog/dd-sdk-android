@@ -663,7 +663,8 @@ class RumConfigE2ETests {
                         logsEnabled = true,
                         tracesEnabled = true,
                         rumEnabled = true,
-                        crashReportsEnabled = true
+                        crashReportsEnabled = true,
+                        sessionReplayEnabled = true
                     )
                     .setSecurityConfig(SecurityConfig(localDataEncryption = TestEncryption()))
                     .build()
@@ -753,7 +754,8 @@ class RumConfigE2ETests {
                         logsEnabled = true,
                         tracesEnabled = true,
                         rumEnabled = true,
-                        crashReportsEnabled = true
+                        crashReportsEnabled = true,
+                        sessionReplayEnabled = true
                     )
                     .useViewTrackingStrategy(strategy)
                     .setVitalsUpdateFrequency(fakeFrequency)
