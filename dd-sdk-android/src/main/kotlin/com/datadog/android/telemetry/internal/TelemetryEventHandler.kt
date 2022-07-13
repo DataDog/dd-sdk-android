@@ -121,10 +121,10 @@ internal class TelemetryEventHandler(
             action = rumContext.actionId?.let { TelemetryErrorEvent.Action(it) },
             telemetry = TelemetryErrorEvent.Telemetry(
                 message = message,
-                error = TelemetryErrorEvent.Error(
+                error = if (stack != null || kind != null) TelemetryErrorEvent.Error(
                     stack = stack,
                     kind = kind
-                )
+                ) else null
             )
         )
     }

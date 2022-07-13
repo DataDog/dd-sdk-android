@@ -19,13 +19,13 @@ import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.telemetry
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
@@ -289,13 +289,9 @@ object Datadog {
      *
      * @see _InternalProxy
      */
-    @JvmStatic
     @Suppress("ObjectPropertyNaming")
-    val _internal: _InternalProxy by lazy {
-        _InternalProxy(
-            GlobalRum.get() as? AdvancedRumMonitor
-        )
-    }
+    var _internal: _InternalProxy = _InternalProxy(telemetry)
+        private set
 
     // endregion
 

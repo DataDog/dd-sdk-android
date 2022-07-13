@@ -4,59 +4,56 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android
+package com.datadog.android.rum
 
-import com.datadog.android.telemetry.internal.Telemetry
+import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.verify
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mockito
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
+    ExtendWith(TestConfigurationExtension::class),
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class InternalProxyTest {
+internal class RumInternalProxyTest {
 
     @Test
-    fun `M proxy telemetry to RumMonitor W debug()`(
-        @StringForgery message: String
+    fun `M proxy addLongTask to RumMonitor W addLongTask()`(
+        @LongForgery time: Long,
+        @StringForgery target: String
     ) {
         // Given
-        val mockTelemetry = Mockito.mock(Telemetry::class.java)
-        val proxy = _InternalProxy(mockTelemetry)
+        val proxy = _RumInternalProxy(rumMonitor.mockInstance)
 
         // When
-        proxy._telemetry.debug(message)
+        proxy.addLongTask(time, target)
 
         // Then
-        verify(mockTelemetry).debug(message)
+        verify(rumMonitor.mockInstance).addLongTask(time, target)
     }
 
-    @Test
-    fun `M proxy telemetry to RumMonitor W error()`(
-        @StringForgery message: String,
-        @StringForgery stack: String,
-        @StringForgery kind: String
-    ) {
-        // Given
-        val mockTelemetry = Mockito.mock(Telemetry::class.java)
-        val proxy = _InternalProxy(mockTelemetry)
+    companion object {
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
 
-        // When
-        proxy._telemetry.error(message, stack, kind)
-
-        // Then
-        verify(mockTelemetry).error(message, stack, kind)
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
+        }
     }
 }

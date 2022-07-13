@@ -4,9 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android
+package com.datadog.android.rum
 
-import com.datadog.android.telemetry.internal.Telemetry
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 
 /**
  * This class exposes internal methods that are used by other Datadog modules and cross platform
@@ -25,30 +25,14 @@ import com.datadog.android.telemetry.internal.Telemetry
     "ClassNaming",
     "VariableNaming"
 )
-class _InternalProxy {
-    class _TelemetryProxy {
-        private val telemetry: Telemetry
+class _RumInternalProxy {
+    private val rumMonitor: AdvancedRumMonitor
 
-        internal constructor(telemetry: Telemetry) {
-            this.telemetry = telemetry
-        }
-
-        fun debug(message: String) {
-            telemetry.debug(message)
-        }
-
-        fun error(message: String, throwable: Throwable? = null) {
-            telemetry.error(message, throwable)
-        }
-
-        fun error(message: String, stack: String?, kind: String?) {
-            telemetry.error(message, stack, kind)
-        }
+    internal constructor(rumMonitor: AdvancedRumMonitor) {
+        this.rumMonitor = rumMonitor
     }
 
-    val _telemetry: _TelemetryProxy
-
-    internal constructor(telemetry: Telemetry) {
-        _telemetry = _TelemetryProxy(telemetry)
+    fun addLongTask(durationNs: Long, target: String) {
+        rumMonitor.addLongTask(durationNs, target)
     }
 }

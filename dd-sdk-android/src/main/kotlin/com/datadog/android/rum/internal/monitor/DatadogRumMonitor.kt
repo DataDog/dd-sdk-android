@@ -19,6 +19,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -82,6 +83,8 @@ internal class DatadogRumMonitor(
     }
 
     internal var debugListener: RumDebugListener? = null
+
+    private val internalProxy = _RumInternalProxy(this)
 
     init {
         handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
@@ -330,17 +333,17 @@ internal class DatadogRumMonitor(
     }
 
     override fun sendErrorTelemetryEvent(message: String, throwable: Throwable?) {
-        var stack: String? = null
-        var kind: String? = null
-        throwable?.let {
-            stack = it.loggableStackTrace()
-            kind = it.javaClass.canonicalName ?: it.javaClass.simpleName
-        }
+        var stack: String? = throwable?.loggableStackTrace()
+        var kind: String? = throwable?.javaClass?.canonicalName ?: throwable?.javaClass?.simpleName
         handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, stack, kind))
     }
 
     override fun sendErrorTelemetryEvent(message: String, stack: String?, kind: String?) {
         handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, stack, kind))
+    }
+
+    override fun _getInternal(): _RumInternalProxy? {
+        return internalProxy
     }
 
     // endregion
