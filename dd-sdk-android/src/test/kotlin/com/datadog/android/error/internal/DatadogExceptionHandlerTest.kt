@@ -151,7 +151,8 @@ internal class DatadogExceptionHandlerTest {
                 logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
-                rumEnabled = true
+                rumEnabled = true,
+                sessionReplayEnabled = true
             ).build(),
             TrackingConsent.GRANTED
         )
