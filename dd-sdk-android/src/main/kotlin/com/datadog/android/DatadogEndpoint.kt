@@ -181,6 +181,14 @@ object DatadogEndpoint {
     const val SESSION_REPLAY_US5: String = "https://session-replay.browser-intake-us5-datadoghq.com"
 
     /**
+     * The US1_FED endpoint for Session replay (US based servers, FedRAMP compliant).
+     * Use this in your [Configuration] if you want to point to [app.ddog-gov.com](https://app
+     * .ddog-gov.com)
+     * @see [Configuration]
+     */
+    const val SESSION_REPLAY_US1_FED: String = "https://session-replay.browser-intake-ddog-gov.com"
+
+    /**
      * The EU1 endpoint for Session Replay (EU based servers).
      * Use this in your [Configuration] if you want to point to
      * [app.datadoghq.eu](https://app.datadoghq.eu)

@@ -65,7 +65,6 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
         onDone: () -> Unit = {}
     ) {
         scope.launchTraced("startCoroutineOperation", Dispatchers.Main) {
-
             setTag("flavor", BuildConfig.FLAVOR)
             performTask(this)
             performFlowTask()
@@ -144,7 +143,6 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
 
     @SuppressLint("DefaultLocale")
     private suspend fun performFlowTask() {
-
         delay(100)
         withContextTraced("coroutine flow collect", Dispatchers.Default) {
             try {

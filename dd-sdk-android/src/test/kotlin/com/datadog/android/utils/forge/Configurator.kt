@@ -30,6 +30,7 @@ internal class Configurator :
         forge.addFactory(UserInfoForgeryFactory())
         forge.addFactory(FilePersistenceConfigForgeryFactory())
         forge.addFactory(AndroidInfoProviderForgeryFactory())
+        forge.addFactory(ConfigurationSessionReplayForgeryFactory())
 
         // IO
         forge.addFactory(BatchForgeryFactory())
