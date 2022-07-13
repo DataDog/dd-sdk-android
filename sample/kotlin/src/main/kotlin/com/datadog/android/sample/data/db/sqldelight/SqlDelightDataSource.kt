@@ -45,7 +45,6 @@ class SqlDelightDataSource(val context: Context) : DataSource {
         logsDatabase.logsQueries.purgeLogs(minTtlRequired)
         // add new data
         logsDatabase.logsQueries.transactionTraced("Adding data to Logs DB") {
-
             setTag("logs_count", logs.size)
             logs.forEach {
                 logsDatabase.logsQueries.insertLog(

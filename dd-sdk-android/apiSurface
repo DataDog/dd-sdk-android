@@ -30,6 +30,7 @@ object com.datadog.android.DatadogEndpoint
   const val SESSION_REPLAY_US1: String
   const val SESSION_REPLAY_US3: String
   const val SESSION_REPLAY_US5: String
+  const val SESSION_REPLAY_US1_FED: String
   const val SESSION_REPLAY_EU1: String
 class com.datadog.android.DatadogEventListener : okhttp3.EventListener
   override fun callStart(okhttp3.Call)
@@ -64,6 +65,7 @@ enum com.datadog.android.DatadogSite
   fun logsEndpoint(): String
   fun tracesEndpoint(): String
   fun rumEndpoint(): String
+  fun sessionReplayEndpoint(): String
 enum com.datadog.android.core.configuration.BatchSize
   constructor(Long)
   - SMALL
@@ -81,10 +83,11 @@ data class com.datadog.android.core.configuration.Configuration
     fun useCustomTracesEndpoint(String): Builder
     fun useCustomCrashReportsEndpoint(String): Builder
     fun useCustomRumEndpoint(String): Builder
+    fun useSessionReplayEndpoint(String): Builder
     fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
     fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
     fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy): Builder
-    fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
+    DEPRECATED fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
     fun setBatchSize(BatchSize): Builder
     fun setUploadFrequency(UploadFrequency): Builder
     fun sampleRumSessions(Float): Builder

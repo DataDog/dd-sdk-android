@@ -235,7 +235,6 @@ tasks.register("koverReportAll") {
         ":dd-sdk-android-ktx:koverXmlReport",
         ":dd-sdk-android-ndk:koverXmlReport",
         ":dd-sdk-android-rx:koverXmlReport",
-        ":dd-sdk-android-session-replay:koverXmlReport",
         ":dd-sdk-android-sqldelight:koverXmlReport",
         ":dd-sdk-android-timber:koverXmlReport",
         ":dd-sdk-android-tv:koverXmlReport",
@@ -263,7 +262,7 @@ tasks.register("buildNdkIntegrationTestsArtifacts") {
     dependsOn(":instrumented:integration:assembleDebug")
 }
 
-nightlyTestsCoverageConfig(threshold = 0.92f)
+nightlyTestsCoverageConfig(threshold = 0.90f)
 kover {
     isDisabled = false
     disabledProjects = setOf(

@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.domain
 
-import android.content.Context
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
@@ -16,18 +15,19 @@ import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.log.Logger
 import com.datadog.android.security.Encryption
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
+import java.io.File
 import java.util.concurrent.ExecutorService
 
 internal class SessionReplayRecordPersistenceStrategy(
     consentProvider: ConsentProvider,
-    context: Context,
+    storageDir: File,
     executorService: ExecutorService,
     internalLogger: Logger,
     localDataEncryption: Encryption?
 ) : BatchFilePersistenceStrategy<Any>(
     FeatureFileOrchestrator(
         consentProvider,
-        context,
+        storageDir,
         SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME,
         executorService,
         internalLogger
