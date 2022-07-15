@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.telemetry
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
@@ -282,6 +283,15 @@ object Datadog {
             RumFeature.disableDebugging()
         }
     }
+
+    /**
+     * For Datadog internal use only.
+     *
+     * @see _InternalProxy
+     */
+    @Suppress("ObjectPropertyNaming")
+    var _internal: _InternalProxy = _InternalProxy(telemetry)
+        private set
 
     // endregion
 

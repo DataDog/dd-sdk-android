@@ -238,6 +238,14 @@ interface RumMonitor {
         name: String
     )
 
+    /**
+     * For Datadog internal use only.
+     *
+     * @see _RumInternalProxy
+     */
+    @Suppress("FunctionNaming")
+    fun _getInternal(): _RumInternalProxy?
+
     // region Builder
 
     /**
