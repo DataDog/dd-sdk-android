@@ -6,11 +6,8 @@
 
 package com.datadog.android.rum
 
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -19,13 +16,13 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(TestConfigurationExtension::class),
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -38,22 +35,13 @@ internal class RumInternalProxyTest {
         @StringForgery target: String
     ) {
         // Given
-        val proxy = _RumInternalProxy(rumMonitor.mockInstance)
+        val mockRumMonitor = mock(AdvancedRumMonitor::class.java)
+        val proxy = _RumInternalProxy(mockRumMonitor)
 
         // When
         proxy.addLongTask(time, target)
 
         // Then
-        verify(rumMonitor.mockInstance).addLongTask(time, target)
-    }
-
-    companion object {
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
-        }
+        verify(mockRumMonitor).addLongTask(time, target)
     }
 }

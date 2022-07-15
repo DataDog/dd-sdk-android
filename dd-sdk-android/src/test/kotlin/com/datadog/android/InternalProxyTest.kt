@@ -9,13 +9,14 @@ package com.datadog.android
 import com.datadog.android.telemetry.internal.Telemetry
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.verify
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mockito
+import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -33,7 +34,7 @@ internal class InternalProxyTest {
         @StringForgery message: String
     ) {
         // Given
-        val mockTelemetry = Mockito.mock(Telemetry::class.java)
+        val mockTelemetry = mock(Telemetry::class.java)
         val proxy = _InternalProxy(mockTelemetry)
 
         // When
@@ -50,7 +51,7 @@ internal class InternalProxyTest {
         @StringForgery kind: String
     ) {
         // Given
-        val mockTelemetry = Mockito.mock(Telemetry::class.java)
+        val mockTelemetry = mock(Telemetry::class.java)
         val proxy = _InternalProxy(mockTelemetry)
 
         // When
@@ -58,5 +59,21 @@ internal class InternalProxyTest {
 
         // Then
         verify(mockTelemetry).error(message, stack, kind)
+    }
+
+    @Test
+    fun `M proxy telemetry to RumMonitor W error({message, throwable})`(
+        @StringForgery message: String,
+        @Forgery throwable: Throwable
+    ) {
+        // Given
+        val mockTelemetry = mock(Telemetry::class.java)
+        val proxy = _InternalProxy(mockTelemetry)
+
+        // When
+        proxy._telemetry.error(message, throwable)
+
+        // Then
+        verify(mockTelemetry).error(message, throwable)
     }
 }
