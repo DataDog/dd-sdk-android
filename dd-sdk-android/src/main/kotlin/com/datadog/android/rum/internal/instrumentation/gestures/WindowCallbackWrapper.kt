@@ -130,7 +130,7 @@ internal class WindowCallbackWrapper(
         } else {
             customTargetName
         }
-        GlobalRum.get().addUserAction(RumActionType.CUSTOM, targetName, emptyMap())
+        GlobalRum.get().addUserAction(RumActionType.BACK, targetName, emptyMap())
     }
 
     // endregion
