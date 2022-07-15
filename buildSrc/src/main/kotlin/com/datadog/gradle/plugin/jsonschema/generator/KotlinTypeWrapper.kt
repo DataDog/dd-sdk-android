@@ -7,12 +7,13 @@
 package com.datadog.gradle.plugin.jsonschema.generator
 
 import com.datadog.gradle.plugin.jsonschema.TypeDefinition
-import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.TypeName
 
-abstract class TypeSpecGenerator<T : TypeDefinition>(
-    packageName: String,
-    knownTypes: MutableSet<KotlinTypeWrapper>
-) : KotlinSpecGenerator<T, TypeSpec.Builder>(
-    packageName,
-    knownTypes
-)
+data class KotlinTypeWrapper(
+    val name: String,
+    val typeName: TypeName,
+    val type: TypeDefinition
+) {
+    var written: Boolean = false
+}

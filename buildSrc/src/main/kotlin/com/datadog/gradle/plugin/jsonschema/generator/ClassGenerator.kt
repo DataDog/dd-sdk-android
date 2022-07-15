@@ -13,6 +13,7 @@ import com.datadog.gradle.plugin.jsonschema.TypeProperty
 import com.datadog.gradle.plugin.jsonschema.variableName
 import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.ARRAY
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
@@ -27,15 +28,13 @@ import com.squareup.kotlinpoet.TypeSpec
 
 class ClassGenerator(
     packageName: String,
-    nestedTypes: MutableSet<TypeDefinition>,
-    knownTypeNames: MutableSet<String>
+    knownTypes: MutableSet<KotlinTypeWrapper>
 ) : TypeSpecGenerator<TypeDefinition.Class>(
     packageName,
-    nestedTypes,
-    knownTypeNames
+    knownTypes
 ) {
 
-    private val deserializer = ClassDeserializerGenerator(packageName, nestedTypes, knownTypeNames)
+    private val deserializer = ClassDeserializerGenerator(packageName, knownTypes)
 
     // region TypeSpecGenerator
 
@@ -44,7 +43,7 @@ class ClassGenerator(
         rootTypeName: String
     ): TypeSpec.Builder {
         val typeBuilder = TypeSpec.classBuilder(definition.name)
-        knownTypeNames.add(definition.name)
+
         if (definition.parentType != null){
             typeBuilder.superclass(definition.parentType.asKotlinTypeName(rootTypeName))
         }
@@ -159,7 +158,7 @@ class ClassGenerator(
             is TypeDefinition.Null -> appendNullSerialization(property)
             is TypeDefinition.Array -> appendArraySerialization(property, property.type, refName)
             is TypeDefinition.Class,
-                is TypeDefinition.MultiClass,
+                is TypeDefinition.OneOfClass,
             is TypeDefinition.Enum -> appendTypeSerialization(property, refName)
         }
 
@@ -225,7 +224,7 @@ class ClassGenerator(
                 resultArrayName
             )
             is TypeDefinition.Class,
-            is TypeDefinition.MultiClass,
+            is TypeDefinition.OneOfClass,
             is TypeDefinition.Enum -> addStatement(
                 "%L.forEach { %L.add(it.%L()) }",
                 propertyName,

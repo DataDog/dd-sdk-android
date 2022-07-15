@@ -17,9 +17,8 @@ import com.squareup.kotlinpoet.SET
 import com.squareup.kotlinpoet.TypeName
 
 abstract class KotlinSpecGenerator<I : Any, O : Any>(
-    private val packageName: String,
-    val nestedTypes: MutableSet<TypeDefinition>,
-    val knownTypeNames: MutableSet<String>
+    val packageName: String,
+    val knownTypes: MutableSet<KotlinTypeWrapper>
 ) {
 
     /**
@@ -39,7 +38,7 @@ abstract class KotlinSpecGenerator<I : Any, O : Any>(
             is TypeDefinition.Null -> null
             is TypeDefinition.Enum -> name
             is TypeDefinition.Class -> name
-            is TypeDefinition.MultiClass -> name
+            is TypeDefinition.OneOfClass -> name
         }
     }
 
@@ -50,11 +49,6 @@ abstract class KotlinSpecGenerator<I : Any, O : Any>(
             is TypeDefinition.Null -> NOTHING
             is TypeDefinition.Primitive -> type.asKotlinTypeName()
             is TypeDefinition.Constant -> type.asKotlinTypeName()
-            is TypeDefinition.Class -> {
-                val def = withUniqueTypeName()
-                nestedTypes.add(def)
-                ClassName(packageName, rootTypeName, def.name)
-            }
             is TypeDefinition.Array -> {
                 if (uniqueItems) {
                     SET.parameterizedBy(items.asKotlinTypeName(rootTypeName))
@@ -62,53 +56,91 @@ abstract class KotlinSpecGenerator<I : Any, O : Any>(
                     LIST.parameterizedBy(items.asKotlinTypeName(rootTypeName))
                 }
             }
-            is TypeDefinition.Enum -> {
-                val def = withUniqueTypeName()
-                nestedTypes.add(def)
-                ClassName(packageName, rootTypeName, def.name)
-            }
-            is TypeDefinition.MultiClass -> {
-                if (rootTypeName == name) {
-                    ClassName(packageName, rootTypeName)
-                } else {
-                    ClassName(packageName, rootTypeName, name)
-                }
-            }
+            is TypeDefinition.Class -> withUniqueTypeName(rootTypeName).typeName
+            is TypeDefinition.Enum -> withUniqueTypeName(rootTypeName).typeName
+            is TypeDefinition.OneOfClass -> withUniqueTypeName(rootTypeName).typeName
         }
     }
 
     fun TypeDefinition.additionalPropertyTypeName(rootTypeName: String): TypeName {
         return if (this is TypeDefinition.Primitive) {
-             this.asKotlinTypeName(rootTypeName)
+            this.asKotlinTypeName(rootTypeName)
         } else {
             ANY.copy(nullable = true)
         }
     }
 
-    private fun TypeDefinition.Class.withUniqueTypeName(): TypeDefinition.Class {
-        val matchingClass = nestedTypes.filterIsInstance<TypeDefinition.Class>()
-            .firstOrNull {
-                it.properties == properties && it.additionalProperties == additionalProperties
+    fun TypeDefinition.Class.withUniqueTypeName(rootTypeName: String): KotlinTypeWrapper {
+        val matchingClass = knownTypes.firstOrNull {
+            it.type.matches(this)
+        }
+        return if (matchingClass == null) {
+            val uniqueName = name.uniqueTypeName()
+            val typeName = if ((parentType == null) || (parentType.name == rootTypeName)) {
+                ClassName(packageName, rootTypeName, uniqueName)
+            } else {
+                ClassName(packageName, rootTypeName, parentType.name, uniqueName)
             }
-        return matchingClass ?: copy(name = name.uniqueTypeName())
+            KotlinTypeWrapper(
+                uniqueName,
+                typeName,
+                this
+            ).apply { knownTypes.add(this) }
+        } else {
+            matchingClass
+        }
     }
 
-    private fun TypeDefinition.Enum.withUniqueTypeName(): TypeDefinition.Enum {
-        val matchingEnum = nestedTypes.filterIsInstance<TypeDefinition.Enum>()
-            .firstOrNull { it.values == values }
-        return matchingEnum ?: copy(name = name.uniqueTypeName())
+    private fun TypeDefinition.Enum.withUniqueTypeName(rootTypeName: String): KotlinTypeWrapper {
+        val matchingClass = knownTypes.firstOrNull {
+            it.type.matches(this)
+        }
+        return if (matchingClass == null) {
+            val uniqueName = name.uniqueTypeName()
+            val typeName = ClassName(packageName, rootTypeName, uniqueName)
+            KotlinTypeWrapper(
+                uniqueName,
+                typeName,
+                this
+            ).apply { knownTypes.add(this) }
+        } else {
+            matchingClass
+        }
+    }
+
+    private fun TypeDefinition.OneOfClass.withUniqueTypeName(rootTypeName: String): KotlinTypeWrapper {
+        val matchingClass = knownTypes.firstOrNull {
+            it.type.matches(this)
+        }
+        return if (matchingClass == null) {
+            val uniqueName = name.uniqueTypeName()
+            val typeName = ClassName(packageName, rootTypeName, uniqueName)
+            KotlinTypeWrapper(
+                uniqueName,
+                typeName,
+                this
+            ).apply { knownTypes.add(this) }
+        } else {
+            matchingClass
+        }
     }
 
     private fun String.uniqueTypeName(): String {
         var uniqueName = this
         var tries = 0
-        while (uniqueName in knownTypeNames) {
+        while (knownTypes.any { it.name == uniqueName }) {
             tries++
             uniqueName = "${this}$tries"
         }
-        knownTypeNames.add(uniqueName)
         return uniqueName
     }
 
     // endregion
+
+    fun debugKnownTypes(message: String) {
+        System.err.println("--- $message; known types:")
+        knownTypes.forEach {
+            System.err.println("* ${it.name} (${it.type.javaClass.simpleName}) written:${it.written}")
+        }
+    }
 }
