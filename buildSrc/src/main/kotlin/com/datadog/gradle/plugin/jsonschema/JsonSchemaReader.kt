@@ -269,9 +269,8 @@ class JsonSchemaReader(
         oneOf: List<JsonDefinition>,
         description: String?
     ): TypeDefinition {
-        return TypeDefinition.MultiClass(
+        return TypeDefinition.OneOfClass(
             typeName,
-            TypeDefinition.MultiClass.Type.ONE_OF,
             oneOf.mapIndexed { i, it ->
                 transform(it, it.title ?: "${typeName}_$i")
             },

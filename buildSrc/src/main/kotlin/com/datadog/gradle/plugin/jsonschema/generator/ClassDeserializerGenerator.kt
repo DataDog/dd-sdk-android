@@ -18,12 +18,10 @@ import com.squareup.kotlinpoet.jvm.throws
 
 class ClassDeserializerGenerator(
     packageName: String,
-    nestedTypes: MutableSet<TypeDefinition>,
-    knownTypeNames: MutableSet<String>
+    knownTypes: MutableSet<KotlinTypeWrapper>
 ) : KotlinSpecGenerator<TypeDefinition.Class, FunSpec>(
     packageName,
-    nestedTypes,
-    knownTypeNames
+    knownTypes
 ) {
 
     override fun generate(definition: TypeDefinition.Class, rootTypeName: String): FunSpec {
@@ -133,7 +131,7 @@ class ClassDeserializerGenerator(
         when (propertyType) {
             is TypeDefinition.Null -> addStatement("$assignee = null")
             is TypeDefinition.Primitive -> addStatement(
-                "$assignee = $getter${if (nullable) "?" else ""}.${propertyType.asPrimitiveType()}"
+                "$assignee = $getter${if (nullable) "?" else ""}.${propertyType.asPrimitiveTypeFun()}"
             )
             is TypeDefinition.Array -> appendArrayDeserialization(
                 propertyType,
@@ -216,9 +214,10 @@ class ClassDeserializerGenerator(
     ) {
         when (arrayType.items) {
             is TypeDefinition.Primitive -> addStatement(
-                "%L.add(it.${arrayType.items.asPrimitiveType()})",
+                "%L.add(it.${arrayType.items.asPrimitiveTypeFun()})",
                 Identifier.PARAM_COLLECTION
             )
+            is TypeDefinition.OneOfClass,
             is TypeDefinition.Class -> addStatement(
                 "%L.add(%T.%L(it.toString()))",
                 Identifier.PARAM_COLLECTION,

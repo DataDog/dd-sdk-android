@@ -63,6 +63,7 @@ class JsonSchemaReaderTest(
                 arrayOf("external_description", Delivery),
                 arrayOf("types", Demo),
                 arrayOf("top_level_definition", Foo),
+                arrayOf("one_of_ref", Household),
                 arrayOf("enum_number", Jacket),
                 arrayOf("constant", Location),
                 arrayOf("read_only", Message),

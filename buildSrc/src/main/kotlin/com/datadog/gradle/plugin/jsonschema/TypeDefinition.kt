@@ -6,6 +6,11 @@
 
 package com.datadog.gradle.plugin.jsonschema
 
+import com.squareup.kotlinpoet.LIST
+import com.squareup.kotlinpoet.NOTHING
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.SET
+import com.squareup.kotlinpoet.TypeName
 import java.util.Locale
 import kotlin.reflect.KClass
 
@@ -15,11 +20,17 @@ sealed class TypeDefinition {
 
     abstract fun mergedWith(other: TypeDefinition): TypeDefinition
 
+    abstract fun matches(other: TypeDefinition): Boolean
+
     data class Null(
         override val description: String = ""
     ) : TypeDefinition() {
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
             return other
+        }
+
+        override fun matches(other: TypeDefinition): Boolean {
+            return other is Null
         }
     }
 
@@ -31,12 +42,17 @@ sealed class TypeDefinition {
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
             throw IllegalStateException("Can't merge Constant with type $other")
         }
+
+        override fun matches(other: TypeDefinition): Boolean {
+            return (other is Constant) && (other.type == type) && (other.value == value)
+        }
     }
 
     data class Primitive(
         val type: JsonPrimitiveType,
         override val description: String = ""
     ) : TypeDefinition() {
+
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
             if (other is Primitive && type == other.type) {
                 return Primitive(type, "$description\n${other.description}".trim())
@@ -45,7 +61,11 @@ sealed class TypeDefinition {
             }
         }
 
-        fun asPrimitiveType(): String {
+        override fun matches(other: TypeDefinition): Boolean {
+            return (other is Primitive) && (other.type == type)
+        }
+
+        fun asPrimitiveTypeFun(): String {
             return when (type) {
                 JsonPrimitiveType.BOOLEAN -> "asBoolean"
                 JsonPrimitiveType.DOUBLE -> "asDouble"
@@ -62,7 +82,11 @@ sealed class TypeDefinition {
         override val description: String = ""
     ) : TypeDefinition() {
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
-            TODO("Not yet implemented")
+            throw IllegalStateException("Can't merge Array with type $other")
+        }
+
+        override fun matches(other: TypeDefinition): Boolean {
+            return (other is Array) && (other.items == items) && (other.uniqueItems == uniqueItems)
         }
     }
 
@@ -71,7 +95,7 @@ sealed class TypeDefinition {
         val properties: List<TypeProperty>,
         override val description: String = "",
         val additionalProperties: TypeDefinition? = null,
-        val parentType: MultiClass? = null
+        val parentType: OneOfClass? = null
     ) : TypeDefinition() {
 
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
@@ -99,6 +123,11 @@ sealed class TypeDefinition {
                 mergedFields,
                 "$description\n${other.description}".trim()
             )
+        }
+
+        override fun matches(other: TypeDefinition): Boolean {
+            return (other is Class) && (other.properties == properties) &&
+                (other.additionalProperties == additionalProperties)
         }
 
         fun isConstantClass(): Boolean {
@@ -154,7 +183,11 @@ sealed class TypeDefinition {
     ) : TypeDefinition() {
 
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
-            TODO("Not yet implemented")
+            throw IllegalStateException("Can't merge Enum with type $other")
+        }
+
+        override fun matches(other: TypeDefinition): Boolean {
+            return (other is Enum) && (other.type == type) && (other.values == values)
         }
 
         fun jsonValueType(): KClass<*> {
@@ -190,20 +223,18 @@ sealed class TypeDefinition {
         }
     }
 
-    data class MultiClass(
+    data class OneOfClass(
         val name: String,
-        val type: Type,
         val options: List<TypeDefinition>,
         override val description: String = ""
     ) : TypeDefinition() {
 
-        enum class Type {
-            // TODO ANY_OF,
-            ONE_OF
+        override fun mergedWith(other: TypeDefinition): TypeDefinition {
+            throw IllegalStateException("Can't merge Multiclass with type $other")
         }
 
-        override fun mergedWith(other: TypeDefinition): TypeDefinition {
-            TODO("Not yet implemented")
+        override fun matches(other: TypeDefinition): Boolean {
+            return (other is OneOfClass) && (other.options == options)
         }
     }
 }

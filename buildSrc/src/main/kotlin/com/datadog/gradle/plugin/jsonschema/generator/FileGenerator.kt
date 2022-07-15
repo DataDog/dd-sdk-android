@@ -7,6 +7,7 @@
 package com.datadog.gradle.plugin.jsonschema.generator
 
 import com.datadog.gradle.plugin.jsonschema.TypeDefinition
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.TypeSpec
 import java.io.File
@@ -18,12 +19,11 @@ class FileGenerator(
     private val logger: Logger
 ) {
 
-    private val nestedTypes: MutableSet<TypeDefinition> = mutableSetOf()
-    private val knownTypeNames: MutableSet<String> = mutableSetOf()
+    private val knownTypes: MutableSet<KotlinTypeWrapper> = mutableSetOf()
 
-    private val classGenerator = ClassGenerator(packageName, nestedTypes, knownTypeNames)
-    private val enumGenerator = EnumClassGenerator(packageName, nestedTypes, knownTypeNames)
-    private val multiClassGenerator = MultiClassGenerator(packageName, nestedTypes, knownTypeNames)
+    private val classGenerator = ClassGenerator(packageName, knownTypes)
+    private val enumGenerator = EnumClassGenerator(packageName, knownTypes)
+    private val multiClassGenerator = MultiClassGenerator(classGenerator, packageName, knownTypes)
 
     // region FileGenerator
 
@@ -32,8 +32,7 @@ class FileGenerator(
      */
     fun generate(typeDefinition: TypeDefinition) {
         logger.info("Generating class for type $typeDefinition with package name $packageName")
-        knownTypeNames.clear()
-        nestedTypes.clear()
+        knownTypes.clear()
         generateFile(typeDefinition)
     }
 
@@ -41,11 +40,12 @@ class FileGenerator(
 
     // region Internal
 
-    private val isClass: (TypeDefinition) -> Boolean = { type ->
-        type is TypeDefinition.Class || type is TypeDefinition.MultiClass
+    private val isUnwrittenClass: (KotlinTypeWrapper) -> Boolean = { k ->
+        (k.type is TypeDefinition.Class || k.type is TypeDefinition.OneOfClass) &&
+            !k.written
     }
-    private val isEnum: (TypeDefinition) -> Boolean = { type ->
-        type is TypeDefinition.Enum
+    private val isEnum: (KotlinTypeWrapper) -> Boolean = { k ->
+        (k.type is TypeDefinition.Enum) && !k.written
     }
 
     /**
@@ -54,32 +54,38 @@ class FileGenerator(
     private fun generateFile(definition: TypeDefinition) {
         val rootTypeName = when (definition) {
             is TypeDefinition.Class -> definition.name
-            is TypeDefinition.MultiClass -> definition.name
+            is TypeDefinition.OneOfClass -> definition.name
             else -> throw IllegalStateException("Top level type $definition is not supported")
         }
 
         val fileBuilder = FileSpec.builder(packageName, rootTypeName)
 
+        knownTypes.add(
+            KotlinTypeWrapper(
+                rootTypeName,
+                ClassName(packageName, rootTypeName),
+                definition
+            ).apply { written = true }
+        )
         val topLevelTypeBuilder = generateTypeSpec(definition, rootTypeName)
 
-        while (nestedTypes.any(isClass)) {
-            val nestedClasses = nestedTypes.filter(isClass).toSet()
+        while (knownTypes.any(isUnwrittenClass)) {
+            classGenerator.debugKnownTypes("Appending nested classes")
 
+            val nestedClasses = knownTypes.filter(isUnwrittenClass).toSet()
             nestedClasses.forEach {
-                topLevelTypeBuilder.addType(generateTypeSpec(it, rootTypeName).build())
+                topLevelTypeBuilder.addType(generateTypeSpec(it.type, rootTypeName).build())
+                it.written = true
             }
-
-            nestedTypes.removeAll(nestedClasses)
         }
 
-        while (nestedTypes.any(isEnum)) {
-            val nestedEnums = nestedTypes.filter(isEnum).toSet()
-
+        while (knownTypes.any(isEnum)) {
+            classGenerator.debugKnownTypes("Appending nested enums")
+            val nestedEnums = knownTypes.filter(isEnum).toSet()
             nestedEnums.forEach {
-                topLevelTypeBuilder.addType(generateTypeSpec(it, rootTypeName).build())
+                topLevelTypeBuilder.addType(generateTypeSpec(it.type, rootTypeName).build())
+                it.written = true
             }
-
-            nestedTypes.removeAll(nestedEnums)
         }
 
         fileBuilder.addType(topLevelTypeBuilder.build())
@@ -96,7 +102,7 @@ class FileGenerator(
         return when (definition) {
             is TypeDefinition.Class -> classGenerator.generate(definition, rootTypeName)
             is TypeDefinition.Enum -> enumGenerator.generate(definition, rootTypeName)
-            is TypeDefinition.MultiClass -> multiClassGenerator.generate(definition, rootTypeName)
+            is TypeDefinition.OneOfClass -> multiClassGenerator.generate(definition, rootTypeName)
             else -> throw IllegalArgumentException("Can't generate a file for type $definition")
         }
     }

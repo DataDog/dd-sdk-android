@@ -9,38 +9,61 @@ package com.datadog.gradle.plugin.jsonschema
 val Address = TypeDefinition.Class(
     name = "Address",
     properties = listOf(
-        TypeProperty("street_address", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
-        TypeProperty("city", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
-        TypeProperty("state", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false)
+        TypeProperty(
+            name = "street_address",
+            type = TypeDefinition.Primitive(JsonPrimitiveType.STRING),
+            optional = false
+        ),
+        TypeProperty(
+            name = "city",
+            type = TypeDefinition.Primitive(JsonPrimitiveType.STRING),
+            optional = false
+        ),
+        TypeProperty(
+            name = "state",
+            type = TypeDefinition.Primitive(JsonPrimitiveType.STRING),
+            optional = false
+        )
     )
 )
 
-val Animal = TypeDefinition.MultiClass(
+val Animal = TypeDefinition.OneOfClass(
     name = "Animal",
-    type = TypeDefinition.MultiClass.Type.ONE_OF,
     options = listOf(
         TypeDefinition.Class(
             name = "Fish",
             properties = listOf(
                 TypeProperty(
-                    "water",
-                    TypeDefinition.Enum("Water", JsonType.STRING, listOf("salt", "fresh")),
-                    false
+                    name = "water",
+                    type = TypeDefinition.Enum("Water", JsonType.STRING, listOf("salt", "fresh")),
+                    optional = false
                 ),
-                TypeProperty("size", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), true)
+                TypeProperty(
+                    name = "size",
+                    type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                    optional = true
+                )
             )
         ),
         TypeDefinition.Class(
             name = "Bird",
             properties = listOf(
                 TypeProperty(
-                    "food",
-                    TypeDefinition.Enum(
-                        "Food",
-                        JsonType.STRING,
-                        listOf("fish", "bird", "rodent", "insect", "fruit", "seeds", "pollen")
+                    name = "food",
+                    type = TypeDefinition.Enum(
+                        name = "Food",
+                        type = JsonType.STRING,
+                        values = listOf(
+                            "fish",
+                            "bird",
+                            "rodent",
+                            "insect",
+                            "fruit",
+                            "seeds",
+                            "pollen"
+                        )
                     ),
-                    false
+                    optional = false
                 ),
                 TypeProperty("can_fly", TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN), false)
             )
@@ -536,13 +559,77 @@ val Style = TypeDefinition.Class(
     name = "Style",
     properties = listOf(
         TypeProperty(
-            "color",
-            TypeDefinition.Enum(
-                "Color",
-                null,
-                listOf("red", "amber", "green", "dark_blue", "lime green", "sunburst-yellow", null)
+            name = "color",
+            type = TypeDefinition.Enum(
+                name = "Color",
+                type = null,
+                values = listOf(
+                    "red",
+                    "amber",
+                    "green",
+                    "dark_blue",
+                    "lime green",
+                    "sunburst-yellow",
+                    null
+                )
             ),
-            false
+            optional = false
+        )
+    )
+)
+
+val Household = TypeDefinition.Class(
+    name = "Household",
+    properties = listOf(
+        TypeProperty(
+            name = "pets",
+            type = TypeDefinition.Array(
+                items = TypeDefinition.OneOfClass(
+                    name = "Animal",
+                    options = listOf(
+                        TypeDefinition.Class(
+                            name = "Fish",
+                            properties = listOf(
+                                TypeProperty(
+                                    name = "water",
+                                    type = TypeDefinition.Enum("Water", JsonType.STRING, listOf("salt", "fresh")),
+                                    optional = false
+                                ),
+                                TypeProperty(
+                                    name = "size",
+                                    type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                                    optional = true
+                                )
+                            )
+                        ),
+                        TypeDefinition.Class(
+                            name = "Bird",
+                            properties = listOf(
+                                TypeProperty(
+                                    name = "food",
+                                    type = TypeDefinition.Enum(
+                                        name = "Food",
+                                        type = JsonType.STRING,
+                                        values = listOf(
+                                            "fish",
+                                            "bird",
+                                            "rodent",
+                                            "insect",
+                                            "fruit",
+                                            "seeds",
+                                            "pollen"
+                                        )
+                                    ),
+                                    optional = false
+                                ),
+                                TypeProperty("can_fly", TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN), false)
+                            )
+                        )
+                    ),
+                    description = "A representation of the animal kingdom"
+                )
+            ),
+            optional = true
         )
     )
 )

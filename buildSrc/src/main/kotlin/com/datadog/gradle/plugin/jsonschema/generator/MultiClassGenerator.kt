@@ -15,24 +15,24 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.jvm.throws
 
 class MultiClassGenerator(
+    val classGenerator: KotlinSpecGenerator<TypeDefinition.Class, TypeSpec.Builder>,
     packageName: String,
-    nestedTypes: MutableSet<TypeDefinition>,
-    knownTypeNames: MutableSet<String>
-) : TypeSpecGenerator<TypeDefinition.MultiClass>(
+    knownTypes: MutableSet<KotlinTypeWrapper>
+) : TypeSpecGenerator<TypeDefinition.OneOfClass>(
     packageName,
-    nestedTypes,
-    knownTypeNames
+    knownTypes
 ) {
 
     //region TypeSpecGenerator
 
     override fun generate(
-        definition: TypeDefinition.MultiClass,
+        definition: TypeDefinition.OneOfClass,
         rootTypeName: String
     ): TypeSpec.Builder {
         val typeBuilder = TypeSpec.classBuilder(definition.name)
             .addModifiers(KModifier.SEALED)
-        knownTypeNames.add(definition.name)
+
+        debugKnownTypes("Generating One Of class")
 
         if (definition.description.isNotBlank()) {
             val docBuilder = CodeBlock.builder()
@@ -42,19 +42,29 @@ class MultiClassGenerator(
         }
 
         definition.options.forEach {
-            val updatedType = when (it) {
-                is TypeDefinition.Class -> it.copy(parentType = definition)
+            when (it) {
+                is TypeDefinition.Class -> {
+                    val childType = it.copy(parentType = definition)
+                    val wrapper = childType.withUniqueTypeName(rootTypeName)
+                    typeBuilder.addType(
+                        classGenerator.generate(childType, rootTypeName).build()
+                    )
+                    wrapper.written = true
+                }
                 else -> TODO("Can't have type $it as child of a `one_of` block")
             }
-            nestedTypes.add(updatedType)
         }
+
+        debugKnownTypes("Wrote sealed implementations")
 
         typeBuilder.addFunction(generateMultiClassSerializer())
 
         typeBuilder.addType(generateCompanionObject(definition, rootTypeName))
 
+        debugKnownTypes("One Of class complete")
         return typeBuilder
     }
+
 
     // endregion
 
@@ -67,7 +77,7 @@ class MultiClassGenerator(
     }
 
     private fun generateCompanionObject(
-        definition: TypeDefinition.MultiClass,
+        definition: TypeDefinition.OneOfClass,
         rootTypeName: String
     ): TypeSpec {
         return TypeSpec.companionObjectBuilder()
@@ -76,7 +86,7 @@ class MultiClassGenerator(
     }
 
     private fun generateMultiClassDeserializer(
-        definition: TypeDefinition.MultiClass,
+        definition: TypeDefinition.OneOfClass,
         rootTypeName: String
     ): FunSpec {
         val returnType = definition.asKotlinTypeName(rootTypeName)
@@ -115,9 +125,10 @@ class MultiClassGenerator(
             options.add(variableName)
         }
 
-        funBuilder.addStatement(
-            "val result = arrayOf(${options.joinToString(", ")}).firstOrNull { it != null }"
-        )
+        funBuilder.addStatement("val result = arrayOf(")
+        options.forEach { funBuilder.addStatement("    $it,") }
+        funBuilder.addStatement(").firstOrNull { it != null }")
+
         funBuilder.beginControlFlow("if (result == null)")
         funBuilder.addStatement("val message = \"$PARSE_ERROR_MSG %T\"", returnType)
         funBuilder.addStatement("throw %T(message, errors[0])", ClassNameRef.JsonParseException)

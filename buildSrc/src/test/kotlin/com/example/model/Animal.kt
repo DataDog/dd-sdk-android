@@ -20,32 +20,6 @@ import kotlin.jvm.Throws
 public sealed class Animal {
     public abstract fun toJson(): JsonElement
 
-    public companion object {
-        @JvmStatic
-        @Throws(JsonParseException::class)
-        public fun fromJson(jsonString: String): Animal {
-            val errors = mutableListOf<Throwable>()
-            val asFish = try {
-                Fish.fromJson(jsonString)
-            } catch (e: JsonParseException) {
-                errors.add(e)
-                null
-            }
-            val asBird = try {
-                Bird.fromJson(jsonString)
-            } catch (e: JsonParseException) {
-                errors.add(e)
-                null
-            }
-            val result = arrayOf(asFish, asBird).firstOrNull { it != null }
-            if (result == null) {
-                val message = "Unable to parse json into one of type Animal"
-                throw JsonParseException(message, errors[0])
-            }
-            return result
-        }
-    }
-
     public data class Fish(
         public val water: Water,
         public val size: Long? = null,
@@ -107,6 +81,35 @@ public sealed class Animal {
                     throw JsonParseException("Unable to parse json into type Bird", e)
                 }
             }
+        }
+    }
+
+    public companion object {
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJson(jsonString: String): Animal {
+            val errors = mutableListOf<Throwable>()
+            val asFish = try {
+                Fish.fromJson(jsonString)
+            } catch (e: JsonParseException) {
+                errors.add(e)
+                null
+            }
+            val asBird = try {
+                Bird.fromJson(jsonString)
+            } catch (e: JsonParseException) {
+                errors.add(e)
+                null
+            }
+            val result = arrayOf(
+                asFish,
+                asBird,
+            ).firstOrNull { it != null }
+            if (result == null) {
+                val message = "Unable to parse json into one of type Animal"
+                throw JsonParseException(message, errors[0])
+            }
+            return result
         }
     }
 

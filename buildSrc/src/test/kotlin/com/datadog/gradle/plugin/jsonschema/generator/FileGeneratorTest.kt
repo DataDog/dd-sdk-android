@@ -18,6 +18,7 @@ import com.datadog.gradle.plugin.jsonschema.DateTime
 import com.datadog.gradle.plugin.jsonschema.Delivery
 import com.datadog.gradle.plugin.jsonschema.Demo
 import com.datadog.gradle.plugin.jsonschema.Foo
+import com.datadog.gradle.plugin.jsonschema.Household
 import com.datadog.gradle.plugin.jsonschema.Jacket
 import com.datadog.gradle.plugin.jsonschema.Location
 import com.datadog.gradle.plugin.jsonschema.Message
@@ -109,6 +110,7 @@ class FileGeneratorTest(
                 arrayOf(Delivery, "Delivery"),
                 arrayOf(Demo, "Demo"),
                 arrayOf(Foo, "Foo"),
+                arrayOf(Household, "Household"),
                 arrayOf(Jacket, "Jacket"),
                 arrayOf(Person, "Person"),
                 arrayOf(Location, "Location"),
