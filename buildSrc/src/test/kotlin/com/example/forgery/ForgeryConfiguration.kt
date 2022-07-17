@@ -23,6 +23,7 @@ internal class ForgeryConfiguration : ForgeConfigurator {
         forge.addFactory(DeliveryForgeryFactory())
         forge.addFactory(DemoForgeryFactory())
         forge.addFactory(FooForgeryFactory())
+        forge.addFactory(HouseholdForgeryFactory())
         forge.addFactory(JacketForgeryFactory())
         forge.addFactory(LocationForgeryFactory())
         forge.addFactory(MessageForgeryFactory())

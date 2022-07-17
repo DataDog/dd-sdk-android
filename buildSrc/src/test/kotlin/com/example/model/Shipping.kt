@@ -34,11 +34,20 @@ public data class Shipping(
                 }
                 return Shipping(item, destination)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Shipping", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Shipping",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Shipping", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Shipping",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Shipping", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Shipping",
+                    e
+                )
             }
         }
     }
@@ -67,11 +76,20 @@ public data class Shipping(
                     val state = jsonObject.get("state").asString
                     return Address(streetAddress, city, state)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type Address", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Address",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type Address", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Address",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type Address", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Address",
+                        e
+                    )
                 }
             }
         }

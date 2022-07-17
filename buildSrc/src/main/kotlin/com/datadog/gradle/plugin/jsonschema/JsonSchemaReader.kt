@@ -12,14 +12,15 @@ import java.io.File
 import org.gradle.api.logging.Logger
 
 class JsonSchemaReader(
-    internal val nameMapping: Map<String, String>,
-    internal val logger: Logger
+    private val nameMapping: Map<String, String>,
+    private val logger: Logger
 ) {
 
     private val gson = Gson()
     private lateinit var currentFile: File
 
     private val loadedSchemas: MutableList<JsonDefinition> = mutableListOf()
+    private val knownSchemas: MutableMap<File, JsonDefinition> = mutableMapOf()
 
     // region JsonSchemaReader
 
@@ -34,7 +35,7 @@ class JsonSchemaReader(
         val fileName = schemaFile.nameWithoutExtension
         val typeName = (customName ?: schema.title ?: fileName).toCamelCase()
 
-        val rawType = transform(schema, typeName)
+        val rawType = transform(schema, typeName, schemaFile)
         return sanitize(rawType)
     }
 
@@ -48,15 +49,19 @@ class JsonSchemaReader(
      * - `#/definitions/foo`
      * - `#bar`
      *
-     * @param ref the reference used to resolve the target definiton
+     * @param fromFile the file where the reference is being used
+     * @param ref the reference used to resolve the target definition
      * @return the found Definition reference or null
      */
     private fun findDefinitionReference(
-        ref: String
-    ): Pair<String, JsonDefinition>? {
+        ref: String,
+        fromFile: File
+    ): JsonDefinitionReference? {
         val file = REF_FILE_REGEX.matchEntire(ref)
         if (file != null) {
-            return loadDefinitionFromFileRef(file.groupValues[2], file.groupValues[5])
+            val path = file.groupValues[2]
+            val localRef = file.groupValues[5]
+            return loadDefinitionFromFileRef(path, localRef, fromFile)
         }
 
         val name = REF_DEFINITION_REGEX.matchEntire(ref)?.groupValues?.get(1)
@@ -69,31 +74,41 @@ class JsonSchemaReader(
             { _: String, def: JsonDefinition -> def.id == id }
         }
 
-        val match = loadedSchemas.mapNotNull { schema ->
-            schema.definitions?.entries?.firstOrNull { matcher(it.key, it.value) }
-        }.firstOrNull() ?: return null
+        val match = knownSchemas[fromFile]
+            ?.definitions
+            ?.entries
+            ?.firstOrNull { matcher(it.key, it.value) } ?: return null
 
-        return match.key.toCamelCase() to match.value
+        return JsonDefinitionReference(
+            match.key.toCamelCase(),
+            match.value,
+            fromFile
+        )
     }
 
     /**
      * Loads a Definition from a Json Schema file
      * @param path the path to the file to load (relatively to the root file)
-     * @param ref a nested reference to a definiton, or blank to use the root type.
+     * @param ref a nested reference to a definition, or blank to use the root type.
      * @return the loaded definition or `null` if it wasn't found
      */
     private fun loadDefinitionFromFileRef(
         path: String,
-        ref: String
-    ): Pair<String, JsonDefinition>? {
-        val file = File(currentFile.parentFile.absolutePath + File.separator + path)
+        ref: String,
+        fromFile: File
+    ): JsonDefinitionReference? {
+        val file = File(fromFile.parentFile.absolutePath + File.separator + path)
         val schema = loadSchema(file)
 
         return if (ref.isBlank()) {
             val className = (schema.title ?: file.nameWithoutExtension).toCamelCase()
-            return className to schema
+            return JsonDefinitionReference(
+                className,
+                schema,
+                file
+            )
         } else {
-            findDefinitionReference(ref)
+            findDefinitionReference(ref, file)
         }
     }
 
@@ -103,11 +118,18 @@ class JsonSchemaReader(
      * @return the loaded [JsonDefinition]
      */
     private fun loadSchema(file: File): JsonDefinition {
+        val knownSchema = knownSchemas[file]
+        if (knownSchema != null) {
+            return knownSchema
+        }
+
         val schema = gson.fromJson(
             file.inputStream().reader(Charsets.UTF_8),
             JsonDefinition::class.java
         )
         loadedSchemas.add(schema)
+        knownSchemas[file] = schema
+
         return schema
     }
 
@@ -130,7 +152,8 @@ class JsonSchemaReader(
     // region Internal
 
     private fun extractAdditionalPropertiesType(
-        definition: JsonDefinition
+        definition: JsonDefinition,
+        fromFile: File
     ): TypeDefinition? {
         return when (val additional = definition.additionalProperties) {
             null -> null // TODO additionalProperties is true by default !
@@ -140,12 +163,12 @@ class JsonSchemaReader(
                     throw IllegalStateException("additionalProperties object is missing a `type`")
                 } else {
                     val type = JsonType.values().firstOrNull { it.name.equals(value, true) }
-                    transform(JsonDefinition.ANY.copy(type = type), "?")
+                    transform(JsonDefinition.ANY.copy(type = type), "?", fromFile)
                 }
             }
             is Boolean -> {
                 if (additional) {
-                    transform(JsonDefinition.EMPTY.copy(type = JsonType.OBJECT), "?")
+                    transform(JsonDefinition.EMPTY.copy(type = JsonType.OBJECT), "?", fromFile)
                 } else {
                     null
                 }
@@ -158,21 +181,21 @@ class JsonSchemaReader(
 
     private fun transform(
         definition: JsonDefinition?,
-        typeName: String
+        typeName: String,
+        fromFile: File
     ): TypeDefinition {
 
         if (definition == null) return TypeDefinition.Null()
 
-        val type = definition.type
-        return when (type) {
+        return when (definition.type) {
             JsonType.NULL -> TypeDefinition.Null(definition.description.orEmpty())
             JsonType.BOOLEAN -> transformPrimitive(definition, JsonPrimitiveType.BOOLEAN, typeName)
             JsonType.NUMBER -> transformPrimitive(definition, JsonPrimitiveType.NUMBER, typeName)
             JsonType.INTEGER -> transformPrimitive(definition, JsonPrimitiveType.INTEGER, typeName)
             JsonType.STRING -> transformPrimitive(definition, JsonPrimitiveType.STRING, typeName)
-            JsonType.ARRAY -> transformArray(definition, typeName)
+            JsonType.ARRAY -> transformArray(definition, typeName, fromFile)
             JsonType.OBJECT,
-            null -> transformType(definition, typeName)
+            null -> transformType(definition, typeName, fromFile)
         }
     }
 
@@ -221,12 +244,13 @@ class JsonSchemaReader(
 
     private fun transformArray(
         definition: JsonDefinition,
-        typeName: String
+        typeName: String,
+        fromFile: File
     ): TypeDefinition {
         val singularName = typeName.singular()
         val items = definition.items
         return TypeDefinition.Array(
-            items = transform(items, singularName),
+            items = transform(items, singularName, fromFile),
             uniqueItems = definition.uniqueItems ?: false,
             description = definition.description.orEmpty()
         )
@@ -234,7 +258,8 @@ class JsonSchemaReader(
 
     private fun transformType(
         definition: JsonDefinition,
-        typeName: String
+        typeName: String,
+        fromFile: File
     ): TypeDefinition {
         return if (!definition.enum.isNullOrEmpty()) {
             transformEnum(typeName, definition.type, definition.enum, definition.description)
@@ -243,22 +268,22 @@ class JsonSchemaReader(
         } else if (!definition.properties.isNullOrEmpty() ||
             definition.additionalProperties != null
         ) {
-            generateDataClass(typeName, definition)
+            generateDataClass(typeName, definition, fromFile)
         } else if (!definition.allOf.isNullOrEmpty()) {
-            generateTypeAllOf(typeName, definition.allOf)
+            generateTypeAllOf(typeName, definition.allOf, fromFile)
         } else if (!definition.oneOf.isNullOrEmpty()) {
-            generateTypeOneOf(typeName, definition.oneOf, definition.description)
+            generateTypeOneOf(typeName, definition.oneOf, definition.description, fromFile)
         } else if (!definition.ref.isNullOrBlank()) {
-            val refDefinition = findDefinitionReference(definition.ref)
+            val refDefinition = findDefinitionReference(definition.ref, fromFile)
             if (refDefinition != null) {
-                transform(refDefinition.second, refDefinition.first)
+                transform(refDefinition.definition, refDefinition.typeName, refDefinition.fromFile)
             } else {
                 throw IllegalStateException(
                     "Definition reference not found: ${definition.ref}."
                 )
             }
         } else if (definition.type == JsonType.OBJECT) {
-            generateDataClass(typeName, definition)
+            generateDataClass(typeName, definition, fromFile)
         } else {
             throw UnsupportedOperationException("Unsupported schema definition\n$definition")
         }
@@ -267,12 +292,13 @@ class JsonSchemaReader(
     private fun generateTypeOneOf(
         typeName: String,
         oneOf: List<JsonDefinition>,
-        description: String?
+        description: String?,
+        fromFile: File
     ): TypeDefinition {
         return TypeDefinition.OneOfClass(
             typeName,
             oneOf.mapIndexed { i, it ->
-                transform(it, it.title ?: "${typeName}_$i")
+                transform(it, it.title ?: "${typeName}_$i", fromFile)
             },
             description.orEmpty()
         )
@@ -280,12 +306,13 @@ class JsonSchemaReader(
 
     private fun generateTypeAllOf(
         typeName: String,
-        allOf: List<JsonDefinition>
+        allOf: List<JsonDefinition>,
+        fromFile: File
     ): TypeDefinition {
         var mergedType: TypeDefinition = TypeDefinition.Class(typeName, emptyList())
 
         allOf.forEach {
-            val type = transform(it, typeName)
+            val type = transform(it, typeName, fromFile)
             mergedType = mergedType.mergedWith(type)
         }
         return mergedType
@@ -293,7 +320,8 @@ class JsonSchemaReader(
 
     private fun generateDataClass(
         typeName: String,
-        definition: JsonDefinition
+        definition: JsonDefinition,
+        fromFile: File
     ): TypeDefinition {
 
         val properties = mutableListOf<TypeProperty>()
@@ -302,7 +330,8 @@ class JsonSchemaReader(
             val readOnly = (property.readOnly == null) || (property.readOnly)
             val propertyType = transform(
                 property,
-                name.toCamelCase()
+                name.toCamelCase(),
+                fromFile
             )
             properties.add(
                 TypeProperty(
@@ -314,7 +343,7 @@ class JsonSchemaReader(
                 )
             )
         }
-        val additional = extractAdditionalPropertiesType(definition)
+        val additional = extractAdditionalPropertiesType(definition, fromFile)
 
         return TypeDefinition.Class(
             name = typeName,

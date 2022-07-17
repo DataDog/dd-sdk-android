@@ -44,11 +44,20 @@ public data class User(
                 val contactType = ContactType.fromJson(jsonObject.get("contact_type").asString)
                 return User(username, host, firstname, lastname, contactType)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type User", e)
+                throw JsonParseException(
+                    "Unable to parse json into type User",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type User", e)
+                throw JsonParseException(
+                    "Unable to parse json into type User",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type User", e)
+                throw JsonParseException(
+                    "Unable to parse json into type User",
+                    e
+                )
             }
         }
     }

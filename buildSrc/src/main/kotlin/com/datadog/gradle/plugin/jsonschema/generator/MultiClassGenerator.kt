@@ -32,8 +32,6 @@ class MultiClassGenerator(
         val typeBuilder = TypeSpec.classBuilder(definition.name)
             .addModifiers(KModifier.SEALED)
 
-        debugKnownTypes("Generating One Of class")
-
         if (definition.description.isNotBlank()) {
             val docBuilder = CodeBlock.builder()
             docBuilder.add(definition.description)
@@ -51,17 +49,16 @@ class MultiClassGenerator(
                     )
                     wrapper.written = true
                 }
-                else -> TODO("Can't have type $it as child of a `one_of` block")
+                else -> throw IllegalStateException(
+                    "Can't have type $it as child of a `one_of` block"
+                )
             }
         }
-
-        debugKnownTypes("Wrote sealed implementations")
 
         typeBuilder.addFunction(generateMultiClassSerializer())
 
         typeBuilder.addType(generateCompanionObject(definition, rootTypeName))
 
-        debugKnownTypes("One Of class complete")
         return typeBuilder
     }
 
@@ -130,8 +127,9 @@ class MultiClassGenerator(
         funBuilder.addStatement(").firstOrNull { it != null }")
 
         funBuilder.beginControlFlow("if (result == null)")
-        funBuilder.addStatement("val message = \"$PARSE_ERROR_MSG %T\"", returnType)
-        funBuilder.addStatement("throw %T(message, errors[0])", ClassNameRef.JsonParseException)
+        funBuilder.addStatement("val message = \"$PARSE_ERROR_MSG %T\\n\" +", returnType)
+        funBuilder.addStatement("    errors.joinToString(\"\\n\") { it.message.toString() }")
+        funBuilder.addStatement("throw %T(message)", ClassNameRef.JsonParseException)
         funBuilder.endControlFlow()
         funBuilder.addStatement("return result")
 

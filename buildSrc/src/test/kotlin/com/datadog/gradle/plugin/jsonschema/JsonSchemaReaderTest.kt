@@ -62,6 +62,7 @@ class JsonSchemaReaderTest(
                 arrayOf("nested_enum", DateTime),
                 arrayOf("external_description", Delivery),
                 arrayOf("types", Demo),
+                arrayOf("external_description_complex_path", Employee),
                 arrayOf("top_level_definition", Foo),
                 arrayOf("one_of_ref", Household),
                 arrayOf("enum_number", Jacket),

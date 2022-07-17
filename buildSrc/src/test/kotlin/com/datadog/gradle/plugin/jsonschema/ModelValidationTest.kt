@@ -81,7 +81,11 @@ class ModelValidationTest(
             assertThat(generatedModel)
                 .overridingErrorMessage(
                     "Deserialized model was not the same " +
-                        "with the serialized for type: [$type] and test iteration: [$it]"
+                        "with the serialized for type: [$type] and test iteration: [$it]\n" +
+                        " -  input: $entity \n" +
+                        " -   json: $json \n" +
+                        " - output: $generatedModel"
+
                 )
                 .usingRecursiveComparison()
                 .withComparatorForType(numberTypeComparator, Number::class.java)
@@ -188,6 +192,7 @@ class ModelValidationTest(
                 arrayOf("external_description", OutputInfo("Delivery")),
                 arrayOf("types", OutputInfo("Demo")),
                 arrayOf("top_level_definition", OutputInfo("Foo")),
+                arrayOf("one_of_ref", OutputInfo("Household")),
                 arrayOf("enum_number", OutputInfo("Jacket")),
                 arrayOf("constant", OutputInfo("Location", true)),
                 arrayOf("read_only", OutputInfo("Message")),

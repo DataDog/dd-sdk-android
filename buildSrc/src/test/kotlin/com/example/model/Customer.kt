@@ -45,11 +45,20 @@ public data class Customer(
                 }
                 return Customer(name, billingAddress, shippingAddress)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Customer", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Customer",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Customer", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Customer",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Customer", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Customer",
+                    e
+                )
             }
         }
     }
@@ -78,11 +87,20 @@ public data class Customer(
                     val state = jsonObject.get("state").asString
                     return Address(streetAddress, city, state)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type Address", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Address",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type Address", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Address",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type Address", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Address",
+                        e
+                    )
                 }
             }
         }

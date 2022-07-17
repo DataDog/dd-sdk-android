@@ -56,11 +56,20 @@ public data class Comment(
                 }
                 return Comment(message, ratings, flags, tags)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Comment", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Comment",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Comment", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Comment",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Comment", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Comment",
+                    e
+                )
             }
         }
     }
@@ -97,11 +106,20 @@ public data class Comment(
                     }
                     return Ratings(global, additionalProperties)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type Ratings", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Ratings",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type Ratings", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Ratings",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type Ratings", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Ratings",
+                        e
+                    )
                 }
             }
         }
@@ -130,11 +148,20 @@ public data class Comment(
                     }
                     return Flags(additionalProperties)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type Flags", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Flags",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type Flags", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Flags",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type Flags", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Flags",
+                        e
+                    )
                 }
             }
         }
@@ -163,11 +190,20 @@ public data class Comment(
                     }
                     return Tags(additionalProperties)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type Tags", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Tags",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type Tags", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Tags",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type Tags", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Tags",
+                        e
+                    )
                 }
             }
         }

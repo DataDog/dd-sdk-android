@@ -34,11 +34,20 @@ public data class Delivery(
                 }
                 return Delivery(item, customer)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Delivery", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Delivery",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Delivery", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Delivery",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Delivery", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Delivery",
+                    e
+                )
             }
         }
     }
@@ -77,11 +86,20 @@ public data class Delivery(
                     }
                     return Customer(name, billingAddress, shippingAddress)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type Customer", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Customer",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type Customer", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Customer",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type Customer", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Customer",
+                        e
+                    )
                 }
             }
         }
@@ -111,11 +129,20 @@ public data class Delivery(
                     val state = jsonObject.get("state").asString
                     return Address(streetAddress, city, state)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type Address", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Address",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type Address", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Address",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type Address", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Address",
+                        e
+                    )
                 }
             }
         }

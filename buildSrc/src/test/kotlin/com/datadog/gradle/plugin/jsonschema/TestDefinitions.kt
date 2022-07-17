@@ -344,6 +344,24 @@ val Delivery = TypeDefinition.Class(
     )
 )
 
+val Employee = TypeDefinition.Class(
+    name = "Employee",
+    properties = listOf(
+        TypeProperty("name", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+        TypeProperty(
+            name = "contact",
+            type = TypeDefinition.Class(
+                name = "Contact",
+                properties = listOf(
+                    TypeProperty("phone", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
+                    TypeProperty("address", Address, false),
+                )
+            ),
+            optional = true
+        )
+    )
+)
+
 val Foo = TypeDefinition.Class(
     name = "Foo",
     properties = listOf(
@@ -627,6 +645,39 @@ val Household = TypeDefinition.Class(
                         )
                     ),
                     description = "A representation of the animal kingdom"
+                )
+            ),
+            optional = true
+        ),
+        TypeProperty(
+            name = "situation",
+            type = TypeDefinition.OneOfClass(
+                name = "Situation",
+                options = listOf(
+                    TypeDefinition.Class(
+                        name = "Marriage",
+                        properties = listOf(
+                            TypeProperty(
+                                name = "spouses",
+                                type = TypeDefinition.Array(
+                                    items = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
+                                ),
+                                optional = false
+                            )
+                        )
+                    ),
+                    TypeDefinition.Class(
+                        name = "Cotenancy",
+                        properties = listOf(
+                            TypeProperty(
+                                name = "roommates",
+                                type = TypeDefinition.Array(
+                                    items = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
+                                ),
+                                optional = false
+                            )
+                        )
+                    )
                 )
             ),
             optional = true

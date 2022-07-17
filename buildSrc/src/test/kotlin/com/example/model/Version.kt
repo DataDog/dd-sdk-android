@@ -44,11 +44,20 @@ public data class Version(
                 }
                 return Version(id, date)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Version", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Version",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Version", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Version",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Version", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Version",
+                    e
+                )
             }
         }
     }

@@ -41,11 +41,20 @@ public data class Order(
                 }
                 return Order(sizes)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Order", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Order",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Order", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Order",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Order", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Order",
+                    e
+                )
             }
         }
     }

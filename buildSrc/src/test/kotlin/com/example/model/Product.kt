@@ -37,11 +37,20 @@ public data class Product(
                 val price = jsonObject.get("price").asNumber
                 return Product(productId, productName, price)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Product", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Product",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Product", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Product",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Product", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Product",
+                    e
+                )
             }
         }
     }

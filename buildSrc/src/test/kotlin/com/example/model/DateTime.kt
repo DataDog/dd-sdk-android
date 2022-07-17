@@ -42,11 +42,20 @@ public data class DateTime(
                 }
                 return DateTime(date, time)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type DateTime", e)
+                throw JsonParseException(
+                    "Unable to parse json into type DateTime",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type DateTime", e)
+                throw JsonParseException(
+                    "Unable to parse json into type DateTime",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type DateTime", e)
+                throw JsonParseException(
+                    "Unable to parse json into type DateTime",
+                    e
+                )
             }
         }
     }
@@ -83,11 +92,20 @@ public data class DateTime(
                     val day = jsonObject.get("day")?.asLong
                     return Date(year, month, day)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type Date", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Date",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type Date", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Date",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type Date", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Date",
+                        e
+                    )
                 }
             }
         }
@@ -123,11 +141,20 @@ public data class DateTime(
                     val seconds = jsonObject.get("seconds")?.asLong
                     return Time(hour, minute, seconds)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type Time", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Time",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type Time", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Time",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type Time", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Time",
+                        e
+                    )
                 }
             }
         }

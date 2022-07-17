@@ -56,11 +56,20 @@ public data class Article(
                 }
                 return Article(title, tags, authors)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Article", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Article",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Article", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Article",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Article", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Article",
+                    e
+                )
             }
         }
     }

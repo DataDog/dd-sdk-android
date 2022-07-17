@@ -69,11 +69,20 @@ public data class Demo(
                 val nl = null
                 return Demo(s, i, n, b, l, ns, ni, nn, nb, nl)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Demo", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Demo",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Demo", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Demo",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Demo", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Demo",
+                    e
+                )
             }
         }
     }

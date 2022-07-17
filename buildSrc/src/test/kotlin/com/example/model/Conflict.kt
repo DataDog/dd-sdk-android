@@ -41,11 +41,20 @@ public data class Conflict(
                 }
                 return Conflict(type, user)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Conflict", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Conflict",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Conflict", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Conflict",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Conflict", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Conflict",
+                    e
+                )
             }
         }
     }
@@ -70,11 +79,20 @@ public data class Conflict(
                     val id = jsonObject.get("id")?.asString
                     return ConflictType(id)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type ConflictType", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type ConflictType",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type ConflictType", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type ConflictType",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type ConflictType", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type ConflictType",
+                        e
+                    )
                 }
             }
         }
@@ -107,11 +125,20 @@ public data class Conflict(
                     }
                     return User(name, type)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type User", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type User",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type User", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type User",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type User", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type User",
+                        e
+                    )
                 }
             }
         }

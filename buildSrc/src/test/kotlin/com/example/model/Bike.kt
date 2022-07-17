@@ -57,11 +57,20 @@ public data class Bike(
                 val color = Color.fromJson(jsonObject.get("color").asString)
                 return Bike(productId, productName, type, price, frameMaterial, inStock, color)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Bike", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Bike",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Bike", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Bike",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Bike", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Bike",
+                    e
+                )
             }
         }
     }

@@ -51,11 +51,20 @@ public data class UserMerged(
                 val lastname = jsonObject.get("lastname").asString
                 return UserMerged(email, phone, info, firstname, lastname)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type UserMerged", e)
+                throw JsonParseException(
+                    "Unable to parse json into type UserMerged",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type UserMerged", e)
+                throw JsonParseException(
+                    "Unable to parse json into type UserMerged",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type UserMerged", e)
+                throw JsonParseException(
+                    "Unable to parse json into type UserMerged",
+                    e
+                )
             }
         }
     }
@@ -85,11 +94,20 @@ public data class UserMerged(
                     val source = jsonObject.get("source")?.asString
                     return Info(notes, source)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type Info", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Info",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type Info", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Info",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type Info", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Info",
+                        e
+                    )
                 }
             }
         }
