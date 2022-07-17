@@ -31,11 +31,20 @@ public data class Jacket(
                 val size = Size.fromJson(jsonObject.get("size").asString)
                 return Jacket(size)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Jacket", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Jacket",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Jacket", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Jacket",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Jacket", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Jacket",
+                    e
+                )
             }
         }
     }

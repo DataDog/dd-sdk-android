@@ -43,11 +43,20 @@ public sealed class Animal {
                     val size = jsonObject.get("size")?.asLong
                     return Fish(water, size)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type Fish", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Fish",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type Fish", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Fish",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type Fish", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Fish",
+                        e
+                    )
                 }
             }
         }
@@ -74,11 +83,20 @@ public sealed class Animal {
                     val canFly = jsonObject.get("can_fly").asBoolean
                     return Bird(food, canFly)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type Bird", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Bird",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type Bird", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Bird",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type Bird", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Bird",
+                        e
+                    )
                 }
             }
         }
@@ -106,8 +124,9 @@ public sealed class Animal {
                 asBird,
             ).firstOrNull { it != null }
             if (result == null) {
-                val message = "Unable to parse json into one of type Animal"
-                throw JsonParseException(message, errors[0])
+                val message = "Unable to parse json into one of type Animal\n" +
+                    errors.joinToString("\n") { it.message.toString() }
+                throw JsonParseException(message)
             }
             return result
         }

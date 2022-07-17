@@ -36,11 +36,20 @@ public data class Style(
                 }
                 return Style(color)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Style", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Style",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Style", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Style",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Style", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Style",
+                    e
+                )
             }
         }
     }

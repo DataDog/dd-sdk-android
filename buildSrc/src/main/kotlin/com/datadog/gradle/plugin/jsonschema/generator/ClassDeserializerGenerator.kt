@@ -41,39 +41,17 @@ class ClassDeserializerGenerator(
         funBuilder.appendDeserializerFunctionBlock(definition, isConstantClass, rootTypeName)
 
         if (!isConstantClass) {
-            funBuilder.nextControlFlow(
-                "catch (%L: %T)",
-                Identifier.CAUGHT_EXCEPTION,
-                ClassNameRef.IllegalStateException
-            )
-            funBuilder.addStatement(
-                "throw %T(\"$PARSE_ERROR_MSG %T\", %L)",
-                ClassNameRef.JsonParseException,
-                returnType,
-                Identifier.CAUGHT_EXCEPTION
-            )
-            funBuilder.nextControlFlow(
-                "catch (%L: %T)",
-                Identifier.CAUGHT_EXCEPTION,
-                ClassNameRef.NumberFormatException
-            )
-            funBuilder.addStatement(
-                "throw %T(\"$PARSE_ERROR_MSG %T\", %L)",
-                ClassNameRef.JsonParseException,
-                returnType,
-                Identifier.CAUGHT_EXCEPTION
-            )
-            funBuilder.nextControlFlow(
-                "catch (%L: %T)",
-                Identifier.CAUGHT_EXCEPTION,
-                ClassNameRef.NullPointerException
-            )
-            funBuilder.addStatement(
-                "throw %T(\"$PARSE_ERROR_MSG %T\", %L)",
-                ClassNameRef.JsonParseException,
-                returnType,
-                Identifier.CAUGHT_EXCEPTION
-            )
+            caughtExceptions.forEach {
+                funBuilder.nextControlFlow(
+                    "catch (%L: %T)",
+                    Identifier.CAUGHT_EXCEPTION,
+                    it
+                )
+                funBuilder.addStatement("throw %T(", ClassNameRef.JsonParseException)
+                funBuilder.addStatement("    \"$PARSE_ERROR_MSG %T\",", returnType)
+                funBuilder.addStatement("    %L", Identifier.CAUGHT_EXCEPTION)
+                funBuilder.addStatement(")")
+            }
             funBuilder.endControlFlow()
         }
         return funBuilder.build()
@@ -159,6 +137,15 @@ class ClassDeserializerGenerator(
                     )
                 }
             }
+            is TypeDefinition.OneOfClass -> {
+                appendObjectDeserialization(
+                    propertyType,
+                    assignee,
+                    getter,
+                    nullable,
+                    rootTypeName
+                )
+            }
             is TypeDefinition.Enum -> appendEnumDeserialization(
                 propertyType,
                 assignee,
@@ -170,7 +157,8 @@ class ClassDeserializerGenerator(
                 // No Op
             }
             else -> throw IllegalStateException(
-                "Property deserialization not yet implemented for $propertyType"
+                "Property deserialization not yet implemented for " +
+                    "$rootTypeName $assignee $propertyType"
             )
         }
     }
@@ -282,6 +270,24 @@ class ClassDeserializerGenerator(
         endControlFlow()
     }
 
+    private fun FunSpec.Builder.appendObjectDeserialization(
+        propertyType: TypeDefinition.OneOfClass,
+        assignee: String,
+        getter: String,
+        nullable: Boolean,
+        rootTypeName: String
+    ) {
+        val opt = if (nullable) "?" else ""
+        beginControlFlow("$assignee = $getter$opt.toString()$opt.let")
+
+        addStatement(
+            "%T.%L(it)",
+            propertyType.asKotlinTypeName(rootTypeName),
+            Identifier.FUN_FROM_JSON
+        )
+        endControlFlow()
+    }
+
     private fun FunSpec.Builder.appendEnumDeserialization(
         propertyType: TypeDefinition.Enum,
         assignee: String,
@@ -372,5 +378,11 @@ class ClassDeserializerGenerator(
 
     companion object {
         private const val PARSE_ERROR_MSG = "Unable to parse json into type"
+
+        private val caughtExceptions = arrayOf(
+            ClassNameRef.IllegalStateException,
+            ClassNameRef.NumberFormatException,
+            ClassNameRef.NullPointerException
+        )
     }
 }

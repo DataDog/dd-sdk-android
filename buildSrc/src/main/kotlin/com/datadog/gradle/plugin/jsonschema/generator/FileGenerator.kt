@@ -70,7 +70,6 @@ class FileGenerator(
         val topLevelTypeBuilder = generateTypeSpec(definition, rootTypeName)
 
         while (knownTypes.any(isUnwrittenClass)) {
-            classGenerator.debugKnownTypes("Appending nested classes")
 
             val nestedClasses = knownTypes.filter(isUnwrittenClass).toSet()
             nestedClasses.forEach {
@@ -80,7 +79,6 @@ class FileGenerator(
         }
 
         while (knownTypes.any(isEnum)) {
-            classGenerator.debugKnownTypes("Appending nested enums")
             val nestedEnums = knownTypes.filter(isEnum).toSet()
             nestedEnums.forEach {
                 topLevelTypeBuilder.addType(generateTypeSpec(it.type, rootTypeName).build())

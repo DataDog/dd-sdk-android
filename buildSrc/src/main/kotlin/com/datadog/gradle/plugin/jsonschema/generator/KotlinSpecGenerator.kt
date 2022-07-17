@@ -84,7 +84,7 @@ abstract class KotlinSpecGenerator<I : Any, O : Any>(
             KotlinTypeWrapper(
                 uniqueName,
                 typeName,
-                this
+                this.copy(name = uniqueName)
             ).apply { knownTypes.add(this) }
         } else {
             matchingClass
@@ -92,36 +92,36 @@ abstract class KotlinSpecGenerator<I : Any, O : Any>(
     }
 
     private fun TypeDefinition.Enum.withUniqueTypeName(rootTypeName: String): KotlinTypeWrapper {
-        val matchingClass = knownTypes.firstOrNull {
+        val matchingEnum = knownTypes.firstOrNull {
             it.type.matches(this)
         }
-        return if (matchingClass == null) {
+        return if (matchingEnum == null) {
             val uniqueName = name.uniqueTypeName()
             val typeName = ClassName(packageName, rootTypeName, uniqueName)
             KotlinTypeWrapper(
                 uniqueName,
                 typeName,
-                this
+                this.copy(name = uniqueName)
             ).apply { knownTypes.add(this) }
         } else {
-            matchingClass
+            matchingEnum
         }
     }
 
     private fun TypeDefinition.OneOfClass.withUniqueTypeName(rootTypeName: String): KotlinTypeWrapper {
-        val matchingClass = knownTypes.firstOrNull {
+        val matchingOneOf = knownTypes.firstOrNull {
             it.type.matches(this)
         }
-        return if (matchingClass == null) {
+        return if (matchingOneOf == null) {
             val uniqueName = name.uniqueTypeName()
             val typeName = ClassName(packageName, rootTypeName, uniqueName)
             KotlinTypeWrapper(
                 uniqueName,
                 typeName,
-                this
+                this.copy(name = uniqueName)
             ).apply { knownTypes.add(this) }
         } else {
-            matchingClass
+            matchingOneOf
         }
     }
 
@@ -137,10 +137,4 @@ abstract class KotlinSpecGenerator<I : Any, O : Any>(
 
     // endregion
 
-    fun debugKnownTypes(message: String) {
-        System.err.println("--- $message; known types:")
-        knownTypes.forEach {
-            System.err.println("* ${it.name} (${it.type.javaClass.simpleName}) written:${it.written}")
-        }
-    }
 }

@@ -37,11 +37,20 @@ public data class Foo(
                 val baz = jsonObject.get("baz")?.asLong
                 return Foo(bar, baz)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Foo", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Foo",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Foo", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Foo",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Foo", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Foo",
+                    e
+                )
             }
         }
     }

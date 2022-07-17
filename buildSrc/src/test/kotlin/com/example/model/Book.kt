@@ -42,11 +42,20 @@ public data class Book(
                 }
                 return Book(bookId, title, price, author)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Book", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Book",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Book", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Book",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Book", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Book",
+                    e
+                )
             }
         }
     }
@@ -77,11 +86,20 @@ public data class Book(
                     }
                     return Author(firstName, lastName, contact)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type Author", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Author",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type Author", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Author",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type Author", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Author",
+                        e
+                    )
                 }
             }
         }
@@ -112,11 +130,20 @@ public data class Book(
                     val email = jsonObject.get("email")?.asString
                     return Contact(phone, email)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type Contact", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Contact",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type Contact", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Contact",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type Contact", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Contact",
+                        e
+                    )
                 }
             }
         }

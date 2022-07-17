@@ -58,11 +58,20 @@ public data class Video(
                 }
                 return Video(title, tags, links)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Video", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Video",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Video", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Video",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Video", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Video",
+                    e
+                )
             }
         }
     }

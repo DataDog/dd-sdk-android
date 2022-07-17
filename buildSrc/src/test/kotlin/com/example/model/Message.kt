@@ -77,11 +77,20 @@ public data class Message(
                 val important = jsonObject.get("important")?.asBoolean
                 return Message(destination, origin, subject, message, labels, read, important)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Message", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Message",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Message", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Message",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Message", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Message",
+                    e
+                )
             }
         }
     }

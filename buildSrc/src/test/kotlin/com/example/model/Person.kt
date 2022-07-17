@@ -42,11 +42,20 @@ public data class Person(
                 val age = jsonObject.get("age")?.asLong
                 return Person(firstName, lastName, age)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Person", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Person",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Person", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Person",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Person", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Person",
+                    e
+                )
             }
         }
     }

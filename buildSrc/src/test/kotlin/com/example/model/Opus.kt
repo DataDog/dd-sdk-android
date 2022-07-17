@@ -66,11 +66,20 @@ public data class Opus(
                 val duration = jsonObject.get("duration")?.asLong
                 return Opus(title, composer, artists, duration)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Opus", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Opus",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Opus", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Opus",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Opus", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Opus",
+                    e
+                )
             }
         }
     }
@@ -107,11 +116,20 @@ public data class Opus(
                     }
                     return Artist(name, role)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type Artist", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Artist",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type Artist", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Artist",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type Artist", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Artist",
+                        e
+                    )
                 }
             }
         }

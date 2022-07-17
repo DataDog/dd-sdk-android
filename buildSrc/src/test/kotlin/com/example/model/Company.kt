@@ -65,11 +65,20 @@ public data class Company(
                 }
                 return Company(name, ratings, information, additionalProperties)
             } catch (e: IllegalStateException) {
-                throw JsonParseException("Unable to parse json into type Company", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Company",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException("Unable to parse json into type Company", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Company",
+                    e
+                )
             } catch (e: NullPointerException) {
-                throw JsonParseException("Unable to parse json into type Company", e)
+                throw JsonParseException(
+                    "Unable to parse json into type Company",
+                    e
+                )
             }
         }
     }
@@ -106,11 +115,20 @@ public data class Company(
                     }
                     return Ratings(global, additionalProperties)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type Ratings", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Ratings",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type Ratings", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Ratings",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type Ratings", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Ratings",
+                        e
+                    )
                 }
             }
         }
@@ -155,11 +173,20 @@ public data class Company(
                     }
                     return Information(date, priority, additionalProperties)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException("Unable to parse json into type Information", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Information",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException("Unable to parse json into type Information", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Information",
+                        e
+                    )
                 } catch (e: NullPointerException) {
-                    throw JsonParseException("Unable to parse json into type Information", e)
+                    throw JsonParseException(
+                        "Unable to parse json into type Information",
+                        e
+                    )
                 }
             }
         }
