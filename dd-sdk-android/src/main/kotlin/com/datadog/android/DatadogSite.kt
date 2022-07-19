@@ -12,6 +12,8 @@ package com.datadog.android
  * @property siteName Explicit site name property introduced in order to have a consistent SDK
  * instance ID (because this value is used there) in case if enum values are renamed.
  */
+// TODO RUMM-0000 Remove logs, traces, rum endpoint methods, because this class is for core SDK v2
+// TODO RUMM-0000 Since it is used in SDK v2 context, what should be the value for custom endpoints?
 enum class DatadogSite(val siteName: String) {
     /**
      *  The US1 site: [app.datadoghq.com](https://app.datadoghq.com).

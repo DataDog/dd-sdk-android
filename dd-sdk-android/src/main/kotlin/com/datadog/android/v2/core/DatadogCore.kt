@@ -33,7 +33,8 @@ import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.FeatureUploadConfiguration
 import com.datadog.android.v2.api.SDKCore
-import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.DatadogContextProvider
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.opentracing.DDSpan
@@ -63,7 +64,7 @@ internal class DatadogCore(
     internal var webViewRumFeature: SdkFeature<Any, Configuration.Feature.RUM>? = null
 
     // TODO RUMM-0000 handle context
-    internal var context: DatadogContext? = null
+    internal var contextProvider: ContextProvider? = null
 
     init {
         val isDebug = isAppDebuggable(context)
@@ -130,11 +131,19 @@ internal class DatadogCore(
     /** @inheritDoc */
     override fun stop() {
         logsFeature?.stop()
+        logsFeature = null
         tracingFeature?.stop()
+        tracingFeature = null
         rumFeature?.stop()
+        rumFeature = null
         crashReportsFeature?.stop()
+        crashReportsFeature = null
         webViewLogsFeature?.stop()
+        webViewLogsFeature = null
         webViewRumFeature?.stop()
+        webViewRumFeature = null
+
+        contextProvider = null
 
         coreFeature.stop()
     }
@@ -189,6 +198,7 @@ internal class DatadogCore(
             mutableConfig.coreConfig,
             TrackingConsent.PENDING
         )
+        contextProvider = DatadogContextProvider(coreFeature)
 
         applyAdditionalConfiguration(mutableConfig.additionalConfig)
 

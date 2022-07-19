@@ -13,6 +13,8 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.internal.domain.scope.toSchemaSource
 import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.v2.api.context.NetworkInfo as NetworkInfoV2
+import com.datadog.android.v2.api.context.UserInfo as UserInfoV2
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
@@ -128,6 +130,35 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasUserInfo(expected: UserInfoV2?): ErrorEventAssert {
+        assertThat(actual.usr?.id)
+            .overridingErrorMessage(
+                "Expected RUM event to have usr.id ${expected?.id} " +
+                    "but was ${actual.usr?.id}"
+            )
+            .isEqualTo(expected?.id)
+        assertThat(actual.usr?.name)
+            .overridingErrorMessage(
+                "Expected RUM event to have usr.name ${expected?.name} " +
+                    "but was ${actual.usr?.name}"
+            )
+            .isEqualTo(expected?.name)
+        assertThat(actual.usr?.email)
+            .overridingErrorMessage(
+                "Expected RUM event to have usr.email ${expected?.email} " +
+                    "but was ${actual.usr?.email}"
+            )
+            .isEqualTo(expected?.email)
+        assertThat(actual.usr?.additionalProperties)
+            .overridingErrorMessage(
+                "Expected event to have user additional " +
+                    "properties ${expected?.additionalProperties} " +
+                    "but was ${actual.usr?.additionalProperties}"
+            )
+            .containsExactlyInAnyOrderEntriesOf(expected?.additionalProperties)
+        return this
+    }
+
     fun containsExactlyContextAttributes(expected: Map<String, Any?>) {
         assertThat(actual.context?.additionalProperties)
             .overridingErrorMessage(
@@ -182,6 +213,60 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
                     "but was ${actual.connectivity?.cellular?.carrierName}"
             )
             .isEqualTo(expected?.carrierName)
+
+        assertThat(actual.connectivity?.interfaces)
+            .overridingErrorMessage(
+                "Expected RUM event to have connectivity.interfaces $expectedInterfaces " +
+                    "but was ${actual.connectivity?.interfaces}"
+            )
+            .isEqualTo(expectedInterfaces)
+        return this
+    }
+
+    fun hasConnectivityInfo(expected: NetworkInfoV2?): ErrorEventAssert {
+        val expectedStatus = if (expected?.isConnected() == true) {
+            ErrorEvent.Status.CONNECTED
+        } else {
+            ErrorEvent.Status.NOT_CONNECTED
+        }
+        val expectedInterfaces = when (expected?.connectivity) {
+            NetworkInfoV2.Connectivity.NETWORK_ETHERNET -> listOf(ErrorEvent.Interface.ETHERNET)
+            NetworkInfoV2.Connectivity.NETWORK_WIFI -> listOf(ErrorEvent.Interface.WIFI)
+            NetworkInfoV2.Connectivity.NETWORK_WIMAX -> listOf(ErrorEvent.Interface.WIMAX)
+            NetworkInfoV2.Connectivity.NETWORK_BLUETOOTH -> listOf(ErrorEvent.Interface.BLUETOOTH)
+            NetworkInfoV2.Connectivity.NETWORK_2G,
+            NetworkInfoV2.Connectivity.NETWORK_3G,
+            NetworkInfoV2.Connectivity.NETWORK_4G,
+            NetworkInfoV2.Connectivity.NETWORK_5G,
+            NetworkInfoV2.Connectivity.NETWORK_MOBILE_OTHER,
+            NetworkInfoV2.Connectivity.NETWORK_CELLULAR -> listOf(ErrorEvent.Interface.CELLULAR)
+            NetworkInfoV2.Connectivity.NETWORK_OTHER -> listOf(ErrorEvent.Interface.OTHER)
+            NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
+            null -> null
+        }
+
+        assertThat(actual.connectivity?.status)
+            .overridingErrorMessage(
+                "Expected RUM event to have connectivity.status $expectedStatus " +
+                    "but was ${actual.connectivity?.status}"
+            )
+            .isEqualTo(expectedStatus)
+
+        assertThat(actual.connectivity?.cellular?.technology)
+            .overridingErrorMessage(
+                "Expected RUM event to connectivity usr.cellular.technology " +
+                    "${expected?.carrier?.technology} " +
+                    "but was ${actual.connectivity?.cellular?.technology}"
+            )
+            .isEqualTo(expected?.carrier?.technology)
+
+        assertThat(actual.connectivity?.cellular?.carrierName)
+            .overridingErrorMessage(
+                "Expected RUM event to connectivity usr.cellular.carrierName " +
+                    "${expected?.carrier?.carrierName} " +
+                    "but was ${actual.connectivity?.cellular?.carrierName}"
+            )
+            .isEqualTo(expected?.carrier?.carrierName)
 
         assertThat(actual.connectivity?.interfaces)
             .overridingErrorMessage(

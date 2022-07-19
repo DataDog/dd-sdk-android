@@ -7,7 +7,6 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.system.DeviceType
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.internal.utils.errorWithTelemetry
@@ -21,6 +20,8 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.v2.api.context.DeviceType
+import com.datadog.android.v2.api.context.NetworkInfo as NetworkInfoV2
 import java.util.Locale
 
 internal fun String.toMethod(): ResourceEvent.Method {
@@ -230,6 +231,118 @@ internal fun NetworkInfo.toLongTaskConnectivity(): LongTaskEvent.Connectivity {
 
 internal fun NetworkInfo.isConnected(): Boolean {
     return connectivity != NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
+}
+
+internal fun NetworkInfoV2.toResourceConnectivity(): ResourceEvent.Connectivity {
+    val status = if (isConnected()) {
+        ResourceEvent.Status.CONNECTED
+    } else {
+        ResourceEvent.Status.NOT_CONNECTED
+    }
+    val interfaces = when (connectivity) {
+        NetworkInfoV2.Connectivity.NETWORK_ETHERNET -> listOf(ResourceEvent.Interface.ETHERNET)
+        NetworkInfoV2.Connectivity.NETWORK_WIFI -> listOf(ResourceEvent.Interface.WIFI)
+        NetworkInfoV2.Connectivity.NETWORK_WIMAX -> listOf(ResourceEvent.Interface.WIMAX)
+        NetworkInfoV2.Connectivity.NETWORK_BLUETOOTH -> listOf(ResourceEvent.Interface.BLUETOOTH)
+        NetworkInfoV2.Connectivity.NETWORK_2G,
+        NetworkInfoV2.Connectivity.NETWORK_3G,
+        NetworkInfoV2.Connectivity.NETWORK_4G,
+        NetworkInfoV2.Connectivity.NETWORK_5G,
+        NetworkInfoV2.Connectivity.NETWORK_MOBILE_OTHER,
+        NetworkInfoV2.Connectivity.NETWORK_CELLULAR -> listOf(ResourceEvent.Interface.CELLULAR)
+        NetworkInfoV2.Connectivity.NETWORK_OTHER -> listOf(ResourceEvent.Interface.OTHER)
+        NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
+    }
+
+    val cellular = if (carrier != null) {
+        ResourceEvent.Cellular(
+            technology = carrier.technology,
+            carrierName = carrier.carrierName
+        )
+    } else {
+        null
+    }
+    return ResourceEvent.Connectivity(
+        status,
+        interfaces,
+        cellular
+    )
+}
+
+internal fun NetworkInfoV2.toErrorConnectivity(): ErrorEvent.Connectivity {
+    val status = if (isConnected()) {
+        ErrorEvent.Status.CONNECTED
+    } else {
+        ErrorEvent.Status.NOT_CONNECTED
+    }
+    val interfaces = when (connectivity) {
+        NetworkInfoV2.Connectivity.NETWORK_ETHERNET -> listOf(ErrorEvent.Interface.ETHERNET)
+        NetworkInfoV2.Connectivity.NETWORK_WIFI -> listOf(ErrorEvent.Interface.WIFI)
+        NetworkInfoV2.Connectivity.NETWORK_WIMAX -> listOf(ErrorEvent.Interface.WIMAX)
+        NetworkInfoV2.Connectivity.NETWORK_BLUETOOTH -> listOf(ErrorEvent.Interface.BLUETOOTH)
+        NetworkInfoV2.Connectivity.NETWORK_2G,
+        NetworkInfoV2.Connectivity.NETWORK_3G,
+        NetworkInfoV2.Connectivity.NETWORK_4G,
+        NetworkInfoV2.Connectivity.NETWORK_5G,
+        NetworkInfoV2.Connectivity.NETWORK_MOBILE_OTHER,
+        NetworkInfoV2.Connectivity.NETWORK_CELLULAR -> listOf(ErrorEvent.Interface.CELLULAR)
+        NetworkInfoV2.Connectivity.NETWORK_OTHER -> listOf(ErrorEvent.Interface.OTHER)
+        NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
+    }
+
+    val cellular = if (carrier != null) {
+        ErrorEvent.Cellular(
+            technology = carrier.technology,
+            carrierName = carrier.carrierName
+        )
+    } else {
+        null
+    }
+    return ErrorEvent.Connectivity(
+        status,
+        interfaces,
+        cellular
+    )
+}
+
+internal fun NetworkInfoV2.toLongTaskConnectivity(): LongTaskEvent.Connectivity {
+    val status = if (isConnected()) {
+        LongTaskEvent.Status.CONNECTED
+    } else {
+        LongTaskEvent.Status.NOT_CONNECTED
+    }
+    val interfaces = when (connectivity) {
+        NetworkInfoV2.Connectivity.NETWORK_ETHERNET -> listOf(LongTaskEvent.Interface.ETHERNET)
+        NetworkInfoV2.Connectivity.NETWORK_WIFI -> listOf(LongTaskEvent.Interface.WIFI)
+        NetworkInfoV2.Connectivity.NETWORK_WIMAX -> listOf(LongTaskEvent.Interface.WIMAX)
+        NetworkInfoV2.Connectivity.NETWORK_BLUETOOTH -> listOf(LongTaskEvent.Interface.BLUETOOTH)
+        NetworkInfoV2.Connectivity.NETWORK_2G,
+        NetworkInfoV2.Connectivity.NETWORK_3G,
+        NetworkInfoV2.Connectivity.NETWORK_4G,
+        NetworkInfoV2.Connectivity.NETWORK_5G,
+        NetworkInfoV2.Connectivity.NETWORK_MOBILE_OTHER,
+        NetworkInfoV2.Connectivity.NETWORK_CELLULAR -> listOf(LongTaskEvent.Interface.CELLULAR)
+        NetworkInfoV2.Connectivity.NETWORK_OTHER -> listOf(LongTaskEvent.Interface.OTHER)
+        NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
+    }
+
+    val cellular = if (carrier != null) {
+        LongTaskEvent.Cellular(
+            technology = carrier.technology,
+            carrierName = carrier.carrierName
+        )
+    } else {
+        null
+    }
+    return LongTaskEvent.Connectivity(
+        status,
+        interfaces,
+        cellular
+    )
+}
+
+internal fun NetworkInfoV2.isConnected(): Boolean {
+    return connectivity != NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED
 }
 
 // endregion

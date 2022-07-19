@@ -64,6 +64,7 @@ internal class RumMonitorBuilderTest {
     fun `set up`() {
         val mockCore = mock<DatadogCore>()
         whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
+        whenever(mockCore.contextProvider) doReturn mock()
 
         rumFeature = RumFeature(coreFeature.mockInstance)
         rumFeature.initialize(appContext.mockInstance, fakeConfig)

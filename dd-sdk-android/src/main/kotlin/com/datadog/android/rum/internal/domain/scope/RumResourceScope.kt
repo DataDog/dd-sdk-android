@@ -8,12 +8,9 @@ package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -24,12 +21,12 @@ import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.v2.core.internal.ContextProvider
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.Locale
 import java.util.UUID
 
-@Suppress("LongParameterList")
 internal class RumResourceScope(
     internal val parentScope: RumScope,
     internal val url: String,
@@ -40,9 +37,7 @@ internal class RumResourceScope(
     serverTimeOffsetInMs: Long,
     internal val firstPartyHostDetector: FirstPartyHostDetector,
     private val rumEventSourceProvider: RumEventSourceProvider,
-    private val userInfoProvider: UserInfoProvider,
-    networkInfoProvider: NetworkInfoProvider,
-    private val androidInfoProvider: AndroidInfoProvider
+    private val contextProvider: ContextProvider
 ) : RumScope {
 
     internal val resourceId: String = UUID.randomUUID().toString()
@@ -54,7 +49,7 @@ internal class RumResourceScope(
 
     internal val eventTimestamp = eventTime.timestamp + serverTimeOffsetInMs
     private val startedNanos: Long = eventTime.nanoTime
-    private val networkInfo = networkInfoProvider.getLatestNetworkInfo()
+    private val networkInfo = contextProvider.context.networkInfo
 
     private var sent = false
     private var waitForTiming = false
@@ -175,8 +170,9 @@ internal class RumResourceScope(
         val traceId = attributes.remove(RumAttributes.TRACE_ID)?.toString()
         val spanId = attributes.remove(RumAttributes.SPAN_ID)?.toString()
 
-        val context = getRumContext()
-        val user = userInfoProvider.getUserInfo()
+        val sdkContext = contextProvider.context
+        val rumContext = getRumContext()
+        val user = sdkContext.userInfo
 
         @Suppress("UNCHECKED_CAST")
         val finalTiming = timing ?: extractResourceTiming(
@@ -200,11 +196,11 @@ internal class RumResourceScope(
                 download = finalTiming?.download(),
                 provider = resolveResourceProvider()
             ),
-            action = context.actionId?.let { ResourceEvent.Action(it) },
+            action = rumContext.actionId?.let { ResourceEvent.Action(it) },
             view = ResourceEvent.View(
-                id = context.viewId.orEmpty(),
-                name = context.viewName,
-                url = context.viewUrl.orEmpty()
+                id = rumContext.viewId.orEmpty(),
+                name = rumContext.viewName,
+                url = rumContext.viewUrl.orEmpty()
             ),
             usr = ResourceEvent.Usr(
                 id = user.id,
@@ -213,22 +209,22 @@ internal class RumResourceScope(
                 additionalProperties = user.additionalProperties
             ),
             connectivity = networkInfo.toResourceConnectivity(),
-            application = ResourceEvent.Application(context.applicationId),
+            application = ResourceEvent.Application(rumContext.applicationId),
             session = ResourceEvent.ResourceEventSession(
-                id = context.sessionId,
+                id = rumContext.sessionId,
                 type = ResourceEvent.ResourceEventSessionType.USER
             ),
             source = rumEventSourceProvider.resourceEventSource,
             os = ResourceEvent.Os(
-                name = androidInfoProvider.osName,
-                version = androidInfoProvider.osVersion,
-                versionMajor = androidInfoProvider.osMajorVersion
+                name = sdkContext.deviceInfo.osName,
+                version = sdkContext.deviceInfo.osVersion,
+                versionMajor = sdkContext.deviceInfo.osMajorVersion
             ),
             device = ResourceEvent.Device(
-                type = androidInfoProvider.deviceType.toResourceSchemaType(),
-                name = androidInfoProvider.deviceName,
-                model = androidInfoProvider.deviceModel,
-                brand = androidInfoProvider.deviceBrand
+                type = sdkContext.deviceInfo.deviceType.toResourceSchemaType(),
+                name = sdkContext.deviceInfo.deviceName,
+                model = sdkContext.deviceInfo.deviceModel,
+                brand = sdkContext.deviceInfo.deviceBrand
             ),
             context = ResourceEvent.Context(additionalProperties = attributes),
             dd = ResourceEvent.Dd(
@@ -274,8 +270,10 @@ internal class RumResourceScope(
     ) {
         attributes.putAll(GlobalRum.globalAttributes)
 
-        val context = getRumContext()
-        val user = userInfoProvider.getUserInfo()
+        val rumContext = getRumContext()
+        val sdkContext = contextProvider.context
+        val user = sdkContext.userInfo
+
         val errorEvent = ErrorEvent(
             date = eventTimestamp,
             error = ErrorEvent.Error(
@@ -292,11 +290,11 @@ internal class RumResourceScope(
                 type = errorType,
                 sourceType = ErrorEvent.SourceType.ANDROID
             ),
-            action = context.actionId?.let { ErrorEvent.Action(it) },
+            action = rumContext.actionId?.let { ErrorEvent.Action(it) },
             view = ErrorEvent.View(
-                id = context.viewId.orEmpty(),
-                name = context.viewName,
-                url = context.viewUrl.orEmpty()
+                id = rumContext.viewId.orEmpty(),
+                name = rumContext.viewName,
+                url = rumContext.viewUrl.orEmpty()
             ),
             usr = ErrorEvent.Usr(
                 id = user.id,
@@ -305,22 +303,22 @@ internal class RumResourceScope(
                 additionalProperties = user.additionalProperties
             ),
             connectivity = networkInfo.toErrorConnectivity(),
-            application = ErrorEvent.Application(context.applicationId),
+            application = ErrorEvent.Application(rumContext.applicationId),
             session = ErrorEvent.ErrorEventSession(
-                id = context.sessionId,
+                id = rumContext.sessionId,
                 type = ErrorEvent.ErrorEventSessionType.USER
             ),
             source = rumEventSourceProvider.errorEventSource,
             os = ErrorEvent.Os(
-                name = androidInfoProvider.osName,
-                version = androidInfoProvider.osVersion,
-                versionMajor = androidInfoProvider.osMajorVersion
+                name = sdkContext.deviceInfo.osName,
+                version = sdkContext.deviceInfo.osVersion,
+                versionMajor = sdkContext.deviceInfo.osMajorVersion
             ),
             device = ErrorEvent.Device(
-                type = androidInfoProvider.deviceType.toErrorSchemaType(),
-                name = androidInfoProvider.deviceName,
-                model = androidInfoProvider.deviceModel,
-                brand = androidInfoProvider.deviceBrand
+                type = sdkContext.deviceInfo.deviceType.toErrorSchemaType(),
+                name = sdkContext.deviceInfo.deviceName,
+                model = sdkContext.deviceInfo.deviceModel,
+                brand = sdkContext.deviceInfo.deviceBrand
             ),
             context = ErrorEvent.Context(additionalProperties = attributes),
             dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
@@ -363,9 +361,7 @@ internal class RumResourceScope(
             firstPartyHostDetector: FirstPartyHostDetector,
             timestampOffset: Long,
             rumEventSourceProvider: RumEventSourceProvider,
-            userInfoProvider: UserInfoProvider,
-            networkInfoProvider: NetworkInfoProvider,
-            androidInfoProvider: AndroidInfoProvider
+            contextProvider: ContextProvider
         ): RumScope {
             return RumResourceScope(
                 parentScope,
@@ -377,9 +373,7 @@ internal class RumResourceScope(
                 timestampOffset,
                 firstPartyHostDetector,
                 rumEventSourceProvider,
-                userInfoProvider,
-                networkInfoProvider,
-                androidInfoProvider
+                contextProvider
             )
         }
     }

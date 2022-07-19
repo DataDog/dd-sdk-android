@@ -4,9 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.system
+package com.datadog.android.v2.api.context
 
-internal enum class DeviceType {
+/**
+ * Device type.
+ */
+public enum class DeviceType {
     MOBILE,
     TABLET,
     TV,

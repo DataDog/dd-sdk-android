@@ -8,12 +8,8 @@ package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -36,6 +32,7 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.telemetry.internal.TelemetryType
+import com.datadog.android.v2.core.internal.ContextProvider
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -55,13 +52,10 @@ internal class DatadogRumMonitor(
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
-    timeProvider: TimeProvider,
     sessionListener: RumSessionListener?,
     sourceName: String,
-    userInfoProvider: UserInfoProvider,
-    networkInfoProvider: NetworkInfoProvider,
-    private val executorService: ExecutorService = Executors.newSingleThreadExecutor(),
-    androidInfoProvider: AndroidInfoProvider
+    contextProvider: ContextProvider,
+    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -72,16 +66,13 @@ internal class DatadogRumMonitor(
         cpuVitalMonitor,
         memoryVitalMonitor,
         frameRateVitalMonitor,
-        timeProvider,
         if (sessionListener != null) {
             CombinedRumSessionListener(sessionListener, telemetryEventHandler)
         } else {
             telemetryEventHandler
         },
         sourceName,
-        userInfoProvider,
-        networkInfoProvider,
-        androidInfoProvider
+        contextProvider
     )
 
     internal val keepAliveRunnable = Runnable {

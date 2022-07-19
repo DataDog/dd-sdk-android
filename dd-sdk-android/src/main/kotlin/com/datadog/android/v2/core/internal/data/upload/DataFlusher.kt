@@ -27,7 +27,7 @@ internal class DataFlusher(
 
     @WorkerThread
     override fun flush(uploader: DataUploader) {
-        val context = contextProvider.context ?: return
+        val context = contextProvider.context
 
         val toUploadFiles = fileOrchestrator.getFlushableFiles()
         toUploadFiles.forEach {

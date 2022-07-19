@@ -305,23 +305,6 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `M not send batch W run() { no datadog context }`() {
-        // Given
-        whenever(mockContextProvider.context) doReturn null
-
-        // When
-        testedRunnable.run()
-
-        // Then
-        verifyZeroInteractions(mockStorage, mockDataUploader)
-        verify(mockThreadPoolExecutor).schedule(
-            same(testedRunnable),
-            any(),
-            eq(TimeUnit.MILLISECONDS)
-        )
-    }
-
-    @Test
     fun `M not send batch W run() { not enough battery }`(
         @IntForgery(min = 0, max = DataUploadRunnable.LOW_BATTERY_THRESHOLD) batteryLevel: Int
     ) {

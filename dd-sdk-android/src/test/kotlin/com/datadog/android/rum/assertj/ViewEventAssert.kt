@@ -8,6 +8,7 @@ package com.datadog.android.rum.assertj
 
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.v2.api.context.UserInfo as UserInfoV2
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
@@ -247,6 +248,35 @@ internal class ViewEventAssert(actual: ViewEvent) :
     }
 
     fun hasUserInfo(expected: UserInfo?): ViewEventAssert {
+        assertThat(actual.usr?.id)
+            .overridingErrorMessage(
+                "Expected event to have usr.id ${expected?.id} " +
+                    "but was ${actual.usr?.id}"
+            )
+            .isEqualTo(expected?.id)
+        assertThat(actual.usr?.name)
+            .overridingErrorMessage(
+                "Expected event to have usr.name ${expected?.name} " +
+                    "but was ${actual.usr?.name}"
+            )
+            .isEqualTo(expected?.name)
+        assertThat(actual.usr?.email)
+            .overridingErrorMessage(
+                "Expected event to have usr.email ${expected?.email} " +
+                    "but was ${actual.usr?.email}"
+            )
+            .isEqualTo(expected?.email)
+        assertThat(actual.usr?.additionalProperties)
+            .overridingErrorMessage(
+                "Expected event to have user additional" +
+                    " properties ${expected?.additionalProperties} " +
+                    "but was ${actual.usr?.additionalProperties}"
+            )
+            .containsExactlyInAnyOrderEntriesOf(expected?.additionalProperties)
+        return this
+    }
+
+    fun hasUserInfo(expected: UserInfoV2?): ViewEventAssert {
         assertThat(actual.usr?.id)
             .overridingErrorMessage(
                 "Expected event to have usr.id ${expected?.id} " +

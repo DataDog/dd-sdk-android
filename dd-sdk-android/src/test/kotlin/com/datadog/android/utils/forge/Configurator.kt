@@ -72,6 +72,11 @@ internal class Configurator :
         forge.addFactory(OrgJSONArrayForgeryFactory())
 
         // Datadog SDK v2
+        forge.addFactory(TimeInfoForgeryFactory())
+        forge.addFactory(ProcessInfoForgeryFactory())
+        forge.addFactory(NetworkInfoV2ForgeryFactory())
+        forge.addFactory(DeviceInfoForgeryFactory())
+        forge.addFactory(UserInfoV2ForgeryFactory())
         forge.addFactory(DatadogContextForgeryFactory())
 
         forge.useJvmFactories()

@@ -13,16 +13,10 @@ import android.view.Display
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
-import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.core.model.UserInfo
-import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.log.internal.utils.DEBUG_WITH_TELEMETRY_LEVEL
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
@@ -48,6 +42,8 @@ import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aFilteredMap
 import com.datadog.android.utils.forge.exhaustiveAttributes
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -127,10 +123,7 @@ internal class RumViewScopeTest {
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
 
     @Mock
-    lateinit var mockUserInfoProvider: UserInfoProvider
-
-    @Mock
-    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+    lateinit var mockContextProvider: ContextProvider
 
     @StringForgery(regex = "([a-z]+\\.)+[A-Z][a-z]+")
     lateinit var fakeName: String
@@ -145,25 +138,12 @@ internal class RumViewScopeTest {
     @Forgery
     lateinit var fakeParentContext: RumContext
 
-    @Forgery
-    lateinit var fakeUserInfo: UserInfo
-
-    @Forgery
-    lateinit var fakeNetworkInfo: NetworkInfo
-
-    @Forgery
-    lateinit var fakeAndroidInfoProvider: AndroidInfoProvider
-
     lateinit var fakeEventTime: Time
-
-    var fakeServerOffset: Long = 0L
-
-    var fakeServerOffsetSecond: Long = 0L
 
     lateinit var fakeEvent: RumRawEvent
 
-    @Mock
-    lateinit var mockTimeProvider: TimeProvider
+    @Forgery
+    lateinit var fakeDatadogContext: DatadogContext
 
     @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
@@ -202,22 +182,19 @@ internal class RumViewScopeTest {
         val fakeNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(fakeOffset)
         val maxLimit = max(Long.MAX_VALUE - fakeTimestamp, Long.MAX_VALUE)
         val minLimit = min(-fakeTimestamp, maxLimit)
-        fakeServerOffset =
-            forge.aLong(min = minLimit, max = maxLimit)
-        fakeServerOffsetSecond =
-            forge.aLong(min = minLimit, max = maxLimit)
-        whenever(mockTimeProvider.getServerOffsetMillis())
-            .thenReturn(fakeServerOffset)
-            .thenReturn(fakeServerOffsetSecond)
+
+        fakeDatadogContext = fakeDatadogContext.copy(
+            time = fakeDatadogContext.time.copy(
+                serverTimeOffsetMs = forge.aLong(min = minLimit, max = maxLimit)
+            )
+        )
         fakeEventTime = Time(fakeTimestamp, fakeNanos)
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString().toByteArray()
         fakeEvent = mockEvent()
         fakeUrl = fakeKey.resolveViewUrl().replace('.', '/')
 
-        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
-        whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
-            .doReturn(fakeNetworkInfo)
+        whenever(mockContextProvider.context) doReturn fakeDatadogContext
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         whenever(mockActionScope.handleEvent(any(), any())) doReturn mockActionScope
@@ -235,13 +212,10 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockRumEventSourceProvider,
-            mockUserInfoProvider,
-            mockNetworkInfoProvider,
+            mockContextProvider,
             mockBuildSdkVersionProvider,
-            mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            mockViewUpdatePredicate
         )
 
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
@@ -325,14 +299,11 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockRumEventSourceProvider,
-            mockUserInfoProvider,
-            mockNetworkInfoProvider,
+            mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
-            type = fakeViewEventType,
-            androidInfoProvider = fakeAndroidInfoProvider
+            type = fakeViewEventType
         )
 
         // Then
@@ -397,14 +368,11 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockRumEventSourceProvider,
-            mockUserInfoProvider,
-            mockNetworkInfoProvider,
+            mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
-            type = expectedViewType,
-            androidInfoProvider = fakeAndroidInfoProvider
+            type = expectedViewType
         )
 
         // When
@@ -565,14 +533,11 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockRumEventSourceProvider,
-            mockUserInfoProvider,
-            mockNetworkInfoProvider,
+            mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
-            type = viewType,
-            androidInfoProvider = fakeAndroidInfoProvider
+            type = viewType
         )
 
         // When
@@ -612,14 +577,11 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockRumEventSourceProvider,
-            mockUserInfoProvider,
-            mockNetworkInfoProvider,
+            mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
-            type = viewType,
-            androidInfoProvider = fakeAndroidInfoProvider
+            type = viewType
         )
 
         // When
@@ -684,7 +646,7 @@ internal class RumViewScopeTest {
                 isActive(false)
                 isSlowRendered(null)
                 hasNoCustomTimings()
-                hasUserInfo(fakeUserInfo)
+                hasUserInfo(fakeDatadogContext.userInfo)
                 hasViewId(testedScope.viewId)
                 hasApplicationId(fakeParentContext.applicationId)
                 hasSessionId(fakeParentContext.sessionId)
@@ -692,15 +654,15 @@ internal class RumViewScopeTest {
                 hasSource(fakeSourceViewEvent)
                 containsExactlyContextAttributes(fakeAttributes)
                 hasDeviceInfo(
-                    fakeAndroidInfoProvider.deviceName,
-                    fakeAndroidInfoProvider.deviceModel,
-                    fakeAndroidInfoProvider.deviceBrand,
-                    fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                    fakeDatadogContext.deviceInfo.deviceName,
+                    fakeDatadogContext.deviceInfo.deviceModel,
+                    fakeDatadogContext.deviceInfo.deviceBrand,
+                    fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                 )
                 hasOsInfo(
-                    fakeAndroidInfoProvider.osName,
-                    fakeAndroidInfoProvider.osVersion,
-                    fakeAndroidInfoProvider.osMajorVersion
+                    fakeDatadogContext.deviceInfo.osName,
+                    fakeDatadogContext.deviceInfo.osVersion,
+                    fakeDatadogContext.deviceInfo.osMajorVersion
                 )
             }
         }
@@ -747,7 +709,7 @@ internal class RumViewScopeTest {
                     isActive(false)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -755,15 +717,15 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -810,7 +772,7 @@ internal class RumViewScopeTest {
                     isActive(false)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -818,15 +780,15 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -879,7 +841,7 @@ internal class RumViewScopeTest {
                     isActive(false)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -887,15 +849,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -945,7 +907,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -953,15 +915,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1011,7 +973,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1019,15 +981,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1065,22 +1027,22 @@ internal class RumViewScopeTest {
                     isActive(false)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1100,9 +1062,7 @@ internal class RumViewScopeTest {
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(fakeGlobalAttributes)
         GlobalRum.globalAttributes.putAll(fakeGlobalAttributes)
-        whenever(mockTimeProvider.getServerOffsetMillis())
-            .thenReturn(fakeServerOffset)
-            .thenReturn(fakeServerOffsetSecond)
+
         testedScope = RumViewScope(
             mockParentScope,
             fakeKey,
@@ -1113,12 +1073,9 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
-            rumEventSourceProvider = mockRumEventSourceProvider,
-            mockUserInfoProvider,
-            mockNetworkInfoProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            mockRumEventSourceProvider,
+            mockContextProvider,
+            viewUpdatePredicate = mockViewUpdatePredicate
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
 
@@ -1150,7 +1107,7 @@ internal class RumViewScopeTest {
                     isActive(false)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1158,15 +1115,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1215,7 +1172,7 @@ internal class RumViewScopeTest {
                     isActive(false)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1223,15 +1180,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1248,10 +1205,7 @@ internal class RumViewScopeTest {
         val fakeGlobalAttributeKey = forge.anAlphabeticalString()
         val fakeGlobalAttributeValue = forge.anAlphabeticalString()
         GlobalRum.addAttribute(fakeGlobalAttributeKey, fakeGlobalAttributeValue)
-        reset(mockTimeProvider)
-        whenever(mockTimeProvider.getServerOffsetMillis())
-            .thenReturn(fakeServerOffset)
-            .thenReturn(fakeServerOffsetSecond)
+
         testedScope = RumViewScope(
             mockParentScope,
             fakeKey,
@@ -1262,12 +1216,9 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
-            rumEventSourceProvider = mockRumEventSourceProvider,
-            mockUserInfoProvider,
-            mockNetworkInfoProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            mockRumEventSourceProvider,
+            mockContextProvider,
+            viewUpdatePredicate = mockViewUpdatePredicate
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -1302,7 +1253,7 @@ internal class RumViewScopeTest {
                     isActive(false)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1310,15 +1261,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1337,10 +1288,7 @@ internal class RumViewScopeTest {
         val fakeGlobalAttributeNewValue =
             fakeGlobalAttributeValue + forge.anAlphabeticalString(size = 2)
         GlobalRum.addAttribute(fakeGlobalAttributeKey, fakeGlobalAttributeValue)
-        reset(mockTimeProvider)
-        whenever(mockTimeProvider.getServerOffsetMillis())
-            .thenReturn(fakeServerOffset)
-            .thenReturn(fakeServerOffsetSecond)
+
         testedScope = RumViewScope(
             mockParentScope,
             fakeKey,
@@ -1351,12 +1299,9 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
-            rumEventSourceProvider = mockRumEventSourceProvider,
-            mockUserInfoProvider,
-            mockNetworkInfoProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            mockRumEventSourceProvider,
+            mockContextProvider,
+            viewUpdatePredicate = mockViewUpdatePredicate
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -1391,7 +1336,7 @@ internal class RumViewScopeTest {
                     isActive(false)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1399,15 +1344,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1457,7 +1402,7 @@ internal class RumViewScopeTest {
                     isActive(false)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1465,15 +1410,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1522,7 +1467,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1530,15 +1475,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1580,7 +1525,7 @@ internal class RumViewScopeTest {
                     isActive(false)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1588,15 +1533,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1681,7 +1626,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1689,15 +1634,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1759,7 +1704,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1767,15 +1712,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1837,7 +1782,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1845,15 +1790,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1917,7 +1862,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1925,15 +1870,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1978,7 +1923,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1986,15 +1931,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -2052,22 +1997,22 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -2107,7 +2052,7 @@ internal class RumViewScopeTest {
                     isActive(false)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -2115,15 +2060,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -2185,7 +2130,7 @@ internal class RumViewScopeTest {
                     isActive(false)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -2193,15 +2138,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -2263,7 +2208,7 @@ internal class RumViewScopeTest {
                     isActive(false)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -2271,15 +2216,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -2341,7 +2286,7 @@ internal class RumViewScopeTest {
                     isActive(false)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -2349,15 +2294,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -2415,22 +2360,22 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -2466,22 +2411,22 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -2535,7 +2480,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -2543,15 +2488,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -2795,22 +2740,22 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasView(testedScope.getRumContext())
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -3239,8 +3184,8 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -3248,15 +3193,15 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -3298,8 +3243,8 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -3308,15 +3253,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -3359,8 +3304,8 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -3369,15 +3314,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -3422,8 +3367,8 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -3432,15 +3377,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -3478,8 +3423,8 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(stacktrace)
                     isCrash(false)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -3528,8 +3473,8 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -3540,15 +3485,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -3590,8 +3535,8 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(null)
                     isCrash(false)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -3602,15 +3547,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -3651,8 +3596,8 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(null)
                     isCrash(true)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -3663,15 +3608,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
             assertThat(lastValue as ViewEvent)
@@ -3695,7 +3640,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -3703,15 +3648,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -3756,8 +3701,8 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -3768,15 +3713,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -3819,8 +3764,8 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(true)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -3831,15 +3776,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
             assertThat(lastValue as ViewEvent)
@@ -3863,7 +3808,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -3871,15 +3816,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -3924,8 +3869,8 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(true)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -3935,15 +3880,15 @@ internal class RumViewScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(attributes)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -3988,8 +3933,8 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -4000,15 +3945,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -4054,8 +3999,8 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(false)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -4066,15 +4011,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -4118,8 +4063,8 @@ internal class RumViewScopeTest {
                     hasErrorSource(source)
                     hasStackTrace(throwable.loggableStackTrace())
                     isCrash(true)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -4130,15 +4075,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
             assertThat(lastValue as ViewEvent)
@@ -4162,7 +4107,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -4170,15 +4115,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes + attributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -4350,23 +4295,23 @@ internal class RumViewScopeTest {
                     )
                     hasDuration(durationNs)
                     isFrozenFrame(false)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceLongTaskEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toLongTaskSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toLongTaskSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -4396,23 +4341,23 @@ internal class RumViewScopeTest {
                     )
                     hasDuration(durationNs)
                     isFrozenFrame(true)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceLongTaskEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toLongTaskSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toLongTaskSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -4450,8 +4395,8 @@ internal class RumViewScopeTest {
                     hasTimestamp(expectedTimestamp)
                     hasDuration(durationNs)
                     isFrozenFrame(false)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -4460,15 +4405,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceLongTaskEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toLongTaskSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toLongTaskSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -4506,8 +4451,8 @@ internal class RumViewScopeTest {
                     )
                     hasDuration(durationNs)
                     isFrozenFrame(true)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -4516,15 +4461,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceLongTaskEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toLongTaskSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toLongTaskSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -4736,7 +4681,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -4744,15 +4689,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -4799,7 +4744,7 @@ internal class RumViewScopeTest {
                     isActive(false)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -4807,15 +4752,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -4881,22 +4826,22 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(null)
                     hasCustomTimings(mapOf(fakeTimingKey to customTimingEstimatedDuration))
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -4946,7 +4891,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(null)
                     hasCustomTimings(mapOf(fakeTimingKey1 to customTiming1EstimatedDuration))
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -4954,15 +4899,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
             assertThat(lastValue)
@@ -4990,7 +4935,7 @@ internal class RumViewScopeTest {
                             fakeTimingKey2 to customTiming2EstimatedDuration
                         )
                     )
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -4998,15 +4943,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -5066,7 +5011,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -5074,15 +5019,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -5130,7 +5075,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(null)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -5138,15 +5083,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -5204,7 +5149,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(false)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -5212,15 +5157,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -5278,7 +5223,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(true)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -5286,15 +5231,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -5314,10 +5259,7 @@ internal class RumViewScopeTest {
         whenever(mockActivity.display) doReturn mockDisplay
         whenever(mockDisplay.refreshRate) doReturn deviceRefreshRate
         reset(mockFrameRateVitalMonitor)
-        reset(mockTimeProvider)
-        whenever(mockTimeProvider.getServerOffsetMillis())
-            .thenReturn(fakeServerOffset)
-            .thenReturn(fakeServerOffsetSecond)
+
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
@@ -5329,13 +5271,10 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockRumEventSourceProvider,
-            mockUserInfoProvider,
-            mockNetworkInfoProvider,
+            mockContextProvider,
             mockBuildSdkVersionProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            viewUpdatePredicate = mockViewUpdatePredicate
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5369,7 +5308,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(true)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -5377,15 +5316,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -5405,10 +5344,7 @@ internal class RumViewScopeTest {
         whenever(mockActivity.display) doReturn mockDisplay
         whenever(mockDisplay.refreshRate) doReturn deviceRefreshRate
         reset(mockFrameRateVitalMonitor)
-        reset(mockTimeProvider)
-        whenever(mockTimeProvider.getServerOffsetMillis())
-            .thenReturn(fakeServerOffset)
-            .thenReturn(fakeServerOffsetSecond)
+
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
@@ -5420,13 +5356,10 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockRumEventSourceProvider,
-            mockUserInfoProvider,
-            mockNetworkInfoProvider,
+            mockContextProvider,
             mockBuildSdkVersionProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            mockViewUpdatePredicate
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5460,7 +5393,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(false)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -5468,15 +5401,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -5498,10 +5431,7 @@ internal class RumViewScopeTest {
         whenever(mockActivity.display) doReturn mockDisplay
         whenever(mockDisplay.refreshRate) doReturn deviceRefreshRate
         reset(mockFrameRateVitalMonitor)
-        reset(mockTimeProvider)
-        whenever(mockTimeProvider.getServerOffsetMillis())
-            .thenReturn(fakeServerOffset)
-            .thenReturn(fakeServerOffsetSecond)
+
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
@@ -5513,13 +5443,10 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockRumEventSourceProvider,
-            mockUserInfoProvider,
-            mockNetworkInfoProvider,
+            mockContextProvider,
             mockBuildSdkVersionProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            mockViewUpdatePredicate
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5553,7 +5480,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(true)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -5561,15 +5488,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -5591,10 +5518,7 @@ internal class RumViewScopeTest {
         whenever(mockActivity.display) doReturn mockDisplay
         whenever(mockDisplay.refreshRate) doReturn deviceRefreshRate
         reset(mockFrameRateVitalMonitor)
-        reset(mockTimeProvider)
-        whenever(mockTimeProvider.getServerOffsetMillis())
-            .thenReturn(fakeServerOffset)
-            .thenReturn(fakeServerOffsetSecond)
+
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
@@ -5606,13 +5530,10 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockRumEventSourceProvider,
-            mockUserInfoProvider,
-            mockNetworkInfoProvider,
+            mockContextProvider,
             mockBuildSdkVersionProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            mockViewUpdatePredicate
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5646,7 +5567,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(false)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -5654,15 +5575,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -5685,10 +5606,7 @@ internal class RumViewScopeTest {
         whenever(mockActivity.display) doReturn mockDisplay
         whenever(mockDisplay.refreshRate) doReturn deviceRefreshRate
         reset(mockFrameRateVitalMonitor)
-        reset(mockTimeProvider)
-        whenever(mockTimeProvider.getServerOffsetMillis())
-            .thenReturn(fakeServerOffset)
-            .thenReturn(fakeServerOffsetSecond)
+
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
@@ -5700,13 +5618,10 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockRumEventSourceProvider,
-            mockUserInfoProvider,
-            mockNetworkInfoProvider,
+            mockContextProvider,
             mockBuildSdkVersionProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            mockViewUpdatePredicate
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5740,7 +5655,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(true)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -5748,15 +5663,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -5779,10 +5694,7 @@ internal class RumViewScopeTest {
         whenever(mockActivity.display) doReturn mockDisplay
         whenever(mockDisplay.refreshRate) doReturn deviceRefreshRate
         reset(mockFrameRateVitalMonitor)
-        reset(mockTimeProvider)
-        whenever(mockTimeProvider.getServerOffsetMillis())
-            .thenReturn(fakeServerOffset)
-            .thenReturn(fakeServerOffsetSecond)
+
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
@@ -5794,13 +5706,10 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockRumEventSourceProvider,
-            mockUserInfoProvider,
-            mockNetworkInfoProvider,
+            mockContextProvider,
             mockBuildSdkVersionProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            mockViewUpdatePredicate
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5834,7 +5743,7 @@ internal class RumViewScopeTest {
                     isActive(true)
                     isSlowRendered(false)
                     hasNoCustomTimings()
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -5842,15 +5751,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceViewEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toViewSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toViewSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -5954,22 +5863,22 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -6000,23 +5909,23 @@ internal class RumViewScopeTest {
                         resolveExpectedTimestamp(fakeEvent.eventTime.timestamp) - durationMs
                     )
                     hasDuration(durationNs)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     hasSource(fakeSourceLongTaskEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toLongTaskSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toLongTaskSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -6059,8 +5968,8 @@ internal class RumViewScopeTest {
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                     hasErrorSource(source)
-                    hasUserInfo(fakeUserInfo)
-                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -6070,15 +5979,15 @@ internal class RumViewScopeTest {
                     containsExactlyContextAttributes(attributes)
                     hasSource(fakeSourceErrorEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -6106,13 +6015,10 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockRumEventSourceProvider,
-            mockUserInfoProvider,
-            mockNetworkInfoProvider,
+            mockContextProvider,
             mockBuildSdkVersionProvider,
-            viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            mockViewUpdatePredicate
         )
 
         // When
@@ -6153,7 +6059,7 @@ internal class RumViewScopeTest {
     }
 
     private fun resolveExpectedTimestamp(timestamp: Long): Long {
-        return timestamp + fakeServerOffset
+        return timestamp + fakeDatadogContext.time.serverTimeOffsetMs
     }
 
     // endregion

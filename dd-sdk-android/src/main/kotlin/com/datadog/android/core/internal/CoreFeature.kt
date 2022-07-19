@@ -13,6 +13,7 @@ import android.os.Build
 import android.os.Process
 import com.datadog.android.BuildConfig
 import com.datadog.android.DatadogEndpoint
+import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
@@ -105,6 +106,7 @@ internal class CoreFeature {
     internal var batchSize: BatchSize = BatchSize.MEDIUM
     internal var uploadFrequency: UploadFrequency = UploadFrequency.AVERAGE
     internal var ndkCrashHandler: NdkCrashHandler = NoOpNdkCrashHandler()
+    internal var site: DatadogSite = DatadogSite.US1
 
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: ExecutorService
@@ -290,6 +292,7 @@ internal class CoreFeature {
         batchSize = configuration.batchSize
         uploadFrequency = configuration.uploadFrequency
         localDataEncryption = configuration.securityConfig.localDataEncryption
+        site = configuration.site
     }
 
     private fun setupInfoProviders(
