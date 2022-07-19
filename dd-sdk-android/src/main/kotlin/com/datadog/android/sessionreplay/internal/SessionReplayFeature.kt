@@ -23,8 +23,7 @@ internal class SessionReplayFeature(
     coreFeature: CoreFeature,
     private val sessionReplayCallback:
         SessionReplayLifecycleCallback
-) :
-    SdkFeature<Any, Configuration.Feature.SessionReplay>(coreFeature) {
+) : SdkFeature<Any, Configuration.Feature.SessionReplay>(coreFeature) {
 
     internal lateinit var appContext: Context
     private var isRecording = AtomicBoolean(false)
