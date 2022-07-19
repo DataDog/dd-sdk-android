@@ -149,7 +149,7 @@ class ClassGenerator(
         when (property.type) {
             is TypeDefinition.Constant -> appendConstantSerialization(
                 property.type,
-                refName
+                property.name
             )
             is TypeDefinition.Primitive -> appendPrimitiveSerialization(
                 property,

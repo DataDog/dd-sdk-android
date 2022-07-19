@@ -1,6 +1,5 @@
 package com.example.model
 
-import com.datadog.android.core.`internal`.utils.fromJsonElement
 import com.datadog.android.core.`internal`.utils.toJsonElement
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -60,7 +59,7 @@ public data class Company(
                 val additionalProperties = mutableMapOf<String, Any?>()
                 for (entry in jsonObject.entrySet()) {
                     if (entry.key !in RESERVED_PROPERTIES) {
-                        additionalProperties[entry.key] = entry.value.fromJsonElement()
+                        additionalProperties[entry.key] = entry.value
                     }
                 }
                 return Company(name, ratings, information, additionalProperties)
@@ -168,7 +167,7 @@ public data class Company(
                     val additionalProperties = mutableMapOf<String, Any?>()
                     for (entry in jsonObject.entrySet()) {
                         if (entry.key !in RESERVED_PROPERTIES) {
-                            additionalProperties[entry.key] = entry.value.fromJsonElement()
+                            additionalProperties[entry.key] = entry.value
                         }
                     }
                     return Information(date, priority, additionalProperties)
