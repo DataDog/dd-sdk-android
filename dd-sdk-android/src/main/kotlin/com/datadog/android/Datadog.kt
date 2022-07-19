@@ -16,6 +16,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
+import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.v2.api.NoOpSdkCore
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
@@ -26,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * This class initializes the Datadog SDK, and sets up communication with the server.
  */
+@SuppressWarnings("TooManyFunctions")
 object Datadog {
 
     internal var globalSdkCore: SdkCore = NoOpSdkCore()
@@ -210,6 +212,28 @@ object Datadog {
         } else {
             rumFeature?.disableDebugging()
         }
+    }
+
+    /**
+     * Stops the session recording.
+     *
+     * Session Replay feature will only work for recorded
+     * sessions.
+     */
+    fun stopSessionRecording() {
+        ((globalSdkCore as? DatadogCore)?.sessionReplayFeature as? SessionReplayFeature)
+            ?.stopRecording()
+    }
+
+    /**
+     * Starts/resumes the session recording.
+     *
+     * Session Replay feature will only work for recorded
+     * sessions.
+     */
+    fun startSessionRecording() {
+        ((globalSdkCore as? DatadogCore)?.sessionReplayFeature as? SessionReplayFeature)
+            ?.startRecording()
     }
 
     /**
