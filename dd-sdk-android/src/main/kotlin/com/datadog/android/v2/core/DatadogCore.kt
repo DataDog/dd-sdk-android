@@ -28,6 +28,7 @@ import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.v2.api.FeatureScope
@@ -134,6 +135,7 @@ internal class DatadogCore(
         tracingFeature?.clearAllData()
         webViewLogsFeature?.clearAllData()
         webViewRumFeature?.clearAllData()
+        sessionReplayFeature?.clearAllData()
     }
 
     /** @inheritDoc */
@@ -149,6 +151,7 @@ internal class DatadogCore(
         webViewLogsFeature?.stop()
         webViewLogsFeature = null
         webViewRumFeature?.stop()
+        sessionReplayFeature?.stop()
         webViewRumFeature = null
 
         coreFeature.stop()
@@ -166,6 +169,7 @@ internal class DatadogCore(
         crashReportsFeature?.flushStoredData()
         webViewLogsFeature?.flushStoredData()
         webViewRumFeature?.flushStoredData()
+        sessionReplayFeature?.flushStoredData()
     }
 
     /** @inheritDoc */
@@ -298,7 +302,10 @@ internal class DatadogCore(
         appContext: Context
     ) {
         if (configuration != null) {
-            sessionReplayFeature = SessionReplayFeature(coreFeature)
+            sessionReplayFeature = SessionReplayFeature(
+                coreFeature,
+                SessionReplayLifecycleCallback()
+            )
             sessionReplayFeature?.initialize(appContext, configuration)
         }
     }

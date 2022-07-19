@@ -197,6 +197,7 @@ internal class DatadogCoreTest {
         testedCore.webViewLogsFeature = mock()
         testedCore.webViewRumFeature = mock()
         testedCore.crashReportsFeature = mock()
+        testedCore.sessionReplayFeature = mock()
 
         // When
         testedCore.clearAllData()
@@ -208,6 +209,59 @@ internal class DatadogCoreTest {
         verify(testedCore.webViewLogsFeature)!!.clearAllData()
         verify(testedCore.webViewRumFeature)!!.clearAllData()
         verify(testedCore.crashReportsFeature)!!.clearAllData()
+        verify(testedCore.sessionReplayFeature)!!.clearAllData()
+    }
+
+    @Test
+    fun `𝕄 flush data in all features 𝕎 flushStoredData()`() {
+        // Given
+        testedCore.coreFeature = mock()
+        testedCore.rumFeature = mock()
+        testedCore.tracingFeature = mock()
+        testedCore.logsFeature = mock()
+        testedCore.webViewLogsFeature = mock()
+        testedCore.webViewRumFeature = mock()
+        testedCore.crashReportsFeature = mock()
+        testedCore.sessionReplayFeature = mock()
+
+        // When
+        testedCore.flushStoredData()
+
+        // Then
+        verify(testedCore.coreFeature).drainAndShutdownExecutors()
+        verify(testedCore.rumFeature)!!.flushStoredData()
+        verify(testedCore.tracingFeature)!!.flushStoredData()
+        verify(testedCore.logsFeature)!!.flushStoredData()
+        verify(testedCore.webViewLogsFeature)!!.flushStoredData()
+        verify(testedCore.webViewRumFeature)!!.flushStoredData()
+        verify(testedCore.crashReportsFeature)!!.flushStoredData()
+        verify(testedCore.sessionReplayFeature)!!.flushStoredData()
+    }
+
+    @Test
+    fun `𝕄 stop all features 𝕎 stop()`() {
+        // Given
+        testedCore.coreFeature = mock()
+        testedCore.rumFeature = mock()
+        testedCore.tracingFeature = mock()
+        testedCore.logsFeature = mock()
+        testedCore.webViewLogsFeature = mock()
+        testedCore.webViewRumFeature = mock()
+        testedCore.crashReportsFeature = mock()
+        testedCore.sessionReplayFeature = mock()
+
+        // When
+        testedCore.stop()
+
+        // Then
+        verify(testedCore.coreFeature).stop()
+        verify(testedCore.rumFeature)!!.stop()
+        verify(testedCore.tracingFeature)!!.stop()
+        verify(testedCore.logsFeature)!!.stop()
+        verify(testedCore.webViewLogsFeature)!!.stop()
+        verify(testedCore.webViewRumFeature)!!.stop()
+        verify(testedCore.crashReportsFeature)!!.stop()
+        verify(testedCore.sessionReplayFeature)!!.stop()
     }
 
     companion object {
