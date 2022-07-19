@@ -373,7 +373,8 @@ val Foo = TypeDefinition.Class(
 val Location = TypeDefinition.Class(
     name = "Location",
     properties = listOf(
-        TypeProperty("planet", TypeDefinition.Constant(JsonType.STRING, "earth"), false)
+        TypeProperty("planet", TypeDefinition.Constant(JsonType.STRING, "earth"), false),
+        TypeProperty("solar_system", TypeDefinition.Constant(JsonType.STRING, "sol"), false)
     )
 )
 

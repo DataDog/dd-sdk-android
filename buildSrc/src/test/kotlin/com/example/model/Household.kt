@@ -180,7 +180,7 @@ public data class Household(
                     asBird,
                 ).firstOrNull { it != null }
                 if (result == null) {
-                    val message = "Unable to parse json into one of type Animal\n" +
+                    val message = "Unable to parse json into one of type \n" + "Animal\n" +
                         errors.joinToString("\n") { it.message.toString() }
                     throw JsonParseException(message)
                 }
@@ -304,7 +304,7 @@ public data class Household(
                     asCotenancy,
                 ).firstOrNull { it != null }
                 if (result == null) {
-                    val message = "Unable to parse json into one of type Situation\n" +
+                    val message = "Unable to parse json into one of type \n" + "Situation\n" +
                         errors.joinToString("\n") { it.message.toString() }
                     throw JsonParseException(message)
                 }
