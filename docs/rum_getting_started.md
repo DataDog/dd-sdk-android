@@ -51,7 +51,7 @@ For more information about setting up a client token, see the [Client Token docu
 
 ### Initialize the library with application context
 
-In the initialization snippet, set an environment name, service name, and version number. In the examples below, `APP_VARIANT_NAME` specifies the name of the service that generates data. For more information, see [Using Tags][14].
+In the initialization snippet, set an environment name, service name, and version number. In the examples below, `APP_VARIANT_NAME` specifies the variant of the application that generates data. For more information, see [Using Tags][14].
 
 See [`ViewTrackingStrategy`][5] to enable automatic tracking of all your views (activities, fragments, and more), [`trackingConsent`][6] to add GDPR compliance for your EU users, and [other configuration options][7] to initialize the library.
 
