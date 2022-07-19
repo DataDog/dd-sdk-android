@@ -15,6 +15,7 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -98,7 +99,7 @@ internal class SessionReplayFeatureTest : SdkFeatureTest<Any, Configuration.Feat
 
         // Then
         verify(mockSessionReplayLifecycleCallback)
-            .register(appContext.mockInstance)
+            .unregisterAndStopRecorders(appContext.mockInstance)
     }
 
     @Test
@@ -119,6 +120,9 @@ internal class SessionReplayFeatureTest : SdkFeatureTest<Any, Configuration.Feat
         countDownLatch.await(5, TimeUnit.SECONDS)
         verify(mockSessionReplayLifecycleCallback)
             .register(appContext.mockInstance)
+        verify(mockSessionReplayLifecycleCallback)
+            .unregisterAndStopRecorders(appContext.mockInstance)
+        verifyNoMoreInteractions(mockSessionReplayLifecycleCallback)
     }
 
     @Test
@@ -133,6 +137,9 @@ internal class SessionReplayFeatureTest : SdkFeatureTest<Any, Configuration.Feat
         // Then
         verify(mockSessionReplayLifecycleCallback)
             .register(appContext.mockInstance)
+        verify(mockSessionReplayLifecycleCallback)
+            .unregisterAndStopRecorders(appContext.mockInstance)
+        verifyNoMoreInteractions(mockSessionReplayLifecycleCallback)
     }
 
     @Test
@@ -170,15 +177,15 @@ internal class SessionReplayFeatureTest : SdkFeatureTest<Any, Configuration.Feat
         // When
         repeat(3) {
             Thread {
-                testedFeature.stopRecording()
+                testedFeature.startRecording()
                 countDownLatch.countDown()
             }.run()
         }
 
         // Then
         countDownLatch.await(5, TimeUnit.SECONDS)
-        verify(mockSessionReplayLifecycleCallback)
-            .register(appContext.mockInstance)
+        verify(mockSessionReplayLifecycleCallback).register(appContext.mockInstance)
+        verifyNoMoreInteractions(mockSessionReplayLifecycleCallback)
     }
 
     @Test

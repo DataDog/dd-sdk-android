@@ -1,3 +1,13 @@
+class com.datadog.android.sessionreplay.SessionReplayLifecycleCallback : android.app.Application.ActivityLifecycleCallbacks
+  override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
+  override fun onActivityStarted(android.app.Activity)
+  override fun onActivityResumed(android.app.Activity)
+  override fun onActivityPaused(android.app.Activity)
+  override fun onActivityStopped(android.app.Activity)
+  override fun onActivitySaveInstanceState(android.app.Activity, android.os.Bundle)
+  override fun onActivityDestroyed(android.app.Activity)
+  fun register(android.app.Application)
+  fun unregisterAndStopRecorders(android.app.Application)
 data class com.datadog.android.sessionreplay.model.FullSnapshotRecord
   constructor(kotlin.Long, Data)
   val type: kotlin.Long
@@ -926,3 +936,5 @@ sealed class com.datadog.android.sessionreplay.model.WireframeUpdateMutation
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Vertical
+data class com.datadog.android.sessionreplay.recorder.Node
+  constructor(Int, Node? = null)
