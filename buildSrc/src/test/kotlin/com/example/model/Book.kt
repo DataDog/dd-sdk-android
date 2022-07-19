@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.lang.IllegalStateException
+import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.Long
 import kotlin.Number
@@ -30,9 +31,9 @@ public data class Book(
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(serializedObject: String): Book {
+        public fun fromJson(jsonString: String): Book {
             try {
-                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val bookId = jsonObject.get("bookId").asLong
                 val title = jsonObject.get("title").asString
                 val price = jsonObject.get("price").asNumber
@@ -41,9 +42,20 @@ public data class Book(
                 }
                 return Book(bookId, title, price, author)
             } catch (e: IllegalStateException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException(
+                    "Unable to parse json into type Book",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException(
+                    "Unable to parse json into type Book",
+                    e
+                )
+            } catch (e: NullPointerException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Book",
+                    e
+                )
             }
         }
     }
@@ -64,9 +76,9 @@ public data class Book(
         public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJson(serializedObject: String): Author {
+            public fun fromJson(jsonString: String): Author {
                 try {
-                    val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val firstName = jsonObject.get("firstName").asString
                     val lastName = jsonObject.get("lastName").asString
                     val contact = jsonObject.get("contact").toString().let {
@@ -74,9 +86,20 @@ public data class Book(
                     }
                     return Author(firstName, lastName, contact)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException(
+                        "Unable to parse json into type Author",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException(
+                        "Unable to parse json into type Author",
+                        e
+                    )
+                } catch (e: NullPointerException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Author",
+                        e
+                    )
                 }
             }
         }
@@ -88,24 +111,39 @@ public data class Book(
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()
-            phone?.let { json.addProperty("phone", it) }
-            email?.let { json.addProperty("email", it) }
+            phone?.let { phoneNonNull ->
+                json.addProperty("phone", phoneNonNull)
+            }
+            email?.let { emailNonNull ->
+                json.addProperty("email", emailNonNull)
+            }
             return json
         }
 
         public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJson(serializedObject: String): Contact {
+            public fun fromJson(jsonString: String): Contact {
                 try {
-                    val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val phone = jsonObject.get("phone")?.asString
                     val email = jsonObject.get("email")?.asString
                     return Contact(phone, email)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException(
+                        "Unable to parse json into type Contact",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException(
+                        "Unable to parse json into type Contact",
+                        e
+                    )
+                } catch (e: NullPointerException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Contact",
+                        e
+                    )
                 }
             }
         }

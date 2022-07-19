@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.lang.IllegalStateException
+import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.Array
 import kotlin.Boolean
@@ -22,19 +23,27 @@ public data class Comment(
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
-        message?.let { json.addProperty("message", it) }
-        ratings?.let { json.add("ratings", it.toJson()) }
-        flags?.let { json.add("flags", it.toJson()) }
-        tags?.let { json.add("tags", it.toJson()) }
+        message?.let { messageNonNull ->
+            json.addProperty("message", messageNonNull)
+        }
+        ratings?.let { ratingsNonNull ->
+            json.add("ratings", ratingsNonNull.toJson())
+        }
+        flags?.let { flagsNonNull ->
+            json.add("flags", flagsNonNull.toJson())
+        }
+        tags?.let { tagsNonNull ->
+            json.add("tags", tagsNonNull.toJson())
+        }
         return json
     }
 
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(serializedObject: String): Comment {
+        public fun fromJson(jsonString: String): Comment {
             try {
-                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val message = jsonObject.get("message")?.asString
                 val ratings = jsonObject.get("ratings")?.toString()?.let {
                     Ratings.fromJson(it)
@@ -47,9 +56,20 @@ public data class Comment(
                 }
                 return Comment(message, ratings, flags, tags)
             } catch (e: IllegalStateException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException(
+                    "Unable to parse json into type Comment",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException(
+                    "Unable to parse json into type Comment",
+                    e
+                )
+            } catch (e: NullPointerException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Comment",
+                    e
+                )
             }
         }
     }
@@ -74,9 +94,9 @@ public data class Comment(
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJson(serializedObject: String): Ratings {
+            public fun fromJson(jsonString: String): Ratings {
                 try {
-                    val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val global = jsonObject.get("global").asLong
                     val additionalProperties = mutableMapOf<String, Long>()
                     for (entry in jsonObject.entrySet()) {
@@ -86,9 +106,20 @@ public data class Comment(
                     }
                     return Ratings(global, additionalProperties)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException(
+                        "Unable to parse json into type Ratings",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException(
+                        "Unable to parse json into type Ratings",
+                        e
+                    )
+                } catch (e: NullPointerException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Ratings",
+                        e
+                    )
                 }
             }
         }
@@ -108,18 +139,29 @@ public data class Comment(
         public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJson(serializedObject: String): Flags {
+            public fun fromJson(jsonString: String): Flags {
                 try {
-                    val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val additionalProperties = mutableMapOf<String, Boolean>()
                     for (entry in jsonObject.entrySet()) {
                         additionalProperties[entry.key] = entry.value.asBoolean
                     }
                     return Flags(additionalProperties)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException(
+                        "Unable to parse json into type Flags",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException(
+                        "Unable to parse json into type Flags",
+                        e
+                    )
+                } catch (e: NullPointerException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Flags",
+                        e
+                    )
                 }
             }
         }
@@ -139,18 +181,29 @@ public data class Comment(
         public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJson(serializedObject: String): Tags {
+            public fun fromJson(jsonString: String): Tags {
                 try {
-                    val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val additionalProperties = mutableMapOf<String, String>()
                     for (entry in jsonObject.entrySet()) {
                         additionalProperties[entry.key] = entry.value.asString
                     }
                     return Tags(additionalProperties)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException(
+                        "Unable to parse json into type Tags",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException(
+                        "Unable to parse json into type Tags",
+                        e
+                    )
+                } catch (e: NullPointerException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Tags",
+                        e
+                    )
                 }
             }
         }

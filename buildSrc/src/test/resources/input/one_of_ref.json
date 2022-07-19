@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Household",
+  "type": "object",
+  "properties": {
+    "pets": {
+      "type": "array",
+      "items": {
+        "$ref": "one_of.json"
+      },
+      "readOnly": true
+    },
+    "situation": {
+      "oneOf": [
+        {
+          "title": "Marriage",
+          "properties": {
+            "spouses": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "spouses"
+          ]
+        },
+        {
+          "title": "Cotenancy",
+          "properties": {
+            "roommates": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "roommates"
+          ]
+        }
+      ]
+    }
+  }
+}

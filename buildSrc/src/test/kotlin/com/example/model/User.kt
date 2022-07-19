@@ -6,6 +6,7 @@ import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import java.lang.IllegalStateException
+import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.String
 import kotlin.jvm.JvmStatic
@@ -22,7 +23,9 @@ public data class User(
         val json = JsonObject()
         json.addProperty("username", username)
         json.addProperty("host", host)
-        firstname?.let { json.addProperty("firstname", it) }
+        firstname?.let { firstnameNonNull ->
+            json.addProperty("firstname", firstnameNonNull)
+        }
         json.addProperty("lastname", lastname)
         json.add("contact_type", contactType.toJson())
         return json
@@ -31,21 +34,30 @@ public data class User(
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(serializedObject: String): User {
+        public fun fromJson(jsonString: String): User {
             try {
-                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val username = jsonObject.get("username").asString
                 val host = jsonObject.get("host").asString
                 val firstname = jsonObject.get("firstname")?.asString
                 val lastname = jsonObject.get("lastname").asString
-                val contactType = jsonObject.get("contact_type").asString.let {
-                    ContactType.fromJson(it)
-                }
+                val contactType = ContactType.fromJson(jsonObject.get("contact_type").asString)
                 return User(username, host, firstname, lastname, contactType)
             } catch (e: IllegalStateException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException(
+                    "Unable to parse json into type User",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException(
+                    "Unable to parse json into type User",
+                    e
+                )
+            } catch (e: NullPointerException) {
+                throw JsonParseException(
+                    "Unable to parse json into type User",
+                    e
+                )
             }
         }
     }
@@ -61,8 +73,8 @@ public data class User(
 
         public companion object {
             @JvmStatic
-            public fun fromJson(serializedObject: String): ContactType = values().first {
-                it.jsonValue == serializedObject
+            public fun fromJson(jsonString: String): ContactType = values().first {
+                it.jsonValue == jsonString
             }
         }
     }
