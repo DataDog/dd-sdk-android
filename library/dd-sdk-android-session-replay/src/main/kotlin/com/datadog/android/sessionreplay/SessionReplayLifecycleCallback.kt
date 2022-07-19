@@ -11,14 +11,21 @@ import android.app.Application
 import android.os.Bundle
 import com.datadog.android.sessionreplay.processor.SnapshotProcessor
 import com.datadog.android.sessionreplay.recorder.Recorder
-import com.datadog.android.sessionreplay.recorder.SnapshotRecorder
+import com.datadog.android.sessionreplay.recorder.ScreenRecorder
 import java.util.WeakHashMap
 
+/**
+ * The SessionReplayLifecycleCallback.
+ * It will be registered as `Application.ActivityLifecycleCallbacks` and will decide when the
+ * activity can be recorded or not based on the `onActivityResume`, `onActivityPause` callbacks.
+ * This is only meant for internal usage and later will change visibility from public to internal.
+ */
+@SuppressWarnings("UndocumentedPublicFunction")
 class SessionReplayLifecycleCallback :
     Application.ActivityLifecycleCallbacks {
 
-    internal var recorder: Recorder = SnapshotRecorder(SnapshotProcessor())
-    private val resumedActivities: WeakHashMap<Activity, Any?> = WeakHashMap()
+    internal var recorder: Recorder = ScreenRecorder(SnapshotProcessor())
+    internal val resumedActivities: WeakHashMap<Activity, Any?> = WeakHashMap()
 
     // region callback
 
@@ -64,9 +71,10 @@ class SessionReplayLifecycleCallback :
         appContext.unregisterActivityLifecycleCallbacks(this)
         resumedActivities.keys.forEach {
             it?.let { activity ->
-                recorder.startRecording(activity)
+                recorder.stopRecording(activity)
             }
         }
+        resumedActivities.clear()
     }
 
     // endregion
