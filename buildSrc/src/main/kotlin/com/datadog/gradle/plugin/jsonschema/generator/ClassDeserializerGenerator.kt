@@ -354,9 +354,8 @@ class ClassDeserializerGenerator(
 
         if (additionalProperties is TypeDefinition.Class) {
             addStatement(
-                "%L[entry.key] = entry.value.%M()",
-                Identifier.PARAM_ADDITIONAL_PROPS,
-                MemberName(Identifier.PACKAGE_UTILS, Identifier.FUN_FROM_JSON_ELT)
+                "%L[entry.key] = entry.value",
+                Identifier.PARAM_ADDITIONAL_PROPS
             )
         } else {
             appendDeserializedProperty(

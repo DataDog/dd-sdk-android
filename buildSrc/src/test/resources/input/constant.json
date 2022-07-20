@@ -6,7 +6,11 @@
     "planet": {
       "type" : "string",
       "const": "earth"
+    },
+    "solar_system": {
+      "type" : "string",
+      "const": "sol"
     }
   },
-  "required": [ "planet"]
+  "required": [ "planet", "solar_system"]
 }

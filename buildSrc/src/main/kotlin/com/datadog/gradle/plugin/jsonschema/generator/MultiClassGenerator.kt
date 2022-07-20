@@ -127,7 +127,7 @@ class MultiClassGenerator(
         funBuilder.addStatement(").firstOrNull { it != null }")
 
         funBuilder.beginControlFlow("if (result == null)")
-        funBuilder.addStatement("val message = \"$PARSE_ERROR_MSG %T\\n\" +", returnType)
+        funBuilder.addStatement("val message = \"$PARSE_ERROR_MSG \\n\" + \"%T\\n\" +", returnType)
         funBuilder.addStatement("    errors.joinToString(\"\\n\") { it.message.toString() }")
         funBuilder.addStatement("throw %T(message)", ClassNameRef.JsonParseException)
         funBuilder.endControlFlow()
