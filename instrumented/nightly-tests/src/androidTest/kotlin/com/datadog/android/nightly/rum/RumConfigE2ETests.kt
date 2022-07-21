@@ -304,7 +304,7 @@ class RumConfigE2ETests {
                     tracesEnabled = true,
                     rumEnabled = true,
                     crashReportsEnabled = true,
-                        sessionReplayEnabled = true
+                    sessionReplayEnabled = true
                 ).setRumActionEventMapper(
                     eventMapper = object : EventMapper<ActionEvent> {
                         override fun map(event: ActionEvent): ActionEvent? {
@@ -703,7 +703,7 @@ class RumConfigE2ETests {
                         tracesEnabled = true,
                         rumEnabled = true,
                         crashReportsEnabled = true,
-                            sessionReplayEnabled = true
+                        sessionReplayEnabled = true
                     )
                     .useViewTrackingStrategy(strategy)
                     .setVitalsUpdateFrequency(VitalsUpdateFrequency.NEVER)
