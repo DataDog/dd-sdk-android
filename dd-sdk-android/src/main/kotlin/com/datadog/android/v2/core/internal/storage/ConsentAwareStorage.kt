@@ -91,11 +91,16 @@ internal class ConsentAwareStorage(
     @WorkerThread
     override fun readNextBatch(
         datadogContext: DatadogContext,
-        callback: (BatchId, BatchReader) -> Unit
+        noBatchCallback: () -> Unit,
+        batchCallback: (BatchId, BatchReader) -> Unit
     ) {
         val (batchFile, metaFile) = synchronized(lockedBatches) {
             val batchFile = grantedOrchestrator
-                .getReadableFile(lockedBatches.map { it.file }.toSet()) ?: return
+                .getReadableFile(lockedBatches.map { it.file }.toSet())
+            if (batchFile == null) {
+                noBatchCallback()
+                return
+            }
 
             val metaFile = grantedOrchestrator.getMetadataFile(batchFile)
             lockedBatches.add(Batch(batchFile, metaFile))
@@ -117,7 +122,7 @@ internal class ConsentAwareStorage(
                 return batchEventsReaderWriter.readData(batchFile)
             }
         }
-        callback(batchId, reader)
+        batchCallback(batchId, reader)
     }
 
     /** @inheritdoc */
