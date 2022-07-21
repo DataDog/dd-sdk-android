@@ -274,9 +274,10 @@ interface RumMonitor {
         fun build(): RumMonitor {
             val datadogCore = Datadog.globalSDKCore as? DatadogCore
             val coreFeature = datadogCore?.coreFeature
+            val contextProvider = datadogCore?.contextProvider
             val rumFeature = datadogCore?.rumFeature as? RumFeature
             val rumApplicationId = coreFeature?.rumApplicationId
-            return if (rumFeature == null || coreFeature == null) {
+            return if (rumFeature == null || coreFeature == null || contextProvider == null) {
                 devLogger.e(
                     RUM_NOT_ENABLED_ERROR_MESSAGE + "\n" +
                         Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
@@ -302,12 +303,9 @@ interface RumMonitor {
                     memoryVitalMonitor = rumFeature.memoryVitalMonitor,
                     frameRateVitalMonitor = rumFeature.frameRateVitalMonitor,
                     backgroundTrackingEnabled = rumFeature.backgroundEventTracking,
-                    timeProvider = coreFeature.timeProvider,
                     sessionListener = sessionListener,
                     sourceName = coreFeature.sourceName,
-                    userInfoProvider = coreFeature.userInfoProvider,
-                    networkInfoProvider = coreFeature.networkInfoProvider,
-                    androidInfoProvider = coreFeature.androidInfoProvider
+                    contextProvider = contextProvider
                 )
             }
         }

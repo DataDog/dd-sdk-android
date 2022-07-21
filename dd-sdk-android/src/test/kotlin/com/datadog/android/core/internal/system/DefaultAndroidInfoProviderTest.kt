@@ -14,6 +14,7 @@ import android.content.res.Resources
 import android.os.Build
 import android.telephony.TelephonyManager
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.context.DeviceType
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock

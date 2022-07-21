@@ -45,18 +45,16 @@ internal class DataUploadRunnable(
     override fun run() {
         if (isNetworkAvailable() && isSystemReady()) {
             val context = contextProvider.context
-            if (context != null) {
-                storage.readNextBatch(context) { batchId, reader ->
-                    val batch = reader.read()
-                    val batchMeta = reader.currentMetadata()
+            storage.readNextBatch(context) { batchId, reader ->
+                val batch = reader.read()
+                val batchMeta = reader.currentMetadata()
 
-                    consumeBatch(
-                        context,
-                        batchId,
-                        batch,
-                        batchMeta
-                    )
-                }
+                consumeBatch(
+                    context,
+                    batchId,
+                    batch,
+                    batchMeta
+                )
             }
 
             // TODO RUMM-2297 decrease interval if there is no batch available?

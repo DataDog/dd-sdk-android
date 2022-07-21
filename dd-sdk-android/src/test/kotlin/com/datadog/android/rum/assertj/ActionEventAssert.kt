@@ -11,6 +11,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.toSchemaType
 import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.v2.api.context.UserInfo as UserInfoV2
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
@@ -180,6 +181,35 @@ internal class ActionEventAssert(actual: ActionEvent) :
     }
 
     fun hasUserInfo(expected: UserInfo?): ActionEventAssert {
+        assertThat(actual.usr?.id)
+            .overridingErrorMessage(
+                "Expected RUM event to have usr.id ${expected?.id} " +
+                    "but was ${actual.usr?.id}"
+            )
+            .isEqualTo(expected?.id)
+        assertThat(actual.usr?.name)
+            .overridingErrorMessage(
+                "Expected RUM event to have usr.name ${expected?.name} " +
+                    "but was ${actual.usr?.name}"
+            )
+            .isEqualTo(expected?.name)
+        assertThat(actual.usr?.email)
+            .overridingErrorMessage(
+                "Expected RUM event to have usr.email ${expected?.email} " +
+                    "but was ${actual.usr?.email}"
+            )
+            .isEqualTo(expected?.email)
+        assertThat(actual.usr?.additionalProperties)
+            .overridingErrorMessage(
+                "Expected event to have user additional " +
+                    "properties ${expected?.additionalProperties} " +
+                    "but was ${actual.usr?.additionalProperties}"
+            )
+            .containsExactlyInAnyOrderEntriesOf(expected?.additionalProperties)
+        return this
+    }
+
+    fun hasUserInfo(expected: UserInfoV2?): ActionEventAssert {
         assertThat(actual.usr?.id)
             .overridingErrorMessage(
                 "Expected RUM event to have usr.id ${expected?.id} " +

@@ -11,15 +11,14 @@ import android.content.pm.ApplicationInfo
 import android.util.Log
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.SDKCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.verify
@@ -51,7 +50,6 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ProhibitLeavingStaticMocksExtension::class),
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -60,7 +58,7 @@ internal class DatadogCoreInitializationTest {
 
     // TODO RUMM-2206 handle all commented lines on this class
 
-    lateinit var testedCore: SDKCore
+    lateinit var testedCore: DatadogCore
 
     @Forgery
     lateinit var fakeCredentials: Credentials
@@ -101,13 +99,33 @@ internal class DatadogCoreInitializationTest {
             DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
 
         // Then
-        // assertThat(CoreFeature.initialized.get()).isTrue()
-        // assertThat(LogsFeature.initialized.get()).isEqualTo(logsEnabled)
-        // assertThat(TracingFeature.initialized.get()).isEqualTo(tracingEnabled)
-        // assertThat(CrashReportsFeature.initialized.get()).isEqualTo(crashReportEnabled)
-        // assertThat(RumFeature.initialized.get()).isEqualTo(rumEnabled)
-        // assertThat(WebViewLogsFeature.initialized.get()).isEqualTo(logsEnabled)
-        // assertThat(WebViewRumFeature.initialized.get()).isEqualTo(rumEnabled)
+        assertThat(testedCore.coreFeature.initialized.get()).isTrue()
+        assertThat(testedCore.contextProvider).isNotNull
+
+        if (logsEnabled) {
+            assertThat(testedCore.logsFeature!!.initialized.get()).isTrue()
+            assertThat(testedCore.webViewLogsFeature!!.initialized.get()).isTrue()
+        } else {
+            assertThat(testedCore.logsFeature).isNull()
+            assertThat(testedCore.webViewLogsFeature).isNull()
+        }
+        if (tracingEnabled) {
+            assertThat(testedCore.tracingFeature!!.initialized.get()).isTrue()
+        } else {
+            assertThat(testedCore.tracingFeature).isNull()
+        }
+        if (crashReportEnabled) {
+            assertThat(testedCore.crashReportsFeature!!.initialized.get()).isTrue()
+        } else {
+            assertThat(testedCore.crashReportsFeature).isNull()
+        }
+        if (rumEnabled) {
+            assertThat(testedCore.rumFeature!!.initialized.get()).isTrue()
+            assertThat(testedCore.webViewRumFeature!!.initialized.get()).isTrue()
+        } else {
+            assertThat(testedCore.rumFeature).isNull()
+            assertThat(testedCore.webViewRumFeature).isNull()
+        }
     }
 
     @Test
@@ -126,9 +144,9 @@ internal class DatadogCoreInitializationTest {
             DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
 
         // Then
-        // assertThat(CoreFeature.initialized.get()).isTrue()
-        // assertThat(RumFeature.initialized.get()).isTrue()
-        // assertThat(WebViewRumFeature.initialized.get()).isTrue()
+        assertThat(testedCore.coreFeature.initialized.get()).isTrue()
+        assertThat(testedCore.rumFeature!!.initialized.get()).isTrue()
+        assertThat(testedCore.webViewRumFeature!!.initialized.get()).isTrue()
         verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             DatadogCore.WARNING_MESSAGE_APPLICATION_ID_IS_NULL
@@ -151,9 +169,9 @@ internal class DatadogCoreInitializationTest {
             DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
 
         // Then
-        // assertThat(CoreFeature.initialized.get()).isTrue()
-        // assertThat(RumFeature.initialized.get()).isFalse()
-        // assertThat(WebViewRumFeature.initialized.get()).isFalse()
+        assertThat(testedCore.coreFeature.initialized.get()).isTrue()
+        assertThat(testedCore.rumFeature).isNull()
+        assertThat(testedCore.webViewRumFeature).isNull()
         verifyZeroInteractions(logger.mockDevLogHandler)
     }
 
@@ -225,8 +243,8 @@ internal class DatadogCoreInitializationTest {
             DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
 
         // Then
-        // assertThat(CoreFeature.trackingConsentProvider.getConsent())
-        //     .isEqualTo(TrackingConsent.PENDING)
+        assertThat(testedCore.coreFeature.trackingConsentProvider.getConsent())
+            .isEqualTo(TrackingConsent.PENDING)
     }
 
     @Test
@@ -249,7 +267,7 @@ internal class DatadogCoreInitializationTest {
             DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
 
         // Then
-        assertThat((testedCore as DatadogCore).libraryVerbosity)
+        assertThat(testedCore.libraryVerbosity)
             .isEqualTo(Int.MAX_VALUE)
     }
 
@@ -273,7 +291,7 @@ internal class DatadogCoreInitializationTest {
             DatadogCore(appContext.mockInstance, fakeCredentials, configuration, fakeInstanceId)
 
         // Then
-        assertThat((testedCore as DatadogCore).libraryVerbosity)
+        assertThat(testedCore.libraryVerbosity)
             .isEqualTo(Log.VERBOSE)
     }
 

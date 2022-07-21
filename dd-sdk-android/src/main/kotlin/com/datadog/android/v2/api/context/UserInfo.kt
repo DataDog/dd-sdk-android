@@ -11,11 +11,11 @@ package com.datadog.android.v2.api.context
  * @property id a unique identifier for the user, or null
  * @property name the name of the user, or null
  * @property email the email address of the user, or null
- * @property customProperties a dictionary of custom properties attached to the current user
+ * @property additionalProperties a dictionary of custom properties attached to the current user
  */
 data class UserInfo(
     val id: String?,
     val name: String?,
     val email: String?,
-    val customProperties: Map<String, Any>
+    val additionalProperties: Map<String, Any?>
 )

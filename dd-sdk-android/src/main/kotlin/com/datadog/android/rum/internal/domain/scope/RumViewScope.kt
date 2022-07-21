@@ -14,17 +14,13 @@ import android.view.WindowManager
 import androidx.annotation.WorkerThread
 import androidx.fragment.app.Fragment
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.log.internal.utils.debugWithTelemetry
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
@@ -39,6 +35,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.v2.core.internal.ContextProvider
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
 import java.util.Locale
@@ -57,14 +54,11 @@ internal open class RumViewScope(
     internal val cpuVitalMonitor: VitalMonitor,
     internal val memoryVitalMonitor: VitalMonitor,
     internal val frameRateVitalMonitor: VitalMonitor,
-    internal val timeProvider: TimeProvider,
     private val rumEventSourceProvider: RumEventSourceProvider,
-    private val userInfoProvider: UserInfoProvider,
-    private val networkInfoProvider: NetworkInfoProvider,
+    private val contextProvider: ContextProvider,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val viewUpdatePredicate: ViewUpdatePredicate = DefaultViewUpdatePredicate(),
-    internal val type: RumViewType = RumViewType.FOREGROUND,
-    private val androidInfoProvider: AndroidInfoProvider
+    internal val type: RumViewType = RumViewType.FOREGROUND
 ) : RumScope {
 
     internal val url = key.resolveViewUrl().replace('.', '/')
@@ -79,7 +73,7 @@ internal open class RumViewScope(
         private set
     private val startedNanos: Long = eventTime.nanoTime
 
-    internal val serverTimeOffsetInMs = timeProvider.getServerOffsetMillis()
+    internal val serverTimeOffsetInMs = contextProvider.context.time.serverTimeOffsetMs
     internal val eventTimestamp = eventTime.timestamp + serverTimeOffsetInMs
 
     internal var activeActionScope: RumScope? = null
@@ -286,8 +280,7 @@ internal open class RumViewScope(
                     event,
                     serverTimeOffsetInMs,
                     rumEventSourceProvider,
-                    userInfoProvider,
-                    androidInfoProvider
+                    contextProvider
                 )
                 pendingActionCount++
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), writer)
@@ -304,8 +297,7 @@ internal open class RumViewScope(
                 event,
                 serverTimeOffsetInMs,
                 rumEventSourceProvider,
-                userInfoProvider,
-                androidInfoProvider
+                contextProvider
             )
         )
         pendingActionCount++
@@ -328,9 +320,7 @@ internal open class RumViewScope(
             firstPartyHostDetector,
             serverTimeOffsetInMs,
             rumEventSourceProvider,
-            userInfoProvider,
-            networkInfoProvider,
-            androidInfoProvider
+            contextProvider
         )
         pendingResourceCount++
     }
@@ -344,11 +334,13 @@ internal open class RumViewScope(
         delegateEventToChildren(event, writer)
         if (stopped) return
 
-        val context = getRumContext()
-        val user = userInfoProvider.getUserInfo()
+        val rumContext = getRumContext()
+        val sdkContext = contextProvider.context
+
+        val user = sdkContext.userInfo
         val updatedAttributes = addExtraAttributes(event.attributes)
         val isFatal = updatedAttributes.remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean
-        val networkInfo = networkInfoProvider.getLatestNetworkInfo()
+        val networkInfo = sdkContext.networkInfo
         val errorType = event.type ?: event.throwable?.javaClass?.canonicalName
         val throwableMessage = event.throwable?.message ?: ""
         val message = if (throwableMessage.isNotBlank() && event.message != throwableMessage) {
@@ -366,11 +358,11 @@ internal open class RumViewScope(
                 type = errorType,
                 sourceType = event.sourceType.toSchemaSourceType()
             ),
-            action = context.actionId?.let { ErrorEvent.Action(it) },
+            action = rumContext.actionId?.let { ErrorEvent.Action(it) },
             view = ErrorEvent.View(
-                id = context.viewId.orEmpty(),
-                name = context.viewName,
-                url = context.viewUrl.orEmpty()
+                id = rumContext.viewId.orEmpty(),
+                name = rumContext.viewName,
+                url = rumContext.viewUrl.orEmpty()
             ),
             usr = ErrorEvent.Usr(
                 id = user.id,
@@ -379,22 +371,22 @@ internal open class RumViewScope(
                 additionalProperties = user.additionalProperties
             ),
             connectivity = networkInfo.toErrorConnectivity(),
-            application = ErrorEvent.Application(context.applicationId),
+            application = ErrorEvent.Application(rumContext.applicationId),
             session = ErrorEvent.ErrorEventSession(
-                id = context.sessionId,
+                id = rumContext.sessionId,
                 type = ErrorEvent.ErrorEventSessionType.USER
             ),
             source = rumEventSourceProvider.errorEventSource,
             os = ErrorEvent.Os(
-                name = androidInfoProvider.osName,
-                version = androidInfoProvider.osVersion,
-                versionMajor = androidInfoProvider.osMajorVersion
+                name = sdkContext.deviceInfo.osName,
+                version = sdkContext.deviceInfo.osVersion,
+                versionMajor = sdkContext.deviceInfo.osMajorVersion
             ),
             device = ErrorEvent.Device(
-                type = androidInfoProvider.deviceType.toErrorSchemaType(),
-                name = androidInfoProvider.deviceName,
-                model = androidInfoProvider.deviceModel,
-                brand = androidInfoProvider.deviceBrand
+                type = sdkContext.deviceInfo.deviceType.toErrorSchemaType(),
+                name = sdkContext.deviceInfo.deviceName,
+                model = sdkContext.deviceInfo.deviceModel,
+                brand = sdkContext.deviceInfo.deviceBrand
             ),
             context = ErrorEvent.Context(additionalProperties = updatedAttributes),
             dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
@@ -579,8 +571,10 @@ internal open class RumViewScope(
         attributes.putAll(GlobalRum.globalAttributes)
         version++
         val updatedDurationNs = resolveViewDuration(event)
-        val context = getRumContext()
-        val user = userInfoProvider.getUserInfo()
+        val rumContext = getRumContext()
+        val sdkContext = contextProvider.context
+
+        val user = sdkContext.userInfo
         val timings = resolveCustomTimings()
         val memoryInfo = lastMemoryInfo
         val refreshRateInfo = lastFrameRateInfo
@@ -588,9 +582,9 @@ internal open class RumViewScope(
         val viewEvent = ViewEvent(
             date = eventTimestamp,
             view = ViewEvent.View(
-                id = context.viewId.orEmpty(),
-                name = context.viewName.orEmpty(),
-                url = context.viewUrl.orEmpty(),
+                id = rumContext.viewId.orEmpty(),
+                name = rumContext.viewName.orEmpty(),
+                url = rumContext.viewUrl.orEmpty(),
                 loadingTime = loadingTime,
                 loadingType = loadingType,
                 timeSpent = updatedDurationNs,
@@ -616,22 +610,22 @@ internal open class RumViewScope(
                 email = user.email,
                 additionalProperties = user.additionalProperties
             ),
-            application = ViewEvent.Application(context.applicationId),
+            application = ViewEvent.Application(rumContext.applicationId),
             session = ViewEvent.ViewEventSession(
-                id = context.sessionId,
+                id = rumContext.sessionId,
                 type = ViewEvent.ViewEventSessionType.USER
             ),
             source = rumEventSourceProvider.viewEventSource,
             os = ViewEvent.Os(
-                name = androidInfoProvider.osName,
-                version = androidInfoProvider.osVersion,
-                versionMajor = androidInfoProvider.osMajorVersion
+                name = sdkContext.deviceInfo.osName,
+                version = sdkContext.deviceInfo.osVersion,
+                versionMajor = sdkContext.deviceInfo.osMajorVersion
             ),
             device = ViewEvent.Device(
-                type = androidInfoProvider.deviceType.toViewSchemaType(),
-                name = androidInfoProvider.deviceName,
-                model = androidInfoProvider.deviceModel,
-                brand = androidInfoProvider.deviceBrand
+                type = sdkContext.deviceInfo.deviceType.toViewSchemaType(),
+                name = sdkContext.deviceInfo.deviceName,
+                model = sdkContext.deviceInfo.deviceModel,
+                brand = sdkContext.deviceInfo.deviceBrand
             ),
             context = ViewEvent.Context(additionalProperties = attributes),
             dd = ViewEvent.Dd(
@@ -693,8 +687,10 @@ internal open class RumViewScope(
         writer: DataWriter<Any>
     ) {
         pendingActionCount++
-        val context = getRumContext()
-        val user = userInfoProvider.getUserInfo()
+        val rumContext = getRumContext()
+        val sdkContext = contextProvider.context
+
+        val user = sdkContext.userInfo
 
         val actionEvent = ActionEvent(
             date = eventTimestamp,
@@ -704,9 +700,9 @@ internal open class RumViewScope(
                 loadingTime = getStartupTime(event)
             ),
             view = ActionEvent.View(
-                id = context.viewId.orEmpty(),
-                name = context.viewName,
-                url = context.viewUrl.orEmpty()
+                id = rumContext.viewId.orEmpty(),
+                name = rumContext.viewName,
+                url = rumContext.viewUrl.orEmpty()
             ),
             usr = ActionEvent.Usr(
                 id = user.id,
@@ -714,22 +710,22 @@ internal open class RumViewScope(
                 email = user.email,
                 additionalProperties = user.additionalProperties
             ),
-            application = ActionEvent.Application(context.applicationId),
+            application = ActionEvent.Application(rumContext.applicationId),
             session = ActionEvent.ActionEventSession(
-                id = context.sessionId,
+                id = rumContext.sessionId,
                 type = ActionEvent.ActionEventSessionType.USER
             ),
             source = rumEventSourceProvider.actionEventSource,
             os = ActionEvent.Os(
-                name = androidInfoProvider.osName,
-                version = androidInfoProvider.osVersion,
-                versionMajor = androidInfoProvider.osMajorVersion
+                name = sdkContext.deviceInfo.osName,
+                version = sdkContext.deviceInfo.osVersion,
+                versionMajor = sdkContext.deviceInfo.osMajorVersion
             ),
             device = ActionEvent.Device(
-                type = androidInfoProvider.deviceType.toActionSchemaType(),
-                name = androidInfoProvider.deviceName,
-                model = androidInfoProvider.deviceModel,
-                brand = androidInfoProvider.deviceBrand
+                type = sdkContext.deviceInfo.deviceType.toActionSchemaType(),
+                name = sdkContext.deviceInfo.deviceName,
+                model = sdkContext.deviceInfo.deviceModel,
+                brand = sdkContext.deviceInfo.deviceBrand
             ),
             context = ActionEvent.Context(additionalProperties = GlobalRum.globalAttributes),
             dd = ActionEvent.Dd(session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1))
@@ -748,12 +744,14 @@ internal open class RumViewScope(
         delegateEventToChildren(event, writer)
         if (stopped) return
 
-        val context = getRumContext()
-        val user = userInfoProvider.getUserInfo()
+        val rumContext = getRumContext()
+        val sdkContext = contextProvider.context
+
+        val user = sdkContext.userInfo
         val updatedAttributes = addExtraAttributes(
             mapOf(RumAttributes.LONG_TASK_TARGET to event.target)
         )
-        val networkInfo = networkInfoProvider.getLatestNetworkInfo()
+        val networkInfo = sdkContext.networkInfo
         val timestamp = event.eventTime.timestamp + serverTimeOffsetInMs
         val isFrozenFrame = event.durationNs > FROZEN_FRAME_THRESHOLD_NS
         val longTaskEvent = LongTaskEvent(
@@ -762,11 +760,11 @@ internal open class RumViewScope(
                 duration = event.durationNs,
                 isFrozenFrame = isFrozenFrame
             ),
-            action = context.actionId?.let { LongTaskEvent.Action(it) },
+            action = rumContext.actionId?.let { LongTaskEvent.Action(it) },
             view = LongTaskEvent.View(
-                id = context.viewId.orEmpty(),
-                name = context.viewName,
-                url = context.viewUrl.orEmpty()
+                id = rumContext.viewId.orEmpty(),
+                name = rumContext.viewName,
+                url = rumContext.viewUrl.orEmpty()
             ),
             usr = LongTaskEvent.Usr(
                 id = user.id,
@@ -775,22 +773,22 @@ internal open class RumViewScope(
                 additionalProperties = user.additionalProperties
             ),
             connectivity = networkInfo.toLongTaskConnectivity(),
-            application = LongTaskEvent.Application(context.applicationId),
+            application = LongTaskEvent.Application(rumContext.applicationId),
             session = LongTaskEvent.LongTaskEventSession(
-                id = context.sessionId,
+                id = rumContext.sessionId,
                 type = LongTaskEvent.LongTaskEventSessionType.USER
             ),
             source = rumEventSourceProvider.longTaskEventSource,
             os = LongTaskEvent.Os(
-                name = androidInfoProvider.osName,
-                version = androidInfoProvider.osVersion,
-                versionMajor = androidInfoProvider.osMajorVersion
+                name = sdkContext.deviceInfo.osName,
+                version = sdkContext.deviceInfo.osVersion,
+                versionMajor = sdkContext.deviceInfo.osMajorVersion
             ),
             device = LongTaskEvent.Device(
-                type = androidInfoProvider.deviceType.toLongTaskSchemaType(),
-                name = androidInfoProvider.deviceName,
-                model = androidInfoProvider.deviceModel,
-                brand = androidInfoProvider.deviceBrand
+                type = sdkContext.deviceInfo.deviceType.toLongTaskSchemaType(),
+                name = sdkContext.deviceInfo.deviceName,
+                model = sdkContext.deviceInfo.deviceModel,
+                brand = sdkContext.deviceInfo.deviceBrand
             ),
             context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
             dd = LongTaskEvent.Dd(session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1))
@@ -860,7 +858,6 @@ internal open class RumViewScope(
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for your " +
             "view: %s was 0 or negative. In order to keep the view we forced it to 1ns."
 
-        @Suppress("LongParameterList")
         internal fun fromEvent(
             parentScope: RumScope,
             event: RumRawEvent.StartView,
@@ -868,11 +865,8 @@ internal open class RumViewScope(
             cpuVitalMonitor: VitalMonitor,
             memoryVitalMonitor: VitalMonitor,
             frameRateVitalMonitor: VitalMonitor,
-            timeProvider: TimeProvider,
             rumEventSourceProvider: RumEventSourceProvider,
-            userInfoProvider: UserInfoProvider,
-            networkInfoProvider: NetworkInfoProvider,
-            androidInfoProvider: AndroidInfoProvider
+            contextProvider: ContextProvider
         ): RumViewScope {
             return RumViewScope(
                 parentScope,
@@ -884,11 +878,8 @@ internal open class RumViewScope(
                 cpuVitalMonitor,
                 memoryVitalMonitor,
                 frameRateVitalMonitor,
-                timeProvider,
                 rumEventSourceProvider,
-                userInfoProvider,
-                networkInfoProvider,
-                androidInfoProvider = androidInfoProvider
+                contextProvider
             )
         }
     }

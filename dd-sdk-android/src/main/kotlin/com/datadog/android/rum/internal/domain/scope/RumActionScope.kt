@@ -8,14 +8,13 @@ package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
-import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.v2.core.internal.ContextProvider
 import java.lang.ref.WeakReference
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -32,8 +31,7 @@ internal class RumActionScope(
     inactivityThresholdMs: Long = ACTION_INACTIVITY_MS,
     maxDurationMs: Long = ACTION_MAX_DURATION_MS,
     private val rumEventSourceProvider: RumEventSourceProvider,
-    private val userInfoProvider: UserInfoProvider,
-    private val androidInfoProvider: AndroidInfoProvider
+    private val contextProvider: ContextProvider
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
@@ -191,8 +189,9 @@ internal class RumActionScope(
         val actualType = type
         attributes.putAll(GlobalRum.globalAttributes)
 
-        val context = getRumContext()
-        val user = userInfoProvider.getUserInfo()
+        val rumContext = getRumContext()
+        val sdkContext = contextProvider.context
+        val user = sdkContext.userInfo
 
         val actionEvent = ActionEvent(
             date = eventTimestamp,
@@ -207,13 +206,13 @@ internal class RumActionScope(
                 loadingTime = max(endNanos - startedNanos, 1L)
             ),
             view = ActionEvent.View(
-                id = context.viewId.orEmpty(),
-                name = context.viewName,
-                url = context.viewUrl.orEmpty()
+                id = rumContext.viewId.orEmpty(),
+                name = rumContext.viewName,
+                url = rumContext.viewUrl.orEmpty()
             ),
-            application = ActionEvent.Application(context.applicationId),
+            application = ActionEvent.Application(rumContext.applicationId),
             session = ActionEvent.ActionEventSession(
-                id = context.sessionId,
+                id = rumContext.sessionId,
                 type = ActionEvent.ActionEventSessionType.USER
             ),
             source = rumEventSourceProvider.actionEventSource,
@@ -224,15 +223,15 @@ internal class RumActionScope(
                 additionalProperties = user.additionalProperties
             ),
             os = ActionEvent.Os(
-                name = androidInfoProvider.osName,
-                version = androidInfoProvider.osVersion,
-                versionMajor = androidInfoProvider.osMajorVersion
+                name = sdkContext.deviceInfo.osName,
+                version = sdkContext.deviceInfo.osVersion,
+                versionMajor = sdkContext.deviceInfo.osMajorVersion
             ),
             device = ActionEvent.Device(
-                type = androidInfoProvider.deviceType.toActionSchemaType(),
-                name = androidInfoProvider.deviceName,
-                model = androidInfoProvider.deviceModel,
-                brand = androidInfoProvider.deviceBrand
+                type = sdkContext.deviceInfo.deviceType.toActionSchemaType(),
+                name = sdkContext.deviceInfo.deviceName,
+                model = sdkContext.deviceInfo.deviceModel,
+                brand = sdkContext.deviceInfo.deviceBrand
             ),
             context = ActionEvent.Context(additionalProperties = attributes),
             dd = ActionEvent.Dd(session = ActionEvent.DdSession(plan = ActionEvent.Plan.PLAN_1))
@@ -254,8 +253,7 @@ internal class RumActionScope(
             event: RumRawEvent.StartAction,
             timestampOffset: Long,
             eventSourceProvider: RumEventSourceProvider,
-            userInfoProvider: UserInfoProvider,
-            androidInfoProvider: AndroidInfoProvider
+            contextProvider: ContextProvider
         ): RumScope {
             return RumActionScope(
                 parentScope,
@@ -266,8 +264,7 @@ internal class RumActionScope(
                 event.attributes,
                 timestampOffset,
                 rumEventSourceProvider = eventSourceProvider,
-                userInfoProvider = userInfoProvider,
-                androidInfoProvider = androidInfoProvider
+                contextProvider = contextProvider
             )
         }
     }

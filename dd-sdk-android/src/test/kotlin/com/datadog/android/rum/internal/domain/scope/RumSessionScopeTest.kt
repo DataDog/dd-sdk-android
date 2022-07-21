@@ -7,19 +7,16 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.NoOpDataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -82,9 +79,6 @@ internal class RumSessionScopeTest {
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
 
     @Mock
-    lateinit var mockTimeProvider: TimeProvider
-
-    @Mock
     lateinit var mockSessionListener: RumSessionListener
 
     @Mock
@@ -94,16 +88,10 @@ internal class RumSessionScopeTest {
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
     @Mock
-    lateinit var mockUserInfoProvider: UserInfoProvider
-
-    @Mock
-    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+    lateinit var mockContextProvider: ContextProvider
 
     @Forgery
     lateinit var fakeParentContext: RumContext
-
-    @Forgery
-    lateinit var fakeAndroidInfoProvider: AndroidInfoProvider
 
     @FloatForgery(min = 0f, max = 100f)
     var fakeSamplingRate: Float = 0f
@@ -763,15 +751,12 @@ internal class RumSessionScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockSessionListener,
             mockRumEventSourceProvider,
-            mockUserInfoProvider,
-            mockNetworkInfoProvider,
+            mockContextProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS,
-            fakeAndroidInfoProvider
+            TEST_MAX_DURATION_NS
         )
 
         if (withMockChildScope) {

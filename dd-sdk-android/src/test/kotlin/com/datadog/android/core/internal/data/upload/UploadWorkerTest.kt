@@ -20,6 +20,7 @@ import com.datadog.android.v2.api.NoOpSDKCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.DatadogFeature
+import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.net.DataUploader
 import com.datadog.android.v2.core.internal.storage.BatchConfirmation
 import com.datadog.android.v2.core.internal.storage.BatchId
@@ -71,6 +72,9 @@ internal class UploadWorkerTest {
     lateinit var mockGlobalSdkCore: DatadogCore
 
     @Mock
+    lateinit var mockContextProvider: ContextProvider
+
+    @Mock
     lateinit var mockFeatureA: DatadogFeature
 
     @Mock
@@ -105,7 +109,8 @@ internal class UploadWorkerTest {
         Datadog.initialized.set(true)
         Datadog.globalSDKCore = mockGlobalSdkCore
 
-        whenever(mockGlobalSdkCore.context) doReturn fakeContext
+        whenever(mockGlobalSdkCore.contextProvider) doReturn mockContextProvider
+        whenever(mockContextProvider.context) doReturn fakeContext
 
         stubFeatures(
             mockGlobalSdkCore,

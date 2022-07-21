@@ -9,5 +9,9 @@ package com.datadog.android.v2.core.internal
 import com.datadog.android.v2.api.context.DatadogContext
 
 internal interface ContextProvider {
-    val context: DatadogContext?
+    // TODO RUMM-0000 getting context may be quite heavy, should it be something non-blocking here?
+    // TODO RUMM-0000 lifecycle checks may be needed for the cases when context is requested
+    //  when datadog is not initialized yet/anymore (case of UploadWorker, other calls site
+    //  should be in sync with lifecycle)
+    val context: DatadogContext
 }

@@ -15,19 +15,16 @@ import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.v2.core.internal.ContextProvider
 import java.util.concurrent.TimeUnit
 
 internal class RumViewManagerScope(
@@ -37,12 +34,9 @@ internal class RumViewManagerScope(
     private val cpuVitalMonitor: VitalMonitor,
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,
-    private val timeProvider: TimeProvider,
     private val rumEventSourceProvider: RumEventSourceProvider,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
-    private val userInfoProvider: UserInfoProvider,
-    private val networkInfoProvider: NetworkInfoProvider,
-    private val androidInfoProvider: AndroidInfoProvider
+    private val contextProvider: ContextProvider
 ) : RumScope {
 
     internal val childrenScopes = mutableListOf<RumScope>()
@@ -112,11 +106,8 @@ internal class RumViewManagerScope(
             cpuVitalMonitor,
             memoryVitalMonitor,
             frameRateVitalMonitor,
-            timeProvider,
             rumEventSourceProvider,
-            userInfoProvider,
-            networkInfoProvider,
-            androidInfoProvider
+            contextProvider
         )
         onViewDisplayed(event, viewScope, writer)
         childrenScopes.add(viewScope)
@@ -170,12 +161,9 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
-            timeProvider,
             rumEventSourceProvider,
             type = RumViewScope.RumViewType.BACKGROUND,
-            userInfoProvider = userInfoProvider,
-            networkInfoProvider = networkInfoProvider,
-            androidInfoProvider = androidInfoProvider
+            contextProvider = contextProvider
         )
     }
 
@@ -190,12 +178,9 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
-            timeProvider,
             rumEventSourceProvider,
             type = RumViewScope.RumViewType.APPLICATION_LAUNCH,
-            userInfoProvider = userInfoProvider,
-            networkInfoProvider = networkInfoProvider,
-            androidInfoProvider = androidInfoProvider
+            contextProvider = contextProvider
         )
     }
 

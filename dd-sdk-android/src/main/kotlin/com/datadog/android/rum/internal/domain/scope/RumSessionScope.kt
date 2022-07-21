@@ -8,19 +8,16 @@ package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.NoOpDataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
-import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.v2.core.internal.ContextProvider
 import java.security.SecureRandom
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -35,15 +32,12 @@ internal class RumSessionScope(
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
-    timeProvider: TimeProvider,
     internal val sessionListener: RumSessionListener?,
     rumEventSourceProvider: RumEventSourceProvider,
-    userInfoProvider: UserInfoProvider,
-    networkInfoProvider: NetworkInfoProvider,
+    contextProvider: ContextProvider,
     buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
-    private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
-    androidInfoProvider: AndroidInfoProvider
+    private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID
@@ -62,12 +56,9 @@ internal class RumSessionScope(
         cpuVitalMonitor,
         memoryVitalMonitor,
         frameRateVitalMonitor,
-        timeProvider,
         rumEventSourceProvider,
         buildSdkVersionProvider,
-        userInfoProvider,
-        networkInfoProvider,
-        androidInfoProvider
+        contextProvider
     )
 
     init {

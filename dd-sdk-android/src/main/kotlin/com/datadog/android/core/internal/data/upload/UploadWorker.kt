@@ -63,7 +63,7 @@ internal class UploadWorker(
         // context is unique for each batch query instead of using the same one for all the batches
         // which will be uploaded, because it can change by the time the upload of the next batch
         // is requested.
-        val context = datadogCore.context ?: return
+        val context = datadogCore.contextProvider?.context ?: return
 
         storage.readNextBatch(context) { batchId, reader ->
             val batch = reader.read()

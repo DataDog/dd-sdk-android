@@ -7,14 +7,11 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
-import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -65,19 +62,10 @@ internal class RumApplicationScopeTest {
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
 
     @Mock
-    lateinit var mockTimeProvider: TimeProvider
-
-    @Mock
     lateinit var mockSessionListener: RumSessionListener
 
     @Mock
-    lateinit var mockUserInfoProvider: UserInfoProvider
-
-    @Mock
-    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
-
-    @Mock
-    lateinit var mockAndroidInfoProvider: AndroidInfoProvider
+    lateinit var mockContextProvider: ContextProvider
 
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
@@ -101,12 +89,9 @@ internal class RumApplicationScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockSessionListener,
             fakeSourceName,
-            mockUserInfoProvider,
-            mockNetworkInfoProvider,
-            mockAndroidInfoProvider
+            mockContextProvider
         )
     }
 

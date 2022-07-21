@@ -10,8 +10,14 @@ package com.datadog.android.v2.api.context
  * Holds information about the current local and server time.
  * @property deviceTimeNs the current time as known by the System on the device (nanoseconds)
  * @property serverTimeNs the current time synchronized with Datadog's NTP server(s) (nanoseconds)
+ * @property serverTimeOffsetNs the difference between server time and device time, relative
+ * to the device time (nanoseconds)
+ * @property serverTimeOffsetMs the difference between server time and device time, relative
+ * to the device time (milliseconds)
  */
 data class TimeInfo(
     val deviceTimeNs: Long,
-    val serverTimeNs: Long
+    val serverTimeNs: Long,
+    val serverTimeOffsetNs: Long,
+    val serverTimeOffsetMs: Long
 )

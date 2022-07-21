@@ -35,7 +35,6 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -82,9 +81,7 @@ internal class DatadogTest {
     lateinit var fakeConsent: TrackingConsent
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
-        fakeConsent = forge.aValueFrom(TrackingConsent::class.java)
-
+    fun `set up`() {
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)
 

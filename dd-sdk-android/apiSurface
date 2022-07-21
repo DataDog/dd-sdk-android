@@ -1648,12 +1648,18 @@ enum com.datadog.android.v2.api.SDKEndpoint
   - US5
   - US1_FED
   - EU1
-data class com.datadog.android.v2.api.context.ApplicationInfo
-  constructor(String, String, Int)
 data class com.datadog.android.v2.api.context.CarrierInfo
   constructor(String?, String?)
 data class com.datadog.android.v2.api.context.DatadogContext
-  constructor(TimeInfo, ApplicationInfo, ProcessInfo, NetworkInfo, UserInfo, com.datadog.android.privacy.TrackingConsent, Map<String, Any>)
+  constructor(com.datadog.android.DatadogSite, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, com.datadog.android.privacy.TrackingConsent, Map<String, Any>)
+data class com.datadog.android.v2.api.context.DeviceInfo
+  constructor(String, String, String, DeviceType, String, String, String, String)
+enum com.datadog.android.v2.api.context.DeviceType
+  - MOBILE
+  - TABLET
+  - TV
+  - DESKTOP
+  - OTHER
 data class com.datadog.android.v2.api.context.NetworkInfo
   constructor(Connectivity, CarrierInfo?)
   enum Connectivity
@@ -1672,9 +1678,9 @@ data class com.datadog.android.v2.api.context.NetworkInfo
 data class com.datadog.android.v2.api.context.ProcessInfo
   constructor(Boolean, Int)
 data class com.datadog.android.v2.api.context.TimeInfo
-  constructor(Long, Long)
+  constructor(Long, Long, Long, Long)
 data class com.datadog.android.v2.api.context.UserInfo
-  constructor(String?, String?, String?, Map<String, Any>)
+  constructor(String?, String?, String?, Map<String, Any?>)
 class com.datadog.android.webview.DatadogEventBridge
   constructor()
   constructor(List<String>)

@@ -7,9 +7,6 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
-import com.datadog.android.core.model.UserInfo
-import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
@@ -23,6 +20,8 @@ import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aFilteredMap
 import com.datadog.android.utils.forge.exhaustiveAttributes
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -71,6 +70,9 @@ internal class RumContinuousActionScopeTest {
     @Mock
     lateinit var mockWriter: DataWriter<Any>
 
+    @Mock
+    lateinit var mockContextProvider: ContextProvider
+
     @Forgery
     lateinit var fakeType: RumActionType
 
@@ -84,10 +86,7 @@ internal class RumContinuousActionScopeTest {
     lateinit var fakeParentContext: RumContext
 
     @Forgery
-    lateinit var fakeUserInfo: UserInfo
-
-    @Forgery
-    lateinit var fakeAndroidInfoProvider: AndroidInfoProvider
+    lateinit var fakeDatadogContext: DatadogContext
 
     lateinit var fakeEventTime: Time
 
@@ -99,9 +98,6 @@ internal class RumContinuousActionScopeTest {
 
     @Mock
     lateinit var mockRumEventSourceProvider: RumEventSourceProvider
-
-    @Mock
-    lateinit var mockUserInfoProvider: UserInfoProvider
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -116,7 +112,7 @@ internal class RumContinuousActionScopeTest {
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString().toByteArray()
 
-        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        whenever(mockContextProvider.context) doReturn fakeDatadogContext
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
 
         testedScope = RumActionScope(
@@ -130,8 +126,7 @@ internal class RumContinuousActionScopeTest {
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
             mockRumEventSourceProvider,
-            mockUserInfoProvider,
-            fakeAndroidInfoProvider
+            mockContextProvider
         )
     }
 
@@ -208,22 +203,22 @@ internal class RumContinuousActionScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -266,22 +261,22 @@ internal class RumContinuousActionScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -323,22 +318,22 @@ internal class RumContinuousActionScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -390,15 +385,15 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -460,15 +455,15 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -534,15 +529,15 @@ internal class RumContinuousActionScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -594,15 +589,15 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -658,15 +653,15 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -715,15 +710,15 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -779,15 +774,15 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -824,15 +819,15 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -873,15 +868,15 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -922,15 +917,15 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -965,22 +960,22 @@ internal class RumContinuousActionScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1017,22 +1012,22 @@ internal class RumContinuousActionScopeTest {
                     hasCrashCount(fatalCount)
                     hasLongTaskCount(0)
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1064,22 +1059,22 @@ internal class RumContinuousActionScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1112,8 +1107,7 @@ internal class RumContinuousActionScopeTest {
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
             mockRumEventSourceProvider,
-            mockUserInfoProvider,
-            fakeAndroidInfoProvider
+            mockContextProvider
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.globalAttributes.remove(it) }
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
@@ -1138,22 +1132,22 @@ internal class RumContinuousActionScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1197,22 +1191,22 @@ internal class RumContinuousActionScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1250,22 +1244,22 @@ internal class RumContinuousActionScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1303,22 +1297,22 @@ internal class RumContinuousActionScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1357,22 +1351,22 @@ internal class RumContinuousActionScopeTest {
                     hasCrashCount(fatalCount)
                     hasLongTaskCount(0)
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1408,22 +1402,22 @@ internal class RumContinuousActionScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1470,15 +1464,15 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1521,15 +1515,15 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1632,22 +1626,22 @@ internal class RumContinuousActionScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1687,22 +1681,22 @@ internal class RumContinuousActionScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
@@ -1736,22 +1730,22 @@ internal class RumContinuousActionScopeTest {
                     hasLongTaskCount(0)
                     hasLongTaskCount(0)
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
                 }
         }
