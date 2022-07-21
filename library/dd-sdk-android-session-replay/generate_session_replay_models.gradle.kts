@@ -36,7 +36,16 @@ tasks.register(
         "shape-wireframe-schema.json",
         "text-wireframe-schema.json",
         "shape-wireframe-update-schema.json",
-        "text-wireframe-update-schema.json"
+        "text-wireframe-update-schema.json",
+        "full-snapshot-record-schema.json",
+        "incremental-snapshot-record-schema.json",
+        "incremental-data-schema.json",
+        "text-style-schema.json",
+        "text-position-schema.json",
+        "shape-style-schema.json",
+        "shape-border-schema.json",
+        "wireframe-schema.json",
+        "wireframe-update-mutation-schema.json"
     )
 }
 
