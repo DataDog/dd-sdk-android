@@ -20,6 +20,7 @@ import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.net.CurlInterceptor
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
+import com.datadog.android.core.internal.net.RotatingDnsResolver
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NetworkInfoDeserializer
@@ -400,8 +401,10 @@ internal object CoreFeature {
             .connectionSpecs(listOf(connectionSpec))
 
         if (BuildConfig.DEBUG) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             builder.addNetworkInterceptor(CurlInterceptor())
         } else {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             builder.addInterceptor(GzipRequestInterceptor())
         }
 
@@ -409,6 +412,10 @@ internal object CoreFeature {
             builder.proxy(configuration.proxy)
             builder.proxyAuthenticator(configuration.proxyAuth)
         }
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+        builder.dns(RotatingDnsResolver())
+
         okHttpClient = builder.build()
     }
 
