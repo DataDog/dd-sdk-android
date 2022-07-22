@@ -18,14 +18,16 @@ class ApiSurfacePlugin : Plugin<Project> {
         val srcDir = File(target.projectDir, "src")
         val surfaceFile = File(target.projectDir, FILE_NAME)
 
-        val generateTask = target.tasks
-            .create(TASK_GEN_API_SURFACE, GenerateApiSurfaceTask::class.java)
-        generateTask.srcDir = File(srcDir, "main")
-        generateTask.surfaceFile = surfaceFile
-        val checkTask = target.tasks
-            .create(TASK_CHECK_API_SURFACE, CheckApiSurfaceTask::class.java)
-        checkTask.surfaceFile = surfaceFile
-        checkTask.dependsOn(TASK_GEN_API_SURFACE)
+        target.tasks
+            .register(TASK_GEN_API_SURFACE, GenerateApiSurfaceTask::class.java) {
+                this.srcDir = File(srcDir, "main")
+                this.surfaceFile = surfaceFile
+            }
+        target.tasks
+            .register(TASK_CHECK_API_SURFACE, CheckApiSurfaceTask::class.java) {
+                this.surfaceFile = surfaceFile
+                dependsOn(TASK_GEN_API_SURFACE)
+            }
 
         target.taskConfig<KotlinCompile> {
             finalizedBy(TASK_GEN_API_SURFACE)

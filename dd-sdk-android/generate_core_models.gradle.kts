@@ -14,5 +14,7 @@ tasks.register(
 afterEvaluate {
     tasks.findByName(ApiSurfacePlugin.TASK_GEN_API_SURFACE)
         ?.dependsOn(generateCoreModelsTaskName)
-    tasks.withType(KotlinCompile::class.java) { dependsOn(generateCoreModelsTaskName) }
+    tasks.withType(KotlinCompile::class.java).configureEach {
+        dependsOn(generateCoreModelsTaskName)
+    }
 }
