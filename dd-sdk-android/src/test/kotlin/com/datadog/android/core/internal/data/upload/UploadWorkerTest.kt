@@ -25,6 +25,7 @@ import com.datadog.android.v2.core.internal.net.DataUploader
 import com.datadog.android.v2.core.internal.storage.BatchConfirmation
 import com.datadog.android.v2.core.internal.storage.BatchId
 import com.datadog.android.v2.core.internal.storage.BatchReader
+import com.datadog.android.v2.core.internal.storage.BatchWriter
 import com.datadog.android.v2.core.internal.storage.Storage
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -42,12 +43,15 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.api.fail
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
@@ -360,6 +364,92 @@ internal class UploadWorkerTest {
             .isEqualTo(ListenableWorker.Result.success())
     }
 
+    @Test
+    fun `𝕄 send batches 𝕎 doWork() {multiple batches, all Success, async storage}`(forge: Forge) {
+        // Given
+        val batchesA = forge.aList {
+            forge.aList { forge.aString().toByteArray() }
+        }
+        val batchesAMeta = forge.aList(batchesA.size) {
+            forge.aNullable { forge.aString().toByteArray() }
+        }
+        val aIds = forge.aList(batchesA.size) { mock<BatchId>() }
+        val aConfirmations = forge.aList(batchesA.size) { mock<BatchConfirmation>() }
+        val aReaders = forge.aList(batchesA.size) { mock<BatchReader>() }
+
+        val batchB = forge.aList { forge.aString().toByteArray() }
+        val batchBMeta = forge.aString().toByteArray()
+
+        stubMultipleReadSequence(
+            mockStorageA,
+            fakeContext,
+            aReaders,
+            aIds,
+            aConfirmations,
+            batchesA,
+            batchesAMeta
+        )
+
+        val batchBConfirmation = mock<BatchConfirmation>()
+        stubReadSequence(
+            mockStorageB,
+            fakeContext,
+            mockBatchReaderB,
+            mock(),
+            batchBConfirmation,
+            batchB,
+            batchBMeta
+        )
+
+        val executorService = Executors.newSingleThreadExecutor()
+        whenever(mockFeatureA.storage) doReturn AsyncStorageDelegate(mockStorageA, executorService)
+        whenever(mockFeatureB.storage) doReturn AsyncStorageDelegate(mockStorageB, executorService)
+
+        batchesA.forEachIndexed { index, batch ->
+            whenever(
+                mockUploaderA.upload(
+                    fakeContext,
+                    batch,
+                    batchesAMeta[index]
+                )
+            ) doReturn UploadStatus.SUCCESS
+        }
+
+        whenever(
+            mockUploaderB.upload(
+                fakeContext,
+                batchB,
+                batchBMeta
+            )
+        ) doReturn UploadStatus.SUCCESS
+
+        // When
+        val result = testedWorker.doWork()
+
+        // Then
+        batchesA.forEachIndexed { index, batch ->
+            verify(mockUploaderA).upload(
+                fakeContext,
+                batch,
+                batchesAMeta[index]
+            )
+
+            verify(aConfirmations[index]).markAsRead(true)
+        }
+
+        verify(mockUploaderB).upload(
+            fakeContext,
+            batchB,
+            batchBMeta
+        )
+        verify(batchBConfirmation).markAsRead(true)
+
+        assertThat(result)
+            .isEqualTo(ListenableWorker.Result.success())
+
+        executorService.shutdown()
+    }
+
     @ParameterizedTest
     @EnumSource(UploadStatus::class, names = ["SUCCESS"], mode = EnumSource.Mode.EXCLUDE)
     fun `𝕄 send batches 𝕎 doWork() {multiple batches, some fails}`(
@@ -450,6 +540,26 @@ internal class UploadWorkerTest {
             .isEqualTo(ListenableWorker.Result.success())
     }
 
+    @Test
+    fun `𝕄 log error 𝕎 doWork() { SDK is not initialized }`() {
+        // Given
+        Datadog.initialized.set(false)
+
+        // When
+        val result = testedWorker.doWork()
+
+        // Then
+        verify(logger.mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Datadog.MESSAGE_NOT_INITIALIZED
+        )
+        verifyZeroInteractions(mockFeatureA, mockBatchReaderA, mockUploaderA)
+        verifyZeroInteractions(mockFeatureB, mockBatchReaderB, mockUploaderB)
+
+        assertThat(result)
+            .isEqualTo(ListenableWorker.Result.success())
+    }
+
     // endregion
 
     // region private
@@ -496,51 +606,65 @@ internal class UploadWorkerTest {
         batches: List<List<ByteArray>>,
         batchMetadata: List<ByteArray?>
     ) {
-        whenever(storage.readNextBatch(eq(context), any())).thenAnswer(object : Answer<Unit> {
-            var invocationCount: Int = 0
+        whenever(storage.readNextBatch(eq(context), any(), any()))
+            .thenAnswer(object : Answer<Unit> {
+                var invocationCount: Int = 0
 
-            override fun answer(invocation: InvocationOnMock) {
-                if (invocationCount >= batches.size) return
+                override fun answer(invocation: InvocationOnMock) {
+                    if (invocationCount >= batches.size) {
+                        (invocation.getArgument<() -> Unit>(1)).invoke()
+                        return
+                    }
 
-                val reader = batchReaders[invocationCount]
-                val batchId = batchIds[invocationCount]
-                val batchConfirmation = batchConfirmations[invocationCount]
+                    val reader = batchReaders[invocationCount]
+                    val batchId = batchIds[invocationCount]
+                    val batchConfirmation = batchConfirmations[invocationCount]
 
-                whenever(reader.read()) doReturn batches[invocationCount]
-                whenever(reader.currentMetadata()) doReturn batchMetadata[invocationCount]
+                    whenever(reader.read()) doReturn batches[invocationCount]
+                    whenever(reader.currentMetadata()) doReturn batchMetadata[invocationCount]
 
-                invocationCount++
+                    invocationCount++
 
-                whenever(storage.confirmBatchRead(eq(batchId), any())) doAnswer {
-                    (it.getArgument<(BatchConfirmation) -> Unit>(1)).invoke(batchConfirmation)
+                    whenever(storage.confirmBatchRead(eq(batchId), any())) doAnswer {
+                        (it.getArgument<(BatchConfirmation) -> Unit>(1)).invoke(batchConfirmation)
+                    }
+
+                    (invocation.getArgument<(BatchId, BatchReader) -> Unit>(2)).invoke(
+                        batchId,
+                        reader
+                    )
                 }
-
-                (invocation.getArgument<(BatchId, BatchReader) -> Unit>(1)).invoke(
-                    batchId,
-                    reader
-                )
-            }
-        })
+            })
     }
 
-    @Test
-    fun `𝕄 log error 𝕎 doWork() { SDK is not initialized }`() {
-        // Given
-        Datadog.initialized.set(false)
+    private class AsyncStorageDelegate(
+        private val delegate: Storage,
+        private val executor: Executor
+    ) : Storage {
+        override fun writeCurrentBatch(
+            datadogContext: DatadogContext,
+            callback: (BatchWriter) -> Unit
+        ) {
+            fail("we don't expect this one to be called")
+        }
 
-        // When
-        val result = testedWorker.doWork()
+        override fun readNextBatch(
+            datadogContext: DatadogContext,
+            noBatchCallback: () -> Unit,
+            batchCallback: (BatchId, BatchReader) -> Unit
+        ) {
+            executor.execute {
+                delegate.readNextBatch(
+                    datadogContext,
+                    noBatchCallback,
+                    batchCallback
+                )
+            }
+        }
 
-        // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
-            Datadog.MESSAGE_NOT_INITIALIZED
-        )
-        verifyZeroInteractions(mockFeatureA, mockBatchReaderA, mockUploaderA)
-        verifyZeroInteractions(mockFeatureB, mockBatchReaderB, mockUploaderB)
-
-        assertThat(result)
-            .isEqualTo(ListenableWorker.Result.success())
+        override fun confirmBatchRead(batchId: BatchId, callback: (BatchConfirmation) -> Unit) {
+            executor.execute { delegate.confirmBatchRead(batchId, callback) }
+        }
     }
 
     // endregion

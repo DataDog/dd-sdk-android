@@ -27,11 +27,16 @@ internal interface Storage {
     /**
      * Utility to read a batch, asynchronously.
      * @param datadogContext the current [DatadogContext]
-     * @param callback an operation to perform with a [BatchId] and [BatchReader] that will target
+     * @param noBatchCallback an optional callback which is called when there is no batch available to read.
+     * @param batchCallback an operation to perform with a [BatchId] and [BatchReader] that will target
      * the next readable Batch
      */
     @WorkerThread
-    fun readNextBatch(datadogContext: DatadogContext, callback: (BatchId, BatchReader) -> Unit)
+    fun readNextBatch(
+        datadogContext: DatadogContext,
+        noBatchCallback: () -> Unit = {},
+        batchCallback: (BatchId, BatchReader) -> Unit
+    )
 
     /**
      * Utility to update the state of a batch, asynchronously.

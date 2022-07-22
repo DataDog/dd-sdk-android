@@ -41,7 +41,6 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Ignore
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -163,11 +162,11 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.read()) doReturn batchData
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
-        whenever(mockStorage.readNextBatch(eq(fakeContext), any())) doAnswer {
+        whenever(mockStorage.readNextBatch(eq(fakeContext), any(), any())) doAnswer {
             whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
                 it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
             }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
+            it.getArgument<(BatchId, BatchReader) -> Unit>(2).invoke(batchId, batchReader)
         }
 
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
@@ -218,11 +217,11 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.read()) doReturn batchData
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
-        whenever(mockStorage.readNextBatch(eq(fakeContext), any())) doAnswer {
+        whenever(mockStorage.readNextBatch(eq(fakeContext), any(), any())) doAnswer {
             whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
                 it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
             }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
+            it.getArgument<(BatchId, BatchReader) -> Unit>(2).invoke(batchId, batchReader)
         }
 
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
@@ -272,11 +271,11 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.read()) doReturn batchData
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
-        whenever(mockStorage.readNextBatch(eq(fakeContext), any())) doAnswer {
+        whenever(mockStorage.readNextBatch(eq(fakeContext), any(), any())) doAnswer {
             whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
                 it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
             }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
+            it.getArgument<(BatchId, BatchReader) -> Unit>(2).invoke(batchId, batchReader)
         }
 
         whenever(mockSystemInfoProvider.getLatestSystemInfo()) doReturn fakeSystemInfo
@@ -410,7 +409,7 @@ internal class DataUploadRunnableTest {
         testedRunnable.run()
 
         // Then
-        verify(mockStorage).readNextBatch(eq(fakeContext), any())
+        verify(mockStorage).readNextBatch(eq(fakeContext), any(), any())
         verifyNoMoreInteractions(mockStorage)
         verifyZeroInteractions(mockDataUploader)
         verify(mockThreadPoolExecutor).schedule(
@@ -436,11 +435,11 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.read()) doReturn batchData
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
-        whenever(mockStorage.readNextBatch(eq(fakeContext), any())) doAnswer {
+        whenever(mockStorage.readNextBatch(eq(fakeContext), any(), any())) doAnswer {
             whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
                 it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
             }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
+            it.getArgument<(BatchId, BatchReader) -> Unit>(2).invoke(batchId, batchReader)
         }
 
         whenever(
@@ -488,11 +487,11 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.read()) doReturn batchData
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
-        whenever(mockStorage.readNextBatch(eq(fakeContext), any())) doAnswer {
+        whenever(mockStorage.readNextBatch(eq(fakeContext), any(), any())) doAnswer {
             whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
                 it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
             }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
+            it.getArgument<(BatchId, BatchReader) -> Unit>(2).invoke(batchId, batchReader)
         }
 
         whenever(
@@ -541,11 +540,11 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.read()) doReturn batchData
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
-        whenever(mockStorage.readNextBatch(eq(fakeContext), any())) doAnswer {
+        whenever(mockStorage.readNextBatch(eq(fakeContext), any(), any())) doAnswer {
             whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
                 it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
             }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
+            it.getArgument<(BatchId, BatchReader) -> Unit>(2).invoke(batchId, batchReader)
         }
         whenever(
             mockDataUploader.upload(
@@ -594,11 +593,11 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.read()) doReturn batchData
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
-        whenever(mockStorage.readNextBatch(eq(fakeContext), any())) doAnswer {
+        whenever(mockStorage.readNextBatch(eq(fakeContext), any(), any())) doAnswer {
             whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
                 it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
             }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
+            it.getArgument<(BatchId, BatchReader) -> Unit>(2).invoke(batchId, batchReader)
         }
         whenever(
             mockDataUploader.upload(
@@ -639,11 +638,11 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.read()) doReturn batchData
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
-        whenever(mockStorage.readNextBatch(eq(fakeContext), any())) doAnswer {
+        whenever(mockStorage.readNextBatch(eq(fakeContext), any(), any())) doAnswer {
             whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
                 it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
             }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
+            it.getArgument<(BatchId, BatchReader) -> Unit>(2).invoke(batchId, batchReader)
         }
         whenever(
             mockDataUploader.upload(
@@ -685,11 +684,11 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.read()) doReturn batchData
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
-        whenever(mockStorage.readNextBatch(eq(fakeContext), any())) doAnswer {
+        whenever(mockStorage.readNextBatch(eq(fakeContext), any(), any())) doAnswer {
             whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
                 it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
             }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
+            it.getArgument<(BatchId, BatchReader) -> Unit>(2).invoke(batchId, batchReader)
         }
         whenever(
             mockDataUploader.upload(
@@ -745,11 +744,11 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.read()) doReturn batchData
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
-        whenever(mockStorage.readNextBatch(eq(fakeContext), any())) doAnswer {
+        whenever(mockStorage.readNextBatch(eq(fakeContext), any(), any())) doAnswer {
             whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
                 it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
             }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
+            it.getArgument<(BatchId, BatchReader) -> Unit>(2).invoke(batchId, batchReader)
         }
         whenever(
             mockDataUploader.upload(
@@ -782,12 +781,15 @@ internal class DataUploadRunnableTest {
         }
     }
 
-    @Ignore("Not supported functionality")
     @Test
     fun `𝕄 increase delay between runs 𝕎 no batch available`(
         @IntForgery(16, 64) runCount: Int
     ) {
         // When
+        whenever(mockStorage.readNextBatch(eq(fakeContext), any(), any())) doAnswer {
+            it.getArgument<() -> Unit>(1).invoke()
+        }
+
         repeat(runCount) {
             testedRunnable.run()
         }
@@ -827,11 +829,11 @@ internal class DataUploadRunnableTest {
         whenever(batchReader.read()) doReturn batchData
         whenever(batchReader.currentMetadata()) doReturn batchMetadata
 
-        whenever(mockStorage.readNextBatch(eq(fakeContext), any())) doAnswer {
+        whenever(mockStorage.readNextBatch(eq(fakeContext), any(), any())) doAnswer {
             whenever(mockStorage.confirmBatchRead(eq(batchId), any())) doAnswer {
                 it.getArgument<(BatchConfirmation) -> Unit>(1).invoke(batchConfirmation)
             }
-            it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
+            it.getArgument<(BatchId, BatchReader) -> Unit>(2).invoke(batchId, batchReader)
         }
         whenever(
             mockDataUploader.upload(

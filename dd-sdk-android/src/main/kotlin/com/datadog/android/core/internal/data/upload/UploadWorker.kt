@@ -17,7 +17,10 @@ import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.DatadogFeature
 import com.datadog.android.v2.core.internal.net.DataUploader
-import com.datadog.android.v2.core.internal.storage.Storage
+import java.util.LinkedList
+import java.util.Queue
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 internal class UploadWorker(
     appContext: Context,
@@ -36,61 +39,84 @@ internal class UploadWorker(
         val globalSDKCore: DatadogCore? = (Datadog.globalSDKCore as? DatadogCore)
 
         if (globalSDKCore != null) {
+            // the idea behind upload is the following:
+            // 1. we shuffle features list to randomize initial upload task sequence. It is done to
+            // avoid the possible bottleneck when some feature has big batches which are uploaded
+            // slowly, so that next time other features don't wait and have a chance to go before.
+            // 2. we introduce FIFO queue also to avoid the bottleneck: if some feature batch cannot
+            // be uploaded we put retry task to the end of queue, so that batches of other features
+            // have a chance to go.
             val features =
-                globalSDKCore.getAllFeatures().mapNotNull { it as? DatadogFeature }
+                globalSDKCore.getAllFeatures().mapNotNull { it as? DatadogFeature }.shuffled()
+
+            val tasksQueue = LinkedList<UploadNextBatchTask>()
 
             features.forEach {
-                // TODO RUMM-2296 do interleaving/randomization for the upload sequence, because
-                //  if some feature upload is slow, all other feature uploads will wait until
-                //  feature completes with all its batches
-                uploadNextBatch(
-                    globalSDKCore,
-                    it.storage,
-                    it.uploader
-                )
+                @Suppress("UnsafeThirdPartyFunctionCall") // safe to add
+                tasksQueue.offer(UploadNextBatchTask(tasksQueue, globalSDKCore, it))
+            }
+
+            while (!tasksQueue.isEmpty()) {
+                tasksQueue.poll()?.run()
             }
         }
 
         return Result.success()
     }
 
-    @WorkerThread
-    private fun uploadNextBatch(
-        datadogCore: DatadogCore,
-        storage: Storage,
-        uploader: DataUploader
-    ) {
-        // context is unique for each batch query instead of using the same one for all the batches
-        // which will be uploaded, because it can change by the time the upload of the next batch
-        // is requested.
-        val context = datadogCore.contextProvider?.context ?: return
-
-        storage.readNextBatch(context) { batchId, reader ->
-            val batch = reader.read()
-            val batchMeta = reader.currentMetadata()
-
-            val success = consumeBatch(context, batch, batchMeta, uploader)
-            storage.confirmBatchRead(batchId) { confirmation ->
-                confirmation.markAsRead(deleteBatch = success)
-            }
-
-            // TODO RUMM-2295 stack overflow protection?
-            uploadNextBatch(datadogCore, storage, uploader)
-        }
-    }
-
     // endregion
 
     // region Internal
 
-    private fun consumeBatch(
-        context: DatadogContext,
-        batch: List<ByteArray>,
-        batchMeta: ByteArray?,
-        uploader: DataUploader
-    ): Boolean {
-        val status = uploader.upload(context, batch, batchMeta)
-        return status == UploadStatus.SUCCESS
+    class UploadNextBatchTask(
+        private val taskQueue: Queue<UploadNextBatchTask>,
+        private val datadogCore: DatadogCore,
+        private val feature: DatadogFeature
+    ) : Runnable {
+
+        @WorkerThread
+        override fun run() {
+            // context is unique for each batch query instead of using the same one for all the
+            // batches which will be uploaded, because it can change by the time the upload
+            // of the next batch is requested.
+            val context = datadogCore.contextProvider?.context ?: return
+
+            val storage = feature.storage
+            val uploader = feature.uploader
+
+            // storage APIs may be async, so we need to block current thread to keep Worker alive
+            @Suppress("UnsafeThirdPartyFunctionCall") // safe to create, argument is not negative
+            val lock = CountDownLatch(1)
+
+            storage.readNextBatch(context, noBatchCallback = {
+                lock.countDown()
+            }) { batchId, reader ->
+                val batch = reader.read()
+                val batchMeta = reader.currentMetadata()
+
+                val success = consumeBatch(context, batch, batchMeta, uploader)
+                storage.confirmBatchRead(batchId) { confirmation ->
+                    confirmation.markAsRead(deleteBatch = success)
+                    @Suppress("UnsafeThirdPartyFunctionCall") // safe to add
+                    taskQueue.offer(UploadNextBatchTask(taskQueue, datadogCore, feature))
+                    lock.countDown()
+                }
+            }
+
+            @Suppress("UnsafeThirdPartyFunctionCall") // if interrupt happens, WorkManager
+            // will handle it
+            lock.await(30, TimeUnit.SECONDS)
+        }
+
+        private fun consumeBatch(
+            context: DatadogContext,
+            batch: List<ByteArray>,
+            batchMeta: ByteArray?,
+            uploader: DataUploader
+        ): Boolean {
+            val status = uploader.upload(context, batch, batchMeta)
+            return status == UploadStatus.SUCCESS
+        }
     }
 
     // endregion

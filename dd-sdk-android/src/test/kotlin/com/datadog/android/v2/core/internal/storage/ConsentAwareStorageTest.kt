@@ -955,14 +955,21 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 readNextBatch() {no file}`() {
+    fun `𝕄 notify no batch available 𝕎 readNextBatch() {no file}`() {
         // Given
         whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturn null
+        val mockNoBatchCallback = mock<() -> Unit>()
 
         // When
-        testedStorage.readNextBatch(fakeDatadogContext) { _, _ ->
+        testedStorage.readNextBatch(
+            fakeDatadogContext,
+            noBatchCallback = mockNoBatchCallback
+        ) { _, _ ->
             fail { "Callback should not have been called here" }
         }
+
+        // Then
+        verify(mockNoBatchCallback).invoke()
     }
 
     // endregion

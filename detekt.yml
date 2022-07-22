@@ -648,6 +648,8 @@ datadog:
       - "java.util.concurrent.Callable.call():java.lang.Exception"
       - "java.util.concurrent.ConcurrentHashMap.remove(kotlin.String):java.lang.NullPointerException"
       - "java.util.concurrent.CopyOnWriteArraySet.removeAll(kotlin.collections.Collection):java.lang.NullPointerException,java.lang.ClassCastException"
+      - "java.util.concurrent.CountDownLatch.await(kotlin.Long, java.util.concurrent.TimeUnit):java.lang.InterruptedException"
+      - "java.util.concurrent.CountDownLatch.constructor(kotlin.Int):java.lang.IllegalArgumentException"
       - "java.util.concurrent.ExecutorService.awaitTermination(kotlin.Long, java.util.concurrent.TimeUnit):java.lang.InterruptedException"
       - "java.util.concurrent.ExecutorService.execute(java.lang.Runnable):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       - "java.util.concurrent.ExecutorService.submit(java.lang.Runnable):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
@@ -672,6 +674,8 @@ datadog:
       # endregion
       # region Java Collections
       - "java.util.LinkedList.removeFirst():java.util.NoSuchElementException"
+      - "java.util.LinkedList.offer(com.datadog.android.core.internal.data.upload.UploadWorker.UploadNextBatchTask):java.lang.ClassCastException,java.lang.NullPointerException,java.lang.IllegalArgumentException"
+      - "java.util.Queue.offer(com.datadog.android.core.internal.data.upload.UploadWorker.UploadNextBatchTask):java.lang.ClassCastException,java.lang.NullPointerException,java.lang.IllegalArgumentException"
       # endregion
       # region Kotlin primitives
       - "kotlin.String.get(kotlin.Int):java.lang.IndexOutOfBoundsException"
@@ -877,6 +881,7 @@ datadog:
       - "java.util.LinkedList.forEach(kotlin.Function1)"
       - "java.util.LinkedList.isEmpty()"
       - "java.util.LinkedList.isNotEmpty()"
+      - "java.util.LinkedList.poll()"
       - "java.util.LinkedHashMap.remove(kotlin.String)"
       # endregion
       # region Java Concurrency
@@ -890,6 +895,7 @@ datadog:
       - "java.util.concurrent.CopyOnWriteArraySet.constructor()"
       - "java.util.concurrent.CopyOnWriteArraySet.remove(kotlin.String)"
       - "java.util.concurrent.CopyOnWriteArraySet.toTypedArray()"
+      - "java.util.concurrent.CountDownLatch.countDown()"
       - "java.util.concurrent.ExecutorService.shutdown()"
       - "java.util.concurrent.ExecutorService.shutdownNow()"
       - "java.util.concurrent.Executors.newSingleThreadExecutor()"
@@ -1007,6 +1013,7 @@ datadog:
       - "kotlin.collections.List.mapNotNull(kotlin.Function1)"
       - "kotlin.collections.List.orEmpty()"
       - "kotlin.collections.List.reversed()"
+      - "kotlin.collections.List.shuffled()"
       - "kotlin.collections.List.sumOf(kotlin.Function1)"
       - "kotlin.collections.List.take(kotlin.Int)"
       - "kotlin.collections.List.toCharArray()"
