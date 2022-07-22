@@ -19,5 +19,7 @@ tasks.register(
 afterEvaluate {
     tasks.findByName(ApiSurfacePlugin.TASK_GEN_API_SURFACE)
         ?.dependsOn(generateTelemetryModelsTaskName)
-    tasks.withType(KotlinCompile::class.java) { dependsOn(generateTelemetryModelsTaskName) }
+    tasks.withType(KotlinCompile::class.java).configureEach {
+        dependsOn(generateTelemetryModelsTaskName)
+    }
 }

@@ -25,7 +25,7 @@ fun Project.detektConfig(excludes: List<String> = emptyList()) {
         }
     }
 
-    tasks.withType<Detekt> {
+    tasks.withType<Detekt>().configureEach {
         jvmTarget = "11"
 
         dependsOn(":tools:detekt:assemble")

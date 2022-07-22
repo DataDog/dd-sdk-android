@@ -21,13 +21,15 @@ class ThirdPartyLicensesPlugin : Plugin<Project> {
             ThirdPartyLicensesExtension.DEFAULT_TP_LICENCE_FILENAME
         )
 
-        val updateTask = target.tasks
-            .create(TASK_UPDATE_NAME, UpdateThirdPartyLicensesTask::class.java)
-        updateTask.extension = extension
+        target.tasks
+            .register(TASK_UPDATE_NAME, UpdateThirdPartyLicensesTask::class.java) {
+                this.extension = extension
+            }
 
-        val checkTask = target.tasks
-            .create(TASK_CHECK_NAME, CheckThirdPartyLicensesTask::class.java)
-        checkTask.extension = extension
+        target.tasks
+            .register(TASK_CHECK_NAME, CheckThirdPartyLicensesTask::class.java) {
+                this.extension = extension
+            }
 
         target.tasks.named("check").dependsOn(TASK_CHECK_NAME)
     }

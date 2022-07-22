@@ -9,9 +9,8 @@ package com.datadog.gradle.config
 import org.gradle.api.Project
 import org.gradle.api.tasks.testing.Test
 
-@Suppress("UnstableApiUsage")
 fun Project.junitConfig() {
-    tasks.withType(Test::class.java) {
+    tasks.withType(Test::class.java).configureEach {
         useJUnitPlatform {
             includeEngines("spek", "junit-jupiter", "junit-vintage")
         }
