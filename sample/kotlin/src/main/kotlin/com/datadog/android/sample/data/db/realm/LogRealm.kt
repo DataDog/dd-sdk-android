@@ -15,7 +15,8 @@ import java.util.UUID
 
 open class LogRealm(
     @RealmField(name = BaseColumns._ID)
-    @PrimaryKey var id: String = UUID.randomUUID().toString(),
+    @PrimaryKey
+    var id: String = UUID.randomUUID().toString(),
     @RealmField(name = DatadogDbContract.Logs.COLUMN_NAME_MESSAGE)
     var message: String,
     @RealmField(name = DatadogDbContract.Logs.COLUMN_NAME_TIMESTAMP)

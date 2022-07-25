@@ -15,4 +15,5 @@ internal class NoOpAndroidInfoProvider : AndroidInfoProvider {
     override val osName: String = ""
     override val osMajorVersion: String = ""
     override val osVersion: String = ""
+    override val architecture: String = ""
 }

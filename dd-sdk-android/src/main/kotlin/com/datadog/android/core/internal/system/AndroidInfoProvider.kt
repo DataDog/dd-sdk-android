@@ -23,4 +23,6 @@ internal interface AndroidInfoProvider {
     val osMajorVersion: String
 
     val osVersion: String
+
+    val architecture: String
 }
