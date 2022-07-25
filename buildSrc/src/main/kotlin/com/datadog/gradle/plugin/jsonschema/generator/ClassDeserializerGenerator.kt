@@ -156,10 +156,6 @@ class ClassDeserializerGenerator(
             is TypeDefinition.Constant -> {
                 // No Op
             }
-            else -> throw IllegalStateException(
-                "Property deserialization not yet implemented for " +
-                    "$rootTypeName $assignee $propertyType"
-            )
         }
     }
 
