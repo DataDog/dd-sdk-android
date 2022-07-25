@@ -15,9 +15,10 @@ class GitCloneDependenciesPlugin : Plugin<Project> {
         val extension = target.extensions
             .create(EXT_NAME, GitCloneDependenciesExtension::class.java)
 
-        val cloneTask = target.tasks
-            .create(TASK_NAME, GitCloneDependenciesTask::class.java)
-        cloneTask.extension = extension
+        target.tasks
+            .register(TASK_NAME, GitCloneDependenciesTask::class.java) {
+                this.extension = extension
+            }
     }
 
     companion object {
