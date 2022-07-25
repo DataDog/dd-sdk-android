@@ -6,11 +6,6 @@
 
 package com.datadog.gradle.plugin.jsonschema
 
-import com.squareup.kotlinpoet.LIST
-import com.squareup.kotlinpoet.NOTHING
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.SET
-import com.squareup.kotlinpoet.TypeName
 import java.util.Locale
 import kotlin.reflect.KClass
 

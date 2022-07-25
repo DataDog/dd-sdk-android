@@ -11,7 +11,6 @@ import com.datadog.gradle.plugin.jsonschema.variableName
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STRING
 import com.squareup.kotlinpoet.jvm.throws
@@ -156,10 +155,6 @@ class ClassDeserializerGenerator(
             is TypeDefinition.Constant -> {
                 // No Op
             }
-            else -> throw IllegalStateException(
-                "Property deserialization not yet implemented for " +
-                    "$rootTypeName $assignee $propertyType"
-            )
         }
     }
 
