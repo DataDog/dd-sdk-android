@@ -116,7 +116,8 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
                     name = androidInfoProvider.deviceName,
                     model = androidInfoProvider.deviceModel,
                     brand = androidInfoProvider.deviceBrand,
-                    type = androidInfoProvider.deviceType.toViewSchemaType()
+                    type = androidInfoProvider.deviceType.toViewSchemaType(),
+                    architecture = androidInfoProvider.architecture
                 )
             },
             context = forge.aNullable {

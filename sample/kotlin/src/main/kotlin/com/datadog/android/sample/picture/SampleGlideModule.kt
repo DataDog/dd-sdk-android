@@ -10,7 +10,6 @@ import android.content.Context
 import android.util.Log
 import com.bumptech.glide.GlideBuilder
 import com.bumptech.glide.annotation.GlideModule
-import com.bumptech.glide.load.engine.cache.InternalCacheDiskCacheFactory
 import com.bumptech.glide.load.engine.cache.LruResourceCache
 import com.datadog.android.glide.DatadogGlideModule
 

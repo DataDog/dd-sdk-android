@@ -41,7 +41,6 @@ import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.UNIT
 import com.squareup.kotlinpoet.ksp.KotlinPoetKspPreview
 import com.squareup.kotlinpoet.ksp.TypeParameterResolver
-import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import java.io.IOException
@@ -167,7 +166,6 @@ class NoOpFactorySymbolProcessor(
         packageName: String,
         interfaceName: String
     ) {
-
         val params = declaration.typeParameters
         if (params.isEmpty()) {
             typeSpecBuilder.addSuperinterface(ClassName(packageName, interfaceName))
@@ -214,7 +212,7 @@ class NoOpFactorySymbolProcessor(
      */
     private fun generateParentInterfacesImplementation(
         typeSpecBuilder: TypeSpec.Builder,
-        declaration: KSClassDeclaration,
+        declaration: KSClassDeclaration
     ) {
         val interfaces = mutableListOf(declaration)
         val functions: MutableMap<String, KSFunctionDeclaration> = mutableMapOf()
