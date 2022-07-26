@@ -24,6 +24,6 @@ inline fun <reified T : Task> Project.taskConfig(
     crossinline configure: T.() -> Unit
 ) {
     project.afterEvaluate {
-        tasks.withType(T::class.java) { configure() }
+        tasks.withType(T::class.java).configureEach { configure() }
     }
 }
