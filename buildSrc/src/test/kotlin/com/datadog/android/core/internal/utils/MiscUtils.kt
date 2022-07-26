@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.example.model
+package  com.datadog.android.core.`internal`.utils
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
