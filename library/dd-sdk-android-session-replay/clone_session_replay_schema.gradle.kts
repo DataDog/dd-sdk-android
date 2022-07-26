@@ -5,13 +5,49 @@
  */
 import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesTask
 
-tasks.register<GitCloneDependenciesTask>("cloneSessionReplaySchema") {
+tasks.register<GitCloneDependenciesTask>("cloneSessionReplayRootSchemas") {
     extension.apply {
         clone(
             "https://github.com/DataDog/rum-events-format.git",
-            "schemas/session-replay/",
-            destinationFolder = "src/main/json/session-replay",
+            "schemas/",
+            destinationFolder = "src/main/json/schemas",
+            excludedPrefixes = listOf(
+                "session-replay/",
+                "rum",
+                "mobile",
+                "telemetry",
+                "session-replay-schema",
+                "session-replay-browser-schema"
+            ),
             ref = "master"
         )
     }
+}
+
+tasks.register<GitCloneDependenciesTask>("cloneSessionReplayMobileSchemas") {
+    extension.apply {
+        clone(
+            "https://github.com/DataDog/rum-events-format.git",
+            "schemas/session-replay/mobile",
+            destinationFolder = "src/main/json/schemas/session-replay/mobile",
+            ref = "master"
+        )
+    }
+}
+
+tasks.register<GitCloneDependenciesTask>("cloneSessionReplayCommonSchemas") {
+    extension.apply {
+        clone(
+            "https://github.com/DataDog/rum-events-format.git",
+            "schemas/session-replay/common",
+            destinationFolder = "src/main/json/schemas/session-replay/common",
+            ref = "master"
+        )
+    }
+}
+
+tasks.register("cloneSessionReplaySchemas") {
+    dependsOn("cloneSessionReplayRootSchemas")
+    dependsOn("cloneSessionReplayMobileSchemas")
+    dependsOn("cloneSessionReplayCommonSchemas")
 }
