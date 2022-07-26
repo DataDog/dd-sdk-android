@@ -8,185 +8,11 @@ class com.datadog.android.sessionreplay.SessionReplayLifecycleCallback : android
   override fun onActivityDestroyed(android.app.Activity)
   fun register(android.app.Application)
   fun unregisterAndStopRecorders(android.app.Application)
-sealed class com.datadog.android.sessionreplay.model.Record
-  abstract fun toJson(): com.google.gson.JsonElement
-  data class FullSnapshotRecord : Record
-    constructor(kotlin.Long, Data)
-    val type: kotlin.Long
-    override fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): FullSnapshotRecord
-  data class IncrementalSnapshotRecord : Record
-    constructor(kotlin.Long, IncrementalData)
-    val type: kotlin.Long
-    override fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): IncrementalSnapshotRecord
-  data class MetadataRecord : Record
-    constructor(kotlin.Long, Data1)
-    val type: kotlin.Long
-    override fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): MetadataRecord
-  data class FocusRecord : Record
-    constructor(kotlin.Long, Data2)
-    val type: kotlin.Long
-    override fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): FocusRecord
-  data class ViewEndRecord : Record
-    constructor(kotlin.Long)
-    val type: kotlin.Long
-    override fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): ViewEndRecord
-  companion object 
-    fun fromJson(kotlin.String): Record
-  data class Data
-    constructor(kotlin.collections.List<Wireframe>)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Data
-  sealed class IncrementalData
-    abstract fun toJson(): com.google.gson.JsonElement
-    data class MutationData : IncrementalData
-      constructor(kotlin.collections.List<Add>? = null, kotlin.collections.List<Remove>? = null, kotlin.collections.List<WireframeUpdateMutation>? = null)
-      val source: kotlin.Long
-      override fun toJson(): com.google.gson.JsonElement
-      companion object 
-        fun fromJson(kotlin.String): MutationData
-    data class ViewportResizeData : IncrementalData
-      constructor(kotlin.Long? = null, kotlin.Long? = null)
-      val source: kotlin.Long
-      override fun toJson(): com.google.gson.JsonElement
-      companion object 
-        fun fromJson(kotlin.String): ViewportResizeData
-    data class TouchData : IncrementalData
-      constructor(kotlin.collections.List<Position>? = null)
-      val source: kotlin.Long
-      override fun toJson(): com.google.gson.JsonElement
-      companion object 
-        fun fromJson(kotlin.String): TouchData
-    companion object 
-      fun fromJson(kotlin.String): IncrementalData
-  data class Data1
-    constructor(kotlin.Long, kotlin.Long)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Data1
-  data class Data2
-    constructor(kotlin.Boolean)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Data2
-  sealed class Wireframe
-    abstract fun toJson(): com.google.gson.JsonElement
-    data class ShapeWireframe : Wireframe
-      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, ShapeStyle? = null, ShapeBorder? = null)
-      val type: kotlin.String
-      override fun toJson(): com.google.gson.JsonElement
-      companion object 
-        fun fromJson(kotlin.String): ShapeWireframe
-    data class TextWireframe : Wireframe
-      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, ShapeStyle? = null, ShapeBorder? = null, kotlin.String, TextStyle, TextPosition? = null)
-      val type: kotlin.String
-      override fun toJson(): com.google.gson.JsonElement
-      companion object 
-        fun fromJson(kotlin.String): TextWireframe
-    companion object 
-      fun fromJson(kotlin.String): Wireframe
-  data class Add
-    constructor(kotlin.Long? = null, Wireframe)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Add
-  data class Remove
-    constructor(kotlin.Long)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Remove
-  sealed class WireframeUpdateMutation
-    abstract fun toJson(): com.google.gson.JsonElement
-    data class TextWireframeUpdate : WireframeUpdateMutation
-      constructor(kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String? = null, TextStyle? = null, TextPosition? = null)
-      val type: kotlin.String
-      override fun toJson(): com.google.gson.JsonElement
-      companion object 
-        fun fromJson(kotlin.String): TextWireframeUpdate
-    data class ShapeWireframeUpdate : WireframeUpdateMutation
-      constructor(kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, ShapeStyle? = null, ShapeBorder? = null)
-      val type: kotlin.String
-      override fun toJson(): com.google.gson.JsonElement
-      companion object 
-        fun fromJson(kotlin.String): ShapeWireframeUpdate
-    companion object 
-      fun fromJson(kotlin.String): WireframeUpdateMutation
-  data class Position
-    constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Position
-  data class ShapeStyle
-    constructor(kotlin.String? = null, kotlin.Number? = null, kotlin.Number? = null)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): ShapeStyle
-  data class ShapeBorder
-    constructor(kotlin.String, kotlin.Long)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): ShapeBorder
-  data class TextStyle
-    constructor(kotlin.String, kotlin.Long, Type, kotlin.String)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): TextStyle
-  data class TextPosition
-    constructor(Padding? = null, Alignment? = null)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): TextPosition
-  data class Padding
-    constructor(kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Padding
-  data class Alignment
-    constructor(Horizontal? = null, Vertical? = null)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Alignment
-  enum Type
-    constructor(kotlin.String)
-    - SERIF
-    - SANS_SERIF
-    - SCRIPT
-    - MONOSPACED
-    - DYNAMIC
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Type
-  enum Horizontal
-    constructor(kotlin.String)
-    - LEFT
-    - RIGHT
-    - CENTER
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Horizontal
-  enum Vertical
-    constructor(kotlin.String)
-    - TOP
-    - BOTTOM
-    - CENTER
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Vertical
-data class com.datadog.android.sessionreplay.model.Segment
-  constructor(Application, Session, View, Source, kotlin.Long, kotlin.Long, kotlin.Boolean, kotlin.Long, CreationReason = CreationReason.INIT, kotlin.Long, kotlin.collections.List<Record>)
+data class com.datadog.android.sessionreplay.model.MobileSegment
+  constructor(Application, Session, View, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Boolean? = null, Source, kotlin.collections.List<MobileRecord>)
   fun toJson(): com.google.gson.JsonElement
   companion object 
-    fun fromJson(kotlin.String): Segment
+    fun fromJson(kotlin.String): MobileSegment
   data class Application
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
@@ -202,69 +28,75 @@ data class com.datadog.android.sessionreplay.model.Segment
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): View
-  sealed class Record
+  sealed class MobileRecord
     abstract fun toJson(): com.google.gson.JsonElement
-    data class FullSnapshotRecord : Record
+    data class MobileFullSnapshotRecord : MobileRecord
       constructor(kotlin.Long, Data)
       val type: kotlin.Long
       override fun toJson(): com.google.gson.JsonElement
       companion object 
-        fun fromJson(kotlin.String): FullSnapshotRecord
-    data class IncrementalSnapshotRecord : Record
-      constructor(kotlin.Long, IncrementalData)
+        fun fromJson(kotlin.String): MobileFullSnapshotRecord
+    data class MobileIncrementalSnapshotRecord : MobileRecord
+      constructor(kotlin.Long, MobileIncrementalData)
       val type: kotlin.Long
       override fun toJson(): com.google.gson.JsonElement
       companion object 
-        fun fromJson(kotlin.String): IncrementalSnapshotRecord
-    data class MetadataRecord : Record
+        fun fromJson(kotlin.String): MobileIncrementalSnapshotRecord
+    data class MetaRecord : MobileRecord
       constructor(kotlin.Long, Data1)
       val type: kotlin.Long
       override fun toJson(): com.google.gson.JsonElement
       companion object 
-        fun fromJson(kotlin.String): MetadataRecord
-    data class FocusRecord : Record
+        fun fromJson(kotlin.String): MetaRecord
+    data class FocusRecord : MobileRecord
       constructor(kotlin.Long, Data2)
       val type: kotlin.Long
       override fun toJson(): com.google.gson.JsonElement
       companion object 
         fun fromJson(kotlin.String): FocusRecord
-    data class ViewEndRecord : Record
+    data class ViewEndRecord : MobileRecord
       constructor(kotlin.Long)
       val type: kotlin.Long
       override fun toJson(): com.google.gson.JsonElement
       companion object 
         fun fromJson(kotlin.String): ViewEndRecord
+    data class VisualViewportRecord : MobileRecord
+      constructor(kotlin.Long, Data3)
+      val type: kotlin.Long
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): VisualViewportRecord
     companion object 
-      fun fromJson(kotlin.String): Record
+      fun fromJson(kotlin.String): MobileRecord
   data class Data
     constructor(kotlin.collections.List<Wireframe>)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Data
-  sealed class IncrementalData
+  sealed class MobileIncrementalData
     abstract fun toJson(): com.google.gson.JsonElement
-    data class MutationData : IncrementalData
+    data class MobileMutationData : MobileIncrementalData
       constructor(kotlin.collections.List<Add>? = null, kotlin.collections.List<Remove>? = null, kotlin.collections.List<WireframeUpdateMutation>? = null)
       val source: kotlin.Long
       override fun toJson(): com.google.gson.JsonElement
       companion object 
-        fun fromJson(kotlin.String): MutationData
-    data class ViewportResizeData : IncrementalData
-      constructor(kotlin.Long? = null, kotlin.Long? = null)
-      val source: kotlin.Long
-      override fun toJson(): com.google.gson.JsonElement
-      companion object 
-        fun fromJson(kotlin.String): ViewportResizeData
-    data class TouchData : IncrementalData
+        fun fromJson(kotlin.String): MobileMutationData
+    data class TouchData : MobileIncrementalData
       constructor(kotlin.collections.List<Position>? = null)
       val source: kotlin.Long
       override fun toJson(): com.google.gson.JsonElement
       companion object 
         fun fromJson(kotlin.String): TouchData
+    data class ViewportResizeData : MobileIncrementalData
+      constructor(kotlin.Long, kotlin.Long)
+      val source: kotlin.Long
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): ViewportResizeData
     companion object 
-      fun fromJson(kotlin.String): IncrementalData
+      fun fromJson(kotlin.String): MobileIncrementalData
   data class Data1
-    constructor(kotlin.Long, kotlin.Long)
+    constructor(kotlin.Long, kotlin.Long, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Data1
@@ -273,6 +105,11 @@ data class com.datadog.android.sessionreplay.model.Segment
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Data2
+  data class Data3
+    constructor(kotlin.Number, kotlin.Number, kotlin.Number, kotlin.Number, kotlin.Number, kotlin.Number, kotlin.Number)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Data3
   sealed class Wireframe
     abstract fun toJson(): com.google.gson.JsonElement
     data class ShapeWireframe : Wireframe
@@ -354,23 +191,11 @@ data class com.datadog.android.sessionreplay.model.Segment
     constructor(kotlin.String)
     - ANDROID
     - IOS
-    - BROWSER
     - FLUTTER
     - REACT_NATIVE
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Source
-  enum CreationReason
-    constructor(kotlin.String)
-    - INIT
-    - SEGMENT_DURATION_LIMIT
-    - SEGMENT_BYTES_LIMIT
-    - VIEW_CHANGE
-    - BEFORE_UNLOAD
-    - VISIBILITY_HIDDEN
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): CreationReason
   enum Type
     constructor(kotlin.String)
     - SERIF
