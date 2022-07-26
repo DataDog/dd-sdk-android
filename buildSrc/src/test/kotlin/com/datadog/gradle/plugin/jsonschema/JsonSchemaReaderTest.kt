@@ -8,7 +8,6 @@ package com.datadog.gradle.plugin.jsonschema
 
 import java.io.File
 import org.assertj.core.api.Assertions.assertThat
-import org.gradle.api.logging.Logger
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -77,7 +76,8 @@ class JsonSchemaReaderTest(
                 arrayOf("all_of", User),
                 arrayOf("all_of_merged", UserMerged),
                 arrayOf("constant_number", Version),
-                arrayOf("sets", Video)
+                arrayOf("sets", Video),
+                arrayOf("root_schema_with_no_type", Country)
             )
         }
     }
