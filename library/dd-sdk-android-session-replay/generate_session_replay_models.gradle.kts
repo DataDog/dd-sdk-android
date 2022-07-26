@@ -2,63 +2,23 @@ import com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val generateSessionReplayModelsTaskName = "generateSessionReplayModels"
-val generateSessionReplayMobileModelsTaskName = "generateSessionReplayMobileModels"
 
 tasks.register(
-    "generateSessionReplayModels",
+    generateSessionReplayModelsTaskName,
     com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask::class.java
 ) {
-    inputDirPath = "src/main/json/session-replay"
+    inputDirPath = "src/main/json/schemas"
     targetPackageName = "com.datadog.android.sessionreplay.model"
-    ignoredFiles = arrayOf(
-        "_common-record-schema.json",
-        "focus-record-schema.json",
-        "metadata-record-schema.json",
-        "view-end-record-schema.json"
-    )
-}
-
-tasks.register(
-    "generateSessionReplayMobileModels",
-    com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask::class.java
-) {
-    inputDirPath = "src/main/json/session-replay/mobile"
-    targetPackageName = "com.datadog.android.sessionreplay.model"
-    ignoredFiles = arrayOf(
-        "_common-wireframe-schema.json",
-        "_common-shape-wireframe-schema.json",
-        "_common-shape-wireframe-update-schema.json",
-        "_common-wireframe-schema.json",
-        "_common-wireframe-update-schema.json",
-        "mutation-data-schema.json",
-        "viewport-resize-data-schema.json",
-        "touch-data-schema.json",
-        "shape-wireframe-schema.json",
-        "text-wireframe-schema.json",
-        "shape-wireframe-update-schema.json",
-        "text-wireframe-update-schema.json",
-        "full-snapshot-record-schema.json",
-        "incremental-snapshot-record-schema.json",
-        "incremental-data-schema.json",
-        "text-style-schema.json",
-        "text-position-schema.json",
-        "shape-style-schema.json",
-        "shape-border-schema.json",
-        "wireframe-schema.json",
-        "wireframe-update-mutation-schema.json"
-    )
 }
 
 afterEvaluate {
     tasks.findByName(ApiSurfacePlugin.TASK_GEN_API_SURFACE)
         ?.dependsOn(
-            generateSessionReplayModelsTaskName,
-            generateSessionReplayMobileModelsTaskName
+            generateSessionReplayModelsTaskName
         )
     tasks.withType(KotlinCompile::class.java) {
         dependsOn(
-            generateSessionReplayModelsTaskName,
-            generateSessionReplayMobileModelsTaskName
+            generateSessionReplayModelsTaskName
         )
     }
 }
