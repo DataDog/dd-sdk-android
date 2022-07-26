@@ -739,6 +739,15 @@ val User = TypeDefinition.Class(
     )
 )
 
+val Country = TypeDefinition.Class(
+        name = "Country",
+        properties = listOf(
+                TypeProperty("name", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+                TypeProperty("continent", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+                TypeProperty("population", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), true)
+        )
+)
+
 val UserMerged = TypeDefinition.Class(
     name = "UserMerged",
     properties = listOf(
