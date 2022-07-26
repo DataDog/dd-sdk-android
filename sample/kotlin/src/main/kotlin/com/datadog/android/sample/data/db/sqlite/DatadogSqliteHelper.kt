@@ -40,10 +40,10 @@ class DatadogSqliteHelper(context: Context) :
             ${DatadogDbContract.Logs.COLUMN_NAME_TIMESTAMP} TEXT,
             ${DatadogDbContract.Logs.COLUMN_NAME_TTL} INTEGER
             )
-        """
+            """
         const val DELETE_DB_QUERY =
             """
             DROP TABLE IF EXISTS ${DatadogDbContract.Logs.TABLE_NAME}
-        """
+            """
     }
 }

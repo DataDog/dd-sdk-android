@@ -227,7 +227,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -289,7 +290,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -364,7 +366,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -429,7 +432,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -491,7 +495,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -544,7 +549,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -589,7 +595,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -706,7 +713,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -769,7 +777,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -833,7 +842,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -898,7 +908,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -964,7 +975,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1030,7 +1042,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1111,7 +1124,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1193,7 +1207,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1262,7 +1277,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1331,7 +1347,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1399,7 +1416,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1468,7 +1486,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1542,7 +1561,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1617,7 +1637,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toErrorSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1769,7 +1790,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1829,7 +1851,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1891,7 +1914,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -2001,7 +2025,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -2060,7 +2085,8 @@ internal class RumResourceScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toResourceSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,

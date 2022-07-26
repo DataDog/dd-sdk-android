@@ -380,7 +380,8 @@ internal open class RumViewScope(
                 type = androidInfoProvider.deviceType.toErrorSchemaType(),
                 name = androidInfoProvider.deviceName,
                 model = androidInfoProvider.deviceModel,
-                brand = androidInfoProvider.deviceBrand
+                brand = androidInfoProvider.deviceBrand,
+                architecture = androidInfoProvider.architecture
             ),
             context = ErrorEvent.Context(additionalProperties = updatedAttributes),
             dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
@@ -607,7 +608,8 @@ internal open class RumViewScope(
                 type = androidInfoProvider.deviceType.toViewSchemaType(),
                 name = androidInfoProvider.deviceName,
                 model = androidInfoProvider.deviceModel,
-                brand = androidInfoProvider.deviceBrand
+                brand = androidInfoProvider.deviceBrand,
+                architecture = androidInfoProvider.architecture
             ),
             context = ViewEvent.Context(additionalProperties = attributes),
             dd = ViewEvent.Dd(
@@ -703,7 +705,8 @@ internal open class RumViewScope(
                 type = androidInfoProvider.deviceType.toActionSchemaType(),
                 name = androidInfoProvider.deviceName,
                 model = androidInfoProvider.deviceModel,
-                brand = androidInfoProvider.deviceBrand
+                brand = androidInfoProvider.deviceBrand,
+                architecture = androidInfoProvider.architecture
             ),
             context = ActionEvent.Context(additionalProperties = GlobalRum.globalAttributes),
             dd = ActionEvent.Dd(session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1))
@@ -763,7 +766,8 @@ internal open class RumViewScope(
                 type = androidInfoProvider.deviceType.toLongTaskSchemaType(),
                 name = androidInfoProvider.deviceName,
                 model = androidInfoProvider.deviceModel,
-                brand = androidInfoProvider.deviceBrand
+                brand = androidInfoProvider.deviceBrand,
+                architecture = androidInfoProvider.architecture
             ),
             context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
             dd = LongTaskEvent.Dd(session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1))
