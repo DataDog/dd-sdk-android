@@ -188,17 +188,23 @@ internal class RumActionScope(
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
 
+        val frustrations = mutableListOf<ActionEvent.Type>()
+        if (errorCount > 0 && actualType == RumActionType.TAP) {
+            frustrations.add(ActionEvent.Type.ERROR_TAP)
+        }
+
         val actionEvent = ActionEvent(
             date = eventTimestamp,
-            action = ActionEvent.Action(
+            action = ActionEvent.ActionEventAction(
                 type = actualType.toSchemaType(),
                 id = actionId,
-                target = ActionEvent.Target(name),
+                target = ActionEvent.ActionEventActionTarget(name),
                 error = ActionEvent.Error(errorCount),
                 crash = ActionEvent.Crash(crashCount),
                 longTask = ActionEvent.LongTask(longTaskCount),
                 resource = ActionEvent.Resource(resourceCount),
-                loadingTime = max(endNanos - startedNanos, 1L)
+                loadingTime = max(endNanos - startedNanos, 1L),
+                frustration = ActionEvent.Frustration(frustrations)
             ),
             view = ActionEvent.View(
                 id = context.viewId.orEmpty(),

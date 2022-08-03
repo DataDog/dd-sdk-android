@@ -31,6 +31,11 @@
       "description": "The service name for this application",
       "readOnly": true
     },
+    "version": {
+      "type": "string",
+      "description": "The version for this application",
+      "readOnly": true
+    },
     "session": {
       "type": "object",
       "description": "Session properties",
@@ -156,6 +161,30 @@
             "carrier_name": {
               "type": "string",
               "description": "The name of the SIM carrier",
+              "readOnly": true
+            }
+          },
+          "readOnly": true
+        }
+      }
+    },
+    "display": {
+      "type": "object",
+      "description": "Display properties",
+      "properties": {
+        "viewport": {
+          "type": "object",
+          "description": "The viewport represents the rectangular area that is currently being viewed. Content outside the viewport is not visible onscreen until scrolled into view.",
+          "required": ["width", "height"],
+          "properties": {
+            "width": {
+              "type": "number",
+              "description": "Width of the viewport (in pixels)",
+              "readOnly": true
+            },
+            "height": {
+              "type": "number",
+              "description": "Height of the viewport (in pixels)",
               "readOnly": true
             }
           },
