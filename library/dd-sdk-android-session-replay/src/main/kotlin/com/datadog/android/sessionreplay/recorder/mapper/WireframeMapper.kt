@@ -4,11 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.recorder
+package com.datadog.android.sessionreplay.recorder.mapper
 
+import android.view.View
 import com.datadog.android.sessionreplay.model.MobileSegment
 
-internal data class Node(
-    val wireframes: List<MobileSegment.Wireframe>,
-    val children: List<Node> = emptyList()
-)
+internal interface WireframeMapper<T : View, S : MobileSegment.Wireframe> {
+    fun map(view: T, pixelsDensity: Float): S
+}
