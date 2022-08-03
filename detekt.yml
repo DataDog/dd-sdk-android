@@ -793,6 +793,8 @@ datadog:
       - "android.view.Window.Callback.dispatchKeyEvent(android.view.KeyEvent)"
       - "android.view.Window.Callback.dispatchTouchEvent(android.view.MotionEvent)"
       - "android.view.Window.Callback.onMenuItemSelected(kotlin.Int, android.view.MenuItem)"
+      - "android.view.View.getChildAt(kotlin.Int)"
+      - "android.view.View.hashCode()"
       # endregion
       # region Android Webview APIs
       - "android.webkit.ConsoleMessage.MessageLevel.toLogLevel()"
@@ -818,6 +820,9 @@ datadog:
       - "android.widget.TextView.setBackgroundColor(kotlin.Int)"
       - "android.widget.TextView.setPadding(kotlin.Int)"
       - "android.widget.TextView.setTextColor(kotlin.Int)"
+      # endregion
+      # region Android Graphics
+      - "android.graphics.drawable.Drawable.getDrawable(kotlin.Int)"
       # endregion
       # region Androidx APIs
       - "androidx.compose.foundation.interaction.DragInteraction.Start.constructor()"
@@ -885,6 +890,7 @@ datadog:
       - "java.util.LinkedList.add(android.view.View)"
       - "java.util.LinkedList.add(com.datadog.android.privacy.TrackingConsentProviderCallback)"
       - "java.util.LinkedList.addFirst(android.view.View)"
+      - "java.util.LinkedList.add(com.datadog.android.sessionreplay.recorder.Node)"
       - "java.util.LinkedList.clear()"
       - "java.util.LinkedList.constructor()"
       - "java.util.LinkedList.forEach(kotlin.Function1)"
@@ -1116,15 +1122,19 @@ datadog:
       - "kotlin.Double.toInt()"
       - "kotlin.Double.toLong()"
       - "kotlin.Float.toInt()"
+      - "kotlin.Float.toLong()"
       - "kotlin.Int.inv()"
       - "kotlin.Int.toChar()"
       - "kotlin.Int.toLong()"
+      - "kotlin.Int.and(kotlin.Int)"
       - "kotlin.IntArray.constructor(kotlin.Int)"
       - "kotlin.Long.asTime()"
       - "kotlin.Long.coerceIn(kotlin.Long, kotlin.Long)"
       - "kotlin.Long.hashCode()"
       - "kotlin.Long.toDouble()"
       - "kotlin.Long.toInt()"
+      - "kotlin.Long.shl(kotlin.Int)"
+      - "kotlin.Long.or(kotlin.Long)"
       - "kotlin.Number.toLong()"
       # endregion
       # region Kotlin String
