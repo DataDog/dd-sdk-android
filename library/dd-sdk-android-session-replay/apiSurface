@@ -168,7 +168,7 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     companion object 
       fun fromJson(kotlin.String): ShapeBorder
   data class TextStyle
-    constructor(kotlin.String, kotlin.Long, Type, kotlin.String)
+    constructor(kotlin.String, kotlin.Long, kotlin.String)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): TextStyle
@@ -196,16 +196,6 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Source
-  enum Type
-    constructor(kotlin.String)
-    - SERIF
-    - SANS_SERIF
-    - SCRIPT
-    - MONOSPACED
-    - DYNAMIC
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Type
   enum Horizontal
     constructor(kotlin.String)
     - LEFT
