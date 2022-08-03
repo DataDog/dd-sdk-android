@@ -14,7 +14,7 @@
         "type": {
           "type": "integer",
           "description": "The type of this Record.",
-          "const": 3,
+          "const": 11,
           "readOnly": true
         },
         "data": {

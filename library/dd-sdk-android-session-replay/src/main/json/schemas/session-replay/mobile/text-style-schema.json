@@ -6,22 +6,20 @@
   "description": "Schema of all properties of a TextStyle.",
   "allOf": [
     {
-      "required": ["color", "family", "size", "type"],
+      "required": [
+        "color",
+        "family",
+        "size"
+      ],
       "properties": {
         "family": {
           "type": "string",
-          "description": "The font family.",
+          "description": "The preferred font family collection, ordered by preference and formatted as a String list: e.g. Century Gothic, Verdana, sans-serif",
           "readOnly": true
         },
         "size": {
           "type": "integer",
           "description": "The font size in pixels.",
-          "readOnly": true
-        },
-        "type": {
-          "type": "string",
-          "enum": ["serif", "sans-serif", "script", "monospaced", "dynamic"],
-          "description": "The font type.",
           "readOnly": true
         },
         "color": {
