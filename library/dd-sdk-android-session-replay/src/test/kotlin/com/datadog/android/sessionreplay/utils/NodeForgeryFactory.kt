@@ -14,10 +14,7 @@ internal class NodeForgeryFactory : ForgeryFactory<Node> {
 
     override fun getForgery(forge: Forge): Node {
         return Node(
-            forge.anInt(min = 0),
-            parent = forge.aNullable {
-                forge.getForgery()
-            }
+            wireframes = emptyList()
         )
     }
 }

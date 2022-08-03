@@ -57,6 +57,8 @@ internal open class AndroidXFragmentLifecycleCallbacks(
         }
     }
 
+    // TODO: RUMM-0000 Update Androidx packages and handle deprecated APIs
+    @Suppress("DEPRECATION")
     override fun onFragmentActivityCreated(
         fm: FragmentManager,
         f: Fragment,
