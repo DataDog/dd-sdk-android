@@ -49,7 +49,7 @@ internal class RumOkHttpUploaderV2Test : DataOkHttpUploaderV2Test<RumOkHttpUploa
         return "/api/v2/rum"
     }
 
-    override fun expectedQueryParams(): Map<String, String> {
+    override fun expectedQueryParams(source: String): Map<String, String> {
         val tags = mutableListOf(
             "${RumAttributes.SERVICE_NAME}:${coreFeature.fakeServiceName}",
             "${RumAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}",
@@ -62,7 +62,7 @@ internal class RumOkHttpUploaderV2Test : DataOkHttpUploaderV2Test<RumOkHttpUploa
         }
 
         return mapOf(
-            DataOkHttpUploaderV2.QUERY_PARAM_SOURCE to fakeSource,
+            DataOkHttpUploaderV2.QUERY_PARAM_SOURCE to source,
             DataOkHttpUploaderV2.QUERY_PARAM_TAGS to tags.joinToString(",")
         )
     }
