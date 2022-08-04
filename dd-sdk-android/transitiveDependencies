@@ -1,7 +1,7 @@
 Dependencies List
 
 androidx.activity:activity-ktx:1.1.0                            :    7 Kb
-androidx.activity:activity:1.1.0                                :   13 Kb
+androidx.activity:activity:1.2.3                                :   65 Kb
 androidx.annotation:annotation-experimental:1.1.0               :   16 Kb
 androidx.annotation:annotation:1.2.0                            :   28 Kb
 androidx.arch.core:core-common:2.1.0                            :   10 Kb
@@ -10,15 +10,15 @@ androidx.collection:collection:1.1.0                            :   41 Kb
 androidx.core:core-ktx:1.1.0                                    :  152 Kb
 androidx.core:core:1.6.0                                        :  905 Kb
 androidx.customview:customview:1.0.0                            :   32 Kb
-androidx.fragment:fragment:1.2.4                                :  221 Kb
-androidx.lifecycle:lifecycle-common:2.2.0                       :   21 Kb
-androidx.lifecycle:lifecycle-livedata-core:2.2.0                :    8 Kb
+androidx.fragment:fragment:1.3.4                                :  291 Kb
+androidx.lifecycle:lifecycle-common:2.3.1                       :   22 Kb
+androidx.lifecycle:lifecycle-livedata-core:2.3.1                :    8 Kb
 androidx.lifecycle:lifecycle-livedata:2.1.0                     :   10 Kb
 androidx.lifecycle:lifecycle-runtime-ktx:2.2.0                  :   40 Kb
-androidx.lifecycle:lifecycle-runtime:2.2.0                      :   10 Kb
+androidx.lifecycle:lifecycle-runtime:2.3.1                      :   10 Kb
 androidx.lifecycle:lifecycle-viewmodel-ktx:2.2.0                :    5 Kb
-androidx.lifecycle:lifecycle-viewmodel-savedstate:2.2.0         :   13 Kb
-androidx.lifecycle:lifecycle-viewmodel:2.2.0                    :    9 Kb
+androidx.lifecycle:lifecycle-viewmodel-savedstate:2.3.1         :   15 Kb
+androidx.lifecycle:lifecycle-viewmodel:2.3.1                    :   10 Kb
 androidx.loader:loader:1.0.0                                    :   32 Kb
 androidx.navigation:navigation-common-ktx:2.3.0                 :   25 Kb
 androidx.navigation:navigation-common:2.3.0                     :   54 Kb
@@ -26,7 +26,7 @@ androidx.navigation:navigation-fragment:2.3.0                   :   18 Kb
 androidx.navigation:navigation-runtime-ktx:2.3.0                :   12 Kb
 androidx.navigation:navigation-runtime:2.3.0                    :   46 Kb
 androidx.recyclerview:recyclerview:1.1.0                        :  349 Kb
-androidx.savedstate:savedstate:1.0.0                            :    9 Kb
+androidx.savedstate:savedstate:1.1.0                            :   10 Kb
 androidx.startup:startup-runtime:1.0.0                          :   18 Kb
 androidx.versionedparcelable:versionedparcelable:1.1.1          :   30 Kb
 androidx.viewpager:viewpager:1.0.0                              :   52 Kb

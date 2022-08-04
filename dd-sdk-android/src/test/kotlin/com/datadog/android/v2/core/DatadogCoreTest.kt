@@ -9,16 +9,24 @@ package com.datadog.android.v2.core
 import android.app.Application
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.model.UserInfo
+import com.datadog.android.error.internal.CrashReportsFeature
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.sessionreplay.internal.SessionReplayFeature
+import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.webview.internal.log.WebViewLogsFeature
+import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -241,27 +249,44 @@ internal class DatadogCoreTest {
     @Test
     fun `𝕄 stop all features 𝕎 stop()`() {
         // Given
-        testedCore.coreFeature = mock()
-        testedCore.rumFeature = mock()
-        testedCore.tracingFeature = mock()
-        testedCore.logsFeature = mock()
-        testedCore.webViewLogsFeature = mock()
-        testedCore.webViewRumFeature = mock()
-        testedCore.crashReportsFeature = mock()
-        testedCore.sessionReplayFeature = mock()
+        val mockCoreFeature = mock<CoreFeature>()
+        testedCore.coreFeature = mockCoreFeature
+        val mockRumFeature = mock<RumFeature>()
+        testedCore.rumFeature = mockRumFeature
+        val mockTracingFeature = mock<TracingFeature>()
+        testedCore.tracingFeature = mockTracingFeature
+        val mockLogsFeature = mock<LogsFeature>()
+        testedCore.logsFeature = mockLogsFeature
+        val mockWebViewLogsFeature = mock<WebViewLogsFeature>()
+        testedCore.webViewLogsFeature = mockWebViewLogsFeature
+        val mockWebViewRumFeature = mock<WebViewRumFeature>()
+        testedCore.webViewRumFeature = mockWebViewRumFeature
+        val mockCrashReportsFeature = mock<CrashReportsFeature>()
+        testedCore.crashReportsFeature = mockCrashReportsFeature
+        val mockSessionReplayFeature = mock<SessionReplayFeature>()
+        testedCore.sessionReplayFeature = mockSessionReplayFeature
 
         // When
         testedCore.stop()
 
         // Then
-        verify(testedCore.coreFeature).stop()
-        verify(testedCore.rumFeature)!!.stop()
-        verify(testedCore.tracingFeature)!!.stop()
-        verify(testedCore.logsFeature)!!.stop()
-        verify(testedCore.webViewLogsFeature)!!.stop()
-        verify(testedCore.webViewRumFeature)!!.stop()
-        verify(testedCore.crashReportsFeature)!!.stop()
-        verify(testedCore.sessionReplayFeature)!!.stop()
+        verify(mockCoreFeature).stop()
+        verify(mockRumFeature).stop()
+        verify(mockTracingFeature).stop()
+        verify(mockLogsFeature).stop()
+        verify(mockWebViewRumFeature).stop()
+        verify(mockWebViewLogsFeature).stop()
+        verify(mockCrashReportsFeature).stop()
+        verify(mockSessionReplayFeature).stop()
+
+        assertThat(testedCore.rumFeature).isNull()
+        assertThat(testedCore.tracingFeature).isNull()
+        assertThat(testedCore.logsFeature).isNull()
+        assertThat(testedCore.webViewLogsFeature).isNull()
+        assertThat(testedCore.webViewRumFeature).isNull()
+        assertThat(testedCore.crashReportsFeature).isNull()
+        assertThat(testedCore.sessionReplayFeature).isNull()
+        assertThat(testedCore.contextProvider).isNull()
     }
 
     companion object {
