@@ -195,8 +195,9 @@ internal class DatadogCore(
         webViewLogsFeature?.stop()
         webViewLogsFeature = null
         webViewRumFeature?.stop()
-        sessionReplayFeature?.stop()
         webViewRumFeature = null
+        sessionReplayFeature?.stop()
+        sessionReplayFeature = null
 
         features.clear()
 
