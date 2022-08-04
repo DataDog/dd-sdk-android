@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.processor
 
+import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.Node
 import com.datadog.android.sessionreplay.recorder.OrientationChanged
 
@@ -15,6 +16,10 @@ internal class SnapshotProcessor : Processor {
     }
 
     override fun process(event: OrientationChanged) {
+        // TODO RUMM-2271
+    }
+
+    override fun process(touchData: MobileSegment.MobileIncrementalData.TouchData) {
         // TODO RUMM-2271
     }
 }

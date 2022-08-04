@@ -25,6 +25,11 @@ internal class ScreenRecorder(private val processor: Processor) : Recorder {
                 drawListeners[activity.hashCode()] = this
                 activity.window.decorView.viewTreeObserver?.addOnDrawListener(this)
             }
+            activity.window.callback = RecorderWindowCallback(
+                processor,
+                activity.resources.displayMetrics.density,
+                activity.window.callback
+            )
         }
     }
 
@@ -33,6 +38,8 @@ internal class ScreenRecorder(private val processor: Processor) : Recorder {
             drawListeners.remove(windowHashCode)?.let {
                 activity.window.decorView.viewTreeObserver.removeOnDrawListener(it)
             }
+            activity.window.callback =
+                (activity.window.callback as? RecorderWindowCallback)?.wrappedCallback
         }
     }
 }
