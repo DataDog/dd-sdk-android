@@ -2,7 +2,7 @@ Dependencies List
 
 androidx.annotation:annotation:1.2.0                            :   28 Kb
 androidx.lifecycle:lifecycle-common-java8:2.2.0                 : 1015 b 
-androidx.lifecycle:lifecycle-common:2.2.0                       :   21 Kb
+androidx.lifecycle:lifecycle-common:2.3.1                       :   22 Kb
 com.squareup.okhttp3:okhttp:3.12.13                             :  417 Kb
 com.squareup.okio:okio:2.9.0                                    :  247 Kb
 io.coil-kt:coil-base:1.0.0                                      :  395 Kb
