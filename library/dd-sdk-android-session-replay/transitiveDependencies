@@ -1,9 +1,35 @@
 Dependencies List
 
+androidx.activity:activity:1.2.3                                :   65 Kb
+androidx.annotation:annotation-experimental:1.0.0               :   11 Kb
+androidx.annotation:annotation:1.2.0                            :   28 Kb
+androidx.appcompat:appcompat-resources:1.3.0                    :   63 Kb
+androidx.appcompat:appcompat:1.3.0                              : 1058 Kb
+androidx.arch.core:core-common:2.1.0                            :   10 Kb
+androidx.arch.core:core-runtime:2.1.0                           :    5 Kb
+androidx.collection:collection:1.1.0                            :   41 Kb
+androidx.core:core:1.5.0                                        :  851 Kb
+androidx.cursoradapter:cursoradapter:1.0.0                      :   10 Kb
+androidx.customview:customview:1.0.0                            :   32 Kb
+androidx.drawerlayout:drawerlayout:1.0.0                        :   31 Kb
+androidx.fragment:fragment:1.3.4                                :  291 Kb
+androidx.interpolator:interpolator:1.0.0                        :    7 Kb
+androidx.lifecycle:lifecycle-common:2.3.1                       :   22 Kb
+androidx.lifecycle:lifecycle-livedata-core:2.3.1                :    8 Kb
+androidx.lifecycle:lifecycle-livedata:2.0.0                     :    9 Kb
+androidx.lifecycle:lifecycle-runtime:2.3.1                      :   10 Kb
+androidx.lifecycle:lifecycle-viewmodel-savedstate:2.3.1         :   15 Kb
+androidx.lifecycle:lifecycle-viewmodel:2.3.1                    :   10 Kb
+androidx.loader:loader:1.0.0                                    :   32 Kb
+androidx.savedstate:savedstate:1.1.0                            :   10 Kb
+androidx.vectordrawable:vectordrawable-animated:1.1.0           :   33 Kb
+androidx.vectordrawable:vectordrawable:1.1.0                    :   32 Kb
+androidx.versionedparcelable:versionedparcelable:1.1.1          :   30 Kb
+androidx.viewpager:viewpager:1.0.0                              :   52 Kb
 com.google.code.gson:gson:2.8.8                                 :  236 Kb
 org.jetbrains.kotlin:kotlin-stdlib-common:1.6.10                :  195 Kb
 org.jetbrains.kotlin:kotlin-stdlib:1.6.10                       : 1472 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb
 
-Total transitive dependencies size                              : 1922 Kb
+Total transitive dependencies size                              :    4 Mb
 
