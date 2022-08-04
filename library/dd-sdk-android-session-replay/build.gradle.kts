@@ -72,7 +72,6 @@ android {
         ignoreTestSources = true
     }
 }
-
 dependencies {
     implementation(libs.kotlin)
     implementation(libs.gson)
