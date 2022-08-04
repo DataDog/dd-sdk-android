@@ -782,6 +782,9 @@ datadog:
       - "android.util.Log.getStackTraceString(kotlin.Throwable?)"
       - "android.view.Choreographer.postFrameCallback(android.view.Choreographer.FrameCallback)"
       - "android.view.MotionEvent.recycle()"
+      - "android.view.MotionEvent.getPointerId(kotlin.Int)"
+      - "android.view.MotionEvent.PointerCoords.constructor()"
+      - "android.view.MotionEvent.getPointerCoords(kotlin.Int, android.view.MotionEvent.PointerCoords)"
       - "android.view.ViewGroup.findViewById(kotlin.Int)"
       - "android.view.ViewGroup.getChildAt(kotlin.Int)"
       - "android.view.ViewTreeObserver.addOnGlobalLayoutListener()"
@@ -887,6 +890,7 @@ datadog:
       # endregion
       # region Java Collections
       - "java.util.ArrayList.forEach(kotlin.Function1)"
+      - "java.util.LinkedList.constructor(kotlin.collections.MutableCollection)"
       - "java.util.LinkedList.add(android.view.View)"
       - "java.util.LinkedList.add(com.datadog.android.privacy.TrackingConsentProviderCallback)"
       - "java.util.LinkedList.addFirst(android.view.View)"
@@ -1059,6 +1063,7 @@ datadog:
       - "kotlin.collections.MutableList.add(java.lang.ref.WeakReference)"
       - "kotlin.collections.MutableList.add(kotlin.ByteArray)"
       - "kotlin.collections.MutableList.add(kotlin.String)"
+      - "kotlin.collections.MutableList.add(com.datadog.android.sessionreplay.model.MobileSegment.Position)"
       - "kotlin.collections.MutableList.add(java.net.InetAddress)"
       - "kotlin.collections.MutableList.addAll(kotlin.collections.Collection)"
       - "kotlin.collections.MutableList.clear()"
