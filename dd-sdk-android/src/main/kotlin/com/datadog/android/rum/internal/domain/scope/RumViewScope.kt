@@ -674,8 +674,8 @@ internal open class RumViewScope(
 
         val actionEvent = ActionEvent(
             date = eventTimestamp,
-            action = ActionEvent.Action(
-                type = ActionEvent.ActionType.APPLICATION_START,
+            action = ActionEvent.ActionEventAction(
+                type = ActionEvent.ActionEventActionType.APPLICATION_START,
                 id = UUID.randomUUID().toString(),
                 loadingTime = getStartupTime(event)
             ),

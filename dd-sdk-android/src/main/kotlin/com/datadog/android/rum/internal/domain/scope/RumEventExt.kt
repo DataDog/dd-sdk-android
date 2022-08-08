@@ -108,14 +108,14 @@ internal fun ResourceTiming.download(): ResourceEvent.Download? {
     } else null
 }
 
-internal fun RumActionType.toSchemaType(): ActionEvent.ActionType {
+internal fun RumActionType.toSchemaType(): ActionEvent.ActionEventActionType {
     return when (this) {
-        RumActionType.TAP -> ActionEvent.ActionType.TAP
-        RumActionType.SCROLL -> ActionEvent.ActionType.SCROLL
-        RumActionType.SWIPE -> ActionEvent.ActionType.SWIPE
-        RumActionType.CLICK -> ActionEvent.ActionType.CLICK
-        RumActionType.BACK -> ActionEvent.ActionType.BACK
-        RumActionType.CUSTOM -> ActionEvent.ActionType.CUSTOM
+        RumActionType.TAP -> ActionEvent.ActionEventActionType.TAP
+        RumActionType.SCROLL -> ActionEvent.ActionEventActionType.SCROLL
+        RumActionType.SWIPE -> ActionEvent.ActionEventActionType.SWIPE
+        RumActionType.CLICK -> ActionEvent.ActionEventActionType.CLICK
+        RumActionType.BACK -> ActionEvent.ActionEventActionType.BACK
+        RumActionType.CUSTOM -> ActionEvent.ActionEventActionType.CUSTOM
     }
 }
 

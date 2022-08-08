@@ -60,6 +60,25 @@
               },
               "readOnly": true
             },
+            "frustration": {
+              "type": "object",
+              "description": "Action frustration properties",
+              "required": [
+                "type"
+              ],
+              "properties": {
+                "type": {
+                  "type": "array",
+                  "description": "Action frustration types",
+                  "readOnly": true,
+                  "items": {
+                    "type": "string",
+                    "enum": ["rage_click", "dead_click", "error_click", "rage_tap", "error_tap"]
+                  }
+                }
+              },
+              "readOnly": true
+            },
             "error": {
               "type": "object",
               "description": "Properties of the errors of the action",
@@ -139,6 +158,58 @@
             }
           },
           "readOnly": true
+        },
+        "_dd": {
+          "type": "object",
+          "description": "Internal properties",
+          "properties": {
+            "action": {
+              "type": "object",
+              "description": "Action properties",
+              "properties": {
+                "position": {
+                  "type": "object",
+                  "description": "Action position properties",
+                  "required": ["x", "y"],
+                  "properties": {
+                    "x": {
+                      "type": "integer",
+                      "description": "X coordinate relative to the target element of the action (in pixels)",
+                      "readOnly": true
+                    },
+                    "y": {
+                      "type": "integer",
+                      "description": "Y coordinate relative to the target element of the action (in pixels)",
+                      "readOnly": true
+                    }
+                  },
+                  "readOnly": true
+                },
+                "target": {
+                  "type": "object",
+                  "description": "Target properties",
+                  "properties": {
+                    "selector": {
+                      "type": "string",
+                      "description": "CSS selector path of the target element",
+                      "readOnly": true
+                    },
+                    "width": {
+                      "type": "integer",
+                      "description": "Width of the target element (in pixels)",
+                      "readOnly": true
+                    },
+                    "height": {
+                      "type": "integer",
+                      "description": "Height of the target element (in pixels)",
+                      "readOnly": true
+                    }
+                  }
+                }
+              },
+              "readOnly": true
+            }
+          }
         }
       }
     }
