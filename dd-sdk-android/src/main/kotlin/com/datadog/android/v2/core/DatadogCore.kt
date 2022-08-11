@@ -29,6 +29,7 @@ import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
+import com.datadog.android.sessionreplay.internal.SessionReplayContextProvider
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.v2.api.FeatureScope
@@ -305,7 +306,7 @@ internal class DatadogCore(
         if (configuration != null) {
             sessionReplayFeature = SessionReplayFeature(
                 coreFeature,
-                SessionReplayLifecycleCallback()
+                SessionReplayLifecycleCallback(SessionReplayContextProvider())
             )
             sessionReplayFeature?.initialize(appContext, configuration)
         }

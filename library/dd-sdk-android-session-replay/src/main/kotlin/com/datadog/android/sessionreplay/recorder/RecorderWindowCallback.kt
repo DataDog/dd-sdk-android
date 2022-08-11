@@ -10,7 +10,6 @@ import android.view.MotionEvent
 import android.view.Window
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.processor.Processor
-import com.datadog.android.sessionreplay.utils.SessionReplayTimeProvider
 import com.datadog.android.sessionreplay.utils.TimeProvider
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit
@@ -20,7 +19,7 @@ internal class RecorderWindowCallback(
     private val processor: Processor,
     private val pixelsDensity: Float,
     internal val wrappedCallback: Window.Callback,
-    private val timeProvider: TimeProvider = SessionReplayTimeProvider(),
+    private val timeProvider: TimeProvider,
     private val copyEvent: (MotionEvent) -> MotionEvent = {
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         MotionEvent.obtain(it)

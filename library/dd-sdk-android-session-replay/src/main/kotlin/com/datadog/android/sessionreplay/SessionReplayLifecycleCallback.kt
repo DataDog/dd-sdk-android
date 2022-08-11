@@ -12,7 +12,12 @@ import android.os.Bundle
 import com.datadog.android.sessionreplay.processor.SnapshotProcessor
 import com.datadog.android.sessionreplay.recorder.Recorder
 import com.datadog.android.sessionreplay.recorder.ScreenRecorder
+import com.datadog.android.sessionreplay.utils.RumContextProvider
+import com.datadog.android.sessionreplay.utils.SessionReplayTimeProvider
 import java.util.WeakHashMap
+import java.util.concurrent.LinkedBlockingDeque
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 /**
  * The SessionReplayLifecycleCallback.
@@ -21,10 +26,27 @@ import java.util.WeakHashMap
  * This is only meant for internal usage and later will change visibility from public to internal.
  */
 @SuppressWarnings("UndocumentedPublicFunction")
-class SessionReplayLifecycleCallback :
+class SessionReplayLifecycleCallback(rumContextProvider: RumContextProvider) :
     Application.ActivityLifecycleCallbacks {
 
-    internal var recorder: Recorder = ScreenRecorder(SnapshotProcessor())
+    private val timeProvider = SessionReplayTimeProvider()
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // workQueue can't be null
+    private val processorExecutorService = ThreadPoolExecutor(
+        CORE_DEFAULT_POOL_SIZE,
+        Runtime.getRuntime().availableProcessors(),
+        THREAD_POOL_MAX_KEEP_ALIVE_MS,
+        TimeUnit.MILLISECONDS,
+        LinkedBlockingDeque()
+    )
+    internal var recorder: Recorder = ScreenRecorder(
+        SnapshotProcessor(
+            rumContextProvider,
+            timeProvider,
+            processorExecutorService
+        ),
+        timeProvider
+    )
     internal val resumedActivities: WeakHashMap<Activity, Any?> = WeakHashMap()
 
     // region callback
@@ -78,4 +100,9 @@ class SessionReplayLifecycleCallback :
     }
 
     // endregion
+
+    companion object {
+        private val THREAD_POOL_MAX_KEEP_ALIVE_MS = TimeUnit.SECONDS.toMillis(5)
+        private const val CORE_DEFAULT_POOL_SIZE = 1 // Only one thread will be kept alive
+    }
 }

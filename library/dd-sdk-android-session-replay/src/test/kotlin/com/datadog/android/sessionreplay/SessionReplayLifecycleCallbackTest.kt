@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay
 import android.app.Activity
 import android.app.Application
 import com.datadog.android.sessionreplay.recorder.Recorder
+import com.datadog.android.sessionreplay.utils.RumContextProvider
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -32,9 +33,12 @@ class SessionReplayLifecycleCallbackTest {
     @Mock
     private lateinit var mockRecoder: Recorder
 
+    @Mock
+    private lateinit var mockRumContextProvider: RumContextProvider
+
     @BeforeEach
     fun `set up`() {
-        testedCallback = SessionReplayLifecycleCallback()
+        testedCallback = SessionReplayLifecycleCallback(mockRumContextProvider)
         testedCallback.recorder = mockRecoder
     }
 

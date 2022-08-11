@@ -16,5 +16,9 @@ internal class ForgeConfigurator : BaseConfigurator() {
 
         // Session Replay
         forge.addFactory(NodeForgeryFactory())
+        forge.addFactory(SessionReplayRumContextForgeryFactory())
+        forge.addFactory(ShapeWireframeForgeryFactory())
+        forge.addFactory(TextWireframeForgeryFactory())
+        forge.addFactory(WireframeForgeryFactory())
     }
 }

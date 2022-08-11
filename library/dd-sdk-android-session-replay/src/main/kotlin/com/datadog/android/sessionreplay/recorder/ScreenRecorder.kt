@@ -9,8 +9,12 @@ package com.datadog.android.sessionreplay.recorder
 import android.app.Activity
 import android.view.ViewTreeObserver
 import com.datadog.android.sessionreplay.processor.Processor
+import com.datadog.android.sessionreplay.utils.TimeProvider
 
-internal class ScreenRecorder(private val processor: Processor) : Recorder {
+internal class ScreenRecorder(
+    private val processor: Processor,
+    private val timeProvider: TimeProvider
+) : Recorder {
     internal val drawListeners: MutableMap<Int, ViewTreeObserver.OnDrawListener> = HashMap()
 
     override fun startRecording(activity: Activity) {
@@ -28,7 +32,8 @@ internal class ScreenRecorder(private val processor: Processor) : Recorder {
             activity.window.callback = RecorderWindowCallback(
                 processor,
                 activity.resources.displayMetrics.density,
-                activity.window.callback
+                activity.window.callback,
+                timeProvider
             )
         }
     }
