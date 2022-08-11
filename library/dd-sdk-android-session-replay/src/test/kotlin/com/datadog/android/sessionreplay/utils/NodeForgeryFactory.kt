@@ -13,8 +13,6 @@ import fr.xgouchet.elmyr.ForgeryFactory
 internal class NodeForgeryFactory : ForgeryFactory<Node> {
 
     override fun getForgery(forge: Forge): Node {
-        return Node(
-            wireframes = emptyList()
-        )
+        return Node(wireframes = forge.aList(forge.anInt(min = 2, max = 10)) { forge.getForgery() })
     }
 }
