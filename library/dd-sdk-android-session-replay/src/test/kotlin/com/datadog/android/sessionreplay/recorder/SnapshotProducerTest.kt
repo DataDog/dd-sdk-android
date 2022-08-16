@@ -93,7 +93,7 @@ internal class SnapshotProducerTest {
     @Test
     fun `M produce a tree of Nodes W produce() { view tree }`(forge: Forge) {
         // Given
-        val fakeRoot = forge.aViewWithChildren(2, 0, 2)
+        val fakeRoot = forge.aMockViewWithChildren(2, 0, 2)
 
         // When
         val snapshot = testedSnapshotProducer.produce(fakeRoot, fakePixelDensity)
@@ -111,7 +111,7 @@ internal class SnapshotProducerTest {
     fun `M return null W produce() { root is invisible }`(forge: Forge) {
         // Given
         val fakeRoot = forge
-            .aViewWithChildren(2, 0, 2)
+            .aMockViewWithChildren(2, 0, 2)
             .apply { whenever(this.isShown).thenReturn(false) }
 
         // Then
@@ -122,7 +122,7 @@ internal class SnapshotProducerTest {
     fun `M return null W produce() { root width is 0 or less }`(forge: Forge) {
         // Given
         val fakeRoot = forge
-            .aViewWithChildren(2, 0, 2)
+            .aMockViewWithChildren(2, 0, 2)
             .apply {
                 whenever(this.width).thenReturn(forge.anInt(max = 1))
             }
@@ -135,7 +135,7 @@ internal class SnapshotProducerTest {
     fun `M return null W produce() { root height is 0 or less }`(forge: Forge) {
         // Given
         val fakeRoot = forge
-            .aViewWithChildren(2, 0, 2)
+            .aMockViewWithChildren(2, 0, 2)
             .apply {
                 whenever(this.height).thenReturn(forge.anInt(max = 1))
             }
@@ -154,7 +154,7 @@ internal class SnapshotProducerTest {
     fun `M exclude the navigationBarBackground W produce()`(forge: Forge) {
         // Given
         val fakeRoot = forge
-            .aViewWithChildren(2, 0, 2)
+            .aMockViewWithChildren(2, 0, 2)
             .apply {
                 whenever(this.id).thenReturn(android.R.id.navigationBarBackground)
             }
@@ -169,7 +169,7 @@ internal class SnapshotProducerTest {
     fun `M exclude the statusBarBackground W produce()`(forge: Forge) {
         // Given
         val fakeRoot = forge
-            .aViewWithChildren(2, 0, 2)
+            .aMockViewWithChildren(2, 0, 2)
             .apply {
                 whenever(this.id).thenReturn(android.R.id.statusBarBackground)
             }

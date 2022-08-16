@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.processor
 
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.Node
+import com.datadog.android.sessionreplay.recorder.OrientationChanged
 import com.datadog.android.sessionreplay.utils.ForgeConfigurator
 import com.datadog.android.sessionreplay.utils.RumContextProvider
 import com.datadog.android.sessionreplay.utils.SessionReplayRumContext
@@ -25,16 +26,21 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.lang.NullPointerException
 import java.util.LinkedList
 import java.util.Stack
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
+import java.util.concurrent.RejectedExecutionException
 import kotlin.math.pow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.api.fail
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -84,6 +90,8 @@ internal class SnapshotProcessorTest {
         )
     }
 
+    // region Snapshot
+
     @Test
     fun `M send it to the writer as EnrichedRecord W process { snapshot }`(forge: Forge) {
         // Given
@@ -98,26 +106,13 @@ internal class SnapshotProcessorTest {
         assertThat(captor.firstValue.applicationId).isEqualTo(fakeRumContext.applicationId)
         assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
         assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
-        assertThat(captor.firstValue.records.size).isEqualTo(2)
+        assertThat(captor.firstValue.records.size).isEqualTo(3)
     }
 
     @Test
     fun `M do nothing W process { snapshot is empty }`(forge: Forge) {
         // Given
         val fakeSnapshot = forge.aSingleLevelSnapshot().copy(wireframes = emptyList())
-
-        // When
-        testedProcessor.process(fakeSnapshot)
-
-        // Then
-        verifyZeroInteractions(mockWriter)
-    }
-
-    @Test
-    fun `M do nothing W process { context is not invalid }`(forge: Forge) {
-        // Given
-        val fakeSnapshot = forge.aSingleLevelSnapshot()
-        whenever(mockRumContextProvider.getRumContext()).thenReturn(SessionReplayRumContext())
 
         // When
         testedProcessor.process(fakeSnapshot)
@@ -149,11 +144,40 @@ internal class SnapshotProcessorTest {
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
         verify(mockWriter).write(captor.capture())
-        assertThat(captor.firstValue.records.size).isEqualTo(2)
+        assertThat(captor.firstValue.records.size).isEqualTo(3)
         val metaRecord = captor.firstValue.records[0] as MobileSegment.MobileRecord.MetaRecord
         assertThat(metaRecord.timestamp).isEqualTo(fakeTimestamp)
         assertThat(metaRecord.data.height).isEqualTo(fakeRootHeight)
         assertThat(metaRecord.data.width).isEqualTo(fakeRootWidth)
+    }
+
+    @Test
+    fun `M send FocusRecord second W process { snapshot on a new view }`(forge: Forge) {
+        // Given
+        val fakeRootWidth = forge.aLong(min = 400)
+        val fakeRootHeight = forge.aLong(min = 700)
+        val fakeSnapshot = Node(
+            wireframes = listOf(
+                MobileSegment.Wireframe.ShapeWireframe(
+                    0,
+                    0,
+                    0,
+                    fakeRootWidth,
+                    fakeRootHeight
+                )
+            )
+        )
+
+        // When
+        testedProcessor.process(fakeSnapshot)
+
+        // Then
+        val captor = argumentCaptor<EnrichedRecord>()
+        verify(mockWriter).write(captor.capture())
+        assertThat(captor.firstValue.records.size).isEqualTo(3)
+        val focusRecord = captor.firstValue.records[1] as MobileSegment.MobileRecord.FocusRecord
+        assertThat(focusRecord.timestamp).isEqualTo(fakeTimestamp)
+        assertThat(focusRecord.data.hasFocus).isTrue
     }
 
     @Test
@@ -177,7 +201,63 @@ internal class SnapshotProcessorTest {
     }
 
     @Test
+    fun `M not send FocusRecord W process { snapshot 2 on same view }`(forge: Forge) {
+        // Given
+        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
+        val fakeSnapshot2 = forge.aSingleLevelSnapshot()
+        testedProcessor.process(fakeSnapshot1)
+
+        // When
+        testedProcessor.process(fakeSnapshot2)
+
+        // Then
+        val captor = argumentCaptor<EnrichedRecord>()
+        verify(mockWriter, times(2)).write(captor.capture())
+        assertThat(captor.secondValue.records.size).isEqualTo(1)
+        assertThat(captor.secondValue.records[0]).isInstanceOf(
+            MobileSegment.MobileRecord
+                .MobileFullSnapshotRecord::class.java
+        )
+    }
+
+    @Test
     fun `M send MetaRecord W process { snapshot 3 on new view }`(forge: Forge) {
+        // Given
+        val fakeRootWidth = forge.aLong(min = 400)
+        val fakeRootHeight = forge.aLong(min = 700)
+        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
+        val fakeSnapshot2 = forge.aSingleLevelSnapshot()
+        val fakeSnapshot3 = Node(
+            wireframes = listOf(
+                MobileSegment.Wireframe.ShapeWireframe(
+                    0,
+                    0,
+                    0,
+                    fakeRootWidth,
+                    fakeRootHeight
+                )
+            )
+        )
+
+        testedProcessor.process(fakeSnapshot1)
+        testedProcessor.process(fakeSnapshot2)
+        whenever(mockRumContextProvider.getRumContext()).thenReturn(forge.getForgery())
+
+        // When
+        testedProcessor.process(fakeSnapshot3)
+
+        // Then
+        val captor = argumentCaptor<EnrichedRecord>()
+        verify(mockWriter, times(4)).write(captor.capture())
+        assertThat(captor.lastValue.records.size).isEqualTo(3)
+        val metaRecord = captor.lastValue.records[0] as MobileSegment.MobileRecord.MetaRecord
+        assertThat(metaRecord.timestamp).isEqualTo(fakeTimestamp)
+        assertThat(metaRecord.data.height).isEqualTo(fakeRootHeight)
+        assertThat(metaRecord.data.width).isEqualTo(fakeRootWidth)
+    }
+
+    @Test
+    fun `M send FocusRecord W process { snapshot 3 on new view }`(forge: Forge) {
         // Given
         val fakeSnapshot1 = forge.aSingleLevelSnapshot()
         val fakeSnapshot2 = forge.aSingleLevelSnapshot()
@@ -191,11 +271,35 @@ internal class SnapshotProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter, times(3)).write(captor.capture())
-        assertThat(captor.thirdValue.records.size).isEqualTo(2)
-        assertThat(captor.thirdValue.records[0]).isInstanceOf(
-            MobileSegment.MobileRecord.MetaRecord::class.java
-        )
+        verify(mockWriter, times(4)).write(captor.capture())
+        assertThat(captor.lastValue.records.size).isEqualTo(3)
+        val focusRecord = captor.lastValue.records[1] as MobileSegment.MobileRecord.FocusRecord
+        assertThat(focusRecord.timestamp).isEqualTo(fakeTimestamp)
+        assertThat(focusRecord.data.hasFocus).isTrue
+    }
+
+    @Test
+    fun `M send ViewEndRecord on prev view W process { snapshot 3 on new view }`(forge: Forge) {
+        // Given
+        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
+        val fakeSnapshot2 = forge.aSingleLevelSnapshot()
+        val fakeSnapshot3 = forge.aSingleLevelSnapshot()
+        testedProcessor.process(fakeSnapshot1)
+        testedProcessor.process(fakeSnapshot2)
+        whenever(mockRumContextProvider.getRumContext()).thenReturn(forge.getForgery())
+
+        // When
+        testedProcessor.process(fakeSnapshot3)
+
+        // Then
+        val captor = argumentCaptor<EnrichedRecord>()
+        verify(mockWriter, times(4)).write(captor.capture())
+        assertThat(captor.thirdValue.records.size).isEqualTo(1)
+        assertThat(captor.firstValue.applicationId).isEqualTo(fakeRumContext.applicationId)
+        assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
+        assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
+        val viewEndRecord = captor.thirdValue.records[0] as MobileSegment.MobileRecord.ViewEndRecord
+        assertThat(viewEndRecord.timestamp).isEqualTo(fakeTimestamp)
     }
 
     @Test
@@ -216,7 +320,7 @@ internal class SnapshotProcessorTest {
             fakeSnapshot.children[1].children[1].wireframes
         val captor = argumentCaptor<EnrichedRecord>()
         verify(mockWriter).write(captor.capture())
-        val fullSnapshotRecord = captor.firstValue.records[1] as
+        val fullSnapshotRecord = captor.firstValue.records[2] as
             MobileSegment.MobileRecord.MobileFullSnapshotRecord
         assertThat(fullSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
         assertThat(fullSnapshotRecord.data.wireframes).isEqualTo(expectedList)
@@ -244,7 +348,7 @@ internal class SnapshotProcessorTest {
         }
         val captor = argumentCaptor<EnrichedRecord>()
         verify(mockWriter).write(captor.capture())
-        val fullSnapshotRecord = captor.firstValue.records[1] as
+        val fullSnapshotRecord = captor.firstValue.records[2] as
             MobileSegment.MobileRecord.MobileFullSnapshotRecord
         assertThat(fullSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
         assertThat(fullSnapshotRecord.data.wireframes).isEqualTo(expectedList)
@@ -273,7 +377,7 @@ internal class SnapshotProcessorTest {
             topWireframe
         val captor = argumentCaptor<EnrichedRecord>()
         verify(mockWriter).write(captor.capture())
-        val fullSnapshotRecord = captor.firstValue.records[1] as
+        val fullSnapshotRecord = captor.firstValue.records[2] as
             MobileSegment.MobileRecord.MobileFullSnapshotRecord
         assertThat(fullSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
         assertThat(fullSnapshotRecord.data.wireframes).isEqualTo(expectedList)
@@ -304,7 +408,7 @@ internal class SnapshotProcessorTest {
             fakeSnapshot.children[1].wireframes
         val captor = argumentCaptor<EnrichedRecord>()
         verify(mockWriter).write(captor.capture())
-        val fullSnapshotRecord = captor.firstValue.records[1] as
+        val fullSnapshotRecord = captor.firstValue.records[2] as
             MobileSegment.MobileRecord.MobileFullSnapshotRecord
         assertThat(fullSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
         assertThat(fullSnapshotRecord.data.wireframes).isEqualTo(expectedList)
@@ -336,13 +440,157 @@ internal class SnapshotProcessorTest {
 
         val captor = argumentCaptor<EnrichedRecord>()
         verify(mockWriter).write(captor.capture())
-        val fullSnapshotRecord = captor.firstValue.records[1] as
+        val fullSnapshotRecord = captor.firstValue.records[2] as
             MobileSegment.MobileRecord.MobileFullSnapshotRecord
         assertThat(fullSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
         assertThat(fullSnapshotRecord.data.wireframes).isEqualTo(expectedList)
     }
 
+    // endregion
+
+    // region TouchData
+
+    @Test
+    fun `M send it to the writer as EnrichedRecord W process { TouchData }`(forge: Forge) {
+        // Given
+        val fakeTouchData = MobileSegment.MobileIncrementalData.TouchData(
+            forge.aList(forge.anInt(min = 1, max = 10)) {
+                MobileSegment.Position(aLong(), aLong(), aLong(), aLong())
+            }
+        )
+
+        // When
+        testedProcessor.process(fakeTouchData)
+
+        // Then
+        val captor = argumentCaptor<EnrichedRecord>()
+        verify(mockWriter).write(captor.capture())
+        assertThat(captor.firstValue.applicationId).isEqualTo(fakeRumContext.applicationId)
+        assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
+        assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
+        assertThat(captor.firstValue.records.size).isEqualTo(1)
+        val incrementalSnapshotRecord = captor.firstValue.records[0] as
+            MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord
+        assertThat(incrementalSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
+        assertThat(incrementalSnapshotRecord.data).isEqualTo(fakeTouchData)
+    }
+
+    // endregion
+
+    // region OrientationChanged
+
+    @Test
+    fun `M send it to the writer as EnrichedRecord W process { OrientationChanged }`(forge: Forge) {
+        // Given
+        val fakeOrientationChanged = OrientationChanged(forge.anInt(), forge.anInt())
+
+        // When
+        testedProcessor.process(fakeOrientationChanged)
+
+        // Then
+        val captor = argumentCaptor<EnrichedRecord>()
+        verify(mockWriter).write(captor.capture())
+        assertThat(captor.firstValue.applicationId).isEqualTo(fakeRumContext.applicationId)
+        assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
+        assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
+        assertThat(captor.firstValue.records.size).isEqualTo(1)
+        val incrementalSnapshotRecord = captor.firstValue.records[0] as
+            MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord
+        assertThat(incrementalSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
+        val viewportResizeData = incrementalSnapshotRecord.data as
+            MobileSegment.MobileIncrementalData.ViewportResizeData
+        assertThat(viewportResizeData.height).isEqualTo(fakeOrientationChanged.height.toLong())
+        assertThat(viewportResizeData.width).isEqualTo(fakeOrientationChanged.width.toLong())
+    }
+
+    // endregion
+
+    // region Misc
+
+    @ParameterizedTest
+    @MethodSource("processorArguments")
+    fun `M do nothing W process { context is not invalid }`(argument: Any) {
+        // Given
+        whenever(mockRumContextProvider.getRumContext()).thenReturn(SessionReplayRumContext())
+
+        // When
+        processArgument(argument)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+    }
+
+    // TODO: RUMM-2397 When proper logs are added modify this test accordingly
+    @ParameterizedTest
+    @MethodSource("processorArguments")
+    fun `M do nothing W process { executor was shutdown }`(argument: Any) {
+        // Given
+        whenever(mockExecutorService.submit(any())).thenThrow(RejectedExecutionException())
+        whenever(mockRumContextProvider.getRumContext()).thenReturn(SessionReplayRumContext())
+
+        // When
+        processArgument(argument)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+    }
+
+    // TODO: RUMM-2397 When proper logs are added modify this test accordingly
+    @ParameterizedTest
+    @MethodSource("processorArguments")
+    fun `M do nothing W process { executor throws NPE }`(argument: Any) {
+        // Given
+        whenever(mockExecutorService.submit(any())).thenThrow(NullPointerException())
+        whenever(mockRumContextProvider.getRumContext()).thenReturn(SessionReplayRumContext())
+
+        // When
+        processArgument(argument)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+    }
+
+    @ParameterizedTest
+    @MethodSource("processorArguments")
+    fun `M update current RUM context W process`(
+        argument: Any,
+        @Forgery
+        fakeRumContext2: SessionReplayRumContext
+    ) {
+        // Given
+        whenever(mockRumContextProvider.getRumContext())
+            .thenReturn(fakeRumContext)
+            .thenReturn(fakeRumContext2)
+
+        // When
+        processArgument(argument)
+        assertThat(testedProcessor.prevRumContext).isEqualTo(fakeRumContext)
+        processArgument(argument)
+        assertThat(testedProcessor.prevRumContext).isEqualTo(fakeRumContext2)
+    }
+
+    // endregion
+
     // region Internal
+
+    private fun processArgument(argument: Any) {
+        when (argument) {
+            is Node -> {
+                testedProcessor.process(argument)
+            }
+            is MobileSegment.MobileIncrementalData.TouchData -> {
+                testedProcessor.process(argument)
+            }
+            is OrientationChanged -> {
+                testedProcessor.process(argument)
+            }
+            else -> fail(
+                "The provided argument of " +
+                    "class: ${argument::class.java.simpleName} was not matching " +
+                    "any of the processor methods signature"
+            )
+        }
+    }
 
     private fun MobileSegment.Wireframe.copy(id: Long): MobileSegment.Wireframe {
         return when (this) {
@@ -458,4 +706,33 @@ internal class SnapshotProcessorTest {
     }
 
     // endregion
+
+    companion object {
+        @JvmStatic
+        fun processorArguments(): List<Any> {
+            val fakeSnapshot = Node(
+                wireframes = listOf(
+                    MobileSegment.Wireframe.ShapeWireframe(
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                    )
+                )
+            )
+
+            val fakeTouchData = MobileSegment.MobileIncrementalData.TouchData(
+                positions =
+                listOf(
+                    MobileSegment.Position(0, 0, 0, 0),
+                    MobileSegment.Position(0, 0, 0, 0)
+                )
+            )
+
+            val fakeOrientationChanged = OrientationChanged(0, 0)
+
+            return listOf(fakeSnapshot, fakeTouchData, fakeOrientationChanged)
+        }
+    }
 }

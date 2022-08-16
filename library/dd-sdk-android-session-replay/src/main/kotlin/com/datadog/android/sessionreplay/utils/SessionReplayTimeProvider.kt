@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.utils
 
 internal class SessionReplayTimeProvider : TimeProvider {
 
+    // TODO: RUMM-2400 Apply the Kronos offset here once will be provided through SDKContext
     override fun getDeviceTimestamp(): Long {
         return System.currentTimeMillis()
     }
