@@ -25,6 +25,11 @@ data class SessionReplayRumContext(
             sessionId == NULL_UUID ||
             viewId == NULL_UUID
 
+    internal fun isValid(): Boolean =
+        applicationId != NULL_UUID &&
+            sessionId != NULL_UUID &&
+            viewId != NULL_UUID
+
     companion object {
         private val NULL_UUID = UUID(0, 0).toString()
     }
