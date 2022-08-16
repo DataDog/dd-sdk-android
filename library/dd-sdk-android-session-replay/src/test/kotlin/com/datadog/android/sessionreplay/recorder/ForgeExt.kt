@@ -12,7 +12,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 
-internal fun Forge.aViewWithChildren(
+internal fun Forge.aMockViewWithChildren(
     numberOfChildren: Int,
     currentLevel: Int,
     maxLevel: Int = 10
@@ -24,7 +24,7 @@ internal fun Forge.aViewWithChildren(
     val mockViewGroup: ViewGroup = aMockView()
     whenever(mockViewGroup.childCount).thenReturn(numberOfChildren)
     for (i in 0 until numberOfChildren) {
-        val mockChildGroup = aViewWithChildren(
+        val mockChildGroup = aMockViewWithChildren(
             numberOfChildren,
             level,
             maxLevel
