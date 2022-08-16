@@ -1091,13 +1091,16 @@ datadog:
       - "kotlin.Number.toLong()"
       # endregion
       # region Kotlin String
+      - "kotlin.String.all(kotlin.Function1)"
       - "kotlin.String.contains(kotlin.Char, kotlin.Boolean)"
       - "kotlin.String.contains(kotlin.CharSequence, kotlin.Boolean)"
       - "kotlin.String.count(kotlin.Function1)"
       - "kotlin.String.endsWith(kotlin.Char, kotlin.Boolean)"
       - "kotlin.String.endsWith(kotlin.String, kotlin.Boolean)"
+      - "kotlin.String.filter(kotlin.Function1)"
       - "kotlin.String.format(java.util.Locale?, kotlin.Array)"
       - "kotlin.String.format(java.util.Locale?, kotlin.String, kotlin.Array)"
+      - "kotlin.String.ifBlank(kotlin.Function0)"
       - "kotlin.String.indexOf(kotlin.Char, kotlin.Int, kotlin.Boolean)"
       - "kotlin.String.isEmpty()"
       - "kotlin.String.isNotBlank()"
