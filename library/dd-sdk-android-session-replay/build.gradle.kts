@@ -76,6 +76,7 @@ android {
 dependencies {
     implementation(libs.kotlin)
     implementation(libs.gson)
+    implementation(libs.androidXAppCompat)
 
     testImplementation(project(":tools:unit"))
     testImplementation(libs.bundles.jUnit5)
