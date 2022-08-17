@@ -6,11 +6,14 @@
 
 package com.datadog.android.sessionreplay.processor
 
+import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.Node
 import com.datadog.android.sessionreplay.recorder.OrientationChanged
 
 internal interface Processor {
     fun process(node: Node)
+
+    fun process(touchData: MobileSegment.MobileIncrementalData.TouchData)
 
     fun process(event: OrientationChanged)
 }
