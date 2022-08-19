@@ -94,7 +94,6 @@ analysis:licenses:
 
 static-analysis:
   stage: analysis
-  timeout: 30m
   variables: 
     GRADLE_OPTS: "-Xmx2560m -Dorg.gradle.daemon=false -Porg.gradle.logging.stacktrace=full"
   trigger:
