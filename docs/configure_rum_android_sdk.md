@@ -199,7 +199,7 @@ You can use the following methods in `Configuration.Builder` when creating the D
 : Defines the frequency for requests made to Datadog endpoints (if requests are available).
 
 `setVitalsUpdateFrequency([FREQUENT|AVERAGE|RARE|NEVER])` 
-: Sets the preferred frequency of collecting mobile vitals.
+: Sets the preferred frequency for collecting mobile vitals.
 
 `sampleRumSessions(<samplingRate>)` 
 : Sets the RUM sessions sampling rate. (A value of 0 means no RUM events are sent. A value of 100 means all sessions are kept.)
