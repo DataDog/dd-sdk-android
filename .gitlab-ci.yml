@@ -95,7 +95,7 @@ analysis:licenses:
 static-analysis:
   stage: analysis
   variables: 
-    GRADLE_OPTS: "-Xmx2560m -Dorg.gradle.daemon=false -Porg.gradle.logging.stacktrace=full"
+    GRADLE_OPTS: "-Xmx2560m -Dorg.gradle.daemon=false -Dorg.gradle.logging.stacktrace=all"
   trigger:
     include: "https://gitlab-templates.ddbuild.io/mobile/release/static-analysis.yml"
     strategy: depend
