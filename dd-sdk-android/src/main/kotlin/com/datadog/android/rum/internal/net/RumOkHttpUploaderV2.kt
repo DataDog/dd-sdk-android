@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.net
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploaderV2
 import com.datadog.android.core.internal.system.AndroidInfoProvider
+import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.RumAttributes
 import okhttp3.Call
@@ -19,7 +20,8 @@ internal open class RumOkHttpUploaderV2(
     source: String,
     sdkVersion: String,
     callFactory: Call.Factory,
-    androidInfoProvider: AndroidInfoProvider
+    androidInfoProvider: AndroidInfoProvider,
+    private val appVersionProvider: AppVersionProvider
 ) : DataOkHttpUploaderV2(
     buildUrl(endpoint, TrackType.RUM),
     clientToken,
@@ -31,20 +33,21 @@ internal open class RumOkHttpUploaderV2(
     sdkLogger
 ) {
 
-    private val tags: String by lazy {
-        val elements = mutableListOf(
-            "${RumAttributes.SERVICE_NAME}:${CoreFeature.serviceName}",
-            "${RumAttributes.APPLICATION_VERSION}:${CoreFeature.packageVersion}",
-            "${RumAttributes.SDK_VERSION}:$sdkVersion",
-            "${RumAttributes.ENV}:${CoreFeature.envName}"
-        )
+    private val tags: String
+        get() {
+            val elements = mutableListOf(
+                "${RumAttributes.SERVICE_NAME}:${CoreFeature.serviceName}",
+                "${RumAttributes.APPLICATION_VERSION}:${appVersionProvider.version}",
+                "${RumAttributes.SDK_VERSION}:$sdkVersion",
+                "${RumAttributes.ENV}:${CoreFeature.envName}"
+            )
 
-        if (CoreFeature.variant.isNotEmpty()) {
-            elements.add("${RumAttributes.VARIANT}:${CoreFeature.variant}")
+            if (CoreFeature.variant.isNotEmpty()) {
+                elements.add("${RumAttributes.VARIANT}:${CoreFeature.variant}")
+            }
+
+            return elements.joinToString(",")
         }
-
-        elements.joinToString(",")
-    }
 
     // region DataOkHttpUploaderV2
 

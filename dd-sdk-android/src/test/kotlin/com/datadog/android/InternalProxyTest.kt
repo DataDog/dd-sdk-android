@@ -6,17 +6,20 @@
 
 package com.datadog.android
 
+import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.system.DefaultAppVersionProvider
 import com.datadog.android.telemetry.internal.Telemetry
 import com.datadog.android.utils.forge.Configurator
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -34,7 +37,7 @@ internal class InternalProxyTest {
         @StringForgery message: String
     ) {
         // Given
-        val mockTelemetry = mock(Telemetry::class.java)
+        val mockTelemetry = mock<Telemetry>()
         val proxy = _InternalProxy(mockTelemetry)
 
         // When
@@ -51,7 +54,7 @@ internal class InternalProxyTest {
         @StringForgery kind: String
     ) {
         // Given
-        val mockTelemetry = mock(Telemetry::class.java)
+        val mockTelemetry = mock<Telemetry>()
         val proxy = _InternalProxy(mockTelemetry)
 
         // When
@@ -67,7 +70,7 @@ internal class InternalProxyTest {
         @Forgery throwable: Throwable
     ) {
         // Given
-        val mockTelemetry = mock(Telemetry::class.java)
+        val mockTelemetry = mock<Telemetry>()
         val proxy = _InternalProxy(mockTelemetry)
 
         // When
@@ -75,5 +78,20 @@ internal class InternalProxyTest {
 
         // Then
         verify(mockTelemetry).error(message, throwable)
+    }
+
+    @Test
+    fun `M set app version W setCustomAppVersion()`(
+        @StringForgery version: String
+    ) {
+        // Given
+        CoreFeature.packageVersionProvider = DefaultAppVersionProvider("")
+        val proxy = _InternalProxy(telemetry = mock())
+
+        // When
+        proxy.setCustomAppVersion(version)
+
+        // Then
+        assertThat(CoreFeature.packageVersionProvider.version).isEqualTo(version)
     }
 }

@@ -156,8 +156,8 @@ internal class DatadogExceptionHandlerTest {
                 mockTimeProvider,
                 CoreFeature.sdkVersion,
                 CoreFeature.envName,
-                CoreFeature.packageVersion,
-                CoreFeature.variant
+                CoreFeature.variant,
+                CoreFeature.packageVersionProvider
             ),
             writer = mockLogWriter,
             appContext = appContext.mockInstance

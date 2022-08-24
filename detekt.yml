@@ -915,9 +915,11 @@ datadog:
       - "java.util.concurrent.atomic.AtomicReference.compareAndSet(io.opentracing.Tracer, io.opentracing.Tracer)"
       - "java.util.concurrent.atomic.AtomicReference.constructor()"
       - "java.util.concurrent.atomic.AtomicReference.constructor(com.datadog.android.rum.internal.domain.RumContext)"
+      - "java.util.concurrent.atomic.AtomicReference.constructor(kotlin.String)"
       - "java.util.concurrent.atomic.AtomicReference.get()"
       - "java.util.concurrent.atomic.AtomicReference.set(com.datadog.android.rum.internal.domain.RumContext)"
       - "java.util.concurrent.atomic.AtomicReference.set(io.opentracing.Tracer)"
+      - "java.util.concurrent.atomic.AtomicReference.set(kotlin.String)"
       # endregion
       # region Java I/O
       - "java.io.File.constructor(java.io.File, kotlin.String)"

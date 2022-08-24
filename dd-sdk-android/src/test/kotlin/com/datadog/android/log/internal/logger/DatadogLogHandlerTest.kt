@@ -12,10 +12,10 @@ import android.view.Choreographer
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.sampling.Sampler
+import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
@@ -106,6 +106,9 @@ internal class DatadogLogHandlerTest {
     lateinit var mockTimeProvider: TimeProvider
 
     @Mock
+    lateinit var mockAppVersionProvider: AppVersionProvider
+
+    @Mock
     lateinit var mockSampler: Sampler
 
     lateinit var fakeAppVersion: String
@@ -138,11 +141,10 @@ internal class DatadogLogHandlerTest {
         fakeAttributes = forge.aMap { anAlphabeticalString() to anInt() }
         fakeTags = forge.aList { anAlphabeticalString() }.toSet()
         fakeSdkVersion = forge.anAlphabeticalString()
-        CoreFeature.sdkVersion = fakeSdkVersion
-        CoreFeature.envName = fakeEnvName
-        CoreFeature.packageVersion = fakeAppVersion
+
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        whenever(mockAppVersionProvider.version) doReturn fakeAppVersion
 
         testedHandler = DatadogLogHandler(
             LogGenerator(
@@ -153,8 +155,8 @@ internal class DatadogLogHandlerTest {
                 mockTimeProvider,
                 fakeSdkVersion,
                 fakeEnvName,
-                fakeAppVersion,
-                fakeVariant
+                fakeVariant,
+                mockAppVersionProvider
             ),
             mockWriter
         )
@@ -223,8 +225,8 @@ internal class DatadogLogHandlerTest {
                 mockTimeProvider,
                 fakeSdkVersion,
                 fakeEnvName,
-                fakeAppVersion,
-                fakeVariant
+                fakeVariant,
+                mockAppVersionProvider
             ),
             mockWriter,
             minLogPriority = forge.anInt(min = fakeLevel + 1)
@@ -452,8 +454,8 @@ internal class DatadogLogHandlerTest {
                 mockTimeProvider,
                 fakeSdkVersion,
                 fakeEnvName,
-                fakeAppVersion,
-                fakeVariant
+                fakeVariant,
+                mockAppVersionProvider
             ),
             mockWriter
         )
@@ -508,8 +510,8 @@ internal class DatadogLogHandlerTest {
                 mockTimeProvider,
                 fakeSdkVersion,
                 fakeEnvName,
-                fakeAppVersion,
-                fakeVariant
+                fakeVariant,
+                mockAppVersionProvider
             ),
             mockWriter
         )
@@ -667,8 +669,8 @@ internal class DatadogLogHandlerTest {
                 mockTimeProvider,
                 fakeSdkVersion,
                 fakeEnvName,
-                fakeAppVersion,
-                fakeVariant
+                fakeVariant,
+                mockAppVersionProvider
             ),
             mockWriter,
             bundleWithTraces = false
@@ -705,8 +707,8 @@ internal class DatadogLogHandlerTest {
                 mockTimeProvider,
                 fakeSdkVersion,
                 fakeEnvName,
-                fakeAppVersion,
-                fakeVariant
+                fakeVariant,
+                mockAppVersionProvider
             ),
             mockWriter,
             bundleWithTraces = false,
@@ -740,8 +742,8 @@ internal class DatadogLogHandlerTest {
                 mockTimeProvider,
                 fakeSdkVersion,
                 fakeEnvName,
-                fakeAppVersion,
-                fakeVariant
+                fakeVariant,
+                mockAppVersionProvider
             ),
             mockWriter,
             bundleWithTraces = false,

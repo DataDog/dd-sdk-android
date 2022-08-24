@@ -34,6 +34,7 @@ internal object TracingFeature : SdkFeature<DDSpan, Configuration.Feature.Tracin
             CoreFeature.timeProvider,
             CoreFeature.networkInfoProvider,
             CoreFeature.userInfoProvider,
+            CoreFeature.packageVersionProvider,
             CoreFeature.envName,
             sdkLogger,
             configuration.spanEventMapper,

@@ -8,6 +8,7 @@ package com.datadog.android.tracing.internal.domain.event
 
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.core.model.NetworkInfo
@@ -61,6 +62,9 @@ internal class DdSpanToSpanEventMapperTest {
     @Mock
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
 
+    @Mock
+    lateinit var mockAppVersionProvider: AppVersionProvider
+
     @StringForgery(regex = "[0-9]\\.[0-9]\\.[0-9]")
     lateinit var fakeClientPackageVersion: String
 
@@ -75,16 +79,19 @@ internal class DdSpanToSpanEventMapperTest {
 
     @BeforeEach
     fun `set up`() {
-        CoreFeature.packageVersion = fakeClientPackageVersion
         CoreFeature.sdkVersion = fakeSdkVersion
         CoreFeature.sourceName = fakeSource
-        whenever(mockTimeProvider.getServerOffsetNanos()).thenReturn(fakeServerOffsetNanos)
+
+        whenever(mockTimeProvider.getServerOffsetNanos()) doReturn fakeServerOffsetNanos
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
+        whenever(mockAppVersionProvider.version) doReturn fakeClientPackageVersion
+
         testedMapper = DdSpanToSpanEventMapper(
             mockTimeProvider,
             mockNetworkInfoProvider,
-            mockUserInfoProvider
+            mockUserInfoProvider,
+            mockAppVersionProvider
         )
     }
 

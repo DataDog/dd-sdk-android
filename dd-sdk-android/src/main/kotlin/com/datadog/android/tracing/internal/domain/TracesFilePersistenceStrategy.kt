@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOr
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
 import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.log.Logger
@@ -33,6 +34,7 @@ internal class TracesFilePersistenceStrategy(
     timeProvider: TimeProvider,
     networkInfoProvider: NetworkInfoProvider,
     userInfoProvider: UserInfoProvider,
+    appVersionProvider: AppVersionProvider,
     envName: String,
     internalLogger: Logger,
     spanEventMapper: SpanEventMapper,
@@ -50,7 +52,8 @@ internal class TracesFilePersistenceStrategy(
         DdSpanToSpanEventMapper(
             timeProvider,
             networkInfoProvider,
-            userInfoProvider
+            userInfoProvider,
+            appVersionProvider
         ),
         SpanEventMapperWrapper(spanEventMapper),
         SpanEventSerializer(envName)
