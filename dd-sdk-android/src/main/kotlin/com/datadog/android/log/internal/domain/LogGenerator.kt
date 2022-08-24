@@ -7,6 +7,7 @@
 package com.datadog.android.log.internal.domain
 
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
@@ -26,7 +27,7 @@ internal class LogGenerator(
     internal val timeProvider: TimeProvider,
     internal val sdkVersion: String,
     envName: String,
-    appVersion: String
+    internal val appVersionProvider: AppVersionProvider
 ) {
 
     private val simpleDateFormat = buildLogDateFormat()
@@ -37,11 +38,15 @@ internal class LogGenerator(
         null
     }
 
-    private val appVersionTag = if (appVersion.isNotEmpty()) {
-        "${LogAttributes.APPLICATION_VERSION}:$appVersion"
-    } else {
-        null
-    }
+    private val appVersionTag: String?
+        get() {
+            val appVersion = appVersionProvider.version
+            return if (appVersion.isNotEmpty()) {
+                "${LogAttributes.APPLICATION_VERSION}:$appVersion"
+            } else {
+                null
+            }
+        }
 
     @Suppress("LongParameterList")
     fun generateLog(

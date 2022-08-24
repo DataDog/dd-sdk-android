@@ -7,6 +7,7 @@
 package com.datadog.android.log.internal.domain
 
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
@@ -76,6 +77,10 @@ internal class LogGeneratorTest {
 
     @Mock
     lateinit var mockTimeProvider: TimeProvider
+
+    @Mock
+    lateinit var mockAppVersionProvider: AppVersionProvider
+
     lateinit var fakeServiceName: String
     lateinit var fakeLoggerName: String
     lateinit var fakeAttributes: Map<String, Any?>
@@ -128,7 +133,8 @@ internal class LogGeneratorTest {
         whenever(mockSpan.context()) doReturn mockSpanContext
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
         whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId
-        whenever(mockTimeProvider.getServerOffsetMillis()).thenReturn(fakeTimeOffset)
+        whenever(mockTimeProvider.getServerOffsetMillis()) doReturn fakeTimeOffset
+        whenever(mockAppVersionProvider.version) doReturn fakeAppVersion
         GlobalTracer.registerIfAbsent(mockTracer)
         testedLogGenerator = LogGenerator(
             fakeServiceName,
@@ -138,7 +144,7 @@ internal class LogGeneratorTest {
             mockTimeProvider,
             fakeSdkVersion,
             fakeEnvName,
-            fakeAppVersion
+            mockAppVersionProvider
         )
     }
 
@@ -384,7 +390,7 @@ internal class LogGeneratorTest {
             mockTimeProvider,
             fakeSdkVersion,
             fakeEnvName,
-            fakeAppVersion
+            mockAppVersionProvider
         )
         // WHEN
         val log = testedLogGenerator.generateLog(
@@ -413,7 +419,7 @@ internal class LogGeneratorTest {
             mockTimeProvider,
             fakeSdkVersion,
             fakeEnvName,
-            fakeAppVersion
+            mockAppVersionProvider
         )
         // WHEN
         val log = testedLogGenerator.generateLog(
@@ -458,7 +464,7 @@ internal class LogGeneratorTest {
             mockTimeProvider,
             fakeSdkVersion,
             "",
-            fakeAppVersion
+            mockAppVersionProvider
         )
 
         // WHEN
@@ -497,6 +503,8 @@ internal class LogGeneratorTest {
     @Test
     fun `M not add the appVersionTag W not empty`() {
         // GIVEN
+        whenever(mockAppVersionProvider.version) doReturn ""
+
         testedLogGenerator = LogGenerator(
             fakeServiceName,
             fakeLoggerName,
@@ -505,7 +513,7 @@ internal class LogGeneratorTest {
             mockTimeProvider,
             fakeSdkVersion,
             fakeEnvName,
-            ""
+            mockAppVersionProvider
         )
 
         // WHEN
