@@ -33,9 +33,12 @@ import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.core.internal.system.AndroidInfoProvider
+import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.core.internal.system.DefaultAndroidInfoProvider
+import com.datadog.android.core.internal.system.DefaultAppVersionProvider
 import com.datadog.android.core.internal.system.NoOpAndroidInfoProvider
+import com.datadog.android.core.internal.system.NoOpAppVersionProvider
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.KronosTimeProvider
@@ -134,7 +137,7 @@ internal object CoreFeature {
 
     internal var clientToken: String = ""
     internal var packageName: String = ""
-    internal var packageVersion: String = ""
+    internal var packageVersionProvider: AppVersionProvider = NoOpAppVersionProvider()
     internal var serviceName: String = ""
     internal var sourceName: String = DEFAULT_SOURCE_NAME
     internal var sdkVersion: String = DEFAULT_SDK_VERSION
@@ -259,7 +262,7 @@ internal object CoreFeature {
                     timeProvider,
                     sdkVersion,
                     envName,
-                    packageVersion
+                    packageVersionProvider
                 ),
                 NdkCrashLogDeserializer(sdkLogger),
                 RumEventDeserializer(),
@@ -306,12 +309,14 @@ internal object CoreFeature {
             devLogger.e("Unable to read your application's version name", e)
             null
         }
-        packageVersion = packageInfo?.let {
-            // we need to use the deprecated method because getLongVersionCode method is only
-            // available from API 28 and above
-            @Suppress("DEPRECATION")
-            it.versionName ?: it.versionCode.toString()
-        } ?: DEFAULT_APP_VERSION
+        packageVersionProvider = DefaultAppVersionProvider(
+            packageInfo?.let {
+                // we need to use the deprecated method because getLongVersionCode method is only
+                // available from API 28 and above
+                @Suppress("DEPRECATION")
+                it.versionName ?: it.versionCode.toString()
+            } ?: DEFAULT_APP_VERSION
+        )
         clientToken = credentials.clientToken
         serviceName = credentials.serviceName ?: appContext.packageName
         rumApplicationId = credentials.rumApplicationId
@@ -468,7 +473,7 @@ internal object CoreFeature {
     private fun cleanupApplicationInfo() {
         clientToken = ""
         packageName = ""
-        packageVersion = ""
+        packageVersionProvider = NoOpAppVersionProvider()
         serviceName = ""
         sourceName = DEFAULT_SOURCE_NAME
         rumApplicationId = null

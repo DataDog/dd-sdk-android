@@ -22,15 +22,11 @@ import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
     "UndocumentedPublicClass",
     "UndocumentedPublicFunction",
     "UndocumentedPublicProperty",
+    "ClassName",
     "ClassNaming",
     "VariableNaming"
 )
-class _RumInternalProxy {
-    private val rumMonitor: AdvancedRumMonitor
-
-    internal constructor(rumMonitor: AdvancedRumMonitor) {
-        this.rumMonitor = rumMonitor
-    }
+class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRumMonitor) {
 
     fun addLongTask(durationNs: Long, target: String) {
         rumMonitor.addLongTask(durationNs, target)

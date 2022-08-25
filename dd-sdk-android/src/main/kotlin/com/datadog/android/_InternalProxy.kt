@@ -6,6 +6,7 @@
 
 package com.datadog.android
 
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.telemetry.internal.Telemetry
 
 /**
@@ -22,16 +23,12 @@ import com.datadog.android.telemetry.internal.Telemetry
     "UndocumentedPublicClass",
     "UndocumentedPublicFunction",
     "UndocumentedPublicProperty",
+    "ClassName",
     "ClassNaming",
     "VariableNaming"
 )
-class _InternalProxy {
-    class _TelemetryProxy {
-        private val telemetry: Telemetry
-
-        internal constructor(telemetry: Telemetry) {
-            this.telemetry = telemetry
-        }
+class _InternalProxy internal constructor(telemetry: Telemetry) {
+    class _TelemetryProxy internal constructor(private val telemetry: Telemetry) {
 
         fun debug(message: String) {
             telemetry.debug(message)
@@ -46,9 +43,9 @@ class _InternalProxy {
         }
     }
 
-    val _telemetry: _TelemetryProxy
+    val _telemetry: _TelemetryProxy = _TelemetryProxy(telemetry)
 
-    internal constructor(telemetry: Telemetry) {
-        _telemetry = _TelemetryProxy(telemetry)
+    fun setCustomAppVersion(version: String) {
+        CoreFeature.packageVersionProvider.version = version
     }
 }
