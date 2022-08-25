@@ -11,7 +11,11 @@ If you use Fresco to load images in your application, take a look at Datadog's [
 ### Glide
  
 If you use Glide to load images in your application, take a look at Datadog's [dedicated Glide library][3].
- 
+
+### Jetpack Compose
+
+If you use Jetpack Compose to load images in your application, take a look at Datadog's [dedicated Jetpack Compose library][7].
+
 ### Picasso
  
 If you use Picasso, let it use your `OkHttpClient` for RUM and APM information about network requests made by Picasso.
@@ -138,3 +142,4 @@ If you use the Leanback API to add actions into your Android TV application, tak
 [4]: https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-sqldelight
 [5]: https://developer.android.com/reference/android/database/sqlite/SQLiteOpenHelper
 [6]: https://github.com/DataDog/dd-sdk-android/tree/master/dd-sdk-android-tv
+[7]: https://github.com/Datadog/dd-sdk-android/tree/master/dd-sdk-android-compose
