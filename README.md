@@ -34,7 +34,7 @@ If you use Glide to load images in your application, take a look at Datadog's [d
 
 ### Jetpack Compose
 
-If you use Jetpack Compose to load images in your application, take a look at Datadog's [dedicated library](dd-sdk-android-compose/README.md).
+If you use Jetpack Compose in your application, take a look at Datadog's [dedicated library](dd-sdk-android-compose/README.md).
 
 ### Picasso
 
