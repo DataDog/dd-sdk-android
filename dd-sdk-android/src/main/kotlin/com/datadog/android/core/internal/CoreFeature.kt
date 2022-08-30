@@ -258,7 +258,8 @@ internal object CoreFeature {
                     timeProvider,
                     sdkVersion,
                     envName,
-                    packageVersion
+                    packageVersion,
+                    variant
                 ),
                 NdkCrashLogDeserializer(sdkLogger),
                 RumEventDeserializer(),

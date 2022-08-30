@@ -82,6 +82,7 @@ internal class LogGeneratorTest {
     lateinit var fakeTags: Set<String>
     lateinit var fakeAppVersion: String
     lateinit var fakeEnvName: String
+    lateinit var fakeVariant: String
     lateinit var fakeLogMessage: String
     lateinit var fakeThrowable: Throwable
 
@@ -114,6 +115,7 @@ internal class LogGeneratorTest {
         fakeTags = forge.aList { anAlphabeticalString() }.toSet()
         fakeAppVersion = forge.aStringMatching("^[0-9]\\.[0-9]\\.[0-9]")
         fakeEnvName = forge.aStringMatching("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
+        fakeVariant = forge.anAlphabeticalString()
         fakeThrowable = forge.aThrowable()
         fakeTimestamp = System.currentTimeMillis()
         fakeThreadName = forge.anAlphabeticalString()
@@ -138,7 +140,8 @@ internal class LogGeneratorTest {
             mockTimeProvider,
             fakeSdkVersion,
             fakeEnvName,
-            fakeAppVersion
+            fakeAppVersion,
+            fakeVariant
         )
     }
 
@@ -384,7 +387,8 @@ internal class LogGeneratorTest {
             mockTimeProvider,
             fakeSdkVersion,
             fakeEnvName,
-            fakeAppVersion
+            fakeAppVersion,
+            fakeVariant
         )
         // WHEN
         val log = testedLogGenerator.generateLog(
@@ -413,7 +417,8 @@ internal class LogGeneratorTest {
             mockTimeProvider,
             fakeSdkVersion,
             fakeEnvName,
-            fakeAppVersion
+            fakeAppVersion,
+            fakeVariant
         )
         // WHEN
         val log = testedLogGenerator.generateLog(
@@ -458,7 +463,8 @@ internal class LogGeneratorTest {
             mockTimeProvider,
             fakeSdkVersion,
             "",
-            fakeAppVersion
+            fakeAppVersion,
+            fakeVariant
         )
 
         // WHEN
@@ -472,7 +478,9 @@ internal class LogGeneratorTest {
         )
 
         // THEN
-        val expectedTags = fakeTags + "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion"
+        val expectedTags = fakeTags +
+            "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion" +
+            "${LogAttributes.VARIANT}:$fakeVariant"
         assertThat(log).hasExactlyTags(expectedTags)
     }
 
@@ -495,7 +503,7 @@ internal class LogGeneratorTest {
     }
 
     @Test
-    fun `M not add the appVersionTag W not empty`() {
+    fun `M not add the appVersionTag W empty`() {
         // GIVEN
         testedLogGenerator = LogGenerator(
             fakeServiceName,
@@ -505,6 +513,57 @@ internal class LogGeneratorTest {
             mockTimeProvider,
             fakeSdkVersion,
             fakeEnvName,
+            "",
+            fakeVariant
+        )
+
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp
+        )
+
+        // THEN
+        val expectedTags = fakeTags +
+            "${LogAttributes.ENV}:$fakeEnvName" +
+            "${LogAttributes.VARIANT}:$fakeVariant"
+        assertThat(log).hasExactlyTags(expectedTags)
+    }
+
+    @Test
+    fun `M add the variantTag W not empty`() {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp
+        )
+
+        // THEN
+        val deserializedTags = log.ddtags.split(",")
+        Assertions.assertThat(deserializedTags)
+            .contains("${LogAttributes.VARIANT}:$fakeVariant")
+    }
+
+    @Test
+    fun `M not add the variantTag W empty`() {
+        // GIVEN
+        testedLogGenerator = LogGenerator(
+            fakeServiceName,
+            fakeLoggerName,
+            mockNetworkInfoProvider,
+            mockUserInfoProvider,
+            mockTimeProvider,
+            fakeSdkVersion,
+            fakeEnvName,
+            fakeAppVersion,
             ""
         )
 
@@ -519,7 +578,9 @@ internal class LogGeneratorTest {
         )
 
         // THEN
-        val expectedTags = fakeTags + "${LogAttributes.ENV}:$fakeEnvName"
+        val expectedTags = fakeTags +
+            "${LogAttributes.ENV}:$fakeEnvName" +
+            "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion"
         assertThat(log).hasExactlyTags(expectedTags)
     }
 
