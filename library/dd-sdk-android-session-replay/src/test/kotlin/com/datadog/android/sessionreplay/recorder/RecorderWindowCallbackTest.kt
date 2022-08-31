@@ -13,7 +13,6 @@ import com.datadog.android.sessionreplay.processor.Processor
 import com.datadog.android.sessionreplay.utils.ForgeConfigurator
 import com.datadog.android.sessionreplay.utils.TimeProvider
 import com.datadog.tools.unit.forge.aThrowable
-import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.eq

@@ -13,6 +13,7 @@ import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
 import com.datadog.android.sessionreplay.processor.Processor
+import com.datadog.android.sessionreplay.utils.TimeProvider
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
@@ -42,9 +43,12 @@ internal class ScreenRecorderTest {
     @Mock
     lateinit var mockProcessor: Processor
 
+    @Mock
+    lateinit var mockTimeProvider: TimeProvider
+
     @BeforeEach
     fun `set up`() {
-        testedRecorder = ScreenRecorder(mockProcessor)
+        testedRecorder = ScreenRecorder(mockProcessor, mockTimeProvider)
     }
 
     // region Tests
