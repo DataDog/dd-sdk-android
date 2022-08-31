@@ -123,6 +123,9 @@ internal class DatadogExceptionHandlerTest {
     @StringForgery(regex = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
     lateinit var fakeEnvName: String
 
+    @StringForgery
+    lateinit var fakeVariant: String
+
     @BeforeEach
     fun `set up`() {
         mockChoreographerInstance()
@@ -132,7 +135,7 @@ internal class DatadogExceptionHandlerTest {
 
         Datadog.initialize(
             appContext.mockInstance,
-            Credentials(fakeToken, fakeEnvName, Credentials.NO_VARIANT, null),
+            Credentials(fakeToken, fakeEnvName, fakeVariant, null),
             Configuration.Builder(
                 logsEnabled = true,
                 tracesEnabled = true,
@@ -153,7 +156,8 @@ internal class DatadogExceptionHandlerTest {
                 mockTimeProvider,
                 CoreFeature.sdkVersion,
                 CoreFeature.envName,
-                CoreFeature.packageVersion
+                CoreFeature.packageVersion,
+                CoreFeature.variant
             ),
             writer = mockLogWriter,
             appContext = appContext.mockInstance
@@ -191,7 +195,8 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}"
+                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}",
+                        "${LogAttributes.VARIANT}:$fakeVariant"
                     )
                 )
                 .hasExactlyAttributes(
@@ -291,7 +296,8 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}"
+                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}",
+                        "${LogAttributes.VARIANT}:$fakeVariant"
                     )
                 )
                 .hasExactlyAttributes(
@@ -327,7 +333,8 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}"
+                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}",
+                        "${LogAttributes.VARIANT}:$fakeVariant"
                     )
                 )
                 .hasExactlyAttributes(
@@ -365,7 +372,8 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}"
+                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}",
+                        "${LogAttributes.VARIANT}:$fakeVariant"
                     )
                 )
                 .hasExactlyAttributes(
@@ -409,7 +417,8 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}"
+                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}",
+                        "${LogAttributes.VARIANT}:$fakeVariant"
                     )
                 )
                 .hasExactlyAttributes(

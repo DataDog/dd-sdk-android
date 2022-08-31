@@ -26,7 +26,8 @@ internal class LogGenerator(
     internal val timeProvider: TimeProvider,
     internal val sdkVersion: String,
     envName: String,
-    appVersion: String
+    appVersion: String,
+    variant: String
 ) {
 
     private val simpleDateFormat = buildLogDateFormat()
@@ -39,6 +40,12 @@ internal class LogGenerator(
 
     private val appVersionTag = if (appVersion.isNotEmpty()) {
         "${LogAttributes.APPLICATION_VERSION}:$appVersion"
+    } else {
+        null
+    }
+
+    private val variantTag = if (variant.isNotEmpty()) {
+        "${LogAttributes.VARIANT}:$variant"
     } else {
         null
     }
@@ -122,6 +129,9 @@ internal class LogGenerator(
             combinedTags.add(it)
         }
         appVersionTag?.let {
+            combinedTags.add(it)
+        }
+        variantTag?.let {
             combinedTags.add(it)
         }
 

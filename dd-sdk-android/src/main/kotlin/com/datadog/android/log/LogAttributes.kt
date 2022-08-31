@@ -305,4 +305,10 @@ object LogAttributes {
      * @see [Datadog.setUserInfo]
      */
     const val USR_NAME: String = "$USR_ATTRIBUTES_GROUP.name"
+
+    /**
+     * The application variant. (String)
+     * This value is filled automatically by the [Logger].
+     */
+    const val VARIANT: String = "variant"
 }
