@@ -29,7 +29,7 @@ internal class SnapshotProcessor(
     private val writer: Writer = RecordWriter()
 ) : Processor {
 
-    private var currentRumContext: SessionReplayRumContext = SessionReplayRumContext()
+    internal var prevRumContext: SessionReplayRumContext = SessionReplayRumContext()
 
     @MainThread
     override fun process(node: Node) {
@@ -38,51 +38,73 @@ internal class SnapshotProcessor(
             return
         }
 
-        // we will make sure we get the timestamp on the UI thread to avoid time skewing
-        val recordsTimestamp = timeProvider.getDeviceTimestamp()
-
-        // TODO: RUMM-2426 Fetch the RumContext from the core SDKContext when available
-        val newRumContext = rumContextProvider.getRumContext()
-
-        if (newRumContext.isNotValid()) {
-            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
-            return
-        }
-
-        // For the time being until we can log those.
-        @Suppress("SwallowedException", "TooGenericExceptionCaught")
-        try {
-            executorService.submit {
+        buildRunnable { timestamp, newContext, currentContext ->
+            Runnable {
                 @Suppress("ThreadSafety") // this runs inside an executor
-                handleSnapshot(newRumContext, currentRumContext, recordsTimestamp, node)
+                handleSnapshot(newContext, currentContext, timestamp, node)
             }
-        } catch (e: RejectedExecutionException) {
-            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
-        } catch (e: NullPointerException) {
-            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
-            // the task will never be null so normally this exception should not be triggered.
-            // In any case we will add a log here later.
-        }
-
-        currentRumContext = newRumContext
+        }?.let { executeRunnable(it) }
     }
 
     @MainThread
     override fun process(event: OrientationChanged) {
-        // TODO RUMM-2271
+        buildRunnable { timestamp, newContext, _ ->
+            Runnable {
+                @Suppress("ThreadSafety") // this runs inside an executor
+                handleOrientationChanged(newContext, timestamp, event)
+            }
+        }?.let { executeRunnable(it) }
     }
 
     @MainThread
     override fun process(touchData: MobileSegment.MobileIncrementalData.TouchData) {
-        // TODO RUMM-2271
+        buildRunnable { timestamp, newContext, _ ->
+            Runnable {
+                @Suppress("ThreadSafety") // this runs inside an executor
+                handleTouchData(newContext, timestamp, touchData)
+            }
+        }?.let { executeRunnable(it) }
     }
 
     // region Internal
 
     @WorkerThread
+    private fun handleTouchData(
+        rumContext: SessionReplayRumContext,
+        timestamp: Long,
+        touchData: MobileSegment.MobileIncrementalData.TouchData
+    ) {
+        val touchDataRecord = MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
+            timestamp,
+            touchData
+        )
+        val enrichedRecord = bundleRecordInEnrichedRecord(rumContext, listOf(touchDataRecord))
+        writer.write(enrichedRecord)
+    }
+
+    @WorkerThread
+    private fun handleOrientationChanged(
+        rumContext: SessionReplayRumContext,
+        timestamp: Long,
+        orientationChanged: OrientationChanged
+    ) {
+        val viewPortResizeData = MobileSegment.MobileIncrementalData.ViewportResizeData(
+            orientationChanged.width.toLong(),
+            orientationChanged.height.toLong()
+        )
+        val viewportRecord = MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
+            timestamp,
+            data = viewPortResizeData
+        )
+
+        val enrichedRecord = bundleRecordInEnrichedRecord(rumContext, listOf(viewportRecord))
+        writer.write(enrichedRecord)
+    }
+
+    @WorkerThread
     private fun handleSnapshot(
         newRumContext: SessionReplayRumContext,
-        currentRumContext: SessionReplayRumContext,
+        prevRumContext: SessionReplayRumContext,
         timestamp: Long,
         snapshot: Node
     ) {
@@ -94,31 +116,88 @@ internal class SnapshotProcessor(
         }
 
         val records: MutableList<MobileSegment.MobileRecord> = LinkedList()
-        val rootWireframeBounds = wireframes[0].bounds()
-
-        if (checkForNewView(currentRumContext, newRumContext)) {
+        if (isNewView(prevRumContext, newRumContext)) {
+            handleViewEndRecord(prevRumContext, timestamp)
+            val rootWireframeBounds = wireframes[0].bounds()
             val metaRecord = MobileSegment.MobileRecord.MetaRecord(
                 timestamp,
                 MobileSegment.Data1(rootWireframeBounds.width, rootWireframeBounds.height)
             )
+            val focusRecord = MobileSegment.MobileRecord.FocusRecord(
+                timestamp,
+                MobileSegment.Data2(true)
+            )
             records.add(metaRecord)
+            records.add(focusRecord)
         }
+
         val record = MobileSegment.MobileRecord.MobileFullSnapshotRecord(
-            timeProvider.getDeviceTimestamp(),
+            timestamp,
             MobileSegment.Data(wireframes)
         )
         records.add(record)
-        writer.write(
-            EnrichedRecord(
-                newRumContext.applicationId,
-                newRumContext.sessionId,
-                newRumContext.viewId,
-                records
-            )
+        writer.write(bundleRecordInEnrichedRecord(newRumContext, records))
+    }
+
+    private fun handleViewEndRecord(prevRumContext: SessionReplayRumContext, timestamp: Long) {
+        if (prevRumContext.isValid()) {
+            // send first the ViewEndRecord for the previous RUM context (View)
+            val viewEndRecord = MobileSegment.MobileRecord.ViewEndRecord(timestamp)
+            writer.write(bundleRecordInEnrichedRecord(prevRumContext, listOf(viewEndRecord)))
+        }
+    }
+
+    private fun executeRunnable(runnable: Runnable) {
+        @Suppress("SwallowedException", "TooGenericExceptionCaught")
+        try {
+            executorService.submit(runnable)
+        } catch (e: RejectedExecutionException) {
+            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
+        } catch (e: NullPointerException) {
+            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
+            // the task will never be null so normally this exception should not be triggered.
+            // In any case we will add a log here later.
+        }
+    }
+
+    private fun buildRunnable(
+        runnableFactory: (
+            timestamp: Long,
+            newContext: SessionReplayRumContext,
+            prevRumContext: SessionReplayRumContext
+        ) -> Runnable
+    ): Runnable? {
+        // we will make sure we get the timestamp on the UI thread to avoid time skewing
+        val timestamp = timeProvider.getDeviceTimestamp()
+
+        // TODO: RUMM-2426 Fetch the RumContext from the core SDKContext when available
+        val newRumContext = rumContextProvider.getRumContext()
+
+        if (newRumContext.isNotValid()) {
+            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
+            return null
+        }
+        val runnable = runnableFactory(timestamp, newRumContext.copy(), prevRumContext.copy())
+
+        prevRumContext = newRumContext
+
+        return runnable
+    }
+
+    private fun bundleRecordInEnrichedRecord(
+        rumContext: SessionReplayRumContext,
+        records: List<MobileSegment.MobileRecord>
+    ):
+        EnrichedRecord {
+        return EnrichedRecord(
+            rumContext.applicationId,
+            rumContext.sessionId,
+            rumContext.viewId,
+            records
         )
     }
 
-    private fun checkForNewView(
+    private fun isNewView(
         newContext: SessionReplayRumContext,
         currentContext: SessionReplayRumContext
     ): Boolean {
