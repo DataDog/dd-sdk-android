@@ -1,7 +1,8 @@
 # Configure Android SDK
 
-If you have not set up the SDK yet, follow the [in-app setup instructions][1] or refer to the [Android RUM setup documentation][2]. 
+## Overview
 
+If you have not set up the SDK yet, follow the [in-app setup instructions][1] or refer to the [Android RUM setup documentation][2]. 
 
 ## Enrich user sessions
 
@@ -388,7 +389,7 @@ val monitor = RumMonitor.Builder()
 GlobalRum.registerIfAbsent(monitor)
 ```
 
-   ## Further Reading
+## Further Reading
 
 {{< partial name="whats-next/whats-next.html" >}}
 
@@ -399,5 +400,5 @@ GlobalRum.registerIfAbsent(monitor)
 [5]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#initialization-parameters
 [6]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#automatically-track-network-requests
 [7]: https://github.com/DataDog/dd-sdk-android/tree/master/sample/kotlin/src/main/kotlin/com/datadog/android/sample/widget
-[8]: https://square.github.io/okhttp/events/
-[9]: https://docs.datadoghq.com/real_user_monitoring/android/data_collected/?tab=error#event-specific-attributes
+[8]: https://square.github.io/okhttp/features/events/
+[9]: https://docs.datadoghq.com/real_user_monitoring/android/data_collected/#event-specific-attributes
