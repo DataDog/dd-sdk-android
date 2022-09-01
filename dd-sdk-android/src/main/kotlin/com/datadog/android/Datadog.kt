@@ -351,6 +351,7 @@ object Datadog {
         )
     }
 
+    @Suppress("ComplexMethod")
     private fun applyAdditionalConfiguration(
         additionalConfiguration: Map<String, Any>
     ) {
@@ -366,6 +367,12 @@ object Datadog {
         additionalConfiguration[DD_SDK_VERSION_TAG]?.let {
             if (it is String && it.isNotBlank()) {
                 CoreFeature.sdkVersion = it
+            }
+        }
+
+        additionalConfiguration[DD_APP_VERSION_TAG]?.let {
+            if (it is String && it.isNotBlank()) {
+                CoreFeature.packageVersionProvider.version = it
             }
         }
     }
@@ -426,6 +433,7 @@ object Datadog {
 
     internal const val DD_SOURCE_TAG = "_dd.source"
     internal const val DD_SDK_VERSION_TAG = "_dd.sdk_version"
+    internal const val DD_APP_VERSION_TAG = "_dd.version"
 
     // endregion
 }

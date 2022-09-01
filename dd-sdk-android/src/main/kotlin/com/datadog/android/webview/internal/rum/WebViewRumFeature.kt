@@ -43,7 +43,8 @@ internal object WebViewRumFeature : SdkFeature<Any, Configuration.Feature.RUM>()
             CoreFeature.sourceName,
             CoreFeature.sdkVersion,
             CoreFeature.okHttpClient,
-            CoreFeature.androidInfoProvider
+            CoreFeature.androidInfoProvider,
+            CoreFeature.packageVersionProvider
         )
     }
 }

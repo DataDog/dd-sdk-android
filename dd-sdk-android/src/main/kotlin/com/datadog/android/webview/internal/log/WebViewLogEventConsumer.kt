@@ -8,6 +8,7 @@ package com.datadog.android.webview.internal.log
 
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.LogAttributes
@@ -21,13 +22,15 @@ import kotlin.NumberFormatException
 internal class WebViewLogEventConsumer(
     private val userLogsWriter: DataWriter<JsonObject>,
     private val rumContextProvider: WebViewRumEventContextProvider,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val appVersionProvider: AppVersionProvider
 ) : WebViewEventConsumer<Pair<JsonObject, String>> {
 
-    private val ddTags: String by lazy {
-        "${LogAttributes.APPLICATION_VERSION}:${CoreFeature.packageVersion}" +
-            ",${LogAttributes.ENV}:${CoreFeature.envName}"
-    }
+    private val ddTags: String
+        get() {
+            return "${LogAttributes.APPLICATION_VERSION}:${appVersionProvider.version}" +
+                ",${LogAttributes.ENV}:${CoreFeature.envName}"
+        }
 
     override fun consume(event: Pair<JsonObject, String>) {
         map(event.first).let {

@@ -139,7 +139,8 @@ internal constructor(
                 WebViewLogEventConsumer(
                     userLogsWriter = WebViewLogsFeature.persistenceStrategy.getWriter(),
                     rumContextProvider = contextProvider,
-                    timeProvider = CoreFeature.timeProvider
+                    timeProvider = CoreFeature.timeProvider,
+                    appVersionProvider = CoreFeature.packageVersionProvider
                 )
             )
         }

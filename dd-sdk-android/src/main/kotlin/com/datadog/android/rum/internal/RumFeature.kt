@@ -137,7 +137,8 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
             CoreFeature.sourceName,
             CoreFeature.sdkVersion,
             CoreFeature.okHttpClient,
-            CoreFeature.androidInfoProvider
+            CoreFeature.androidInfoProvider,
+            CoreFeature.packageVersionProvider
         )
     }
 
