@@ -161,7 +161,7 @@ internal fun Forge.silentOrphanEvent(): RumRawEvent {
             RumRawEvent.ResetSession(),
             RumRawEvent.KeepAlive(),
             RumRawEvent.StopView(anAlphabeticalString(), emptyMap()),
-            RumRawEvent.ActionSent(fakeId),
+            RumRawEvent.ActionSent(fakeId, aPositiveInt()),
             RumRawEvent.ErrorSent(fakeId),
             RumRawEvent.LongTaskSent(fakeId),
             RumRawEvent.ResourceSent(fakeId),

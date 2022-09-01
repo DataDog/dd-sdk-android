@@ -83,6 +83,7 @@ internal open class RumViewScope(
 
     private var resourceCount: Long = 0
     private var actionCount: Long = 0
+    private var frustrationCount: Int = 0
     private var errorCount: Long = 0
     private var crashCount: Long = 0
     private var longTaskCount: Long = 0
@@ -490,6 +491,7 @@ internal open class RumViewScope(
         if (event.viewId == viewId) {
             pendingActionCount--
             actionCount++
+            frustrationCount += event.frustrationCount
             sendViewUpdate(event, writer)
         }
     }
@@ -585,7 +587,8 @@ internal open class RumViewScope(
                 memoryMax = memoryInfo?.maxValue,
                 refreshRateAverage = refreshRateInfo?.meanValue?.let { it * refreshRateScale },
                 refreshRateMin = refreshRateInfo?.minValue?.let { it * refreshRateScale },
-                isSlowRendered = isSlowRendered
+                isSlowRendered = isSlowRendered,
+                frustration = ViewEvent.Frustration(frustrationCount.toLong())
             ),
             usr = ViewEvent.Usr(
                 id = user.id,

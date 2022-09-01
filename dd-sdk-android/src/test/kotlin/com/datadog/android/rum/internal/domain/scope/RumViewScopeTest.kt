@@ -68,6 +68,7 @@ import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -661,6 +662,7 @@ internal class RumViewScopeTest {
                 hasCrashCount(0)
                 hasResourceCount(0)
                 hasActionCount(0)
+                hasFrustrationCount(0)
                 hasLongTaskCount(0)
                 hasFrozenFrameCount(0)
                 hasCpuMetric(null)
@@ -725,6 +727,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -789,6 +792,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -859,6 +863,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -926,6 +931,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -993,6 +999,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1048,6 +1055,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1132,6 +1140,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1198,6 +1207,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1284,6 +1294,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1372,6 +1383,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1439,6 +1451,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1505,6 +1518,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1564,6 +1578,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1666,6 +1681,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1745,6 +1761,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(1)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1801,10 +1818,11 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send event 𝕎 handleEvent(ActionSent) on active view`(
-        @LongForgery(1) pending: Long
+        @LongForgery(1) pending: Long,
+        @IntForgery(0) frustrationCount: Int
     ) {
         // Given
-        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId)
+        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount)
         testedScope.pendingActionCount = pending
 
         // When
@@ -1824,6 +1842,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(1)
+                    hasFrustrationCount(frustrationCount.toLong())
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1861,12 +1880,13 @@ internal class RumViewScopeTest {
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(ActionSent) on active view {unknown viewId}`(
         @Forgery viewUuid: UUID,
-        @LongForgery(1) pending: Long
+        @LongForgery(1) pending: Long,
+        @IntForgery(0) frustrationCount: Int
     ) {
         // Given
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
-        fakeEvent = RumRawEvent.ActionSent(viewId)
+        fakeEvent = RumRawEvent.ActionSent(viewId, frustrationCount)
         testedScope.pendingActionCount = pending
 
         // When
@@ -1905,6 +1925,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(1)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1967,6 +1988,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(1)
                     hasFrozenFrameCount(1)
                     hasCpuMetric(null)
@@ -2098,6 +2120,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -2177,6 +2200,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(1)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -2233,11 +2257,13 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(ActionSent) on stopped view`() {
+    fun `𝕄 send event 𝕎 handleEvent(ActionSent) on stopped view`(
+        @IntForgery(0) frustrationCount: Int
+    ) {
         // Given
         testedScope.stopped = true
         testedScope.pendingActionCount = 1
-        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId)
+        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -2256,6 +2282,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(1)
+                    hasFrustrationCount(frustrationCount.toLong())
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -2293,14 +2320,15 @@ internal class RumViewScopeTest {
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(ActionSent) on stopped view {unknown viewId}`(
         @Forgery viewUuid: UUID,
-        @LongForgery(1) pending: Long
+        @LongForgery(1) pending: Long,
+        @IntForgery(0) frustrationCount: Int
     ) {
         // Given
         testedScope.stopped = true
         testedScope.pendingActionCount = pending
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
-        fakeEvent = RumRawEvent.ActionSent(viewId)
+        fakeEvent = RumRawEvent.ActionSent(viewId, frustrationCount)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -2335,6 +2363,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(1)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -2392,14 +2421,15 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 close the scope 𝕎 handleEvent(ActionSent) on stopped view { ApplicationStarted }`(
-        @LongForgery(0) duration: Long
+        @LongForgery(0) duration: Long,
+        @IntForgery(0) frustrationCount: Int
     ) {
         // Given
         testedScope.stopped = true
         val eventTime = Time()
         val startedNanos = eventTime.nanoTime - duration
         fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
-        val fakeActionSent = RumRawEvent.ActionSent(testedScope.viewId)
+        val fakeActionSent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount)
 
         // When
         testedScope.handleEvent(fakeEvent, mockWriter)
@@ -2532,6 +2562,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -3701,6 +3732,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(1)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -3872,6 +3904,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(1)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -4176,6 +4209,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(1)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -4755,6 +4789,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -4819,6 +4854,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -4902,6 +4938,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -4968,6 +5005,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5008,6 +5046,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5090,6 +5129,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(expectedTotal)
@@ -5155,6 +5195,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5230,6 +5271,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5305,6 +5347,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5395,6 +5438,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5485,6 +5529,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5577,6 +5622,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5669,6 +5715,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5762,6 +5809,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5855,6 +5903,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5907,7 +5956,7 @@ internal class RumViewScopeTest {
                 forge.aBool(),
                 emptyMap()
             ),
-            RumRawEvent.ActionSent(forge.anAlphabeticalString()),
+            RumRawEvent.ActionSent(forge.anAlphabeticalString(), forge.aPositiveInt()),
             RumRawEvent.StartResource(
                 forge.anAlphabeticalString(),
                 forge.anAlphabeticalString(),
