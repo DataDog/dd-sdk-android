@@ -13,7 +13,7 @@ import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.rum.internal.monitor.EventType
+import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -165,7 +165,10 @@ internal class RumDataWriterTest {
         testedWriter.onDataWritten(actionEvent, fakeSerializedData)
 
         // Then
-        verify(rumMonitor.mockInstance).eventSent(actionEvent.view.id, EventType.ACTION)
+        verify(rumMonitor.mockInstance).eventSent(
+            actionEvent.view.id,
+            StorageEvent.Action(frustrationCount = actionEvent.action.frustration?.type?.size ?: 0)
+        )
         verifyZeroInteractions(mockFileHandler)
     }
 
@@ -188,7 +191,7 @@ internal class RumDataWriterTest {
         testedWriter.onDataWritten(resourceEvent, fakeSerializedData)
 
         // Then
-        verify(rumMonitor.mockInstance).eventSent(resourceEvent.view.id, EventType.RESOURCE)
+        verify(rumMonitor.mockInstance).eventSent(resourceEvent.view.id, StorageEvent.Resource)
         verifyZeroInteractions(mockFileHandler)
     }
 
@@ -214,7 +217,7 @@ internal class RumDataWriterTest {
         testedWriter.onDataWritten(errorEvent, fakeSerializedData)
 
         // Then
-        verify(rumMonitor.mockInstance).eventSent(fakeEvent.view.id, EventType.ERROR)
+        verify(rumMonitor.mockInstance).eventSent(fakeEvent.view.id, StorageEvent.Error)
         verifyZeroInteractions(mockFileHandler)
     }
 
@@ -261,7 +264,7 @@ internal class RumDataWriterTest {
         testedWriter.onDataWritten(longTaskEvent, fakeSerializedData)
 
         // Then
-        verify(rumMonitor.mockInstance).eventSent(longTaskEvent.view.id, EventType.LONG_TASK)
+        verify(rumMonitor.mockInstance).eventSent(longTaskEvent.view.id, StorageEvent.LongTask)
         verifyZeroInteractions(mockFileHandler)
     }
 
@@ -282,7 +285,10 @@ internal class RumDataWriterTest {
         testedWriter.onDataWritten(frozenFrameEvent, fakeSerializedData)
 
         // Then
-        verify(rumMonitor.mockInstance).eventSent(frozenFrameEvent.view.id, EventType.FROZEN_FRAME)
+        verify(rumMonitor.mockInstance).eventSent(
+            frozenFrameEvent.view.id,
+            StorageEvent.FrozenFrame
+        )
         verifyZeroInteractions(mockFileHandler)
     }
 

@@ -122,6 +122,7 @@ internal sealed class RumRawEvent {
 
     internal data class ActionSent(
         val viewId: String,
+        val frustrationCount: Int,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 

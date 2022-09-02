@@ -30,7 +30,14 @@ internal class ActionEventForgeryFactory :
                 crash = forge.aNullable { ActionEvent.Crash(aLong(0, 512)) },
                 resource = forge.aNullable { ActionEvent.Resource(aLong(0, 512)) },
                 longTask = forge.aNullable { ActionEvent.LongTask(aLong(0, 512)) },
-                loadingTime = forge.aNullable { aPositiveLong(strict = true) }
+                loadingTime = forge.aNullable { aPositiveLong(strict = true) },
+                frustration = forge.aNullable {
+                    ActionEvent.Frustration(
+                        type = forge.aList {
+                            forge.aValueFrom(ActionEvent.Type::class.java)
+                        }.distinct()
+                    )
+                }
             ),
             view = ActionEvent.View(
                 id = forge.getForgery<UUID>().toString(),

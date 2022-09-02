@@ -122,6 +122,16 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasFrustrationCount(expected: Long?): ViewEventAssert {
+        assertThat(actual.view.frustration?.count)
+            .overridingErrorMessage(
+                "Expected event data to have view.frustration.count $expected " +
+                    "but was ${actual.view.frustration?.count}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasCrashCount(expected: Long?): ViewEventAssert {
         assertThat(actual.view.crash?.count)
             .overridingErrorMessage(

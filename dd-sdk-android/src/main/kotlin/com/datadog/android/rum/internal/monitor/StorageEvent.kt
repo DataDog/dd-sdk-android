@@ -6,11 +6,11 @@
 
 package com.datadog.android.rum.internal.monitor
 
-internal enum class EventType {
-    VIEW,
-    ACTION,
-    RESOURCE,
-    ERROR,
-    LONG_TASK,
-    FROZEN_FRAME
+internal sealed class StorageEvent {
+    object View : StorageEvent()
+    data class Action(val frustrationCount: Int) : StorageEvent()
+    object Resource : StorageEvent()
+    object Error : StorageEvent()
+    object LongTask : StorageEvent()
+    object FrozenFrame : StorageEvent()
 }

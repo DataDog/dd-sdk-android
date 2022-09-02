@@ -63,7 +63,8 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
                 cpuTicksCount = forge.aNullable { aPositiveDouble() },
                 cpuTicksPerSecond = forge.aNullable { aPositiveDouble() },
                 refreshRateAverage = forge.aNullable { aPositiveDouble() },
-                refreshRateMin = forge.aNullable { aPositiveDouble() }
+                refreshRateMin = forge.aNullable { aPositiveDouble() },
+                frustration = forge.aNullable { ViewEvent.Frustration(aPositiveLong()) }
             ),
             connectivity = forge.aNullable {
                 ViewEvent.Connectivity(
