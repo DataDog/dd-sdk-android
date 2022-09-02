@@ -72,11 +72,11 @@ def github_create_pr(repository: str, branch_name: str, base_name: str, version:
     }
     body = "This PR has been created automatically by the CI"
     if previous_version:
-        diff = "Updating from version '{previous_version}' to version '{version}': [diff](https://github.com/DataDog/dd-sdk-android/compare/{previous_version}...{version})".format(previous_version=previous_version, version=version)
-        body = "\n".join([body, diff])
+        diff = "Updating from version {previous_version} to version {version}: [diff](https://github.com/DataDog/dd-sdk-android/compare/{previous_version}...{version})".format(previous_version=previous_version, version=version)
+        body = "\\n".join([body, diff])
     data = '{"body": "' + body + '", ' \
            '"title": "Update to version ' + version + '", ' \
-                                                      '"base":"' + base_name + '", "head":"' + branch_name + '"}'
+           '"base":"' + base_name + '", "head":"' + branch_name + '"}'
 
     url = "https://api.github.com/repos/DataDog/" + repository + "/pulls"
     response = requests.post(url=url, headers=headers, data=data)

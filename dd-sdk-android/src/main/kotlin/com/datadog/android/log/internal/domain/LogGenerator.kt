@@ -27,6 +27,7 @@ internal class LogGenerator(
     internal val timeProvider: TimeProvider,
     internal val sdkVersion: String,
     envName: String,
+    variant: String,
     internal val appVersionProvider: AppVersionProvider
 ) {
 
@@ -47,6 +48,12 @@ internal class LogGenerator(
                 null
             }
         }
+
+    private val variantTag = if (variant.isNotEmpty()) {
+        "${LogAttributes.VARIANT}:$variant"
+    } else {
+        null
+    }
 
     @Suppress("LongParameterList")
     fun generateLog(
@@ -127,6 +134,9 @@ internal class LogGenerator(
             combinedTags.add(it)
         }
         appVersionTag?.let {
+            combinedTags.add(it)
+        }
+        variantTag?.let {
             combinedTags.add(it)
         }
 

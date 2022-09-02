@@ -79,6 +79,7 @@ internal object CrashReportsFeature : SdkFeature<LogEvent, Configuration.Feature
                 CoreFeature.timeProvider,
                 CoreFeature.sdkVersion,
                 CoreFeature.envName,
+                CoreFeature.variant,
                 CoreFeature.packageVersionProvider
             ),
             writer = persistenceStrategy.getWriter(),

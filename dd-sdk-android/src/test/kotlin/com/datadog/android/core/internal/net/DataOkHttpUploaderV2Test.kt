@@ -320,7 +320,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
 
     @Test
     fun `𝕄 fail and warn 𝕎 upload() {invalid API_KEY header}`(
-        @StringForgery(regex = "[a-z]+[\u007F..\u00FF]+") invalidValue: String
+        @StringForgery(regex = "[a-z]+[\u007F-\u00FF]+") invalidValue: String
     ) {
         // Given
         fakeClientToken = invalidValue
