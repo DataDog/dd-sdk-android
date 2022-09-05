@@ -46,9 +46,12 @@ internal class ScreenRecorderTest {
     @Mock
     lateinit var mockTimeProvider: TimeProvider
 
+    @Mock
+    lateinit var mockSnapshotProducer: SnapshotProducer
+
     @BeforeEach
     fun `set up`() {
-        testedRecorder = ScreenRecorder(mockProcessor, mockTimeProvider)
+        testedRecorder = ScreenRecorder(mockProcessor, mockSnapshotProducer, mockTimeProvider)
     }
 
     // region Tests

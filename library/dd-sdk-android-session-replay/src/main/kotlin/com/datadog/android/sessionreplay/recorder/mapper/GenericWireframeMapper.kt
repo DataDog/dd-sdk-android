@@ -12,12 +12,11 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.datadog.android.sessionreplay.model.MobileSegment
 
-internal class GenericWireframeMapper(
-    private val viewWireframeMapper: ViewWireframeMapper = ViewWireframeMapper(),
-    private val imageMapper: ViewScreenshotWireframeMapper =
-        ViewScreenshotWireframeMapper(viewWireframeMapper),
-    private val textMapper: TextWireframeMapper = TextWireframeMapper(viewWireframeMapper),
-    private val buttonMapper: ButtonWireframeMapper = ButtonWireframeMapper(textMapper)
+internal abstract class GenericWireframeMapper(
+    private val viewWireframeMapper: ViewWireframeMapper,
+    internal val imageMapper: ViewScreenshotWireframeMapper,
+    private val textMapper: TextWireframeMapper,
+    private val buttonMapper: ButtonWireframeMapper
 ) : WireframeMapper<View, MobileSegment.Wireframe> {
 
     override fun map(view: View, pixelsDensity: Float): MobileSegment.Wireframe {

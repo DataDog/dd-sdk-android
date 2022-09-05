@@ -28,7 +28,7 @@ import org.mockito.quality.Strictness
     ExtendWith(MockitoExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class GenericWireframeMapperTest {
+internal class AllowAllWireframeMapperTest {
     @FloatForgery
     var fakePixelDensity: Float = 1f
 
@@ -56,11 +56,11 @@ internal class GenericWireframeMapperTest {
     @Mock
     lateinit var mockButtonWireframe: MobileSegment.Wireframe.TextWireframe
 
-    lateinit var testedGenericWireframeMapper: GenericWireframeMapper
+    lateinit var testedAllowAllWireframeMapper: AllowAllWireframeMapper
 
     @BeforeEach
     fun `set up`() {
-        testedGenericWireframeMapper = GenericWireframeMapper(
+        testedAllowAllWireframeMapper = AllowAllWireframeMapper(
             mockViewWireframeMapper,
             mockImageWireframeMapper,
             mockTextWireframeMapper,
@@ -76,7 +76,7 @@ internal class GenericWireframeMapperTest {
             .thenReturn(mockShapeWireframe)
 
         // When
-        val wireframe = testedGenericWireframeMapper.map(mockView, fakePixelDensity)
+        val wireframe = testedAllowAllWireframeMapper.map(mockView, fakePixelDensity)
 
         // Then
         assertThat(wireframe).isEqualTo(mockShapeWireframe)
@@ -90,7 +90,7 @@ internal class GenericWireframeMapperTest {
             .thenReturn(mockImageWireframe)
 
         // When
-        val wireframe = testedGenericWireframeMapper.map(mockView, fakePixelDensity)
+        val wireframe = testedAllowAllWireframeMapper.map(mockView, fakePixelDensity)
 
         // Then
         assertThat(wireframe).isEqualTo(mockImageWireframe)
@@ -104,7 +104,7 @@ internal class GenericWireframeMapperTest {
             .thenReturn(mockTextWireframe)
 
         // When
-        val wireframe = testedGenericWireframeMapper.map(mockView, fakePixelDensity)
+        val wireframe = testedAllowAllWireframeMapper.map(mockView, fakePixelDensity)
 
         // Then
         assertThat(wireframe).isEqualTo(mockTextWireframe)
@@ -118,9 +118,14 @@ internal class GenericWireframeMapperTest {
             .thenReturn(mockButtonWireframe)
 
         // When
-        val wireframe = testedGenericWireframeMapper.map(mockView, fakePixelDensity)
+        val wireframe = testedAllowAllWireframeMapper.map(mockView, fakePixelDensity)
 
         // Then
         assertThat(wireframe).isEqualTo(mockButtonWireframe)
+    }
+
+    @Test
+    fun `M return the ImageMapper W getImageMapper`() {
+        assertThat(testedAllowAllWireframeMapper.imageMapper).isEqualTo(mockImageWireframeMapper)
     }
 }

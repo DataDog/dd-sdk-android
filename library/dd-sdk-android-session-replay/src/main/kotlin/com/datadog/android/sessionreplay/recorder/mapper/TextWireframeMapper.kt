@@ -12,7 +12,7 @@ import android.widget.TextView
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.densityNormalized
 
-internal class TextWireframeMapper(
+internal open class TextWireframeMapper(
     private val viewWireframeMapper: ViewWireframeMapper = ViewWireframeMapper()
 ) : BaseWireframeMapper<TextView, MobileSegment.Wireframe.TextWireframe>() {
 
@@ -26,46 +26,55 @@ internal class TextWireframeMapper(
             shapeWireframe.height,
             shapeStyle = shapeWireframe.shapeStyle,
             border = shapeWireframe.border,
-            text = view.text.toString(),
-            textStyle = view.resolveTextStyle(pixelsDensity),
-            textPosition = view.resolveTextPosition(pixelsDensity)
+            text = resolveTextValue(view),
+            textStyle = resolveTextStyle(view, pixelsDensity),
+            textPosition = resolveTextPosition(view, pixelsDensity)
         )
+    }
+
+    protected open fun resolveTextValue(textView: TextView): String {
+        return textView.text.toString()
     }
 
     // region Internal
 
-    private fun TextView.resolveTextStyle(pixelsDensity: Float): MobileSegment.TextStyle {
+    private fun resolveTextStyle(textView: TextView, pixelsDensity: Float): MobileSegment
+    .TextStyle {
         return MobileSegment.TextStyle(
-            this.typeface.resolveFontFamily(),
-            this.textSize.toLong().densityNormalized(pixelsDensity),
-            colorAndAlphaAsStringHexa(currentTextColor, OPAQUE_AS_HEXA)
+            resolveFontFamily(textView.typeface),
+            textView.textSize.toLong().densityNormalized(pixelsDensity),
+            colorAndAlphaAsStringHexa(textView.currentTextColor, OPAQUE_AS_HEXA)
         )
     }
 
-    private fun Typeface.resolveFontFamily(): String {
+    private fun resolveFontFamily(typeface: Typeface): String {
         return when {
-            this === Typeface.SANS_SERIF -> SANS_SERIF_FAMILY_NAME
-            this === Typeface.MONOSPACE -> MONOSPACE_FAMILY_NAME
-            this === Typeface.SERIF -> SERIF_FAMILY_NAME
+            typeface === Typeface.SANS_SERIF -> SANS_SERIF_FAMILY_NAME
+            typeface === Typeface.MONOSPACE -> MONOSPACE_FAMILY_NAME
+            typeface === Typeface.SERIF -> SERIF_FAMILY_NAME
             else -> SANS_SERIF_FAMILY_NAME
         }
     }
 
-    private fun TextView.resolveTextPosition(pixelsDensity: Float): MobileSegment.TextPosition {
-        return MobileSegment.TextPosition(resolvePadding(pixelsDensity), resolveAlignment())
-    }
-
-    private fun TextView.resolvePadding(pixelsDensity: Float): MobileSegment.Padding {
-        return MobileSegment.Padding(
-            top = this.totalPaddingTop.densityNormalized(pixelsDensity).toLong(),
-            bottom = this.totalPaddingBottom.densityNormalized(pixelsDensity).toLong(),
-            left = this.totalPaddingStart.densityNormalized(pixelsDensity).toLong(),
-            right = this.totalPaddingEnd.densityNormalized(pixelsDensity).toLong()
+    private fun resolveTextPosition(textView: TextView, pixelsDensity: Float):
+        MobileSegment.TextPosition {
+        return MobileSegment.TextPosition(
+            resolvePadding(textView, pixelsDensity),
+            resolveAlignment(textView)
         )
     }
 
-    private fun TextView.resolveAlignment(): MobileSegment.Alignment {
-        return when (this.textAlignment) {
+    private fun resolvePadding(textView: TextView, pixelsDensity: Float): MobileSegment.Padding {
+        return MobileSegment.Padding(
+            top = textView.totalPaddingTop.densityNormalized(pixelsDensity).toLong(),
+            bottom = textView.totalPaddingBottom.densityNormalized(pixelsDensity).toLong(),
+            left = textView.totalPaddingStart.densityNormalized(pixelsDensity).toLong(),
+            right = textView.totalPaddingEnd.densityNormalized(pixelsDensity).toLong()
+        )
+    }
+
+    private fun resolveAlignment(textView: TextView): MobileSegment.Alignment {
+        return when (textView.textAlignment) {
             TextView.TEXT_ALIGNMENT_CENTER -> MobileSegment.Alignment(
                 horizontal = MobileSegment.Horizontal.CENTER,
                 vertical = MobileSegment.Vertical.CENTER
@@ -80,7 +89,7 @@ internal class TextWireframeMapper(
                 horizontal = MobileSegment.Horizontal.LEFT,
                 vertical = MobileSegment.Vertical.CENTER
             )
-            TextView.TEXT_ALIGNMENT_GRAVITY -> resolveAlignmentFromGravity()
+            TextView.TEXT_ALIGNMENT_GRAVITY -> resolveAlignmentFromGravity(textView)
             else -> MobileSegment.Alignment(
                 horizontal = MobileSegment.Horizontal.LEFT,
                 vertical = MobileSegment.Vertical.CENTER
@@ -88,8 +97,8 @@ internal class TextWireframeMapper(
         }
     }
 
-    private fun TextView.resolveAlignmentFromGravity(): MobileSegment.Alignment {
-        val horizontalAlignment = when (this.gravity.and(Gravity.HORIZONTAL_GRAVITY_MASK)) {
+    private fun resolveAlignmentFromGravity(textView: TextView): MobileSegment.Alignment {
+        val horizontalAlignment = when (textView.gravity.and(Gravity.HORIZONTAL_GRAVITY_MASK)) {
             Gravity.START,
             Gravity.LEFT -> MobileSegment.Horizontal.LEFT
             Gravity.END,
@@ -98,7 +107,7 @@ internal class TextWireframeMapper(
             Gravity.CENTER_HORIZONTAL -> MobileSegment.Horizontal.CENTER
             else -> MobileSegment.Horizontal.LEFT
         }
-        val verticalAlignment = when (this.gravity.and(Gravity.VERTICAL_GRAVITY_MASK)) {
+        val verticalAlignment = when (textView.gravity.and(Gravity.VERTICAL_GRAVITY_MASK)) {
             Gravity.TOP -> MobileSegment.Vertical.TOP
             Gravity.BOTTOM -> MobileSegment.Vertical.BOTTOM
             Gravity.CENTER_VERTICAL -> MobileSegment.Vertical.CENTER
