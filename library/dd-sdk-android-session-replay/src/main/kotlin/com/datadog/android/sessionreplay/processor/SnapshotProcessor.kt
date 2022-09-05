@@ -18,18 +18,22 @@ import com.datadog.android.sessionreplay.writer.RecordWriter
 import com.datadog.android.sessionreplay.writer.Writer
 import java.lang.NullPointerException
 import java.util.LinkedList
-import java.util.Stack
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.TimeUnit
 
 internal class SnapshotProcessor(
     private val rumContextProvider: RumContextProvider,
     private val timeProvider: TimeProvider,
     private val executorService: ExecutorService,
-    private val writer: Writer = RecordWriter()
+    private val writer: Writer = RecordWriter(),
+    private val mutationResolver: MutationResolver = MutationResolver(),
+    private val nodeFlattener: NodeFlattener = NodeFlattener()
 ) : Processor {
 
     internal var prevRumContext: SessionReplayRumContext = SessionReplayRumContext()
+    private var prevSnapshot: List<MobileSegment.Wireframe> = emptyList()
+    private var lastSnapshotTimestamp = 0L
 
     @MainThread
     override fun process(node: Node) {
@@ -108,7 +112,7 @@ internal class SnapshotProcessor(
         timestamp: Long,
         snapshot: Node
     ) {
-        val wireframes = filterOutInvalidWireframes(flattenNode(snapshot))
+        val wireframes = nodeFlattener.flattenNode(snapshot)
 
         if (wireframes.isEmpty()) {
             // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
@@ -116,7 +120,9 @@ internal class SnapshotProcessor(
         }
 
         val records: MutableList<MobileSegment.MobileRecord> = LinkedList()
+        var fullSnapshotRequired = isLastFullSnapshotTime()
         if (isNewView(prevRumContext, newRumContext)) {
+            fullSnapshotRequired = true
             handleViewEndRecord(prevRumContext, timestamp)
             val rootWireframeBounds = wireframes[0].bounds()
             val metaRecord = MobileSegment.MobileRecord.MetaRecord(
@@ -131,12 +137,29 @@ internal class SnapshotProcessor(
             records.add(focusRecord)
         }
 
-        val record = MobileSegment.MobileRecord.MobileFullSnapshotRecord(
-            timestamp,
-            MobileSegment.Data(wireframes)
-        )
+        val record = if (fullSnapshotRequired) {
+            MobileSegment.MobileRecord.MobileFullSnapshotRecord(
+                timestamp,
+                MobileSegment.Data(wireframes)
+            )
+        } else {
+            MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
+                timestamp,
+                mutationResolver.resolveMutations(prevSnapshot, wireframes)
+            )
+        }
         records.add(record)
+        prevSnapshot = wireframes
         writer.write(bundleRecordInEnrichedRecord(newRumContext, records))
+    }
+
+    private fun isLastFullSnapshotTime(): Boolean {
+        return if (System.nanoTime() - lastSnapshotTimestamp >= FULL_SNAPSHOT_INTERVAL_IN_NS) {
+            lastSnapshotTimestamp = System.nanoTime()
+            true
+        } else {
+            false
+        }
     }
 
     private fun handleViewEndRecord(prevRumContext: SessionReplayRumContext, timestamp: Long) {
@@ -206,43 +229,6 @@ internal class SnapshotProcessor(
             newContext.viewId != currentContext.viewId
     }
 
-    private fun filterOutInvalidWireframes(wireframes: List<MobileSegment.Wireframe>):
-        List<MobileSegment.Wireframe> {
-        return wireframes.filterIndexed { index, wireframe ->
-            checkWireframe(wireframe, wireframes.drop(index + 1))
-        }
-    }
-
-    private fun flattenNode(root: Node): List<MobileSegment.Wireframe> {
-        val stack = Stack<Node>()
-        val list = LinkedList<MobileSegment.Wireframe>()
-        stack.push(root)
-        while (stack.isNotEmpty()) {
-            val node = stack.pop()
-            list.addAll(node.wireframes)
-            for (i in node.children.count() - 1 downTo 0) {
-                stack.push(node.children[i])
-            }
-        }
-        return list
-    }
-
-    private fun checkWireframe(
-        wireframe: MobileSegment.Wireframe,
-        topWireframes: List<MobileSegment.Wireframe>
-    ): Boolean {
-        val wireframeBounds = wireframe.bounds()
-        if (wireframeBounds.width <= 0 || wireframeBounds.height <= 0) {
-            return false
-        }
-        topWireframes.forEach {
-            if (it.bounds().isCovering(wireframeBounds)) {
-                return false
-            }
-        }
-        return true
-    }
-
     private fun MobileSegment.Wireframe.bounds(): Bounds {
         return when (this) {
             is MobileSegment.Wireframe.ShapeWireframe -> this.bounds()
@@ -258,14 +244,11 @@ internal class SnapshotProcessor(
         return Bounds(x, y, width, height)
     }
 
-    private fun Bounds.isCovering(other: Bounds): Boolean {
-        return this.x <= other.x &&
-            x + width >= other.x + other.width &&
-            y <= other.y &&
-            y + height >= other.y + other.height
-    }
-
     private data class Bounds(val x: Long, val y: Long, val width: Long, val height: Long)
 
     // endregion
+
+    companion object {
+        internal val FULL_SNAPSHOT_INTERVAL_IN_NS = TimeUnit.MILLISECONDS.toNanos(3000)
+    }
 }
