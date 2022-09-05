@@ -21,7 +21,8 @@ class DeviceInfoForgeryFactory : ForgeryFactory<DeviceInfo> {
             deviceBuildId = forge.anAlphaNumericalString(),
             osName = forge.aString(),
             osVersion = forge.aString(),
-            osMajorVersion = forge.aString()
+            osMajorVersion = forge.aString(),
+            architecture = forge.aString()
         )
     }
 }

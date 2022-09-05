@@ -552,7 +552,8 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         name: String,
         model: String,
         brand: String,
-        type: ResourceEvent.DeviceType
+        type: ResourceEvent.DeviceType,
+        architecture: String
     ): ResourceEventAssert {
         assertThat(actual.device?.name)
             .overridingErrorMessage(
@@ -574,6 +575,12 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
                 "Expected event data to have device.type $type but was ${actual.device?.type}"
             )
             .isEqualTo(type)
+        assertThat(actual.device?.architecture)
+            .overridingErrorMessage(
+                "Expected event data to have device.architecture $architecture" +
+                    " but was ${actual.device?.architecture}"
+            )
+            .isEqualTo(architecture)
         return this
     }
 

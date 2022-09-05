@@ -15,6 +15,7 @@ import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.sampling.Sampler
+import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
@@ -107,6 +108,9 @@ internal class DatadogLogHandlerTest {
     lateinit var mockTimeProvider: TimeProvider
 
     @Mock
+    lateinit var mockAppVersionProvider: AppVersionProvider
+
+    @Mock
     lateinit var mockSampler: Sampler
 
     lateinit var fakeAppVersion: String
@@ -114,6 +118,8 @@ internal class DatadogLogHandlerTest {
     lateinit var fakeEnvName: String
 
     lateinit var fakeSdkVersion: String
+
+    lateinit var fakeVariant: String
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -129,6 +135,7 @@ internal class DatadogLogHandlerTest {
         )
         fakeAppVersion = forge.aStringMatching("^[0-9]\\.[0-9]\\.[0-9]")
         fakeEnvName = forge.aStringMatching("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
+        fakeVariant = forge.anAlphabeticalString()
         fakeServiceName = forge.anAlphabeticalString()
         fakeLoggerName = forge.anAlphabeticalString()
         fakeMessage = forge.anAlphabeticalString()
@@ -136,8 +143,10 @@ internal class DatadogLogHandlerTest {
         fakeAttributes = forge.aMap { anAlphabeticalString() to anInt() }
         fakeTags = forge.aList { anAlphabeticalString() }.toSet()
         fakeSdkVersion = forge.anAlphabeticalString()
+
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        whenever(mockAppVersionProvider.version) doReturn fakeAppVersion
 
         testedHandler = DatadogLogHandler(
             DatadogLogGenerator(
@@ -148,7 +157,8 @@ internal class DatadogLogHandlerTest {
                 mockTimeProvider,
                 fakeSdkVersion,
                 fakeEnvName,
-                fakeAppVersion
+                fakeVariant,
+                mockAppVersionProvider
             ),
             mockWriter
         )
@@ -195,7 +205,8 @@ internal class DatadogLogHandlerTest {
                 .hasExactlyTags(
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion"
+                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion",
+                        "${LogAttributes.VARIANT}:$fakeVariant"
                     )
                 )
                 .doesNotHaveError()
@@ -216,7 +227,8 @@ internal class DatadogLogHandlerTest {
                 mockTimeProvider,
                 fakeSdkVersion,
                 fakeEnvName,
-                fakeAppVersion
+                fakeVariant,
+                mockAppVersionProvider
             ),
             mockWriter,
             minLogPriority = forge.anInt(min = fakeLevel + 1)
@@ -270,7 +282,8 @@ internal class DatadogLogHandlerTest {
                 .hasExactlyTags(
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion"
+                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion",
+                        "${LogAttributes.VARIANT}:$fakeVariant"
                     )
                 )
                 .hasError(
@@ -372,7 +385,8 @@ internal class DatadogLogHandlerTest {
                 .hasExactlyTags(
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion"
+                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion",
+                        "${LogAttributes.VARIANT}:$fakeVariant"
                     )
                 )
         }
@@ -423,7 +437,8 @@ internal class DatadogLogHandlerTest {
                 .hasExactlyTags(
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion"
+                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion",
+                        "${LogAttributes.VARIANT}:$fakeVariant"
                     )
                 )
         }
@@ -441,7 +456,8 @@ internal class DatadogLogHandlerTest {
                 mockTimeProvider,
                 fakeSdkVersion,
                 fakeEnvName,
-                fakeAppVersion
+                fakeVariant,
+                mockAppVersionProvider
             ),
             mockWriter
         )
@@ -476,7 +492,8 @@ internal class DatadogLogHandlerTest {
                 .hasExactlyTags(
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion"
+                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion",
+                        "${LogAttributes.VARIANT}:$fakeVariant"
                     )
                 )
         }
@@ -495,7 +512,8 @@ internal class DatadogLogHandlerTest {
                 mockTimeProvider,
                 fakeSdkVersion,
                 fakeEnvName,
-                fakeAppVersion
+                fakeVariant,
+                mockAppVersionProvider
             ),
             mockWriter
         )
@@ -523,7 +541,8 @@ internal class DatadogLogHandlerTest {
                 .hasExactlyTags(
                     setOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion"
+                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion",
+                        "${LogAttributes.VARIANT}:$fakeVariant"
                     )
                 )
                 .doesNotHaveError()
@@ -655,7 +674,8 @@ internal class DatadogLogHandlerTest {
                 mockTimeProvider,
                 fakeSdkVersion,
                 fakeEnvName,
-                fakeAppVersion
+                fakeVariant,
+                mockAppVersionProvider
             ),
             mockWriter,
             bundleWithTraces = false
@@ -692,7 +712,8 @@ internal class DatadogLogHandlerTest {
                 mockTimeProvider,
                 fakeSdkVersion,
                 fakeEnvName,
-                fakeAppVersion
+                fakeVariant,
+                mockAppVersionProvider
             ),
             mockWriter,
             bundleWithTraces = false,
@@ -726,7 +747,8 @@ internal class DatadogLogHandlerTest {
                 mockTimeProvider,
                 fakeSdkVersion,
                 fakeEnvName,
-                fakeAppVersion
+                fakeVariant,
+                mockAppVersionProvider
             ),
             mockWriter,
             bundleWithTraces = false,
@@ -765,7 +787,8 @@ internal class DatadogLogHandlerTest {
                 .hasExactlyTags(
                     fakeTags + setOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion"
+                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion",
+                        "${LogAttributes.VARIANT}:$fakeVariant"
                     )
                 )
         }

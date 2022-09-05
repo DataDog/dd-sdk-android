@@ -66,24 +66,9 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
         val errorMessage = intent.getStringExtra(TELEMETRY_ERROR_MESSAGE_KEY)
             ?: throw IllegalArgumentException("Telemetry error message should be provided")
 
-        GlobalRum.get().sendDebugTelemetry(debugMessage)
-        GlobalRum.get().sendErrorTelemetry(errorMessage)
-        GlobalRum.get()
-            .sendErrorTelemetry(errorMessage, forge.aThrowable())
-    }
-
-    private fun RumMonitor.sendDebugTelemetry(message: String) {
-        this.invokeMethod("sendDebugTelemetryEvent", message)
-    }
-
-    private fun RumMonitor.sendErrorTelemetry(message: String, throwable: Throwable? = null) {
-        this.invokeMethod("sendErrorTelemetryEvent", message, throwable)
-    }
-
-    private fun RumMonitor.invokeMethod(methodName: String, vararg args: Any?) {
-        val method = this::class.java.declaredMethods.first { it.name == methodName }
-        method.isAccessible = true
-        method.invoke(this, *args)
+        Datadog._internal._telemetry.debug(debugMessage)
+        Datadog._internal._telemetry.error(errorMessage)
+        Datadog._internal._telemetry.error(errorMessage, forge.aThrowable())
     }
 
     private fun Forge.aThrowable() = anElementFrom(anError(), anException())

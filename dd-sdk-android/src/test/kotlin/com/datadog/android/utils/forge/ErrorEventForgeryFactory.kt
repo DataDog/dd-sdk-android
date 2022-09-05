@@ -106,7 +106,8 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
                     name = androidInfoProvider.deviceName,
                     model = androidInfoProvider.deviceModel,
                     brand = androidInfoProvider.deviceBrand,
-                    type = androidInfoProvider.deviceType.toErrorSchemaType()
+                    type = androidInfoProvider.deviceType.toErrorSchemaType(),
+                    architecture = androidInfoProvider.architecture
                 )
             },
             context = forge.aNullable {

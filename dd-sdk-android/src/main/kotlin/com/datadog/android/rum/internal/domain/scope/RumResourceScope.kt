@@ -224,7 +224,8 @@ internal class RumResourceScope(
                 type = sdkContext.deviceInfo.deviceType.toResourceSchemaType(),
                 name = sdkContext.deviceInfo.deviceName,
                 model = sdkContext.deviceInfo.deviceModel,
-                brand = sdkContext.deviceInfo.deviceBrand
+                brand = sdkContext.deviceInfo.deviceBrand,
+                architecture = sdkContext.deviceInfo.architecture
             ),
             context = ResourceEvent.Context(additionalProperties = attributes),
             dd = ResourceEvent.Dd(
@@ -318,7 +319,8 @@ internal class RumResourceScope(
                 type = sdkContext.deviceInfo.deviceType.toErrorSchemaType(),
                 name = sdkContext.deviceInfo.deviceName,
                 model = sdkContext.deviceInfo.deviceModel,
-                brand = sdkContext.deviceInfo.deviceBrand
+                brand = sdkContext.deviceInfo.deviceBrand,
+                architecture = sdkContext.deviceInfo.architecture
             ),
             context = ErrorEvent.Context(additionalProperties = attributes),
             dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))

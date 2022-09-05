@@ -566,6 +566,74 @@ internal class DatadogCoreInitializationTest {
     //     )
     //         .containsOnly(CoreFeature.DEFAULT_SDK_VERSION)
     // }
+//
+//    @Test
+//    fun `𝕄 apply app version 𝕎 applyAdditionalConfig(config) { with app version }`(
+//        @StringForgery appVersion: String
+//    ) {
+//        // Given
+//        val config = Configuration.Builder(
+//            logsEnabled = true,
+//            tracesEnabled = true,
+//            crashReportsEnabled = true,
+//            rumEnabled = true
+//        )
+//            .setAdditionalConfiguration(mapOf(Datadog.DD_APP_VERSION_TAG to appVersion))
+//            .build()
+//        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+//
+//        // When
+//        Datadog.initialize(DatadogTest.appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
+//
+//        // Then
+//        assertThat(CoreFeature.packageVersionProvider.version).isEqualTo(appVersion)
+//    }
+//
+//    @Test
+//    fun `𝕄 use default app version 𝕎 applyAdditionalConfig(config) { with empty app version }`(
+//        forge: Forge
+//    ) {
+//        // Given
+//        val config = Configuration.Builder(
+//            logsEnabled = true,
+//            tracesEnabled = true,
+//            crashReportsEnabled = true,
+//            rumEnabled = true
+//        )
+//            .setAdditionalConfiguration(
+//                mapOf(Datadog.DD_APP_VERSION_TAG to forge.aWhitespaceString())
+//            )
+//            .build()
+//        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+//
+//        // When
+//        Datadog.initialize(DatadogTest.appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
+//
+//        // Then
+//        assertThat(CoreFeature.packageVersionProvider.version).isEqualTo(DatadogTest.appContext.fakeVersionName)
+//    }
+//
+//    @Test
+//    fun `𝕄 use default app version 𝕎 applyAdditionalConfig(config) { with app version !string }`(
+//        forge: Forge
+//    ) {
+//        // Given
+//        val config = Configuration.Builder(
+//            logsEnabled = true,
+//            tracesEnabled = true,
+//            crashReportsEnabled = true,
+//            rumEnabled = true
+//        )
+//            .setAdditionalConfiguration(mapOf(Datadog.DD_APP_VERSION_TAG to forge.anInt()))
+//            .build()
+//        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+//
+//        // When
+//        Datadog.initialize(DatadogTest.appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
+//
+//        // Then
+//        assertThat(CoreFeature.packageVersionProvider.version).isEqualTo(DatadogTest.appContext.fakeVersionName)
+//    }
 
     // endregion
 

@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.system.AndroidInfoProvider
+import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
@@ -62,6 +63,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var mockUserInfoProvider: MutableUserInfoProvider
     lateinit var mockTrackingConsentProvider: ConsentProvider
     lateinit var mockAndroidInfoProvider: AndroidInfoProvider
+    lateinit var mockAppVersionProvider: AppVersionProvider
 
     // region CoreFeatureTestConfiguration
 
@@ -109,6 +111,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         mockUserInfoProvider = mock()
         mockAndroidInfoProvider = mock()
         mockTrackingConsentProvider = mock { on { getConsent() } doReturn TrackingConsent.PENDING }
+        mockAppVersionProvider = mock { on { version } doReturn appContext.fakeVersionName }
     }
 
     private fun configureCoreFeature() {
@@ -117,7 +120,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         whenever(mockInstance.envName) doReturn fakeEnvName
         whenever(mockInstance.serviceName) doReturn fakeServiceName
         whenever(mockInstance.packageName) doReturn appContext.fakePackageName
-        whenever(mockInstance.packageVersion) doReturn appContext.fakeVersionName
+        whenever(mockInstance.packageVersionProvider) doReturn mockAppVersionProvider
         whenever(mockInstance.variant) doReturn appContext.fakeVariant
         whenever(mockInstance.rumApplicationId) doReturn fakeRumApplicationId
         whenever(mockInstance.sourceName) doReturn fakeSourceName

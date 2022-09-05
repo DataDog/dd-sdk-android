@@ -35,13 +35,15 @@ internal interface AdvancedRumMonitor : RumMonitor {
         throwable: Throwable
     )
 
-    fun eventSent(viewId: String, type: EventType)
+    fun eventSent(viewId: String, event: StorageEvent)
 
-    fun eventDropped(viewId: String, type: EventType)
+    fun eventDropped(viewId: String, event: StorageEvent)
 
     fun setDebugListener(listener: RumDebugListener?)
 
     fun sendDebugTelemetryEvent(message: String)
 
     fun sendErrorTelemetryEvent(message: String, throwable: Throwable?)
+
+    fun sendErrorTelemetryEvent(message: String, stack: String?, kind: String?)
 }

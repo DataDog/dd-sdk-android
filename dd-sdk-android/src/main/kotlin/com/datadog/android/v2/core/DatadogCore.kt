@@ -295,6 +295,7 @@ internal class DatadogCore(
         )
     }
 
+    @Suppress("ComplexMethod")
     private fun applyAdditionalConfiguration(
         additionalConfiguration: Map<String, Any>
     ) {
@@ -310,6 +311,12 @@ internal class DatadogCore(
         additionalConfiguration[Datadog.DD_SDK_VERSION_TAG]?.let {
             if (it is String && it.isNotBlank()) {
                 coreFeature.sdkVersion = it
+            }
+        }
+
+        additionalConfiguration[Datadog.DD_APP_VERSION_TAG]?.let {
+            if (it is String && it.isNotBlank()) {
+                coreFeature.packageVersionProvider.version = it
             }
         }
     }

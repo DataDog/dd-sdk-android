@@ -4,13 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.monitor
+package com.datadog.android.core.internal.system
 
-internal enum class EventType {
-    VIEW,
-    ACTION,
-    RESOURCE,
-    ERROR,
-    LONG_TASK,
-    FROZEN_FRAME
+internal class NoOpAppVersionProvider : AppVersionProvider {
+    @Suppress("UNUSED_PARAMETER")
+    override var version: String
+        get() = ""
+        set(value) {}
 }

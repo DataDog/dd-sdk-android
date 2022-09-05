@@ -189,6 +189,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -199,7 +200,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -283,6 +285,11 @@ internal class RumActionScopeTest {
                     hasErrorCount(1)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -293,7 +300,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -355,6 +363,11 @@ internal class RumActionScopeTest {
                     hasErrorCount(1)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -364,7 +377,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -484,6 +498,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -494,7 +509,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -543,6 +559,11 @@ internal class RumActionScopeTest {
                     hasErrorCount(1)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -553,7 +574,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -593,6 +615,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(1)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -603,7 +626,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -649,6 +673,11 @@ internal class RumActionScopeTest {
                     hasErrorCount(1)
                     hasCrashCount(1)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -659,7 +688,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -699,6 +729,11 @@ internal class RumActionScopeTest {
                     hasErrorCount(2)
                     hasCrashCount(1)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -709,7 +744,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -750,6 +786,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -760,7 +797,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -800,6 +838,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(count)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -810,7 +849,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -850,6 +890,11 @@ internal class RumActionScopeTest {
                     hasErrorCount(count)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -861,7 +906,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -903,6 +949,11 @@ internal class RumActionScopeTest {
                     hasErrorCount(nonFatalCount + fatalCount)
                     hasCrashCount(fatalCount)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -914,7 +965,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -953,6 +1005,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -963,7 +1016,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1002,6 +1056,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(count)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1012,7 +1067,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1051,6 +1107,11 @@ internal class RumActionScopeTest {
                     hasErrorCount(count)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1062,7 +1123,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1103,6 +1165,11 @@ internal class RumActionScopeTest {
                     hasErrorCount(nonFatalCount + fatalCount)
                     hasCrashCount(fatalCount)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1114,7 +1181,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1173,6 +1241,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1184,7 +1253,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1229,6 +1299,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1240,7 +1311,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1276,6 +1348,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1287,7 +1360,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1326,6 +1400,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1337,7 +1412,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1376,6 +1452,11 @@ internal class RumActionScopeTest {
                     hasErrorCount(count)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1387,7 +1468,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1427,6 +1509,11 @@ internal class RumActionScopeTest {
                     hasErrorCount(nonFatalCount + fatalCount)
                     hasCrashCount(fatalCount)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1438,7 +1525,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1473,6 +1561,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1484,7 +1573,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1526,6 +1616,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1537,7 +1628,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1577,6 +1669,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1588,7 +1681,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1626,6 +1720,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1637,7 +1732,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1675,6 +1771,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1686,7 +1783,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1726,6 +1824,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1737,7 +1836,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1807,6 +1907,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1818,7 +1919,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1853,6 +1955,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1864,7 +1967,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1899,6 +2003,7 @@ internal class RumActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1910,7 +2015,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1938,13 +2044,14 @@ internal class RumActionScopeTest {
                 .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
-                    hasType(ActionEvent.ActionType.CUSTOM)
+                    hasType(ActionEvent.ActionEventActionType.CUSTOM)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1956,7 +2063,8 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,

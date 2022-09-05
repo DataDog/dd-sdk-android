@@ -28,7 +28,7 @@ You can perform the following:
 
 ### Prerequisites
 
-Set up the web page you want rendered on your mobile Android and Android TV application with the Browser SDK first. For more information, see [RUM Browser Monitoring][1].
+Set up the web page you want rendered on your mobile Android and Android TV application with the RUM Browser SDK first. For more information, see [RUM Browser Monitoring][1].
 
 ### Update your existing SDK setup
 
@@ -52,11 +52,13 @@ Set up the web page you want rendered on your mobile Android and Android TV appl
     }
    ```
 
-4. Configure the `DatadogEventBridge` for web views you want to track in your mobile Android application using `DatadogEventBridge.setup(webView)` in the configuration file when you initialize the SDK.
+4. Configure the `DatadogEventBridge` for web views you want to track in your mobile Android application using `DatadogEventBridge.setup(webView)` in the configuration file when you initialize the RUM Android SDK.
 
 ## Access your web views
 
-Your web views appear as events and views in the [RUM Explorer][4]. Filter on your Android and Android TV applications, and click a session. A side panel with a list of events in the session appears. 
+Your web views appear in the [RUM Explorer][4] with associated `service` and `source` attributes. The `service` attribute indicates the web component the web view is generated from, and the `source` attribute denotes the mobile application's platform, such as Android. 
+
+Filter on your Android and Android TV applications, and click a session. A side panel with a list of events in the session appears. 
 
 {{< img src="real_user_monitoring/android/android-webview-tracking.png" alt="Webview events captured in a session in the RUM Explorer" style="width:100%;">}}
 

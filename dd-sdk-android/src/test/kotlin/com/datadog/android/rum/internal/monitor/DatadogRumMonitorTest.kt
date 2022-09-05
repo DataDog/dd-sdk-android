@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.monitor
 import android.os.Handler
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -932,9 +933,10 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W eventSent {action}`(
-        @StringForgery viewId: String
+        @StringForgery viewId: String,
+        @IntForgery(0) frustrationCount: Int
     ) {
-        testedMonitor.eventSent(viewId, EventType.ACTION)
+        testedMonitor.eventSent(viewId, StorageEvent.Action(frustrationCount))
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -942,6 +944,7 @@ internal class DatadogRumMonitorTest {
 
             val event = firstValue as RumRawEvent.ActionSent
             assertThat(event.viewId).isEqualTo(viewId)
+            assertThat(event.frustrationCount).isEqualTo(frustrationCount)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
@@ -950,7 +953,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventSent {resource}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventSent(viewId, EventType.RESOURCE)
+        testedMonitor.eventSent(viewId, StorageEvent.Resource)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -966,7 +969,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventSent {error}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventSent(viewId, EventType.ERROR)
+        testedMonitor.eventSent(viewId, StorageEvent.Error)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -982,7 +985,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventSent {longTask}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventSent(viewId, EventType.LONG_TASK)
+        testedMonitor.eventSent(viewId, StorageEvent.LongTask)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -999,7 +1002,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventSent {frozenFrame}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventSent(viewId, EventType.FROZEN_FRAME)
+        testedMonitor.eventSent(viewId, StorageEvent.FrozenFrame)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1014,9 +1017,10 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W eventDropped {action}`(
-        @StringForgery viewId: String
+        @StringForgery viewId: String,
+        @IntForgery(0) frustrationCount: Int
     ) {
-        testedMonitor.eventDropped(viewId, EventType.ACTION)
+        testedMonitor.eventDropped(viewId, StorageEvent.Action(frustrationCount))
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1032,7 +1036,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventDropped {resource}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventDropped(viewId, EventType.RESOURCE)
+        testedMonitor.eventDropped(viewId, StorageEvent.Resource)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1048,7 +1052,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventDropped {error}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventDropped(viewId, EventType.ERROR)
+        testedMonitor.eventDropped(viewId, StorageEvent.Error)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1064,7 +1068,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventDropped {longTask}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventDropped(viewId, EventType.LONG_TASK)
+        testedMonitor.eventDropped(viewId, StorageEvent.LongTask)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1081,7 +1085,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventDropped {frozenFrame}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventDropped(viewId, EventType.FROZEN_FRAME)
+        testedMonitor.eventDropped(viewId, StorageEvent.FrozenFrame)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1398,7 +1402,8 @@ internal class DatadogRumMonitorTest {
             )
             assertThat(lastValue.message).isEqualTo(message)
             assertThat(lastValue.type).isEqualTo(TelemetryType.DEBUG)
-            assertThat(lastValue.throwable).isNull()
+            assertThat(lastValue.stack).isNull()
+            assertThat(lastValue.kind).isNull()
         }
     }
 
@@ -1419,7 +1424,8 @@ internal class DatadogRumMonitorTest {
             )
             assertThat(lastValue.message).isEqualTo(message)
             assertThat(lastValue.type).isEqualTo(TelemetryType.ERROR)
-            assertThat(lastValue.throwable).isEqualTo(throwable)
+            assertThat(lastValue.stack).isEqualTo(throwable?.loggableStackTrace())
+            assertThat(lastValue.kind).isEqualTo(throwable?.javaClass?.canonicalName)
         }
     }
 

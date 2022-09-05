@@ -90,10 +90,14 @@ internal class GesturesListener(
             val scrollTarget = findTargetForScroll(decorView, startDownEvent.x, startDownEvent.y)
             if (scrollTarget != null) {
                 scrollTargetReference = WeakReference(scrollTarget)
+                val targetId: String = contextRef.get().resourceIdName(scrollTarget.id)
+                val attributes = resolveAttributes(scrollTarget, targetId, null)
+                // although we report scroll here, while it can be swipe in the end, it is fine,
+                // because the final type is taken from stopUserAction call anyway
                 rumMonitor.startUserAction(
-                    RumActionType.CUSTOM,
-                    "",
-                    emptyMap()
+                    RumActionType.SCROLL,
+                    resolveTargetName(interactionPredicate, scrollTarget),
+                    attributes
                 )
             } else {
                 return false
@@ -135,14 +139,16 @@ internal class GesturesListener(
     private fun resolveAttributes(
         scrollTarget: View,
         targetId: String,
-        onUpEvent: MotionEvent
+        onUpEvent: MotionEvent?
     ): MutableMap<String, Any?> {
         val attributes = mutableMapOf<String, Any?>(
             RumAttributes.ACTION_TARGET_CLASS_NAME to scrollTarget.targetClassName(),
             RumAttributes.ACTION_TARGET_RESOURCE_ID to targetId
         )
-        gestureDirection = resolveGestureDirection(onUpEvent)
-        attributes.put(RumAttributes.ACTION_GESTURE_DIRECTION, gestureDirection)
+        if (onUpEvent != null) {
+            gestureDirection = resolveGestureDirection(onUpEvent)
+            attributes.put(RumAttributes.ACTION_GESTURE_DIRECTION, gestureDirection)
+        }
 
         attributesProviders.forEach {
             it.extractAttributes(scrollTarget, attributes)

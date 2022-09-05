@@ -214,6 +214,20 @@
               },
               "readOnly": true
             },
+            "frustration": {
+              "type": "object",
+              "description": "Properties of the frustrations of the view",
+              "required": ["count"],
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "description": "Number of frustrations that occurred on the view",
+                  "minimum": 0,
+                  "readOnly": true
+                }
+              },
+              "readOnly": true
+            },
             "in_foreground_periods": {
               "type": "array",
               "description": "List of the periods of time the user had the view in foreground (focused in the browser)",

@@ -100,7 +100,6 @@ class CrashFragment :
     }
 
     private fun triggerOOM() {
-
         Thread {
             for (i in 0..128) {
                 bitmapList.add(Bitmap.createBitmap(3840, 2160, Bitmap.Config.ARGB_8888))
