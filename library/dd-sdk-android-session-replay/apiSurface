@@ -1,5 +1,5 @@
 class com.datadog.android.sessionreplay.SessionReplayLifecycleCallback : android.app.Application.ActivityLifecycleCallbacks
-  constructor(com.datadog.android.sessionreplay.utils.RumContextProvider)
+  constructor(com.datadog.android.sessionreplay.utils.RumContextProvider, SessionReplayPrivacy)
   override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
   override fun onActivityStarted(android.app.Activity)
   override fun onActivityResumed(android.app.Activity)
@@ -10,6 +10,9 @@ class com.datadog.android.sessionreplay.SessionReplayLifecycleCallback : android
   fun register(android.app.Application)
   fun unregisterAndStopRecorders(android.app.Application)
   companion object 
+enum com.datadog.android.sessionreplay.SessionReplayPrivacy
+  - ALLOW_ALL
+  - MASK_ALL
 data class com.datadog.android.sessionreplay.model.MobileSegment
   constructor(Application, Session, View, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Boolean? = null, Source, kotlin.collections.List<MobileRecord>)
   fun toJson(): com.google.gson.JsonElement

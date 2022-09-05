@@ -43,6 +43,7 @@ import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import java.net.Proxy
 import java.util.Locale
 import okhttp3.Authenticator
@@ -112,7 +113,8 @@ internal constructor(
 
         internal data class SessionReplay(
             override val endpointUrl: String,
-            override val plugins: List<DatadogPlugin> = emptyList()
+            override val plugins: List<DatadogPlugin> = emptyList(),
+            val privacy: SessionReplayPrivacy
         ) : Feature()
     }
 
@@ -580,6 +582,17 @@ internal constructor(
             return this
         }
 
+        /**
+         * Sets the privacy rule for the Session Replay feature.
+         * If not specified all the elements will be masked by default (MASK_ALL).
+         * @see SessionReplayPrivacy.ALLOW_ALL
+         * @see SessionReplayPrivacy.MASK_ALL
+         */
+        fun setSessionReplayPrivacy(privacy: SessionReplayPrivacy): Builder {
+            sessionReplayConfig = sessionReplayConfig.copy(privacy = privacy)
+            return this
+        }
+
         private fun checkCustomEndpoint(endpoint: String) {
             if (endpoint.startsWith("http://")) {
                 coreConfig = coreConfig.copy(needsClearTextHttp = true)
@@ -681,7 +694,8 @@ internal constructor(
         )
         internal val DEFAULT_SESSION_REPLAY_CONFIG = Feature.SessionReplay(
             endpointUrl = DatadogEndpoint.SESSION_REPLAY_US1,
-            plugins = emptyList()
+            plugins = emptyList(),
+            privacy = SessionReplayPrivacy.MASK_ALL
         )
 
         internal const val ERROR_FEATURE_DISABLED = "The %s feature has been disabled in your " +
