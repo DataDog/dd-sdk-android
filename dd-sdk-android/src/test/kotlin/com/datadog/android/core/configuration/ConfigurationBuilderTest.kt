@@ -35,6 +35,7 @@ import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -159,7 +160,8 @@ internal class ConfigurationBuilderTest {
         assertThat(config.sessionReplayConfig).isEqualTo(
             Configuration.Feature.SessionReplay(
                 endpointUrl = DatadogEndpoint.SESSION_REPLAY_US1,
-                plugins = emptyList()
+                plugins = emptyList(),
+                privacy = SessionReplayPrivacy.MASK_ALL
             )
         )
     }
@@ -1743,6 +1745,18 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(vitalsMonitorUpdateFrequency = fakeFrequency)
         )
+    }
+
+    @Test
+    fun `M use the given privacy rule W setSessionReplayPrivacy`(
+        @Forgery fakePrivacy: SessionReplayPrivacy
+    ) {
+        // When
+        val config = testedBuilder.setSessionReplayPrivacy(fakePrivacy).build()
+
+        // Then
+        assertThat(config.sessionReplayConfig)
+            .isEqualTo(Configuration.DEFAULT_SESSION_REPLAY_CONFIG.copy(privacy = fakePrivacy))
     }
 
     companion object {

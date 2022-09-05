@@ -13,14 +13,10 @@ import android.view.ViewStub
 import androidx.appcompat.widget.ActionBarContextView
 import androidx.appcompat.widget.Toolbar
 import com.datadog.android.sessionreplay.recorder.mapper.GenericWireframeMapper
-import com.datadog.android.sessionreplay.recorder.mapper.ViewScreenshotWireframeMapper
 import java.util.LinkedList
 
 internal class SnapshotProducer(
-    private val viewScreenshotWireframeMapper: ViewScreenshotWireframeMapper =
-        ViewScreenshotWireframeMapper(),
-    private val genericWireframeMapper: GenericWireframeMapper =
-        GenericWireframeMapper(imageMapper = viewScreenshotWireframeMapper)
+    private val wireframeMapper: GenericWireframeMapper
 ) {
 
     private val systemViewIds by lazy {
@@ -50,7 +46,7 @@ internal class SnapshotProducer(
             // It is too complex to de - structure this in multiple wireframes
             // and we cannot actually get all the details here.
             return Node(
-                wireframes = listOf(viewScreenshotWireframeMapper.map(view, pixelsDensity))
+                wireframes = listOf(wireframeMapper.imageMapper.map(view, pixelsDensity))
             )
         }
 
@@ -73,7 +69,7 @@ internal class SnapshotProducer(
         pixelsDensity: Float
     ) = Node(
         children = childNodes,
-        wireframes = listOf(genericWireframeMapper.map(view, pixelsDensity))
+        wireframes = listOf(wireframeMapper.map(view, pixelsDensity))
     )
 
     private fun View.isToolbar(): Boolean {

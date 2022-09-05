@@ -19,7 +19,7 @@ internal class RecorderOnDrawListener(
     activity: Activity,
     private val pixelsDensity: Float,
     private val processor: Processor,
-    private val snapshotProducer: SnapshotProducer = SnapshotProducer(),
+    private val snapshotProducer: SnapshotProducer,
     private val handler: Handler = Handler(Looper.getMainLooper())
 ) : ViewTreeObserver.OnDrawListener {
     private var currentOrientation = Configuration.ORIENTATION_UNDEFINED

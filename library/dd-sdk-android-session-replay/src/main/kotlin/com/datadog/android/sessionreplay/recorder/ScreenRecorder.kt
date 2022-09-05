@@ -13,6 +13,7 @@ import com.datadog.android.sessionreplay.utils.TimeProvider
 
 internal class ScreenRecorder(
     private val processor: Processor,
+    private val snapshotProducer: SnapshotProducer,
     private val timeProvider: TimeProvider
 ) : Recorder {
     internal val drawListeners: MutableMap<Int, ViewTreeObserver.OnDrawListener> = HashMap()
@@ -23,7 +24,8 @@ internal class ScreenRecorder(
                 RecorderOnDrawListener(
                     activity,
                     activity.resources.displayMetrics.density,
-                    processor
+                    processor,
+                    snapshotProducer
                 )
             ) {
                 drawListeners[activity.hashCode()] = this
