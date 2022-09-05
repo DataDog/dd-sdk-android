@@ -29,7 +29,8 @@ import com.datadog.android.telemetry.internal.Telemetry
 )
 class _InternalProxy internal constructor(
     telemetry: Telemetry,
-    private val coreFeature: CoreFeature
+    // TODO RUMM-0000 Shouldn't be nullable
+    private val coreFeature: CoreFeature?
 ) {
     class _TelemetryProxy internal constructor(private val telemetry: Telemetry) {
 
@@ -49,6 +50,6 @@ class _InternalProxy internal constructor(
     val _telemetry: _TelemetryProxy = _TelemetryProxy(telemetry)
 
     fun setCustomAppVersion(version: String) {
-        coreFeature.packageVersionProvider.version = version
+        coreFeature?.packageVersionProvider?.version = version
     }
 }

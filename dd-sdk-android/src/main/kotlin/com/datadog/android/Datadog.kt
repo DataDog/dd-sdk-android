@@ -10,6 +10,7 @@ import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.telemetry
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
@@ -209,6 +210,19 @@ object Datadog {
         } else {
             rumFeature?.disableDebugging()
         }
+    }
+
+    /**
+     * For Datadog internal use only.
+     *
+     * @see _InternalProxy
+     */
+    @Suppress("ObjectPropertyNaming")
+    val _internal: _InternalProxy by lazy {
+        _InternalProxy(
+            telemetry,
+            (globalSDKCore as? DatadogCore)?.coreFeature
+        )
     }
 
     // endregion
