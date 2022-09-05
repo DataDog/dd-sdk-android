@@ -1136,6 +1136,7 @@ datadog:
       - "kotlin.ByteArray.constructor(kotlin.Int)"
       - "kotlin.Char.isLowerCase()"
       - "kotlin.Char.titlecase(java.util.Locale)"
+      - "kotlin.CharArray.constructor(kotlin.Int, kotlin.Function1)"
       - "kotlin.Double.isNaN()"
       - "kotlin.Double.pow(kotlin.Int)"
       - "kotlin.Double.rangeTo(kotlin.Double)"

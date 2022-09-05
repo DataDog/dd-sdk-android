@@ -12,6 +12,8 @@ import com.datadog.android.sessionreplay.recorder.Recorder
 import com.datadog.android.sessionreplay.utils.RumContextProvider
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -23,7 +25,8 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
-    ExtendWith(MockitoExtension::class)
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 class SessionReplayLifecycleCallbackTest {
@@ -36,9 +39,12 @@ class SessionReplayLifecycleCallbackTest {
     @Mock
     private lateinit var mockRumContextProvider: RumContextProvider
 
+    @Forgery
+    private lateinit var fakePrivacy: SessionReplayPrivacy
+
     @BeforeEach
     fun `set up`() {
-        testedCallback = SessionReplayLifecycleCallback(mockRumContextProvider)
+        testedCallback = SessionReplayLifecycleCallback(mockRumContextProvider, fakePrivacy)
         testedCallback.recorder = mockRecoder
     }
 

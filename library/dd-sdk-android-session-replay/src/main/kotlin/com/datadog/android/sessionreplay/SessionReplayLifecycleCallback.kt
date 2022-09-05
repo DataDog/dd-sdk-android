@@ -12,6 +12,7 @@ import android.os.Bundle
 import com.datadog.android.sessionreplay.processor.SnapshotProcessor
 import com.datadog.android.sessionreplay.recorder.Recorder
 import com.datadog.android.sessionreplay.recorder.ScreenRecorder
+import com.datadog.android.sessionreplay.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.utils.RumContextProvider
 import com.datadog.android.sessionreplay.utils.SessionReplayTimeProvider
 import java.util.WeakHashMap
@@ -26,7 +27,10 @@ import java.util.concurrent.TimeUnit
  * This is only meant for internal usage and later will change visibility from public to internal.
  */
 @SuppressWarnings("UndocumentedPublicFunction")
-class SessionReplayLifecycleCallback(rumContextProvider: RumContextProvider) :
+class SessionReplayLifecycleCallback(
+    rumContextProvider: RumContextProvider,
+    privacy: SessionReplayPrivacy
+) :
     Application.ActivityLifecycleCallbacks {
 
     private val timeProvider = SessionReplayTimeProvider()
@@ -45,6 +49,7 @@ class SessionReplayLifecycleCallback(rumContextProvider: RumContextProvider) :
             timeProvider,
             processorExecutorService
         ),
+        SnapshotProducer(privacy.mapper()),
         timeProvider
     )
     internal val resumedActivities: WeakHashMap<Activity, Any?> = WeakHashMap()

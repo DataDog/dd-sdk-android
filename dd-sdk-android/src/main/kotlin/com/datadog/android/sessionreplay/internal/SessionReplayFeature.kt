@@ -21,8 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 internal class SessionReplayFeature(
     coreFeature: CoreFeature,
-    private val sessionReplayCallback:
-        SessionReplayLifecycleCallback
+    private val sessionReplayCallback: SessionReplayLifecycleCallback
 ) : SdkFeature<Any, Configuration.Feature.SessionReplay>(coreFeature) {
 
     internal lateinit var appContext: Context

@@ -14,7 +14,7 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.widget.ActionBarContextView
 import androidx.appcompat.widget.Toolbar
 import com.datadog.android.sessionreplay.model.MobileSegment
-import com.datadog.android.sessionreplay.recorder.mapper.GenericWireframeMapper
+import com.datadog.android.sessionreplay.recorder.mapper.AllowAllWireframeMapper
 import com.datadog.android.sessionreplay.recorder.mapper.ViewScreenshotWireframeMapper
 import com.datadog.android.sessionreplay.utils.ForgeConfigurator
 import com.datadog.tools.unit.annotations.TestTargetApi
@@ -55,7 +55,7 @@ internal class SnapshotProducerTest {
     lateinit var mockViewScreenshotWireframeMapper: ViewScreenshotWireframeMapper
 
     @Mock
-    lateinit var mockGenericWireframeMapper: GenericWireframeMapper
+    lateinit var mockGenericWireframeMapper: AllowAllWireframeMapper
 
     @Mock
     lateinit var mockViewWireframe: MobileSegment.Wireframe
@@ -69,10 +69,9 @@ internal class SnapshotProducerTest {
             .thenReturn(mockShapeScreenshotWireframe)
         whenever(mockGenericWireframeMapper.map(any(), eq(fakePixelDensity)))
             .thenReturn(mockViewWireframe)
-        testedSnapshotProducer = SnapshotProducer(
-            mockViewScreenshotWireframeMapper,
-            mockGenericWireframeMapper
-        )
+        whenever(mockGenericWireframeMapper.imageMapper)
+            .thenReturn(mockViewScreenshotWireframeMapper)
+        testedSnapshotProducer = SnapshotProducer(mockGenericWireframeMapper)
     }
 
     // region Default Tests
