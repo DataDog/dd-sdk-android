@@ -25,7 +25,7 @@ internal class WebViewLogEventConsumer(
 ) : WebViewEventConsumer<Pair<JsonObject, String>> {
 
     private val ddTags: String by lazy {
-        "${LogAttributes.APPLICATION_VERSION}:${coreFeature.packageVersion}" +
+        "${LogAttributes.APPLICATION_VERSION}:${coreFeature.packageVersionProvider.version}" +
             ",${LogAttributes.ENV}:${coreFeature.envName}"
     }
 

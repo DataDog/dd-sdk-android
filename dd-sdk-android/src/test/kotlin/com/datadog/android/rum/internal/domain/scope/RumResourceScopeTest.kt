@@ -218,7 +218,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -280,7 +281,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -355,7 +357,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -420,7 +423,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -482,7 +486,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -535,7 +540,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -580,7 +586,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -697,7 +704,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -760,7 +768,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -824,7 +833,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -889,7 +899,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -955,7 +966,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1021,7 +1033,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1102,7 +1115,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1184,7 +1198,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1253,7 +1268,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1322,7 +1338,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1390,7 +1407,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1459,7 +1477,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1533,7 +1552,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1608,7 +1628,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1760,7 +1781,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1820,7 +1842,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1882,7 +1905,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1992,7 +2016,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -2051,7 +2076,8 @@ internal class RumResourceScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toResourceSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,

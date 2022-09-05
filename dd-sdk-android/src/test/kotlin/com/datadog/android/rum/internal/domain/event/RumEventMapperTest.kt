@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.domain.event
 import android.util.Log
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.internal.utils.WARN_WITH_TELEMETRY_LEVEL
-import com.datadog.android.rum.internal.monitor.EventType
+import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -436,7 +436,13 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance).eventDropped(fakeRumEvent.view.id, EventType.ACTION)
+        verify(rumMonitor.mockInstance)
+            .eventDropped(
+                fakeRumEvent.view.id,
+                StorageEvent.Action(
+                    frustrationCount = fakeRumEvent.action.frustration?.type?.size ?: 0
+                )
+            )
     }
 
     @Test
@@ -451,7 +457,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance).eventDropped(fakeRumEvent.view.id, EventType.RESOURCE)
+        verify(rumMonitor.mockInstance).eventDropped(fakeRumEvent.view.id, StorageEvent.Resource)
     }
 
     @Test
@@ -469,7 +475,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance).eventDropped(fakeNoCrashEvent.view.id, EventType.ERROR)
+        verify(rumMonitor.mockInstance).eventDropped(fakeNoCrashEvent.view.id, StorageEvent.Error)
     }
 
     @Test
@@ -490,7 +496,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance).eventDropped(longTaskEvent.view.id, EventType.LONG_TASK)
+        verify(rumMonitor.mockInstance).eventDropped(longTaskEvent.view.id, StorageEvent.LongTask)
     }
 
     @Test
@@ -511,7 +517,10 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance).eventDropped(longTaskEvent.view.id, EventType.FROZEN_FRAME)
+        verify(rumMonitor.mockInstance).eventDropped(
+            longTaskEvent.view.id,
+            StorageEvent.FrozenFrame
+        )
     }
 
     companion object {

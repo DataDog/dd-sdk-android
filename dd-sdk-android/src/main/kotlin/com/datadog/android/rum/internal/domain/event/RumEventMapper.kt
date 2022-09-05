@@ -13,7 +13,7 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.log.internal.utils.warningWithTelemetry
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.internal.monitor.EventType
+import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -98,14 +98,17 @@ internal data class RumEventMapper(
     private fun notifyEventDropped(event: Any) {
         val monitor = (GlobalRum.get() as? AdvancedRumMonitor) ?: return
         when (event) {
-            is ActionEvent -> monitor.eventDropped(event.view.id, EventType.ACTION)
-            is ResourceEvent -> monitor.eventDropped(event.view.id, EventType.RESOURCE)
-            is ErrorEvent -> monitor.eventDropped(event.view.id, EventType.ERROR)
+            is ActionEvent -> monitor.eventDropped(
+                event.view.id,
+                StorageEvent.Action(frustrationCount = event.action.frustration?.type?.size ?: 0)
+            )
+            is ResourceEvent -> monitor.eventDropped(event.view.id, StorageEvent.Resource)
+            is ErrorEvent -> monitor.eventDropped(event.view.id, StorageEvent.Error)
             is LongTaskEvent -> {
                 if (event.longTask.isFrozenFrame == true) {
-                    monitor.eventDropped(event.view.id, EventType.FROZEN_FRAME)
+                    monitor.eventDropped(event.view.id, StorageEvent.FrozenFrame)
                 } else {
-                    monitor.eventDropped(event.view.id, EventType.LONG_TASK)
+                    monitor.eventDropped(event.view.id, StorageEvent.LongTask)
                 }
             }
             else -> {

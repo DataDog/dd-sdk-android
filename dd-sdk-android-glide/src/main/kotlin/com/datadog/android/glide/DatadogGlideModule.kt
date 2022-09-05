@@ -78,6 +78,7 @@ open class DatadogGlideModule
      * and [DatadogEventListener.Factory].
      * @return the builder for the [OkHttpClient] to be used by Glide
      */
+    @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
     open fun getClientBuilder(): OkHttpClient.Builder {
         return OkHttpClient.Builder()
             .addInterceptor(DatadogInterceptor(firstPartyHosts, traceSamplingRate = samplingRate))

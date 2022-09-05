@@ -151,8 +151,8 @@ internal class TelemetryEventHandlerTest {
                 hasSessionId(rumContext.sessionId)
                 hasViewId(rumContext.viewId)
                 hasActionId(rumContext.actionId)
-                hasErrorStack(errorRawEvent.throwable?.loggableStackTrace())
-                hasErrorKind(errorRawEvent.throwable?.javaClass?.canonicalName)
+                hasErrorStack(errorRawEvent.stack)
+                hasErrorKind(errorRawEvent.kind)
             }
         }
     }
@@ -190,7 +190,7 @@ internal class TelemetryEventHandlerTest {
                     Locale.US,
                     TelemetryEventHandler.EventIdentity(
                         rawEvent.message,
-                        if (rawEvent.throwable != null) rawEvent.throwable::class.java else null
+                        rawEvent.kind
                     )
                 )
             )
@@ -223,8 +223,8 @@ internal class TelemetryEventHandlerTest {
                         hasSessionId(rumContext.sessionId)
                         hasViewId(rumContext.viewId)
                         hasActionId(rumContext.actionId)
-                        hasErrorStack(rawEvent.throwable?.loggableStackTrace())
-                        hasErrorKind(rawEvent.throwable?.javaClass?.canonicalName)
+                        hasErrorStack(rawEvent.stack)
+                        hasErrorKind(rawEvent.kind)
                     }
                 }
                 else -> throw IllegalArgumentException(
@@ -290,8 +290,8 @@ internal class TelemetryEventHandlerTest {
                             hasSessionId(rumContext.sessionId)
                             hasViewId(rumContext.viewId)
                             hasActionId(rumContext.actionId)
-                            hasErrorStack(events[it.index].throwable?.loggableStackTrace())
-                            hasErrorKind(events[it.index].throwable?.javaClass?.canonicalName)
+                            hasErrorStack(events[it.index].stack)
+                            hasErrorKind(events[it.index].kind)
                         }
                     }
                     else -> throw IllegalArgumentException(
@@ -373,9 +373,9 @@ internal class TelemetryEventHandlerTest {
                             hasSessionId(rumContext.sessionId)
                             hasViewId(rumContext.viewId)
                             hasActionId(rumContext.actionId)
-                            hasErrorStack(expectedEvents[it.index].throwable?.loggableStackTrace())
+                            hasErrorStack(expectedEvents[it.index].stack)
                             hasErrorKind(
-                                expectedEvents[it.index].throwable?.javaClass?.canonicalName
+                                expectedEvents[it.index].kind
                             )
                         }
                     }
@@ -429,15 +429,18 @@ internal class TelemetryEventHandlerTest {
         return RumRawEvent.SendTelemetry(
             TelemetryType.DEBUG,
             aString(),
+            null,
             null
         )
     }
 
     private fun Forge.createRumRawTelemetryErrorEvent(): RumRawEvent.SendTelemetry {
+        val throwable = aNullable { aThrowable() }
         return RumRawEvent.SendTelemetry(
             TelemetryType.ERROR,
             aString(),
-            aNullable { aThrowable() }
+            throwable?.loggableStackTrace(),
+            throwable?.javaClass?.canonicalName
         )
     }
 

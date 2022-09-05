@@ -16,7 +16,7 @@ import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.Logger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.internal.monitor.EventType
+import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -42,18 +42,21 @@ internal class RumDataWriter(
     override fun onDataWritten(data: Any, rawData: ByteArray) {
         when (data) {
             is ViewEvent -> persistViewEvent(rawData)
-            is ActionEvent -> notifyEventSent(data.view.id, EventType.ACTION)
-            is ResourceEvent -> notifyEventSent(data.view.id, EventType.RESOURCE)
+            is ActionEvent -> notifyEventSent(
+                data.view.id,
+                StorageEvent.Action(data.action.frustration?.type?.size ?: 0)
+            )
+            is ResourceEvent -> notifyEventSent(data.view.id, StorageEvent.Resource)
             is ErrorEvent -> {
                 if (data.error.isCrash != true) {
-                    notifyEventSent(data.view.id, EventType.ERROR)
+                    notifyEventSent(data.view.id, StorageEvent.Error)
                 }
             }
             is LongTaskEvent -> {
                 if (data.longTask.isFrozenFrame == true) {
-                    notifyEventSent(data.view.id, EventType.FROZEN_FRAME)
+                    notifyEventSent(data.view.id, StorageEvent.FrozenFrame)
                 } else {
-                    notifyEventSent(data.view.id, EventType.LONG_TASK)
+                    notifyEventSent(data.view.id, StorageEvent.LongTask)
                 }
             }
         }
@@ -77,10 +80,10 @@ internal class RumDataWriter(
         }
     }
 
-    private fun notifyEventSent(viewId: String, eventType: EventType) {
+    private fun notifyEventSent(viewId: String, storageEvent: StorageEvent) {
         val rumMonitor = GlobalRum.get()
         if (rumMonitor is AdvancedRumMonitor) {
-            rumMonitor.eventSent(viewId, eventType)
+            rumMonitor.eventSent(viewId, storageEvent)
         }
     }
 

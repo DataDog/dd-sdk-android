@@ -193,17 +193,23 @@ internal class RumActionScope(
         val sdkContext = contextProvider.context
         val user = sdkContext.userInfo
 
+        val frustrations = mutableListOf<ActionEvent.Type>()
+        if (errorCount > 0 && actualType == RumActionType.TAP) {
+            frustrations.add(ActionEvent.Type.ERROR_TAP)
+        }
+
         val actionEvent = ActionEvent(
             date = eventTimestamp,
-            action = ActionEvent.Action(
+            action = ActionEvent.ActionEventAction(
                 type = actualType.toSchemaType(),
                 id = actionId,
-                target = ActionEvent.Target(name),
+                target = ActionEvent.ActionEventActionTarget(name),
                 error = ActionEvent.Error(errorCount),
                 crash = ActionEvent.Crash(crashCount),
                 longTask = ActionEvent.LongTask(longTaskCount),
                 resource = ActionEvent.Resource(resourceCount),
-                loadingTime = max(endNanos - startedNanos, 1L)
+                loadingTime = max(endNanos - startedNanos, 1L),
+                frustration = ActionEvent.Frustration(frustrations)
             ),
             view = ActionEvent.View(
                 id = rumContext.viewId.orEmpty(),
@@ -231,7 +237,8 @@ internal class RumActionScope(
                 type = sdkContext.deviceInfo.deviceType.toActionSchemaType(),
                 name = sdkContext.deviceInfo.deviceName,
                 model = sdkContext.deviceInfo.deviceModel,
-                brand = sdkContext.deviceInfo.deviceBrand
+                brand = sdkContext.deviceInfo.deviceBrand,
+                architecture = sdkContext.deviceInfo.architecture
             ),
             context = ActionEvent.Context(additionalProperties = attributes),
             dd = ActionEvent.Dd(session = ActionEvent.DdSession(plan = ActionEvent.Plan.PLAN_1))

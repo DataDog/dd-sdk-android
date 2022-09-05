@@ -332,7 +332,8 @@ internal class DatadogNdkCrashHandler(
                 type = androidInfoProvider.deviceType.toErrorSchemaType(),
                 name = androidInfoProvider.deviceName,
                 model = androidInfoProvider.deviceModel,
-                brand = androidInfoProvider.deviceBrand
+                brand = androidInfoProvider.deviceBrand,
+                architecture = androidInfoProvider.architecture
             ),
             dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1)),
             context = ErrorEvent.Context(additionalProperties = additionalProperties),

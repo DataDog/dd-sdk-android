@@ -8,6 +8,7 @@ package com.datadog.android.webview.internal.log
 
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
@@ -64,6 +65,9 @@ internal class WebViewLogEventConsumerTest {
     @Mock
     lateinit var mockRumContextProvider: WebViewRumEventContextProvider
 
+    @Mock
+    lateinit var mockAppVersionProvider: AppVersionProvider
+
     @StringForgery(regex = "[0-9]\\.[0-9]\\.[0-9]")
     lateinit var fakePackageVersion: String
 
@@ -87,7 +91,8 @@ internal class WebViewLogEventConsumerTest {
         fakeWebLogEvent = forge.aWebLogEvent()
         fakeTimeOffset = forge.aLong()
         whenever(mockCoreFeature.envName) doReturn fakeEnvName
-        whenever(mockCoreFeature.packageVersion) doReturn fakePackageVersion
+        whenever(mockCoreFeature.packageVersionProvider) doReturn mockAppVersionProvider
+        whenever(mockAppVersionProvider.version) doReturn fakePackageVersion
 
         testedConsumer = WebViewLogEventConsumer(
             mockUserLogsWriter,
@@ -95,7 +100,8 @@ internal class WebViewLogEventConsumerTest {
             mockTimeProvider,
             mockCoreFeature
         )
-        whenever(mockTimeProvider.getServerOffsetMillis()).thenReturn(fakeTimeOffset)
+        whenever(mockTimeProvider.getServerOffsetMillis()) doReturn fakeTimeOffset
+        whenever(mockAppVersionProvider.version) doReturn fakePackageVersion
     }
 
     @Test

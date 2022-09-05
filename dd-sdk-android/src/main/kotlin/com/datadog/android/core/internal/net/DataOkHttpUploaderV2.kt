@@ -17,9 +17,9 @@ import okhttp3.RequestBody
 
 internal abstract class DataOkHttpUploaderV2(
     internal var intakeUrl: String,
-    internal val clientToken: String,
-    internal val source: String,
-    internal val sdkVersion: String,
+    rawClientToken: String,
+    rawSource: String,
+    rawSdkVersion: String,
     internal val callFactory: Call.Factory,
     internal val contentType: String,
     internal val androidInfoProvider: AndroidInfoProvider,
@@ -34,17 +34,18 @@ internal abstract class DataOkHttpUploaderV2(
 
     private val uploaderName = javaClass.simpleName
 
+    internal val clientToken = if (isValidHeaderValue(rawClientToken)) rawClientToken else ""
+    internal val source: String = sanitizeHeaderValue(rawSource)
+    internal val sdkVersion: String = sanitizeHeaderValue(rawSdkVersion)
+
     private val userAgent by lazy {
-        System.getProperty(SYSTEM_UA).let {
-            if (it.isNullOrBlank()) {
-                "Datadog/$sdkVersion " +
+        sanitizeHeaderValue(System.getProperty(SYSTEM_UA))
+            .ifBlank {
+                "Datadog/${sanitizeHeaderValue(sdkVersion)} " +
                     "(Linux; U; Android ${androidInfoProvider.osVersion}; " +
                     "${androidInfoProvider.deviceModel} " +
                     "Build/${androidInfoProvider.deviceBuildId})"
-            } else {
-                it
             }
-        }
     }
 
     // region DataUploader
@@ -88,6 +89,9 @@ internal abstract class DataOkHttpUploaderV2(
         data: ByteArray,
         requestId: String
     ): UploadStatus {
+        if (clientToken.isBlank()) {
+            return UploadStatus.INVALID_TOKEN_ERROR
+        }
         val request = buildRequest(data, requestId)
         val call = callFactory.newCall(request)
         val response = call.execute()
@@ -142,6 +146,20 @@ internal abstract class DataOkHttpUploaderV2(
             else -> UploadStatus.UNKNOWN_ERROR
         }
     }
+
+    private fun sanitizeHeaderValue(value: String?): String {
+        return value?.filter { isValidHeaderValueChar(it) }.orEmpty()
+    }
+
+    private fun isValidHeaderValue(value: String): Boolean {
+        return value.all { isValidHeaderValueChar(it) }
+    }
+
+    private fun isValidHeaderValueChar(c: Char): Boolean {
+        return c == '\t' || c in '\u0020' until '\u007F'
+    }
+
+    // endregion
 
     companion object {
 

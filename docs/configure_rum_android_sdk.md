@@ -246,6 +246,9 @@ You can use the following methods in `Configuration.Builder` when creating the D
 `setUploadFrequency([FREQUENT|AVERAGE|RARE])` 
 : Defines the frequency for requests made to Datadog endpoints (if requests are available).
 
+`setVitalsUpdateFrequency([FREQUENT|AVERAGE|RARE|NEVER])` 
+: Sets the preferred frequency for collecting mobile vitals.
+
 `sampleRumSessions(<samplingRate>)` 
 : Sets the RUM sessions sampling rate. (A value of 0 means no RUM events are sent. A value of 100 means all sessions are kept.)
 
@@ -292,7 +295,7 @@ For instance, to set each fragment as a distinct view, use the following configu
    
 For `ActivityViewTrackingStrategy`, `FragmentViewTrackingStrategy`, or `MixedViewTrackingStrategy`, you can filter which `Fragment` or `Activity` is tracked as a RUM View by providing a `ComponentPredicate` implementation in the constructor.
    
-**Note**: By default, the library does not track any views. If you decide not to provide a view tracking strategy, you must manually send the views by calling the `startView` and `stopView` methods yourself.
+**Note**: By default, the library is using `ActivityViewTrackingStrategy`. If you decide not to provide a view tracking strategy, you must manually send the views by calling the `startView` and `stopView` methods yourself.
 
 
 ### Automatically track network requests

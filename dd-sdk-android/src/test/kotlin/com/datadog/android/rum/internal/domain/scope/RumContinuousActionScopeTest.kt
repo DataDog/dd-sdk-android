@@ -202,6 +202,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -210,10 +211,13 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
+
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -260,6 +264,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -268,10 +273,13 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
+
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -317,6 +325,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -328,7 +337,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -378,6 +388,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -388,7 +399,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -448,6 +460,11 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(1)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -458,7 +475,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -523,6 +541,11 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(1)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -532,7 +555,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -582,6 +606,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -592,7 +617,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -646,6 +672,11 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(1)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -656,7 +687,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -703,6 +735,11 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(1)
                     hasCrashCount(1)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -713,7 +750,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -767,6 +805,11 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(2)
                     hasCrashCount(1)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -777,7 +820,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -812,6 +856,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -822,7 +867,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -861,6 +907,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -871,7 +918,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -910,6 +958,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(count)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -920,7 +969,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -959,6 +1009,11 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(count)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -970,7 +1025,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1011,6 +1067,11 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(nonFatalCount + fatalCount)
                     hasCrashCount(fatalCount)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1022,7 +1083,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1058,6 +1120,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1069,7 +1132,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1131,6 +1195,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1142,7 +1207,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1190,6 +1256,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1201,7 +1268,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1243,6 +1311,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1254,7 +1323,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1296,6 +1366,11 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(count)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1307,7 +1382,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1350,6 +1426,11 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(nonFatalCount + fatalCount)
                     hasCrashCount(fatalCount)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1361,7 +1442,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1401,6 +1483,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1412,7 +1495,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1457,6 +1541,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1467,7 +1552,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1508,6 +1594,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1518,7 +1605,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1625,6 +1713,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1636,7 +1725,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1680,6 +1770,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1691,7 +1782,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,
@@ -1721,7 +1813,7 @@ internal class RumContinuousActionScopeTest {
                 .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
-                    hasType(ActionEvent.ActionType.CUSTOM)
+                    hasType(ActionEvent.ActionEventActionType.CUSTOM)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
                     hasResourceCount(0)
@@ -1729,6 +1821,7 @@ internal class RumContinuousActionScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1740,7 +1833,8 @@ internal class RumContinuousActionScopeTest {
                         fakeDatadogContext.deviceInfo.deviceName,
                         fakeDatadogContext.deviceInfo.deviceModel,
                         fakeDatadogContext.deviceInfo.deviceBrand,
-                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType()
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
                         fakeDatadogContext.deviceInfo.osName,

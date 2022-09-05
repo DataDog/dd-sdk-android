@@ -83,7 +83,8 @@ internal class LongTaskEventForgeryFactory :
                     name = androidInfoProvider.deviceName,
                     model = androidInfoProvider.deviceModel,
                     brand = androidInfoProvider.deviceBrand,
-                    type = androidInfoProvider.deviceType.toLongTaskSchemaType()
+                    type = androidInfoProvider.deviceType.toLongTaskSchemaType(),
+                    architecture = androidInfoProvider.architecture
                 )
             },
             context = forge.aNullable {

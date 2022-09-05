@@ -123,6 +123,16 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasFrustrationCount(expected: Long?): ViewEventAssert {
+        assertThat(actual.view.frustration?.count)
+            .overridingErrorMessage(
+                "Expected event data to have view.frustration.count $expected " +
+                    "but was ${actual.view.frustration?.count}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasCrashCount(expected: Long?): ViewEventAssert {
         assertThat(actual.view.crash?.count)
             .overridingErrorMessage(
@@ -442,7 +452,8 @@ internal class ViewEventAssert(actual: ViewEvent) :
         name: String,
         model: String,
         brand: String,
-        type: ViewEvent.DeviceType
+        type: ViewEvent.DeviceType,
+        architecture: String
     ): ViewEventAssert {
         assertThat(actual.device?.name)
             .overridingErrorMessage(
@@ -464,6 +475,12 @@ internal class ViewEventAssert(actual: ViewEvent) :
                 "Expected event data to have device.type $type but was ${actual.device?.type}"
             )
             .isEqualTo(type)
+        assertThat(actual.device?.architecture)
+            .overridingErrorMessage(
+                "Expected event data to have device.architecture $architecture" +
+                    " but was ${actual.device?.architecture}"
+            )
+            .isEqualTo(architecture)
         return this
     }
 

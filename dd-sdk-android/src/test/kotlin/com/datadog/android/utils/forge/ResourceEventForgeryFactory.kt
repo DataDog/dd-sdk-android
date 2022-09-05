@@ -112,7 +112,8 @@ internal class ResourceEventForgeryFactory :
                     name = androidInfoProvider.deviceName,
                     model = androidInfoProvider.deviceModel,
                     brand = androidInfoProvider.deviceBrand,
-                    type = androidInfoProvider.deviceType.toResourceSchemaType()
+                    type = androidInfoProvider.deviceType.toResourceSchemaType(),
+                    architecture = androidInfoProvider.architecture
                 )
             },
             context = forge.aNullable {

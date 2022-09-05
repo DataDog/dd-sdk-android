@@ -17,6 +17,7 @@ package com.datadog.android.v2.api.context
  * @property osName Operating system name, e.g. Android.
  * @property osMajorVersion Major operating system version, e.g. 8.
  * @property osVersion Full operating system version, e.g. 8.1.1.
+ * @property architecture The CPU architecture of the device
  */
 data class DeviceInfo(
     val deviceName: String,
@@ -26,5 +27,6 @@ data class DeviceInfo(
     val deviceBuildId: String,
     val osName: String,
     val osMajorVersion: String,
-    val osVersion: String
+    val osVersion: String,
+    val architecture: String
 )

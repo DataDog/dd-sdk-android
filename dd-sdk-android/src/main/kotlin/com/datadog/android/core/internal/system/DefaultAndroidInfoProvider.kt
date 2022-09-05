@@ -72,6 +72,11 @@ internal class DefaultAndroidInfoProvider(
             return osVersion.split('.').first()
         }
 
+    override val architecture: String
+        get() {
+            return System.getProperty("os.arch") ?: "unknown"
+        }
+
     companion object {
 
         const val FEATURE_GOOGLE_ANDROID_TV = "com.google.android.tv"

@@ -81,6 +81,7 @@ internal open class RumViewScope(
 
     private var resourceCount: Long = 0
     private var actionCount: Long = 0
+    private var frustrationCount: Int = 0
     private var errorCount: Long = 0
     private var crashCount: Long = 0
     private var longTaskCount: Long = 0
@@ -386,7 +387,8 @@ internal open class RumViewScope(
                 type = sdkContext.deviceInfo.deviceType.toErrorSchemaType(),
                 name = sdkContext.deviceInfo.deviceName,
                 model = sdkContext.deviceInfo.deviceModel,
-                brand = sdkContext.deviceInfo.deviceBrand
+                brand = sdkContext.deviceInfo.deviceBrand,
+                architecture = sdkContext.deviceInfo.architecture
             ),
             context = ErrorEvent.Context(additionalProperties = updatedAttributes),
             dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
@@ -502,6 +504,7 @@ internal open class RumViewScope(
         if (event.viewId == viewId) {
             pendingActionCount--
             actionCount++
+            frustrationCount += event.frustrationCount
             sendViewUpdate(event, writer)
         }
     }
@@ -602,7 +605,8 @@ internal open class RumViewScope(
                 memoryMax = memoryInfo?.maxValue,
                 refreshRateAverage = refreshRateInfo?.meanValue?.let { it * refreshRateScale },
                 refreshRateMin = refreshRateInfo?.minValue?.let { it * refreshRateScale },
-                isSlowRendered = isSlowRendered
+                isSlowRendered = isSlowRendered,
+                frustration = ViewEvent.Frustration(frustrationCount.toLong())
             ),
             usr = ViewEvent.Usr(
                 id = user.id,
@@ -625,7 +629,8 @@ internal open class RumViewScope(
                 type = sdkContext.deviceInfo.deviceType.toViewSchemaType(),
                 name = sdkContext.deviceInfo.deviceName,
                 model = sdkContext.deviceInfo.deviceModel,
-                brand = sdkContext.deviceInfo.deviceBrand
+                brand = sdkContext.deviceInfo.deviceBrand,
+                architecture = sdkContext.deviceInfo.architecture
             ),
             context = ViewEvent.Context(additionalProperties = attributes),
             dd = ViewEvent.Dd(
@@ -694,8 +699,8 @@ internal open class RumViewScope(
 
         val actionEvent = ActionEvent(
             date = eventTimestamp,
-            action = ActionEvent.Action(
-                type = ActionEvent.ActionType.APPLICATION_START,
+            action = ActionEvent.ActionEventAction(
+                type = ActionEvent.ActionEventActionType.APPLICATION_START,
                 id = UUID.randomUUID().toString(),
                 loadingTime = getStartupTime(event)
             ),
@@ -725,7 +730,8 @@ internal open class RumViewScope(
                 type = sdkContext.deviceInfo.deviceType.toActionSchemaType(),
                 name = sdkContext.deviceInfo.deviceName,
                 model = sdkContext.deviceInfo.deviceModel,
-                brand = sdkContext.deviceInfo.deviceBrand
+                brand = sdkContext.deviceInfo.deviceBrand,
+                architecture = sdkContext.deviceInfo.architecture
             ),
             context = ActionEvent.Context(additionalProperties = GlobalRum.globalAttributes),
             dd = ActionEvent.Dd(session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1))
@@ -788,7 +794,8 @@ internal open class RumViewScope(
                 type = sdkContext.deviceInfo.deviceType.toLongTaskSchemaType(),
                 name = sdkContext.deviceInfo.deviceName,
                 model = sdkContext.deviceInfo.deviceModel,
-                brand = sdkContext.deviceInfo.deviceBrand
+                brand = sdkContext.deviceInfo.deviceBrand,
+                architecture = sdkContext.deviceInfo.architecture
             ),
             context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
             dd = LongTaskEvent.Dd(session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1))

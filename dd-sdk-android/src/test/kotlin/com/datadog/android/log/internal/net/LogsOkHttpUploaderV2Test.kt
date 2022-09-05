@@ -44,9 +44,9 @@ internal class LogsOkHttpUploaderV2Test : DataOkHttpUploaderV2Test<LogsOkHttpUpl
         return "/api/v2/logs"
     }
 
-    override fun expectedQueryParams(): Map<String, String> {
+    override fun expectedQueryParams(source: String): Map<String, String> {
         return mapOf(
-            DataOkHttpUploaderV2.QUERY_PARAM_SOURCE to fakeSource
+            DataOkHttpUploaderV2.QUERY_PARAM_SOURCE to source
         )
     }
 }
