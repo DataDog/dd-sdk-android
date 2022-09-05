@@ -27,12 +27,10 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.lang.NullPointerException
-import java.util.LinkedList
-import java.util.Stack
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 import java.util.concurrent.RejectedExecutionException
-import kotlin.math.pow
+import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -66,6 +64,12 @@ internal class SnapshotProcessorTest {
     @Mock
     lateinit var mockExecutorService: ExecutorService
 
+    @Mock
+    lateinit var mockMutationResolver: MutationResolver
+
+    @Mock
+    lateinit var mockNodeFlattener: NodeFlattener
+
     @LongForgery
     var fakeTimestamp: Long = 0L
 
@@ -75,7 +79,11 @@ internal class SnapshotProcessorTest {
     lateinit var testedProcessor: SnapshotProcessor
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        whenever(mockNodeFlattener.flattenNode(any()))
+            .thenReturn(forge.aList { forge.getForgery() })
+        whenever(mockMutationResolver.resolveMutations(any(), any()))
+            .thenReturn(forge.getForgery())
         whenever(mockExecutorService.submit(any())).then {
             (it.arguments[0] as Runnable).run()
             mock<Future<Boolean>>()
@@ -86,14 +94,14 @@ internal class SnapshotProcessorTest {
             mockRumContextProvider,
             mockTimeProvider,
             mockExecutorService,
-            mockWriter
+            mockWriter,
+            mockMutationResolver,
+            mockNodeFlattener
         )
     }
 
-    // region Snapshot
-
     @Test
-    fun `M send it to the writer as EnrichedRecord W process { snapshot }`(forge: Forge) {
+    fun `M send to the writer as EnrichedRecord W process { snapshot }`(forge: Forge) {
         // Given
         val fakeSnapshot = forge.aSingleLevelSnapshot()
 
@@ -107,6 +115,133 @@ internal class SnapshotProcessorTest {
         assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
         assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
         assertThat(captor.firstValue.records.size).isEqualTo(3)
+    }
+
+    // region FullSnapshot
+
+    @Test
+    fun `M send FullSnapshot W process`(forge: Forge) {
+        // Given
+        val fakeSnapshot = forge.aSingleLevelSnapshot()
+        val fakeFlattenedSnapshot = forge.aList {
+            getForgery(MobileSegment.Wireframe::class.java)
+        }
+
+        // When
+        whenever(mockNodeFlattener.flattenNode(fakeSnapshot)).thenReturn(fakeFlattenedSnapshot)
+        testedProcessor.process(fakeSnapshot)
+
+        // Then
+        val captor = argumentCaptor<EnrichedRecord>()
+        verify(mockWriter).write(captor.capture())
+        assertThat(captor.firstValue.records.size).isEqualTo(3)
+        val fullSnapshotRecord = captor.firstValue.records[2]
+            as MobileSegment.MobileRecord.MobileFullSnapshotRecord
+        assertThat(fullSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
+        assertThat(fullSnapshotRecord.data.wireframes).isEqualTo(fakeFlattenedSnapshot)
+    }
+
+    @Test
+    fun `M send FullSnapshot W process { new view }`(forge: Forge) {
+        // Given
+        whenever(mockRumContextProvider.getRumContext())
+            .thenReturn(fakeRumContext)
+            .thenReturn(forge.getForgery())
+        val fakeSnapshotView1 = forge.aSingleLevelSnapshot()
+        val fakeSnapshotView2 = forge.aSingleLevelSnapshot()
+        val fakeFlattenedSnapshotView1 = forge.aList {
+            getForgery(MobileSegment.Wireframe::class.java)
+        }
+        val fakeFlattenedSnapshotView2 = forge.aList {
+            getForgery(MobileSegment.Wireframe::class.java)
+        }
+        whenever(mockNodeFlattener.flattenNode(fakeSnapshotView1))
+            .thenReturn(fakeFlattenedSnapshotView1)
+        whenever(mockNodeFlattener.flattenNode(fakeSnapshotView2))
+            .thenReturn(fakeFlattenedSnapshotView2)
+
+        // When
+        testedProcessor.process(fakeSnapshotView1)
+        testedProcessor.process(fakeSnapshotView2)
+
+        // Then
+        val captor = argumentCaptor<EnrichedRecord>()
+        verify(mockWriter, times(3)).write(captor.capture())
+        assertThat(captor.firstValue.records.size).isEqualTo(3)
+        assertThat(captor.thirdValue.records.size).isEqualTo(3)
+        assertThat(captor.firstValue.records[2])
+            .isInstanceOf(MobileSegment.MobileRecord.MobileFullSnapshotRecord::class.java)
+        assertThat(captor.secondValue.records[0])
+            .isInstanceOf(MobileSegment.MobileRecord.ViewEndRecord::class.java)
+        assertThat(captor.thirdValue.records[2])
+            .isInstanceOf(MobileSegment.MobileRecord.MobileFullSnapshotRecord::class.java)
+    }
+
+    @Test
+    fun `M send FullSnapshot W process { same view, full snapshot window reached }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
+        val fakeSnapshot2 = forge.aSingleLevelSnapshot()
+        val fakeFlattenedSnapshot1 = forge.aList {
+            getForgery(MobileSegment.Wireframe::class.java)
+        }
+        val fakeFlattenedSnapshot2 = forge.aList {
+            getForgery(MobileSegment.Wireframe::class.java)
+        }
+        whenever(mockNodeFlattener.flattenNode(fakeSnapshot1)).thenReturn(fakeFlattenedSnapshot1)
+        whenever(mockNodeFlattener.flattenNode(fakeSnapshot2)).thenReturn(fakeFlattenedSnapshot2)
+        testedProcessor.process(fakeSnapshot1)
+        Thread.sleep(TimeUnit.NANOSECONDS.toMillis(SnapshotProcessor.FULL_SNAPSHOT_INTERVAL_IN_NS))
+
+        // When
+        testedProcessor.process(fakeSnapshot2)
+
+        // Then
+        val captor = argumentCaptor<EnrichedRecord>()
+        verify(mockWriter, times(2)).write(captor.capture())
+        assertThat(captor.secondValue.records.size).isEqualTo(1)
+        val fullSnapshotRecord = captor.secondValue.records[0]
+            as MobileSegment.MobileRecord.MobileFullSnapshotRecord
+        assertThat(fullSnapshotRecord.data.wireframes).isEqualTo(fakeFlattenedSnapshot2)
+    }
+
+    @Test
+    fun `M send IncrementalRecord W process { same view, full snapshot window not reached }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
+        val fakeSnapshot2 = forge.aSingleLevelSnapshot()
+        val fakeFlattenedSnapshot1 = forge.aList {
+            getForgery(MobileSegment.Wireframe::class.java)
+        }
+        val fakeFlattenedSnapshot2 = forge.aList {
+            getForgery(MobileSegment.Wireframe::class.java)
+        }
+        val fakeMutationData: MobileSegment.MobileIncrementalData.MobileMutationData =
+            forge.getForgery()
+        whenever(mockNodeFlattener.flattenNode(fakeSnapshot1)).thenReturn(fakeFlattenedSnapshot1)
+        whenever(mockNodeFlattener.flattenNode(fakeSnapshot2)).thenReturn(fakeFlattenedSnapshot2)
+        whenever(
+            mockMutationResolver.resolveMutations(
+                fakeFlattenedSnapshot1,
+                fakeFlattenedSnapshot2
+            )
+        ).thenReturn(fakeMutationData)
+        testedProcessor.process(fakeSnapshot1)
+
+        // When
+        testedProcessor.process(fakeSnapshot2)
+
+        // Then
+        val captor = argumentCaptor<EnrichedRecord>()
+        verify(mockWriter, times(2)).write(captor.capture())
+        assertThat(captor.secondValue.records.size).isEqualTo(1)
+        val fullSnapshotRecord = captor.secondValue.records[0]
+            as MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord
+        assertThat(fullSnapshotRecord.data).isEqualTo(fakeMutationData)
     }
 
     @Test
@@ -126,17 +261,19 @@ internal class SnapshotProcessorTest {
         // Given
         val fakeRootWidth = forge.aLong(min = 400)
         val fakeRootHeight = forge.aLong(min = 700)
+        val rootWireframe = MobileSegment.Wireframe.ShapeWireframe(
+            0,
+            0,
+            0,
+            fakeRootWidth,
+            fakeRootHeight
+        )
         val fakeSnapshot = Node(
             wireframes = listOf(
-                MobileSegment.Wireframe.ShapeWireframe(
-                    0,
-                    0,
-                    0,
-                    fakeRootWidth,
-                    fakeRootHeight
-                )
+                rootWireframe
             )
         )
+        whenever(mockNodeFlattener.flattenNode(fakeSnapshot)).thenReturn(listOf(rootWireframe))
 
         // When
         testedProcessor.process(fakeSnapshot)
@@ -196,7 +333,7 @@ internal class SnapshotProcessorTest {
         assertThat(captor.secondValue.records.size).isEqualTo(1)
         assertThat(captor.secondValue.records[0]).isInstanceOf(
             MobileSegment.MobileRecord
-                .MobileFullSnapshotRecord::class.java
+                .MobileIncrementalSnapshotRecord::class.java
         )
     }
 
@@ -216,7 +353,7 @@ internal class SnapshotProcessorTest {
         assertThat(captor.secondValue.records.size).isEqualTo(1)
         assertThat(captor.secondValue.records[0]).isInstanceOf(
             MobileSegment.MobileRecord
-                .MobileFullSnapshotRecord::class.java
+                .MobileIncrementalSnapshotRecord::class.java
         )
     }
 
@@ -227,17 +364,19 @@ internal class SnapshotProcessorTest {
         val fakeRootHeight = forge.aLong(min = 700)
         val fakeSnapshot1 = forge.aSingleLevelSnapshot()
         val fakeSnapshot2 = forge.aSingleLevelSnapshot()
+        val rootWireframe = MobileSegment.Wireframe.ShapeWireframe(
+            0,
+            0,
+            0,
+            fakeRootWidth,
+            fakeRootHeight
+        )
         val fakeSnapshot3 = Node(
             wireframes = listOf(
-                MobileSegment.Wireframe.ShapeWireframe(
-                    0,
-                    0,
-                    0,
-                    fakeRootWidth,
-                    fakeRootHeight
-                )
+                rootWireframe
             )
         )
+        whenever(mockNodeFlattener.flattenNode(fakeSnapshot3)).thenReturn(listOf(rootWireframe))
 
         testedProcessor.process(fakeSnapshot1)
         testedProcessor.process(fakeSnapshot2)
@@ -302,151 +441,47 @@ internal class SnapshotProcessorTest {
         assertThat(viewEndRecord.timestamp).isEqualTo(fakeTimestamp)
     }
 
-    @Test
-    fun `M flatten the tree using DFS W process { snapshot 2 levels }`(forge: Forge) {
-        // Given
-        val fakeSnapshot = forge.aSnapshot(2)
-
-        // When
-        testedProcessor.process(fakeSnapshot)
-
-        // Then
-        val expectedList = fakeSnapshot.wireframes +
-            fakeSnapshot.children[0].wireframes +
-            fakeSnapshot.children[0].children[0].wireframes +
-            fakeSnapshot.children[0].children[1].wireframes +
-            fakeSnapshot.children[1].wireframes +
-            fakeSnapshot.children[1].children[0].wireframes +
-            fakeSnapshot.children[1].children[1].wireframes
-        val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter).write(captor.capture())
-        val fullSnapshotRecord = captor.firstValue.records[2] as
-            MobileSegment.MobileRecord.MobileFullSnapshotRecord
-        assertThat(fullSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
-        assertThat(fullSnapshotRecord.data.wireframes).isEqualTo(expectedList)
-    }
-
-    @Test
-    fun `M flatten the tree using DFS W process { snapshot n levels }`(forge: Forge) {
-        // Given
-        val requiredLevels = forge.anInt(min = 1, max = 9)
-        val fakeSnapshot = forge.aSnapshot(requiredLevels)
-
-        // When
-        testedProcessor.process(fakeSnapshot)
-
-        // Then
-        val stack = Stack<Node>()
-        val expectedList = LinkedList<MobileSegment.Wireframe>()
-        stack.push(fakeSnapshot)
-        while (stack.isNotEmpty()) {
-            val node = stack.pop()
-            expectedList.addAll(node!!.wireframes)
-            for (i in node.children.count() - 1 downTo 0) {
-                stack.push(node.children[i])
-            }
-        }
-        val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter).write(captor.capture())
-        val fullSnapshotRecord = captor.firstValue.records[2] as
-            MobileSegment.MobileRecord.MobileFullSnapshotRecord
-        assertThat(fullSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
-        assertThat(fullSnapshotRecord.data.wireframes).isEqualTo(expectedList)
-    }
-
-    @Test
-    fun `M filter out the completely covered wireframes W process`(forge: Forge) {
-        // Given
-        var fakeSnapshot = forge.aSnapshot(2)
-        val topWireframeId = forge.aLong(min = 0)
-        val topWireframe = fakeSnapshot.children[1].wireframes[0].copy(topWireframeId)
-        val childrenWithCoverUpWireframe = fakeSnapshot.children +
-            Node(wireframes = listOf(topWireframe))
-        fakeSnapshot = fakeSnapshot.copy(children = childrenWithCoverUpWireframe)
-
-        // When
-        testedProcessor.process(fakeSnapshot)
-
-        // Then
-        // The added wireframe completely covers the previous one + its children in the list. The
-        // previous wireframe and it children will therefore be removed.
-        val expectedList = fakeSnapshot.wireframes +
-            fakeSnapshot.children[0].wireframes +
-            fakeSnapshot.children[0].children[0].wireframes +
-            fakeSnapshot.children[0].children[1].wireframes +
-            topWireframe
-        val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter).write(captor.capture())
-        val fullSnapshotRecord = captor.firstValue.records[2] as
-            MobileSegment.MobileRecord.MobileFullSnapshotRecord
-        assertThat(fullSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
-        assertThat(fullSnapshotRecord.data.wireframes).isEqualTo(expectedList)
-    }
-
-    @Test
-    fun `M filter out wireframes with invalid width W process`(forge: Forge) {
-        // Given
-        var fakeSnapshot = forge.aSnapshot(1)
-        val invalidWidthWireframe: MobileSegment.Wireframe = if (forge.aBool()) {
-            forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
-                .copy(width = forge.aLong(max = 1))
-        } else {
-            forge.getForgery<MobileSegment.Wireframe.TextWireframe>()
-                .copy(width = forge.aLong(max = 1))
-        }
-        val childrenWithCoverUpWireframe = fakeSnapshot.children + Node(
-            wireframes = listOf(invalidWidthWireframe)
-        )
-        fakeSnapshot = fakeSnapshot.copy(children = childrenWithCoverUpWireframe)
-
-        // When
-        testedProcessor.process(fakeSnapshot)
-
-        // Then
-        val expectedList = fakeSnapshot.wireframes +
-            fakeSnapshot.children[0].wireframes +
-            fakeSnapshot.children[1].wireframes
-        val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter).write(captor.capture())
-        val fullSnapshotRecord = captor.firstValue.records[2] as
-            MobileSegment.MobileRecord.MobileFullSnapshotRecord
-        assertThat(fullSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
-        assertThat(fullSnapshotRecord.data.wireframes).isEqualTo(expectedList)
-    }
-
-    @Test
-    fun `M filter out wireframes with invalid height W process`(forge: Forge) {
-        // Given
-        var fakeSnapshot = forge.aSnapshot(1)
-        val invalidHeightWireframe: MobileSegment.Wireframe = if (forge.aBool()) {
-            forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
-                .copy(height = forge.aLong(max = 1))
-        } else {
-            forge.getForgery<MobileSegment.Wireframe.TextWireframe>()
-                .copy(height = forge.aLong(max = 1))
-        }
-        val childrenWithCoverUpWireframe = fakeSnapshot.children + Node(
-            wireframes = listOf(invalidHeightWireframe)
-        )
-        fakeSnapshot = fakeSnapshot.copy(children = childrenWithCoverUpWireframe)
-
-        // When
-        testedProcessor.process(fakeSnapshot)
-
-        // Then
-        val expectedList = fakeSnapshot.wireframes +
-            fakeSnapshot.children[0].wireframes +
-            fakeSnapshot.children[1].wireframes
-
-        val captor = argumentCaptor<EnrichedRecord>()
-        verify(mockWriter).write(captor.capture())
-        val fullSnapshotRecord = captor.firstValue.records[2] as
-            MobileSegment.MobileRecord.MobileFullSnapshotRecord
-        assertThat(fullSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
-        assertThat(fullSnapshotRecord.data.wireframes).isEqualTo(expectedList)
-    }
-
     // endregion
+
+    // region IncrementalSnapshotRecord
+
+    @Test
+    fun `M send IncrementalSnapshotRecord W process { snapshot 2nd time, same view }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
+        val fakeSnapshot2 = forge.aSingleLevelSnapshot()
+        val fakeFlattenedSnapshot1 = forge.aList {
+            getForgery(MobileSegment.Wireframe::class.java)
+        }
+        val fakeFlattenedSnapshot2 = forge.aList {
+            getForgery(MobileSegment.Wireframe::class.java)
+        }
+        val fakeMutationData: MobileSegment.MobileIncrementalData.MobileMutationData =
+            forge.getForgery()
+        whenever(mockNodeFlattener.flattenNode(fakeSnapshot1)).thenReturn(fakeFlattenedSnapshot1)
+        whenever(mockNodeFlattener.flattenNode(fakeSnapshot2)).thenReturn(fakeFlattenedSnapshot2)
+        whenever(
+            mockMutationResolver.resolveMutations(
+                fakeFlattenedSnapshot1,
+                fakeFlattenedSnapshot2
+            )
+        ).thenReturn(fakeMutationData)
+        testedProcessor.process(fakeSnapshot1)
+
+        // When
+        testedProcessor.process(fakeSnapshot2)
+
+        // Then
+        val captor = argumentCaptor<EnrichedRecord>()
+        verify(mockWriter, times(2)).write(captor.capture())
+        assertThat(captor.secondValue.records.size).isEqualTo(1)
+        val incrementalSnapshotRecord = captor.secondValue.records[0]
+            as MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord
+        assertThat(incrementalSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
+        assertThat(incrementalSnapshotRecord.data).isEqualTo(fakeMutationData)
+    }
 
     // region TouchData
 
@@ -613,96 +648,6 @@ internal class SnapshotProcessorTest {
                 )
             )
         )
-    }
-
-    private fun Forge.aSnapshot(treeLevel: Int, childrenSize: Int = 2): Node {
-        val baseWidth = aLong(min = 200, max = 300)
-        val baseHeight = aLong(min = 300, max = 400)
-        val dimensionsMultiplierFactor = childrenSize.toFloat().pow(treeLevel).toLong()
-        val root = Node(
-            wireframes = listOf(
-                MobileSegment.Wireframe.ShapeWireframe(
-                    0,
-                    0,
-                    0,
-                    baseWidth * dimensionsMultiplierFactor,
-                    baseHeight * dimensionsMultiplierFactor
-                )
-            )
-        )
-        return root.copy(children = snapshots(root, 1, treeLevel, childrenSize))
-    }
-
-    private fun Forge.snapshots(parent: Node, treeLevel: Int, maxTreeLevel: Int, childrenSize: Int):
-        List<Node> {
-        val startIdIndex = childrenSize * parent.wireframes[0].id()
-        val parentWireframeBounds = parent.wireframes[0].bounds()
-        val parentWidth = parentWireframeBounds.width
-        val parentHeight = parentWireframeBounds.height
-        val parentY = parentWireframeBounds.y
-        val parentX = parentWireframeBounds.x
-        val maxWidth = parentWidth / childrenSize
-        val maxHeight = parentHeight / childrenSize
-        if (maxWidth == 0L || maxHeight == 0L) {
-            return emptyList()
-        }
-
-        return if (treeLevel <= maxTreeLevel) {
-            Array(childrenSize) {
-                val nodeId = startIdIndex + (treeLevel * 10 + it).toLong()
-                val minY = parentY + maxHeight * it
-                val minX = parentX + maxWidth * it
-                val wireframe = forgeWireframe(nodeId, minX, minY, maxWidth, maxHeight)
-                var node = Node(wireframes = listOf(wireframe))
-                node = node.copy(
-                    children = snapshots(
-                        node,
-                        treeLevel + 1,
-                        maxTreeLevel,
-                        childrenSize
-                    )
-                )
-                node
-            }.toList()
-        } else emptyList()
-    }
-
-    private fun Forge.forgeWireframe(id: Long, x: Long, y: Long, width: Long, height: Long):
-        MobileSegment.Wireframe {
-        return when (val fakeWireframe = getForgery<MobileSegment.Wireframe>()) {
-            is MobileSegment.Wireframe.ShapeWireframe -> fakeWireframe.copy(
-                id = id,
-                x = x,
-                y = y,
-                width = width,
-                height = height
-            )
-            is MobileSegment.Wireframe.TextWireframe -> fakeWireframe.copy(
-                id = id,
-                x = x,
-                y = y,
-                width = width,
-                height = height
-            )
-        }
-    }
-
-    private fun MobileSegment.Wireframe.bounds(): Bounds {
-        return when (this) {
-            is MobileSegment.Wireframe.ShapeWireframe ->
-                Bounds(this.x, this.y, this.width, this.height)
-            is MobileSegment.Wireframe.TextWireframe ->
-                Bounds(this.x, this.y, this.width, this.height)
-        }
-    }
-
-    private data class Bounds(val x: Long, val y: Long, val width: Long, val height: Long)
-
-    private fun MobileSegment.Wireframe.id(): Long {
-        return when (this) {
-            is MobileSegment.Wireframe.ShapeWireframe -> this.id
-            is MobileSegment.Wireframe.TextWireframe -> this.id
-        }
     }
 
     // endregion
