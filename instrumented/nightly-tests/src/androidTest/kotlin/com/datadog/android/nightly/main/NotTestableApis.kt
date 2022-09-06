@@ -30,4 +30,5 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android._InternalProxy$_TelemetryProxy#fun error(String, String?, String?)
  * apiMethodSignature: com.datadog.android._InternalProxy$_TelemetryProxy#fun error(String, Throwable? = null)
  * apiMethodSignature: com.datadog.android.rum._RumInternalProxy#fun addLongTask(Long, String)
+ * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun disableInteractionTracking(): Builder
  */
