@@ -70,6 +70,7 @@ import com.lyft.kronos.KronosClock
 import java.io.File
 import java.lang.ref.WeakReference
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.ScheduledThreadPoolExecutor
@@ -118,6 +119,8 @@ internal class CoreFeature {
     internal lateinit var webViewTrackingHosts: List<String>
     internal lateinit var storageDir: File
     internal lateinit var androidInfoProvider: AndroidInfoProvider
+
+    internal val featuresContext: MutableMap<String, Map<String, Any?>> = ConcurrentHashMap()
 
     // TESTS ONLY, to prevent Kronos spinning sync threads in unit-tests
     internal var disableKronosBackgroundSync = false
@@ -179,6 +182,7 @@ internal class CoreFeature {
             cleanupApplicationInfo()
             cleanupProviders()
             shutDownExecutors()
+            featuresContext.clear()
             initialized.set(false)
             ndkCrashHandler = NoOpNdkCrashHandler()
             trackingConsentProvider = NoOpConsentProvider()

@@ -1067,6 +1067,7 @@ datadog:
       - "kotlin.collections.MutableList.toMutableList()"
       - "kotlin.collections.MutableList.withIndex()"
       - "kotlin.collections.MutableList?.firstOrNull(kotlin.Function1)"
+      - "kotlin.collections.MutableMap.clear()"
       - "kotlin.collections.MutableMap.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableMap.isEmpty()"
       - "kotlin.collections.MutableMap.isNotEmpty()"

@@ -20,8 +20,12 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.MapForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.TimeUnit
@@ -142,7 +146,22 @@ internal class DatadogContextProviderTest {
 
         assertThat(context.trackingConsent).isEqualTo(fakeTrackingConsent)
 
-        assertThat(context.featuresContext).isEmpty()
+        assertThat(context.featuresContext).isEqualTo(coreFeature.mockInstance.featuresContext)
+    }
+
+    @Test
+    fun `𝕄 set feature context 𝕎 setFeatureContext()`(
+        @StringForgery feature: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
+        ) context: Map<String, String>
+    ) {
+        // When
+        testedProvider.setFeatureContext(feature, context)
+
+        // Then
+        assertThat(coreFeature.mockInstance.featuresContext[feature]).isEqualTo(context)
     }
 
     companion object {

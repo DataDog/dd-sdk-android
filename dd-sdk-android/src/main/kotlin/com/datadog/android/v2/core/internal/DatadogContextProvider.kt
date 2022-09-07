@@ -74,9 +74,13 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
                     )
                 },
                 trackingConsent = coreFeature.trackingConsentProvider.getConsent(),
-                featuresContext = emptyMap()
+                featuresContext = coreFeature.featuresContext
             )
         }
+
+    override fun setFeatureContext(feature: String, context: Map<String, Any?>) {
+        coreFeature.featuresContext[feature] = context
+    }
 
     private fun NetworkInfoV1.Connectivity.asV2(): NetworkInfo.Connectivity {
         return when (this) {
