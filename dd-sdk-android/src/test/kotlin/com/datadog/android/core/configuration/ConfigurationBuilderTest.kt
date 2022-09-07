@@ -335,6 +335,27 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
+    fun `M set the NoOpUserActionTrackingStrategy W disableInteractionTracking()`() {
+        // Given
+
+        // When
+        val config = testedBuilder
+            .disableInteractionTracking()
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig!!)
+            .hasNoOpUserActionTrackingStrategy()
+            .hasViewTrackingStrategy(Configuration.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
+            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
     fun `𝕄 bundle the custom attributes providers W trackInteractions()`(
         @IntForgery(0, 10) attributesCount: Int
     ) {
