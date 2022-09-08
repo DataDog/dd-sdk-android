@@ -20,5 +20,9 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(ShapeWireframeForgeryFactory())
         forge.addFactory(TextWireframeForgeryFactory())
         forge.addFactory(WireframeForgeryFactory())
+        forge.addFactory(TextWireframeMutationForgeryFactory())
+        forge.addFactory(ShapeWireframeMutationForgeryFactory())
+        forge.addFactory(WireframeUpdateMutationForgeryFactory())
+        forge.addFactory(MutationDataForgeryFactory())
     }
 }
