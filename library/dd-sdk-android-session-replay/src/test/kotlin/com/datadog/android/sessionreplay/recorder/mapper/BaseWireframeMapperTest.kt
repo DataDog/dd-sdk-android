@@ -30,7 +30,7 @@ internal abstract class BaseWireframeMapperTest {
         val x = coordinates[0].densityNormalized(fakePixelDensity).toLong()
         val y = coordinates[1].densityNormalized(fakePixelDensity).toLong()
         return MobileSegment.Wireframe.ShapeWireframe(
-            id.toLong(),
+            System.identityHashCode(this).toLong(),
             x = x,
             y = y,
             width = width.toLong().densityNormalized(fakePixelDensity),
@@ -44,7 +44,7 @@ internal abstract class BaseWireframeMapperTest {
         val x = coordinates[0].densityNormalized(fakePixelDensity).toLong()
         val y = coordinates[1].densityNormalized(fakePixelDensity).toLong()
         return MobileSegment.Wireframe.TextWireframe(
-            id.toLong(),
+            System.identityHashCode(this).toLong(),
             x = x,
             y = y,
             text = resolveTextValue(this),
