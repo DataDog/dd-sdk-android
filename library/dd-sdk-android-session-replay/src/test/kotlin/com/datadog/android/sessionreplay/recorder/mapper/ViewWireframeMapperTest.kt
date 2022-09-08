@@ -62,28 +62,10 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
     }
 
     @Test
-    fun `M default to View hashcode W map() { View and id = NO_ID}`(forge: Forge) {
-        // Given
-        val mockView: View = forge.aMockView<View>().apply {
-            whenever(id).thenReturn(View.NO_ID)
-            // we cannot mock the hashcode method as it is final
-        }
-
-        // When
-        val shapeWireframe = testedWireframeMapper.map(mockView, fakePixelDensity)
-
-        // Then
-        val expectedWireframe = mockView.toShapeWireframe().copy(id = mockView.hashCode().toLong())
-        assertThat(shapeWireframe).isEqualTo(expectedWireframe)
-    }
-
-    @Test
-    fun `M use the View hashcode for Wireframe id W produce() { id is not valid }`(forge: Forge) {
+    fun `M use the View hashcode for Wireframe id W produce()`(forge: Forge) {
         // Given
         val mockViews = forge.aList(size = forge.anInt(min = 10, max = 20)) {
-            val mockRoot = aMockView<View>()
-            whenever(mockRoot.id).thenReturn(View.NO_ID)
-            mockRoot
+            aMockView<View>()
         }
 
         // When

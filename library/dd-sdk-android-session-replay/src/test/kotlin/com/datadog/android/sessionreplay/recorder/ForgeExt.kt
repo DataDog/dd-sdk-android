@@ -29,7 +29,6 @@ internal fun Forge.aMockViewWithChildren(
             level,
             maxLevel
         )
-        whenever(mockViewGroup.id).thenReturn(currentLevel * 10 + i)
         whenever(mockViewGroup.getChildAt(i)).thenReturn(mockChildGroup)
     }
     return mockViewGroup
