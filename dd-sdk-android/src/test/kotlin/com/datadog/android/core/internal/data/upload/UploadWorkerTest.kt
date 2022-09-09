@@ -154,7 +154,6 @@ internal class UploadWorkerTest {
         val batchAConfirmation = mock<BatchConfirmation>()
         stubReadSequence(
             mockStorageA,
-            fakeContext,
             mockBatchReaderA,
             mock(),
             batchAConfirmation,
@@ -165,7 +164,6 @@ internal class UploadWorkerTest {
         val batchBConfirmation = mock<BatchConfirmation>()
         stubReadSequence(
             mockStorageB,
-            fakeContext,
             mockBatchReaderB,
             mock(),
             batchBConfirmation,
@@ -229,7 +227,6 @@ internal class UploadWorkerTest {
         val batchAConfirmation = mock<BatchConfirmation>()
         stubReadSequence(
             mockStorageA,
-            fakeContext,
             mockBatchReaderA,
             mock(),
             batchAConfirmation,
@@ -240,7 +237,6 @@ internal class UploadWorkerTest {
         val batchBConfirmation = mock<BatchConfirmation>()
         stubReadSequence(
             mockStorageB,
-            fakeContext,
             mockBatchReaderB,
             mock(),
             batchBConfirmation,
@@ -302,7 +298,6 @@ internal class UploadWorkerTest {
 
         stubMultipleReadSequence(
             mockStorageA,
-            fakeContext,
             aReaders,
             aIds,
             aConfirmations,
@@ -313,7 +308,6 @@ internal class UploadWorkerTest {
         val batchBConfirmation = mock<BatchConfirmation>()
         stubReadSequence(
             mockStorageB,
-            fakeContext,
             mockBatchReaderB,
             mock(),
             batchBConfirmation,
@@ -382,7 +376,6 @@ internal class UploadWorkerTest {
 
         stubMultipleReadSequence(
             mockStorageA,
-            fakeContext,
             aReaders,
             aIds,
             aConfirmations,
@@ -393,7 +386,6 @@ internal class UploadWorkerTest {
         val batchBConfirmation = mock<BatchConfirmation>()
         stubReadSequence(
             mockStorageB,
-            fakeContext,
             mockBatchReaderB,
             mock(),
             batchBConfirmation,
@@ -474,7 +466,6 @@ internal class UploadWorkerTest {
 
         stubMultipleReadSequence(
             mockStorageA,
-            fakeContext,
             aReaders,
             aIds,
             aConfirmations,
@@ -485,7 +476,6 @@ internal class UploadWorkerTest {
         val batchBConfirmation = mock<BatchConfirmation>()
         stubReadSequence(
             mockStorageB,
-            fakeContext,
             mockBatchReaderB,
             mock(),
             batchBConfirmation,
@@ -579,7 +569,6 @@ internal class UploadWorkerTest {
 
     private fun stubReadSequence(
         storage: Storage,
-        context: DatadogContext,
         batchReader: BatchReader,
         batchId: BatchId,
         batchConfirmation: BatchConfirmation,
@@ -588,7 +577,6 @@ internal class UploadWorkerTest {
     ) {
         stubMultipleReadSequence(
             storage,
-            context,
             listOf(batchReader),
             listOf(batchId),
             listOf(batchConfirmation),
@@ -599,20 +587,19 @@ internal class UploadWorkerTest {
 
     private fun stubMultipleReadSequence(
         storage: Storage,
-        context: DatadogContext,
         batchReaders: List<BatchReader>,
         batchIds: List<BatchId>,
         batchConfirmations: List<BatchConfirmation>,
         batches: List<List<ByteArray>>,
         batchMetadata: List<ByteArray?>
     ) {
-        whenever(storage.readNextBatch(eq(context), any(), any()))
+        whenever(storage.readNextBatch(any(), any()))
             .thenAnswer(object : Answer<Unit> {
                 var invocationCount: Int = 0
 
                 override fun answer(invocation: InvocationOnMock) {
                     if (invocationCount >= batches.size) {
-                        (invocation.getArgument<() -> Unit>(1)).invoke()
+                        (invocation.getArgument<() -> Unit>(0)).invoke()
                         return
                     }
 
@@ -629,7 +616,7 @@ internal class UploadWorkerTest {
                         (it.getArgument<(BatchConfirmation) -> Unit>(1)).invoke(batchConfirmation)
                     }
 
-                    (invocation.getArgument<(BatchId, BatchReader) -> Unit>(2)).invoke(
+                    (invocation.getArgument<(BatchId, BatchReader) -> Unit>(1)).invoke(
                         batchId,
                         reader
                     )
@@ -649,13 +636,11 @@ internal class UploadWorkerTest {
         }
 
         override fun readNextBatch(
-            datadogContext: DatadogContext,
             noBatchCallback: () -> Unit,
             batchCallback: (BatchId, BatchReader) -> Unit
         ) {
             executor.execute {
                 delegate.readNextBatch(
-                    datadogContext,
                     noBatchCallback,
                     batchCallback
                 )

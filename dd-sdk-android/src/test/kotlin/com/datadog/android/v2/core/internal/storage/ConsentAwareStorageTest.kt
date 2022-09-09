@@ -868,7 +868,7 @@ internal class ConsentAwareStorageTest {
         // Whenever
         var readData: List<ByteArray>? = null
         var readMetadata: ByteArray? = null
-        testedStorage.readNextBatch(fakeDatadogContext) { _, reader ->
+        testedStorage.readNextBatch { _, reader ->
             readMetadata = reader.currentMetadata()
             readData = reader.read()
         }
@@ -891,7 +891,7 @@ internal class ConsentAwareStorageTest {
         // Whenever
         var readData: List<ByteArray>? = null
         var readMetadata: ByteArray? = null
-        testedStorage.readNextBatch(fakeDatadogContext) { _, reader ->
+        testedStorage.readNextBatch { _, reader ->
             readMetadata = reader.currentMetadata()
             readData = reader.read()
         }
@@ -920,7 +920,7 @@ internal class ConsentAwareStorageTest {
         // Whenever
         var readData: List<ByteArray>? = null
         var readMetadata: ByteArray? = null
-        testedStorage.readNextBatch(fakeDatadogContext) { _, reader ->
+        testedStorage.readNextBatch { _, reader ->
             readMetadata = reader.currentMetadata()
             readData = reader.read()
         }
@@ -943,10 +943,10 @@ internal class ConsentAwareStorageTest {
 
         // When
         var readData: List<ByteArray>? = null
-        testedStorage.readNextBatch(fakeDatadogContext) { _, reader ->
+        testedStorage.readNextBatch { _, reader ->
             readData = reader.read()
         }
-        testedStorage.readNextBatch(fakeDatadogContext) { _, _ ->
+        testedStorage.readNextBatch { _, _ ->
             fail { "Callback should not have been called again" }
         }
 
@@ -962,7 +962,6 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.readNextBatch(
-            fakeDatadogContext,
             noBatchCallback = mockNoBatchCallback
         ) { _, _ ->
             fail { "Callback should not have been called here" }
@@ -1003,7 +1002,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         var batchId: BatchId? = null
-        testedStorage.readNextBatch(fakeDatadogContext) { id, _ ->
+        testedStorage.readNextBatch { id, _ ->
             batchId = id
         }
         testedStorage.confirmBatchRead(batchId!!) { confirm ->
@@ -1029,16 +1028,16 @@ internal class ConsentAwareStorageTest {
         // When
         var batchId1: BatchId? = null
         var batchId2: BatchId? = null
-        testedStorage.readNextBatch(fakeDatadogContext) { id, _ ->
+        testedStorage.readNextBatch { id, _ ->
             batchId1 = id
         }
-        testedStorage.readNextBatch(fakeDatadogContext) { _, _ ->
+        testedStorage.readNextBatch { _, _ ->
             fail { "Callback should not have been called here" }
         }
         testedStorage.confirmBatchRead(batchId1!!) { confirm ->
             confirm.markAsRead(false)
         }
-        testedStorage.readNextBatch(fakeDatadogContext) { id, _ ->
+        testedStorage.readNextBatch { id, _ ->
             batchId2 = id
         }
 
@@ -1060,13 +1059,13 @@ internal class ConsentAwareStorageTest {
         whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
 
         // When
-        testedStorage.readNextBatch(fakeDatadogContext) { _, _ ->
+        testedStorage.readNextBatch { _, _ ->
             // no-op
         }
         testedStorage.confirmBatchRead(BatchId.fromFile(anotherFile)) { confirm ->
             confirm.markAsRead(true)
         }
-        testedStorage.readNextBatch(fakeDatadogContext) { _, _ ->
+        testedStorage.readNextBatch { _, _ ->
             fail { "Callback should not have been called here" }
         }
 
@@ -1085,7 +1084,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         var batchId: BatchId? = null
-        testedStorage.readNextBatch(fakeDatadogContext) { id, _ ->
+        testedStorage.readNextBatch { id, _ ->
             batchId = id
         }
         testedStorage.confirmBatchRead(batchId!!) { confirm ->
@@ -1120,7 +1119,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         var batchId: BatchId? = null
-        testedStorage.readNextBatch(fakeDatadogContext) { id, _ ->
+        testedStorage.readNextBatch { id, _ ->
             batchId = id
         }
         testedStorage.confirmBatchRead(batchId!!) { confirm ->

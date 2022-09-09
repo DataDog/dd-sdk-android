@@ -90,7 +90,6 @@ internal class ConsentAwareStorage(
     /** @inheritdoc */
     @WorkerThread
     override fun readNextBatch(
-        datadogContext: DatadogContext,
         noBatchCallback: () -> Unit,
         batchCallback: (BatchId, BatchReader) -> Unit
     ) {

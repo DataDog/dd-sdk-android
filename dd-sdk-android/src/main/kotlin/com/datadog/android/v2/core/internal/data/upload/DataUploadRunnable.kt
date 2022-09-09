@@ -46,7 +46,6 @@ internal class DataUploadRunnable(
         if (isNetworkAvailable() && isSystemReady()) {
             val context = contextProvider.context
             storage.readNextBatch(
-                context,
                 noBatchCallback = { increaseInterval() }
             ) { batchId, reader ->
                 val batch = reader.read()
