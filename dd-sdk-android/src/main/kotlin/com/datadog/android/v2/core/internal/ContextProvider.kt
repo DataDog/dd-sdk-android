@@ -14,4 +14,6 @@ internal interface ContextProvider {
     //  when datadog is not initialized yet/anymore (case of UploadWorker, other calls site
     //  should be in sync with lifecycle)
     val context: DatadogContext
+
+    fun setFeatureContext(feature: String, context: Map<String, Any?>)
 }

@@ -51,8 +51,10 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -919,6 +921,31 @@ internal class CoreFeatureTest {
 
         // Then
         verify(mockConsentProvider).unregisterAllCallbacks()
+    }
+
+    @Test
+    fun `𝕄 clean up feature context 𝕎 stop()`(
+        @StringForgery feature: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
+        ) context: Map<String, String>
+    ) {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+        testedFeature.featuresContext[feature] = context
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        assertThat(testedFeature.featuresContext).isEmpty()
     }
 
     @Test

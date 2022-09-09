@@ -30,7 +30,11 @@ class DatadogContextForgeryFactory : ForgeryFactory<DatadogContext> {
             deviceInfo = forge.getForgery(),
             userInfo = forge.getForgery(),
             trackingConsent = forge.aValueFrom(TrackingConsent::class.java),
-            featuresContext = emptyMap()
+            // building nested maps with default size slows down tests quite a lot, so will use
+            // an explicit small size
+            featuresContext = forge.aMap(size = 2) {
+                forge.anAlphabeticalString() to forge.exhaustiveAttributes()
+            }
         )
     }
 }

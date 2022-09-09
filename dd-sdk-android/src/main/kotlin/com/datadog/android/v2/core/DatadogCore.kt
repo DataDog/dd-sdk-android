@@ -162,6 +162,11 @@ internal class DatadogCore(
         webViewRumFeature?.flushStoredData()
     }
 
+    /** @inheritDoc */
+    override fun setFeatureContext(feature: String, context: Map<String, Any?>) {
+        contextProvider?.setFeatureContext(feature, context)
+    }
+
     /**
      * Returns all registered features.
      */
