@@ -47,7 +47,7 @@ internal abstract class BaseWireframeMapperTest {
             id.toLong(),
             x = x,
             y = y,
-            text = text.toString(),
+            text = resolveTextValue(this),
             width = width.toLong().densityNormalized(fakePixelDensity),
             height = height.toLong().densityNormalized(fakePixelDensity),
             textStyle = MobileSegment.TextStyle(
@@ -65,6 +65,10 @@ internal abstract class BaseWireframeMapperTest {
                 )
             )
         )
+    }
+
+    protected open fun resolveTextValue(textView: TextView): String {
+        return textView.text.toString()
     }
 
     companion object {

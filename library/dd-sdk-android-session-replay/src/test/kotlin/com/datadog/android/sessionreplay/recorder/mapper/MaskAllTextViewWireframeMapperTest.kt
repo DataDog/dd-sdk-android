@@ -31,14 +31,28 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class TextViewWireframeMapperTest : BaseTextViewWireframeMapperTest() {
+internal class MaskAllTextViewWireframeMapperTest : BaseTextViewWireframeMapperTest() {
+
+    // region super
+
+    override fun initTestedMapper(): TextWireframeMapper {
+        return MaskAllTextWireframeMapper()
+    }
+
+    override fun resolveTextValue(textView: TextView): String {
+        return String(CharArray(textView.text.length) { 'x' })
+    }
+
+    // endregion
+
+    // region Unit tests
 
     @Test
-    fun `M resolve a TextWireframe W map() { TextView with text }`(forge: Forge) {
+    fun `M resolve a TextWireframe with masked text W map() { TextView with text }`(forge: Forge) {
         // Given
-        val fakeText = forge.aString()
+        val fakeText = forge.aString { 'x' }
         val mockButton: TextView = forge.aMockView<Button>().apply {
-            whenever(this.text).thenReturn(fakeText)
+            whenever(this.text).thenReturn(forge.aString(fakeText.length))
             whenever(this.typeface).thenReturn(mock())
         }
 
@@ -49,4 +63,6 @@ internal class TextViewWireframeMapperTest : BaseTextViewWireframeMapperTest() {
         val expectedWireframe = mockButton.toTextWireframe().copy(text = fakeText)
         assertThat(textWireframe).isEqualTo(expectedWireframe)
     }
+
+    // endregion
 }
