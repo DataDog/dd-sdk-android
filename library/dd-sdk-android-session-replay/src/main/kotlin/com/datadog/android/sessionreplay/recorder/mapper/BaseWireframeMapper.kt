@@ -14,7 +14,9 @@ internal abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wirefram
     WireframeMapper<T, S> {
 
     protected fun resolveViewId(view: View): Long {
-        return if (view.id != View.NO_ID) view.id.toLong() else view.hashCode().toLong()
+        // we will use the System.identityHashcode in here which always returns the default
+        // hashcode value whether or not a child class overrides this.
+        return System.identityHashCode(view).toLong()
     }
 
     protected fun colorAndAlphaAsStringHexa(color: Int, alphaAsHexa: Long): String {
