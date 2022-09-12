@@ -14,7 +14,7 @@ internal class MutationResolver {
     fun resolveMutations(
         prevSnapshot: List<MobileSegment.Wireframe>,
         currentSnapshot: List<MobileSegment.Wireframe>
-    ): MobileSegment.MobileIncrementalData.MobileMutationData {
+    ): MobileSegment.MobileIncrementalData.MobileMutationData? {
         val prevSnapshotAsMap = prevSnapshot.associateBy { it.id() }.toMutableMap()
         val updates: MutableList<MobileSegment.WireframeUpdateMutation> = LinkedList()
         val adds: MutableList<MobileSegment.Add> = LinkedList()
@@ -31,11 +31,16 @@ internal class MutationResolver {
             prevWireframe = currentWireframe
         }
         val removes = prevSnapshotAsMap.map { MobileSegment.Remove(it.key) }
-        return MobileSegment.MobileIncrementalData.MobileMutationData(
-            adds = adds,
-            removes = removes,
-            updates = updates
-        )
+
+        return if (adds.isNotEmpty() || removes.isNotEmpty() || updates.isNotEmpty()) {
+            MobileSegment.MobileIncrementalData.MobileMutationData(
+                adds = adds,
+                removes = removes,
+                updates = updates
+            )
+        } else {
+            null
+        }
     }
 
     private fun resolveUpdateMutation(
