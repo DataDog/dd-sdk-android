@@ -117,7 +117,9 @@ internal class DataOkHttpUploaderTest {
 
     lateinit var fakeDatadogRequest: DatadogRequest
 
-    private lateinit var fakeUserAgent: String
+    private lateinit var fakeSystemUserAgent: String
+
+    private lateinit var fakeSdkUserAgent: String
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -153,8 +155,12 @@ internal class DataOkHttpUploaderTest {
         whenever(mockRequestFactory.create(eq(fakeContext), any(), any())) doReturn
             fakeDatadogRequest
 
-        fakeUserAgent = if (forge.aBool()) forge.anAlphaNumericalString() else ""
-        System.setProperty("http.agent", fakeUserAgent)
+        fakeSystemUserAgent = if (forge.aBool()) forge.anAlphaNumericalString() else ""
+        System.setProperty("http.agent", fakeSystemUserAgent)
+
+        fakeSdkUserAgent = "Datadog/$fakeSdkVersion " +
+            "(Linux; U; Android $fakeDeviceVersion; " +
+            "$fakeDeviceModel Build/$fakeDeviceBuildId)"
 
         testedUploader = DataOkHttpUploader(
             mockRequestFactory,
@@ -163,6 +169,53 @@ internal class DataOkHttpUploaderTest {
             fakeSdkVersion,
             mockAndroidInfoProvider
         )
+    }
+
+    @Test
+    fun `𝕄 redact invalid user agent header 𝕎 upload()`(
+        @StringForgery batch: List<String>,
+        @StringForgery batchMeta: String,
+        @StringForgery(regex = "[a-z]+") validValue: String,
+        @StringForgery(regex = "[\u007F-\u00FF]+") invalidValuePostfix: String
+    ) {
+        // Given
+        val batchData = batch.map { it.toByteArray() }
+        val batchMetadata = batchMeta.toByteArray()
+
+        fakeSystemUserAgent = validValue + invalidValuePostfix
+        System.setProperty("http.agent", fakeSystemUserAgent)
+        whenever(mockCall.execute()) doReturn mockResponse(202, "{}")
+
+        // When
+        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.SUCCESS)
+        verifyRequest(fakeDatadogRequest, expectedUserAgentHeader = validValue)
+        verifyResponseIsClosed()
+    }
+
+    @Test
+    fun `𝕄 replace fully invalid user agent header 𝕎 upload()`(
+        @StringForgery batch: List<String>,
+        @StringForgery batchMeta: String,
+        @StringForgery(regex = "[\u007F-\u00FF]+") invalidValue: String
+    ) {
+        // Given
+        val batchData = batch.map { it.toByteArray() }
+        val batchMetadata = batchMeta.toByteArray()
+
+        fakeSystemUserAgent = invalidValue
+        System.setProperty("http.agent", fakeSystemUserAgent)
+        whenever(mockCall.execute()) doReturn mockResponse(202, "{}")
+
+        // When
+        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.SUCCESS)
+        verifyRequest(fakeDatadogRequest, expectedUserAgentHeader = fakeSdkUserAgent)
+        verifyResponseIsClosed()
     }
 
     // region Expected status codes
@@ -188,7 +241,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return client error 𝕎 upload() {400 bad request status} `(
+    fun `𝕄 return client error 𝕎 upload() {400 bad request status}`(
         @StringForgery batch: List<String>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -208,7 +261,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return client token error 𝕎 upload() {401 unauthorized status} `(
+    fun `𝕄 return client token error 𝕎 upload() {401 unauthorized status}`(
         @StringForgery batch: List<String>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -228,7 +281,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return client error 𝕎 upload() {403 forbidden status} `(
+    fun `𝕄 return client error 𝕎 upload() {403 forbidden status}`(
         @StringForgery batch: List<String>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -248,7 +301,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return client error with retry 𝕎 upload() {408 timeout status} `(
+    fun `𝕄 return client error with retry 𝕎 upload() {408 timeout status}`(
         @StringForgery batch: List<String>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -268,7 +321,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return client error 𝕎 upload() {413 too large status} `(
+    fun `𝕄 return client error 𝕎 upload() {413 too large status}`(
         @StringForgery batch: List<String>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -288,7 +341,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return client error with retry 𝕎 upload() {429 too many requests status} `(
+    fun `𝕄 return client error with retry 𝕎 upload() {429 too many requests status}`(
         @StringForgery batch: List<String>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -308,7 +361,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return server error 𝕎 upload() {500 internal error status} `(
+    fun `𝕄 return server error 𝕎 upload() {500 internal error status}`(
         @StringForgery batch: List<String>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -328,7 +381,7 @@ internal class DataOkHttpUploaderTest {
     }
 
     @Test
-    fun `𝕄 return server error 𝕎 upload() {503 unavailable status} `(
+    fun `𝕄 return server error 𝕎 upload() {503 unavailable status}`(
         @StringForgery batch: List<String>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -352,7 +405,7 @@ internal class DataOkHttpUploaderTest {
     // region Unknown cases
 
     @RepeatedTest(32)
-    fun `𝕄 return unknown error 𝕎 upload() {xxx status} `(
+    fun `𝕄 return unknown error 𝕎 upload() {xxx status}`(
         @StringForgery batch: List<String>,
         @StringForgery batchMeta: String,
         forge: Forge,
@@ -461,14 +514,18 @@ internal class DataOkHttpUploaderTest {
         return fakeResponse
     }
 
-    private fun verifyRequest(expectedRequest: DatadogRequest) {
+    private fun verifyRequest(
+        expectedRequest: DatadogRequest,
+        expectedUserAgentHeader: String = fakeSystemUserAgent.ifBlank { fakeSdkUserAgent }
+    ) {
         argumentCaptor<Request> {
             verify(mockCallFactory).newCall(capture())
 
             verifyRequestUrl(firstValue.url(), HttpUrl.get(expectedRequest.url))
             verifyRequestHeaders(
                 firstValue.headers(),
-                expectedRequest.headers
+                expectedRequest.headers,
+                expectedUserAgentHeader
             )
             verifyRequestBody(firstValue.body(), expectedRequest.body, expectedRequest.contentType)
         }
@@ -515,7 +572,8 @@ internal class DataOkHttpUploaderTest {
 
     private fun verifyRequestHeaders(
         headers: Headers,
-        expectedHeaders: Map<String, String>
+        expectedHeaders: Map<String, String>,
+        expectedUserAgentHeader: String
     ) {
         val actualHeaders = headers.toMultimap()
 
@@ -528,14 +586,7 @@ internal class DataOkHttpUploaderTest {
         )
             .isEqualTo(expectedHeaders.mapKeys { it.key.lowercase(Locale.US) })
 
-        val expectedUserAgent = if (fakeUserAgent.isBlank()) {
-            "Datadog/$fakeSdkVersion " +
-                "(Linux; U; Android $fakeDeviceVersion; " +
-                "$fakeDeviceModel Build/$fakeDeviceBuildId)"
-        } else {
-            fakeUserAgent
-        }
-        assertThat(headers.get("User-Agent")).isEqualTo(expectedUserAgent)
+        assertThat(headers.get("User-Agent")).isEqualTo(expectedUserAgentHeader)
     }
 
     private fun verifyResponseIsClosed() {

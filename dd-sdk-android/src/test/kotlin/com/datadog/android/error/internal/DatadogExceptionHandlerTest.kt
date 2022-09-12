@@ -17,6 +17,7 @@ import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
@@ -108,6 +109,9 @@ internal class DatadogExceptionHandlerTest {
     @Mock
     lateinit var mockWorkManager: WorkManagerImpl
 
+    @Mock
+    lateinit var mockPackageVersionProvider: AppVersionProvider
+
     @Forgery
     lateinit var fakeThrowable: Throwable
 
@@ -129,16 +133,20 @@ internal class DatadogExceptionHandlerTest {
     @StringForgery(regex = "[0-9](\\.[0-9]{1,2}){1,3}")
     lateinit var fakeSdkVersion: String
 
+    @StringForgery
+    lateinit var fakeVariant: String
+
     @BeforeEach
     fun `set up`() {
         mockChoreographerInstance()
 
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
         whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        whenever(mockPackageVersionProvider.version) doReturn appContext.fakeVersionName
 
         Datadog.initialize(
             appContext.mockInstance,
-            Credentials(fakeToken, fakeEnvName, Credentials.NO_VARIANT, null),
+            Credentials(fakeToken, fakeEnvName, fakeVariant, null),
             Configuration.Builder(
                 logsEnabled = true,
                 tracesEnabled = true,
@@ -160,7 +168,8 @@ internal class DatadogExceptionHandlerTest {
                 mockTimeProvider,
                 fakeSdkVersion,
                 fakeEnvName,
-                appContext.fakeVersionName
+                fakeVariant,
+                mockPackageVersionProvider
             ),
             writer = mockLogWriter,
             appContext = appContext.mockInstance
@@ -198,7 +207,8 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}"
+                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}",
+                        "${LogAttributes.VARIANT}:$fakeVariant"
                     )
                 )
                 .hasExactlyAttributes(
@@ -300,7 +310,8 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}"
+                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}",
+                        "${LogAttributes.VARIANT}:$fakeVariant"
                     )
                 )
                 .hasExactlyAttributes(
@@ -336,7 +347,8 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}"
+                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}",
+                        "${LogAttributes.VARIANT}:$fakeVariant"
                     )
                 )
                 .hasExactlyAttributes(
@@ -374,7 +386,8 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}"
+                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}",
+                        "${LogAttributes.VARIANT}:$fakeVariant"
                     )
                 )
                 .hasExactlyAttributes(
@@ -418,7 +431,8 @@ internal class DatadogExceptionHandlerTest {
                 .hasExactlyTags(
                     listOf(
                         "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}"
+                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}",
+                        "${LogAttributes.VARIANT}:$fakeVariant"
                     )
                 )
                 .hasExactlyAttributes(

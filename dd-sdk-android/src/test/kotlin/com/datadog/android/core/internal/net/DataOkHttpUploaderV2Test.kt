@@ -13,6 +13,7 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -75,7 +76,8 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
     @StringForgery
     lateinit var fakeSdkVersion: String
 
-    lateinit var fakeUserAgent: String
+    lateinit var fakeSystemUserAgent: String
+    lateinit var fakeSdkUserAgent: String
 
     lateinit var fakeResponse: Response
 
@@ -96,8 +98,11 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
         whenever(mockAndroidInfoProvider.deviceModel) doReturn fakeDeviceModel
         whenever(mockAndroidInfoProvider.deviceBuildId) doReturn fakeDeviceBuildId
 
-        fakeUserAgent = if (forge.aBool()) forge.anAlphaNumericalString() else ""
-        System.setProperty("http.agent", fakeUserAgent)
+        fakeSystemUserAgent = if (forge.aBool()) forge.anAlphaNumericalString() else ""
+        System.setProperty("http.agent", fakeSystemUserAgent)
+        fakeSdkUserAgent = "Datadog/$fakeSdkVersion " +
+            "(Linux; U; Android $fakeDeviceVersion; " +
+            "$fakeDeviceModel Build/$fakeDeviceBuildId)"
 
         testedUploader = buildTestedInstance(mockCallFactory)
     }
@@ -106,12 +111,12 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
 
     abstract fun expectedPath(): String
 
-    abstract fun expectedQueryParams(): Map<String, String>
+    abstract fun expectedQueryParams(source: String): Map<String, String>
 
     // region Expected status codes
 
     @Test
-    fun `𝕄 return success 𝕎 upload() {202 accepted status} `(
+    fun `𝕄 return success 𝕎 upload() {202 accepted status}`(
         @StringForgery message: String
     ) {
         // Given
@@ -127,7 +132,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
     }
 
     @Test
-    fun `𝕄 return client error 𝕎 upload() {400 bad request status} `(
+    fun `𝕄 return client error 𝕎 upload() {400 bad request status}`(
         @StringForgery message: String
     ) {
         // Given
@@ -143,7 +148,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
     }
 
     @Test
-    fun `𝕄 return client token error 𝕎 upload() {401 unauthorized status} `(
+    fun `𝕄 return client token error 𝕎 upload() {401 unauthorized status}`(
         @StringForgery message: String
     ) {
         // Given
@@ -159,7 +164,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
     }
 
     @Test
-    fun `𝕄 return client error 𝕎 upload() {403 forbidden status} `(
+    fun `𝕄 return client error 𝕎 upload() {403 forbidden status}`(
         @StringForgery message: String
     ) {
         // Given
@@ -175,7 +180,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
     }
 
     @Test
-    fun `𝕄 return client error with retry 𝕎 upload() {408 timeout status} `(
+    fun `𝕄 return client error with retry 𝕎 upload() {408 timeout status}`(
         @StringForgery message: String
     ) {
         // Given
@@ -191,7 +196,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
     }
 
     @Test
-    fun `𝕄 return client error 𝕎 upload() {413 too large status} `(
+    fun `𝕄 return client error 𝕎 upload() {413 too large status}`(
         @StringForgery message: String
     ) {
         // Given
@@ -207,7 +212,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
     }
 
     @Test
-    fun `𝕄 return client error with retry 𝕎 upload() {429 too many requests status} `(
+    fun `𝕄 return client error with retry 𝕎 upload() {429 too many requests status}`(
         @StringForgery message: String
     ) {
         // Given
@@ -223,7 +228,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
     }
 
     @Test
-    fun `𝕄 return server error 𝕎 upload() {500 internal error status} `(
+    fun `𝕄 return server error 𝕎 upload() {500 internal error status}`(
         @StringForgery message: String
     ) {
         // Given
@@ -239,7 +244,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
     }
 
     @Test
-    fun `𝕄 return server error 𝕎 upload() {503 unavailable status} `(
+    fun `𝕄 return server error 𝕎 upload() {503 unavailable status}`(
         @StringForgery message: String
     ) {
         // Given
@@ -259,7 +264,7 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
     // region Unknown cases
 
     @RepeatedTest(32)
-    fun `𝕄 return unknown error 𝕎 upload() {xxx status} `(
+    fun `𝕄 return unknown error 𝕎 upload() {xxx status}`(
         forge: Forge,
         @StringForgery message: String
     ) {
@@ -311,6 +316,143 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
 
     // endregion
 
+    // region Invalid Headers
+
+    @Test
+    fun `𝕄 fail and warn 𝕎 upload() {invalid API_KEY header}`(
+        @StringForgery(regex = "[a-z]+[\u007F-\u00FF]+") invalidValue: String
+    ) {
+        // Given
+        fakeClientToken = invalidValue
+        testedUploader = buildTestedInstance(mockCallFactory)
+
+        // When
+        val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
+
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.INVALID_TOKEN_ERROR)
+        verify(mockCallFactory, never()).newCall(any())
+    }
+
+    @Test
+    fun `𝕄 redact invalid source header 𝕎 upload() {invalid source header}`(
+        @StringForgery(regex = "[a-z]+") validValue: String,
+        @StringForgery(regex = "[\u007F-\u00FF]+") invalidValuePostfix: String
+    ) {
+        // Given
+        fakeSource = validValue + invalidValuePostfix
+        testedUploader = buildTestedInstance(mockCallFactory)
+        whenever(mockCall.execute()) doReturn mockResponse(202, "{}")
+
+        // When
+        val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
+
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.SUCCESS)
+        verifyRequest(
+            expectedHeaders(source = validValue),
+            validValue
+        )
+        verifyResponseIsClosed()
+    }
+
+    @Test
+    fun `𝕄 redact invalid sdk version header 𝕎 upload() {invalid sdk version, valid user agent}`(
+        @StringForgery(regex = "[a-z]+") validValue: String,
+        @StringForgery(regex = "[\u007F-\u00FF]+") invalidValuePostfix: String,
+        @StringForgery userAgent: String
+    ) {
+        // Given
+        fakeSdkVersion = validValue + invalidValuePostfix
+        fakeSystemUserAgent = userAgent
+        System.setProperty("http.agent", fakeSystemUserAgent)
+        testedUploader = buildTestedInstance(mockCallFactory)
+        whenever(mockCall.execute()) doReturn mockResponse(202, "{}")
+
+        // When
+        val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
+
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.SUCCESS)
+        verifyRequest(
+            expectedHeaders(sdkVersion = validValue)
+        )
+        verifyResponseIsClosed()
+    }
+
+    @Test
+    fun `𝕄 redact invalid sdk version header 𝕎 upload() {invalid sdk version and user agent }`(
+        @StringForgery(regex = "[a-z]+") validValue: String,
+        @StringForgery(regex = "[\u007F-\u00FF]+") invalidValuePostfix: String
+    ) {
+        // Given
+        fakeSdkVersion = validValue + invalidValuePostfix
+        fakeSystemUserAgent = ""
+        System.setProperty("http.agent", fakeSystemUserAgent)
+        testedUploader = buildTestedInstance(mockCallFactory)
+        whenever(mockCall.execute()) doReturn mockResponse(202, "{}")
+
+        // When
+        val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
+
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.SUCCESS)
+        verifyRequest(
+            expectedHeaders(
+                sdkVersion = validValue,
+                userAgent = "Datadog/$validValue " +
+                    "(Linux; U; Android $fakeDeviceVersion; " +
+                    "$fakeDeviceModel Build/$fakeDeviceBuildId)"
+            )
+        )
+        verifyResponseIsClosed()
+    }
+
+    @Test
+    fun `𝕄 redact invalid user agent header 𝕎 upload() {invalid source header}`(
+        @StringForgery(regex = "[a-z]+") validValue: String,
+        @StringForgery(regex = "[\u007F-\u00FF]+") invalidValuePostfix: String
+    ) {
+        // Given
+        fakeSystemUserAgent = validValue + invalidValuePostfix
+        System.setProperty("http.agent", fakeSystemUserAgent)
+        testedUploader = buildTestedInstance(mockCallFactory)
+        whenever(mockCall.execute()) doReturn mockResponse(202, "{}")
+
+        // When
+        val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
+
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.SUCCESS)
+        verifyRequest(
+            expectedHeaders(userAgent = validValue)
+        )
+        verifyResponseIsClosed()
+    }
+
+    @Test
+    fun `𝕄 replace fully invalid user agent header 𝕎 upload() {invalid source header}`(
+        @StringForgery(regex = "[\u007F-\u00FF]+") invalidValue: String
+    ) {
+        // Given
+        fakeSystemUserAgent = invalidValue
+        System.setProperty("http.agent", fakeSystemUserAgent)
+        testedUploader = buildTestedInstance(mockCallFactory)
+        whenever(mockCall.execute()) doReturn mockResponse(202, "{}")
+
+        // When
+        val result = testedUploader.upload(fakeData.toByteArray(Charsets.UTF_8))
+
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.SUCCESS)
+        verifyRequest(
+            expectedHeaders(userAgent = fakeSdkUserAgent)
+        )
+        verifyResponseIsClosed()
+    }
+
+    // endregion
+
     // region Internal
 
     private fun mockResponse(statusCode: Int, message: String): Response {
@@ -324,21 +466,25 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
         return fakeResponse
     }
 
-    private fun verifyRequest() {
+    private fun verifyRequest(
+        expectedHeaders: Map<String, String> = expectedHeaders(),
+        source: String = fakeSource
+    ) {
         argumentCaptor<Request> {
             verify(mockCallFactory).newCall(capture())
 
-            verifyRequestUrl(firstValue.url())
-            verifyRequestHeaders(firstValue.headers())
+            verifyRequestUrl(firstValue.url(), source)
+            verifyRequestHeaders(firstValue.headers(), expectedHeaders)
+            verifyRequestIdHeaders(firstValue.headers())
             verifyRequestBody(firstValue.body())
         }
     }
 
-    private fun verifyRequestUrl(url: HttpUrl) {
+    private fun verifyRequestUrl(url: HttpUrl, source: String) {
         assertThat("${url.scheme()}://${url.host()}").isEqualTo(fakeEndpoint)
         assertThat(url.encodedPath()).isEqualTo(expectedPath())
 
-        val expectedQueryParams = expectedQueryParams()
+        val expectedQueryParams = expectedQueryParams(source)
 
         if (expectedQueryParams.isEmpty()) {
             assertThat(url.query()).isNullOrEmpty()
@@ -360,24 +506,34 @@ internal abstract class DataOkHttpUploaderV2Test<T : DataOkHttpUploaderV2> {
         assertThat(body.contentLength()).isEqualTo(fakeData.length.toLong())
     }
 
-    private fun verifyRequestHeaders(headers: Headers) {
-        assertThat(headers.get("DD-API-KEY")).isEqualTo(fakeClientToken)
-        assertThat(headers.get("DD-EVP-ORIGIN")).isEqualTo(fakeSource)
-        assertThat(headers.get("DD-EVP-ORIGIN-VERSION")).isEqualTo(fakeSdkVersion)
+    private fun verifyRequestHeaders(
+        headers: Headers,
+        expectedHeaders: Map<String, String>
+    ) {
+        expectedHeaders.forEach { (key, value) ->
+            assertThat(headers.get(key)).isEqualTo(value)
+        }
+    }
+
+    private fun verifyRequestIdHeaders(headers: Headers) {
         assertThat(headers.get("DD-REQUEST-ID")).matches {
             UUID.fromString(it) != UUID(0, 0)
         }
+    }
 
-        assertThat(headers.get("Content-Type")).isEqualTo(testedUploader.contentType)
-
-        val expectedUserAgent = if (fakeUserAgent.isBlank()) {
-            "Datadog/$fakeSdkVersion " +
-                "(Linux; U; Android $fakeDeviceVersion; " +
-                "$fakeDeviceModel Build/$fakeDeviceBuildId)"
-        } else {
-            fakeUserAgent
-        }
-        assertThat(headers.get("User-Agent")).isEqualTo(expectedUserAgent)
+    private fun expectedHeaders(
+        clientToken: String = fakeClientToken,
+        source: String = fakeSource,
+        sdkVersion: String = fakeSdkVersion,
+        userAgent: String = fakeSystemUserAgent.ifBlank { fakeSdkUserAgent }
+    ): Map<String, String> {
+        return mapOf(
+            "DD-API-KEY" to clientToken,
+            "DD-EVP-ORIGIN" to source,
+            "DD-EVP-ORIGIN-VERSION" to sdkVersion,
+            "Content-Type" to testedUploader.contentType,
+            "User-Agent" to userAgent
+        )
     }
 
     private fun verifyResponseIsClosed() {

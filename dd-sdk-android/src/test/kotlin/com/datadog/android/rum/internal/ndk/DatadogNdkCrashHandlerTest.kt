@@ -437,7 +437,8 @@ internal class DatadogNdkCrashHandlerTest {
                     fakeAndroidInfoProvider.deviceName,
                     fakeAndroidInfoProvider.deviceModel,
                     fakeAndroidInfoProvider.deviceBrand,
-                    fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    fakeAndroidInfoProvider.deviceType.toErrorSchemaType(),
+                    fakeAndroidInfoProvider.architecture
                 )
                 .hasOsInfo(
                     fakeAndroidInfoProvider.osName,
@@ -521,7 +522,8 @@ internal class DatadogNdkCrashHandlerTest {
                     fakeAndroidInfoProvider.deviceName,
                     fakeAndroidInfoProvider.deviceModel,
                     fakeAndroidInfoProvider.deviceBrand,
-                    fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                    fakeAndroidInfoProvider.deviceType.toErrorSchemaType(),
+                    fakeAndroidInfoProvider.architecture
                 )
                 .hasOsInfo(
                     fakeAndroidInfoProvider.osName,

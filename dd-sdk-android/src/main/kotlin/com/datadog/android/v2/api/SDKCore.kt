@@ -14,7 +14,7 @@ import com.datadog.tools.annotation.NoOpImplementation
 /**
  * SDKCore is the entry point to register Datadog features to the core registry.
  */
-@Suppress("ComplexInterface")
+@Suppress("ComplexInterface", "TooManyFunctions")
 @NoOpImplementation
 interface SDKCore {
 
@@ -101,4 +101,12 @@ interface SDKCore {
      * Flushes all stored data (send everything right now).
      */
     fun flushStoredData()
+
+    /**
+     * Sets the context for the particular feature.
+     *
+     * @param feature Feature name.
+     * @param context Context to set.
+     */
+    fun setFeatureContext(feature: String, context: Map<String, Any?>)
 }

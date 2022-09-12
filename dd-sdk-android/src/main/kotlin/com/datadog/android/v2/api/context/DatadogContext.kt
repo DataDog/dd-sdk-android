@@ -46,5 +46,5 @@ data class DatadogContext(
     val deviceInfo: DeviceInfo,
     val userInfo: UserInfo,
     val trackingConsent: TrackingConsent,
-    val featuresContext: Map<String, Any>
+    val featuresContext: Map<String, Map<String, Any?>>
 )

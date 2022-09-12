@@ -25,7 +25,7 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
                 clientToken = coreFeature.clientToken,
                 service = coreFeature.serviceName,
                 env = coreFeature.envName,
-                version = coreFeature.packageVersion,
+                version = coreFeature.packageVersionProvider.version,
                 sdkVersion = coreFeature.sdkVersion,
                 source = coreFeature.sourceName,
                 time = with(coreFeature.timeProvider) {
@@ -61,7 +61,8 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
                         deviceBuildId = deviceBuildId,
                         osName = osName,
                         osVersion = osVersion,
-                        osMajorVersion = osMajorVersion
+                        osMajorVersion = osMajorVersion,
+                        architecture = architecture
                     )
                 },
                 userInfo = with(coreFeature.userInfoProvider.getUserInfo()) {
@@ -73,9 +74,13 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
                     )
                 },
                 trackingConsent = coreFeature.trackingConsentProvider.getConsent(),
-                featuresContext = emptyMap()
+                featuresContext = coreFeature.featuresContext
             )
         }
+
+    override fun setFeatureContext(feature: String, context: Map<String, Any?>) {
+        coreFeature.featuresContext[feature] = context
+    }
 
     private fun NetworkInfoV1.Connectivity.asV2(): NetworkInfo.Connectivity {
         return when (this) {

@@ -20,7 +20,7 @@ internal open class RumOkHttpUploaderV2(
     sdkVersion: String,
     callFactory: Call.Factory,
     androidInfoProvider: AndroidInfoProvider,
-    coreFeature: CoreFeature
+    private val coreFeature: CoreFeature
 ) : DataOkHttpUploaderV2(
     buildUrl(endpoint, TrackType.RUM),
     clientToken,
@@ -32,20 +32,22 @@ internal open class RumOkHttpUploaderV2(
     sdkLogger
 ) {
 
-    private val tags: String by lazy {
-        val elements = mutableListOf(
-            "${RumAttributes.SERVICE_NAME}:${coreFeature.serviceName}",
-            "${RumAttributes.APPLICATION_VERSION}:${coreFeature.packageVersion}",
-            "${RumAttributes.SDK_VERSION}:$sdkVersion",
-            "${RumAttributes.ENV}:${coreFeature.envName}"
-        )
+    private val tags: String
+        get() {
+            val elements = mutableListOf(
+                "${RumAttributes.SERVICE_NAME}:${coreFeature.serviceName}",
+                "${RumAttributes.APPLICATION_VERSION}:" +
+                    coreFeature.packageVersionProvider.version,
+                "${RumAttributes.SDK_VERSION}:$sdkVersion",
+                "${RumAttributes.ENV}:${coreFeature.envName}"
+            )
 
-        if (coreFeature.variant.isNotEmpty()) {
-            elements.add("${RumAttributes.VARIANT}:${coreFeature.variant}")
+            if (coreFeature.variant.isNotEmpty()) {
+                elements.add("${RumAttributes.VARIANT}:${coreFeature.variant}")
+            }
+
+            return elements.joinToString(",")
         }
-
-        elements.joinToString(",")
-    }
 
     // region DataOkHttpUploaderV2
 

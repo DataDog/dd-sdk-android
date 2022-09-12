@@ -331,9 +331,9 @@ internal constructor(
 
         /**
          * Sets the automatic view tracking strategy used by the SDK.
-         * By default no view will be tracked.
+         * By default [ActivityViewTrackingStrategy] will be used.
          * @param strategy as the [ViewTrackingStrategy]
-         * Note: By default, the RUM Monitor will let you handle View events manually.
+         * Note: If [null] is passed, the RUM Monitor will let you handle View events manually.
          * This means that you should call [RumMonitor.startView] and [RumMonitor.stopView]
          * yourself. A view should be started when it becomes visible and interactive
          * (equivalent to `onResume`) and be stopped when it's paused (equivalent to `onPause`).
@@ -342,7 +342,7 @@ internal constructor(
          * @see [com.datadog.android.rum.tracking.MixedViewTrackingStrategy]
          * @see [com.datadog.android.rum.tracking.NavigationViewTrackingStrategy]
          */
-        fun useViewTrackingStrategy(strategy: ViewTrackingStrategy): Builder {
+        fun useViewTrackingStrategy(strategy: ViewTrackingStrategy?): Builder {
             applyIfFeatureEnabled(PluginFeature.RUM, "useViewTrackingStrategy") {
                 rumConfig = rumConfig.copy(viewTrackingStrategy = strategy)
             }

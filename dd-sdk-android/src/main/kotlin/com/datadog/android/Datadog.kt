@@ -10,6 +10,7 @@ import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.telemetry
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
@@ -214,6 +215,19 @@ object Datadog {
     }
 
     /**
+     * For Datadog internal use only.
+     *
+     * @see _InternalProxy
+     */
+    @Suppress("ObjectPropertyNaming")
+    val _internal: _InternalProxy by lazy {
+        _InternalProxy(
+            telemetry,
+            (globalSDKCore as? DatadogCore)?.coreFeature
+        )
+    }
+
+    /**
      * Stops the session recording.
      *
      * Session Replay feature will only work for recorded
@@ -256,6 +270,7 @@ object Datadog {
 
     internal const val DD_SOURCE_TAG = "_dd.source"
     internal const val DD_SDK_VERSION_TAG = "_dd.sdk_version"
+    internal const val DD_APP_VERSION_TAG = "_dd.version"
 
     // endregion
 }

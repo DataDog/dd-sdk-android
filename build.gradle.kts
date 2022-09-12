@@ -205,6 +205,10 @@ tasks.register("checkApiSurfaceChangesAll") {
     )
 }
 
+tasks.register("checkGeneratedFiles") {
+    dependsOn("checkApiSurfaceChangesAll")
+}
+
 tasks.register("detektAll") {
     dependsOn(
         ":dd-sdk-android:detektMain",

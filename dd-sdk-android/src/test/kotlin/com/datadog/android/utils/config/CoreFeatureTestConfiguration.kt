@@ -15,10 +15,12 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.system.AndroidInfoProvider
+import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import com.lyft.kronos.KronosClock
 import com.nhaarman.mockitokotlin2.doReturn
@@ -48,6 +50,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var fakeUploadFrequency: UploadFrequency
     lateinit var fakeSite: DatadogSite
     var fakeProcessImportance: Int = 0
+    lateinit var fakeFeaturesContext: MutableMap<String, Map<String, Any?>>
 
     lateinit var mockUploadExecutor: ScheduledThreadPoolExecutor
     lateinit var mockOkHttpClient: OkHttpClient
@@ -62,6 +65,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var mockUserInfoProvider: MutableUserInfoProvider
     lateinit var mockTrackingConsentProvider: ConsentProvider
     lateinit var mockAndroidInfoProvider: AndroidInfoProvider
+    lateinit var mockAppVersionProvider: AppVersionProvider
 
     // region CoreFeatureTestConfiguration
 
@@ -92,6 +96,11 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         fakeUploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
         fakeSite = forge.aValueFrom(DatadogSite::class.java)
         fakeProcessImportance = forge.anInt()
+        // building nested maps with default size slows down tests quite a lot, so will use
+        // an explicit small size
+        fakeFeaturesContext = forge.aMap(size = 2) {
+            forge.anAlphabeticalString() to forge.exhaustiveAttributes()
+        }.toMutableMap()
     }
 
     private fun createMocks() {
@@ -109,6 +118,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         mockUserInfoProvider = mock()
         mockAndroidInfoProvider = mock()
         mockTrackingConsentProvider = mock { on { getConsent() } doReturn TrackingConsent.PENDING }
+        mockAppVersionProvider = mock { on { version } doReturn appContext.fakeVersionName }
     }
 
     private fun configureCoreFeature() {
@@ -117,7 +127,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         whenever(mockInstance.envName) doReturn fakeEnvName
         whenever(mockInstance.serviceName) doReturn fakeServiceName
         whenever(mockInstance.packageName) doReturn appContext.fakePackageName
-        whenever(mockInstance.packageVersion) doReturn appContext.fakeVersionName
+        whenever(mockInstance.packageVersionProvider) doReturn mockAppVersionProvider
         whenever(mockInstance.variant) doReturn appContext.fakeVariant
         whenever(mockInstance.rumApplicationId) doReturn fakeRumApplicationId
         whenever(mockInstance.sourceName) doReturn fakeSourceName
@@ -126,6 +136,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         whenever(mockInstance.storageDir) doReturn fakeStorageDir
         whenever(mockInstance.uploadFrequency) doReturn fakeUploadFrequency
         whenever(mockInstance.site) doReturn fakeSite
+        whenever(mockInstance.featuresContext) doReturn fakeFeaturesContext
         CoreFeature.processImportance = fakeProcessImportance
 
         whenever(mockInstance.persistenceExecutorService) doReturn mockPersistenceExecutor

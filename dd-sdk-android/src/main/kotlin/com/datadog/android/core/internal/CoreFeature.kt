@@ -21,6 +21,7 @@ import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.net.CurlInterceptor
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
+import com.datadog.android.core.internal.net.RotatingDnsResolver
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NetworkInfoDeserializer
@@ -35,9 +36,12 @@ import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.core.internal.system.AndroidInfoProvider
+import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.core.internal.system.DefaultAndroidInfoProvider
+import com.datadog.android.core.internal.system.DefaultAppVersionProvider
 import com.datadog.android.core.internal.system.NoOpAndroidInfoProvider
+import com.datadog.android.core.internal.system.NoOpAppVersionProvider
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.KronosTimeProvider
@@ -66,6 +70,7 @@ import com.lyft.kronos.KronosClock
 import java.io.File
 import java.lang.ref.WeakReference
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.ScheduledThreadPoolExecutor
@@ -95,7 +100,7 @@ internal class CoreFeature {
 
     internal var clientToken: String = ""
     internal var packageName: String = ""
-    internal var packageVersion: String = ""
+    internal var packageVersionProvider: AppVersionProvider = NoOpAppVersionProvider()
     internal var serviceName: String = ""
     internal var sourceName: String = DEFAULT_SOURCE_NAME
     internal var sdkVersion: String = DEFAULT_SDK_VERSION
@@ -114,6 +119,8 @@ internal class CoreFeature {
     internal lateinit var webViewTrackingHosts: List<String>
     internal lateinit var storageDir: File
     internal lateinit var androidInfoProvider: AndroidInfoProvider
+
+    internal val featuresContext: MutableMap<String, Map<String, Any?>> = ConcurrentHashMap()
 
     // TESTS ONLY, to prevent Kronos spinning sync threads in unit-tests
     internal var disableKronosBackgroundSync = false
@@ -175,6 +182,7 @@ internal class CoreFeature {
             cleanupApplicationInfo()
             cleanupProviders()
             shutDownExecutors()
+            featuresContext.clear()
             initialized.set(false)
             ndkCrashHandler = NoOpNdkCrashHandler()
             trackingConsentProvider = NoOpConsentProvider()
@@ -225,7 +233,8 @@ internal class CoreFeature {
                     timeProvider,
                     sdkVersion,
                     envName,
-                    packageVersion
+                    variant,
+                    packageVersionProvider
                 ),
                 NdkCrashLogDeserializer(sdkLogger),
                 RumEventDeserializer(),
@@ -274,12 +283,14 @@ internal class CoreFeature {
             devLogger.e("Unable to read your application's version name", e)
             null
         }
-        packageVersion = packageInfo?.let {
-            // we need to use the deprecated method because getLongVersionCode method is only
-            // available from API 28 and above
-            @Suppress("DEPRECATION")
-            it.versionName ?: it.versionCode.toString()
-        } ?: DEFAULT_APP_VERSION
+        packageVersionProvider = DefaultAppVersionProvider(
+            packageInfo?.let {
+                // we need to use the deprecated method because getLongVersionCode method is only
+                // available from API 28 and above
+                @Suppress("DEPRECATION")
+                it.versionName ?: it.versionCode.toString()
+            } ?: DEFAULT_APP_VERSION
+        )
         clientToken = credentials.clientToken
         serviceName = credentials.serviceName ?: appContext.packageName
         rumApplicationId = credentials.rumApplicationId
@@ -368,8 +379,10 @@ internal class CoreFeature {
             .connectionSpecs(listOf(connectionSpec))
 
         if (BuildConfig.DEBUG) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             builder.addNetworkInterceptor(CurlInterceptor())
         } else {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             builder.addInterceptor(GzipRequestInterceptor())
         }
 
@@ -377,6 +390,10 @@ internal class CoreFeature {
             builder.proxy(configuration.proxy)
             builder.proxyAuthenticator(configuration.proxyAuth)
         }
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+        builder.dns(RotatingDnsResolver())
+
         okHttpClient = builder.build()
     }
 
@@ -429,7 +446,7 @@ internal class CoreFeature {
     private fun cleanupApplicationInfo() {
         clientToken = ""
         packageName = ""
-        packageVersion = ""
+        packageVersionProvider = NoOpAppVersionProvider()
         serviceName = ""
         sourceName = DEFAULT_SOURCE_NAME
         sdkVersion = DEFAULT_SDK_VERSION

@@ -69,16 +69,13 @@ internal class DataOkHttpUploader(
     // endregion
 
     private val userAgent by lazy {
-        System.getProperty(SYSTEM_UA).let {
-            if (it.isNullOrBlank()) {
+        sanitizeHeaderValue(System.getProperty(SYSTEM_UA))
+            .ifBlank {
                 "Datadog/$sdkVersion " +
                     "(Linux; U; Android ${androidInfoProvider.osVersion}; " +
                     "${androidInfoProvider.deviceModel} " +
                     "Build/${androidInfoProvider.deviceBuildId})"
-            } else {
-                it
             }
-        }
     }
 
     // region Internal
@@ -116,6 +113,18 @@ internal class DataOkHttpUploader(
         builder.addHeader(HEADER_USER_AGENT, userAgent)
 
         return builder.build()
+    }
+
+    private fun sanitizeHeaderValue(value: String?): String {
+        return value?.filter { isValidHeaderValueChar(it) }.orEmpty()
+    }
+
+    private fun isValidHeaderValue(value: String): Boolean {
+        return value.all { isValidHeaderValueChar(it) }
+    }
+
+    private fun isValidHeaderValueChar(c: Char): Boolean {
+        return c == '\t' || c in '\u0020' until '\u007F'
     }
 
     private fun responseCodeToUploadStatus(code: Int): UploadStatus {

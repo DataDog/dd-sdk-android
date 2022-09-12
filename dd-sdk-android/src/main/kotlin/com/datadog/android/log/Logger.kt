@@ -359,7 +359,8 @@ internal constructor(internal var handler: LogHandler) {
                     coreFeature.timeProvider,
                     coreFeature.sdkVersion,
                     coreFeature.envName,
-                    coreFeature.packageVersion
+                    coreFeature.variant,
+                    coreFeature.packageVersionProvider
                 )
             }
         }
