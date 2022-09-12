@@ -483,6 +483,38 @@ internal class SnapshotProcessorTest {
         assertThat(incrementalSnapshotRecord.data).isEqualTo(fakeMutationData)
     }
 
+    @Test
+    fun `M do nothing W process { no mutation was detected }`(forge: Forge) {
+        // Given
+        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
+        val fakeSnapshot2 = fakeSnapshot1.copy()
+        val fakeFlattenedSnapshot1 = forge.aList {
+            getForgery(MobileSegment.Wireframe::class.java)
+        }
+        val fakeFlattenedSnapshot2 = ArrayList(fakeFlattenedSnapshot1)
+        whenever(mockNodeFlattener.flattenNode(fakeSnapshot1)).thenReturn(fakeFlattenedSnapshot1)
+        whenever(mockNodeFlattener.flattenNode(fakeSnapshot2)).thenReturn(fakeFlattenedSnapshot2)
+        whenever(
+            mockMutationResolver.resolveMutations(
+                fakeFlattenedSnapshot1,
+                fakeFlattenedSnapshot2
+            )
+        ).thenReturn(null)
+        testedProcessor.process(fakeSnapshot1)
+
+        // When
+        testedProcessor.process(fakeSnapshot2)
+
+        // Then
+        // We should only send the FullSnapshotRecord. The IncrementalSnapshotRecord will not be
+        // send as there was no mutation data detected.
+        val captor = argumentCaptor<EnrichedRecord>()
+        verify(mockWriter, times(1)).write(captor.capture())
+        assertThat(captor.firstValue.records.size).isEqualTo(3)
+        assertThat(captor.firstValue.records[2])
+            .isInstanceOf(MobileSegment.MobileRecord.MobileFullSnapshotRecord::class.java)
+    }
+
     // region TouchData
 
     @Test

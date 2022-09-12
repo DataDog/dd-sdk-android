@@ -137,20 +137,27 @@ internal class SnapshotProcessor(
             records.add(focusRecord)
         }
 
-        val record = if (fullSnapshotRequired) {
-            MobileSegment.MobileRecord.MobileFullSnapshotRecord(
-                timestamp,
-                MobileSegment.Data(wireframes)
+        if (fullSnapshotRequired) {
+            records.add(
+                MobileSegment.MobileRecord.MobileFullSnapshotRecord(
+                    timestamp,
+                    MobileSegment.Data(wireframes)
+                )
             )
         } else {
-            MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
-                timestamp,
-                mutationResolver.resolveMutations(prevSnapshot, wireframes)
-            )
+            mutationResolver.resolveMutations(prevSnapshot, wireframes)?.let {
+                records.add(
+                    MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
+                        timestamp,
+                        it
+                    )
+                )
+            }
         }
-        records.add(record)
         prevSnapshot = wireframes
-        writer.write(bundleRecordInEnrichedRecord(newRumContext, records))
+        if (records.isNotEmpty()) {
+            writer.write(bundleRecordInEnrichedRecord(newRumContext, records))
+        }
     }
 
     private fun isLastFullSnapshotTime(): Boolean {

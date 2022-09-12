@@ -11,6 +11,7 @@ import com.datadog.android.sessionreplay.utils.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import java.util.ArrayList
 import java.util.LinkedList
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -60,9 +61,9 @@ internal class MutationResolverTest {
         )
 
         // Then
-        assertThat(mutations.adds).isEqualTo(expectedAdditions)
-        assertThat(mutations.removes).isNullOrEmpty()
-        assertThat(mutations.updates).isNullOrEmpty()
+        assertThat(mutations?.adds).isEqualTo(expectedAdditions)
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isNullOrEmpty()
     }
 
     @Test
@@ -87,9 +88,9 @@ internal class MutationResolverTest {
         )
 
         // Then
-        assertThat(mutations.adds).isEqualTo(expectedAdds)
-        assertThat(mutations.removes).isNullOrEmpty()
-        assertThat(mutations.updates).isNullOrEmpty()
+        assertThat(mutations?.adds).isEqualTo(expectedAdds)
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isNullOrEmpty()
     }
 
     // endregion
@@ -115,9 +116,9 @@ internal class MutationResolverTest {
         )
 
         // Then
-        assertThat(mutations.adds).isNullOrEmpty()
-        assertThat(mutations.removes).isEqualTo(expectedRemovals)
-        assertThat(mutations.updates).isNullOrEmpty()
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isEqualTo(expectedRemovals)
+        assertThat(mutations?.updates).isNullOrEmpty()
     }
 
     // endregion
@@ -150,9 +151,9 @@ internal class MutationResolverTest {
         )
 
         // Then
-        assertThat(mutations.adds).isNullOrEmpty()
-        assertThat(mutations.removes).isNullOrEmpty()
-        assertThat(mutations.updates).isEqualTo(expectedUpdates)
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
     }
 
     @Test
@@ -181,9 +182,9 @@ internal class MutationResolverTest {
         )
 
         // Then
-        assertThat(mutations.adds).isNullOrEmpty()
-        assertThat(mutations.removes).isNullOrEmpty()
-        assertThat(mutations.updates).isEqualTo(expectedUpdates)
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
     }
 
     @Test
@@ -218,9 +219,9 @@ internal class MutationResolverTest {
         )
 
         // Then
-        assertThat(mutations.adds).isNullOrEmpty()
-        assertThat(mutations.removes).isNullOrEmpty()
-        assertThat(mutations.updates).isEqualTo(expectedUpdates)
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
     }
 
     @Test
@@ -256,9 +257,9 @@ internal class MutationResolverTest {
         )
 
         // Then
-        assertThat(mutations.adds).isNullOrEmpty()
-        assertThat(mutations.removes).isNullOrEmpty()
-        assertThat(mutations.updates).isEqualTo(expectedUpdates)
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
     }
 
     @Test
@@ -284,9 +285,9 @@ internal class MutationResolverTest {
         )
 
         // Then
-        assertThat(mutations.adds).isNullOrEmpty()
-        assertThat(mutations.removes).isNullOrEmpty()
-        assertThat(mutations.updates).isNullOrEmpty()
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isNullOrEmpty()
     }
 
     // endregion
@@ -319,9 +320,9 @@ internal class MutationResolverTest {
         )
 
         // Then
-        assertThat(mutations.adds).isNullOrEmpty()
-        assertThat(mutations.removes).isNullOrEmpty()
-        assertThat(mutations.updates).isEqualTo(expectedUpdates)
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
     }
 
     @Test
@@ -350,9 +351,9 @@ internal class MutationResolverTest {
         )
 
         // Then
-        assertThat(mutations.adds).isNullOrEmpty()
-        assertThat(mutations.removes).isNullOrEmpty()
-        assertThat(mutations.updates).isEqualTo(expectedUpdates)
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
     }
 
     @Test
@@ -387,9 +388,9 @@ internal class MutationResolverTest {
         )
 
         // Then
-        assertThat(mutations.adds).isNullOrEmpty()
-        assertThat(mutations.removes).isNullOrEmpty()
-        assertThat(mutations.updates).isEqualTo(expectedUpdates)
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
     }
 
     @Test
@@ -425,9 +426,9 @@ internal class MutationResolverTest {
         )
 
         // Then
-        assertThat(mutations.adds).isNullOrEmpty()
-        assertThat(mutations.removes).isNullOrEmpty()
-        assertThat(mutations.updates).isEqualTo(expectedUpdates)
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
     }
 
     @Test
@@ -455,9 +456,9 @@ internal class MutationResolverTest {
         )
 
         // Then
-        assertThat(mutations.adds).isNullOrEmpty()
-        assertThat(mutations.removes).isNullOrEmpty()
-        assertThat(mutations.updates).isEqualTo(expectedUpdates)
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
     }
 
     @Test
@@ -493,9 +494,9 @@ internal class MutationResolverTest {
         )
 
         // Then
-        assertThat(mutations.adds).isNullOrEmpty()
-        assertThat(mutations.removes).isNullOrEmpty()
-        assertThat(mutations.updates).isEqualTo(expectedUpdates)
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
     }
 
     @Test
@@ -542,13 +543,13 @@ internal class MutationResolverTest {
         )
 
         // Then
-        assertThat(mutations.adds).isNullOrEmpty()
-        assertThat(mutations.removes).isNullOrEmpty()
-        assertThat(mutations.updates).isEqualTo(expectedUpdates)
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
     }
 
     @Test
-    fun `M return empty mutations W resolveMutation {Text wireframes types are not matching }`(
+    fun `M return null W resolveMutation {Text wireframes types are not matching }`(
         forge: Forge
     ) {
         // Given
@@ -570,9 +571,53 @@ internal class MutationResolverTest {
         )
 
         // Then
-        assertThat(mutations.adds).isNullOrEmpty()
-        assertThat(mutations.removes).isNullOrEmpty()
-        assertThat(mutations.updates).isNullOrEmpty()
+        assertThat(mutations).isNull()
+    }
+
+    // endregion
+
+    // region no mutation
+
+    @Test
+    fun `M return null W resolveMutation { Text wireframes, no mutation }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
+            forge.getForgery(MobileSegment.Wireframe.TextWireframe::class.java)
+        }
+
+        val fakeCurrentSnapshot = ArrayList(fakePrevSnapshot)
+
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            fakePrevSnapshot,
+            fakeCurrentSnapshot
+        )
+
+        // Then
+        assertThat(mutations).isNull()
+    }
+
+    @Test
+    fun `M return null W resolveMutation { Shape wireframes, no mutation }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
+            forge.getForgery(MobileSegment.Wireframe.ShapeWireframe::class.java)
+        }
+
+        val fakeCurrentSnapshot = ArrayList(fakePrevSnapshot)
+
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            fakePrevSnapshot,
+            fakeCurrentSnapshot
+        )
+
+        // Then
+        assertThat(mutations).isNull()
     }
 
     // endregion
