@@ -1039,6 +1039,7 @@ datadog:
       - "kotlin.collections.List.forEach(kotlin.Function1)"
       - "kotlin.collections.List.getOrNull(kotlin.Int)"
       - "kotlin.collections.List.isEmpty()"
+      - "kotlin.collections.List.isNotEmpty()"
       - "kotlin.collections.List.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
       - "kotlin.collections.List.lastOrNull()"
       - "kotlin.collections.List.lastOrNull(kotlin.Function1)"
