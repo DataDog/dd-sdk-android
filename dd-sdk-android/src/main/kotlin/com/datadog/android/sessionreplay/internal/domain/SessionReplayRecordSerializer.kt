@@ -8,10 +8,8 @@ package com.datadog.android.sessionreplay.internal.domain
 
 import com.datadog.android.core.internal.persistence.Serializer
 
-internal class RecordSerializer : Serializer<Any> {
-    override fun serialize(model: Any): String? {
-        // TODO: This will be switched to a Serializer<Record> once the models
-        //  will be in place. RUMM-2330"
-        return null
+internal class SessionReplayRecordSerializer : Serializer<String> {
+    override fun serialize(model: String): String {
+        return model
     }
 }

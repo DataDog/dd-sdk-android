@@ -15,23 +15,21 @@ import com.datadog.android.sessionreplay.recorder.ScreenRecorder
 import com.datadog.android.sessionreplay.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.utils.RumContextProvider
 import com.datadog.android.sessionreplay.utils.SessionReplayTimeProvider
+import com.datadog.android.sessionreplay.writer.RecordWriter
 import java.util.WeakHashMap
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 /**
- * The SessionReplayLifecycleCallback.
- * It will be registered as `Application.ActivityLifecycleCallbacks` and will decide when the
- * activity can be recorded or not based on the `onActivityResume`, `onActivityPause` callbacks.
- * This is only meant for internal usage and later will change visibility from public to internal.
+ * The SessionReplay implementation of the [LifecycleCallback].
  */
 @SuppressWarnings("UndocumentedPublicFunction")
 class SessionReplayLifecycleCallback(
     rumContextProvider: RumContextProvider,
-    privacy: SessionReplayPrivacy
-) :
-    Application.ActivityLifecycleCallbacks {
+    privacy: SessionReplayPrivacy,
+    serializedRecordWriter: SerializedRecordWriter
+) : LifecycleCallback {
 
     private val timeProvider = SessionReplayTimeProvider()
 
@@ -47,7 +45,8 @@ class SessionReplayLifecycleCallback(
         SnapshotProcessor(
             rumContextProvider,
             timeProvider,
-            processorExecutorService
+            processorExecutorService,
+            RecordWriter(serializedRecordWriter)
         ),
         SnapshotProducer(privacy.mapper()),
         timeProvider
@@ -90,11 +89,11 @@ class SessionReplayLifecycleCallback(
 
     // region Api
 
-    fun register(appContext: Application) {
+    override fun register(appContext: Application) {
         appContext.registerActivityLifecycleCallbacks(this)
     }
 
-    fun unregisterAndStopRecorders(appContext: Application) {
+    override fun unregisterAndStopRecorders(appContext: Application) {
         appContext.unregisterActivityLifecycleCallbacks(this)
         resumedActivities.keys.forEach {
             it?.let { activity ->

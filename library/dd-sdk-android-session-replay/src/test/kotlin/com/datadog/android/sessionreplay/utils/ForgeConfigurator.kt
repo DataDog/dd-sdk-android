@@ -24,5 +24,11 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(ShapeWireframeMutationForgeryFactory())
         forge.addFactory(WireframeUpdateMutationForgeryFactory())
         forge.addFactory(MutationDataForgeryFactory())
+        forge.addFactory(FocusRecordForgeryFactory())
+        forge.addFactory(FullSnapshotRecordForgeryFactory())
+        forge.addFactory(IncrementalSnapshotRecordForgeryFactory())
+        forge.addFactory(MetaRecordForgeryFactory())
+        forge.addFactory(ViewEndRecordForgeryFactory())
+        forge.addFactory(EnrichedRecordForgeryFactory())
     }
 }

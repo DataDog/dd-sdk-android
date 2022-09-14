@@ -28,8 +28,6 @@ import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
-import com.datadog.android.sessionreplay.internal.SessionReplayContextProvider
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.v2.api.FeatureScope
@@ -64,7 +62,8 @@ internal class DatadogCore(
         null
     internal var webViewLogsFeature: SdkFeature<JsonObject, Configuration.Feature.Logs>? = null
     internal var webViewRumFeature: SdkFeature<Any, Configuration.Feature.RUM>? = null
-    internal var sessionReplayFeature: SdkFeature<Any, Configuration.Feature.SessionReplay>? = null
+    internal var sessionReplayFeature: SdkFeature<String, Configuration.Feature.SessionReplay>? =
+        null
 
     // TODO RUMM-0000 handle context
     internal val contextProvider: ContextProvider?
@@ -306,10 +305,7 @@ internal class DatadogCore(
         if (configuration != null) {
             sessionReplayFeature = SessionReplayFeature(
                 coreFeature,
-                SessionReplayLifecycleCallback(
-                    SessionReplayContextProvider(),
-                    configuration.privacy
-                )
+                configuration
             )
             sessionReplayFeature?.initialize(appContext, configuration)
         }

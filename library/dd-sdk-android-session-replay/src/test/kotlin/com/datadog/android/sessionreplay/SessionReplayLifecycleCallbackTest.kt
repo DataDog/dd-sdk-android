@@ -39,12 +39,19 @@ class SessionReplayLifecycleCallbackTest {
     @Mock
     private lateinit var mockRumContextProvider: RumContextProvider
 
+    @Mock
+    private lateinit var mockSerializedRecordWriter: SerializedRecordWriter
+
     @Forgery
     private lateinit var fakePrivacy: SessionReplayPrivacy
 
     @BeforeEach
     fun `set up`() {
-        testedCallback = SessionReplayLifecycleCallback(mockRumContextProvider, fakePrivacy)
+        testedCallback = SessionReplayLifecycleCallback(
+            mockRumContextProvider,
+            fakePrivacy,
+            mockSerializedRecordWriter
+        )
         testedCallback.recorder = mockRecoder
     }
 

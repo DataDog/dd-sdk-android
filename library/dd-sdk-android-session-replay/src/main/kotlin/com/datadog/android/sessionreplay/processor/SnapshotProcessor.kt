@@ -14,7 +14,6 @@ import com.datadog.android.sessionreplay.recorder.OrientationChanged
 import com.datadog.android.sessionreplay.utils.RumContextProvider
 import com.datadog.android.sessionreplay.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.utils.TimeProvider
-import com.datadog.android.sessionreplay.writer.RecordWriter
 import com.datadog.android.sessionreplay.writer.Writer
 import java.lang.NullPointerException
 import java.util.LinkedList
@@ -26,7 +25,7 @@ internal class SnapshotProcessor(
     private val rumContextProvider: RumContextProvider,
     private val timeProvider: TimeProvider,
     private val executorService: ExecutorService,
-    private val writer: Writer = RecordWriter(),
+    private val writer: Writer,
     private val mutationResolver: MutationResolver = MutationResolver(),
     private val nodeFlattener: NodeFlattener = NodeFlattener()
 ) : Processor {

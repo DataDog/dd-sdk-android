@@ -1,5 +1,10 @@
-class com.datadog.android.sessionreplay.SessionReplayLifecycleCallback : android.app.Application.ActivityLifecycleCallbacks
-  constructor(com.datadog.android.sessionreplay.utils.RumContextProvider, SessionReplayPrivacy)
+interface com.datadog.android.sessionreplay.LifecycleCallback : android.app.Application.ActivityLifecycleCallbacks
+  fun register(android.app.Application)
+  fun unregisterAndStopRecorders(android.app.Application)
+interface com.datadog.android.sessionreplay.SerializedRecordWriter
+  fun write(String)
+class com.datadog.android.sessionreplay.SessionReplayLifecycleCallback : LifecycleCallback
+  constructor(com.datadog.android.sessionreplay.utils.RumContextProvider, SessionReplayPrivacy, SerializedRecordWriter)
   override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
   override fun onActivityStarted(android.app.Activity)
   override fun onActivityResumed(android.app.Activity)
@@ -7,8 +12,8 @@ class com.datadog.android.sessionreplay.SessionReplayLifecycleCallback : android
   override fun onActivityStopped(android.app.Activity)
   override fun onActivitySaveInstanceState(android.app.Activity, android.os.Bundle)
   override fun onActivityDestroyed(android.app.Activity)
-  fun register(android.app.Application)
-  fun unregisterAndStopRecorders(android.app.Application)
+  override fun register(android.app.Application)
+  override fun unregisterAndStopRecorders(android.app.Application)
   companion object 
 enum com.datadog.android.sessionreplay.SessionReplayPrivacy
   - ALLOW_ALL
