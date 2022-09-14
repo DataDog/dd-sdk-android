@@ -24,7 +24,7 @@ internal class SessionReplayRecordPersistenceStrategy(
     executorService: ExecutorService,
     internalLogger: Logger,
     localDataEncryption: Encryption?
-) : BatchFilePersistenceStrategy<Any>(
+) : BatchFilePersistenceStrategy<String>(
     FeatureFileOrchestrator(
         consentProvider,
         storageDir,
@@ -33,7 +33,7 @@ internal class SessionReplayRecordPersistenceStrategy(
         internalLogger
     ),
     executorService,
-    RecordSerializer(),
+    SessionReplayRecordSerializer(),
     PayloadDecoration.NEW_LINE_DECORATION,
     internalLogger,
     BatchFileReaderWriter.create(internalLogger, localDataEncryption),

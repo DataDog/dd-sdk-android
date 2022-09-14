@@ -6,10 +6,12 @@
 
 package com.datadog.android.sessionreplay.writer
 
+import com.datadog.android.sessionreplay.SerializedRecordWriter
 import com.datadog.android.sessionreplay.processor.EnrichedRecord
 
-internal class RecordWriter : Writer {
+internal class RecordWriter(private val jsonStringWriter: SerializedRecordWriter) : Writer {
+
     override fun write(record: EnrichedRecord) {
-        // TODO: RUMM-2273 Create the Session Replay Writer
+        jsonStringWriter.write(record.toJson())
     }
 }
