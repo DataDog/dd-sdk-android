@@ -179,7 +179,7 @@ internal class DatadogCoreTest {
     ) {
         // Given
         val mockContextProvider = mock<ContextProvider>()
-        testedCore.contextProvider = mockContextProvider
+        testedCore.coreFeature.contextProvider = mockContextProvider
 
         // When
         testedCore.setFeatureContext(feature, context)

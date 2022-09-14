@@ -65,6 +65,9 @@ import com.datadog.android.rum.internal.ndk.NdkNetworkInfoDataWriter
 import com.datadog.android.rum.internal.ndk.NdkUserInfoDataWriter
 import com.datadog.android.rum.internal.ndk.NoOpNdkCrashHandler
 import com.datadog.android.security.Encryption
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.DatadogContextProvider
+import com.datadog.android.v2.core.internal.NoOpContextProvider
 import com.lyft.kronos.AndroidClockFactory
 import com.lyft.kronos.KronosClock
 import java.io.File
@@ -94,6 +97,7 @@ internal class CoreFeature {
     internal var timeProvider: TimeProvider = NoOpTimeProvider()
     internal var trackingConsentProvider: ConsentProvider = NoOpConsentProvider()
     internal var userInfoProvider: MutableUserInfoProvider = NoOpMutableUserInfoProvider()
+    internal var contextProvider: ContextProvider = NoOpContextProvider()
 
     internal lateinit var okHttpClient: OkHttpClient
     internal lateinit var kronosClock: KronosClock
@@ -160,6 +164,7 @@ internal class CoreFeature {
         prepareNdkCrashData()
         setupInfoProviders(appContext, consent)
         initialized.set(true)
+        contextProvider = DatadogContextProvider(this)
     }
 
     fun stop() {
@@ -186,6 +191,7 @@ internal class CoreFeature {
             initialized.set(false)
             ndkCrashHandler = NoOpNdkCrashHandler()
             trackingConsentProvider = NoOpConsentProvider()
+            contextProvider = NoOpContextProvider()
         }
     }
 

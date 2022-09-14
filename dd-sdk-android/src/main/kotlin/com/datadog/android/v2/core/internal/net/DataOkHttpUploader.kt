@@ -19,8 +19,6 @@ import okhttp3.MediaType
 import okhttp3.Request
 import okhttp3.RequestBody
 
-// TODO RUMM-0000 Should replace com.datadog.android.core.internal.net.DataOkHttpUploaderV2 once
-//  features are configured as V2
 internal class DataOkHttpUploader(
     val requestFactory: RequestFactory,
     val internalLogger: Logger,
@@ -84,6 +82,15 @@ internal class DataOkHttpUploader(
     private fun executeUploadRequest(
         request: DatadogRequest
     ): UploadStatus {
+        val apiKey = request.headers.entries
+            .firstOrNull {
+                it.key.equals(RequestFactory.HEADER_API_KEY, ignoreCase = true)
+            }
+            ?.value
+        if (apiKey != null && (apiKey.isEmpty() || !isValidHeaderValue(apiKey))) {
+            return UploadStatus.INVALID_TOKEN_ERROR
+        }
+
         val okHttpRequest = buildOkHttpRequest(request)
         val call = callFactory.newCall(okHttpRequest)
         val response = call.execute()

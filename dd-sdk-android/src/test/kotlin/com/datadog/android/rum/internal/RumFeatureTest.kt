@@ -14,7 +14,6 @@ import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
-import com.datadog.android.rum.internal.net.RumOkHttpUploaderV2
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
@@ -26,6 +25,7 @@ import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.rum.internal.net.RumRequestFactory
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -93,19 +93,15 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
     }
 
     @Test
-    fun `𝕄 create a logs uploader 𝕎 createUploader()`() {
+    fun `𝕄 create a rum request factory 𝕎 createRequestFactory()`() {
         // Given
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // When
-        val uploader = testedFeature.createUploader(fakeConfigurationFeature)
+        val requestFactory = testedFeature.createRequestFactory(fakeConfigurationFeature)
 
         // Then
-        assertThat(uploader).isInstanceOf(RumOkHttpUploaderV2::class.java)
-        val rumUploader = uploader as RumOkHttpUploaderV2
-        assertThat(rumUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
-        assertThat(rumUploader.intakeUrl).endsWith("/api/v2/rum")
-        assertThat(rumUploader.callFactory).isSameAs(coreFeature.mockInstance.okHttpClient)
+        assertThat(requestFactory).isInstanceOf(RumRequestFactory::class.java)
     }
 
     @Test

@@ -8,9 +8,9 @@ package com.datadog.android.error.internal
 
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.SdkFeatureTest
-import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.log.internal.net.LogsRequestFactory
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
@@ -72,16 +72,12 @@ internal class CrashReportsFeatureTest :
     }
 
     @Test
-    fun `𝕄 create a crash reports uploader 𝕎 createUploader()`() {
+    fun `𝕄 create a crash request factory 𝕎 createRequestFactory()`() {
         // When
-        val uploader = testedFeature.createUploader(fakeConfigurationFeature)
+        val requestFactory = testedFeature.createRequestFactory(fakeConfigurationFeature)
 
         // Then
-        assertThat(uploader).isInstanceOf(LogsOkHttpUploaderV2::class.java)
-        val crashReportsUploader = uploader as LogsOkHttpUploaderV2
-        assertThat(crashReportsUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
-        assertThat(crashReportsUploader.intakeUrl).endsWith("/api/v2/logs")
-        assertThat(crashReportsUploader.callFactory).isSameAs(coreFeature.mockInstance.okHttpClient)
+        assertThat(requestFactory).isInstanceOf(LogsRequestFactory::class.java)
     }
 
     @Test

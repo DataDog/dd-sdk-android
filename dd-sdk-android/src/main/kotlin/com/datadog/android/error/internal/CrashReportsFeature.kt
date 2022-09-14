@@ -10,12 +10,12 @@ import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
-import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
-import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
 import com.datadog.android.log.model.LogEvent
+import com.datadog.android.v2.api.RequestFactory
+import com.datadog.android.v2.log.internal.net.LogsRequestFactory
 
 internal class CrashReportsFeature(
     coreFeature: CoreFeature
@@ -38,6 +38,7 @@ internal class CrashReportsFeature(
         configuration: Configuration.Feature.CrashReport
     ): PersistenceStrategy<LogEvent> {
         return CrashReportFilePersistenceStrategy(
+            coreFeature.contextProvider,
             coreFeature.trackingConsentProvider,
             coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
@@ -46,19 +47,12 @@ internal class CrashReportsFeature(
         )
     }
 
-    override fun createUploader(configuration: Configuration.Feature.CrashReport): DataUploader {
-        return LogsOkHttpUploaderV2(
-            configuration.endpointUrl,
-            coreFeature.clientToken,
-            coreFeature.sourceName,
-            coreFeature.sdkVersion,
-            coreFeature.okHttpClient,
-            coreFeature.androidInfoProvider,
-            sdkLogger
-        )
+    override fun createRequestFactory(configuration: Configuration.Feature.CrashReport):
+        RequestFactory {
+        return LogsRequestFactory(configuration.endpointUrl)
     }
 
-    override fun onPostInitialized(context: Context) { }
+    override fun onPostInitialized(context: Context) {}
 
     // endregion
 

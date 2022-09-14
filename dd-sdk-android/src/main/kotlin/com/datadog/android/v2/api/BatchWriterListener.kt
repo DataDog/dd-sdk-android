@@ -6,11 +6,14 @@
 
 package com.datadog.android.v2.api
 
+import com.datadog.tools.annotation.NoOpImplementation
+
 /**
  * A Listener to be notified when an event is actually written in the storage,
  * or when a write operation failed.
  * @see [EventBatchWriter]
  */
+@NoOpImplementation
 internal interface BatchWriterListener {
     /**
      * Called whenever data is written successfully.

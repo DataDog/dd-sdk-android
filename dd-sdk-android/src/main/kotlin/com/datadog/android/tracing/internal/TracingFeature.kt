@@ -10,11 +10,11 @@ import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
-import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.tracing.internal.domain.TracesFilePersistenceStrategy
-import com.datadog.android.tracing.internal.net.TracesOkHttpUploaderV2
+import com.datadog.android.v2.api.RequestFactory
+import com.datadog.android.v2.tracing.internal.net.TracesRequestFactory
 import com.datadog.opentracing.DDSpan
 
 internal class TracingFeature(
@@ -28,6 +28,7 @@ internal class TracingFeature(
         configuration: Configuration.Feature.Tracing
     ): PersistenceStrategy<DDSpan> {
         return TracesFilePersistenceStrategy(
+            coreFeature.contextProvider,
             coreFeature.trackingConsentProvider,
             coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
@@ -39,18 +40,12 @@ internal class TracingFeature(
         )
     }
 
-    override fun createUploader(configuration: Configuration.Feature.Tracing): DataUploader {
-        return TracesOkHttpUploaderV2(
-            configuration.endpointUrl,
-            coreFeature.clientToken,
-            coreFeature.sourceName,
-            coreFeature.sdkVersion,
-            coreFeature.okHttpClient,
-            coreFeature.androidInfoProvider
-        )
+    override fun createRequestFactory(configuration: Configuration.Feature.Tracing):
+        RequestFactory {
+        return TracesRequestFactory(configuration.endpointUrl)
     }
 
-    override fun onPostInitialized(context: Context) { }
+    override fun onPostInitialized(context: Context) {}
 
     // endregion
 

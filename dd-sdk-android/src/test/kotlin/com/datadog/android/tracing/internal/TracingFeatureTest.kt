@@ -13,8 +13,8 @@ import com.datadog.android.core.internal.persistence.file.batch.BatchFileDataWri
 import com.datadog.android.tracing.internal.domain.TracesFilePersistenceStrategy
 import com.datadog.android.tracing.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.tracing.internal.domain.event.SpanMapperSerializer
-import com.datadog.android.tracing.internal.net.TracesOkHttpUploaderV2
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.tracing.internal.net.TracesRequestFactory
 import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.Forge
@@ -76,15 +76,11 @@ internal class TracingFeatureTest :
     }
 
     @Test
-    fun `𝕄 create a tracing uploader 𝕎 createUploader()`() {
+    fun `𝕄 create a tracing request factory 𝕎 createRequestFactory()`() {
         // When
-        val uploader = testedFeature.createUploader(fakeConfigurationFeature)
+        val requestFactory = testedFeature.createRequestFactory(fakeConfigurationFeature)
 
         // Then
-        assertThat(uploader).isInstanceOf(TracesOkHttpUploaderV2::class.java)
-        val tracesUploader = uploader as TracesOkHttpUploaderV2
-        assertThat(tracesUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
-        assertThat(tracesUploader.intakeUrl).endsWith("/api/v2/spans")
-        assertThat(tracesUploader.callFactory).isSameAs(coreFeature.mockInstance.okHttpClient)
+        assertThat(requestFactory).isInstanceOf(TracesRequestFactory::class.java)
     }
 }

@@ -10,11 +10,11 @@ import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
-import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
-import com.datadog.android.rum.internal.net.RumOkHttpUploaderV2
+import com.datadog.android.v2.api.RequestFactory
+import com.datadog.android.v2.rum.internal.net.RumRequestFactory
 
 internal class WebViewRumFeature(
     coreFeature: CoreFeature
@@ -27,6 +27,7 @@ internal class WebViewRumFeature(
         configuration: Configuration.Feature.RUM
     ): PersistenceStrategy<Any> {
         return WebViewRumFilePersistenceStrategy(
+            coreFeature.contextProvider,
             coreFeature.trackingConsentProvider,
             coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
@@ -36,16 +37,8 @@ internal class WebViewRumFeature(
         )
     }
 
-    override fun createUploader(configuration: Configuration.Feature.RUM): DataUploader {
-        return RumOkHttpUploaderV2(
-            configuration.endpointUrl,
-            coreFeature.clientToken,
-            coreFeature.sourceName,
-            coreFeature.sdkVersion,
-            coreFeature.okHttpClient,
-            coreFeature.androidInfoProvider,
-            coreFeature
-        )
+    override fun createRequestFactory(configuration: Configuration.Feature.RUM): RequestFactory {
+        return RumRequestFactory(configuration.endpointUrl)
     }
 
     // endregion

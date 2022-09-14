@@ -21,6 +21,7 @@ internal interface Storage {
      * @param callback an operation to perform with a [BatchWriter] that will target the current
      * writeable Batch
      */
+    @WorkerThread
     fun writeCurrentBatch(datadogContext: DatadogContext, callback: (BatchWriter) -> Unit)
 
     /**

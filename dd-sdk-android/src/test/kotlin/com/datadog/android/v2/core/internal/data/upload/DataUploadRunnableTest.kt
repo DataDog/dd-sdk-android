@@ -120,10 +120,9 @@ internal class DataUploadRunnableTest {
     @Test
     fun `doesn't send batch when offline`() {
         // Given
-        val networkInfo =
-            NetworkInfo(
-                NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
-            )
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
+        )
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn networkInfo
 
         // When
@@ -405,6 +404,11 @@ internal class DataUploadRunnableTest {
 
     @Test
     fun `𝕄 do nothing 𝕎 no batch to send`() {
+        // Given
+        whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
+            it.getArgument<() -> Unit>(0)()
+        }
+
         // When
         testedRunnable.run()
 

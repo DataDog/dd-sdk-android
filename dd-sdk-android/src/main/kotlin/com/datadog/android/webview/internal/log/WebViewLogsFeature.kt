@@ -10,10 +10,10 @@ import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
-import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
+import com.datadog.android.v2.api.RequestFactory
+import com.datadog.android.v2.log.internal.net.LogsRequestFactory
 import com.google.gson.JsonObject
 
 internal class WebViewLogsFeature(
@@ -27,6 +27,7 @@ internal class WebViewLogsFeature(
         configuration: Configuration.Feature.Logs
     ): PersistenceStrategy<JsonObject> {
         return WebViewLogFilePersistenceStrategy(
+            coreFeature.contextProvider,
             coreFeature.trackingConsentProvider,
             coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
@@ -35,16 +36,8 @@ internal class WebViewLogsFeature(
         )
     }
 
-    override fun createUploader(configuration: Configuration.Feature.Logs): DataUploader {
-        return LogsOkHttpUploaderV2(
-            configuration.endpointUrl,
-            coreFeature.clientToken,
-            coreFeature.sourceName,
-            coreFeature.sdkVersion,
-            coreFeature.okHttpClient,
-            coreFeature.androidInfoProvider,
-            sdkLogger
-        )
+    override fun createRequestFactory(configuration: Configuration.Feature.Logs): RequestFactory {
+        return LogsRequestFactory(configuration.endpointUrl)
     }
 
     // endregion

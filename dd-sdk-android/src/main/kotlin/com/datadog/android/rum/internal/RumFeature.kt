@@ -16,7 +16,6 @@ import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.event.NoOpEventMapper
-import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.core.internal.utils.devLogger
@@ -28,7 +27,6 @@ import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
 import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
-import com.datadog.android.rum.internal.net.RumOkHttpUploaderV2
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
@@ -44,6 +42,8 @@ import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.v2.api.RequestFactory
+import com.datadog.android.v2.rum.internal.net.RumRequestFactory
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -120,6 +120,7 @@ internal class RumFeature(
         configuration: Configuration.Feature.RUM
     ): PersistenceStrategy<Any> {
         return RumFilePersistenceStrategy(
+            coreFeature.contextProvider,
             coreFeature.trackingConsentProvider,
             coreFeature.storageDir,
             configuration.rumEventMapper,
@@ -130,19 +131,11 @@ internal class RumFeature(
         )
     }
 
-    override fun createUploader(configuration: Configuration.Feature.RUM): DataUploader {
-        return RumOkHttpUploaderV2(
-            configuration.endpointUrl,
-            coreFeature.clientToken,
-            coreFeature.sourceName,
-            coreFeature.sdkVersion,
-            coreFeature.okHttpClient,
-            coreFeature.androidInfoProvider,
-            coreFeature
-        )
+    override fun createRequestFactory(configuration: Configuration.Feature.RUM): RequestFactory {
+        return RumRequestFactory(configuration.endpointUrl)
     }
 
-    override fun onPostInitialized(context: Context) { }
+    override fun onPostInitialized(context: Context) {}
 
     // endregion
 

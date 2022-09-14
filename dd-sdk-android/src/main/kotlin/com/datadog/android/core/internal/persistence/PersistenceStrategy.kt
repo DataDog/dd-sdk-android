@@ -6,7 +6,8 @@
 
 package com.datadog.android.core.internal.persistence
 
-import com.datadog.android.core.internal.data.upload.Flusher
+import com.datadog.android.v2.core.internal.data.upload.Flusher
+import com.datadog.android.v2.core.internal.storage.Storage
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -21,4 +22,6 @@ internal interface PersistenceStrategy<T : Any> {
     fun getReader(): DataReader
 
     fun getFlusher(): Flusher
+
+    fun getStorage(): Storage
 }

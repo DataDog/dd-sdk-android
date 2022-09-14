@@ -20,6 +20,7 @@ import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
@@ -216,6 +217,32 @@ internal class DataOkHttpUploaderTest {
         assertThat(result).isEqualTo(UploadStatus.SUCCESS)
         verifyRequest(fakeDatadogRequest, expectedUserAgentHeader = fakeSdkUserAgent)
         verifyResponseIsClosed()
+    }
+
+    @Test
+    fun `𝕄 return client token error 𝕎 upload() { bad api key format }`(
+        @StringForgery batch: List<String>,
+        @StringForgery batchMeta: String,
+        @StringForgery(regex = "[\u007F-\u00FF]+") invalidValue: String,
+        forge: Forge
+    ) {
+        // Given
+        val batchData = batch.map { it.toByteArray() }
+        val batchMetadata = batchMeta.toByteArray()
+        fakeDatadogRequest = fakeDatadogRequest.copy(
+            headers = fakeDatadogRequest.headers.toMutableMap().apply {
+                put(RequestFactory.HEADER_API_KEY, forge.anElementFrom("", invalidValue))
+            }
+        )
+        whenever(mockRequestFactory.create(fakeContext, batchData, batchMetadata)) doReturn
+            fakeDatadogRequest
+
+        // When
+        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.INVALID_TOKEN_ERROR)
+        verifyZeroInteractions(mockCallFactory)
     }
 
     // region Expected status codes
