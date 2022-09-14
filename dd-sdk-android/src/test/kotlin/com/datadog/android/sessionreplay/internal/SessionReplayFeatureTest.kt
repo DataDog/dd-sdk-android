@@ -38,14 +38,17 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class SessionReplayFeatureTest : SdkFeatureTest<Any, Configuration.Feature.SessionReplay,
-    SessionReplayFeature>() {
+internal class SessionReplayFeatureTest :
+    SdkFeatureTest<String, Configuration.Feature.SessionReplay, SessionReplayFeature>() {
 
     @Mock
     lateinit var mockSessionReplayLifecycleCallback: SessionReplayLifecycleCallback
 
     override fun createTestedFeature(): SessionReplayFeature {
-        return SessionReplayFeature(coreFeature.mockInstance, mockSessionReplayLifecycleCallback)
+        return SessionReplayFeature(
+            coreFeature.mockInstance,
+            fakeConfigurationFeature
+        ) { mockSessionReplayLifecycleCallback }
     }
 
     override fun forgeConfiguration(forge: Forge): Configuration.Feature.SessionReplay {
@@ -64,6 +67,22 @@ internal class SessionReplayFeatureTest : SdkFeatureTest<Any, Configuration.Feat
         // Then
         assertThat(testedFeature.persistenceStrategy)
             .isInstanceOf(SessionReplayRecordPersistenceStrategy::class.java)
+    }
+
+    @Test
+    fun `𝕄 initialize session replay callback 𝕎 initialize()`() {
+        // Given
+        testedFeature = SessionReplayFeature(
+            coreFeature.mockInstance,
+            fakeConfigurationFeature
+        )
+
+        // When
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+
+        // Then
+        assertThat(testedFeature.sessionReplayCallback)
+            .isInstanceOf(SessionReplayLifecycleCallback::class.java)
     }
 
     @Test
@@ -87,6 +106,19 @@ internal class SessionReplayFeatureTest : SdkFeatureTest<Any, Configuration.Feat
         // Then
         verify(mockSessionReplayLifecycleCallback)
             .unregisterAndStopRecorders(appContext.mockInstance)
+    }
+
+    @Test
+    fun `M reset the Session Replay lifecycle callback W stop()`() {
+        // Given
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        assertThat(testedFeature.sessionReplayCallback)
+            .isInstanceOf(NoOpLifecycleCallback::class.java)
     }
 
     @Test

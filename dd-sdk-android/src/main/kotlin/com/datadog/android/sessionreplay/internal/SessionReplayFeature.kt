@@ -15,17 +15,28 @@ import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.sessionreplay.LifecycleCallback
 import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRecordPersistenceStrategy
+import com.datadog.android.sessionreplay.internal.domain.SessionReplaySerializedRecordWriter
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class SessionReplayFeature(
     coreFeature: CoreFeature,
-    private val sessionReplayCallback: SessionReplayLifecycleCallback
-) : SdkFeature<Any, Configuration.Feature.SessionReplay>(coreFeature) {
+    private val configuration: Configuration.Feature.SessionReplay,
+    private val sessionReplayCallbackProvider: (PersistenceStrategy<String>) ->
+    LifecycleCallback = {
+        SessionReplayLifecycleCallback(
+            SessionReplayContextProvider(),
+            configuration.privacy,
+            SessionReplaySerializedRecordWriter(it.getWriter())
+        )
+    }
+) : SdkFeature<String, Configuration.Feature.SessionReplay>(coreFeature) {
 
     internal lateinit var appContext: Context
     private var isRecording = AtomicBoolean(false)
+    internal var sessionReplayCallback: LifecycleCallback = NoOpLifecycleCallback()
 
     // region SDKFeature
 
@@ -35,18 +46,20 @@ internal class SessionReplayFeature(
     ) {
         super.onInitialize(context, configuration)
         appContext = context
+        sessionReplayCallback = sessionReplayCallbackProvider(persistenceStrategy)
         startRecording()
     }
 
     override fun onStop() {
         super.onStop()
         stopRecording()
+        sessionReplayCallback = NoOpLifecycleCallback()
     }
 
     override fun createPersistenceStrategy(
         context: Context,
         configuration: Configuration.Feature.SessionReplay
-    ): PersistenceStrategy<Any> {
+    ): PersistenceStrategy<String> {
         return SessionReplayRecordPersistenceStrategy(
             coreFeature.trackingConsentProvider,
             coreFeature.storageDir,
