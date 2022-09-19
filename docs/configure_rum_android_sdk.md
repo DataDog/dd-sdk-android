@@ -64,18 +64,20 @@ Once the timing is sent, the timing is accessible as `@view.custom_timings.<timi
 
 In addition to [tracking actions automatically][5], you can also track specific custom user actions (such as taps, clicks, and scrolls) with `RumMonitor#addUserAction`. For continuous action tracking (for example, tracking a user scrolling a list), use `RumMonitor#startUserAction` and `RumMonitor#stopUserAction`.
 
+Note the action type should be one of the following: "custom", "click", "tap", "scroll", "swipe", "back".
+
 {{< tabs >}}
 {{% tab "Kotlin" %}}
    ```kotlin
        fun onUserInteraction() { 
-            GlobalRum.get().addUserAction(resourceKey, method, url, resourceAttributes)
+            GlobalRum.get().addUserAction(actionType, name, actionAttributes)
        }
    ```
 {{% /tab %}}
 {{% tab "Java" %}}
    ```java
        public void onUserInteraction() {
-            GlobalRum.get().addUserAction(resourceKey, method, url, resourceAttributes);
+            GlobalRum.get().addUserAction(actionType, name, actionAttributes);
        }
    ```
 {{% /tab %}}
