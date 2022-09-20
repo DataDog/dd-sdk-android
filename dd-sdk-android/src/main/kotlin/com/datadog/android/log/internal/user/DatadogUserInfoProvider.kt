@@ -23,6 +23,16 @@ internal class DatadogUserInfoProvider(
         internalUserInfo = userInfo
     }
 
+    override fun addUserProperties(properties: Map<String, Any?>) {
+        // keep any existing properties
+        val currentProperties = internalUserInfo.additionalProperties
+
+        internalUserInfo = internalUserInfo.copy(
+            // preserve current properties. in the event of a conflict, let the new properties prevail
+            additionalProperties = currentProperties + properties
+        )
+    }
+
     override fun getUserInfo(): UserInfo {
         return internalUserInfo
     }

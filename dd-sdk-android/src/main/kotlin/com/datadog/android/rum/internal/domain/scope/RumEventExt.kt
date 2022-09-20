@@ -7,6 +7,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.core.internal.system.DeviceType
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.internal.utils.errorWithTelemetry
@@ -19,6 +20,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.ViewEvent
 import java.util.Locale
 
 internal fun String.toMethod(): ResourceEvent.Method {
@@ -112,9 +114,12 @@ internal fun RumActionType.toSchemaType(): ActionEvent.ActionType {
         RumActionType.SCROLL -> ActionEvent.ActionType.SCROLL
         RumActionType.SWIPE -> ActionEvent.ActionType.SWIPE
         RumActionType.CLICK -> ActionEvent.ActionType.CLICK
+        RumActionType.BACK -> ActionEvent.ActionType.BACK
         RumActionType.CUSTOM -> ActionEvent.ActionType.CUSTOM
     }
 }
+
+// region NetworkInfo conversion
 
 internal fun NetworkInfo.toResourceConnectivity(): ResourceEvent.Connectivity {
     val status = if (isConnected()) {
@@ -227,3 +232,59 @@ internal fun NetworkInfo.toLongTaskConnectivity(): LongTaskEvent.Connectivity {
 internal fun NetworkInfo.isConnected(): Boolean {
     return connectivity != NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
 }
+
+// endregion
+
+// region DeviceType conversion
+
+internal fun DeviceType.toViewSchemaType(): ViewEvent.DeviceType {
+    return when (this) {
+        DeviceType.MOBILE -> ViewEvent.DeviceType.MOBILE
+        DeviceType.TABLET -> ViewEvent.DeviceType.TABLET
+        DeviceType.TV -> ViewEvent.DeviceType.TV
+        DeviceType.DESKTOP -> ViewEvent.DeviceType.DESKTOP
+        else -> ViewEvent.DeviceType.OTHER
+    }
+}
+
+internal fun DeviceType.toActionSchemaType(): ActionEvent.DeviceType {
+    return when (this) {
+        DeviceType.MOBILE -> ActionEvent.DeviceType.MOBILE
+        DeviceType.TABLET -> ActionEvent.DeviceType.TABLET
+        DeviceType.TV -> ActionEvent.DeviceType.TV
+        DeviceType.DESKTOP -> ActionEvent.DeviceType.DESKTOP
+        else -> ActionEvent.DeviceType.OTHER
+    }
+}
+
+internal fun DeviceType.toLongTaskSchemaType(): LongTaskEvent.DeviceType {
+    return when (this) {
+        DeviceType.MOBILE -> LongTaskEvent.DeviceType.MOBILE
+        DeviceType.TABLET -> LongTaskEvent.DeviceType.TABLET
+        DeviceType.TV -> LongTaskEvent.DeviceType.TV
+        DeviceType.DESKTOP -> LongTaskEvent.DeviceType.DESKTOP
+        else -> LongTaskEvent.DeviceType.OTHER
+    }
+}
+
+internal fun DeviceType.toResourceSchemaType(): ResourceEvent.DeviceType {
+    return when (this) {
+        DeviceType.MOBILE -> ResourceEvent.DeviceType.MOBILE
+        DeviceType.TABLET -> ResourceEvent.DeviceType.TABLET
+        DeviceType.TV -> ResourceEvent.DeviceType.TV
+        DeviceType.DESKTOP -> ResourceEvent.DeviceType.DESKTOP
+        else -> ResourceEvent.DeviceType.OTHER
+    }
+}
+
+internal fun DeviceType.toErrorSchemaType(): ErrorEvent.DeviceType {
+    return when (this) {
+        DeviceType.MOBILE -> ErrorEvent.DeviceType.MOBILE
+        DeviceType.TABLET -> ErrorEvent.DeviceType.TABLET
+        DeviceType.TV -> ErrorEvent.DeviceType.TV
+        DeviceType.DESKTOP -> ErrorEvent.DeviceType.DESKTOP
+        else -> ErrorEvent.DeviceType.OTHER
+    }
+}
+
+// endregion

@@ -15,7 +15,6 @@ import com.datadog.android.DatadogInterceptor
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpSpanEventMapper
 import com.datadog.android.event.SpanEventMapper
@@ -30,6 +29,7 @@ import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrate
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
+import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -103,7 +103,8 @@ internal constructor(
             val viewTrackingStrategy: ViewTrackingStrategy?,
             val longTaskTrackingStrategy: TrackingStrategy?,
             val rumEventMapper: EventMapper<Any>,
-            val backgroundEventTracking: Boolean
+            val backgroundEventTracking: Boolean,
+            val vitalsMonitorUpdateFrequency: VitalsUpdateFrequency
         ) : Feature()
     }
 
@@ -212,93 +213,6 @@ internal constructor(
         }
 
         /**
-         * Let the SDK target Datadog's Europe server.
-         *
-         * Call this if you log on [app.datadoghq.eu](https://app.datadoghq.eu/).
-         * @deprecated use the [useSite] method instead.
-         */
-        @Deprecated(
-            "Use the `useSite()` method instead.",
-            ReplaceWith(
-                "useSite(DatadogSite.EU1)",
-                "com.datadog.android.DatadogSite"
-            )
-        )
-        @Suppress("DEPRECATION", "StringLiteralDuplication")
-        fun useEUEndpoints(): Builder {
-            warnDeprecated(
-                target = "Configuration.Builder.useEUEndpoints()",
-                deprecatedSince = "1.10.0",
-                removedInVersion = "1.12.0",
-                alternative = "Configuration.Builder.useSite(DatadogSite.EU1)"
-            )
-            logsConfig = logsConfig.copy(endpointUrl = DatadogEndpoint.LOGS_EU)
-            tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_EU)
-            crashReportConfig = crashReportConfig.copy(endpointUrl = DatadogEndpoint.LOGS_EU)
-            rumConfig = rumConfig.copy(endpointUrl = DatadogEndpoint.RUM_EU)
-            coreConfig = coreConfig.copy(needsClearTextHttp = false)
-            return this
-        }
-
-        /**
-         * Let the SDK target Datadog's US server.
-         *
-         * Call this if you log on [app.datadoghq.com](https://app.datadoghq.com/).
-         * @deprecated use the [useSite] method instead.
-         */
-        @Deprecated(
-            "Use the `useSite()` method instead.",
-            ReplaceWith(
-                "useSite(DatadogSite.US1)",
-                "com.datadog.android.DatadogSite"
-            )
-        )
-        @Suppress("DEPRECATION", "StringLiteralDuplication")
-        fun useUSEndpoints(): Builder {
-            warnDeprecated(
-                target = "Configuration.Builder.useUSEndpoints()",
-                deprecatedSince = "1.10.0",
-                removedInVersion = "1.12.0",
-                alternative = "Configuration.Builder.useSite(DatadogSite.US1)"
-            )
-            logsConfig = logsConfig.copy(endpointUrl = DatadogEndpoint.LOGS_US)
-            tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_US)
-            crashReportConfig = crashReportConfig.copy(endpointUrl = DatadogEndpoint.LOGS_US)
-            rumConfig = rumConfig.copy(endpointUrl = DatadogEndpoint.RUM_US)
-            coreConfig = coreConfig.copy(needsClearTextHttp = false)
-            return this
-        }
-
-        /**
-         * Let the SDK target Datadog's Gov server.
-         *
-         * Call this if you log on [app.ddog-gov.com/](https://app.ddog-gov.com/).
-         * @deprecated use the [useSite] method instead.
-         */
-        @Deprecated(
-            "Use the `useSite()` method instead.",
-            ReplaceWith(
-                "useSite(DatadogSite.US1_FED)",
-                "com.datadog.android.DatadogSite"
-            )
-        )
-        @Suppress("DEPRECATION", "StringLiteralDuplication")
-        fun useGovEndpoints(): Builder {
-            warnDeprecated(
-                target = "Configuration.Builder.useGovEndpoints()",
-                deprecatedSince = "1.10.0",
-                removedInVersion = "1.12.0",
-                alternative = "Configuration.Builder.useSite(DatadogSite.US1_FED)"
-            )
-            logsConfig = logsConfig.copy(endpointUrl = DatadogEndpoint.LOGS_GOV)
-            tracesConfig = tracesConfig.copy(endpointUrl = DatadogEndpoint.TRACES_GOV)
-            crashReportConfig = crashReportConfig.copy(endpointUrl = DatadogEndpoint.LOGS_GOV)
-            rumConfig = rumConfig.copy(endpointUrl = DatadogEndpoint.RUM_GOV)
-            coreConfig = coreConfig.copy(needsClearTextHttp = false)
-            return this
-        }
-
-        /**
          * Let the SDK target a custom server for the logs feature.
          */
         fun useCustomLogsEndpoint(endpoint: String): Builder {
@@ -368,6 +282,18 @@ internal constructor(
         }
 
         /**
+         * Disable the user interaction automatic tracker.
+         */
+        fun disableInteractionTracking(): Builder {
+            applyIfFeatureEnabled(PluginFeature.RUM, "disableInteractionTracking") {
+                rumConfig = rumConfig.copy(
+                    userActionTrackingStrategy = NoOpUserActionTrackingStrategy()
+                )
+            }
+            return this
+        }
+
+        /**
          * Enable long operations on the main thread to be tracked automatically.
          * Any long running operation on the main thread will appear as Long Tasks in Datadog
          * RUM Explorer
@@ -386,9 +312,9 @@ internal constructor(
 
         /**
          * Sets the automatic view tracking strategy used by the SDK.
-         * By default no view will be tracked.
+         * By default [ActivityViewTrackingStrategy] will be used.
          * @param strategy as the [ViewTrackingStrategy]
-         * Note: By default, the RUM Monitor will let you handle View events manually.
+         * Note: If [null] is passed, the RUM Monitor will let you handle View events manually.
          * This means that you should call [RumMonitor.startView] and [RumMonitor.stopView]
          * yourself. A view should be started when it becomes visible and interactive
          * (equivalent to `onResume`) and be stopped when it's paused (equivalent to `onPause`).
@@ -397,7 +323,7 @@ internal constructor(
          * @see [com.datadog.android.rum.tracking.MixedViewTrackingStrategy]
          * @see [com.datadog.android.rum.tracking.NavigationViewTrackingStrategy]
          */
-        fun useViewTrackingStrategy(strategy: ViewTrackingStrategy): Builder {
+        fun useViewTrackingStrategy(strategy: ViewTrackingStrategy?): Builder {
             applyIfFeatureEnabled(PluginFeature.RUM, "useViewTrackingStrategy") {
                 rumConfig = rumConfig.copy(viewTrackingStrategy = strategy)
             }
@@ -598,30 +524,6 @@ internal constructor(
         }
 
         /**
-         * Enables the internal logs to be sent to a dedicated Datadog Org.
-         * @param clientToken the client token to use for internal logs
-         * @param endpointUrl the endpoint url to sent the internal logs to
-         * (one of [DatadogEndpoint.LOGS_US], [DatadogEndpoint.LOGS_EU], [DatadogEndpoint.LOGS_GOV])
-         *
-         * @deprecated This method has no effect and will be removed in the next version.
-         */
-        @Suppress("UNUSED_PARAMETER")
-        @Deprecated(
-            message = "This method has no effect and will be removed in the next version."
-        )
-        fun setInternalLogsEnabled(
-            clientToken: String,
-            endpointUrl: String
-        ): Builder {
-            warnDeprecated(
-                target = "Configuration.Builder.setInternalLogsEnabled()",
-                deprecatedSince = "1.13.0",
-                removedInVersion = "1.14.0"
-            )
-            return this
-        }
-
-        /**
          * Allows to provide additional configuration values which can be used by the SDK.
          * @param additionalConfig Additional configuration values.
          */
@@ -691,6 +593,17 @@ internal constructor(
                 devLogger.e(ERROR_FEATURE_DISABLED.format(Locale.US, feature.featureName, method))
             }
         }
+
+        /**
+         * Allows to specify the frequency at which to update the mobile vitals
+         * data provided in the RUM [ViewEvent].
+         * @param frequency as [VitalsUpdateFrequency]
+         * @see [VitalsUpdateFrequency]
+         */
+        fun setVitalsUpdateFrequency(frequency: VitalsUpdateFrequency): Builder {
+            rumConfig = rumConfig.copy(vitalsMonitorUpdateFrequency = frequency)
+            return this
+        }
     }
 
     // endregion
@@ -737,7 +650,8 @@ internal constructor(
             viewTrackingStrategy = ActivityViewTrackingStrategy(false),
             longTaskTrackingStrategy = MainLooperLongTaskStrategy(DEFAULT_LONG_TASK_THRESHOLD_MS),
             rumEventMapper = NoOpEventMapper(),
-            backgroundEventTracking = false
+            backgroundEventTracking = false,
+            vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE
         )
 
         internal const val ERROR_FEATURE_DISABLED = "The %s feature has been disabled in your " +

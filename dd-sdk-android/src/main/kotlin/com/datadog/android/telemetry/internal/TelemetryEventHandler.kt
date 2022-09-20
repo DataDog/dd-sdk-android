@@ -9,7 +9,6 @@ package com.datadog.android.telemetry.internal
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumSessionListener
@@ -21,7 +20,6 @@ import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import java.util.Locale
 
 internal class TelemetryEventHandler(
-    internal val serviceName: String,
     internal val sdkVersion: String,
     private val sourceProvider: RumEventSourceProvider,
     private val timeProvider: TimeProvider,
@@ -48,7 +46,8 @@ internal class TelemetryEventHandler(
                     timestamp,
                     rumContext,
                     event.message,
-                    event.throwable
+                    event.stack,
+                    event.kind
                 )
             }
         }
@@ -90,7 +89,7 @@ internal class TelemetryEventHandler(
             date = timestamp,
             source = sourceProvider.telemetryDebugEventSource
                 ?: TelemetryDebugEvent.Source.ANDROID,
-            service = serviceName,
+            service = TELEMETRY_SERVICE_NAME,
             version = sdkVersion,
             application = TelemetryDebugEvent.Application(rumContext.applicationId),
             session = TelemetryDebugEvent.Session(rumContext.sessionId),
@@ -106,14 +105,15 @@ internal class TelemetryEventHandler(
         timestamp: Long,
         rumContext: RumContext,
         message: String,
-        throwable: Throwable?
+        stack: String?,
+        kind: String?
     ): TelemetryErrorEvent {
         return TelemetryErrorEvent(
             dd = TelemetryErrorEvent.Dd(),
             date = timestamp,
             source = sourceProvider.telemetryErrorEventSource
                 ?: TelemetryErrorEvent.Source.ANDROID,
-            service = serviceName,
+            service = TELEMETRY_SERVICE_NAME,
             version = sdkVersion,
             application = TelemetryErrorEvent.Application(rumContext.applicationId),
             session = TelemetryErrorEvent.Session(rumContext.sessionId),
@@ -121,23 +121,20 @@ internal class TelemetryEventHandler(
             action = rumContext.actionId?.let { TelemetryErrorEvent.Action(it) },
             telemetry = TelemetryErrorEvent.Telemetry(
                 message = message,
-                error = throwable?.let {
-                    TelemetryErrorEvent.Error(
-                        stack = it.loggableStackTrace(),
-                        kind = it.javaClass.canonicalName ?: it.javaClass.simpleName
-                    )
-                }
+                error = if (stack != null || kind != null) TelemetryErrorEvent.Error(
+                    stack = stack,
+                    kind = kind
+                ) else null
             )
         )
     }
 
     private val RumRawEvent.SendTelemetry.identity: EventIdentity
         get() {
-            val throwableClass = if (throwable != null) throwable::class.java else null
-            return EventIdentity(message, throwableClass)
+            return EventIdentity(message, kind)
         }
 
-    internal data class EventIdentity(val message: String, val throwableClass: Class<*>?)
+    internal data class EventIdentity(val message: String, val kind: String?)
 
     // endregion
 
@@ -147,5 +144,6 @@ internal class TelemetryEventHandler(
             "Already seen telemetry event with identity=%s, rejecting."
         const val MAX_EVENT_NUMBER_REACHED_MESSAGE =
             "Max number of telemetry events per session reached, rejecting."
+        const val TELEMETRY_SERVICE_NAME = "dd-sdk-android"
     }
 }

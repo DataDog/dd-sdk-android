@@ -20,6 +20,8 @@ import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracingFeature
+import com.datadog.android.webview.internal.log.WebViewLogsFeature
+import com.datadog.android.webview.internal.rum.WebViewRumFeature
 
 internal class UploadWorker(
     appContext: Context,
@@ -56,6 +58,18 @@ internal class UploadWorker(
         uploadAllBatches(
             RumFeature.persistenceStrategy.getReader(),
             RumFeature.uploader
+        )
+
+        // Upload WebView RUM
+        uploadAllBatches(
+            WebViewRumFeature.persistenceStrategy.getReader(),
+            WebViewRumFeature.uploader
+        )
+
+        // Upload WebView Logs
+        uploadAllBatches(
+            WebViewLogsFeature.persistenceStrategy.getReader(),
+            WebViewLogsFeature.uploader
         )
 
         return Result.success()
@@ -110,8 +124,4 @@ internal class UploadWorker(
     }
 
     // endregion
-
-    companion object {
-        private const val TAG = "UploadWorker"
-    }
 }

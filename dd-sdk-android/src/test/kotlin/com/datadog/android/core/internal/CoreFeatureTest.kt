@@ -265,7 +265,7 @@ internal class CoreFeatureTest {
         // Then
         assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
         assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
-        assertThat(CoreFeature.packageVersion).isEqualTo(appContext.fakeVersionName)
+        assertThat(CoreFeature.packageVersionProvider.version).isEqualTo(appContext.fakeVersionName)
         assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
         assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
         assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
@@ -288,7 +288,7 @@ internal class CoreFeatureTest {
         // Then
         assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
         assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
-        assertThat(CoreFeature.packageVersion).isEqualTo(appContext.fakeVersionName)
+        assertThat(CoreFeature.packageVersionProvider.version).isEqualTo(appContext.fakeVersionName)
         assertThat(CoreFeature.serviceName).isEqualTo(appContext.fakePackageName)
         assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
         assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
@@ -311,7 +311,7 @@ internal class CoreFeatureTest {
         // Then
         assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
         assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
-        assertThat(CoreFeature.packageVersion).isEqualTo(appContext.fakeVersionName)
+        assertThat(CoreFeature.packageVersionProvider.version).isEqualTo(appContext.fakeVersionName)
         assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
         assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
         assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
@@ -339,7 +339,9 @@ internal class CoreFeatureTest {
         // Then
         assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
         assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
-        assertThat(CoreFeature.packageVersion).isEqualTo(appContext.fakeVersionCode.toString())
+        assertThat(CoreFeature.packageVersionProvider.version).isEqualTo(
+            appContext.fakeVersionCode.toString()
+        )
         assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
         assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
         assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
@@ -368,7 +370,9 @@ internal class CoreFeatureTest {
         // Then
         assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
         assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
-        assertThat(CoreFeature.packageVersion).isEqualTo(CoreFeature.DEFAULT_APP_VERSION)
+        assertThat(CoreFeature.packageVersionProvider.version).isEqualTo(
+            CoreFeature.DEFAULT_APP_VERSION
+        )
         assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
         assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
         assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
@@ -510,7 +514,7 @@ internal class CoreFeatureTest {
         // Then
         assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
         assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
-        assertThat(CoreFeature.packageVersion).isEqualTo(appContext.fakeVersionName)
+        assertThat(CoreFeature.packageVersionProvider.version).isEqualTo(appContext.fakeVersionName)
         assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
         assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
         assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
@@ -653,7 +657,7 @@ internal class CoreFeatureTest {
         // Then
         assertThat(CoreFeature.clientToken).isEqualTo("")
         assertThat(CoreFeature.packageName).isEqualTo("")
-        assertThat(CoreFeature.packageVersion).isEqualTo("")
+        assertThat(CoreFeature.packageVersionProvider.version).isEqualTo("")
         assertThat(CoreFeature.serviceName).isEqualTo("")
         assertThat(CoreFeature.envName).isEqualTo("")
         assertThat(CoreFeature.variant).isEqualTo("")

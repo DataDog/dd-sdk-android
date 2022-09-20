@@ -12,7 +12,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.datadog.android.sample.data.db.DatadogDbContract
 
-@Database(entities = [LogRoom::class], version = DatadogDbContract.DB_VERSION)
+@Database(entities = [LogRoom::class], version = DatadogDbContract.DB_VERSION, exportSchema = false)
 abstract class LogsDatabase : RoomDatabase() {
 
     abstract fun logDao(): LogDao

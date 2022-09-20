@@ -8,6 +8,7 @@ package com.datadog.android.webview.internal.log
 
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
@@ -24,6 +25,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -63,6 +65,9 @@ internal class WebViewLogEventConsumerTest {
     @Mock
     lateinit var mockRumContextProvider: WebViewRumEventContextProvider
 
+    @Mock
+    lateinit var mockAppVersionProvider: AppVersionProvider
+
     @StringForgery(regex = "[0-9]\\.[0-9]\\.[0-9]")
     lateinit var fakePackageVersion: String
 
@@ -83,14 +88,15 @@ internal class WebViewLogEventConsumerTest {
         fakeWebLogEvent = forge.aWebLogEvent()
         fakeTimeOffset = forge.aLong()
         CoreFeature.envName = fakeEnvName
-        CoreFeature.packageVersion = fakePackageVersion
 
         testedConsumer = WebViewLogEventConsumer(
             mockUserLogsWriter,
             mockRumContextProvider,
-            mockTimeProvider
+            mockTimeProvider,
+            mockAppVersionProvider
         )
-        whenever(mockTimeProvider.getServerOffsetMillis()).thenReturn(fakeTimeOffset)
+        whenever(mockTimeProvider.getServerOffsetMillis()) doReturn fakeTimeOffset
+        whenever(mockAppVersionProvider.version) doReturn fakePackageVersion
     }
 
     @Test

@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.telemetry
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
@@ -249,6 +250,25 @@ object Datadog {
     }
 
     /**
+     * Sets additional information on the [UserInfo] object
+     *
+     * If properties had originally been set with [Datadog.setUserInfo], they will be preserved.
+     * In the event of a conflict on key, the new property will prevail.
+     *
+     * @param extraInfo additional information. An extra information can be
+     * nested up to 8 levels deep. Keys using more than 8 levels will be sanitized by SDK.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun addUserExtraInfo(
+        extraInfo: Map<String, Any?> = emptyMap()
+    ) {
+        CoreFeature.userInfoProvider.addUserProperties(
+            extraInfo
+        )
+    }
+
+    /**
      * Utility setting to inspect the active RUM View.
      * If set, a debugging outline will be displayed on top of the application, describing the name
      * of the active RUM View. May be used to debug issues with RUM instrumentation in your app.
@@ -263,6 +283,15 @@ object Datadog {
             RumFeature.disableDebugging()
         }
     }
+
+    /**
+     * For Datadog internal use only.
+     *
+     * @see _InternalProxy
+     */
+    @Suppress("ObjectPropertyNaming")
+    var _internal: _InternalProxy = _InternalProxy(telemetry)
+        private set
 
     // endregion
 
@@ -322,6 +351,7 @@ object Datadog {
         )
     }
 
+    @Suppress("ComplexMethod")
     private fun applyAdditionalConfiguration(
         additionalConfiguration: Map<String, Any>
     ) {
@@ -337,6 +367,12 @@ object Datadog {
         additionalConfiguration[DD_SDK_VERSION_TAG]?.let {
             if (it is String && it.isNotBlank()) {
                 CoreFeature.sdkVersion = it
+            }
+        }
+
+        additionalConfiguration[DD_APP_VERSION_TAG]?.let {
+            if (it is String && it.isNotBlank()) {
+                CoreFeature.packageVersionProvider.version = it
             }
         }
     }
@@ -397,6 +433,7 @@ object Datadog {
 
     internal const val DD_SOURCE_TAG = "_dd.source"
     internal const val DD_SDK_VERSION_TAG = "_dd.sdk_version"
+    internal const val DD_APP_VERSION_TAG = "_dd.version"
 
     // endregion
 }

@@ -193,6 +193,41 @@ internal class DatadogTest {
     }
 
     @Test
+    fun `𝕄 set additionalProperties 𝕎 setExtraProperties() is called`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery name: String,
+        @StringForgery(regex = "\\w+@\\w+") email: String
+    ) {
+        // Given
+        val mockUserInfoProvider = mock<MutableUserInfoProvider>()
+        CoreFeature.userInfoProvider = mockUserInfoProvider
+
+        // When
+        Datadog.setUserInfo(id, name, email)
+        Datadog.addUserExtraInfo(
+            mapOf(
+                "key1" to 1,
+                "key2" to "one"
+            )
+        )
+
+        // Then
+        verify(mockUserInfoProvider).setUserInfo(
+            UserInfo(
+                id,
+                name,
+                email
+            )
+        )
+        verify(mockUserInfoProvider).addUserProperties(
+            properties = mapOf(
+                "key1" to 1,
+                "key2" to "one"
+            )
+        )
+    }
+
+    @Test
     fun `𝕄 return true 𝕎 initialize(context, credential, , consent) + isInitialized()`() {
         // Given
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, fakeApplicationId, null)
@@ -761,6 +796,74 @@ internal class DatadogTest {
     }
 
     @Test
+    fun `𝕄 apply app version 𝕎 applyAdditionalConfig(config) { with app version }`(
+        @StringForgery appVersion: String
+    ) {
+        // Given
+        val config = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .setAdditionalConfiguration(mapOf(Datadog.DD_APP_VERSION_TAG to appVersion))
+            .build()
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+
+        // When
+        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
+
+        // Then
+        assertThat(CoreFeature.packageVersionProvider.version).isEqualTo(appVersion)
+    }
+
+    @Test
+    fun `𝕄 use default app version 𝕎 applyAdditionalConfig(config) { with empty app version }`(
+        forge: Forge
+    ) {
+        // Given
+        val config = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .setAdditionalConfiguration(
+                mapOf(Datadog.DD_APP_VERSION_TAG to forge.aWhitespaceString())
+            )
+            .build()
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+
+        // When
+        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
+
+        // Then
+        assertThat(CoreFeature.packageVersionProvider.version).isEqualTo(appContext.fakeVersionName)
+    }
+
+    @Test
+    fun `𝕄 use default app version 𝕎 applyAdditionalConfig(config) { with app version !string }`(
+        forge: Forge
+    ) {
+        // Given
+        val config = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .setAdditionalConfiguration(mapOf(Datadog.DD_APP_VERSION_TAG to forge.anInt()))
+            .build()
+        val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
+
+        // When
+        Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
+
+        // Then
+        assertThat(CoreFeature.packageVersionProvider.version).isEqualTo(appContext.fakeVersionName)
+    }
+
+    @Test
     fun `𝕄 enable RUM debugging 𝕎 enableRumDebugging(true)`() {
         // Given
         val config = Configuration.Builder(
@@ -800,19 +903,14 @@ internal class DatadogTest {
         assertThat(RumFeature.debugActivityLifecycleListener).isNull()
     }
 
-    @Suppress("DEPRECATION")
     @Test
-    fun `𝕄 clear data in all features 𝕎 clearAllData()`(
-        @StringForgery internalLogsToken: String,
-        @StringForgery internalLogsUrl: String
-    ) {
+    fun `𝕄 clear data in all features 𝕎 clearAllData()`() {
         val config = Configuration.Builder(
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
             rumEnabled = true
         )
-            .setInternalLogsEnabled(internalLogsToken, internalLogsUrl)
             .build()
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
         val dataReaders: Array<DataReader> = Array(6) { mock() }

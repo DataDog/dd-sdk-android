@@ -49,7 +49,6 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.net.Proxy
@@ -148,7 +147,8 @@ internal class ConfigurationBuilderTest {
                 viewTrackingStrategy = ActivityViewTrackingStrategy(false),
                 rumEventMapper = NoOpEventMapper(),
                 longTaskTrackingStrategy = MainLooperLongTaskStrategy(100L),
-                backgroundEventTracking = false
+                backgroundEventTracking = false,
+                vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE
             )
         )
         assertThat(config.additionalConfig).isEmpty()
@@ -262,75 +262,6 @@ internal class ConfigurationBuilderTest {
         assertThat(config.additionalConfig).isEmpty()
     }
 
-    @Suppress("DEPRECATION")
-    @Test
-    fun `𝕄 build config with US endpoints 𝕎 useUSEndpoints() and build()`() {
-        // When
-        val config = testedBuilder.useUSEndpoints().build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(
-            Configuration.DEFAULT_LOGS_CONFIG.copy(endpointUrl = DatadogEndpoint.LOGS_US)
-        )
-        assertThat(config.tracesConfig).isEqualTo(
-            Configuration.DEFAULT_TRACING_CONFIG.copy(endpointUrl = DatadogEndpoint.TRACES_US)
-        )
-        assertThat(config.crashReportConfig).isEqualTo(
-            Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = DatadogEndpoint.LOGS_US)
-        )
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = DatadogEndpoint.RUM_US)
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Suppress("DEPRECATION")
-    @Test
-    fun `𝕄 build config with EU endpoints 𝕎 useEUEndpoints() and build()`() {
-        // When
-        val config = testedBuilder.useEUEndpoints().build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(
-            Configuration.DEFAULT_LOGS_CONFIG.copy(endpointUrl = DatadogEndpoint.LOGS_EU)
-        )
-        assertThat(config.tracesConfig).isEqualTo(
-            Configuration.DEFAULT_TRACING_CONFIG.copy(endpointUrl = DatadogEndpoint.TRACES_EU)
-        )
-        assertThat(config.crashReportConfig).isEqualTo(
-            Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = DatadogEndpoint.LOGS_EU)
-        )
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = DatadogEndpoint.RUM_EU)
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
-    @Suppress("DEPRECATION")
-    @Test
-    fun `𝕄 build config with GOV endpoints 𝕎 useGOVEndpoints() and build()`() {
-        // When
-        val config = testedBuilder.useGovEndpoints().build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(
-            Configuration.DEFAULT_LOGS_CONFIG.copy(endpointUrl = DatadogEndpoint.LOGS_GOV)
-        )
-        assertThat(config.tracesConfig).isEqualTo(
-            Configuration.DEFAULT_TRACING_CONFIG.copy(endpointUrl = DatadogEndpoint.TRACES_GOV)
-        )
-        assertThat(config.crashReportConfig).isEqualTo(
-            Configuration.DEFAULT_CRASH_CONFIG.copy(endpointUrl = DatadogEndpoint.LOGS_GOV)
-        )
-        assertThat(config.rumConfig).isEqualTo(
-            Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = DatadogEndpoint.RUM_GOV)
-        )
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
     @Test
     fun `𝕄 build config with custom endpoints 𝕎 useCustomXXXEndpoint() and build()`(
         @StringForgery(regex = "https://[a-z]+\\.com") logsUrl: String,
@@ -400,6 +331,27 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = rumUrl)
         )
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `M set the NoOpUserActionTrackingStrategy W disableInteractionTracking()`() {
+        // Given
+
+        // When
+        val config = testedBuilder
+            .disableInteractionTracking()
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig!!)
+            .hasNoOpUserActionTrackingStrategy()
+            .hasViewTrackingStrategy(Configuration.DEFAULT_RUM_CONFIG.viewTrackingStrategy!!)
+            .hasLongTaskTrackingEnabled(Configuration.DEFAULT_LONG_TASK_THRESHOLD_MS)
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -574,6 +526,26 @@ internal class ConfigurationBuilderTest {
                     )
                 ),
                 viewTrackingStrategy = strategy
+            )
+        )
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 build config without view strategy 𝕎 useViewTrackingStrategy(null) and build()`() {
+        // When
+        val config = testedBuilder
+            .useViewTrackingStrategy(null)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(
+                viewTrackingStrategy = null
             )
         )
         assertThat(config.additionalConfig).isEmpty()
@@ -1493,26 +1465,6 @@ internal class ConfigurationBuilderTest {
         assertThat(config.additionalConfig).isEmpty()
     }
 
-    @Suppress("DEPRECATION")
-    @Test
-    fun `𝕄 not change anything 𝕎 setInternalLogsEnabled()`(
-        @StringForgery(StringForgeryType.HEXADECIMAL) clientToken: String,
-        @StringForgery(regex = "https://[a-z]+\\.com") url: String
-    ) {
-        // When
-        val config = testedBuilder
-            .setInternalLogsEnabled(clientToken, url)
-            .build()
-
-        // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
-        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
-        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
-        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
-        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
-        assertThat(config.additionalConfig).isEmpty()
-    }
-
     @Test
     fun `𝕄 build with additionalConfig 𝕎 setAdditionalConfiguration()`(forge: Forge) {
         // Given
@@ -1641,6 +1593,21 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+    }
+
+    @Test
+    fun `M use the given frequency W setVitalsMonitorUpdateFrequency`(
+        @Forgery fakeFrequency: VitalsUpdateFrequency
+    ) {
+        // When
+        val config = testedBuilder
+            .setVitalsUpdateFrequency(fakeFrequency)
+            .build()
+
+        // Then
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(vitalsMonitorUpdateFrequency = fakeFrequency)
+        )
     }
 
     private fun Configuration.Builder.setSecurityConfig(

@@ -41,7 +41,7 @@ internal class MixedWebViewEventConsumer(
                     rumEventConsumer.consume(wrappedEvent)
                 }
                 else -> {
-                    sdkLogger.errorWithTelemetry(
+                    sdkLogger.e(
                         WRONG_EVENT_TYPE_ERROR_MESSAGE.format(US, eventType)
                     )
                 }
