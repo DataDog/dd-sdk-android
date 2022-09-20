@@ -111,6 +111,9 @@ internal class ProcessLifecycleCallbackTest {
 
         // When
         testedCallback.onStopped()
+
+        // Then
+        verifyZeroInteractions(mockWorkManager)
     }
 
     @Test
@@ -144,6 +147,30 @@ internal class ProcessLifecycleCallbackTest {
 
         // When
         testedCallback.onStopped()
+
+        // Then
+        verifyZeroInteractions(mockWorkManager)
+    }
+
+    @Test
+    fun `when process started cancel existing workers`() {
+        // Given
+        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", mockWorkManager)
+
+        // When
+        testedCallback.onStarted()
+
+        // Then
+        verify(mockWorkManager).cancelAllWorkByTag(TAG_DATADOG_UPLOAD)
+    }
+
+    @Test
+    fun `when process started do nothing if no work manager`() {
+        // Given
+        WorkManagerImpl::class.java.setStaticValue("sDefaultInstance", null)
+
+        // When
+        testedCallback.onStarted()
 
         // Then
         verifyZeroInteractions(mockWorkManager)

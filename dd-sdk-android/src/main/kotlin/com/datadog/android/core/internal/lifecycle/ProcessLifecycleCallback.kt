@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.lifecycle
 import android.content.Context
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.utils.cancelUploadWorker
+import com.datadog.android.core.internal.utils.isWorkManagerInitialized
 import com.datadog.android.core.internal.utils.triggerUploadWorker
 import com.datadog.android.core.model.NetworkInfo
 import java.lang.ref.Reference
@@ -24,7 +25,9 @@ internal class ProcessLifecycleCallback(
 
     override fun onStarted() {
         contextWeakRef.get()?.let {
-            cancelUploadWorker(it)
+            if (isWorkManagerInitialized(it)) {
+                cancelUploadWorker(it)
+            }
         }
     }
 
@@ -39,7 +42,9 @@ internal class ProcessLifecycleCallback(
             )
         if (isOffline) {
             contextWeakRef.get()?.let {
-                triggerUploadWorker(it)
+                if (isWorkManagerInitialized(it)) {
+                    triggerUploadWorker(it)
+                }
             }
         }
     }
