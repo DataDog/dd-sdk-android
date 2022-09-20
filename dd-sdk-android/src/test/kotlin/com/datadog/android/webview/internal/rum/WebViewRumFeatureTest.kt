@@ -8,8 +8,8 @@ package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.SdkFeatureTest
-import com.datadog.android.rum.internal.net.RumOkHttpUploaderV2
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.rum.internal.net.RumRequestFactory
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.Forge
@@ -57,15 +57,11 @@ internal class WebViewRumFeatureTest : SdkFeatureTest<Any,
     }
 
     @Test
-    fun `𝕄 create a rum uploader 𝕎 createUploader()`() {
+    fun `𝕄 create a rum request factory 𝕎 createRequestFactory()`() {
         // When
-        val uploader = testedFeature.createUploader(fakeConfigurationFeature)
+        val requestFactory = testedFeature.createRequestFactory(fakeConfigurationFeature)
 
         // Then
-        assertThat(uploader).isInstanceOf(RumOkHttpUploaderV2::class.java)
-        val rumUploader = uploader as RumOkHttpUploaderV2
-        assertThat(rumUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
-        assertThat(rumUploader.intakeUrl).endsWith("/api/v2/rum")
-        assertThat(rumUploader.callFactory).isSameAs(coreFeature.mockInstance.okHttpClient)
+        assertThat(requestFactory).isInstanceOf(RumRequestFactory::class.java)
     }
 }

@@ -88,7 +88,7 @@ internal class UploadWorker(
             @Suppress("UnsafeThirdPartyFunctionCall") // safe to create, argument is not negative
             val lock = CountDownLatch(1)
 
-            storage.readNextBatch(context, noBatchCallback = {
+            storage.readNextBatch(noBatchCallback = {
                 lock.countDown()
             }) { batchId, reader ->
                 val batch = reader.read()

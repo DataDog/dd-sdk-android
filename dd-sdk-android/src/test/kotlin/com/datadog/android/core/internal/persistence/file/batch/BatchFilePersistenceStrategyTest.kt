@@ -6,18 +6,23 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
-import com.datadog.android.core.internal.data.upload.DataFlusher
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileMover
-import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.file.FileReaderWriter
+import com.datadog.android.core.internal.persistence.file.advanced.ConsentAwareFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.data.upload.DataFlusher
+import com.datadog.android.v2.core.internal.storage.ConsentAwareStorage
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -44,7 +49,7 @@ internal class BatchFilePersistenceStrategyTest {
     lateinit var testedStrategy: PersistenceStrategy<String>
 
     @Mock
-    lateinit var mockFileOrchestrator: FileOrchestrator
+    lateinit var mockFileOrchestrator: ConsentAwareFileOrchestrator
 
     @Mock
     lateinit var mockSerializer: Serializer<String>
@@ -59,7 +64,13 @@ internal class BatchFilePersistenceStrategyTest {
     lateinit var mockFileReaderWriter: BatchFileReaderWriter
 
     @Mock
+    lateinit var mockMetaFileReaderWriter: FileReaderWriter
+
+    @Mock
     lateinit var mockFileMover: FileMover
+
+    @Mock
+    lateinit var mockContextProvider: ContextProvider
 
     @Forgery
     lateinit var fakePayloadDecoration: PayloadDecoration
@@ -70,13 +81,18 @@ internal class BatchFilePersistenceStrategyTest {
             (it.arguments[0] as String).reversed()
         }
 
+        whenever(mockFileOrchestrator.grantedOrchestrator) doReturn mock()
+        whenever(mockFileOrchestrator.pendingOrchestrator) doReturn mock()
+
         testedStrategy = BatchFilePersistenceStrategy(
+            mockContextProvider,
             mockFileOrchestrator,
             mockExecutorService,
             mockSerializer,
             fakePayloadDecoration,
             Logger(mockLogHandler),
             mockFileReaderWriter,
+            mockMetaFileReaderWriter,
             mockFileMover
         )
     }
@@ -120,7 +136,6 @@ internal class BatchFilePersistenceStrategyTest {
         // Then
         check(flusher is DataFlusher)
         assertThat(flusher.fileOrchestrator).isSameAs(mockFileOrchestrator)
-        assertThat(flusher.decoration).isSameAs(fakePayloadDecoration)
         assertThat(flusher.fileReader).isSameAs(mockFileReaderWriter)
     }
 
@@ -164,5 +179,14 @@ internal class BatchFilePersistenceStrategyTest {
         val delegateWriter = writer.delegateWriter
         check(delegateWriter is BatchFileDataWriter)
         assertThat(delegateWriter.fileWriter).isSameAs(reader.fileReader)
+    }
+
+    @Test
+    fun `𝕄 return consent aware storage 𝕎 getStorage()`() {
+        // When
+        val storage = testedStrategy.getStorage()
+
+        // Then
+        assertThat(storage).isInstanceOf(ConsentAwareStorage::class.java)
     }
 }

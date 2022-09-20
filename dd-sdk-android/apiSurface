@@ -1729,6 +1729,15 @@ data class com.datadog.android.v2.api.Request
   constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
 interface com.datadog.android.v2.api.RequestFactory
   fun create(com.datadog.android.v2.api.context.DatadogContext, List<ByteArray>, ByteArray?): Request
+  companion object 
+    const val CONTENT_TYPE_JSON: String
+    const val CONTENT_TYPE_TEXT_UTF8: String
+    const val HEADER_API_KEY: String
+    const val HEADER_EVP_ORIGIN: String
+    const val HEADER_EVP_ORIGIN_VERSION: String
+    const val HEADER_REQUEST_ID: String
+    const val QUERY_PARAM_SOURCE: String
+    const val QUERY_PARAM_TAGS: String
 interface com.datadog.android.v2.api.SDKCore
   fun registerFeature(String, FeatureStorageConfiguration, FeatureUploadConfiguration)
   fun getFeature(String): FeatureScope?
@@ -1750,7 +1759,7 @@ enum com.datadog.android.v2.api.SDKEndpoint
 data class com.datadog.android.v2.api.context.CarrierInfo
   constructor(String?, String?)
 data class com.datadog.android.v2.api.context.DatadogContext
-  constructor(com.datadog.android.DatadogSite, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, com.datadog.android.privacy.TrackingConsent, Map<String, Map<String, Any?>>)
+  constructor(com.datadog.android.DatadogSite, String, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, com.datadog.android.privacy.TrackingConsent, Map<String, Map<String, Any?>>)
 data class com.datadog.android.v2.api.context.DeviceInfo
   constructor(String, String, String, DeviceType, String, String, String, String, String)
 enum com.datadog.android.v2.api.context.DeviceType

@@ -26,6 +26,7 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
                 service = coreFeature.serviceName,
                 env = coreFeature.envName,
                 version = coreFeature.packageVersionProvider.version,
+                variant = coreFeature.variant,
                 sdkVersion = coreFeature.sdkVersion,
                 source = coreFeature.sourceName,
                 time = with(coreFeature.timeProvider) {

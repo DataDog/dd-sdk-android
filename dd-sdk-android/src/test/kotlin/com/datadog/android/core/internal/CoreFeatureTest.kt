@@ -34,6 +34,8 @@ import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.rum.internal.ndk.NoOpNdkCrashHandler
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.core.internal.DatadogContextProvider
+import com.datadog.android.v2.core.internal.NoOpContextProvider
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.assertj.containsInstanceOf
@@ -255,6 +257,22 @@ internal class CoreFeatureTest {
             .isInstanceOf(TrackingConsentProvider::class.java)
         assertThat(testedFeature.trackingConsentProvider.getConsent())
             .isEqualTo(fakeConsent)
+    }
+
+    @Test
+    fun `𝕄 initialise the datadog context provider 𝕎 initialize`() {
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.contextProvider)
+            .isInstanceOf(DatadogContextProvider::class.java)
     }
 
     @Test
@@ -878,6 +896,8 @@ internal class CoreFeatureTest {
             .isInstanceOf(NoOpConsentProvider::class.java)
         assertThat(testedFeature.userInfoProvider)
             .isInstanceOf(NoOpMutableUserInfoProvider::class.java)
+        assertThat(testedFeature.contextProvider)
+            .isInstanceOf(NoOpContextProvider::class.java)
     }
 
     @Test

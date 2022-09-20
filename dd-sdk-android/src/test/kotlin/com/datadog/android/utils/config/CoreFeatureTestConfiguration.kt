@@ -21,6 +21,7 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.exhaustiveAttributes
+import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import com.lyft.kronos.KronosClock
 import com.nhaarman.mockitokotlin2.doReturn
@@ -66,6 +67,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var mockTrackingConsentProvider: ConsentProvider
     lateinit var mockAndroidInfoProvider: AndroidInfoProvider
     lateinit var mockAppVersionProvider: AppVersionProvider
+    lateinit var mockContextProvider: ContextProvider
 
     // region CoreFeatureTestConfiguration
 
@@ -119,6 +121,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         mockAndroidInfoProvider = mock()
         mockTrackingConsentProvider = mock { on { getConsent() } doReturn TrackingConsent.PENDING }
         mockAppVersionProvider = mock { on { version } doReturn appContext.fakeVersionName }
+        mockContextProvider = mock()
     }
 
     private fun configureCoreFeature() {
@@ -152,6 +155,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         whenever(mockInstance.userInfoProvider) doReturn mockUserInfoProvider
         whenever(mockInstance.trackingConsentProvider) doReturn mockTrackingConsentProvider
         whenever(mockInstance.androidInfoProvider) doReturn mockAndroidInfoProvider
+        whenever(mockInstance.contextProvider) doReturn mockContextProvider
     }
 
     // endregion

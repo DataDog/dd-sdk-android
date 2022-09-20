@@ -8,8 +8,6 @@ package com.datadog.android.core.internal
 
 import android.app.Application
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.data.upload.DataFlusher
-import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
 import com.datadog.android.core.internal.net.DataUploader
@@ -25,6 +23,9 @@ import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.core.internal.data.upload.DataFlusher
+import com.datadog.android.v2.core.internal.data.upload.DataUploadScheduler
+import com.datadog.android.v2.core.internal.net.DataOkHttpUploader
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.tools.unit.annotations.ProhibitLeavingStaticMocksIn
@@ -130,6 +131,12 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
                 eq(TimeUnit.MILLISECONDS)
             )
         }
+
+        assertThat(testedFeature.uploader)
+            .isInstanceOf(DataOkHttpUploader::class.java)
+
+        val uploader = testedFeature.uploader as DataOkHttpUploader
+        assertThat(uploader.callFactory).isSameAs(coreFeature.mockInstance.okHttpClient)
     }
 
     @Test

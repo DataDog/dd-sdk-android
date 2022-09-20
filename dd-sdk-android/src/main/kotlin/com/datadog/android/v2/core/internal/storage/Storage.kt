@@ -18,22 +18,20 @@ internal interface Storage {
 
     /**
      * Utility to write data, asynchronously.
-     * @param datadogContext the current [DatadogContext]
      * @param callback an operation to perform with a [BatchWriter] that will target the current
      * writeable Batch
      */
+    @WorkerThread
     fun writeCurrentBatch(datadogContext: DatadogContext, callback: (BatchWriter) -> Unit)
 
     /**
      * Utility to read a batch, asynchronously.
-     * @param datadogContext the current [DatadogContext]
      * @param noBatchCallback an optional callback which is called when there is no batch available to read.
      * @param batchCallback an operation to perform with a [BatchId] and [BatchReader] that will target
      * the next readable Batch
      */
     @WorkerThread
     fun readNextBatch(
-        datadogContext: DatadogContext,
         noBatchCallback: () -> Unit = {},
         batchCallback: (BatchId, BatchReader) -> Unit
     )

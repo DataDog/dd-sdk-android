@@ -6,8 +6,6 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
-import com.datadog.android.core.internal.data.upload.DataFlusher
-import com.datadog.android.core.internal.data.upload.Flusher
 import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.PayloadDecoration
@@ -15,17 +13,29 @@ import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
+import com.datadog.android.core.internal.persistence.file.FileReaderWriter
+import com.datadog.android.core.internal.persistence.file.advanced.ConsentAwareFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.log.Logger
+import com.datadog.android.v2.api.NoOpBatchWriterListener
+import com.datadog.android.v2.api.NoOpInternalLogger
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.data.upload.DataFlusher
+import com.datadog.android.v2.core.internal.data.upload.Flusher
+import com.datadog.android.v2.core.internal.storage.ConsentAwareStorage
+import com.datadog.android.v2.core.internal.storage.Storage
 import java.util.concurrent.ExecutorService
 
 internal open class BatchFilePersistenceStrategy<T : Any>(
-    private val fileOrchestrator: FileOrchestrator,
+    private val contextProvider: ContextProvider,
+    private val fileOrchestrator: ConsentAwareFileOrchestrator,
     private val executorService: ExecutorService,
     serializer: Serializer<T>,
-    private val payloadDecoration: PayloadDecoration,
-    internalLogger: Logger,
+    payloadDecoration: PayloadDecoration,
+    internal val internalLogger: Logger,
     internal val fileReaderWriter: BatchFileReaderWriter,
+    internal val metadataFileReaderWriter: FileReaderWriter,
     val fileMover: FileMover
 ) : PersistenceStrategy<T> {
 
@@ -57,7 +67,13 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
     }
 
     override fun getFlusher(): Flusher {
-        return DataFlusher(fileOrchestrator, payloadDecoration, fileReaderWriter, fileMover)
+        return DataFlusher(
+            contextProvider,
+            fileOrchestrator,
+            fileReaderWriter,
+            metadataFileReaderWriter,
+            fileMover
+        )
     }
 
     // endregion
@@ -79,6 +95,21 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
             ),
             executorService,
             internalLogger
+        )
+    }
+
+    override fun getStorage(): Storage {
+        return ConsentAwareStorage(
+            grantedOrchestrator = fileOrchestrator.grantedOrchestrator,
+            pendingOrchestrator = fileOrchestrator.pendingOrchestrator,
+            batchEventsReaderWriter = fileReaderWriter,
+            batchMetadataReaderWriter = metadataFileReaderWriter,
+            fileMover = fileMover,
+            // TODO RUMM-2504 register listener
+            listener = NoOpBatchWriterListener(),
+            // TODO RUMM-0000 create internal logger
+            internalLogger = NoOpInternalLogger(),
+            filePersistenceConfig = FilePersistenceConfig()
         )
     }
 

@@ -25,4 +25,46 @@ fun interface RequestFactory {
         batchData: List<ByteArray>,
         batchMetadata: ByteArray?
     ): Request
+
+    companion object {
+        /**
+         * application/json content type.
+         */
+        const val CONTENT_TYPE_JSON: String = "application/json"
+
+        /**
+         * text/plain;charset=UTF-8 content type.
+         */
+        const val CONTENT_TYPE_TEXT_UTF8: String = "text/plain;charset=UTF-8"
+
+        /**
+         * Datadog API key header.
+         */
+        const val HEADER_API_KEY: String = "DD-API-KEY"
+
+        /**
+         * Datadog Event Platform Origin header, e.g. android, flutter, etc.
+         */
+        const val HEADER_EVP_ORIGIN: String = "DD-EVP-ORIGIN"
+
+        /**
+         * Datadog Event Platform Origin version header, e.g. SDK version.
+         */
+        const val HEADER_EVP_ORIGIN_VERSION: String = "DD-EVP-ORIGIN-VERSION"
+
+        /**
+         * Datadog Request ID header, used for debugging purposes.
+         */
+        const val HEADER_REQUEST_ID: String = "DD-REQUEST-ID"
+
+        /**
+         * Datadog source query parameter name.
+         */
+        const val QUERY_PARAM_SOURCE: String = "ddsource"
+
+        /**
+         * Datadog tags query parameter name.
+         */
+        const val QUERY_PARAM_TAGS: String = "ddtags"
+    }
 }
