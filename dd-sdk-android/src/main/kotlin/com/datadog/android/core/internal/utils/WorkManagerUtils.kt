@@ -56,3 +56,15 @@ internal fun triggerUploadWorker(context: Context) {
         sdkLogger.errorWithTelemetry(SETUP_ERROR_MESSAGE, e)
     }
 }
+
+@Suppress("TooGenericExceptionCaught", "SwallowedException")
+internal fun isWorkManagerInitialized(context: Context): Boolean {
+    return try {
+        // TODO RUMM-2511 Replace isWorkManagerInitialized
+        //  with WorkManager#isInitialized coming with version 2.8 once it is stable
+        WorkManager.getInstance(context)
+        true
+    } catch (e: Exception) {
+        false
+    }
+}
