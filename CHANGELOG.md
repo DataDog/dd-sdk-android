@@ -1,3 +1,16 @@
+# 1.14.0 / 2022-09-20
+
+* [FEATURE] Global: Collect OS and device information instead of relying on User-Agent header. See [#945](https://github.com/DataDog/dd-sdk-android/pull/945)
+* [IMPROVEMENT] Logs: Add a possibility to define min log level. See [#920](https://github.com/DataDog/dd-sdk-android/pull/920)
+* [IMPROVEMENT] Logs: Add `variant` tag to events. See [#1025](https://github.com/DataDog/dd-sdk-android/pull/1025)
+* [IMPROVEMENT] RUM: Add a method to add extra user properties. See [#952](https://github.com/DataDog/dd-sdk-android/pull/952) (Thanks [@JosephRoskopf](https://github.com/JosephRoskopf))
+* [IMPROVEMENT] RUM: Allow to configure Vitals collection frequency. See [#926](https://github.com/DataDog/dd-sdk-android/pull/926)
+* [IMPROVEMENT] RUM: Improve session management logic. See [#948](https://github.com/DataDog/dd-sdk-android/pull/948)
+* [IMPROVEMENT] RUM: Back navigation is reported with `back` type. See [#980](https://github.com/DataDog/dd-sdk-android/pull/980)
+* [IMPROVEMENT] RUM: Add a possibility to disable automatic view tracking. See [#981](https://github.com/DataDog/dd-sdk-android/pull/981)
+* [IMPROVEMENT] RUM: Add a possibility to disable automatic interactions tracking. See [#1023](https://github.com/DataDog/dd-sdk-android/pull/1023)
+* [IMPROVEMENT] Global: Remove deprecated APIs. See [#973](https://github.com/DataDog/dd-sdk-android/pull/973)
+
 # 1.13.0 / 2022-06-27
 
 * [BUGFIX] Core: Prevent a rare race condition in the features folder creation
