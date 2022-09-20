@@ -6,12 +6,9 @@
 
 package com.datadog.android.core.internal.system
 
-import android.os.Build
-
-internal object StaticAndroidInfoProvider : AndroidInfoProvider {
-    override fun getDeviceModel(): String = Build.MODEL
-
-    override fun getDeviceBuildId(): String = Build.ID
-
-    override fun getDeviceVersion(): String = Build.VERSION.RELEASE
+internal class NoOpAppVersionProvider : AppVersionProvider {
+    @Suppress("UNUSED_PARAMETER")
+    override var version: String
+        get() = ""
+        set(value) {}
 }

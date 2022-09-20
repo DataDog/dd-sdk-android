@@ -9,7 +9,9 @@ package com.datadog.android.rum.internal.monitor
 import android.os.Handler
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -25,6 +27,7 @@ import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumResourceScope
 import com.datadog.android.rum.internal.domain.scope.RumScope
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
+import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
@@ -113,6 +116,9 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockTelemetryEventHandler: TelemetryEventHandler
 
+    @Mock
+    lateinit var mockAndroidInfoProvider: AndroidInfoProvider
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -142,7 +148,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
-            mockSessionListener
+            mockSessionListener,
+            androidInfoProvider = mockAndroidInfoProvider
         )
         testedMonitor.rootScope = mockScope
     }
@@ -161,7 +168,8 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockTimeProvider,
-            mockSessionListener
+            mockSessionListener,
+            androidInfoProvider = mockAndroidInfoProvider
         )
 
         val rootScope = testedMonitor.rootScope
@@ -241,23 +249,6 @@ internal class DatadogRumMonitorTest {
             assertThat(event.type).isEqualTo(type)
             assertThat(event.name).isEqualTo(name)
             assertThat(event.waitForStop).isTrue()
-            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
-        }
-        verifyNoMoreInteractions(mockScope, mockWriter)
-    }
-
-    @Test
-    fun `M delegate event to rootScope W stopUserAction()`() {
-        @Suppress("DEPRECATION")
-        testedMonitor.stopUserAction(fakeAttributes)
-        Thread.sleep(PROCESSING_DELAY)
-
-        argumentCaptor<RumRawEvent> {
-            verify(mockScope).handleEvent(capture(), same(mockWriter))
-
-            val event = firstValue as RumRawEvent.StopAction
-            assertThat(event.type).isNull()
-            assertThat(event.name).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -1174,7 +1165,8 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
-            mockExecutor
+            mockExecutor,
+            mockAndroidInfoProvider
         )
 
         // When
@@ -1217,7 +1209,8 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockAndroidInfoProvider
         )
 
         // When
@@ -1247,7 +1240,8 @@ internal class DatadogRumMonitorTest {
             mockFrameRateVitalMonitor,
             mockTimeProvider,
             mockSessionListener,
-            mockExecutorService
+            mockExecutorService,
+            mockAndroidInfoProvider
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -1277,8 +1271,8 @@ internal class DatadogRumMonitorTest {
         // Given
         val mockRumApplicationScope = mock<RumApplicationScope>()
         testedMonitor.rootScope = mockRumApplicationScope
-
         val mockSessionScope = mock<RumSessionScope>()
+        val mockViewManagerScope = mock<RumViewManagerScope>()
 
         val listener = mock<RumDebugListener>()
         testedMonitor.debugListener = listener
@@ -1291,16 +1285,14 @@ internal class DatadogRumMonitorTest {
                 whenever(isActive()) doReturn true
             }
         }
-
         val expectedViewNames = viewScopes.mapNotNull { it.getRumContext().viewName }
-
         val otherScopes = forge.aList {
             forge.anElementFrom(mock(), mock<RumActionScope>(), mock<RumResourceScope>())
         }
-
         whenever(mockRumApplicationScope.childScope) doReturn mockSessionScope
-        whenever(mockSessionScope.childrenScopes) doReturn
-            (viewScopes + otherScopes).toMutableList()
+        whenever(mockSessionScope.childScope) doReturn mockViewManagerScope
+        whenever(mockViewManagerScope.childrenScopes)
+            .thenReturn((viewScopes + otherScopes).toMutableList())
 
         // When
         testedMonitor.notifyDebugListenerWithState()
@@ -1316,12 +1308,11 @@ internal class DatadogRumMonitorTest {
         // Given
         val mockRumApplicationScope = mock<RumApplicationScope>()
         testedMonitor.rootScope = mockRumApplicationScope
-
         val mockSessionScope = mock<RumSessionScope>()
+        val mockViewManagerScope = mock<RumViewManagerScope>()
 
         val listener = mock<RumDebugListener>()
         testedMonitor.debugListener = listener
-
         val viewScopes = forge.aList {
             mock<RumViewScope>().apply {
                 whenever(getRumContext()) doReturn
@@ -1330,16 +1321,14 @@ internal class DatadogRumMonitorTest {
                 whenever(isActive()) doReturn false
             }
         }
-
         val expectedViewNames = emptyList<String>()
-
         val otherScopes = forge.aList {
             forge.anElementFrom(mock(), mock<RumActionScope>(), mock<RumResourceScope>())
         }
-
         whenever(mockRumApplicationScope.childScope) doReturn mockSessionScope
-        whenever(mockSessionScope.childrenScopes) doReturn
-            (viewScopes + otherScopes).toMutableList()
+        whenever(mockSessionScope.childScope) doReturn mockViewManagerScope
+        whenever(mockViewManagerScope.childrenScopes)
+            .thenReturn((viewScopes + otherScopes).toMutableList())
 
         // When
         testedMonitor.notifyDebugListenerWithState()
@@ -1411,7 +1400,8 @@ internal class DatadogRumMonitorTest {
             )
             assertThat(lastValue.message).isEqualTo(message)
             assertThat(lastValue.type).isEqualTo(TelemetryType.DEBUG)
-            assertThat(lastValue.throwable).isNull()
+            assertThat(lastValue.stack).isNull()
+            assertThat(lastValue.kind).isNull()
         }
     }
 
@@ -1432,7 +1422,8 @@ internal class DatadogRumMonitorTest {
             )
             assertThat(lastValue.message).isEqualTo(message)
             assertThat(lastValue.type).isEqualTo(TelemetryType.ERROR)
-            assertThat(lastValue.throwable).isEqualTo(throwable)
+            assertThat(lastValue.stack).isEqualTo(throwable?.loggableStackTrace())
+            assertThat(lastValue.kind).isEqualTo(throwable?.javaClass?.canonicalName)
         }
     }
 

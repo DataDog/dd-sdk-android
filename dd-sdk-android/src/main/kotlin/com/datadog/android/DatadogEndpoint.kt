@@ -50,36 +50,6 @@ object DatadogEndpoint {
      */
     const val LOGS_EU1: String = "https://mobile-http-intake.logs.datadoghq.eu"
 
-    /**
-     * The endpoint for Logs (US based servers), used by default by the SDK.
-     * @see [Configuration]
-     * @deprecated use [LOGS_US1] instead
-     */
-    @Deprecated("Use LOGS_US1 instead", ReplaceWith("DatadogEndpoint.LOGS_US1"))
-    const val LOGS_US: String = LOGS_US1
-
-    /**
-     * The endpoint for Logs (Europe based servers).
-     * Use this in your [Configuration] if you log on
-     * [app.datadoghq.eu](https://app.datadoghq.eu/) instead of
-     * [app.datadoghq.com](https://app.datadoghq.com/)
-     * @see [Configuration]
-     * @deprecated use [LOGS_EU1] instead
-     */
-    @Deprecated("Use LOGS_EU1 instead", ReplaceWith("DatadogEndpoint.LOGS_EU1"))
-    const val LOGS_EU: String = LOGS_EU1
-
-    /**
-     * The endpoint for Logs (GovCloud compatible servers).
-     * Use this in your [Configuration] if you log on
-     * [app.ddog-gov.com/](https://app.ddog-gov.com/) instead of
-     * [app.datadoghq.com](https://app.datadoghq.com/)
-     * @see [Configuration]
-     * @deprecated use [LOGS_US1_FED] instead
-     */
-    @Deprecated("Use LOGS_US1_FED instead", ReplaceWith("DatadogEndpoint.LOGS_US1_FED"))
-    const val LOGS_GOV: String = LOGS_US1_FED
-
     // endregion
 
     //  region Trace
@@ -119,36 +89,6 @@ object DatadogEndpoint {
      */
     const val TRACES_EU1: String = "https:/public-trace-http-intake.logs.datadoghq.eu"
 
-    /**
-     * The endpoint for Traces (US based servers), used by default by the SDK.
-     * @see [Configuration]
-     * @deprecated use [TRACES_US1] instead
-     */
-    @Deprecated("Use TRACES_US1 instead", ReplaceWith("DatadogEndpoint.TRACES_US1"))
-    const val TRACES_US: String = TRACES_US1
-
-    /**
-     * The endpoint for Traces (Europe based servers).
-     * Use this in your [Configuration] if you log on
-     * [app.datadoghq.eu](https://app.datadoghq.eu/) instead of
-     * [app.datadoghq.com](https://app.datadoghq.com/)
-     * @see [Configuration]
-     * @deprecated use [TRACES_EU1] instead
-     */
-    @Deprecated("Use TRACES_EU1 instead", ReplaceWith("DatadogEndpoint.TRACES_EU1"))
-    const val TRACES_EU: String = TRACES_EU1
-
-    /**
-     * The endpoint for Traces (GovCloud compatible servers).
-     * Use this in your [Configuration] if you log on
-     * [app.ddog-gov.com/](https://app.ddog-gov.com/) instead of
-     * [app.datadoghq.com](https://app.datadoghq.com/)
-     * @see [Configuration]
-     * @deprecated use [TRACES_US1_FED] instead
-     */
-    @Deprecated("Use TRACES_US1_FED instead", ReplaceWith("DatadogEndpoint.TRACES_US1_FED"))
-    const val TRACES_GOV: String = TRACES_US1_FED
-
     // endregion
 
     //  region RUM
@@ -187,34 +127,6 @@ object DatadogEndpoint {
      * @see [Configuration]
      */
     const val RUM_EU1: String = "https://rum-http-intake.logs.datadoghq.eu"
-
-    /**
-     * The endpoint for Real User Monitoring (US based servers), used by default by the SDK.
-     * @see [Configuration]
-     * @deprecated use [RUM_US1] instead
-     */
-    @Deprecated("Use RUM_US1 instead", ReplaceWith("DatadogEndpoint.RUM_US1"))
-    const val RUM_US: String = RUM_US1
-
-    /**
-     * The endpoint for Real User Monitoring (Europe based servers).
-     * Use this in your [Configuration] if you log on
-     * [app.datadoghq.eu](https://app.datadoghq.eu/) instead of
-     * [app.datadoghq.com](https://app.datadoghq.com/)
-     * @deprecated use [RUM_EU1] instead
-     */
-    @Deprecated("Use RUM_EU1 instead", ReplaceWith("DatadogEndpoint.RUM_EU1"))
-    const val RUM_EU: String = RUM_EU1
-
-    /**
-     * The endpoint for Real User Monitoring (GovCloud compatible servers).
-     * Use this in your [Configuration] if you log on
-     * [app.ddog-gov.com/](https://app.ddog-gov.com/) instead of
-     * [app.datadoghq.com](https://app.datadoghq.com/)
-     * @deprecated use [RUM_US1_FED] instead
-     */
-    @Deprecated("Use RUM_US1_FED instead", ReplaceWith("DatadogEndpoint.RUM_US1_FED"))
-    const val RUM_GOV: String = RUM_US1_FED
 
     // endregion
 

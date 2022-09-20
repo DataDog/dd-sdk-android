@@ -403,7 +403,7 @@ internal class WindowCallbackWrapperTest {
 
         // Then
         verify(rumMonitor.mockInstance).addUserAction(
-            RumActionType.CUSTOM,
+            RumActionType.BACK,
             WindowCallbackWrapper.BACK_DEFAULT_TARGET_NAME,
             emptyMap()
         )
@@ -429,7 +429,7 @@ internal class WindowCallbackWrapperTest {
 
         // Then
         verify(rumMonitor.mockInstance).addUserAction(
-            RumActionType.CUSTOM,
+            RumActionType.BACK,
             WindowCallbackWrapper.BACK_DEFAULT_TARGET_NAME,
             emptyMap()
         )
@@ -456,7 +456,7 @@ internal class WindowCallbackWrapperTest {
 
         // Then
         verify(rumMonitor.mockInstance).addUserAction(
-            RumActionType.CUSTOM,
+            RumActionType.BACK,
             customTargetName,
             emptyMap()
         )

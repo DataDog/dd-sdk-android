@@ -26,5 +26,9 @@ package com.datadog.android.nightly.main
  * apiMethodSignature: com.datadog.android.log.Logger#fun log(Int, String, Throwable? = null, Map<String, Any?> = emptyMap())
  * apiMethodSignature: com.datadog.android.plugin.DatadogPluginConfig#constructor(android.content.Context, String, String, com.datadog.android.privacy.TrackingConsent)
  * apiMethodSignature: com.datadog.android.log.Logger$Builder#fun setLogcatLogsEnabled(Boolean): Builder
- *
+ * apiMethodSignature: com.datadog.android._InternalProxy$_TelemetryProxy#fun debug(String)
+ * apiMethodSignature: com.datadog.android._InternalProxy$_TelemetryProxy#fun error(String, String?, String?)
+ * apiMethodSignature: com.datadog.android._InternalProxy$_TelemetryProxy#fun error(String, Throwable? = null)
+ * apiMethodSignature: com.datadog.android.rum._RumInternalProxy#fun addLongTask(Long, String)
+ * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun disableInteractionTracking(): Builder
  */

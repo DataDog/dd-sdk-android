@@ -12,7 +12,6 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
-import com.datadog.android.core.internal.system.StaticAndroidInfoProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.tracing.internal.domain.TracesFilePersistenceStrategy
 import com.datadog.android.tracing.internal.net.TracesOkHttpUploaderV2
@@ -35,6 +34,7 @@ internal object TracingFeature : SdkFeature<DDSpan, Configuration.Feature.Tracin
             CoreFeature.timeProvider,
             CoreFeature.networkInfoProvider,
             CoreFeature.userInfoProvider,
+            CoreFeature.packageVersionProvider,
             CoreFeature.envName,
             sdkLogger,
             configuration.spanEventMapper,
@@ -49,7 +49,7 @@ internal object TracingFeature : SdkFeature<DDSpan, Configuration.Feature.Tracin
             CoreFeature.sourceName,
             CoreFeature.sdkVersion,
             CoreFeature.okHttpClient,
-            StaticAndroidInfoProvider
+            CoreFeature.androidInfoProvider
         )
     }
 

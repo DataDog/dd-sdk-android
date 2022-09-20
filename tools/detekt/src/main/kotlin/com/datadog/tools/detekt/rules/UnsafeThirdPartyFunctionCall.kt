@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.psi.KtTryExpression
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.callUtil.getType
+import org.jetbrains.kotlin.resolve.calls.resolvedCallUtil.getImplicitReceiverValue
 import org.jetbrains.kotlin.types.lowerIfFlexible
 
 /**
@@ -106,7 +107,10 @@ class UnsafeThirdPartyFunctionCall(
         val returnType = expression.getType(bindingContext)?.fullType() ?: return
 
         val explicitReceiverType = call.explicitReceiver?.type(bindingContext)
-        val receiverType = explicitReceiverType ?: call.dispatchReceiver?.type(bindingContext)
+        val receiverType = explicitReceiverType
+            ?: call.dispatchReceiver?.type(bindingContext)
+            ?: resolvedCall.getImplicitReceiverValue()?.type(bindingContext)
+
         val callDescriptor = resolvedCall.candidateDescriptor
 
         if (callDescriptor is ClassConstructorDescriptor) {

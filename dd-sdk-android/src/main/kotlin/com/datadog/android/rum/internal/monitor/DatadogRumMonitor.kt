@@ -9,14 +9,17 @@ package com.datadog.android.rum.internal.monitor
 import android.os.Handler
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -27,6 +30,7 @@ import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
+import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
@@ -53,7 +57,8 @@ internal class DatadogRumMonitor(
     frameRateVitalMonitor: VitalMonitor,
     timeProvider: TimeProvider,
     sessionListener: RumSessionListener?,
-    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
+    private val executorService: ExecutorService = Executors.newSingleThreadExecutor(),
+    androidInfoProvider: AndroidInfoProvider
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -69,7 +74,8 @@ internal class DatadogRumMonitor(
             CombinedRumSessionListener(sessionListener, telemetryEventHandler)
         } else {
             telemetryEventHandler
-        }
+        },
+        androidInfoProvider
     )
 
     internal val keepAliveRunnable = Runnable {
@@ -77,6 +83,8 @@ internal class DatadogRumMonitor(
     }
 
     internal var debugListener: RumDebugListener? = null
+
+    private val internalProxy = _RumInternalProxy(this)
 
     init {
         handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
@@ -109,12 +117,6 @@ internal class DatadogRumMonitor(
         val eventTime = getEventTime(attributes)
         handleEvent(
             RumRawEvent.StartAction(type, name, true, attributes, eventTime)
-        )
-    }
-
-    override fun stopUserAction(attributes: Map<String, Any?>) {
-        handleEvent(
-            RumRawEvent.StopAction(null, null, attributes)
         )
     }
 
@@ -327,11 +329,21 @@ internal class DatadogRumMonitor(
     }
 
     override fun sendDebugTelemetryEvent(message: String) {
-        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.DEBUG, message, null))
+        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.DEBUG, message, null, null))
     }
 
     override fun sendErrorTelemetryEvent(message: String, throwable: Throwable?) {
-        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, throwable))
+        var stack: String? = throwable?.loggableStackTrace()
+        var kind: String? = throwable?.javaClass?.canonicalName ?: throwable?.javaClass?.simpleName
+        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, stack, kind))
+    }
+
+    override fun sendErrorTelemetryEvent(message: String, stack: String?, kind: String?) {
+        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, stack, kind))
+    }
+
+    override fun _getInternal(): _RumInternalProxy? {
+        return internalProxy
     }
 
     // endregion
@@ -385,9 +397,10 @@ internal class DatadogRumMonitor(
         debugListener?.let {
             val applicationScope = rootScope as? RumApplicationScope
             val sessionScope = applicationScope?.childScope as? RumSessionScope
-            if (sessionScope != null) {
+            val viewManagerScope = sessionScope?.childScope as? RumViewManagerScope
+            if (viewManagerScope != null) {
                 it.onReceiveRumActiveViews(
-                    sessionScope.childrenScopes
+                    viewManagerScope.childrenScopes
                         .filterIsInstance<RumViewScope>()
                         .filter { viewScope -> viewScope.isActive() }
                         .mapNotNull { viewScope -> viewScope.getRumContext().viewName }

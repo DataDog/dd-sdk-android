@@ -33,8 +33,8 @@ import org.json.JSONObject
 /**
  * A class enabling Datadog logging features.
  *
- * It allows you to create a specific context (automatic information, custom attributes, tags) that will be embedded in all
- * logs sent through this logger.
+ * It allows you to create a specific context (automatic information, custom attributes, tags) that
+ * will be embedded in all logs sent through this logger.
  *
  * You can have multiple loggers configured in your application, each with their own settings.
  */
@@ -186,6 +186,7 @@ internal constructor(internal var handler: LogHandler) {
         private var bundleWithRumEnabled: Boolean = true
         private var loggerName: String = CoreFeature.packageName
         private var sampleRate: Float = 1.0f
+        private var minDatadogLogsPriority: Int = -1
 
         /**
          * Builds a [Logger] based on the current state of this Builder.
@@ -217,11 +218,22 @@ internal constructor(internal var handler: LogHandler) {
 
         /**
          * Enables your logs to be sent to the Datadog servers.
-         * You can use this feature to disable Datadog logs based on a configuration or an application flavor.
+         * You can use this feature to disable Datadog logs based on a configuration or an
+         * application flavor.
          * @param enabled true by default
          */
         fun setDatadogLogsEnabled(enabled: Boolean): Builder {
             datadogLogsEnabled = enabled
+            return this
+        }
+
+        /**
+         * Sets a minimum priority for the log to be sent to the Datadog servers. If log priority
+         * is below this one, then it won't be sent. Default value is -1 (allow all).
+         * @param minLogPriority Minimum log priority to be sent to the Datadog servers.
+         */
+        fun setDatadogLogsMinPriority(minLogPriority: Int): Builder {
+            minDatadogLogsPriority = minLogPriority
             return this
         }
 
@@ -299,6 +311,7 @@ internal constructor(internal var handler: LogHandler) {
             return DatadogLogHandler(
                 logGenerator = logGenerator,
                 writer = writer,
+                minLogPriority = minDatadogLogsPriority,
                 bundleWithTraces = bundleWithTraceEnabled,
                 bundleWithRum = bundleWithRumEnabled,
                 sampler = RateBasedSampler(sampleRate)
@@ -331,7 +344,8 @@ internal constructor(internal var handler: LogHandler) {
                 CoreFeature.timeProvider,
                 CoreFeature.sdkVersion,
                 CoreFeature.envName,
-                CoreFeature.packageVersion
+                CoreFeature.variant,
+                CoreFeature.packageVersionProvider
             )
         }
 

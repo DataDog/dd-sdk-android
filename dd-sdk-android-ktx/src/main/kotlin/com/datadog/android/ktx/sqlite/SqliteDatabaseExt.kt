@@ -28,16 +28,20 @@ inline fun <T> SQLiteDatabase.transactionTraced(
     val parentSpan = GlobalTracer.get().activeSpan()
     withinSpan(operationName, parentSpan, true) {
         if (exclusive) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // we are in a valid state
             beginTransaction()
         } else {
+            @Suppress("UnsafeThirdPartyFunctionCall") // we are in a valid state
             beginTransactionNonExclusive()
         }
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller
             val result = this.body(this@transactionTraced)
+            @Suppress("UnsafeThirdPartyFunctionCall") // we are in a valid state
             setTransactionSuccessful()
             return result
         } finally {
+            @Suppress("UnsafeThirdPartyFunctionCall") // we are in a valid state
             endTransaction()
         }
     }

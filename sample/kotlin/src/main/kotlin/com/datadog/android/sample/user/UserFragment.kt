@@ -12,6 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import androidx.fragment.app.Fragment
+import com.datadog.android.Datadog.addUserExtraInfo
 import com.datadog.android.Datadog.setUserInfo
 import com.datadog.android.ktx.tracing.withinSpan
 import com.datadog.android.sample.Preferences
@@ -70,6 +71,8 @@ class UserFragment : Fragment(), View.OnClickListener {
                 id,
                 name,
                 email,
+            )
+            addUserExtraInfo(
                 mapOf(
                     GENDER_KEY to gender,
                     AGE_KEY to age

@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
@@ -35,7 +36,8 @@ internal class RumResourceScope(
     initialAttributes: Map<String, Any?>,
     serverTimeOffsetInMs: Long,
     internal val firstPartyHostDetector: FirstPartyHostDetector,
-    private val rumEventSourceProvider: RumEventSourceProvider
+    private val rumEventSourceProvider: RumEventSourceProvider,
+    private val androidInfoProvider: AndroidInfoProvider
 ) : RumScope {
 
     internal val resourceId: String = UUID.randomUUID().toString()
@@ -206,6 +208,17 @@ internal class RumResourceScope(
                 type = ResourceEvent.ResourceEventSessionType.USER
             ),
             source = rumEventSourceProvider.resourceEventSource,
+            os = ResourceEvent.Os(
+                name = androidInfoProvider.osName,
+                version = androidInfoProvider.osVersion,
+                versionMajor = androidInfoProvider.osMajorVersion
+            ),
+            device = ResourceEvent.Device(
+                type = androidInfoProvider.deviceType.toResourceSchemaType(),
+                name = androidInfoProvider.deviceName,
+                model = androidInfoProvider.deviceModel,
+                brand = androidInfoProvider.deviceBrand
+            ),
             context = ResourceEvent.Context(additionalProperties = attributes),
             dd = ResourceEvent.Dd(
                 traceId = traceId,
@@ -286,6 +299,17 @@ internal class RumResourceScope(
                 type = ErrorEvent.ErrorEventSessionType.USER
             ),
             source = rumEventSourceProvider.errorEventSource,
+            os = ErrorEvent.Os(
+                name = androidInfoProvider.osName,
+                version = androidInfoProvider.osVersion,
+                versionMajor = androidInfoProvider.osMajorVersion
+            ),
+            device = ErrorEvent.Device(
+                type = androidInfoProvider.deviceType.toErrorSchemaType(),
+                name = androidInfoProvider.deviceName,
+                model = androidInfoProvider.deviceModel,
+                brand = androidInfoProvider.deviceBrand
+            ),
             context = ErrorEvent.Context(additionalProperties = attributes),
             dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
         )
@@ -320,13 +344,14 @@ internal class RumResourceScope(
             "resource: %s was 0 or negative. In order to keep the resource event" +
             " we forced it to 1ns."
 
+        @Suppress("LongParameterList")
         fun fromEvent(
             parentScope: RumScope,
             event: RumRawEvent.StartResource,
             firstPartyHostDetector: FirstPartyHostDetector,
             timestampOffset: Long,
-            rumEventSourceProvider: RumEventSourceProvider
-
+            rumEventSourceProvider: RumEventSourceProvider,
+            androidInfoProvider: AndroidInfoProvider
         ): RumScope {
             return RumResourceScope(
                 parentScope,
@@ -337,7 +362,8 @@ internal class RumResourceScope(
                 event.attributes,
                 timestampOffset,
                 firstPartyHostDetector,
-                rumEventSourceProvider
+                rumEventSourceProvider,
+                androidInfoProvider
             )
         }
     }

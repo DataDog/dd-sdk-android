@@ -190,7 +190,8 @@ internal sealed class RumRawEvent {
     internal data class SendTelemetry(
         val type: TelemetryType,
         val message: String,
-        val throwable: Throwable?,
+        val stack: String?,
+        val kind: String?,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 }

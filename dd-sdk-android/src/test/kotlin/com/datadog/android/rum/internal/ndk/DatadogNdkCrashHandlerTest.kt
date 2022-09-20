@@ -10,6 +10,7 @@ import android.content.Context
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
@@ -22,6 +23,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.ErrorEventAssert
 import com.datadog.android.rum.assertj.ViewEventAssert
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
+import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
@@ -106,6 +108,9 @@ internal class DatadogNdkCrashHandlerTest {
     @Forgery
     lateinit var fakeLog: LogEvent
 
+    @Forgery
+    lateinit var fakeAndroidInfoProvider: AndroidInfoProvider
+
     @Captor
     lateinit var captureRunnable: ArgumentCaptor<Runnable>
 
@@ -143,7 +148,8 @@ internal class DatadogNdkCrashHandlerTest {
             Logger(mockLogHandler),
             mockTimeProvider,
             mockFileHandler,
-            mockRumEventSourceProvider
+            mockRumEventSourceProvider,
+            fakeAndroidInfoProvider
         )
     }
 
@@ -423,6 +429,17 @@ internal class DatadogNdkCrashHandlerTest {
                 )
                 .hasErrorType(ndkCrashLog.signalName)
                 .hasLiteSessionPlan()
+                .hasDeviceInfo(
+                    fakeAndroidInfoProvider.deviceName,
+                    fakeAndroidInfoProvider.deviceModel,
+                    fakeAndroidInfoProvider.deviceBrand,
+                    fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                )
+                .hasOsInfo(
+                    fakeAndroidInfoProvider.osName,
+                    fakeAndroidInfoProvider.osVersion,
+                    fakeAndroidInfoProvider.osMajorVersion
+                )
 
             ViewEventAssert.assertThat(secondValue as ViewEvent)
                 .hasVersion(fakeViewEvent.dd.documentVersion + 1)
@@ -496,6 +513,17 @@ internal class DatadogNdkCrashHandlerTest {
                 .hasErrorType(ndkCrashLog.signalName)
                 .hasLiteSessionPlan()
                 .hasSource(fakeSourceErrorEvent)
+                .hasDeviceInfo(
+                    fakeAndroidInfoProvider.deviceName,
+                    fakeAndroidInfoProvider.deviceModel,
+                    fakeAndroidInfoProvider.deviceBrand,
+                    fakeAndroidInfoProvider.deviceType.toErrorSchemaType()
+                )
+                .hasOsInfo(
+                    fakeAndroidInfoProvider.osName,
+                    fakeAndroidInfoProvider.osVersion,
+                    fakeAndroidInfoProvider.osMajorVersion
+                )
         }
         verify(mockLogWriter).write(fakeLog)
     }

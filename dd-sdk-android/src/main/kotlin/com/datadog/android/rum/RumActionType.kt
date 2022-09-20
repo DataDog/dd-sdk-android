@@ -23,6 +23,9 @@ enum class RumActionType {
     /** User clicked on a widget (not used on Mobile). */
     CLICK,
 
+    /** User navigated back. */
+    BACK,
+
     /** A custom action. */
     CUSTOM
 }

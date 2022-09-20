@@ -31,7 +31,13 @@ import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
+import com.datadog.android.core.internal.system.AndroidInfoProvider
+import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
+import com.datadog.android.core.internal.system.DefaultAndroidInfoProvider
+import com.datadog.android.core.internal.system.DefaultAppVersionProvider
+import com.datadog.android.core.internal.system.NoOpAndroidInfoProvider
+import com.datadog.android.core.internal.system.NoOpAppVersionProvider
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.time.KronosTimeProvider
@@ -130,7 +136,7 @@ internal object CoreFeature {
 
     internal var clientToken: String = ""
     internal var packageName: String = ""
-    internal var packageVersion: String = ""
+    internal var packageVersionProvider: AppVersionProvider = NoOpAppVersionProvider()
     internal var serviceName: String = ""
     internal var sourceName: String = DEFAULT_SOURCE_NAME
     internal var sdkVersion: String = DEFAULT_SDK_VERSION
@@ -148,6 +154,7 @@ internal object CoreFeature {
     internal lateinit var persistenceExecutorService: ExecutorService
     internal var localDataEncryption: Encryption? = null
     internal lateinit var webViewTrackingHosts: List<String>
+    internal lateinit var androidInfoProvider: AndroidInfoProvider
 
     // TESTS ONLY, to prevent Kronos spinning sync threads in unit-tests
     internal var disableKronosBackgroundSync = false
@@ -168,6 +175,7 @@ internal object CoreFeature {
         setupOkHttpClient(configuration)
         firstPartyHostDetector.addKnownHosts(configuration.firstPartyHosts)
         webViewTrackingHosts = configuration.webViewTrackingHosts
+        androidInfoProvider = DefaultAndroidInfoProvider(appContext)
         setupExecutors()
         // Time Provider
         timeProvider = KronosTimeProvider(kronosClock)
@@ -253,7 +261,8 @@ internal object CoreFeature {
                     timeProvider,
                     sdkVersion,
                     envName,
-                    packageVersion
+                    variant,
+                    packageVersionProvider
                 ),
                 NdkCrashLogDeserializer(sdkLogger),
                 RumEventDeserializer(),
@@ -261,7 +270,8 @@ internal object CoreFeature {
                 UserInfoDeserializer(sdkLogger),
                 sdkLogger,
                 timeProvider,
-                BatchFileHandler.create(sdkLogger, localDataEncryption)
+                BatchFileHandler.create(sdkLogger, localDataEncryption),
+                androidInfoProvider = androidInfoProvider
             )
             ndkCrashHandler.prepareData()
         }
@@ -279,7 +289,16 @@ internal object CoreFeature {
             cacheExpirationMs = TimeUnit.MINUTES.toMillis(30),
             minWaitTimeBetweenSyncMs = TimeUnit.MINUTES.toMillis(5),
             syncListener = LoggingSyncListener()
-        ).apply { if (!disableKronosBackgroundSync) { syncInBackground() } }
+        ).apply {
+            if (!disableKronosBackgroundSync) {
+                try {
+                    syncInBackground()
+                } catch (ise: IllegalStateException) {
+                    // should never happen
+                    sdkLogger.e("Cannot launch time sync", ise)
+                }
+            }
+        }
     }
 
     private fun readApplicationInformation(appContext: Context, credentials: Credentials) {
@@ -290,12 +309,14 @@ internal object CoreFeature {
             devLogger.e("Unable to read your application's version name", e)
             null
         }
-        packageVersion = packageInfo?.let {
-            // we need to use the deprecated method because getLongVersionCode method is only
-            // available from API 28 and above
-            @Suppress("DEPRECATION")
-            it.versionName ?: it.versionCode.toString()
-        } ?: DEFAULT_APP_VERSION
+        packageVersionProvider = DefaultAppVersionProvider(
+            packageInfo?.let {
+                // we need to use the deprecated method because getLongVersionCode method is only
+                // available from API 28 and above
+                @Suppress("DEPRECATION")
+                it.versionName ?: it.versionCode.toString()
+            } ?: DEFAULT_APP_VERSION
+        )
         clientToken = credentials.clientToken
         serviceName = credentials.serviceName ?: appContext.packageName
         rumApplicationId = credentials.rumApplicationId
@@ -446,7 +467,7 @@ internal object CoreFeature {
     private fun cleanupApplicationInfo() {
         clientToken = ""
         packageName = ""
-        packageVersion = ""
+        packageVersionProvider = NoOpAppVersionProvider()
         serviceName = ""
         sourceName = DEFAULT_SOURCE_NAME
         rumApplicationId = null
@@ -462,6 +483,7 @@ internal object CoreFeature {
         timeProvider = NoOpTimeProvider()
         trackingConsentProvider = NoOpConsentProvider()
         userInfoProvider = NoOpMutableUserInfoProvider()
+        androidInfoProvider = NoOpAndroidInfoProvider()
     }
 
     // endregion

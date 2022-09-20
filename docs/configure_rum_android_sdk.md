@@ -10,7 +10,7 @@ Android RUM automatically tracks attributes such as user activity, screens, erro
 
 ### Custom Views
 
-In addition to [tracking views automatically][4], you can also track specific distinct views (activities, fragments, etc.) when they become visible and interactive in the `onResume()` lifecycle. Stop tracking when the view is no longer visible. Most often, this method should be called in the frontmost `Activity` or `Fragment`:
+In addition to [tracking views automatically][4], you can also track specific distinct views (such as activities and fragments) when they become visible and interactive in the `onResume()` lifecycle. Stop tracking when the view is no longer visible. Most often, this method should be called in the frontmost `Activity` or `Fragment`:
 
 
 {{< tabs >}}
@@ -58,11 +58,11 @@ In addition to RUM’s default attributes, you can measure where your applicatio
 {{% /tab %}}
 {{< /tabs >}}
 
-Once the timing is sent, the timing will be accessible as `@view.custom_timings.<timing_name>` (For example, `@view.custom_timings.hero_image`). You must [create a measure](https://docs.datadoghq.com/real_user_monitoring/explorer/?tab=measures#setup-facets-and-measures) before graphing it in RUM analytics or in dashboards. 
+Once the timing is sent, the timing is accessible as `@view.custom_timings.<timing_name>`. For example: `@view.custom_timings.hero_image`. You must [create a measure](https://docs.datadoghq.com/real_user_monitoring/explorer/?tab=measures#setup-facets-and-measures) before graphing it in RUM analytics or in dashboards. 
 
 ### Custom Actions
 
-In addition to [tracking actions automatically][5], you can also track specific custom user actions (taps, clicks, scrolls, etc.) with `RumMonitor#addUserAction`. For continuous action tracking (for example, tracking a user scrolling a list), use `RumMonitor#startUserAction` and `RumMonitor#stopUserAction`.
+In addition to [tracking actions automatically][5], you can also track specific custom user actions (such as taps, clicks, and scrolls) with `RumMonitor#addUserAction`. For continuous action tracking (for example, tracking a user scrolling a list), use `RumMonitor#startUserAction` and `RumMonitor#stopUserAction`.
 
 {{< tabs >}}
 {{% tab "Kotlin" %}}
@@ -81,9 +81,56 @@ In addition to [tracking actions automatically][5], you can also track specific 
 {{% /tab %}}
 {{< /tabs >}}
 
+### Enrich resources
+
+When [tracking resources automatically][6], provide a custom `RumResourceAttributesProvider` instance to add custom attributes to each tracked network request. For example, if you want to track a network request's headers, create an implementation as follows, and pass it in the constructor of the `DatadogInterceptor`.
+
+{{< tabs >}}
+{{% tab "Kotlin" %}}
+```kotlin
+class CustomRumResourceAttributesProvider : RumResourceAttributesProvider {
+    override fun onProvideAttributes(
+        request: Request,
+        response: Response?,
+        throwable: Throwable?
+    ): Map<String, Any?> {
+        val headers = request.headers()
+        return headers.names().associate {
+            "headers.${it.lowercase(Locale.US)}" to headers.values(it).first()
+        }
+    }
+}
+```
+{{% /tab %}}
+{{% tab "Java" %}}
+```java
+
+public class CustomRumResourceAttributesProvider implements RumResourceAttributesProvider {
+    @NonNull
+    @Override
+    public Map<String, Object> onProvideAttributes(
+            @NonNull Request request,
+            @Nullable Response response,
+            @Nullable Throwable throwable
+    ) {
+        Map<String, Object> result = new HashMap<>();
+        Headers headers = request.headers();
+
+        for (String key : headers.names()) {
+            String attrName = "headers." + key.toLowerCase(Locale.US);
+            result.put(attrName, headers.values(key).get(0));
+        }
+        
+        return result;
+    }
+}
+```
+{{% /tab %}}
+{{< /tabs >}}
+
 ### Custom Resources
 
-In addition to [tracking resources automatically][6], you can also track specific custom resources (network requests, third party provider APIs, etc.) with methods (`GET`, `POST`, etc.) while loading the resource with `RumMonitor#startResource`. Stop tracking with `RumMonitor#stopResource` when it is fully loaded, or `RumMonitor#stopResourceWithError` if an error occurs while loading the resource.
+In addition to [tracking resources automatically][6], you can also track specific custom resources (such as network requests and third-party provider APIs) with methods (such as `GET` and `POST`) while loading the resource with `RumMonitor#startResource`. Stop tracking with `RumMonitor#stopResource` when it is fully loaded, or `RumMonitor#stopResourceWithError` if an error occurs while loading the resource.
 
 {{< tabs >}} 
 {{% tab "Kotlin" %}}
@@ -126,9 +173,10 @@ To track specific errors, notify the monitor when an error occurs with the messa
 
 ## Track custom global attributes
 
-In addition to the [default RUM attributes][3] captured by the mobile SDK automatically, you can choose to add additional contextual information, such as custom attributes, to your RUM events to enrich your observability within Datadog. Custom attributes allow you to slice and dice information about observed user behavior (such as cart value, merchant tier, or ad campaign) with code-level information (such as backend services, session timeline, error logs, and network health).
+In addition to the [default RUM attributes][3] captured by the RUM Android SDK automatically, you can choose to add additional contextual information, such as custom attributes, to your RUM events to enrich your observability within Datadog. Custom attributes allow you to slice and dice information about observed user behavior (such as cart value, merchant tier, or ad campaign) with code-level information (such as backend services, session timeline, error logs, and network health).
 
 ### Track User Sessions
+
 Adding user information to your RUM sessions makes it easy to:
 * Follow the journey of a given user
 * Know which users are the most impacted by errors
@@ -176,7 +224,7 @@ You can use the following methods in `Configuration.Builder` when creating the D
 : Defines the strategy used to track views. Depending on your application's architecture, you can choose one of several implementations of [`ViewTrackingStrategy`][4] or implement your own.
 
 `addPlugin(DatadogPlugin, Feature)`
-: Adds a plugin implementation for a specific feature (`CRASH`, `LOG`, `TRACE`, `RUM`). The plugin is registered once the feature is initialized and unregistered when the feature is stopped.
+: Adds a plugin implementation for a specific feature (`CRASH`, `LOG`, `TRACE`, or `RUM`). The plugin is registered once the feature is initialized and unregistered when the feature is stopped.
 
 `trackLongTasks(durationThreshold)` 
 : Enables tracking tasks taking longer than `durationThreshold` on the main thread as long tasks in Datadog.
@@ -211,7 +259,7 @@ You can use the following methods in `Configuration.Builder` when creating the D
  
 ### Automatically track views
 
-To automatically track your views (activities, fragments, etc.), provide a tracking strategy at initialization. Depending on your application's architecture, you can choose one of the following strategies:
+To automatically track your views (such as activities and fragments), provide a tracking strategy at initialization. Depending on your application's architecture, you can choose one of the following strategies:
 
 `ActivityViewTrackingStrategy`
 : Every activity in your application is considered a distinct view.
@@ -246,14 +294,14 @@ For instance, to set each fragment as a distinct view, use the following configu
 {{< /tabs >}}
 
    
-**Tip**: For `ActivityViewTrackingStrategy`, `FragmentViewTrackingStrategy`, or `MixedViewTrackingStrategy` you can filter which `Fragment` or `Activity` is tracked as a RUM View by providing a `ComponentPredicate` implementation in the constructor.
+For `ActivityViewTrackingStrategy`, `FragmentViewTrackingStrategy`, or `MixedViewTrackingStrategy`, you can filter which `Fragment` or `Activity` is tracked as a RUM View by providing a `ComponentPredicate` implementation in the constructor.
    
 **Note**: By default, the library is using `ActivityViewTrackingStrategy`. If you decide not to provide a view tracking strategy, you must manually send the views by calling the `startView` and `stopView` methods yourself.
 
 
 ### Automatically track network requests
 
-To get timing information in resources (third-party providers, network requests) such as time to first byte or DNS resolution, customize the `okHttpClient` to add the [EventListener][8] factory:
+To get timing information in resources (such as third-party providers, network requests) such as time to first byte or DNS resolution, customize the `okHttpClient` to add the [EventListener][8] factory:
 
 {{< tabs >}}
 {{% tab "Kotlin" %}}
@@ -315,7 +363,7 @@ For example, to replace the default `100 ms` duration, set a custom threshold in
 
 ## Modify or drop RUM events
 
-To modify some attributes in your RUM events, or to drop some of the events entirely before batching, provide an implementation of `EventMapper<T>` when initializing the SDK:
+To modify some attributes in your RUM events, or to drop some of the events entirely before batching, provide an implementation of `EventMapper<T>` when initializing the RUM Android SDK:
 
 
 {{< tabs >}}
@@ -346,34 +394,34 @@ To modify some attributes in your RUM events, or to drop some of the events enti
 {{% /tab %}}
 {{< /tabs >}}
 
-   As you will notice when implementing the `EventMapper<T>` interface, only some of the attributes are modifiable for each event type as follows:
+   When implementing the `EventMapper<T>` interface, only some attributes are modifiable for each event type:
      
    | Event type    | Attribute key      | Description                                     |
    |---------------|--------------------|-------------------------------------------------|
-   | ViewEvent     | `view.referrer`      | URL that linked to the initial view of the page |
-   |               | `view.url`           | URL of the view                                 |
-   |               | `view.name`           | Name of the view                                |
+   | ViewEvent     | `view.referrer`      | URL that linked to the initial view of the page. |
+   |               | `view.url`           | URL of the view.                                 |
+   |               | `view.name`           | Name of the view.                                |
    | ActionEvent   |                    |                                                 |
-   |               | `action.target.name` | Target name                                     |
-   |               | `view.referrer`      | URL that linked to the initial view of the page |
-   |               | `view.url`           | URL of the view                                 |
-   |               | `view.name`           | Name of the view                               |
+   |               | `action.target.name` | Target name.                                     |
+   |               | `view.referrer`      | URL that linked to the initial view of the page. |
+   |               | `view.url`           | URL of the view.                                 |
+   |               | `view.name`           | Name of the view.                               |
    | ErrorEvent    |                      |                                                 |
-   |               | `error.message`      | Error message                                   |
-   |               | `error.stack`        | Stacktrace of the error                         |
-   |               | `error.resource.url` | URL of the resource                             |
-   |               | `view.referrer`      | URL that linked to the initial view of the page |
-   |               | `view.url`           | URL of the view                                 |
-   |               | `view.name`           | Name of the view                                |
+   |               | `error.message`      | Error message.                                   |
+   |               | `error.stack`        | Stacktrace of the error.                         |
+   |               | `error.resource.url` | URL of the resource.                             |
+   |               | `view.referrer`      | URL that linked to the initial view of the page. |
+   |               | `view.url`           | URL of the view.                                 |
+   |               | `view.name`           | Name of the view.                                |
    | ResourceEvent |                    |                                                 |
-   |               | `resource.url`       | URL of the resource                             |
-   |               | `view.referrer`      | URL that linked to the initial view of the page |
-   |               | `view.url`           | URL of the view                                 |
-   |               | `view.name`           | Name of the view                                |
+   |               | `resource.url`       | URL of the resource.                             |
+   |               | `view.referrer`      | URL that linked to the initial view of the page. |
+   |               | `view.url`           | URL of the view.                                 |
+   |               | `view.name`           | Name of the view.                                |
    | LongTaskEvent |                    |                                                 |
-   |               | `view.referrer`       | URL that linked to the initial view of the page |
-   |               | `view.url`            | URL of the view                                 |
-   |               | `view.name`           | Name of the view                                |
+   |               | `view.referrer`       | URL that linked to the initial view of the page. |
+   |               | `view.url`            | URL of the view.                                 |
+   |               | `view.name`           | Name of the view.                                |
    
    **Note**: If you return null from the `EventMapper<T>` implementation, the event is dropped.
 

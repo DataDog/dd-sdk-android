@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.isWorkManagerInitialized
 import com.datadog.android.core.internal.utils.triggerUploadWorker
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.model.LogEvent
@@ -52,7 +53,9 @@ internal class DatadogExceptionHandler(
 
         // trigger a task to send the logs ASAP
         contextRef.get()?.let {
-            triggerUploadWorker(it)
+            if (isWorkManagerInitialized(it)) {
+                triggerUploadWorker(it)
+            }
         }
 
         // Always do this one last; this will shut down the VM

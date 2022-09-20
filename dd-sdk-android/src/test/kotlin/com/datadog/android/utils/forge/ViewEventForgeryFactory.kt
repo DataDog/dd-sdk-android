@@ -6,6 +6,8 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.core.internal.system.AndroidInfoProvider
+import com.datadog.android.rum.internal.domain.scope.toViewSchemaType
 import com.datadog.android.rum.model.ViewEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -93,12 +95,29 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
             service = forge.aNullable { anAlphabeticalString() },
             session = ViewEvent.ViewEventSession(
                 id = forge.getForgery<UUID>().toString(),
-                type = ViewEvent.Type.USER,
+                type = ViewEvent.ViewEventSessionType.USER,
                 hasReplay = forge.aNullable { aBool() }
             ),
             source = forge.aNullable { aValueFrom(ViewEvent.Source::class.java) },
             ciTest = forge.aNullable {
                 ViewEvent.CiTest(anHexadecimalString())
+            },
+            os = forge.aNullable {
+                val androidInfoProvider = getForgery(AndroidInfoProvider::class.java)
+                ViewEvent.Os(
+                    name = androidInfoProvider.osName,
+                    version = androidInfoProvider.osVersion,
+                    versionMajor = androidInfoProvider.osMajorVersion
+                )
+            },
+            device = forge.aNullable {
+                val androidInfoProvider = getForgery(AndroidInfoProvider::class.java)
+                ViewEvent.Device(
+                    name = androidInfoProvider.deviceName,
+                    model = androidInfoProvider.deviceModel,
+                    brand = androidInfoProvider.deviceBrand,
+                    type = androidInfoProvider.deviceType.toViewSchemaType()
+                )
             },
             context = forge.aNullable {
                 ViewEvent.Context(

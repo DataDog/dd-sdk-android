@@ -21,6 +21,10 @@ internal class Telemetry {
         rumMonitor.sendErrorTelemetryEvent(message, throwable)
     }
 
+    fun error(message: String, stack: String?, kind: String?) {
+        rumMonitor.sendErrorTelemetryEvent(message, stack, kind)
+    }
+
     fun debug(message: String) {
         rumMonitor.sendDebugTelemetryEvent(message)
     }
