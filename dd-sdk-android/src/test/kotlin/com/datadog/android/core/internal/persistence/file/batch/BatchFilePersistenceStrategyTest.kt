@@ -129,6 +129,25 @@ internal class BatchFilePersistenceStrategyTest {
     }
 
     @Test
+    fun `𝕄 return consent aware storage 𝕎 getStorage()`() {
+        // When
+        val storage = testedStrategy.getStorage()
+
+        // Then
+        assertThat(storage).isInstanceOf(ConsentAwareStorage::class.java)
+    }
+
+    @Test
+    fun `𝕄 return consent aware storage 𝕎 getStorage() twice`() {
+        // When
+        val storage1 = testedStrategy.getStorage()
+        val storage2 = testedStrategy.getStorage()
+
+        // Then
+        assertThat(storage1).isSameAs(storage2)
+    }
+
+    @Test
     fun `𝕄 return batch file flusher 𝕎 getFlusher()`() {
         // When
         val flusher = testedStrategy.getFlusher()
@@ -147,46 +166,5 @@ internal class BatchFilePersistenceStrategyTest {
 
         // Then
         assertThat(reader1).isSameAs(reader2)
-    }
-
-    @Test
-    fun `𝕄 share orchestrator 𝕎 getWriter() + getReader()`() {
-        // Given
-
-        // When
-        val writer = testedStrategy.getWriter()
-        val reader = testedStrategy.getReader()
-
-        // Then
-        check(writer is ScheduledWriter)
-        check(reader is BatchFileDataReader)
-        val delegateWriter = writer.delegateWriter
-        check(delegateWriter is BatchFileDataWriter)
-        assertThat(delegateWriter.fileOrchestrator).isSameAs(reader.fileOrchestrator)
-    }
-
-    @Test
-    fun `𝕄 share handler 𝕎 getWriter() + getReader()`() {
-        // Given
-
-        // When
-        val writer = testedStrategy.getWriter()
-        val reader = testedStrategy.getReader()
-
-        // Then
-        check(writer is ScheduledWriter)
-        check(reader is BatchFileDataReader)
-        val delegateWriter = writer.delegateWriter
-        check(delegateWriter is BatchFileDataWriter)
-        assertThat(delegateWriter.fileWriter).isSameAs(reader.fileReader)
-    }
-
-    @Test
-    fun `𝕄 return consent aware storage 𝕎 getStorage()`() {
-        // When
-        val storage = testedStrategy.getStorage()
-
-        // Then
-        assertThat(storage).isInstanceOf(ConsentAwareStorage::class.java)
     }
 }

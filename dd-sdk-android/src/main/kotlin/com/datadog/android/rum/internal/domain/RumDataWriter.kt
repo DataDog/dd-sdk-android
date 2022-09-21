@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.domain
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileDataWriter
 import com.datadog.android.core.internal.persistence.file.existsSafe
@@ -22,19 +21,22 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.Storage
 import java.io.File
 import java.util.Locale
 
 internal class RumDataWriter(
-    fileOrchestrator: FileOrchestrator,
+    storage: Storage,
+    contextProvider: ContextProvider,
     serializer: Serializer<Any>,
-    fileWriter: FileWriter,
+    private val fileWriter: FileWriter,
     internalLogger: Logger,
     private val lastViewEventFile: File
 ) : BatchFileDataWriter<Any>(
-    fileOrchestrator,
+    storage,
+    contextProvider,
     serializer,
-    fileWriter,
     internalLogger
 ) {
 

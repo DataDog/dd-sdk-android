@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.domain
 
 import android.util.Log
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
@@ -21,6 +20,8 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.Storage
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -62,13 +63,16 @@ internal class RumDataWriterTest {
     lateinit var mockSerializer: Serializer<Any>
 
     @Mock
-    lateinit var mockOrchestrator: FileOrchestrator
-
-    @Mock
     lateinit var mockFileWriter: FileWriter
 
     @Mock
     lateinit var mockLogHandler: LogHandler
+
+    @Mock
+    lateinit var mockStorage: Storage
+
+    @Mock
+    lateinit var mockContextProvider: ContextProvider
 
     @StringForgery
     lateinit var fakeSerializedEvent: String
@@ -82,7 +86,8 @@ internal class RumDataWriterTest {
         fakeSerializedData = fakeSerializedEvent.toByteArray(Charsets.UTF_8)
 
         testedWriter = RumDataWriter(
-            mockOrchestrator,
+            mockStorage,
+            mockContextProvider,
             mockSerializer,
             mockFileWriter,
             Logger(mockLogHandler),

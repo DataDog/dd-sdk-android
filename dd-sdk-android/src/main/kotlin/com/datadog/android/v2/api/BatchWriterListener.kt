@@ -14,7 +14,7 @@ import com.datadog.tools.annotation.NoOpImplementation
  * @see [EventBatchWriter]
  */
 @NoOpImplementation
-internal interface BatchWriterListener {
+interface BatchWriterListener {
     /**
      * Called whenever data is written successfully.
      * @param eventId the id of the written event

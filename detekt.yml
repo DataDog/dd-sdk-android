@@ -1097,6 +1097,7 @@ datadog:
       # endregion
       # region Kotlin Primitives
       - "kotlin.Any.constructor()"
+      - "kotlin.Any.hashCode()"
       - "kotlin.Any.toString()"
       - "kotlin.Boolean.hashCode()"
       - "kotlin.Byte.toInt()"

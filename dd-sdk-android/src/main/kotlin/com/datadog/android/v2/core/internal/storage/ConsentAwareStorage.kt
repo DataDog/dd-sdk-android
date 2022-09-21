@@ -26,7 +26,6 @@ internal class ConsentAwareStorage(
     private val batchEventsReaderWriter: BatchFileReaderWriter,
     private val batchMetadataReaderWriter: FileReaderWriter,
     private val fileMover: FileMover,
-    private val listener: BatchWriterListener,
     private val internalLogger: InternalLogger,
     private val filePersistenceConfig: FilePersistenceConfig
 ) : Storage {
@@ -60,7 +59,12 @@ internal class ConsentAwareStorage(
             }
 
             @WorkerThread
-            override fun write(event: ByteArray, eventId: String, newMetadata: ByteArray?) {
+            override fun write(
+                event: ByteArray,
+                eventId: String,
+                newMetadata: ByteArray?,
+                listener: BatchWriterListener
+            ) {
                 // prevent useless operation for empty event / null orchestrator
                 if (event.isEmpty() || orchestrator == null) {
                     listener.onDataWritten(eventId)
