@@ -12,9 +12,7 @@ object Dependencies {
 
         // NDK
         const val Ndk = "22.1.7171670"
-        // TODO RUMM-1660. Check if Cmake >= 3.20.4 is available when doing AGP 7 migration
-        // Cannot use 3.18.1 here, because it has a bug in the File API.
-        const val CMake = "3.10.2"
+        const val CMake = "3.22.1"
     }
 
     object Repositories {

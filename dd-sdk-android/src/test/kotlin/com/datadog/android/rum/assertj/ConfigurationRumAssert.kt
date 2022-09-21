@@ -11,6 +11,7 @@ import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrate
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
+import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.TrackingStrategy
@@ -31,6 +32,12 @@ internal class ConfigurationRumAssert(actual: Configuration.Feature.RUM) :
     ): ConfigurationRumAssert {
         assertThat(actual.userActionTrackingStrategy)
             .isEqualTo(userActionTrackingStrategy)
+        return this
+    }
+
+    fun hasNoOpUserActionTrackingStrategy(): ConfigurationRumAssert {
+        assertThat(actual.userActionTrackingStrategy)
+            .isInstanceOf(NoOpUserActionTrackingStrategy::class.java)
         return this
     }
 

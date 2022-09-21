@@ -31,6 +31,7 @@ import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrate
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
+import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -279,6 +280,18 @@ internal constructor(
             )
             applyIfFeatureEnabled(PluginFeature.RUM, "trackInteractions") {
                 rumConfig = rumConfig.copy(userActionTrackingStrategy = strategy)
+            }
+            return this
+        }
+
+        /**
+         * Disable the user interaction automatic tracker.
+         */
+        fun disableInteractionTracking(): Builder {
+            applyIfFeatureEnabled(PluginFeature.RUM, "disableInteractionTracking") {
+                rumConfig = rumConfig.copy(
+                    userActionTrackingStrategy = NoOpUserActionTrackingStrategy()
+                )
             }
             return this
         }
