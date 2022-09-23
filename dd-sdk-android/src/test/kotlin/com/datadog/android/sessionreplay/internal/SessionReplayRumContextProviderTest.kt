@@ -32,13 +32,13 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class SessionReplayContextProviderTest {
+internal class SessionReplayRumContextProviderTest {
 
-    lateinit var testedSessionReplayContextProvider: SessionReplayContextProvider
+    lateinit var testedSessionReplayContextProvider: SessionReplayRumContextProvider
 
     @BeforeEach
     fun `set up`() {
-        testedSessionReplayContextProvider = SessionReplayContextProvider()
+        testedSessionReplayContextProvider = SessionReplayRumContextProvider()
     }
 
     @Test

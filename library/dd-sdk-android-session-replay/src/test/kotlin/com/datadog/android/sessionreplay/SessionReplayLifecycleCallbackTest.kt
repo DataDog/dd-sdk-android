@@ -45,12 +45,16 @@ class SessionReplayLifecycleCallbackTest {
     @Forgery
     private lateinit var fakePrivacy: SessionReplayPrivacy
 
+    @Mock
+    private lateinit var mockRecordCallback: RecordCallback
+
     @BeforeEach
     fun `set up`() {
         testedCallback = SessionReplayLifecycleCallback(
             mockRumContextProvider,
             fakePrivacy,
-            mockSerializedRecordWriter
+            mockSerializedRecordWriter,
+            mockRecordCallback
         )
         testedCallback.recorder = mockRecoder
     }
@@ -135,5 +139,31 @@ class SessionReplayLifecycleCallbackTest {
         verify(mockRecoder).stopRecording(mockActivity1)
         verify(mockRecoder).stopRecording(mockActivity2)
         assertThat(testedCallback.resumedActivities).isEmpty()
+    }
+
+    @Test
+    fun `M notify the record callback W startedRecording`() {
+        // Given
+        val mockActivity: Activity = mock()
+
+        // When
+        testedCallback.onActivityResumed(mockActivity)
+
+        // Then
+        verify(mockRecoder).startRecording(mockActivity)
+        verify(mockRecordCallback).onStartRecording()
+    }
+
+    @Test
+    fun `M notify the record callback W stoppedRecording`() {
+        // Given
+        val mockActivity: Activity = mock()
+
+        // When
+        testedCallback.onActivityPaused(mockActivity)
+
+        // Then
+        verify(mockRecoder).stopRecording(mockActivity)
+        verify(mockRecordCallback).onStopRecording()
     }
 }

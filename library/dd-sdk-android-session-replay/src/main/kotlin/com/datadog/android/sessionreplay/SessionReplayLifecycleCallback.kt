@@ -28,7 +28,8 @@ import java.util.concurrent.TimeUnit
 class SessionReplayLifecycleCallback(
     rumContextProvider: RumContextProvider,
     privacy: SessionReplayPrivacy,
-    serializedRecordWriter: SerializedRecordWriter
+    serializedRecordWriter: SerializedRecordWriter,
+    private val recordCallback: RecordCallback = NoOpRecordCallback()
 ) : LifecycleCallback {
 
     private val timeProvider = SessionReplayTimeProvider()
@@ -65,11 +66,13 @@ class SessionReplayLifecycleCallback(
 
     override fun onActivityResumed(activity: Activity) {
         recorder.startRecording(activity)
+        recordCallback.onStartRecording()
         resumedActivities[activity] = null
     }
 
     override fun onActivityPaused(activity: Activity) {
         recorder.stopRecording(activity)
+        recordCallback.onStopRecording()
         resumedActivities.remove(activity)
     }
 

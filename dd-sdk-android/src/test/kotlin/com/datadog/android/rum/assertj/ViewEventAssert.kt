@@ -508,6 +508,15 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasReplay(hasReplay: Boolean) {
+        assertThat(actual.session.hasReplay)
+            .overridingErrorMessage(
+                "Expected event data to have hasReplay $hasReplay " +
+                    "but was ${actual.session.hasReplay}"
+            )
+            .isEqualTo(hasReplay)
+    }
+
     companion object {
 
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)

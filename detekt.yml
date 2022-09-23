@@ -1059,6 +1059,7 @@ datadog:
       - "kotlin.collections.Map.filterKeys(kotlin.Function1)"
       - "kotlin.collections.Map.filterValues(kotlin.Function1)"
       - "kotlin.collections.Map.forEach(kotlin.Function1)"
+      - "kotlin.collections.Map.get(kotlin.String)"
       - "kotlin.collections.Map.isEmpty()"
       - "kotlin.collections.Map.isNotEmpty()"
       - "kotlin.collections.Map.map(kotlin.Function1)"
