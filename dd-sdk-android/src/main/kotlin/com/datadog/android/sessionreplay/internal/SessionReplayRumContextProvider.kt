@@ -11,7 +11,7 @@ import com.datadog.android.rum.internal.domain.RumContext.Companion.NULL_UUID
 import com.datadog.android.sessionreplay.utils.RumContextProvider
 import com.datadog.android.sessionreplay.utils.SessionReplayRumContext
 
-internal class SessionReplayContextProvider : RumContextProvider {
+internal class SessionReplayRumContextProvider : RumContextProvider {
     override fun getRumContext(): SessionReplayRumContext {
         return GlobalRum.getRumContext().let {
             SessionReplayRumContext(
