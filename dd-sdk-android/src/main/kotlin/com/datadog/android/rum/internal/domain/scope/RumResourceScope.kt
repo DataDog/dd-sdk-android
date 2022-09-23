@@ -15,6 +15,7 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -37,7 +38,8 @@ internal class RumResourceScope(
     serverTimeOffsetInMs: Long,
     internal val firstPartyHostDetector: FirstPartyHostDetector,
     private val rumEventSourceProvider: RumEventSourceProvider,
-    private val contextProvider: ContextProvider
+    private val contextProvider: ContextProvider,
+    private val featuresContextResolver: FeaturesContextResolver
 ) : RumScope {
 
     internal val resourceId: String = UUID.randomUUID().toString()
@@ -173,6 +175,7 @@ internal class RumResourceScope(
         val sdkContext = contextProvider.context
         val rumContext = getRumContext()
         val user = sdkContext.userInfo
+        val hasReplay = featuresContextResolver.resolveHasReplay(sdkContext)
 
         @Suppress("UNCHECKED_CAST")
         val finalTiming = timing ?: extractResourceTiming(
@@ -212,7 +215,8 @@ internal class RumResourceScope(
             application = ResourceEvent.Application(rumContext.applicationId),
             session = ResourceEvent.ResourceEventSession(
                 id = rumContext.sessionId,
-                type = ResourceEvent.ResourceEventSessionType.USER
+                type = ResourceEvent.ResourceEventSessionType.USER,
+                hasReplay = hasReplay
             ),
             source = rumEventSourceProvider.resourceEventSource,
             os = ResourceEvent.Os(
@@ -259,7 +263,7 @@ internal class RumResourceScope(
         }
     }
 
-    @SuppressWarnings("LongParameterList")
+    @SuppressWarnings("LongParameterList", "LongMethod")
     @WorkerThread
     private fun sendError(
         message: String,
@@ -274,6 +278,7 @@ internal class RumResourceScope(
         val rumContext = getRumContext()
         val sdkContext = contextProvider.context
         val user = sdkContext.userInfo
+        val hasReplay = featuresContextResolver.resolveHasReplay(sdkContext)
 
         val errorEvent = ErrorEvent(
             date = eventTimestamp,
@@ -307,7 +312,8 @@ internal class RumResourceScope(
             application = ErrorEvent.Application(rumContext.applicationId),
             session = ErrorEvent.ErrorEventSession(
                 id = rumContext.sessionId,
-                type = ErrorEvent.ErrorEventSessionType.USER
+                type = ErrorEvent.ErrorEventSessionType.USER,
+                hasReplay = hasReplay
             ),
             source = rumEventSourceProvider.errorEventSource,
             os = ErrorEvent.Os(
@@ -363,7 +369,8 @@ internal class RumResourceScope(
             firstPartyHostDetector: FirstPartyHostDetector,
             timestampOffset: Long,
             rumEventSourceProvider: RumEventSourceProvider,
-            contextProvider: ContextProvider
+            contextProvider: ContextProvider,
+            featuresContextResolver: FeaturesContextResolver
         ): RumScope {
             return RumResourceScope(
                 parentScope,
@@ -375,7 +382,8 @@ internal class RumResourceScope(
                 timestampOffset,
                 firstPartyHostDetector,
                 rumEventSourceProvider,
-                contextProvider
+                contextProvider,
+                featuresContextResolver
             )
         }
     }

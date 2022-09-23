@@ -25,6 +25,7 @@ import com.datadog.android.log.internal.utils.debugWithTelemetry
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
@@ -58,6 +59,7 @@ internal open class RumViewScope(
     private val contextProvider: ContextProvider,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val viewUpdatePredicate: ViewUpdatePredicate = DefaultViewUpdatePredicate(),
+    private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
     internal val type: RumViewType = RumViewType.FOREGROUND
 ) : RumScope {
 
@@ -281,7 +283,8 @@ internal open class RumViewScope(
                     event,
                     serverTimeOffsetInMs,
                     rumEventSourceProvider,
-                    contextProvider
+                    contextProvider,
+                    featuresContextResolver
                 )
                 pendingActionCount++
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), writer)
@@ -298,7 +301,8 @@ internal open class RumViewScope(
                 event,
                 serverTimeOffsetInMs,
                 rumEventSourceProvider,
-                contextProvider
+                contextProvider,
+                featuresContextResolver
             )
         )
         pendingActionCount++
@@ -321,7 +325,8 @@ internal open class RumViewScope(
             firstPartyHostDetector,
             serverTimeOffsetInMs,
             rumEventSourceProvider,
-            contextProvider
+            contextProvider,
+            featuresContextResolver
         )
         pendingResourceCount++
     }
@@ -344,6 +349,7 @@ internal open class RumViewScope(
         val networkInfo = sdkContext.networkInfo
         val errorType = event.type ?: event.throwable?.javaClass?.canonicalName
         val throwableMessage = event.throwable?.message ?: ""
+        val hasReplay = featuresContextResolver.resolveHasReplay(sdkContext)
         val message = if (throwableMessage.isNotBlank() && event.message != throwableMessage) {
             "${event.message}: $throwableMessage"
         } else {
@@ -375,7 +381,8 @@ internal open class RumViewScope(
             application = ErrorEvent.Application(rumContext.applicationId),
             session = ErrorEvent.ErrorEventSession(
                 id = rumContext.sessionId,
-                type = ErrorEvent.ErrorEventSessionType.USER
+                type = ErrorEvent.ErrorEventSessionType.USER,
+                hasReplay = hasReplay
             ),
             source = rumEventSourceProvider.errorEventSource,
             os = ErrorEvent.Os(
@@ -581,6 +588,7 @@ internal open class RumViewScope(
         val timings = resolveCustomTimings()
         val memoryInfo = lastMemoryInfo
         val refreshRateInfo = lastFrameRateInfo
+        val hasReplay = featuresContextResolver.resolveHasReplay(sdkContext)
         val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo)
         val viewEvent = ViewEvent(
             date = eventTimestamp,
@@ -617,7 +625,8 @@ internal open class RumViewScope(
             application = ViewEvent.Application(rumContext.applicationId),
             session = ViewEvent.ViewEventSession(
                 id = rumContext.sessionId,
-                type = ViewEvent.ViewEventSessionType.USER
+                type = ViewEvent.ViewEventSessionType.USER,
+                hasReplay = hasReplay
             ),
             source = rumEventSourceProvider.viewEventSource,
             os = ViewEvent.Os(
@@ -718,7 +727,8 @@ internal open class RumViewScope(
             application = ActionEvent.Application(rumContext.applicationId),
             session = ActionEvent.ActionEventSession(
                 id = rumContext.sessionId,
-                type = ActionEvent.ActionEventSessionType.USER
+                type = ActionEvent.ActionEventSessionType.USER,
+                hasReplay = false
             ),
             source = rumEventSourceProvider.actionEventSource,
             os = ActionEvent.Os(
@@ -760,6 +770,7 @@ internal open class RumViewScope(
         val networkInfo = sdkContext.networkInfo
         val timestamp = event.eventTime.timestamp + serverTimeOffsetInMs
         val isFrozenFrame = event.durationNs > FROZEN_FRAME_THRESHOLD_NS
+        val hasReplay = featuresContextResolver.resolveHasReplay(sdkContext)
         val longTaskEvent = LongTaskEvent(
             date = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
             longTask = LongTaskEvent.LongTask(
@@ -782,7 +793,8 @@ internal open class RumViewScope(
             application = LongTaskEvent.Application(rumContext.applicationId),
             session = LongTaskEvent.LongTaskEventSession(
                 id = rumContext.sessionId,
-                type = LongTaskEvent.LongTaskEventSessionType.USER
+                type = LongTaskEvent.LongTaskEventSessionType.USER,
+                hasReplay = hasReplay
             ),
             source = rumEventSourceProvider.longTaskEventSource,
             os = LongTaskEvent.Os(

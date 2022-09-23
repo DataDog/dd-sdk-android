@@ -392,6 +392,15 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
+    fun hasReplay(hasReplay: Boolean) {
+        assertThat(actual.session.hasReplay)
+            .overridingErrorMessage(
+                "Expected event data to have hasReplay $hasReplay " +
+                    "but was ${actual.session.hasReplay}"
+            )
+            .isEqualTo(hasReplay)
+    }
+
     companion object {
         internal const val TIMESTAMP_THRESHOLD_MS = 50L
         internal fun assertThat(actual: ActionEvent): ActionEventAssert =

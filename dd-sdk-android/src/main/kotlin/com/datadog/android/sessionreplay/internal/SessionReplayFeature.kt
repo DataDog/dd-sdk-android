@@ -8,17 +8,18 @@ package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
 import android.content.Context
+import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
-import com.datadog.android.core.internal.net.DataUploader
-import com.datadog.android.core.internal.net.NoOpDataUploader
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.sessionreplay.LifecycleCallback
 import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRecordPersistenceStrategy
+import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.domain.SessionReplaySerializedRecordWriter
+import com.datadog.android.v2.api.RequestFactory
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class SessionReplayFeature(
@@ -27,9 +28,10 @@ internal class SessionReplayFeature(
     private val sessionReplayCallbackProvider: (PersistenceStrategy<String>) ->
     LifecycleCallback = {
         SessionReplayLifecycleCallback(
-            SessionReplayContextProvider(),
+            SessionReplayRumContextProvider(),
             configuration.privacy,
-            SessionReplaySerializedRecordWriter(it.getWriter())
+            SessionReplaySerializedRecordWriter(it.getWriter()),
+            SessionReplayRecordCallback(Datadog.globalSDKCore)
         )
     }
 ) : SdkFeature<String, Configuration.Feature.SessionReplay>(coreFeature) {
@@ -61,6 +63,7 @@ internal class SessionReplayFeature(
         configuration: Configuration.Feature.SessionReplay
     ): PersistenceStrategy<String> {
         return SessionReplayRecordPersistenceStrategy(
+            coreFeature.contextProvider,
             coreFeature.trackingConsentProvider,
             coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
@@ -69,9 +72,9 @@ internal class SessionReplayFeature(
         )
     }
 
-    override fun createUploader(configuration: Configuration.Feature.SessionReplay): DataUploader {
-        // TODO: This will be added later in RUMM-2273
-        return NoOpDataUploader()
+    override fun createRequestFactory(configuration: Configuration.Feature.SessionReplay):
+        RequestFactory {
+        return SessionReplayRequestFactory()
     }
 
     // endregion
@@ -110,5 +113,6 @@ internal class SessionReplayFeature(
 
     companion object {
         const val SESSION_REPLAY_FEATURE_NAME = "session-replay"
+        const val IS_RECORDING_CONTEXT_KEY = "is_recording"
     }
 }
