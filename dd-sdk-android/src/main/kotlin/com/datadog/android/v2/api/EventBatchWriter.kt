@@ -25,11 +25,13 @@ interface EventBatchWriter {
      * @param eventId a unique identifier for the event (used to identify events in
      * the [BatchWriterListener] callbacks).
      * @param newMetadata the optional updated metadata
+     * @param listener to notify about write operation outcome
      */
     @WorkerThread
     fun write(
         event: ByteArray,
         eventId: String,
-        newMetadata: ByteArray?
+        newMetadata: ByteArray?,
+        listener: BatchWriterListener
     )
 }

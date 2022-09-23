@@ -9,25 +9,41 @@ package com.datadog.android.core.internal.persistence.file.batch
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.FileOrchestrator
-import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
-import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.internal.persistence.serializeToByteArray
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.utils.errorWithTelemetry
-import java.util.Locale
+import com.datadog.android.v2.api.BatchWriterListener
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.Storage
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * A [DataWriter] storing data in batch files.
  */
 internal open class BatchFileDataWriter<T : Any>(
-    internal val fileOrchestrator: FileOrchestrator,
+    internal val storage: Storage,
+    internal val contextProvider: ContextProvider,
     internal val serializer: Serializer<T>,
-    internal val fileWriter: FileWriter,
-    internal val internalLogger: Logger,
-    // TODO RUMM-0000 don't use default value
-    internal val filePersistenceConfig: FilePersistenceConfig = FilePersistenceConfig()
+    internal val internalLogger: Logger
 ) : DataWriter<T> {
+
+    // TODO RUMM-0000 this may grow up the heap for big data chunks/slow IO. Can this be avoided?
+    private val pendingWriteEvents: MutableMap<String, Pair<T, ByteArray>> = ConcurrentHashMap()
+
+    private val writeListener = object : BatchWriterListener {
+        @WorkerThread
+        override fun onDataWritten(eventId: String) {
+            pendingWriteEvents.remove(eventId)?.let {
+                this@BatchFileDataWriter.onDataWritten(it.first, it.second)
+            }
+        }
+
+        @WorkerThread
+        override fun onDataWriteFailed(eventId: String) {
+            pendingWriteEvents.remove(eventId)?.let {
+                this@BatchFileDataWriter.onDataWriteFailed(it.first)
+            }
+        }
+    }
 
     // region DataWriter
 
@@ -68,39 +84,14 @@ internal open class BatchFileDataWriter<T : Any>(
         val byteArray = serializer.serializeToByteArray(data, internalLogger) ?: return
 
         synchronized(this) {
-            val success = writeData(byteArray)
-            if (success) {
-                onDataWritten(data, byteArray)
-            } else {
-                onDataWriteFailed(data)
+            val context = contextProvider.context
+            val eventId = System.identityHashCode(data).toString()
+            storage.writeCurrentBatch(context) {
+                pendingWriteEvents[eventId] = data to byteArray
+                it.write(byteArray, eventId, null, writeListener)
             }
         }
     }
 
-    @WorkerThread
-    private fun writeData(byteArray: ByteArray): Boolean {
-        if (!checkEventSize(byteArray.size)) return false
-
-        val file = fileOrchestrator.getWritableFile() ?: return false
-        return fileWriter.writeData(file, byteArray, true)
-    }
-    private fun checkEventSize(eventSize: Int): Boolean {
-        if (eventSize > filePersistenceConfig.maxItemSize) {
-            internalLogger.errorWithTelemetry(
-                ERROR_LARGE_DATA.format(
-                    Locale.US,
-                    eventSize,
-                    filePersistenceConfig.maxItemSize
-                )
-            )
-            return false
-        }
-        return true
-    }
-
     // endregion
-
-    companion object {
-        internal const val ERROR_LARGE_DATA = "Can't write data with size %d (max item size is %d)"
-    }
 }

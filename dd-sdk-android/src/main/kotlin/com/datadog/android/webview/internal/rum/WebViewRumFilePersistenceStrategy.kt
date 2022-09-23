@@ -10,7 +10,6 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileMover
-import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
@@ -26,7 +25,7 @@ import java.io.File
 import java.util.concurrent.ExecutorService
 
 internal class WebViewRumFilePersistenceStrategy(
-    contextProvider: ContextProvider,
+    private val contextProvider: ContextProvider,
     consentProvider: ConsentProvider,
     storageDir: File,
     executorService: ExecutorService,
@@ -52,14 +51,14 @@ internal class WebViewRumFilePersistenceStrategy(
 ) {
 
     override fun createWriter(
-        fileOrchestrator: FileOrchestrator,
         executorService: ExecutorService,
         serializer: Serializer<Any>,
         internalLogger: Logger
     ): DataWriter<Any> {
         return ScheduledWriter(
             RumDataWriter(
-                fileOrchestrator,
+                getStorage(),
+                contextProvider,
                 serializer,
                 fileReaderWriter,
                 internalLogger,

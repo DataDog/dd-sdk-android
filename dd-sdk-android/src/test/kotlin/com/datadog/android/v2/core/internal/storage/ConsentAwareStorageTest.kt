@@ -91,7 +91,6 @@ internal class ConsentAwareStorageTest {
             mockBatchReaderWriter,
             mockMetaReaderWriter,
             mockFileMover,
-            mockListener,
             mockInternalLogger,
             mockFilePersistenceConfig
         )
@@ -121,7 +120,7 @@ internal class ConsentAwareStorageTest {
         testedStorage.writeCurrentBatch(sdkContext) {
             val meta = it.currentMetadata()
             val updatedMeta = meta?.reversedArray()
-            it.write(serializedData, eventId, updatedMeta)
+            it.write(serializedData, eventId, updatedMeta, mockListener)
         }
 
         // Then
@@ -163,7 +162,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -194,7 +193,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -214,7 +213,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -236,7 +235,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -261,7 +260,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -296,7 +295,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -335,7 +334,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -358,7 +357,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, forge.aNullable { ByteArray(0) })
+            it.write(serializedData, eventId, forge.aNullable { ByteArray(0) }, mockListener)
         }
 
         // Then
@@ -390,7 +389,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -415,7 +414,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -444,7 +443,7 @@ internal class ConsentAwareStorageTest {
         testedStorage.writeCurrentBatch(sdkContext) {
             val meta = it.currentMetadata()
             val updatedMeta = meta?.reversedArray()
-            it.write(serializedData, eventId, updatedMeta)
+            it.write(serializedData, eventId, updatedMeta, mockListener)
         }
 
         // Then
@@ -481,7 +480,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -508,7 +507,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -528,7 +527,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -550,7 +549,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -575,7 +574,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -610,7 +609,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -649,7 +648,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -672,7 +671,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, forge.aNullable { ByteArray(0) })
+            it.write(serializedData, eventId, forge.aNullable { ByteArray(0) }, mockListener)
         }
 
         // Then
@@ -704,7 +703,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -729,7 +728,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -749,7 +748,7 @@ internal class ConsentAwareStorageTest {
         testedStorage.writeCurrentBatch(sdkContext) {
             val meta = it.currentMetadata()
             val updatedMeta = meta?.reversedArray()
-            it.write(serializedData, eventId, updatedMeta)
+            it.write(serializedData, eventId, updatedMeta, mockListener)
         }
 
         // Then
@@ -773,7 +772,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -798,7 +797,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -818,7 +817,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata)
+            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
         }
 
         // Then
@@ -987,7 +986,6 @@ internal class ConsentAwareStorageTest {
             mockBatchReaderWriter,
             mockMetaReaderWriter,
             mockFileMover,
-            mockListener,
             mockInternalLogger,
             mockFilePersistenceConfig
         )
