@@ -10,6 +10,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
@@ -31,7 +32,8 @@ internal class RumActionScope(
     inactivityThresholdMs: Long = ACTION_INACTIVITY_MS,
     maxDurationMs: Long = ACTION_MAX_DURATION_MS,
     private val rumEventSourceProvider: RumEventSourceProvider,
-    private val contextProvider: ContextProvider
+    private val contextProvider: ContextProvider,
+    private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver()
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
@@ -179,6 +181,7 @@ internal class RumActionScope(
         longTaskCount++
     }
 
+    @Suppress("LongMethod")
     @WorkerThread
     private fun sendAction(
         endNanos: Long,
@@ -192,6 +195,7 @@ internal class RumActionScope(
         val rumContext = getRumContext()
         val sdkContext = contextProvider.context
         val user = sdkContext.userInfo
+        val hasReplay = featuresContextResolver.resolveHasReplay(sdkContext)
 
         val frustrations = mutableListOf<ActionEvent.Type>()
         if (errorCount > 0 && actualType == RumActionType.TAP) {
@@ -219,7 +223,8 @@ internal class RumActionScope(
             application = ActionEvent.Application(rumContext.applicationId),
             session = ActionEvent.ActionEventSession(
                 id = rumContext.sessionId,
-                type = ActionEvent.ActionEventSessionType.USER
+                type = ActionEvent.ActionEventSessionType.USER,
+                hasReplay = hasReplay
             ),
             source = rumEventSourceProvider.actionEventSource,
             usr = ActionEvent.Usr(
@@ -260,7 +265,8 @@ internal class RumActionScope(
             event: RumRawEvent.StartAction,
             timestampOffset: Long,
             eventSourceProvider: RumEventSourceProvider,
-            contextProvider: ContextProvider
+            contextProvider: ContextProvider,
+            featuresContextResolver: FeaturesContextResolver
         ): RumScope {
             return RumActionScope(
                 parentScope,
@@ -271,7 +277,8 @@ internal class RumActionScope(
                 event.attributes,
                 timestampOffset,
                 rumEventSourceProvider = eventSourceProvider,
-                contextProvider = contextProvider
+                contextProvider = contextProvider,
+                featuresContextResolver = featuresContextResolver
             )
         }
     }

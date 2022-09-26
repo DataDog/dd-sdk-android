@@ -250,6 +250,7 @@ internal class DatadogCoreTest {
     fun `𝕄 stop all features 𝕎 stop()`() {
         // Given
         val mockCoreFeature = mock<CoreFeature>()
+        whenever(mockCoreFeature.initialized).thenReturn(mock())
         testedCore.coreFeature = mockCoreFeature
         val mockRumFeature = mock<RumFeature>()
         testedCore.rumFeature = mockRumFeature
