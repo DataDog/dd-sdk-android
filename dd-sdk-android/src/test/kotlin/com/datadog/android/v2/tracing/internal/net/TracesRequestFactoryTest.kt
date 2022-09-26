@@ -37,14 +37,9 @@ internal class TracesRequestFactoryTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
-    @StringForgery(regex = "https://[a-z]+\\.com")
-    lateinit var fakeEndpoint: String
-
     @BeforeEach
     fun `set up`() {
-        testedFactory = TracesRequestFactory(
-            endpointUrl = fakeEndpoint
-        )
+        testedFactory = TracesRequestFactory()
     }
 
     @Suppress("NAME_SHADOWING")
@@ -62,7 +57,9 @@ internal class TracesRequestFactoryTest {
         val request = testedFactory.create(fakeDatadogContext, batchData, batchMetadata)
 
         // Then
-        assertThat(request.url).isEqualTo("$fakeEndpoint/api/v2/spans")
+        assertThat(request.url).isEqualTo(
+            "${fakeDatadogContext.site.tracesEndpoint()}/api/v2/spans"
+        )
         assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
         assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
             mapOf(

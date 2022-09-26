@@ -40,9 +40,8 @@ internal class TracingFeature(
         )
     }
 
-    override fun createRequestFactory(configuration: Configuration.Feature.Tracing):
-        RequestFactory {
-        return TracesRequestFactory(configuration.endpointUrl)
+    override fun createRequestFactory(): RequestFactory {
+        return TracesRequestFactory()
     }
 
     override fun onPostInitialized(context: Context) {}

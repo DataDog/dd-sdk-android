@@ -74,7 +74,7 @@ internal class CrashReportsFeatureTest :
     @Test
     fun `𝕄 create a crash request factory 𝕎 createRequestFactory()`() {
         // When
-        val requestFactory = testedFeature.createRequestFactory(fakeConfigurationFeature)
+        val requestFactory = testedFeature.createRequestFactory()
 
         // Then
         assertThat(requestFactory).isInstanceOf(LogsRequestFactory::class.java)

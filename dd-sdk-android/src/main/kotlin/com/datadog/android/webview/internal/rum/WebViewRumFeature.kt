@@ -37,8 +37,8 @@ internal class WebViewRumFeature(
         )
     }
 
-    override fun createRequestFactory(configuration: Configuration.Feature.RUM): RequestFactory {
-        return RumRequestFactory(configuration.endpointUrl)
+    override fun createRequestFactory(): RequestFactory {
+        return RumRequestFactory()
     }
 
     // endregion

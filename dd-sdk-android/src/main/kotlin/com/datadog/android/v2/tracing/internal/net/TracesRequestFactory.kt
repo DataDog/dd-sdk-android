@@ -13,9 +13,7 @@ import com.datadog.android.v2.api.context.DatadogContext
 import java.util.Locale
 import java.util.UUID
 
-internal class TracesRequestFactory(
-    private val endpointUrl: String
-) : RequestFactory {
+internal class TracesRequestFactory : RequestFactory {
 
     override fun create(
         context: DatadogContext,
@@ -27,7 +25,7 @@ internal class TracesRequestFactory(
         return Request(
             id = requestId,
             description = "Traces Request",
-            url = "%s/api/v2/spans".format(Locale.US, endpointUrl),
+            url = "%s/api/v2/spans".format(Locale.US, context.site.tracesEndpoint()),
             headers = buildHeaders(
                 requestId,
                 context.clientToken,

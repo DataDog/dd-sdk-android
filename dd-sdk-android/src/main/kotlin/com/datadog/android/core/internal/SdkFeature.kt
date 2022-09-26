@@ -46,7 +46,7 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
 
         persistenceStrategy = createPersistenceStrategy(context, configuration)
 
-        setupUploader(configuration)
+        setupUploader()
 
         registerPlugins(
             configuration.plugins,
@@ -112,7 +112,7 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
         configuration: C
     ): PersistenceStrategy<T>
 
-    abstract fun createRequestFactory(configuration: C): RequestFactory
+    abstract fun createRequestFactory(): RequestFactory
 
     // endregion
 
@@ -137,9 +137,9 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
         featurePlugins.clear()
     }
 
-    private fun setupUploader(configuration: C) {
+    private fun setupUploader() {
         uploadScheduler = if (coreFeature.isMainProcess) {
-            val requestFactory = createRequestFactory(configuration)
+            val requestFactory = createRequestFactory()
             uploader = DataOkHttpUploader(
                 requestFactory,
                 internalLogger = sdkLogger,

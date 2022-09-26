@@ -38,14 +38,9 @@ internal class RumRequestFactoryTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
-    @StringForgery(regex = "https://[a-z]+\\.com")
-    lateinit var fakeEndpoint: String
-
     @BeforeEach
     fun `set up`() {
-        testedFactory = RumRequestFactory(
-            endpointUrl = fakeEndpoint
-        )
+        testedFactory = RumRequestFactory()
     }
 
     @Suppress("NAME_SHADOWING")
@@ -63,7 +58,7 @@ internal class RumRequestFactoryTest {
         val request = testedFactory.create(fakeDatadogContext, batchData, batchMetadata)
 
         // Then
-        assertThat(request.url).isEqualTo(expectedUrl(fakeEndpoint))
+        assertThat(request.url).isEqualTo(expectedUrl(fakeDatadogContext.site.rumEndpoint()))
         assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
         assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
             mapOf(

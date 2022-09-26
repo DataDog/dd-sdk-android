@@ -131,8 +131,8 @@ internal class RumFeature(
         )
     }
 
-    override fun createRequestFactory(configuration: Configuration.Feature.RUM): RequestFactory {
-        return RumRequestFactory(configuration.endpointUrl)
+    override fun createRequestFactory(): RequestFactory {
+        return RumRequestFactory()
     }
 
     override fun onPostInitialized(context: Context) {}
@@ -229,9 +229,6 @@ internal class RumFeature(
 
     companion object {
         internal val startupTimeNs: Long = System.nanoTime()
-
-        // Update Vitals every 500 millisecond
-        private const val VITAL_UPDATE_PERIOD_MS = 500L
 
         internal const val RUM_FEATURE_NAME = "rum"
     }

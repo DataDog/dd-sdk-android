@@ -47,9 +47,8 @@ internal class CrashReportsFeature(
         )
     }
 
-    override fun createRequestFactory(configuration: Configuration.Feature.CrashReport):
-        RequestFactory {
-        return LogsRequestFactory(configuration.endpointUrl)
+    override fun createRequestFactory(): RequestFactory {
+        return LogsRequestFactory()
     }
 
     override fun onPostInitialized(context: Context) {}

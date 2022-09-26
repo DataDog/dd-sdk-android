@@ -98,7 +98,7 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // When
-        val requestFactory = testedFeature.createRequestFactory(fakeConfigurationFeature)
+        val requestFactory = testedFeature.createRequestFactory()
 
         // Then
         assertThat(requestFactory).isInstanceOf(RumRequestFactory::class.java)

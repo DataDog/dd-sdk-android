@@ -13,9 +13,7 @@ import com.datadog.android.v2.api.context.DatadogContext
 import java.util.Locale
 import java.util.UUID
 
-internal class LogsRequestFactory(
-    private val endpointUrl: String
-) : RequestFactory {
+internal class LogsRequestFactory : RequestFactory {
 
     override fun create(
         context: DatadogContext,
@@ -27,7 +25,7 @@ internal class LogsRequestFactory(
         return Request(
             id = requestId,
             description = "Logs Request",
-            url = buildUrl(context.source),
+            url = buildUrl(context.source, context.site.logsEndpoint()),
             headers = buildHeaders(
                 requestId,
                 context.clientToken,
@@ -43,7 +41,10 @@ internal class LogsRequestFactory(
         )
     }
 
-    private fun buildUrl(source: String): String {
+    private fun buildUrl(
+        source: String,
+        endpointUrl: String
+    ): String {
         return "%s/api/v2/logs?%s=%s"
             .format(Locale.US, endpointUrl, RequestFactory.QUERY_PARAM_SOURCE, source)
     }

@@ -59,7 +59,7 @@ internal class WebViewRumFeatureTest : SdkFeatureTest<Any,
     @Test
     fun `𝕄 create a rum request factory 𝕎 createRequestFactory()`() {
         // When
-        val requestFactory = testedFeature.createRequestFactory(fakeConfigurationFeature)
+        val requestFactory = testedFeature.createRequestFactory()
 
         // Then
         assertThat(requestFactory).isInstanceOf(RumRequestFactory::class.java)

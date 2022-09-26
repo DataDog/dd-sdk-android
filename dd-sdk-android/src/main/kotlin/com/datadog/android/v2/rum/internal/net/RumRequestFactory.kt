@@ -14,9 +14,7 @@ import com.datadog.android.v2.api.context.DatadogContext
 import java.util.Locale
 import java.util.UUID
 
-internal class RumRequestFactory(
-    private val endpointUrl: String
-) : RequestFactory {
+internal class RumRequestFactory : RequestFactory {
 
     override fun create(
         context: DatadogContext,
@@ -54,7 +52,7 @@ internal class RumRequestFactory(
             )
         )
 
-        val intakeUrl = "%s/api/v2/rum".format(Locale.US, endpointUrl)
+        val intakeUrl = "%s/api/v2/rum".format(Locale.US, context.site.rumEndpoint())
 
         return intakeUrl + queryParams.map { "${it.key}=${it.value}" }
             .joinToString("&", prefix = "?")

@@ -60,7 +60,7 @@ internal class WebViewLogsFeatureTest :
     @Test
     fun `𝕄 create a logs request factory 𝕎 createRequestFactory()`() {
         // When
-        val requestFactory = testedFeature.createRequestFactory(fakeConfigurationFeature)
+        val requestFactory = testedFeature.createRequestFactory()
 
         // Then
         assertThat(requestFactory).isInstanceOf(LogsRequestFactory::class.java)

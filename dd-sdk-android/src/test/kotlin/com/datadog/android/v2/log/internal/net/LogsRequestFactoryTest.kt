@@ -37,14 +37,9 @@ internal class LogsRequestFactoryTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
-    @StringForgery(regex = "https://[a-z]+\\.com")
-    lateinit var fakeEndpoint: String
-
     @BeforeEach
     fun `set up`() {
-        testedFactory = LogsRequestFactory(
-            endpointUrl = fakeEndpoint
-        )
+        testedFactory = LogsRequestFactory()
     }
 
     @Suppress("NAME_SHADOWING")
@@ -63,7 +58,7 @@ internal class LogsRequestFactoryTest {
 
         // Then
         assertThat(request.url).isEqualTo(
-            "$fakeEndpoint/api/v2/logs?" +
+            "${fakeDatadogContext.site.logsEndpoint()}/api/v2/logs?" +
                 "ddsource=${fakeDatadogContext.source}"
         )
         assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_JSON)

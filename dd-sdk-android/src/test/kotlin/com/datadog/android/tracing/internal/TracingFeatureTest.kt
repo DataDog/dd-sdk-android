@@ -78,7 +78,7 @@ internal class TracingFeatureTest :
     @Test
     fun `𝕄 create a tracing request factory 𝕎 createRequestFactory()`() {
         // When
-        val requestFactory = testedFeature.createRequestFactory(fakeConfigurationFeature)
+        val requestFactory = testedFeature.createRequestFactory()
 
         // Then
         assertThat(requestFactory).isInstanceOf(TracesRequestFactory::class.java)

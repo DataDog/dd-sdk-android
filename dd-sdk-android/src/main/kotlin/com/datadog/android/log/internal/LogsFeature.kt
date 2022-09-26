@@ -38,8 +38,8 @@ internal class LogsFeature(
         )
     }
 
-    override fun createRequestFactory(configuration: Configuration.Feature.Logs): RequestFactory {
-        return LogsRequestFactory(configuration.endpointUrl)
+    override fun createRequestFactory(): RequestFactory {
+        return LogsRequestFactory()
     }
 
     override fun onPostInitialized(context: Context) {}
