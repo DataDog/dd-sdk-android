@@ -1,11 +1,12 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "mobile-mutation-data-schema.json",
+  "$id": "session-replay/mobile/mutation-data-schema.json",
   "title": "MobileMutationData",
   "type": "object",
   "description": "Mobile-specific. Schema of a MutationData.",
   "allOf": [
     {
+      "required": ["source"],
       "properties": {
         "source": {
           "type": "integer",

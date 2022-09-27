@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "mobile-incremental-snapshot-record-schema.json",
+  "$id": "session-replay/mobile/incremental-snapshot-record-schema.json",
   "title": "MobileIncrementalSnapshotRecord",
   "type": "object",
   "description": "Mobile-specific. Schema of a Record type which contains mutations of a screen.",

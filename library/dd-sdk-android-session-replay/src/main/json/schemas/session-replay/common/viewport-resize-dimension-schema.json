@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "viewport-resize-dimension-schema.json",
+  "$id": "session-replay/common/viewport-resize-dimension-schema.json",
   "type": "object",
   "title": "ViewportResizeDimension",
   "description": "Schema of a ViewportResizeDimension.",

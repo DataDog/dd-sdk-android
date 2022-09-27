@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "mobile-full-snapshot-record-schema.json",
+  "$id": "session-replay/mobile/full-snapshot-record-schema.json",
   "title": "MobileFullSnapshotRecord",
   "type": "object",
   "description": "Mobile-specific. Schema of a Record type which contains the full snapshot of a screen.",
