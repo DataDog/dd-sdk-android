@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "mobile-segment-schema.json",
+  "$id": "session-replay/mobile/segment-schema.json",
   "title": "MobileSegment",
   "type": "object",
   "description": "Mobile-specific. Schema of a Session Replay data Segment.",

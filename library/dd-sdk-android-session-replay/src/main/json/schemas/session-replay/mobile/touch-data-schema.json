@@ -1,11 +1,12 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "touch-data-schema.json",
+  "$id": "session-replay/mobile/touch-data-schema.json",
   "title": "TouchData",
   "type": "object",
   "description": "Schema of a TouchData.",
   "allOf": [
     {
+      "required": ["source"],
       "properties": {
         "source": {
           "type": "integer",
