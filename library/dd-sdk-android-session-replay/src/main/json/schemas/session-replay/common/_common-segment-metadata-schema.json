@@ -1,10 +1,10 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "_common-segment-metadata-schema.json",
+  "$id": "session-replay/common/_common-segment-metadata-schema.json",
   "title": "CommonSegmentMetadataSchema",
   "type": "object",
   "description": "Schema of common properties for a Segment Metadata type.",
-  "required": ["start", "end", "records_count", "index_in_view"],
+  "required": ["start", "end", "records_count"],
   "properties": {
     "start": {
       "type": "integer",

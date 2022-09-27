@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "mobile-incremental-data-schema.json",
+  "$id": "session-replay/mobile/incremental-data-schema.json",
   "title": "MobileIncrementalData",
   "type": "object",
   "description": "Mobile-specific. Schema of a Session Replay IncrementalData type.",
