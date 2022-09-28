@@ -66,7 +66,7 @@ internal class DatadogCore(
     internal val contextProvider: ContextProvider?
         get() {
             return if (coreFeature.initialized.get()) {
-                return coreFeature.contextProvider
+                coreFeature.contextProvider
             } else {
                 null
             }
