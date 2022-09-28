@@ -6,36 +6,44 @@
 
 package com.datadog.android.sessionreplay.processor
 
-import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.model.MobileSegment.MobileRecord
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 
-internal data class EnrichedRecord(
+/**
+ * Wraps the Session Replay records together with the related Rum Context.
+ * Intended for internal usage.
+ */
+@Suppress("UndocumentedPublicProperty")
+data class EnrichedRecord(
     val applicationId: String,
     val sessionId: String,
     val viewId: String,
-    val records: List<MobileSegment.MobileRecord>
+    val records: List<MobileRecord>
 ) {
 
+    /**
+     * Returns the JSON string equivalent of this object.
+     */
     fun toJson(): String {
         val json = JsonObject()
         json.addProperty(APPLICATION_ID_KEY, applicationId)
         json.addProperty(SESSION_ID_KEY, sessionId)
         json.addProperty(VIEW_ID_KEY, viewId)
-        val recordsJsonArray = JsonArray()
-        records.map { it.toJson() }
-            .fold(recordsJsonArray) { acc, jsonElement ->
+        val recordsJsonArray = records
+            .map { it.toJson() }
+            .fold(JsonArray()) { acc, jsonElement ->
                 acc.add(jsonElement)
                 acc
             }
-        json.add(RECORD_KEY, recordsJsonArray)
+        json.add(RECORDS_KEY, recordsJsonArray)
         return json.toString()
     }
 
     companion object {
-        const val APPLICATION_ID_KEY = "application_id"
-        const val SESSION_ID_KEY = "session_id"
-        const val VIEW_ID_KEY = "view_id"
-        const val RECORD_KEY = "records"
+        const val APPLICATION_ID_KEY: String = "application_id"
+        const val SESSION_ID_KEY: String = "session_id"
+        const val VIEW_ID_KEY: String = "view_id"
+        const val RECORDS_KEY: String = "records"
     }
 }

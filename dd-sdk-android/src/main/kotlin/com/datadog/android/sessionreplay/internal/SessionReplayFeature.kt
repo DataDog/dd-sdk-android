@@ -8,7 +8,6 @@ package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
 import android.content.Context
-import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
@@ -19,19 +18,22 @@ import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRecordPersistenceStrategy
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.domain.SessionReplaySerializedRecordWriter
+import com.datadog.android.sessionreplay.internal.net.SessionReplayOkHttpUploader
 import com.datadog.android.v2.api.RequestFactory
+import com.datadog.android.v2.api.SDKCore
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class SessionReplayFeature(
     coreFeature: CoreFeature,
     private val configuration: Configuration.Feature.SessionReplay,
+    sdkCore: SDKCore,
     private val sessionReplayCallbackProvider: (PersistenceStrategy<String>) ->
     LifecycleCallback = {
         SessionReplayLifecycleCallback(
             SessionReplayRumContextProvider(),
             configuration.privacy,
             SessionReplaySerializedRecordWriter(it.getWriter()),
-            SessionReplayRecordCallback(Datadog.globalSDKCore)
+            SessionReplayRecordCallback(sdkCore)
         )
     }
 ) : SdkFeature<String, Configuration.Feature.SessionReplay>(coreFeature) {
@@ -74,7 +76,17 @@ internal class SessionReplayFeature(
 
     override fun createRequestFactory(configuration: Configuration.Feature.SessionReplay):
         RequestFactory {
-        return SessionReplayRequestFactory()
+        return SessionReplayRequestFactory(
+            SessionReplayOkHttpUploader(
+                configuration.endpointUrl,
+                coreFeature.clientToken,
+                coreFeature.sourceName,
+                coreFeature.sdkVersion,
+                coreFeature.okHttpClient,
+                coreFeature.androidInfoProvider,
+                coreFeature
+            )
+        )
     }
 
     // endregion

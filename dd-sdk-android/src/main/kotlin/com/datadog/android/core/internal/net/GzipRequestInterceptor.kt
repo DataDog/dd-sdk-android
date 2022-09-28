@@ -12,6 +12,7 @@ import java.io.IOException
 import kotlin.jvm.Throws
 import okhttp3.Interceptor
 import okhttp3.MediaType
+import okhttp3.MultipartBody
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
@@ -38,7 +39,10 @@ internal class GzipRequestInterceptor : Interceptor {
         val originalRequest: Request = chain.request()
         val body = originalRequest.body()
 
-        return if (body == null || originalRequest.header(HEADER_ENCODING) != null) {
+        return if (body == null ||
+            originalRequest.header(HEADER_ENCODING) != null ||
+            body is MultipartBody
+        ) {
             chain.proceed(originalRequest)
         } else {
             val compressedRequest = try {

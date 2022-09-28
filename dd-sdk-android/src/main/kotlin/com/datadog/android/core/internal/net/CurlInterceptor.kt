@@ -12,6 +12,7 @@ import java.nio.charset.Charset
 import java.util.Locale
 import kotlin.jvm.Throws
 import okhttp3.Interceptor
+import okhttp3.MultipartBody
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
@@ -51,8 +52,9 @@ internal class CurlInterceptor(
         val url: String,
         val method: String,
         val contentType: String? = null,
-        val body: String? = null,
-        val headers: Map<String, List<String>> = emptyMap()
+        val requestBody: RequestBody? = null,
+        val headers: Map<String, List<String>> = emptyMap(),
+        val printBody: Boolean
     ) {
 
         constructor(request: Request, printBody: Boolean) :
@@ -60,8 +62,9 @@ internal class CurlInterceptor(
                 url = request.url().toString(),
                 method = request.method(),
                 contentType = request.body()?.contentType()?.toString(),
-                body = if (printBody) peekBody(request.body()) else null,
-                headers = request.headers().toMultimap()
+                requestBody = request.body(),
+                headers = request.headers().toMultimap(),
+                printBody = printBody
             )
 
         fun toCommand(): String {
@@ -79,13 +82,31 @@ internal class CurlInterceptor(
                 parts.add(FORMAT_HEADER.format(Locale.US, CONTENT_TYPE, contentType))
             }
 
-            if (body != null) {
-                parts.add(FORMAT_BODY.format(Locale.US, body))
-            }
-
+            requestBody?.let { parts.addAll(it.toParts()) }
             parts.add(FORMAT_URL.format(Locale.US, url))
 
             return parts.joinToString(" ")
+        }
+
+        private fun RequestBody.toParts(): List<String> {
+            return if (this is MultipartBody) {
+                val requestCurlPart = mutableListOf<String>()
+                this.parts().forEach {
+                    it.headers()?.toMultimap()?.forEach { (key, value) ->
+                        requestCurlPart.add(FORMAT_HEADER.format(Locale.US, key, value))
+                    }
+                    if (printBody) {
+                        requestCurlPart.add(FORMAT_BODY.format(Locale.US, peekBody(it.body())))
+                    }
+                }
+                requestCurlPart
+            } else {
+                if (printBody) {
+                    listOf(FORMAT_BODY.format(Locale.US, peekBody(this)))
+                } else {
+                    emptyList()
+                }
+            }
         }
     }
 
