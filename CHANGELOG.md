@@ -1,3 +1,7 @@
+# 1.14.1 / 2022-09-27
+
+* [IMPROVEMENT] Global: Add CPU architecture to the collected device information. See [#1000](https://github.com/DataDog/dd-sdk-android/pull/1000)
+
 # 1.14.0 / 2022-09-20
 
 * [FEATURE] Global: Collect OS and device information instead of relying on User-Agent header. See [#945](https://github.com/DataDog/dd-sdk-android/pull/945)
