@@ -43,7 +43,6 @@ internal class PiDigitComputerBBP {
      * Computes the n-th hexadecimal digits of pi using the BBP formula.
      */
     fun computePiDigits(n: Int): String {
-
         val s1 = piIntermediateSum(1, n)
         val s4 = piIntermediateSum(4, n)
         val s5 = piIntermediateSum(5, n)
