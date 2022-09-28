@@ -4,15 +4,22 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.net
+package com.datadog.android.sessionreplay.net
 
 import java.io.ByteArrayOutputStream
 import java.util.zip.Deflater
 
-internal class BytesCompressor {
+/**
+ *  Compresses the payload data using the ZIP compression algorithm.
+ *  This class is meant for internal usage.
+ */
+class BytesCompressor {
 
+    @Suppress("UndocumentedPublicFunction")
     fun compressBytes(uncompressedData: ByteArray): ByteArray {
-        // Create the compressor with highest level of compression
+        // Create the compressor with highest level of compression.
+        // We are using compression level 6 in order to align with the same compression type used
+        // in the browser sdk.
         val deflater = Deflater(6)
         // We will start with an OutputStream double the size of the data
         val outputStream = ByteArrayOutputStream(uncompressedData.size * 2)
@@ -20,13 +27,16 @@ internal class BytesCompressor {
         // in order to align with dogweb way of decompressing the segments we need to compress
         // using the SYNC_FLUSH flag which adds the 0000FFFF flag at the end of the
         // compressed data
-        compress(deflater, uncompressedData, outputStream, Deflater.SYNC_FLUSH)
-        // in order to align with dogweb way of decompressing the segments we need to add
-        // a fake checksum at the end
-        compress(deflater, ByteArray(0), outputStream, Deflater.FULL_FLUSH)
-        deflater.end()
+        val compressedData = outputStream.use {
+            compress(deflater, uncompressedData, it, Deflater.SYNC_FLUSH)
+            // in order to align with dogweb way of decompressing the segments we need to add
+            // a fake checksum at the end
+            compress(deflater, ByteArray(0), it, Deflater.FULL_FLUSH)
+            deflater.end()
+            it.toByteArray()
+        }
         // Get the compressed data
-        return outputStream.toByteArray()
+        return compressedData
     }
 
     private fun compress(

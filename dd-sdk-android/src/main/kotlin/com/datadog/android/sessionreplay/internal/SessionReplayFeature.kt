@@ -79,12 +79,7 @@ internal class SessionReplayFeature(
         return SessionReplayRequestFactory(
             SessionReplayOkHttpUploader(
                 configuration.endpointUrl,
-                coreFeature.clientToken,
-                coreFeature.sourceName,
-                coreFeature.sdkVersion,
-                coreFeature.okHttpClient,
-                coreFeature.androidInfoProvider,
-                coreFeature
+                coreFeature.okHttpClient
             )
         )
     }

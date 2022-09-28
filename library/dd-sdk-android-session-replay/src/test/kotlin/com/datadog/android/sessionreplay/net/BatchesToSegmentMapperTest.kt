@@ -4,11 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.net
+package com.datadog.android.sessionreplay.net
 
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.processor.EnrichedRecord
-import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.sessionreplay.utils.ForgeConfigurator
+import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -27,7 +28,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class BatchesToSegmentMapperTest {
 
     lateinit var testedMapper: BatchesToSegmentsMapper
@@ -75,11 +76,12 @@ internal class BatchesToSegmentMapperTest {
         val expectedEnrichedRecords: LinkedList<EnrichedRecord> = LinkedList()
         val fakeEnrichedRecords: List<EnrichedRecord> = fakeRecords
             .chunked(chunkSize)
+            .map { it.sortedBy { record -> record.timestamp() } }
             .flatMap {
                 val rootRecord = forge.getForgery<EnrichedRecord>().copy(records = it)
                 expectedEnrichedRecords.add(rootRecord)
                 val subChunkSize = it.size / 2
-                if (subChunkSize> 0) {
+                if (subChunkSize > 0) {
                     it.chunked(subChunkSize).map { records ->
                         rootRecord.copy(records = records)
                     }
@@ -112,9 +114,13 @@ internal class BatchesToSegmentMapperTest {
         forge: Forge
     ) {
         // Given
-        val fakeEnrichedRecords: List<EnrichedRecord> = forge.aList(1) {
-            forge.getForgery()
-        }
+        val fakeEnrichedRecords: List<EnrichedRecord> = forge
+            .aList<EnrichedRecord>(size = 1) {
+                forge.getForgery()
+            }
+            .map {
+                it.copy(records = it.records.sortedBy { record -> record.timestamp() })
+            }
         val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
         val expectedStartTimestamp = fakeEnrichedRecords[0].records.first().timestamp()
 
@@ -130,13 +136,17 @@ internal class BatchesToSegmentMapperTest {
     }
 
     @Test
-    fun `M use the first record in the list as end timestamp W groupDataIntoSegments`(
+    fun `M use the last record in the list as end timestamp W groupDataIntoSegments`(
         forge: Forge
     ) {
         // Given
-        val fakeEnrichedRecords: List<EnrichedRecord> = forge.aList(1) {
-            forge.getForgery()
-        }
+        val fakeEnrichedRecords: List<EnrichedRecord> = forge
+            .aList<EnrichedRecord>(size = 1) {
+                forge.getForgery()
+            }
+            .map {
+                it.copy(records = it.records.sortedBy { record -> record.timestamp() })
+            }
         val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
         val expectedEndTimestamp = fakeEnrichedRecords[0].records.last().timestamp()
 
@@ -175,6 +185,33 @@ internal class BatchesToSegmentMapperTest {
     ) {
         // Given
         val fakeBatchData = forge.aList { forge.anAlphabeticalString().toByteArray() }
+
+        // When
+        val mappedSegments = testedMapper.map(fakeBatchData)
+
+        // Then
+        assertThat(mappedSegments).isEmpty()
+    }
+
+    @Test
+    fun `M return empty list W groupDataIntoSegments { records with missing timestamp key }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeBatchData = forge
+            .aList<EnrichedRecord>(size = 1) {
+                forge.getForgery()
+            }
+            .map { JsonParser.parseString(it.toJson()).asJsonObject }
+            .map {
+                val records = it.get(EnrichedRecord.RECORDS_KEY)
+                    .asJsonArray
+                records.forEach { record ->
+                    record.asJsonObject.remove(BatchesToSegmentsMapper.TIMESTAMP_KEY)
+                }
+                it.add(EnrichedRecord.RECORDS_KEY, records)
+            }
+            .map { it.toString().toByteArray() }
 
         // When
         val mappedSegments = testedMapper.map(fakeBatchData)
