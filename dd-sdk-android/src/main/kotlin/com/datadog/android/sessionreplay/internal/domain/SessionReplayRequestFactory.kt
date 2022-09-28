@@ -7,11 +7,12 @@
 package com.datadog.android.sessionreplay.internal.domain
 
 import com.datadog.android.core.internal.net.DataOkHttpUploaderV2
-import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.internal.net.SessionReplayOkHttpUploader
+import com.datadog.android.sessionreplay.net.BatchesToSegmentsMapper
 import com.datadog.android.v2.api.Request
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
+import java.util.UUID
 
 internal class SessionReplayRequestFactory(
     private val sessionReplayOkHttpUploader: SessionReplayOkHttpUploader,
@@ -27,17 +28,17 @@ internal class SessionReplayRequestFactory(
         // Also add the necessary unit tests once this is done.
         batchToSegmentsMapper.map(batchData).forEach {
             sessionReplayOkHttpUploader.upload(
+                context,
                 it.first,
                 (it.second.toString() + "\n").toByteArray()
             )
         }
         return Request(
-            sessionReplayOkHttpUploader.requestId,
+            UUID.randomUUID().toString(),
             "",
-            sessionReplayOkHttpUploader.buildUrl(),
+            sessionReplayOkHttpUploader.buildUrl(context),
             mapOf(
-                DataOkHttpUploaderV2.HEADER_API_KEY
-                    to sessionReplayOkHttpUploader.clientToken
+                DataOkHttpUploaderV2.HEADER_API_KEY to context.clientToken
             ),
             ByteArray(0)
         )

@@ -6,14 +6,16 @@
 
 package com.datadog.android.sessionreplay.internal.net
 
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.net.DataOkHttpUploaderV2
 import com.datadog.android.core.internal.net.UploadStatus
-import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.log.Logger
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.net.BytesCompressor
+import com.datadog.android.v2.api.context.DatadogContext
+import java.util.Locale
+import java.util.UUID
 import okhttp3.Call
 import okhttp3.MediaType
 import okhttp3.MultipartBody
@@ -24,44 +26,61 @@ import okhttp3.RequestBody
 //  instead from SessionReplayRequestFactory
 // This class is not test as it is meant for non - production usage. It will be dropped later.
 internal class SessionReplayOkHttpUploader(
-    endpoint: String,
-    clientToken: String,
-    source: String,
-    sdkVersion: String,
-    callFactory: Call.Factory,
-    androidInfoProvider: AndroidInfoProvider,
-    private val coreFeature: CoreFeature,
+    private val endpoint: String,
+    internal val callFactory: Call.Factory,
+    internal val internalLogger: Logger = sdkLogger,
     private val compressor: BytesCompressor = BytesCompressor()
-) : DataOkHttpUploaderV2(
-    buildUrl(endpoint, TrackType.SESSION_REPLAY),
-    clientToken,
-    source,
-    sdkVersion,
-    callFactory,
-    CONTENT_TYPE_MUTLIPART_FORM,
-    androidInfoProvider,
-    sdkLogger
 ) {
 
-    private val tags: String
-        get() {
-            val elements = mutableListOf(
-                "${RumAttributes.SERVICE_NAME}:${coreFeature.serviceName}",
-                "${RumAttributes.APPLICATION_VERSION}:" +
-                    coreFeature.packageVersionProvider.version,
-                "${RumAttributes.SDK_VERSION}:$sdkVersion",
-                "${RumAttributes.ENV}:${coreFeature.envName}"
-            )
-            if (coreFeature.variant.isNotEmpty()) {
-                elements.add("${RumAttributes.VARIANT}:${coreFeature.variant}")
+    private val uploaderName = javaClass.simpleName
+
+    private fun userAgent(datadogContext: DatadogContext): String {
+        return sanitizeHeaderValue(System.getProperty(SYSTEM_UA))
+            .ifBlank {
+                "Datadog/${sanitizeHeaderValue(datadogContext.sdkVersion)} " +
+                    "(Linux; U; Android ${datadogContext.deviceInfo.osVersion}; " +
+                    "${datadogContext.deviceInfo.deviceModel} " +
+                    "Build/${datadogContext.deviceInfo.deviceBuildId})"
             }
-            return elements.joinToString(",")
+    }
+
+    private val intakeUrl by lazy {
+        String.format(
+            Locale.US,
+            UPLOAD_URL,
+            endpoint,
+            "replay"
+        )
+    }
+
+    private fun tags(datadogContext: DatadogContext): String {
+        val elements = mutableListOf(
+            "${RumAttributes.SERVICE_NAME}:${datadogContext.service}",
+            "${RumAttributes.APPLICATION_VERSION}:" +
+                datadogContext.version,
+            "${RumAttributes.SDK_VERSION}:${datadogContext.sdkVersion}",
+            "${RumAttributes.ENV}:${datadogContext.env}"
+        )
+        if (datadogContext.variant.isNotEmpty()) {
+            elements.add("${RumAttributes.VARIANT}:${datadogContext.variant}")
         }
+        return elements.joinToString(",")
+    }
 
     @Suppress("TooGenericExceptionCaught")
-    fun upload(mobileSegment: MobileSegment, mobileSegmentAsBinary: ByteArray): UploadStatus {
+    fun upload(
+        datadogContext: DatadogContext,
+        mobileSegment: MobileSegment,
+        mobileSegmentAsBinary: ByteArray
+    ): UploadStatus {
+        val requestId = UUID.randomUUID().toString()
         val uploadStatus = try {
-            executeUploadRequest(mobileSegment, mobileSegmentAsBinary, requestId)
+            executeUploadRequest(
+                datadogContext,
+                mobileSegment,
+                mobileSegmentAsBinary,
+                requestId
+            )
         } catch (e: Throwable) {
             internalLogger.e("Unable to upload batch data.", e)
             UploadStatus.NETWORK_ERROR
@@ -87,16 +106,19 @@ internal class SessionReplayOkHttpUploader(
         return uploadStatus
     }
 
+    // region Internal
+
     @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
     private fun executeUploadRequest(
+        datadogContext: DatadogContext,
         mobileSegment: MobileSegment,
         mobileSegmentAsBinary: ByteArray,
         requestId: String
     ): UploadStatus {
-        if (clientToken.isBlank()) {
+        if (datadogContext.clientToken.isBlank()) {
             return UploadStatus.INVALID_TOKEN_ERROR
         }
-        val request = buildRequest(mobileSegment, mobileSegmentAsBinary, requestId)
+        val request = buildRequest(datadogContext, mobileSegment, mobileSegmentAsBinary, requestId)
         val call = callFactory.newCall(request)
         val response = call.execute()
         response.close()
@@ -105,15 +127,16 @@ internal class SessionReplayOkHttpUploader(
 
     @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
     private fun buildRequest(
+        datadogContext: DatadogContext,
         segment: MobileSegment,
         segmentAsBinary: ByteArray,
         requestId: String
     ): Request {
         val builder = Request.Builder()
-            .url(buildUrl())
+            .url(intakeUrl)
             .post(buildRequestBody(segment, segmentAsBinary))
 
-        buildHeaders(builder, requestId)
+        buildHeaders(datadogContext, builder, requestId)
 
         return builder.build()
     }
@@ -130,6 +153,11 @@ internal class SessionReplayOkHttpUploader(
                     MediaType.parse(CONTENT_TYPE_BINARY),
                     compressedData
                 )
+            )
+            .addFormDataPart(
+                SEGMENT_FORM_KEY,
+                segment.session.id
+
             )
             .addFormDataPart(
                 APPLICATION_ID_FORM_KEY,
@@ -170,16 +198,90 @@ internal class SessionReplayOkHttpUploader(
             .build()
     }
 
-    override fun buildQueryParameters(): Map<String, Any> {
+    internal fun buildUrl(datadogContext: DatadogContext): String {
+        val queryParams = buildQueryParameters(datadogContext)
+        return if (queryParams.isEmpty()) {
+            intakeUrl
+        } else {
+            intakeUrl + queryParams.map { "${it.key}=${it.value}" }
+                .joinToString("&", prefix = "?")
+        }
+    }
+
+    private fun buildHeaders(
+        datadogContext: DatadogContext,
+        builder: Request.Builder,
+        requestId: String
+    ) {
+        builder.addHeader(HEADER_API_KEY, datadogContext.clientToken)
+        builder.addHeader(HEADER_EVP_ORIGIN, datadogContext.source)
+        builder.addHeader(HEADER_EVP_ORIGIN_VERSION, datadogContext.sdkVersion)
+        builder.addHeader(HEADER_USER_AGENT, userAgent(datadogContext))
+        builder.addHeader(HEADER_CONTENT_TYPE, CONTENT_TYPE_MULTIPART_FORM)
+        builder.addHeader(HEADER_REQUEST_ID, requestId)
+    }
+
+    private fun responseCodeToUploadStatus(code: Int): UploadStatus {
+        return when (code) {
+            HTTP_ACCEPTED -> UploadStatus.SUCCESS
+            HTTP_BAD_REQUEST -> UploadStatus.HTTP_CLIENT_ERROR
+            HTTP_UNAUTHORIZED -> UploadStatus.INVALID_TOKEN_ERROR
+            HTTP_FORBIDDEN -> UploadStatus.INVALID_TOKEN_ERROR
+            HTTP_CLIENT_TIMEOUT -> UploadStatus.HTTP_CLIENT_RATE_LIMITING
+            HTTP_ENTITY_TOO_LARGE -> UploadStatus.HTTP_CLIENT_ERROR
+            HTTP_TOO_MANY_REQUESTS -> UploadStatus.HTTP_CLIENT_RATE_LIMITING
+            HTTP_INTERNAL_ERROR -> UploadStatus.HTTP_SERVER_ERROR
+            HTTP_UNAVAILABLE -> UploadStatus.HTTP_SERVER_ERROR
+            else -> UploadStatus.UNKNOWN_ERROR
+        }
+    }
+
+    private fun sanitizeHeaderValue(value: String?): String {
+        return value?.filter { isValidHeaderValueChar(it) }.orEmpty()
+    }
+
+    private fun isValidHeaderValueChar(c: Char): Boolean {
+        return c == '\t' || c in '\u0020' until '\u007F'
+    }
+
+    private fun buildQueryParameters(datadogContext: DatadogContext): Map<String, Any> {
         return mapOf(
-            QUERY_PARAM_SOURCE to source,
-            QUERY_PARAM_TAGS to tags,
-            QUERY_PARAM_EVP_ORIGIN_KEY to source,
-            QUERY_PARAM_EVP_ORIGIN_VERSION_KEY to sdkVersion
+            QUERY_PARAM_SOURCE to datadogContext.source,
+            QUERY_PARAM_TAGS to tags(datadogContext),
+            QUERY_PARAM_EVP_ORIGIN_KEY to datadogContext.source,
+            QUERY_PARAM_EVP_ORIGIN_VERSION_KEY to datadogContext.sdkVersion
         )
     }
 
+    // endregion
+
     companion object {
+
+        const val SYSTEM_UA = "http.agent"
+
+        const val HTTP_ACCEPTED = 202
+
+        const val HTTP_BAD_REQUEST = 400
+        const val HTTP_UNAUTHORIZED = 401
+        const val HTTP_FORBIDDEN = 403
+        const val HTTP_CLIENT_TIMEOUT = 408
+        const val HTTP_ENTITY_TOO_LARGE = 413
+        const val HTTP_TOO_MANY_REQUESTS = 429
+
+        const val HTTP_INTERNAL_ERROR = 500
+        const val HTTP_UNAVAILABLE = 503
+
+        internal const val HEADER_API_KEY = "DD-API-KEY"
+        internal const val HEADER_EVP_ORIGIN = "DD-EVP-ORIGIN"
+        internal const val HEADER_EVP_ORIGIN_VERSION = "DD-EVP-ORIGIN-VERSION"
+        internal const val HEADER_REQUEST_ID = "DD-REQUEST-ID"
+        internal const val HEADER_CONTENT_TYPE = "Content-Type"
+        internal const val HEADER_USER_AGENT = "User-Agent"
+
+        internal const val QUERY_PARAM_SOURCE = "ddsource"
+        internal const val QUERY_PARAM_TAGS = "ddtags"
+
+        private const val UPLOAD_URL = "%s/api/v2/%s"
 
         internal const val QUERY_PARAM_EVP_ORIGIN_VERSION_KEY = "dd-evp-origin-version"
         internal const val QUERY_PARAM_EVP_ORIGIN_KEY = "dd-evp-origin"
@@ -194,5 +296,8 @@ internal class SessionReplayOkHttpUploader(
         internal const val SOURCE_FORM_KEY = "end"
         internal const val SEGMENT_FORM_KEY = "segment"
         internal const val CONTENT_TYPE_BINARY = "application/octet-stream"
+        internal const val CONTENT_TYPE_MULTIPART_FORM = "multipart/form-data"
+        private const val HEADER_ENCODING = "Content-Encoding"
+        private const val ENCODING_GZIP = "gzip"
     }
 }

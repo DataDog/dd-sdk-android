@@ -111,11 +111,19 @@ internal class GzipRequestInterceptorTest {
     }
 
     @Test
-    fun `M keep original body W intercept { MultipartBody }`() {
+    fun `M keep original body W intercept { MultipartBody }`(forge: Forge) {
         // Given
+        val fakeMultipartBody = MultipartBody
+            .Builder()
+            .addFormDataPart(
+                forge.aString(),
+                forge.aString(),
+                RequestBody.create(null, fakeBody.toByteArray())
+            )
+            .build()
+
         fakeRequest = fakeRequest.newBuilder()
-            .header("Content-Encoding", "identity")
-            .post(MultipartBody.create(null, fakeBody))
+            .post(fakeMultipartBody)
             .build()
         fakeResponse = forgeResponse()
         stubChain()
@@ -128,13 +136,12 @@ internal class GzipRequestInterceptorTest {
             verify(mockChain).proceed(capture())
             val buffer = Buffer()
             val stream = ByteArrayOutputStream()
-            lastValue.body()!!.writeTo(buffer)
+            val part = (lastValue.body() as MultipartBody).part(0)
+            part.body().writeTo(buffer)
             buffer.copyTo(stream)
 
             assertThat(stream.toString())
                 .isEqualTo(fakeBody)
-            assertThat(lastValue.header("Content-Encoding"))
-                .isEqualTo("identity")
         }
         assertThat(response)
             .isSameAs(fakeResponse)

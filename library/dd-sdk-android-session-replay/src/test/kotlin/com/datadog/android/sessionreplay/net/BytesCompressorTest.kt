@@ -4,10 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.net
+package com.datadog.android.sessionreplay.net
 
 import com.datadog.android.sessionreplay.processor.EnrichedRecord
-import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.sessionreplay.utils.ForgeConfigurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -26,7 +26,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(Configurator::class)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class BytesCompressorTest {
 
     lateinit var testedBytesCompressor: BytesCompressor
@@ -56,7 +56,6 @@ internal class BytesCompressorTest {
                     BytesCompressor.CHECKSUM_FLAG_SIZE_IN_BYTES
             )
         )
-        decompressor.finished()
         val result = ByteArray(fakeDataAsByteArray.size)
         val resultLength = decompressor.inflate(result)
         decompressor.end()

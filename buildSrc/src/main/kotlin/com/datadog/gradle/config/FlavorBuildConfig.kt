@@ -43,6 +43,11 @@ fun configureFlavorForSampleApp(flavor: ApplicationProductFlavor, rootDir: File)
     )
     flavor.buildConfigField(
         "String",
+        "DD_OVERRIDE_SESSION_REPLAY_URL",
+        "\"${config.sessionReplayEndpoint}\""
+    )
+    flavor.buildConfigField(
+        "String",
         "DD_RUM_APPLICATION_ID",
         "\"${config.rumApplicationId}\""
     )
