@@ -34,6 +34,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    namespace = "com.datadog.android.sdk.integration"
+
     testOptions {
         unitTests.isReturnDefaultValues = true
     }

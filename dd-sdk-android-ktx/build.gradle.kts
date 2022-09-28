@@ -45,6 +45,8 @@ android {
         setLibraryVersion()
     }
 
+    namespace = "com.datadog.android.ktx"
+
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
     }

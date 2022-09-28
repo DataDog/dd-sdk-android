@@ -46,6 +46,8 @@ android {
         setLibraryVersion()
     }
 
+    namespace = "com.datadog.android.glide"
+
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
     }

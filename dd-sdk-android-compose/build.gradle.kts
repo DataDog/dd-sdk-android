@@ -49,6 +49,8 @@ android {
         setLibraryVersion()
     }
 
+    namespace = "com.datadog.android.compose"
+
     buildFeatures {
         compose = true
     }

@@ -5,7 +5,7 @@
   ~ Copyright 2016-Present Datadog, Inc.
   -->
 
-<manifest package="com.datadog.tools.unit">
+<manifest>
 
     <application/>
 

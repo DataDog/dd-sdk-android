@@ -45,6 +45,8 @@ android {
         setLibraryVersion()
     }
 
+    namespace = "com.datadog.android.sqldelight"
+
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
     }
