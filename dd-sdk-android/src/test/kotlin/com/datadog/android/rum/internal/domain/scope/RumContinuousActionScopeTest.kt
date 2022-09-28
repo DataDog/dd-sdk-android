@@ -216,7 +216,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -274,7 +275,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -331,7 +333,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -391,7 +394,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -461,7 +465,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -535,7 +540,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -595,7 +601,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -659,7 +666,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -716,7 +724,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -780,7 +789,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -825,7 +835,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -874,7 +885,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -923,7 +935,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -973,7 +986,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1025,7 +1039,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1072,7 +1087,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1145,7 +1161,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1204,7 +1221,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1257,7 +1275,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1310,7 +1329,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1364,7 +1384,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1415,7 +1436,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1470,7 +1492,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1521,7 +1544,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1639,7 +1663,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1694,7 +1719,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,
@@ -1743,7 +1769,8 @@ internal class RumContinuousActionScopeTest {
                         fakeAndroidInfoProvider.deviceName,
                         fakeAndroidInfoProvider.deviceModel,
                         fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType()
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
                     )
                     hasOsInfo(
                         fakeAndroidInfoProvider.osName,

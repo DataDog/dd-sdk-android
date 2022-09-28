@@ -226,7 +226,8 @@ internal class RumActionScope(
                 type = androidInfoProvider.deviceType.toActionSchemaType(),
                 name = androidInfoProvider.deviceName,
                 model = androidInfoProvider.deviceModel,
-                brand = androidInfoProvider.deviceBrand
+                brand = androidInfoProvider.deviceBrand,
+                architecture = androidInfoProvider.architecture
             ),
             context = ActionEvent.Context(additionalProperties = attributes),
             dd = ActionEvent.Dd(session = ActionEvent.DdSession(plan = ActionEvent.Plan.PLAN_1))

@@ -217,7 +217,8 @@ internal class RumResourceScope(
                 type = androidInfoProvider.deviceType.toResourceSchemaType(),
                 name = androidInfoProvider.deviceName,
                 model = androidInfoProvider.deviceModel,
-                brand = androidInfoProvider.deviceBrand
+                brand = androidInfoProvider.deviceBrand,
+                architecture = androidInfoProvider.architecture
             ),
             context = ResourceEvent.Context(additionalProperties = attributes),
             dd = ResourceEvent.Dd(
@@ -308,7 +309,8 @@ internal class RumResourceScope(
                 type = androidInfoProvider.deviceType.toErrorSchemaType(),
                 name = androidInfoProvider.deviceName,
                 model = androidInfoProvider.deviceModel,
-                brand = androidInfoProvider.deviceBrand
+                brand = androidInfoProvider.deviceBrand,
+                architecture = androidInfoProvider.architecture
             ),
             context = ErrorEvent.Context(additionalProperties = attributes),
             dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))

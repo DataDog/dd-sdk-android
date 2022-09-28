@@ -25,7 +25,6 @@ class WidgetIntentService : IntentService("WidgetIntentService") {
     override fun onHandleIntent(intent: Intent?) {
         when (intent?.action) {
             LOAD_RANDOM_RESOURCE_ACTION -> {
-
                 val widgetName = intent.getStringExtra(WIDGET_NAME_ARG)
                 val widgetId = intent.getIntExtra(WIDGET_ID_ARG, 0)
                 val hasRumContext = widgetId != 0 && widgetName != null
