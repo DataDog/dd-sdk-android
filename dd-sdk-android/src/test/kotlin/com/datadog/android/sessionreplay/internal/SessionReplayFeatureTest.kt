@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRecordPersistenceStrategy
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.SDKCore
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
@@ -44,10 +45,14 @@ internal class SessionReplayFeatureTest :
     @Mock
     lateinit var mockSessionReplayLifecycleCallback: SessionReplayLifecycleCallback
 
+    @Mock
+    lateinit var mockSDKCore: SDKCore
+
     override fun createTestedFeature(): SessionReplayFeature {
         return SessionReplayFeature(
             coreFeature.mockInstance,
-            fakeConfigurationFeature
+            fakeConfigurationFeature,
+            mockSDKCore
         ) { mockSessionReplayLifecycleCallback }
     }
 
@@ -74,7 +79,8 @@ internal class SessionReplayFeatureTest :
         // Given
         testedFeature = SessionReplayFeature(
             coreFeature.mockInstance,
-            fakeConfigurationFeature
+            fakeConfigurationFeature,
+            mockSDKCore
         )
 
         // When

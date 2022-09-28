@@ -305,7 +305,8 @@ internal class DatadogCore(
         if (configuration != null) {
             sessionReplayFeature = SessionReplayFeature(
                 coreFeature,
-                configuration
+                configuration,
+                this
             )
             sessionReplayFeature?.initialize(appContext, configuration)
         }

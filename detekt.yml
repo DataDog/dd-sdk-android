@@ -632,6 +632,7 @@ datadog:
       - "java.io.InputStream.read(kotlin.ByteArray, kotlin.Int, kotlin.Int):java.io.IOException"
       - "java.io.InputStream.reset():java.io.IOException"
       - "java.io.InputStream.skip(kotlin.Long):java.io.IOException"
+      - "java.io.ByteArrayOutputStream.write(kotlin.ByteArray, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "java.nio.ByteBuffer.allocate(kotlin.Int):java.lang.IllegalArgumentException"
       - "java.nio.ByteBuffer.array():java.nio.ReadOnlyBufferException,java.lang.UnsupportedOperationException"
       - "java.nio.ByteBuffer.put(kotlin.ByteArray):java.nio.BufferOverflowException,java.nio.ReadOnlyBufferException"
@@ -676,6 +677,9 @@ datadog:
       - "java.util.LinkedList.removeFirst():java.util.NoSuchElementException"
       - "java.util.LinkedList.offer(com.datadog.android.core.internal.data.upload.UploadWorker.UploadNextBatchTask):java.lang.ClassCastException,java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "java.util.Queue.offer(com.datadog.android.core.internal.data.upload.UploadWorker.UploadNextBatchTask):java.lang.ClassCastException,java.lang.NullPointerException,java.lang.IllegalArgumentException"
+      # endregion
+      # region Java Zip
+      - "java.util.zip.Deflater.deflate(kotlin.ByteArray, kotlin.Int, kotlin.Int, kotlin.Int):java.lang.IllegalArgumentException"
       # endregion
       # region Kotlin primitives
       - "kotlin.String.get(kotlin.Int):java.lang.IndexOutOfBoundsException"
@@ -964,6 +968,8 @@ datadog:
       - "java.io.InputStream.mark(kotlin.Int)"
       - "java.io.InputStream.markSupported()"
       - "java.io.StringWriter.constructor()"
+      - "java.io.ByteArrayOutputStream.constructor(kotlin.Int)"
+      - "java.io.ByteArrayOutputStream.toByteArray()"
       # endregion
       # region Java misc
       - "java.lang.Class.hashCode()"
@@ -1001,6 +1007,13 @@ datadog:
       - "java.util.WeakHashMap.remove(android.app.Activity)"
       - "java.util.WeakHashMap.remove(kotlin.Any)"
       # endregion
+      # region Java Zip
+      - "java.util.zip.Deflater.constructor(kotlin.Int)"
+      - "java.util.zip.Deflater.end()"
+      - "java.util.zip.Deflater.finish()"
+      - "java.util.zip.Deflater.reset()"
+      - "java.util.zip.Deflater.setInput(kotlin.ByteArray)"
+      # endregion
       # region Kotlin Collections
       - "kotlin.Array.all(kotlin.Function1)"
       - "kotlin.Array.contentEquals(kotlin.Array?)"
@@ -1037,6 +1050,7 @@ datadog:
       - "kotlin.collections.List.fold(kotlin.String?, kotlin.Function2)"
       - "kotlin.collections.List.fold(com.google.gson.JsonArray, kotlin.Function2)"
       - "kotlin.collections.List.forEach(kotlin.Function1)"
+      - "kotlin.collections.List.groupBy(kotlin.Function1)"
       - "kotlin.collections.List.getOrNull(kotlin.Int)"
       - "kotlin.collections.List.isEmpty()"
       - "kotlin.collections.List.isNotEmpty()"
@@ -1056,6 +1070,7 @@ datadog:
       - "kotlin.collections.List.toSet()"
       - "kotlin.collections.List.withIndex()"
       - "kotlin.collections.Map.containsKey(kotlin.String)"
+      - "kotlin.collections.Map.filter(kotlin.Function1)"
       - "kotlin.collections.Map.filterKeys(kotlin.Function1)"
       - "kotlin.collections.Map.filterValues(kotlin.Function1)"
       - "kotlin.collections.Map.forEach(kotlin.Function1)"
@@ -1102,6 +1117,7 @@ datadog:
       - "kotlin.collections.MutableList?.firstOrNull(kotlin.Function1)"
       - "kotlin.collections.MutableMap.clear()"
       - "kotlin.collections.MutableMap.forEach(kotlin.Function1)"
+      - "kotlin.collections.MutableMap?.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableMap.isEmpty()"
       - "kotlin.collections.MutableMap.isNotEmpty()"
       - "kotlin.collections.MutableMap.iterator()"
@@ -1160,6 +1176,10 @@ datadog:
       - "kotlin.Long.or(kotlin.Long)"
       - "kotlin.Number.toLong()"
       # endregion
+      # region Kotlin Pair
+      - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.model.MobileSegment, com.google.gson.JsonObject)"
+      - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.utils.SessionReplayRumContext, com.google.gson.JsonArray)"
+      # endregion
       # region Kotlin String
       - "kotlin.String.all(kotlin.Function1)"
       - "kotlin.String.contains(kotlin.Char, kotlin.Boolean)"
@@ -1212,7 +1232,9 @@ datadog:
       - "kotlinx.coroutines.flow.FlowCollector.emit(kotlin.Any?)"
       # endregion
       # region Gson
+      - "com.google.gson.JsonArray.addAll(com.google.gson.JsonArray)"
       - "com.google.gson.JsonArray.add(kotlin.String)"
+      - "com.google.gson.JsonArray.map(kotlin.Function1)"
       - "com.google.gson.JsonParseException.constructor(kotlin.Throwable)"
       # endregion
       # region Kronos
@@ -1255,6 +1277,9 @@ datadog:
       - "okhttp3.OkHttpClient.Builder.proxy(java.net.Proxy)"
       - "okhttp3.OkHttpClient.Builder.proxyAuthenticator(okhttp3.Authenticator)"
       - "okhttp3.OkHttpClient.Builder.writeTimeout(kotlin.Long, java.util.concurrent.TimeUnit)"
+      - "okhttp3.MultipartBody.parts()"
+      - "okhttp3.MultipartBody.Part.body()"
+      - "okhttp3.MultipartBody.Part.headers()"
       - "okhttp3.Request.Builder()"
       - "okhttp3.Request.Builder.addHeader(kotlin.String, kotlin.String)"
       - "okhttp3.Request.Builder.header(kotlin.String, kotlin.String)"
