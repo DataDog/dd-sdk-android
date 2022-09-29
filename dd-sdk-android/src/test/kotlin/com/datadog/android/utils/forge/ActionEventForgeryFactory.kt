@@ -88,7 +88,8 @@ internal class ActionEventForgeryFactory :
                     name = androidInfoProvider.deviceName,
                     model = androidInfoProvider.deviceModel,
                     brand = androidInfoProvider.deviceBrand,
-                    type = androidInfoProvider.deviceType.toActionSchemaType()
+                    type = androidInfoProvider.deviceType.toActionSchemaType(),
+                    architecture = androidInfoProvider.architecture
                 )
             },
             context = forge.aNullable {
