@@ -58,6 +58,8 @@ android {
         consumerProguardFiles("consumer-rules.pro")
     }
 
+    namespace = "com.datadog.android"
+
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
     }

@@ -29,6 +29,8 @@ android {
         targetSdk = AndroidConfig.TARGET_SDK
     }
 
+    namespace = "com.datadog.tools.unit"
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11

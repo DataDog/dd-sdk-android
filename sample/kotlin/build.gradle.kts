@@ -56,6 +56,8 @@ android {
         }
     }
 
+    namespace = "com.datadog.android.sample"
+
     buildFeatures {
         compose = true
     }
