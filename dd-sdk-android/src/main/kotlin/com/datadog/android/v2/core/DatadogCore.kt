@@ -224,6 +224,10 @@ internal class DatadogCore(
         contextProvider?.setFeatureContext(feature, context)
     }
 
+    override fun updateFeatureContext(feature: String, entries: Map<String, Any?>) {
+        contextProvider?.updateFeatureContext(feature, entries)
+    }
+
     /**
      * Returns all registered features.
      */

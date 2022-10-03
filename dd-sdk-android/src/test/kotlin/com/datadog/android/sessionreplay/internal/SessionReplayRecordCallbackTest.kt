@@ -38,7 +38,7 @@ internal class SessionReplayRecordCallbackTest {
         testedRecordCallback.onStartRecording()
 
         // Then
-        verify(mockDatadogCore).setFeatureContext(
+        verify(mockDatadogCore).updateFeatureContext(
             SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME,
             mapOf(SessionReplayFeature.IS_RECORDING_CONTEXT_KEY to true)
         )
@@ -50,7 +50,7 @@ internal class SessionReplayRecordCallbackTest {
         testedRecordCallback.onStopRecording()
 
         // Then
-        verify(mockDatadogCore).setFeatureContext(
+        verify(mockDatadogCore).updateFeatureContext(
             SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME,
             mapOf(SessionReplayFeature.IS_RECORDING_CONTEXT_KEY to false)
         )

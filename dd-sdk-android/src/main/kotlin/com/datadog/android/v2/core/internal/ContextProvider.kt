@@ -17,4 +17,6 @@ internal interface ContextProvider {
     val context: DatadogContext
 
     fun setFeatureContext(feature: String, context: Map<String, Any?>)
+
+    fun updateFeatureContext(feature: String, entries: Map<String, Any?>)
 }

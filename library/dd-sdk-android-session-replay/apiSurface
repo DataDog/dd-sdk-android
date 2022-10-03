@@ -7,7 +7,7 @@ interface com.datadog.android.sessionreplay.RecordCallback
 interface com.datadog.android.sessionreplay.SerializedRecordWriter
   fun write(String)
 class com.datadog.android.sessionreplay.SessionReplayLifecycleCallback : LifecycleCallback
-  constructor(com.datadog.android.sessionreplay.utils.RumContextProvider, SessionReplayPrivacy, SerializedRecordWriter, RecordCallback = NoOpRecordCallback())
+  constructor(com.datadog.android.sessionreplay.utils.RumContextProvider, SessionReplayPrivacy, SerializedRecordWriter, com.datadog.android.sessionreplay.utils.TimeProvider, RecordCallback = NoOpRecordCallback())
   override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
   override fun onActivityStarted(android.app.Activity)
   override fun onActivityResumed(android.app.Activity)
@@ -244,3 +244,5 @@ interface com.datadog.android.sessionreplay.utils.RumContextProvider
 data class com.datadog.android.sessionreplay.utils.SessionReplayRumContext
   constructor(String = NULL_UUID, String = NULL_UUID, String = NULL_UUID)
   companion object 
+interface com.datadog.android.sessionreplay.utils.TimeProvider
+  fun getDeviceTimestamp(): Long

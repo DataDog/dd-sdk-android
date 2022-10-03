@@ -28,6 +28,7 @@ import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
@@ -319,6 +320,17 @@ internal class RumViewScopeTest {
 
         // Then
         assertThat(GlobalRum.getRumContext().viewType).isEqualTo(fakeViewEventType)
+    }
+
+    @Test
+    fun `M update the feature context with the view timestamp offset W initializing`() {
+        verify(mockContextProvider).updateFeatureContext(
+            RumFeature.RUM_FEATURE_NAME,
+            mapOf(
+                RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY to
+                    fakeDatadogContext.time.serverTimeOffsetMs
+            )
+        )
     }
 
     @Test
