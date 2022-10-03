@@ -14,7 +14,7 @@ import com.datadog.android.sessionreplay.recorder.Recorder
 import com.datadog.android.sessionreplay.recorder.ScreenRecorder
 import com.datadog.android.sessionreplay.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.utils.RumContextProvider
-import com.datadog.android.sessionreplay.utils.SessionReplayTimeProvider
+import com.datadog.android.sessionreplay.utils.TimeProvider
 import com.datadog.android.sessionreplay.writer.RecordWriter
 import java.util.WeakHashMap
 import java.util.concurrent.LinkedBlockingDeque
@@ -29,10 +29,9 @@ class SessionReplayLifecycleCallback(
     rumContextProvider: RumContextProvider,
     privacy: SessionReplayPrivacy,
     serializedRecordWriter: SerializedRecordWriter,
+    timeProvider: TimeProvider,
     private val recordCallback: RecordCallback = NoOpRecordCallback()
 ) : LifecycleCallback {
-
-    private val timeProvider = SessionReplayTimeProvider()
 
     @Suppress("UnsafeThirdPartyFunctionCall") // workQueue can't be null
     private val processorExecutorService = ThreadPoolExecutor(

@@ -20,7 +20,7 @@ internal class SessionReplayRecordCallback(private val datadogCore: SDKCore) : R
 
     private fun updateRecording(isRecording: Boolean) {
         val featureContext = mapOf(SessionReplayFeature.IS_RECORDING_CONTEXT_KEY to isRecording)
-        datadogCore.setFeatureContext(
+        datadogCore.updateFeatureContext(
             SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME,
             featureContext
         )

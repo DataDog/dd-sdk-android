@@ -195,6 +195,25 @@ internal class DatadogCoreTest {
     }
 
     @Test
+    fun `𝕄 update feature context 𝕎 updateFeatureContext() is called`(
+        @StringForgery feature: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
+        ) context: Map<String, String>
+    ) {
+        // Given
+        val mockContextProvider = mock<ContextProvider>()
+        testedCore.coreFeature.contextProvider = mockContextProvider
+
+        // When
+        testedCore.updateFeatureContext(feature, context)
+
+        // Then
+        verify(mockContextProvider).updateFeatureContext(feature, context)
+    }
+
+    @Test
     fun `𝕄 clear data in all features 𝕎 clearAllData()`() {
         // Given
         testedCore.rumFeature = mock()

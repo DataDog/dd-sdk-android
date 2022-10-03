@@ -1765,6 +1765,7 @@ interface com.datadog.android.v2.api.SdkCore
   fun clearAllData()
   fun flushStoredData()
   fun setFeatureContext(String, Map<String, Any?>)
+  fun updateFeatureContext(String, Map<String, Any?>)
 enum com.datadog.android.v2.api.SdkEndpoint
   - US1
   - US3

@@ -10,6 +10,7 @@ import android.app.Activity
 import android.app.Application
 import com.datadog.android.sessionreplay.recorder.Recorder
 import com.datadog.android.sessionreplay.utils.RumContextProvider
+import com.datadog.android.sessionreplay.utils.TimeProvider
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -48,12 +49,16 @@ class SessionReplayLifecycleCallbackTest {
     @Mock
     private lateinit var mockRecordCallback: RecordCallback
 
+    @Mock
+    private lateinit var mockTimeProvider: TimeProvider
+
     @BeforeEach
     fun `set up`() {
         testedCallback = SessionReplayLifecycleCallback(
             mockRumContextProvider,
             fakePrivacy,
             mockSerializedRecordWriter,
+            mockTimeProvider,
             mockRecordCallback
         )
         testedCallback.recorder = mockRecoder
