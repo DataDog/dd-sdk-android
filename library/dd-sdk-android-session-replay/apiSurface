@@ -22,7 +22,7 @@ enum com.datadog.android.sessionreplay.SessionReplayPrivacy
   - ALLOW_ALL
   - MASK_ALL
 data class com.datadog.android.sessionreplay.model.MobileSegment
-  constructor(Application, Session, View, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Boolean? = null, Source, kotlin.collections.List<MobileRecord>)
+  constructor(Application, Session, View, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long? = null, kotlin.Boolean? = null, Source, kotlin.collections.List<MobileRecord>)
   fun toJson(): com.google.gson.JsonElement
   companion object 
     fun fromJson(kotlin.String): MobileSegment
@@ -225,6 +225,20 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Vertical
+class com.datadog.android.sessionreplay.net.BatchesToSegmentsMapper
+  fun map(List<ByteArray>): List<Pair<com.datadog.android.sessionreplay.model.MobileSegment, com.google.gson.JsonObject>>
+  companion object 
+class com.datadog.android.sessionreplay.net.BytesCompressor
+  fun compressBytes(ByteArray): ByteArray
+  companion object 
+data class com.datadog.android.sessionreplay.processor.EnrichedRecord
+  constructor(String, String, String, List<com.datadog.android.sessionreplay.model.MobileSegment.MobileRecord>)
+  fun toJson(): String
+  companion object 
+    const val APPLICATION_ID_KEY: String
+    const val SESSION_ID_KEY: String
+    const val VIEW_ID_KEY: String
+    const val RECORDS_KEY: String
 interface com.datadog.android.sessionreplay.utils.RumContextProvider
   fun getRumContext(): SessionReplayRumContext
 data class com.datadog.android.sessionreplay.utils.SessionReplayRumContext

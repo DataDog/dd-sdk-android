@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "_common-wireframe-schema.json",
+  "$id": "session-replay/mobile/_common-wireframe-schema.json",
   "title": "CommonWireframe",
   "type": "object",
   "description": "Schema of common properties for Wireframe events type.",

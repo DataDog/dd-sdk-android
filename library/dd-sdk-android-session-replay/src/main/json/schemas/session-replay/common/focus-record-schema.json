@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "focus-record-schema.json",
+  "$id": "session-replay/common/focus-record-schema.json",
   "title": "FocusRecord",
   "type": "object",
   "description": "Schema of a Record type which contains focus information.",

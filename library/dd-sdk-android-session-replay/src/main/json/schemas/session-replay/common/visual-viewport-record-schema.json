@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "visual-viewport-record-schema.json",
+  "$id": "session-replay/common/visual-viewport-record-schema.json",
   "title": "VisualViewportRecord",
   "type": "object",
   "description": "Schema of a Record which signifies that the viewport properties have changed.",

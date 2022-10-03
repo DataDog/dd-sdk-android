@@ -8,6 +8,7 @@ package com.datadog.android.core.internal.net
 
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -22,6 +23,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.Locale
 import okhttp3.Interceptor
 import okhttp3.MediaType
+import okhttp3.MultipartBody
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -203,6 +205,51 @@ internal class CurlInterceptorTest {
         assertThat(response).isSameAs(fakeResponse)
         verify(mockOutput)
             .invoke("curl -X POST -H \"Content-Type:$type/$subtype\" -d '$fakeBody' \"$fakeUrl\"")
+    }
+
+    @Test
+    fun `M output curl command W intercept() {POST, multipart body}`(
+        @IntForgery(200, 600) statusCode: Int,
+        @StringForgery type: String,
+        @StringForgery subtype: String,
+        @StringForgery fakeFormKey: String,
+        @StringForgery fakeFormKeyValue: String
+    ) {
+        // Given
+        testedInterceptor = CurlInterceptor(true, mockOutput)
+        fakeRequest = Request.Builder()
+            .url(fakeUrl)
+            .post(
+                MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart(fakeFormKey, fakeFormKeyValue)
+                    .addPart(
+                        RequestBody.create(
+                            MediaType.parse("$type/$subtype"),
+                            fakeBody.toByteArray()
+                        )
+                    )
+                    .build()
+            )
+            .build()
+        fakeResponse = forgeResponse(statusCode)
+        stubChain()
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockChain).proceed(fakeRequest)
+        assertThat(response).isSameAs(fakeResponse)
+        val fakeEscapedUrl = fakeUrl
+            .replace("/", "\\/")
+            .replace("?", "\\?")
+        val expectedOutput = "curl -X POST -H \"Content-Type:multipart\\/form-data; " +
+            "boundary=(.*) -H \"content-disposition:\\[form\\-data; name=\"$fakeFormKey\"]\" " +
+            "-d '$fakeFormKeyValue' -d '$fakeBody' \"$fakeEscapedUrl\""
+        val argumentCaptor = argumentCaptor<String>()
+        verify(mockOutput).invoke(argumentCaptor.capture())
+        assertThat(argumentCaptor.firstValue).matches(expectedOutput)
     }
 
     // region Internal
