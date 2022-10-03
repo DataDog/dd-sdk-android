@@ -234,5 +234,6 @@ internal class RumFeature(
         private const val VITAL_UPDATE_PERIOD_MS = 500L
 
         internal const val RUM_FEATURE_NAME = "rum"
+        internal const val VIEW_TIMESTAMP_OFFSET_IN_MS_KEY = "view_timestamp_offset"
     }
 }

@@ -83,6 +83,12 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
         coreFeature.featuresContext[feature] = context
     }
 
+    override fun updateFeatureContext(feature: String, entries: Map<String, Any?>) {
+        val featureContext = coreFeature.featuresContext[feature]?.toMutableMap() ?: mutableMapOf()
+        featureContext.putAll(entries)
+        coreFeature.featuresContext[feature] = featureContext
+    }
+
     private fun NetworkInfoV1.Connectivity.asV2(): NetworkInfo.Connectivity {
         return when (this) {
             NetworkInfoV1.Connectivity.NETWORK_NOT_CONNECTED ->

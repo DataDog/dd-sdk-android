@@ -109,4 +109,12 @@ interface SDKCore {
      * @param context Context to set.
      */
     fun setFeatureContext(feature: String, context: Map<String, Any?>)
+
+    /**
+     * Updates the context if exists with the new entries. If there is no context yet for the
+     * provided [feature] name, a new one will be created.
+     *
+     * @param entries Entries to add to the existing or new context.
+     */
+    fun updateFeatureContext(feature: String, entries: Map<String, Any?>)
 }

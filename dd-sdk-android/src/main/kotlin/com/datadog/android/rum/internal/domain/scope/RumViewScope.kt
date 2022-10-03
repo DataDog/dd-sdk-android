@@ -26,6 +26,7 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.FeaturesContextResolver
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
@@ -135,6 +136,7 @@ internal open class RumViewScope(
     // endregion
 
     init {
+        updateOffsetInFeatureContext()
         GlobalRum.updateRumContext(getRumContext())
         attributes.putAll(GlobalRum.globalAttributes)
         cpuVitalMonitor.register(cpuVitalListener)
@@ -855,6 +857,13 @@ internal open class RumViewScope(
         FOREGROUND,
         BACKGROUND,
         APPLICATION_LAUNCH
+    }
+
+    private fun updateOffsetInFeatureContext() {
+        contextProvider.updateFeatureContext(
+            RumFeature.RUM_FEATURE_NAME,
+            mapOf(RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY to serverTimeOffsetInMs)
+        )
     }
 
     // endregion

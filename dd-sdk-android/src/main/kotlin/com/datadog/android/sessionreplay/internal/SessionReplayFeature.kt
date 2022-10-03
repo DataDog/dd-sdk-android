@@ -19,6 +19,7 @@ import com.datadog.android.sessionreplay.internal.domain.SessionReplayRecordPers
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.domain.SessionReplaySerializedRecordWriter
 import com.datadog.android.sessionreplay.internal.net.SessionReplayOkHttpUploader
+import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SDKCore
 import java.util.concurrent.atomic.AtomicBoolean
@@ -33,6 +34,7 @@ internal class SessionReplayFeature(
             SessionReplayRumContextProvider(),
             configuration.privacy,
             SessionReplaySerializedRecordWriter(it.getWriter()),
+            SessionReplayTimeProvider(coreFeature.contextProvider),
             SessionReplayRecordCallback(sdkCore)
         )
     }
