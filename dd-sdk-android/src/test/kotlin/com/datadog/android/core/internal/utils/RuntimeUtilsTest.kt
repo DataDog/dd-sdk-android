@@ -10,7 +10,7 @@ import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.log.internal.logger.ConditionalLogHandler
 import com.datadog.android.utils.config.LoggerTestConfiguration
-import com.datadog.android.v2.api.SDKCore
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -54,7 +54,7 @@ internal class RuntimeUtilsTest {
         @IntForgery(min = Log.VERBOSE, max = (Log.ASSERT + 1)) level: Int
     ) {
         // Given
-        val mockSdkCore: SDKCore = mock()
+        val mockSdkCore: SdkCore = mock()
         whenever(mockSdkCore.getVerbosity()) doReturn level
 
         // When

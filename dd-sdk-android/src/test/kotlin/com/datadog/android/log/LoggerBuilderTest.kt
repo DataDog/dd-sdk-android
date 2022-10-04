@@ -22,7 +22,7 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.NoOpSDKCore
+import com.datadog.android.v2.api.NoOpSdkCore
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -66,17 +66,17 @@ internal class LoggerBuilderTest {
         logsFeature.initialize(appContext.mockInstance, fakeConfig)
         whenever(mockCore.logsFeature) doReturn logsFeature
 
-        Datadog.globalSDKCore = mockCore
+        Datadog.globalSdkCore = mockCore
     }
 
     @AfterEach
     fun `tear down`() {
-        Datadog.globalSDKCore = NoOpSDKCore()
+        Datadog.globalSdkCore = NoOpSdkCore()
     }
 
     @Test
     fun `builder returns no op if SDK is not initialized`() {
-        Datadog.globalSDKCore = NoOpSDKCore()
+        Datadog.globalSdkCore = NoOpSdkCore()
 
         val testedLogger = Logger.Builder().build()
 
@@ -97,7 +97,7 @@ internal class LoggerBuilderTest {
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
         assertThat(handler.writer).isSameAs(
-            (Datadog.globalSDKCore as DatadogCore).logsFeature!!.persistenceStrategy.getWriter()
+            (Datadog.globalSdkCore as DatadogCore).logsFeature!!.persistenceStrategy.getWriter()
         )
         assertThat(handler.bundleWithTraces).isTrue()
         assertThat(handler.sampler).isInstanceOf(RateBasedSampler::class.java)

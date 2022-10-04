@@ -21,7 +21,7 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.NoOpSDKCore
+import com.datadog.android.v2.api.NoOpSdkCore
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -70,14 +70,14 @@ internal class RumMonitorBuilderTest {
         rumFeature.initialize(appContext.mockInstance, fakeConfig)
         whenever(mockCore.rumFeature) doReturn rumFeature
 
-        Datadog.globalSDKCore = mockCore
+        Datadog.globalSdkCore = mockCore
 
         testedBuilder = RumMonitor.Builder()
     }
 
     @AfterEach
     fun `tear down`() {
-        Datadog.globalSDKCore = NoOpSDKCore()
+        Datadog.globalSdkCore = NoOpSdkCore()
     }
 
     @Test
@@ -176,7 +176,7 @@ internal class RumMonitorBuilderTest {
     @Test
     fun `𝕄 builds nothing 𝕎 build() and RumFeature is not initialized`() {
         // Given
-        Datadog.globalSDKCore = NoOpSDKCore()
+        Datadog.globalSdkCore = NoOpSdkCore()
 
         // When
         val monitor = testedBuilder.build()

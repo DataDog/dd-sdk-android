@@ -36,7 +36,8 @@ internal class TracingFeature(
             coreFeature.envName,
             sdkLogger,
             configuration.spanEventMapper,
-            coreFeature.localDataEncryption
+            coreFeature.localDataEncryption,
+            coreFeature.buildFilePersistenceConfig()
         )
     }
 

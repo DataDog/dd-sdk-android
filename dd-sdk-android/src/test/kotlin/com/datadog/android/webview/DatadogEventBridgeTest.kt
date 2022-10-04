@@ -16,7 +16,7 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.NoOpSDKCore
+import com.datadog.android.v2.api.NoOpSdkCore
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
@@ -81,14 +81,14 @@ internal class DatadogEventBridgeTest {
             mockWebViewLogsPersistenceStrategy
         whenever(mockCore.webViewRumFeature) doReturn mockWebViewRumFeature
         whenever(mockCore.webViewLogsFeature) doReturn mockWebViewLogsFeature
-        Datadog.globalSDKCore = mockCore
+        Datadog.globalSdkCore = mockCore
 
         testedDatadogEventBridge = DatadogEventBridge(mockWebViewEventConsumer, emptyList())
     }
 
     @AfterEach
     fun `tear down`() {
-        Datadog.globalSDKCore = NoOpSDKCore()
+        Datadog.globalSdkCore = NoOpSdkCore()
     }
 
     @Test

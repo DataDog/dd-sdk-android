@@ -16,7 +16,7 @@ import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.NoOpSDKCore
+import com.datadog.android.v2.api.NoOpSdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.DatadogFeature
@@ -111,7 +111,7 @@ internal class UploadWorkerTest {
     @BeforeEach
     fun `set up`() {
         Datadog.initialized.set(true)
-        Datadog.globalSDKCore = mockGlobalSdkCore
+        Datadog.globalSdkCore = mockGlobalSdkCore
 
         whenever(mockGlobalSdkCore.contextProvider) doReturn mockContextProvider
         whenever(mockContextProvider.context) doReturn fakeContext
@@ -131,7 +131,7 @@ internal class UploadWorkerTest {
 
     @AfterEach
     fun `tear down`() {
-        Datadog.globalSDKCore = NoOpSDKCore()
+        Datadog.globalSdkCore = NoOpSdkCore()
         Datadog.initialized.set(false)
     }
 

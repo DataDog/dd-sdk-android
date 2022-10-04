@@ -237,7 +237,7 @@ internal constructor(
 
     @Synchronized
     private fun resolveTracer(): Tracer? {
-        val tracingFeature = (Datadog.globalSDKCore as? DatadogCore)?.tracingFeature
+        val tracingFeature = (Datadog.globalSdkCore as? DatadogCore)?.tracingFeature
         return if (tracingFeature == null) {
             devLogger.w(WARNING_TRACING_DISABLED)
             null
@@ -410,7 +410,7 @@ internal constructor(
         @Suppress("FunctionMaxLength")
         internal fun getGlobalFirstPartyHostDetector(): FirstPartyHostDetector {
             return (
-                (Datadog.globalSDKCore as? DatadogCore)
+                (Datadog.globalSdkCore as? DatadogCore)
                     ?.coreFeature
                     ?.firstPartyHostDetector
                     ?: FirstPartyHostDetector(emptyList())

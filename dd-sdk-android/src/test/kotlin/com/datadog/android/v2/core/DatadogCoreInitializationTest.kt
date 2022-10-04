@@ -13,7 +13,11 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.error.internal.CrashReportsFeature
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
@@ -21,6 +25,8 @@ import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.CustomAttributes
+import com.datadog.android.webview.internal.log.WebViewLogsFeature
+import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -108,26 +114,38 @@ internal class DatadogCoreInitializationTest {
         if (logsEnabled) {
             assertThat(testedCore.logsFeature!!.initialized.get()).isTrue()
             assertThat(testedCore.webViewLogsFeature!!.initialized.get()).isTrue()
+            assertThat(testedCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)).isNotNull
+            assertThat(testedCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)).isNotNull
         } else {
             assertThat(testedCore.logsFeature).isNull()
             assertThat(testedCore.webViewLogsFeature).isNull()
+            assertThat(testedCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)).isNull()
+            assertThat(testedCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)).isNull()
         }
         if (tracingEnabled) {
             assertThat(testedCore.tracingFeature!!.initialized.get()).isTrue()
+            assertThat(testedCore.getFeature(TracingFeature.TRACING_FEATURE_NAME)).isNotNull
         } else {
             assertThat(testedCore.tracingFeature).isNull()
+            assertThat(testedCore.getFeature(TracingFeature.TRACING_FEATURE_NAME)).isNull()
         }
         if (crashReportEnabled) {
             assertThat(testedCore.crashReportsFeature!!.initialized.get()).isTrue()
+            assertThat(testedCore.getFeature(CrashReportsFeature.CRASH_FEATURE_NAME)).isNotNull
         } else {
             assertThat(testedCore.crashReportsFeature).isNull()
+            assertThat(testedCore.getFeature(CrashReportsFeature.CRASH_FEATURE_NAME)).isNull()
         }
         if (rumEnabled) {
             assertThat(testedCore.rumFeature!!.initialized.get()).isTrue()
             assertThat(testedCore.webViewRumFeature!!.initialized.get()).isTrue()
+            assertThat(testedCore.getFeature(RumFeature.RUM_FEATURE_NAME)).isNotNull
+            assertThat(testedCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)).isNotNull
         } else {
             assertThat(testedCore.rumFeature).isNull()
             assertThat(testedCore.webViewRumFeature).isNull()
+            assertThat(testedCore.getFeature(RumFeature.RUM_FEATURE_NAME)).isNull()
+            assertThat(testedCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)).isNull()
         }
     }
 

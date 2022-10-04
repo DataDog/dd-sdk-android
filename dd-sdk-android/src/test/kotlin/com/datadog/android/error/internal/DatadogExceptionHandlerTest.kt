@@ -225,7 +225,7 @@ internal class DatadogExceptionHandlerTest {
     @Test
     fun `M wait for the executor to idle W exception caught`() {
         val mockScheduledThreadExecutor: ThreadPoolExecutor = mock()
-        (Datadog.globalSDKCore as DatadogCore).coreFeature
+        (Datadog.globalSdkCore as DatadogCore).coreFeature
             .persistenceExecutorService = mockScheduledThreadExecutor
         Thread.setDefaultUncaughtExceptionHandler(null)
         testedHandler.register()
@@ -247,7 +247,7 @@ internal class DatadogExceptionHandlerTest {
             whenever(it.taskCount).thenReturn(2)
             whenever(it.completedTaskCount).thenReturn(0)
         }
-        (Datadog.globalSDKCore as DatadogCore).coreFeature
+        (Datadog.globalSdkCore as DatadogCore).coreFeature
             .persistenceExecutorService = mockScheduledThreadExecutor
         Thread.setDefaultUncaughtExceptionHandler(null)
         testedHandler.register()

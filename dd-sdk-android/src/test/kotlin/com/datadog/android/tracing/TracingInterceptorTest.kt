@@ -15,7 +15,7 @@ import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.NoOpSDKCore
+import com.datadog.android.v2.api.NoOpSdkCore
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
@@ -168,7 +168,7 @@ internal open class TracingInterceptorTest {
         fakeRequest = forgeRequest(forge)
         val mockCore = mock<DatadogCore>()
         whenever(mockCore.tracingFeature) doReturn mock()
-        Datadog.globalSDKCore = mockCore
+        Datadog.globalSdkCore = mockCore
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) {
             mockLocalTracer
         }
@@ -196,7 +196,7 @@ internal open class TracingInterceptorTest {
 
     @AfterEach
     fun `tear down`() {
-        Datadog.globalSDKCore = NoOpSDKCore()
+        Datadog.globalSdkCore = NoOpSdkCore()
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
     }
 
@@ -672,7 +672,7 @@ internal open class TracingInterceptorTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        Datadog.globalSDKCore = NoOpSDKCore()
+        Datadog.globalSdkCore = NoOpSdkCore()
         whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 

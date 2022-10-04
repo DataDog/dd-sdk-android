@@ -1038,6 +1038,7 @@ datadog:
       - "kotlin.collections.Map.mapNotNull(kotlin.Function1)"
       - "kotlin.collections.Map.mapValues(kotlin.Function1)"
       - "kotlin.collections.Map.toMutableMap()"
+      - "kotlin.collections.MutableCollection.toList()"
       - "kotlin.collections.MutableIterator.hasNext()"
       - "kotlin.collections.MutableList.add(com.datadog.android.core.internal.persistence.Batch)"
       - "kotlin.collections.MutableList.add(com.datadog.android.plugin.DatadogPlugin)"

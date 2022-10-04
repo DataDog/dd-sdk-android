@@ -36,9 +36,9 @@ internal class UploadWorker(
             return Result.success()
         }
 
-        val globalSDKCore: DatadogCore? = (Datadog.globalSDKCore as? DatadogCore)
+        val globalSdkCore: DatadogCore? = (Datadog.globalSdkCore as? DatadogCore)
 
-        if (globalSDKCore != null) {
+        if (globalSdkCore != null) {
             // the idea behind upload is the following:
             // 1. we shuffle features list to randomize initial upload task sequence. It is done to
             // avoid the possible bottleneck when some feature has big batches which are uploaded
@@ -47,13 +47,13 @@ internal class UploadWorker(
             // be uploaded we put retry task to the end of queue, so that batches of other features
             // have a chance to go.
             val features =
-                globalSDKCore.getAllFeatures().mapNotNull { it as? DatadogFeature }.shuffled()
+                globalSdkCore.getAllFeatures().mapNotNull { it as? DatadogFeature }.shuffled()
 
             val tasksQueue = LinkedList<UploadNextBatchTask>()
 
             features.forEach {
                 @Suppress("UnsafeThirdPartyFunctionCall") // safe to add
-                tasksQueue.offer(UploadNextBatchTask(tasksQueue, globalSDKCore, it))
+                tasksQueue.offer(UploadNextBatchTask(tasksQueue, globalSdkCore, it))
             }
 
             while (!tasksQueue.isEmpty()) {

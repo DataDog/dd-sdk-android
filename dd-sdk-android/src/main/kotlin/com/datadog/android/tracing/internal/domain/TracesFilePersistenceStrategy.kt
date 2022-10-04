@@ -9,6 +9,7 @@ package com.datadog.android.tracing.internal.domain
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.FileMover
+import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
@@ -36,7 +37,8 @@ internal class TracesFilePersistenceStrategy(
     envName: String,
     internalLogger: Logger,
     spanEventMapper: SpanEventMapper,
-    localDataEncryption: Encryption?
+    localDataEncryption: Encryption?,
+    filePersistenceConfig: FilePersistenceConfig
 ) : BatchFilePersistenceStrategy<DDSpan>(
     contextProvider,
     FeatureFileOrchestrator(
@@ -58,5 +60,6 @@ internal class TracesFilePersistenceStrategy(
     internalLogger,
     BatchFileReaderWriter.create(internalLogger, localDataEncryption),
     FileReaderWriter.create(internalLogger, localDataEncryption),
-    FileMover(internalLogger)
+    FileMover(internalLogger),
+    filePersistenceConfig
 )

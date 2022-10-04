@@ -9,14 +9,14 @@ package com.datadog.android.v2.api
 /**
  * Contains the storage configuration for an [FeatureScope] instance.
  * @property maxItemSize the maximum size (in bytes) for a single item in a batch
- * @property maxItemPerBatch the maximum number of individual items in a batch
+ * @property maxItemsPerBatch the maximum number of individual items in a batch
  * @property maxBatchSize the maximum size (in bytes) of a complete batch
  * @property oldBatchThreshold the duration (in milliseconds) after which a batch is considered too
  * old to be uploaded (usually because it'll be discarded at ingestion by the backend)
  */
 data class FeatureStorageConfiguration(
-    val maxItemSize: Int,
-    val maxItemPerBatch: Int,
-    val maxBatchSize: Int,
+    val maxItemSize: Long,
+    val maxItemsPerBatch: Int,
+    val maxBatchSize: Long,
     val oldBatchThreshold: Long
 )

@@ -20,7 +20,7 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.NoOpSDKCore
+import com.datadog.android.v2.api.NoOpSdkCore
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.tools.unit.ObjectTest
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -94,14 +94,14 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
 
         val mockCore = mock<DatadogCore>()
         whenever(mockCore.rumFeature) doReturn mock<RumFeature>()
-        Datadog.globalSDKCore = mockCore
+        Datadog.globalSdkCore = mockCore
 
         testedStrategy = FragmentViewTrackingStrategy(true)
     }
 
     @AfterEach
     fun `tear down`() {
-        Datadog.globalSDKCore = NoOpSDKCore()
+        Datadog.globalSdkCore = NoOpSdkCore()
     }
 
     @Test

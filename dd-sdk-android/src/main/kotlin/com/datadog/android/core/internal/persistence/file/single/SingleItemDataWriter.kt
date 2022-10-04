@@ -22,8 +22,7 @@ internal open class SingleItemDataWriter<T : Any>(
     internal val serializer: Serializer<T>,
     internal val fileWriter: FileWriter,
     internal val internalLogger: Logger,
-    // TODO RUMM-0000 don't use default value
-    internal val filePersistenceConfig: FilePersistenceConfig = FilePersistenceConfig()
+    internal val filePersistenceConfig: FilePersistenceConfig
 ) : DataWriter<T> {
 
     // region DataWriter

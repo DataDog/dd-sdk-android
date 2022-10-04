@@ -60,8 +60,6 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class DatadogCoreTest {
 
-    // TODO RUMM-2206 handle all commented lines on this class
-
     lateinit var testedCore: DatadogCore
 
     @Forgery

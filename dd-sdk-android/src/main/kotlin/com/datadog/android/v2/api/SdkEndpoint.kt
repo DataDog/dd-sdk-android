@@ -9,7 +9,7 @@ package com.datadog.android.v2.api
 /**
  * One of Datadog's official endpoints, related to our existing datacenters.
  */
-enum class SDKEndpoint {
+enum class SdkEndpoint {
     US1,
     US3,
     US5,

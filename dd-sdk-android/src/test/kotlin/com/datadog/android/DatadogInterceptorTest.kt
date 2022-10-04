@@ -20,7 +20,7 @@ import com.datadog.android.tracing.TracingInterceptorNotSendingSpanTest
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
-import com.datadog.android.v2.api.NoOpSDKCore
+import com.datadog.android.v2.api.NoOpSdkCore
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -75,7 +75,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         tracedHosts: List<String>,
         factory: () -> Tracer
     ): TracingInterceptor {
-        whenever((Datadog.globalSDKCore as DatadogCore).rumFeature) doReturn
+        whenever((Datadog.globalSdkCore as DatadogCore).rumFeature) doReturn
             RumFeature(coreFeature.mockInstance)
         return DatadogInterceptor(
             tracedHosts = tracedHosts,
@@ -107,7 +107,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     @AfterEach
     override fun `tear down`() {
         super.`tear down`()
-        Datadog.globalSDKCore = NoOpSDKCore()
+        Datadog.globalSdkCore = NoOpSdkCore()
     }
 
     @Test

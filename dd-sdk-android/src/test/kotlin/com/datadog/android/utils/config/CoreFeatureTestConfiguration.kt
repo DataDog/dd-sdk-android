@@ -9,10 +9,12 @@ package com.datadog.android.utils.config
 import android.app.ActivityManager
 import android.content.Context
 import com.datadog.android.DatadogSite
+import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.AppVersionProvider
@@ -52,6 +54,8 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var fakeSite: DatadogSite
     var fakeProcessImportance: Int = 0
     lateinit var fakeFeaturesContext: MutableMap<String, Map<String, Any?>>
+    lateinit var fakeFilePersistenceConfig: FilePersistenceConfig
+    lateinit var fakeBatchSize: BatchSize
 
     lateinit var mockUploadExecutor: ScheduledThreadPoolExecutor
     lateinit var mockOkHttpClient: OkHttpClient
@@ -103,6 +107,8 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         fakeFeaturesContext = forge.aMap(size = 2) {
             forge.anAlphabeticalString() to forge.exhaustiveAttributes()
         }.toMutableMap()
+        fakeFilePersistenceConfig = forge.getForgery()
+        fakeBatchSize = forge.aValueFrom(BatchSize::class.java)
     }
 
     private fun createMocks() {
@@ -156,6 +162,10 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         whenever(mockInstance.trackingConsentProvider) doReturn mockTrackingConsentProvider
         whenever(mockInstance.androidInfoProvider) doReturn mockAndroidInfoProvider
         whenever(mockInstance.contextProvider) doReturn mockContextProvider
+
+        whenever(mockInstance.buildFilePersistenceConfig()) doReturn fakeFilePersistenceConfig.copy(
+            recentDelayMs = fakeBatchSize.windowDurationMs
+        )
     }
 
     // endregion

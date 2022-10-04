@@ -195,7 +195,7 @@ internal constructor(internal var handler: LogHandler) {
          * Builds a [Logger] based on the current state of this Builder.
          */
         fun build(): Logger {
-            val datadogCore = Datadog.globalSDKCore as? DatadogCore
+            val datadogCore = Datadog.globalSdkCore as? DatadogCore
             val coreFeature = datadogCore?.coreFeature
             val logsFeature = datadogCore?.logsFeature
             val handler = when {

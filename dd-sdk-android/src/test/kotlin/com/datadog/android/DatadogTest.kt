@@ -21,7 +21,7 @@ import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.NoOpSDKCore
+import com.datadog.android.v2.api.NoOpSdkCore
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.internal.HashGenerator
 import com.datadog.android.v2.core.internal.Sha256HashGenerator
@@ -113,7 +113,7 @@ internal class DatadogTest {
     ) {
         // Given
         val mockCore = mock<DatadogCore>()
-        Datadog.globalSDKCore = mockCore
+        Datadog.globalSdkCore = mockCore
 
         // When
         Datadog.setUserInfo(id, name, email)
@@ -144,7 +144,7 @@ internal class DatadogTest {
     ) {
         // Given
         val mockCore = mock<DatadogCore>()
-        Datadog.globalSDKCore = mockCore
+        Datadog.globalSdkCore = mockCore
 
         // When
         Datadog.setUserInfo(id, name, email)
@@ -241,7 +241,7 @@ internal class DatadogTest {
 
         // Then
         assertThat(Datadog.isInitialized()).isTrue()
-        assertThat((Datadog.globalSDKCore as DatadogCore).instanceId).isEqualTo(fakeHash)
+        assertThat((Datadog.globalSdkCore as DatadogCore).instanceId).isEqualTo(fakeHash)
     }
 
     @Test
@@ -263,7 +263,7 @@ internal class DatadogTest {
 
         // Then
         assertThat(Datadog.isInitialized()).isFalse()
-        assertThat(Datadog.globalSDKCore).isInstanceOf(NoOpSDKCore::class.java)
+        assertThat(Datadog.globalSdkCore).isInstanceOf(NoOpSdkCore::class.java)
         verify(logger.mockDevLogHandler).handleLog(
             AndroidLog.ERROR,
             Datadog.CANNOT_CREATE_SDK_INSTANCE_ID_ERROR
@@ -285,7 +285,7 @@ internal class DatadogTest {
 
         // When
         Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
-        (Datadog.globalSDKCore as DatadogCore).rumFeature = mockRumFeature
+        (Datadog.globalSdkCore as DatadogCore).rumFeature = mockRumFeature
         Datadog.enableRumDebugging(true)
 
         // Then
@@ -307,7 +307,7 @@ internal class DatadogTest {
 
         // When
         Datadog.initialize(appContext.mockInstance, credentials, config, TrackingConsent.GRANTED)
-        (Datadog.globalSDKCore as DatadogCore).rumFeature = mockRumFeature
+        (Datadog.globalSdkCore as DatadogCore).rumFeature = mockRumFeature
         Datadog.enableRumDebugging(false)
 
         // Then
@@ -318,7 +318,7 @@ internal class DatadogTest {
     fun `𝕄 clear data in all features 𝕎 clearAllData()`() {
         // Given
         val mockCore = mock<DatadogCore>()
-        Datadog.globalSDKCore = mockCore
+        Datadog.globalSdkCore = mockCore
 
         // When
         Datadog.clearAllData()

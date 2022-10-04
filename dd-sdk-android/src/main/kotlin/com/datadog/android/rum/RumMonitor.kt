@@ -280,7 +280,7 @@ interface RumMonitor {
          * Builds a [RumMonitor] based on the current state of this Builder.
          */
         fun build(): RumMonitor {
-            val datadogCore = Datadog.globalSDKCore as? DatadogCore
+            val datadogCore = Datadog.globalSdkCore as? DatadogCore
             val coreFeature = datadogCore?.coreFeature
             val contextProvider = datadogCore?.contextProvider
             val rumFeature = datadogCore?.rumFeature as? RumFeature
