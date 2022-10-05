@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal
 
-import com.datadog.android.v2.api.SDKCore
+import com.datadog.android.v2.api.SdkCore
 import com.nhaarman.mockitokotlin2.verify
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,7 +24,7 @@ import org.mockito.quality.Strictness
 internal class SessionReplayRecordCallbackTest {
 
     @Mock
-    lateinit var mockDatadogCore: SDKCore
+    lateinit var mockDatadogCore: SdkCore
     lateinit var testedRecordCallback: SessionReplayRecordCallback
 
     @BeforeEach

@@ -21,13 +21,13 @@ import com.datadog.android.sessionreplay.internal.domain.SessionReplaySerialized
 import com.datadog.android.sessionreplay.internal.net.SessionReplayOkHttpUploader
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
 import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.api.SDKCore
+import com.datadog.android.v2.api.SdkCore
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class SessionReplayFeature(
     coreFeature: CoreFeature,
     private val configuration: Configuration.Feature.SessionReplay,
-    sdkCore: SDKCore,
+    sdkCore: SdkCore,
     private val sessionReplayCallbackProvider: (PersistenceStrategy<String>) ->
     LifecycleCallback = {
         SessionReplayLifecycleCallback(
@@ -72,7 +72,8 @@ internal class SessionReplayFeature(
             coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
             sdkLogger,
-            coreFeature.localDataEncryption
+            coreFeature.localDataEncryption,
+            coreFeature.buildFilePersistenceConfig()
         )
     }
 

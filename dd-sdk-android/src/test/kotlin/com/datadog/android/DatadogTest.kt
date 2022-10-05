@@ -339,15 +339,15 @@ internal class DatadogTest {
         val mockCore = mock<DatadogCore> {
             whenever(it.sessionReplayFeature).thenReturn(mockSessionReplayFeature)
         }
-        val previousCore = Datadog.globalSDKCore
-        Datadog.globalSDKCore = mockCore
+        val previousCore = Datadog.globalSdkCore
+        Datadog.globalSdkCore = mockCore
 
         // When
         Datadog.startSessionRecording()
 
         // Then
         verify(mockSessionReplayFeature).startRecording()
-        Datadog.globalSDKCore = previousCore
+        Datadog.globalSdkCore = previousCore
     }
 
     @Test
@@ -357,15 +357,15 @@ internal class DatadogTest {
         val mockCore = mock<DatadogCore> {
             whenever(it.sessionReplayFeature).thenReturn(mockSessionReplayFeature)
         }
-        val previousCore = Datadog.globalSDKCore
-        Datadog.globalSDKCore = mockCore
+        val previousCore = Datadog.globalSdkCore
+        Datadog.globalSdkCore = mockCore
 
         // When
         Datadog.stopSessionRecording()
 
         // Then
         verify(mockSessionReplayFeature).stopRecording()
-        Datadog.globalSDKCore = previousCore
+        Datadog.globalSdkCore = previousCore
     }
 
     companion object {
