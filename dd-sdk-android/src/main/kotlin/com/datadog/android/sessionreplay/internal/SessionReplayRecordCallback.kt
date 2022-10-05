@@ -7,9 +7,9 @@
 package com.datadog.android.sessionreplay.internal
 
 import com.datadog.android.sessionreplay.RecordCallback
-import com.datadog.android.v2.api.SDKCore
+import com.datadog.android.v2.api.SdkCore
 
-internal class SessionReplayRecordCallback(private val datadogCore: SDKCore) : RecordCallback {
+internal class SessionReplayRecordCallback(private val datadogCore: SdkCore) : RecordCallback {
     override fun onStartRecording() {
         updateRecording(true)
     }
