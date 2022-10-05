@@ -7,7 +7,6 @@
 package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
@@ -47,7 +46,6 @@ internal class WebViewRumFilePersistenceStrategy(
     ),
     executorService,
     RumEventSerializer(),
-    PayloadDecoration.NEW_LINE_DECORATION,
     internalLogger,
     BatchFileReaderWriter.create(internalLogger, localDataEncryption),
     FileReaderWriter.create(internalLogger, localDataEncryption),

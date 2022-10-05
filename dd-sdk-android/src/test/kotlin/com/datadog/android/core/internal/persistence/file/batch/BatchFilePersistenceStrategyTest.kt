@@ -6,7 +6,6 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
-import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileMover
@@ -77,9 +76,6 @@ internal class BatchFilePersistenceStrategyTest {
     lateinit var mockStorage: Storage
 
     @Forgery
-    lateinit var fakePayloadDecoration: PayloadDecoration
-
-    @Forgery
     lateinit var fakeFilePersistenceConfig: FilePersistenceConfig
 
     @BeforeEach
@@ -96,7 +92,6 @@ internal class BatchFilePersistenceStrategyTest {
             mockFileOrchestrator,
             mockExecutorService,
             mockSerializer,
-            fakePayloadDecoration,
             Logger(mockLogHandler),
             mockFileReaderWriter,
             mockMetaFileReaderWriter,
@@ -129,15 +124,6 @@ internal class BatchFilePersistenceStrategyTest {
     }
 
     @Test
-    fun `𝕄 return batch file reader 𝕎 getReader()`() {
-        // When
-        val reader = testedStrategy.getReader()
-
-        // Then
-        assertThat(reader).isInstanceOf(BatchFileDataReader::class.java)
-    }
-
-    @Test
     fun `𝕄 return same storage 𝕎 getStorage()`() {
         // When
         val storage = testedStrategy.getStorage()
@@ -155,15 +141,5 @@ internal class BatchFilePersistenceStrategyTest {
         check(flusher is DataFlusher)
         assertThat(flusher.fileOrchestrator).isSameAs(mockFileOrchestrator)
         assertThat(flusher.fileReader).isSameAs(mockFileReaderWriter)
-    }
-
-    @Test
-    fun `𝕄 return same batch file reader 𝕎 getReader() twice`() {
-        // When
-        val reader1 = testedStrategy.getReader()
-        val reader2 = testedStrategy.getReader()
-
-        // Then
-        assertThat(reader1).isSameAs(reader2)
     }
 }

@@ -1137,4 +1137,87 @@ internal class ConsentAwareStorageTest {
     }
 
     // endregion
+
+    // region dropAll
+
+    @Test
+    fun `𝕄 delete everything 𝕎 dropAll()`(
+        @Forgery pendingFile: File,
+        @Forgery grantedFile: File,
+        @StringForgery fakePendingMetaFilePath: String,
+        @StringForgery fakeGrantedMetaFilePath: String
+    ) {
+        // Given
+        testedStorage = ConsentAwareStorage(
+            mockGrantedOrchestrator,
+            mockPendingOrchestrator,
+            mockBatchReaderWriter,
+            mockMetaReaderWriter,
+            mockFileMover,
+            mockInternalLogger,
+            mockFilePersistenceConfig
+        )
+
+        whenever(mockGrantedOrchestrator.getAllFiles()) doReturn listOf(grantedFile)
+        whenever(mockPendingOrchestrator.getAllFiles()) doReturn listOf(pendingFile)
+        val mockPendingMetaFile: File = mock()
+        whenever(mockPendingMetaFile.exists()) doReturn true
+        whenever(mockPendingMetaFile.path) doReturn fakePendingMetaFilePath
+        val mockGrantedMetaFile: File = mock()
+        whenever(mockGrantedMetaFile.exists()) doReturn true
+        whenever(mockGrantedMetaFile.path) doReturn fakeGrantedMetaFilePath
+        whenever(mockGrantedOrchestrator.getMetadataFile(grantedFile)) doReturn mockGrantedMetaFile
+        whenever(mockFileMover.delete(grantedFile)) doReturn true
+        whenever(mockPendingOrchestrator.getMetadataFile(pendingFile)) doReturn mockPendingMetaFile
+        whenever(mockFileMover.delete(pendingFile)) doReturn true
+        doReturn(true).whenever(mockFileMover).delete(mockGrantedMetaFile)
+        doReturn(true).whenever(mockFileMover).delete(mockPendingMetaFile)
+
+        // When
+        testedStorage.dropAll()
+
+        // Then
+        verify(mockFileMover).delete(grantedFile)
+        verify(mockFileMover).delete(mockGrantedMetaFile)
+        verify(mockFileMover).delete(pendingFile)
+        verify(mockFileMover).delete(mockPendingMetaFile)
+    }
+
+    @Test
+    fun `𝕄 delete everything 𝕎 dropAll() { there is locked batch }`(
+        @Forgery file: File,
+        @StringForgery fakeMetaFilePath: String
+    ) {
+        // Given
+        testedStorage = ConsentAwareStorage(
+            mockGrantedOrchestrator,
+            mockPendingOrchestrator,
+            mockBatchReaderWriter,
+            mockMetaReaderWriter,
+            mockFileMover,
+            mockInternalLogger,
+            mockFilePersistenceConfig
+        )
+
+        whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn file
+        val mockMetaFile: File = mock()
+        whenever(mockMetaFile.exists()) doReturn true
+        whenever(mockMetaFile.path) doReturn fakeMetaFilePath
+        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
+        whenever(mockFileMover.delete(file)) doReturn true
+        doReturn(true).whenever(mockFileMover).delete(mockMetaFile)
+
+        testedStorage.readNextBatch { _, _ ->
+            // no-op
+        }
+
+        // When
+        testedStorage.dropAll()
+
+        // Then
+        verify(mockFileMover).delete(file)
+        verify(mockFileMover).delete(mockMetaFile)
+    }
+
+    // endregion
 }

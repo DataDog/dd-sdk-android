@@ -6,9 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
-import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileMover
@@ -28,7 +26,6 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
     private val fileOrchestrator: ConsentAwareFileOrchestrator,
     private val executorService: ExecutorService,
     serializer: Serializer<T>,
-    payloadDecoration: PayloadDecoration,
     internal val internalLogger: Logger,
     internal val fileReaderWriter: BatchFileReaderWriter,
     internal val metadataFileReaderWriter: FileReaderWriter,
@@ -45,22 +42,10 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
         )
     }
 
-    private val dataReader = BatchFileDataReader(
-        fileOrchestrator,
-        payloadDecoration,
-        fileReaderWriter,
-        fileMover,
-        internalLogger
-    )
-
     // region PersistenceStrategy
 
     override fun getWriter(): DataWriter<T> {
         return dataWriter
-    }
-
-    override fun getReader(): DataReader {
-        return dataReader
     }
 
     override fun getStorage(): Storage {

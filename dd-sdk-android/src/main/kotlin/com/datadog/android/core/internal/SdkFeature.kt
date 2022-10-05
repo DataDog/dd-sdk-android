@@ -71,7 +71,7 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
 
     fun clearAllData() {
         @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
-        persistenceStrategy.getReader().dropAll()
+        storage.dropAll()
     }
 
     fun stop() {

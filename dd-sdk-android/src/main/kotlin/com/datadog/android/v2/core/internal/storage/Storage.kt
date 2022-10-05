@@ -43,4 +43,10 @@ internal interface Storage {
      */
     @WorkerThread
     fun confirmBatchRead(batchId: BatchId, callback: (BatchConfirmation) -> Unit)
+
+    /**
+     * Removes all the files backed by this storage, synchronously.
+     */
+    @WorkerThread
+    fun dropAll()
 }

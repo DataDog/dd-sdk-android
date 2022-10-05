@@ -6,7 +6,6 @@
 
 package com.datadog.android.log.internal.domain
 
-import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
@@ -49,7 +48,6 @@ internal class LogFilePersistenceStrategy(
     ),
     executorService,
     MapperSerializer(LogEventMapperWrapper(logEventMapper), LogEventSerializer()),
-    PayloadDecoration.JSON_ARRAY_DECORATION,
     sdkLogger,
     BatchFileReaderWriter.create(sdkLogger, localDataEncryption),
     FileReaderWriter.create(sdkLogger, localDataEncryption),

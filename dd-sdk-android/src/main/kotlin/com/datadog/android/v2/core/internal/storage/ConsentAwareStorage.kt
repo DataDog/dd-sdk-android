@@ -138,10 +138,7 @@ internal class ConsentAwareStorage(
             @WorkerThread
             override fun markAsRead(deleteBatch: Boolean) {
                 if (deleteBatch) {
-                    deleteBatchFile(batch.file)
-                    if (batch.metaFile?.existsSafe() == true) {
-                        deleteBatchMetadataFile(batch.metaFile)
-                    }
+                    deleteBatch(batch)
                 }
                 synchronized(lockedBatches) {
                     lockedBatches.remove(batch)
@@ -149,6 +146,24 @@ internal class ConsentAwareStorage(
             }
         }
         callback(confirmation)
+    }
+
+    /** @inheritdoc */
+    @WorkerThread
+    override fun dropAll() {
+        synchronized(lockedBatches) {
+            lockedBatches.forEach {
+                deleteBatch(it)
+                lockedBatches.remove(it)
+            }
+        }
+
+        arrayOf(pendingOrchestrator, grantedOrchestrator).forEach { orchestrator ->
+            orchestrator.getAllFiles().forEach {
+                val metaFile = orchestrator.getMetadataFile(it)
+                deleteBatch(it, metaFile)
+            }
+        }
     }
 
     private fun checkEventSize(eventSize: Int): Boolean {
@@ -181,6 +196,19 @@ internal class ConsentAwareStorage(
                 null,
                 emptyMap()
             )
+        }
+    }
+
+    @WorkerThread
+    private fun deleteBatch(batch: Batch) {
+        deleteBatch(batch.file, batch.metaFile)
+    }
+
+    @WorkerThread
+    private fun deleteBatch(batchFile: File, metaFile: File?) {
+        deleteBatchFile(batchFile)
+        if (metaFile?.existsSafe() == true) {
+            deleteBatchMetadataFile(metaFile)
         }
     }
 
