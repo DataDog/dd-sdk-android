@@ -25,7 +25,6 @@ import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.rum.internal.net.RumRequestFactory
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
@@ -65,7 +64,7 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
     lateinit var mockChoreographer: Choreographer
 
     override fun createTestedFeature(): RumFeature {
-        return RumFeature(coreFeature.mockInstance)
+        return RumFeature(coreFeature.mockInstance, mockStorage, mockUploader)
     }
 
     override fun forgeConfiguration(forge: Forge): Configuration.Feature.RUM {
@@ -90,18 +89,6 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
         // Then
         assertThat(testedFeature.persistenceStrategy)
             .isInstanceOf(RumFilePersistenceStrategy::class.java)
-    }
-
-    @Test
-    fun `𝕄 create a rum request factory 𝕎 createRequestFactory()`() {
-        // Given
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
-
-        // When
-        val requestFactory = testedFeature.createRequestFactory(fakeConfigurationFeature)
-
-        // Then
-        assertThat(requestFactory).isInstanceOf(RumRequestFactory::class.java)
     }
 
     @Test

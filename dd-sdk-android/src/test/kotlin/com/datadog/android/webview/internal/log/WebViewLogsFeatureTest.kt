@@ -9,7 +9,6 @@ package com.datadog.android.webview.internal.log
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.log.internal.net.LogsRequestFactory
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.google.gson.JsonObject
@@ -36,7 +35,7 @@ internal class WebViewLogsFeatureTest :
     SdkFeatureTest<JsonObject, Configuration.Feature.Logs, WebViewLogsFeature>() {
 
     override fun createTestedFeature(): WebViewLogsFeature {
-        return WebViewLogsFeature(coreFeature.mockInstance)
+        return WebViewLogsFeature(coreFeature.mockInstance, mockStorage, mockUploader)
     }
 
     override fun forgeConfiguration(forge: Forge): Configuration.Feature.Logs {
@@ -55,14 +54,5 @@ internal class WebViewLogsFeatureTest :
         // Then
         assertThat(testedFeature.persistenceStrategy)
             .isInstanceOf(WebViewLogFilePersistenceStrategy::class.java)
-    }
-
-    @Test
-    fun `𝕄 create a logs request factory 𝕎 createRequestFactory()`() {
-        // When
-        val requestFactory = testedFeature.createRequestFactory(fakeConfigurationFeature)
-
-        // Then
-        assertThat(requestFactory).isInstanceOf(LogsRequestFactory::class.java)
     }
 }

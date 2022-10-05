@@ -24,6 +24,7 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.security.Encryption
 import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.Storage
 import java.io.File
 import java.util.concurrent.ExecutorService
 
@@ -36,7 +37,8 @@ internal class RumFilePersistenceStrategy(
     internalLogger: Logger,
     localDataEncryption: Encryption?,
     private val lastViewEventFile: File,
-    filePersistenceConfig: FilePersistenceConfig
+    filePersistenceConfig: FilePersistenceConfig,
+    storage: Storage
 ) : BatchFilePersistenceStrategy<Any>(
     contextProvider,
     FeatureFileOrchestrator(
@@ -56,7 +58,8 @@ internal class RumFilePersistenceStrategy(
     BatchFileReaderWriter.create(internalLogger, localDataEncryption),
     FileReaderWriter.create(internalLogger, localDataEncryption),
     FileMover(internalLogger),
-    filePersistenceConfig
+    filePersistenceConfig,
+    storage
 ) {
 
     override fun createWriter(

@@ -95,8 +95,12 @@ internal class AndroidTracerTest {
         fakeToken = forge.anHexadecimalString()
 
         val mockCore = mock<DatadogCore>()
-        tracingFeature = TracingFeature(coreFeature.mockInstance)
-        rumFeature = RumFeature(coreFeature.mockInstance)
+        tracingFeature = TracingFeature(
+            coreFeature.mockInstance,
+            storage = mock(),
+            uploader = mock()
+        )
+        rumFeature = RumFeature(coreFeature.mockInstance, storage = mock(), uploader = mock())
 
         whenever(mockCore.tracingFeature) doReturn tracingFeature
         whenever(mockCore.rumFeature) doReturn rumFeature

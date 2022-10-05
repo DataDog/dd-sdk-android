@@ -20,6 +20,10 @@ import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.persistence.NoOpDataWriter
+import com.datadog.android.core.internal.persistence.file.FileMover
+import com.datadog.android.core.internal.persistence.file.FileReaderWriter
+import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.UserInfo
@@ -32,8 +36,16 @@ import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.FeatureUploadConfiguration
+import com.datadog.android.v2.api.NoOpInternalLogger
+import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.net.DataOkHttpUploader
+import com.datadog.android.v2.core.internal.storage.ConsentAwareStorage
+import com.datadog.android.v2.core.internal.storage.Storage
+import com.datadog.android.v2.log.internal.net.LogsRequestFactory
+import com.datadog.android.v2.rum.internal.net.RumRequestFactory
+import com.datadog.android.v2.tracing.internal.net.TracesRequestFactory
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.opentracing.DDSpan
@@ -92,31 +104,38 @@ internal class DatadogCore(
         storageConfiguration: FeatureStorageConfiguration,
         uploadConfiguration: FeatureUploadConfiguration
     ) {
-        // TODO RUMM-0000 read configuration and create storage and uploader instead of taking
-        //  from already initialized SdkFeature
-        val (storage, uploader) = when (featureName) {
-            RumFeature.RUM_FEATURE_NAME ->
-                rumFeature?.persistenceStrategy?.getStorage() to rumFeature?.uploader
-            LogsFeature.LOGS_FEATURE_NAME ->
-                logsFeature?.persistenceStrategy?.getStorage() to logsFeature?.uploader
-            TracingFeature.TRACING_FEATURE_NAME ->
-                tracingFeature?.persistenceStrategy?.getStorage() to tracingFeature?.uploader
-            CrashReportsFeature.CRASH_FEATURE_NAME ->
-                crashReportsFeature?.persistenceStrategy?.getStorage() to
-                    crashReportsFeature?.uploader
-            WebViewRumFeature.WEB_RUM_FEATURE_NAME ->
-                webViewRumFeature?.persistenceStrategy?.getStorage() to webViewRumFeature?.uploader
-            WebViewLogsFeature.WEB_LOGS_FEATURE_NAME ->
-                webViewLogsFeature?.persistenceStrategy?.getStorage() to
-                    webViewLogsFeature?.uploader
-            else -> {
-                null to null
+        val storage = createStorage(featureName, storageConfiguration)
+        val uploader = DataOkHttpUploader(
+            requestFactory = uploadConfiguration.requestFactory,
+            internalLogger = sdkLogger,
+            callFactory = coreFeature.okHttpClient,
+            sdkVersion = coreFeature.sdkVersion,
+            androidInfoProvider = coreFeature.androidInfoProvider
+        )
+        // TODO RUMM-0000 those still need to be registered explicitly,
+        //  because of cross-functionality. We will get rid of them eventually and use getFeature
+        when (featureName) {
+            RumFeature.RUM_FEATURE_NAME -> {
+                rumFeature = RumFeature(coreFeature, storage, uploader)
+            }
+            LogsFeature.LOGS_FEATURE_NAME -> {
+                logsFeature = LogsFeature(coreFeature, storage, uploader)
+            }
+            TracingFeature.TRACING_FEATURE_NAME -> {
+                tracingFeature = TracingFeature(coreFeature, storage, uploader)
+            }
+            CrashReportsFeature.CRASH_FEATURE_NAME -> {
+                crashReportsFeature = CrashReportsFeature(coreFeature, storage, uploader)
+            }
+            WebViewRumFeature.WEB_RUM_FEATURE_NAME -> {
+                webViewRumFeature = WebViewRumFeature(coreFeature, storage, uploader)
+            }
+            WebViewLogsFeature.WEB_LOGS_FEATURE_NAME -> {
+                webViewLogsFeature = WebViewLogsFeature(coreFeature, storage, uploader)
             }
         }
 
-        if (storage != null && uploader != null) {
-            features[featureName] = DatadogFeature(this, storage, uploader)
-        }
+        features[featureName] = DatadogFeature(this, storage, uploader)
     }
 
     /** @inheritDoc */
@@ -273,16 +292,16 @@ internal class DatadogCore(
         appContext: Context
     ) {
         if (configuration != null) {
-            logsFeature = LogsFeature(coreFeature)
-            webViewLogsFeature = WebViewLogsFeature(coreFeature)
-            logsFeature?.let {
-                it.initialize(appContext, configuration)
-                registerFeature(LogsFeature.LOGS_FEATURE_NAME, it, configuration)
-            }
-            webViewLogsFeature?.let {
-                it.initialize(appContext, configuration)
-                registerFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME, it, configuration)
-            }
+            registerFeature(
+                LogsFeature.LOGS_FEATURE_NAME,
+                LogsRequestFactory(configuration.endpointUrl)
+            )
+            registerFeature(
+                WebViewLogsFeature.WEB_LOGS_FEATURE_NAME,
+                LogsRequestFactory(configuration.endpointUrl)
+            )
+            logsFeature?.initialize(appContext, configuration)
+            webViewLogsFeature?.initialize(appContext, configuration)
         }
     }
 
@@ -291,11 +310,11 @@ internal class DatadogCore(
         appContext: Context
     ) {
         if (configuration != null) {
-            crashReportsFeature = CrashReportsFeature(coreFeature)
-            crashReportsFeature?.let {
-                it.initialize(appContext, configuration)
-                registerFeature(CrashReportsFeature.CRASH_FEATURE_NAME, it, configuration)
-            }
+            registerFeature(
+                CrashReportsFeature.CRASH_FEATURE_NAME,
+                LogsRequestFactory(configuration.endpointUrl)
+            )
+            crashReportsFeature?.initialize(appContext, configuration)
         }
     }
 
@@ -304,11 +323,11 @@ internal class DatadogCore(
         appContext: Context
     ) {
         if (configuration != null) {
-            tracingFeature = TracingFeature(coreFeature)
-            tracingFeature?.let {
-                it.initialize(appContext, configuration)
-                registerFeature(TracingFeature.TRACING_FEATURE_NAME, it, configuration)
-            }
+            registerFeature(
+                TracingFeature.TRACING_FEATURE_NAME,
+                TracesRequestFactory(configuration.endpointUrl)
+            )
+            tracingFeature?.initialize(appContext, configuration)
         }
     }
 
@@ -320,23 +339,22 @@ internal class DatadogCore(
             if (coreFeature.rumApplicationId.isNullOrBlank()) {
                 devLogger.w(WARNING_MESSAGE_APPLICATION_ID_IS_NULL)
             }
-            rumFeature = RumFeature(coreFeature)
-            webViewRumFeature = WebViewRumFeature(coreFeature)
-            rumFeature?.let {
-                it.initialize(appContext, configuration)
-                registerFeature(RumFeature.RUM_FEATURE_NAME, it, configuration)
-            }
-            webViewRumFeature?.let {
-                it.initialize(appContext, configuration)
-                registerFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME, it, configuration)
-            }
+            registerFeature(
+                RumFeature.RUM_FEATURE_NAME,
+                RumRequestFactory(configuration.endpointUrl)
+            )
+            registerFeature(
+                WebViewRumFeature.WEB_RUM_FEATURE_NAME,
+                RumRequestFactory(configuration.endpointUrl)
+            )
+            rumFeature?.initialize(appContext, configuration)
+            webViewRumFeature?.initialize(appContext, configuration)
         }
     }
 
-    private fun <T : Configuration.Feature> registerFeature(
+    private fun registerFeature(
         featureName: String,
-        feature: SdkFeature<*, T>,
-        featureConfiguration: T
+        requestFactory: RequestFactory
     ) {
         val filePersistenceConfig = coreFeature.buildFilePersistenceConfig()
         registerFeature(
@@ -348,7 +366,7 @@ internal class DatadogCore(
                 oldBatchThreshold = filePersistenceConfig.oldFileThreshold
             ),
             uploadConfiguration = FeatureUploadConfiguration(
-                requestFactory = feature.createRequestFactory(featureConfiguration)
+                requestFactory = requestFactory
             )
         )
     }
@@ -405,6 +423,44 @@ internal class DatadogCore(
 
     private fun isAppDebuggable(context: Context): Boolean {
         return (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+    }
+
+    // endregion
+
+    // region Feature setup
+
+    private fun createStorage(
+        featureName: String,
+        storageConfiguration: FeatureStorageConfiguration
+    ): Storage {
+        val fileOrchestrator = FeatureFileOrchestrator(
+            consentProvider = coreFeature.trackingConsentProvider,
+            storageDir = coreFeature.storageDir,
+            featureName = featureName,
+            executorService = coreFeature.persistenceExecutorService,
+            internalLogger = sdkLogger
+        )
+        return ConsentAwareStorage(
+            grantedOrchestrator = fileOrchestrator.grantedOrchestrator,
+            pendingOrchestrator = fileOrchestrator.pendingOrchestrator,
+            batchEventsReaderWriter = BatchFileReaderWriter.create(
+                internalLogger = sdkLogger,
+                encryption = coreFeature.localDataEncryption
+            ),
+            batchMetadataReaderWriter = FileReaderWriter.create(
+                internalLogger = sdkLogger,
+                encryption = coreFeature.localDataEncryption
+            ),
+            fileMover = FileMover(sdkLogger),
+            // TODO RUMM-0000 create internal logger
+            internalLogger = NoOpInternalLogger(),
+            filePersistenceConfig = coreFeature.buildFilePersistenceConfig().copy(
+                maxBatchSize = storageConfiguration.maxBatchSize,
+                maxItemSize = storageConfiguration.maxItemSize,
+                maxItemsPerBatch = storageConfiguration.maxItemsPerBatch,
+                oldFileThreshold = storageConfiguration.oldBatchThreshold
+            )
+        )
     }
 
     // endregion

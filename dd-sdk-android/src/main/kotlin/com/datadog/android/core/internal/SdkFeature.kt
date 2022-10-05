@@ -15,25 +15,23 @@ import com.datadog.android.core.internal.data.upload.UploadScheduler
 import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
-import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.core.internal.data.upload.DataUploadScheduler
-import com.datadog.android.v2.core.internal.net.DataOkHttpUploader
 import com.datadog.android.v2.core.internal.net.DataUploader
-import com.datadog.android.v2.core.internal.net.NoOpDataUploader
+import com.datadog.android.v2.core.internal.storage.Storage
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Suppress("TooManyFunctions")
 internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
-    internal val coreFeature: CoreFeature
+    internal val coreFeature: CoreFeature,
+    internal val storage: Storage,
+    internal val uploader: DataUploader
 ) {
 
     internal val initialized = AtomicBoolean(false)
 
     internal var persistenceStrategy: PersistenceStrategy<T> = NoOpPersistenceStrategy()
-    internal var uploader: DataUploader = NoOpDataUploader()
     internal var uploadScheduler: UploadScheduler = NoOpUploadScheduler()
     private val featurePlugins: MutableList<DatadogPlugin> = mutableListOf()
 
@@ -44,9 +42,9 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
             return
         }
 
-        persistenceStrategy = createPersistenceStrategy(context, configuration)
+        persistenceStrategy = createPersistenceStrategy(context, storage, configuration)
 
-        setupUploader(configuration)
+        setupUploader()
 
         registerPlugins(
             configuration.plugins,
@@ -109,10 +107,9 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
 
     abstract fun createPersistenceStrategy(
         context: Context,
+        storage: Storage,
         configuration: C
     ): PersistenceStrategy<T>
-
-    abstract fun createRequestFactory(configuration: C): RequestFactory
 
     // endregion
 
@@ -137,18 +134,10 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature>(
         featurePlugins.clear()
     }
 
-    private fun setupUploader(configuration: C) {
+    private fun setupUploader() {
         uploadScheduler = if (coreFeature.isMainProcess) {
-            val requestFactory = createRequestFactory(configuration)
-            uploader = DataOkHttpUploader(
-                requestFactory,
-                internalLogger = sdkLogger,
-                callFactory = coreFeature.okHttpClient,
-                sdkVersion = coreFeature.sdkVersion,
-                androidInfoProvider = coreFeature.androidInfoProvider
-            )
             DataUploadScheduler(
-                persistenceStrategy.getStorage(),
+                storage,
                 uploader,
                 coreFeature.contextProvider,
                 coreFeature.networkInfoProvider,

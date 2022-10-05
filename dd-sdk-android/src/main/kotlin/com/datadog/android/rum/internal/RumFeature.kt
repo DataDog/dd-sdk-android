@@ -42,8 +42,8 @@ import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
-import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.rum.internal.net.RumRequestFactory
+import com.datadog.android.v2.core.internal.net.DataUploader
+import com.datadog.android.v2.core.internal.storage.Storage
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -51,8 +51,10 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 internal class RumFeature(
-    coreFeature: CoreFeature
-) : SdkFeature<Any, Configuration.Feature.RUM>(coreFeature) {
+    coreFeature: CoreFeature,
+    storage: Storage,
+    uploader: DataUploader
+) : SdkFeature<Any, Configuration.Feature.RUM>(coreFeature, storage, uploader) {
 
     internal var samplingRate: Float = 0f
     internal var telemetrySamplingRate: Float = 0f
@@ -117,6 +119,7 @@ internal class RumFeature(
 
     override fun createPersistenceStrategy(
         context: Context,
+        storage: Storage,
         configuration: Configuration.Feature.RUM
     ): PersistenceStrategy<Any> {
         return RumFilePersistenceStrategy(
@@ -128,12 +131,9 @@ internal class RumFeature(
             sdkLogger,
             coreFeature.localDataEncryption,
             DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir),
-            coreFeature.buildFilePersistenceConfig()
+            coreFeature.buildFilePersistenceConfig(),
+            storage
         )
-    }
-
-    override fun createRequestFactory(configuration: Configuration.Feature.RUM): RequestFactory {
-        return RumRequestFactory(configuration.endpointUrl)
     }
 
     override fun onPostInitialized(context: Context) {}

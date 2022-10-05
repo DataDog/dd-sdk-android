@@ -14,7 +14,6 @@ import com.datadog.android.tracing.internal.domain.TracesFilePersistenceStrategy
 import com.datadog.android.tracing.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.tracing.internal.domain.event.SpanMapperSerializer
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.tracing.internal.net.TracesRequestFactory
 import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.Forge
@@ -39,7 +38,7 @@ internal class TracingFeatureTest :
     SdkFeatureTest<DDSpan, Configuration.Feature.Tracing, TracingFeature>() {
 
     override fun createTestedFeature(): TracingFeature {
-        return TracingFeature(coreFeature.mockInstance)
+        return TracingFeature(coreFeature.mockInstance, mockStorage, mockUploader)
     }
 
     override fun forgeConfiguration(forge: Forge): Configuration.Feature.Tracing {
@@ -73,14 +72,5 @@ internal class TracingFeatureTest :
         val spanEventMapperWrapper = spanSerializer?.spanEventMapper as? SpanEventMapperWrapper
         val spanEventMapper = spanEventMapperWrapper?.wrappedEventMapper
         assertThat(spanEventMapper).isSameAs(fakeConfigurationFeature.spanEventMapper)
-    }
-
-    @Test
-    fun `𝕄 create a tracing request factory 𝕎 createRequestFactory()`() {
-        // When
-        val requestFactory = testedFeature.createRequestFactory(fakeConfigurationFeature)
-
-        // Then
-        assertThat(requestFactory).isInstanceOf(TracesRequestFactory::class.java)
     }
 }

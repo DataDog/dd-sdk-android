@@ -171,9 +171,9 @@ internal class DatadogInterceptorWithoutTracesTest {
         ) { mockLocalTracer }
         Datadog.globalSdkCore = mock<DatadogCore>()
         whenever((Datadog.globalSdkCore as DatadogCore).tracingFeature) doReturn
-            TracingFeature(coreFeature.mockInstance)
+            TracingFeature(coreFeature.mockInstance, storage = mock(), uploader = mock())
         whenever((Datadog.globalSdkCore as DatadogCore).rumFeature) doReturn
-            RumFeature(coreFeature.mockInstance)
+            RumFeature(coreFeature.mockInstance, storage = mock(), uploader = mock())
 
         fakeResourceAttributes = forge.exhaustiveAttributes()
 

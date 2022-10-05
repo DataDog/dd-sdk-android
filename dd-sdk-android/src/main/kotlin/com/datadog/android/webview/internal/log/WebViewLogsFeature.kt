@@ -12,18 +12,21 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.log.internal.net.LogsRequestFactory
+import com.datadog.android.v2.core.internal.net.DataUploader
+import com.datadog.android.v2.core.internal.storage.Storage
 import com.google.gson.JsonObject
 
 internal class WebViewLogsFeature(
-    coreFeature: CoreFeature
-) : SdkFeature<JsonObject, Configuration.Feature.Logs>(coreFeature) {
+    coreFeature: CoreFeature,
+    storage: Storage,
+    uploader: DataUploader
+) : SdkFeature<JsonObject, Configuration.Feature.Logs>(coreFeature, storage, uploader) {
 
     // region SdkFeature
 
     override fun createPersistenceStrategy(
         context: Context,
+        storage: Storage,
         configuration: Configuration.Feature.Logs
     ): PersistenceStrategy<JsonObject> {
         return WebViewLogFilePersistenceStrategy(
@@ -33,12 +36,9 @@ internal class WebViewLogsFeature(
             coreFeature.persistenceExecutorService,
             sdkLogger,
             coreFeature.localDataEncryption,
-            coreFeature.buildFilePersistenceConfig()
+            coreFeature.buildFilePersistenceConfig(),
+            storage
         )
-    }
-
-    override fun createRequestFactory(configuration: Configuration.Feature.Logs): RequestFactory {
-        return LogsRequestFactory(configuration.endpointUrl)
     }
 
     // endregion

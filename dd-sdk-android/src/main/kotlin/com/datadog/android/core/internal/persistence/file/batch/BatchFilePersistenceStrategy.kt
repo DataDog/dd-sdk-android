@@ -17,11 +17,9 @@ import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.advanced.ConsentAwareFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.log.Logger
-import com.datadog.android.v2.api.NoOpInternalLogger
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.data.upload.DataFlusher
 import com.datadog.android.v2.core.internal.data.upload.Flusher
-import com.datadog.android.v2.core.internal.storage.ConsentAwareStorage
 import com.datadog.android.v2.core.internal.storage.Storage
 import java.util.concurrent.ExecutorService
 
@@ -35,7 +33,8 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
     internal val fileReaderWriter: BatchFileReaderWriter,
     internal val metadataFileReaderWriter: FileReaderWriter,
     internal val fileMover: FileMover,
-    internal val filePersistenceConfig: FilePersistenceConfig
+    internal val filePersistenceConfig: FilePersistenceConfig,
+    private val storage: Storage
 ) : PersistenceStrategy<T> {
 
     private val dataWriter: DataWriter<T> by lazy {
@@ -54,17 +53,6 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
         internalLogger
     )
 
-    private val dataStorage = ConsentAwareStorage(
-        grantedOrchestrator = fileOrchestrator.grantedOrchestrator,
-        pendingOrchestrator = fileOrchestrator.pendingOrchestrator,
-        batchEventsReaderWriter = fileReaderWriter,
-        batchMetadataReaderWriter = metadataFileReaderWriter,
-        fileMover = fileMover,
-        // TODO RUMM-0000 create internal logger
-        internalLogger = NoOpInternalLogger(),
-        filePersistenceConfig = filePersistenceConfig
-    )
-
     // region PersistenceStrategy
 
     override fun getWriter(): DataWriter<T> {
@@ -76,7 +64,7 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
     }
 
     override fun getStorage(): Storage {
-        return dataStorage
+        return storage
     }
 
     override fun getFlusher(): Flusher {
@@ -100,7 +88,7 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
     ): DataWriter<T> {
         return ScheduledWriter(
             BatchFileDataWriter(
-                dataStorage,
+                storage,
                 contextProvider,
                 serializer,
                 internalLogger

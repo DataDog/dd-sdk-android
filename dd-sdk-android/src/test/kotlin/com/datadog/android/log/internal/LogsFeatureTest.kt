@@ -15,7 +15,6 @@ import com.datadog.android.log.internal.domain.LogFilePersistenceStrategy
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.log.internal.net.LogsRequestFactory
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -39,7 +38,7 @@ internal class LogsFeatureTest :
     SdkFeatureTest<LogEvent, Configuration.Feature.Logs, LogsFeature>() {
 
     override fun createTestedFeature(): LogsFeature {
-        return LogsFeature(coreFeature.mockInstance)
+        return LogsFeature(coreFeature.mockInstance, mockStorage, mockUploader)
     }
 
     override fun forgeConfiguration(forge: Forge): Configuration.Feature.Logs {
@@ -58,15 +57,6 @@ internal class LogsFeatureTest :
         // Then
         assertThat(testedFeature.persistenceStrategy)
             .isInstanceOf(LogFilePersistenceStrategy::class.java)
-    }
-
-    @Test
-    fun `𝕄 create a logs request factory 𝕎 createRequestFactory()`() {
-        // When
-        val requestFactory = testedFeature.createRequestFactory(fakeConfigurationFeature)
-
-        // Then
-        assertThat(requestFactory).isInstanceOf(LogsRequestFactory::class.java)
     }
 
     @Test

@@ -24,6 +24,7 @@ import com.datadog.android.tracing.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.tracing.internal.domain.event.SpanEventSerializer
 import com.datadog.android.tracing.internal.domain.event.SpanMapperSerializer
 import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.Storage
 import com.datadog.opentracing.DDSpan
 import java.io.File
 import java.util.concurrent.ExecutorService
@@ -38,7 +39,8 @@ internal class TracesFilePersistenceStrategy(
     internalLogger: Logger,
     spanEventMapper: SpanEventMapper,
     localDataEncryption: Encryption?,
-    filePersistenceConfig: FilePersistenceConfig
+    filePersistenceConfig: FilePersistenceConfig,
+    storage: Storage
 ) : BatchFilePersistenceStrategy<DDSpan>(
     contextProvider,
     FeatureFileOrchestrator(
@@ -61,5 +63,6 @@ internal class TracesFilePersistenceStrategy(
     BatchFileReaderWriter.create(internalLogger, localDataEncryption),
     FileReaderWriter.create(internalLogger, localDataEncryption),
     FileMover(internalLogger),
-    filePersistenceConfig
+    filePersistenceConfig,
+    storage
 )

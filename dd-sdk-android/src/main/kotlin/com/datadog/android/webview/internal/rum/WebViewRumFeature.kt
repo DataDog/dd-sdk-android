@@ -13,17 +13,20 @@ import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
-import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.rum.internal.net.RumRequestFactory
+import com.datadog.android.v2.core.internal.net.DataUploader
+import com.datadog.android.v2.core.internal.storage.Storage
 
 internal class WebViewRumFeature(
-    coreFeature: CoreFeature
-) : SdkFeature<Any, Configuration.Feature.RUM>(coreFeature) {
+    coreFeature: CoreFeature,
+    storage: Storage,
+    uploader: DataUploader
+) : SdkFeature<Any, Configuration.Feature.RUM>(coreFeature, storage, uploader) {
 
     // region SdkFeature
 
     override fun createPersistenceStrategy(
         context: Context,
+        storage: Storage,
         configuration: Configuration.Feature.RUM
     ): PersistenceStrategy<Any> {
         return WebViewRumFilePersistenceStrategy(
@@ -34,12 +37,9 @@ internal class WebViewRumFeature(
             sdkLogger,
             coreFeature.localDataEncryption,
             DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir),
-            coreFeature.buildFilePersistenceConfig()
+            coreFeature.buildFilePersistenceConfig(),
+            storage
         )
-    }
-
-    override fun createRequestFactory(configuration: Configuration.Feature.RUM): RequestFactory {
-        return RumRequestFactory(configuration.endpointUrl)
     }
 
     // endregion
