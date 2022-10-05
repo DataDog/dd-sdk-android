@@ -33,7 +33,8 @@ internal class WebViewRumFeature(
             coreFeature.persistenceExecutorService,
             sdkLogger,
             coreFeature.localDataEncryption,
-            DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir)
+            DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir),
+            coreFeature.buildFilePersistenceConfig()
         )
     }
 

@@ -163,7 +163,7 @@ object GlobalRum {
                 newContext.viewId
             )
         )
-        val datadogCore = (Datadog.globalSDKCore as? DatadogCore)
+        val datadogCore = (Datadog.globalSdkCore as? DatadogCore)
         updateContextInPlugins(
             pluginContext,
             datadogCore?.rumFeature?.getPlugins().orEmpty()

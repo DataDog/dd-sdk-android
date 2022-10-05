@@ -338,7 +338,8 @@ internal class CoreFeature {
                 persistenceExecutorService,
                 FileReaderWriter.create(sdkLogger, localDataEncryption),
                 FileMover(sdkLogger),
-                sdkLogger
+                sdkLogger,
+                buildFilePersistenceConfig()
             ),
             persistenceExecutorService,
             sdkLogger
@@ -354,7 +355,8 @@ internal class CoreFeature {
                 persistenceExecutorService,
                 FileReaderWriter.create(sdkLogger, localDataEncryption),
                 FileMover(sdkLogger),
-                sdkLogger
+                sdkLogger,
+                buildFilePersistenceConfig()
             ),
             persistenceExecutorService,
             sdkLogger

@@ -43,7 +43,8 @@ internal class CrashReportsFeature(
             coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
             sdkLogger,
-            coreFeature.localDataEncryption
+            coreFeature.localDataEncryption,
+            coreFeature.buildFilePersistenceConfig()
         )
     }
 

@@ -8,6 +8,7 @@ package com.datadog.android.error.internal
 
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.FileMover
+import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
@@ -28,7 +29,8 @@ internal class CrashReportFilePersistenceStrategy(
     storageDir: File,
     executorService: ExecutorService,
     internalLogger: Logger,
-    localDataEncryption: Encryption?
+    localDataEncryption: Encryption?,
+    filePersistenceConfig: FilePersistenceConfig
 ) : BatchFilePersistenceStrategy<LogEvent>(
     contextProvider,
     FeatureFileOrchestrator(
@@ -44,5 +46,6 @@ internal class CrashReportFilePersistenceStrategy(
     sdkLogger,
     BatchFileReaderWriter.create(sdkLogger, localDataEncryption),
     FileReaderWriter.create(sdkLogger, localDataEncryption),
-    FileMover(sdkLogger)
+    FileMover(sdkLogger),
+    filePersistenceConfig
 )

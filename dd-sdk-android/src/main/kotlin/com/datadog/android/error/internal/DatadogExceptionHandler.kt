@@ -47,7 +47,7 @@ internal class DatadogExceptionHandler(
         )
 
         // give some time to the persistence executor service to finish its tasks
-        val coreFeature = (Datadog.globalSDKCore as? DatadogCore)?.coreFeature
+        val coreFeature = (Datadog.globalSdkCore as? DatadogCore)?.coreFeature
         if (coreFeature != null) {
             val idled = (coreFeature.persistenceExecutorService as? ThreadPoolExecutor)
                 ?.waitToIdle(MAX_WAIT_FOR_IDLE_TIME_IN_MS) ?: true

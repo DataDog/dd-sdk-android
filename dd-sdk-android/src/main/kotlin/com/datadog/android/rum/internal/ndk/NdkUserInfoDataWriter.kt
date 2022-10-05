@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.ndk
 
 import com.datadog.android.core.internal.persistence.file.FileMover
+import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.internal.persistence.file.advanced.ConsentAwareFileMigrator
 import com.datadog.android.core.internal.persistence.file.advanced.ConsentAwareFileOrchestrator
@@ -25,7 +26,8 @@ internal class NdkUserInfoDataWriter(
     executorService: ExecutorService,
     fileWriter: FileWriter,
     fileMover: FileMover,
-    internalLogger: Logger
+    internalLogger: Logger,
+    filePersistenceConfig: FilePersistenceConfig
 ) : SingleItemDataWriter<UserInfo>(
     ConsentAwareFileOrchestrator(
         consentProvider = consentProvider,
@@ -43,5 +45,6 @@ internal class NdkUserInfoDataWriter(
     ),
     UserInfoSerializer(),
     fileWriter,
-    internalLogger
+    internalLogger,
+    filePersistenceConfig
 )

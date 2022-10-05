@@ -32,7 +32,8 @@ internal class WebViewLogsFeature(
             coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
             sdkLogger,
-            coreFeature.localDataEncryption
+            coreFeature.localDataEncryption,
+            coreFeature.buildFilePersistenceConfig()
         )
     }
 

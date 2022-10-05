@@ -89,7 +89,7 @@ internal constructor(
         allowedHosts.forEach {
             origins.add(it)
         }
-        val coreFeature = (Datadog.globalSDKCore as? DatadogCore)?.coreFeature
+        val coreFeature = (Datadog.globalSdkCore as? DatadogCore)?.coreFeature
         coreFeature?.webViewTrackingHosts?.forEach {
             origins.add(it)
         }
@@ -130,7 +130,7 @@ internal constructor(
         }
 
         private fun buildWebViewEventConsumer(): WebViewEventConsumer<String> {
-            val datadogCore = Datadog.globalSDKCore as? DatadogCore
+            val datadogCore = Datadog.globalSdkCore as? DatadogCore
             val coreFeature = datadogCore?.coreFeature
             val webViewRumFeature = datadogCore?.webViewRumFeature
             val webViewLogsFeature = datadogCore?.webViewLogsFeature

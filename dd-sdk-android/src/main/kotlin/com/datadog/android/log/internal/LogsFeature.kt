@@ -34,7 +34,8 @@ internal class LogsFeature(
             coreFeature.persistenceExecutorService,
             sdkLogger,
             configuration.logsEventMapper,
-            coreFeature.localDataEncryption
+            coreFeature.localDataEncryption,
+            coreFeature.buildFilePersistenceConfig()
         )
     }
 

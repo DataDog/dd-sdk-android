@@ -17,7 +17,7 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.NoOpSDKCore
+import com.datadog.android.v2.api.NoOpSdkCore
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
@@ -171,8 +171,8 @@ internal open class TracingInterceptorNotSendingSpanTest {
         }
         fakeUrl = forgeUrl(forge)
         fakeRequest = forgeRequest(forge)
-        Datadog.globalSDKCore = mock<DatadogCore>()
-        whenever((Datadog.globalSDKCore as DatadogCore).tracingFeature) doReturn
+        Datadog.globalSdkCore = mock<DatadogCore>()
+        whenever((Datadog.globalSdkCore as DatadogCore).tracingFeature) doReturn
             TracingFeature(coreFeature.mockInstance)
         doAnswer { false }.whenever(mockDetector).isFirstPartyUrl(any<HttpUrl>())
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(HttpUrl.get(fakeUrl))
@@ -184,7 +184,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
     @AfterEach
     open fun `tear down`() {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        Datadog.globalSDKCore = NoOpSDKCore()
+        Datadog.globalSdkCore = NoOpSdkCore()
     }
 
     open fun instantiateTestedInterceptor(
@@ -558,7 +558,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        Datadog.globalSDKCore = NoOpSDKCore()
+        Datadog.globalSdkCore = NoOpSdkCore()
         stubChain(mockChain, statusCode)
 
         testedInterceptor.intercept(mockChain)

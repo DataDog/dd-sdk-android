@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileMover
+import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
@@ -31,7 +32,8 @@ internal class WebViewRumFilePersistenceStrategy(
     executorService: ExecutorService,
     internalLogger: Logger,
     localDataEncryption: Encryption?,
-    private val lastViewEventFile: File
+    private val lastViewEventFile: File,
+    filePersistenceConfig: FilePersistenceConfig
 ) : BatchFilePersistenceStrategy<Any>(
     contextProvider,
     FeatureFileOrchestrator(
@@ -47,7 +49,8 @@ internal class WebViewRumFilePersistenceStrategy(
     internalLogger,
     BatchFileReaderWriter.create(internalLogger, localDataEncryption),
     FileReaderWriter.create(internalLogger, localDataEncryption),
-    FileMover(internalLogger)
+    FileMover(internalLogger),
+    filePersistenceConfig
 ) {
 
     override fun createWriter(

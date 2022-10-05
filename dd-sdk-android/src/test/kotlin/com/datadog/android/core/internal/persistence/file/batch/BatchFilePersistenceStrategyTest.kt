@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileMover
+import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.advanced.ConsentAwareFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
@@ -75,6 +76,9 @@ internal class BatchFilePersistenceStrategyTest {
     @Forgery
     lateinit var fakePayloadDecoration: PayloadDecoration
 
+    @Forgery
+    lateinit var fakeFilePersistenceConfig: FilePersistenceConfig
+
     @BeforeEach
     fun `set up`() {
         whenever(mockSerializer.serialize(any())) doAnswer {
@@ -93,7 +97,8 @@ internal class BatchFilePersistenceStrategyTest {
             Logger(mockLogHandler),
             mockFileReaderWriter,
             mockMetaFileReaderWriter,
-            mockFileMover
+            mockFileMover,
+            fakeFilePersistenceConfig
         )
     }
 

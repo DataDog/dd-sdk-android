@@ -11,9 +11,9 @@ package com.datadog.android.v2.api
  */
 interface FeatureConfiguration {
     /**
-     * Registers the feature linked with this configuration to the provided [SDKCore] instance.
+     * Registers the feature linked with this configuration to the provided [SdkCore] instance.
      *
-     * @param sdkCore the [SDKCore] instance to register against.
+     * @param sdkCore the [SdkCore] instance to register against.
      */
-    fun register(sdkCore: SDKCore)
+    fun register(sdkCore: SdkCore)
 }

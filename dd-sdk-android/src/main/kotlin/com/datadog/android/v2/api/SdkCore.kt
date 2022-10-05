@@ -12,11 +12,11 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
- * SDKCore is the entry point to register Datadog features to the core registry.
+ * SdkCore is the entry point to register Datadog features to the core registry.
  */
 @Suppress("ComplexInterface", "TooManyFunctions")
 @NoOpImplementation
-interface SDKCore {
+interface SdkCore {
 
     /**
      * Registers a feature to this instance of the Datadog SDK.

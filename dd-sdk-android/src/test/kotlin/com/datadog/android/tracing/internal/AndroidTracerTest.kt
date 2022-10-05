@@ -22,7 +22,7 @@ import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.NoOpSDKCore
+import com.datadog.android.v2.api.NoOpSdkCore
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
@@ -105,14 +105,14 @@ internal class AndroidTracerTest {
         tracingFeature.initialize(appContext.mockInstance, Configuration.DEFAULT_TRACING_CONFIG)
         rumFeature.initialize(appContext.mockInstance, Configuration.DEFAULT_RUM_CONFIG)
 
-        Datadog.globalSDKCore = mockCore
+        Datadog.globalSdkCore = mockCore
 
         testedTracerBuilder = AndroidTracer.Builder(mockLogsHandler)
     }
 
     @AfterEach
     fun `tear down`() {
-        Datadog.globalSDKCore = NoOpSDKCore()
+        Datadog.globalSdkCore = NoOpSdkCore()
 
         val tracer = GlobalTracer.get()
         val activeSpan = tracer?.activeSpan()
@@ -130,7 +130,7 @@ internal class AndroidTracerTest {
     @Test
     fun `M log a developer error W buildTracer { TracingFeature not enabled }`() {
         // GIVEN
-        whenever((Datadog.globalSDKCore as DatadogCore).tracingFeature) doReturn null
+        whenever((Datadog.globalSdkCore as DatadogCore).tracingFeature) doReturn null
 
         // WHEN
         testedTracerBuilder.build()
@@ -146,7 +146,7 @@ internal class AndroidTracerTest {
     @Test
     fun `M log a developer error W buildTracer { RumFeature not enabled, bundleWithRum true }`() {
         // GIVEN
-        whenever((Datadog.globalSDKCore as DatadogCore).rumFeature) doReturn null
+        whenever((Datadog.globalSdkCore as DatadogCore).rumFeature) doReturn null
 
         // WHEN
         testedTracerBuilder.build()
@@ -314,7 +314,7 @@ internal class AndroidTracerTest {
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String
     ) {
         // GIVEN
-        whenever((Datadog.globalSDKCore as DatadogCore).rumFeature) doReturn null
+        whenever((Datadog.globalSdkCore as DatadogCore).rumFeature) doReturn null
         val tracer = AndroidTracer.Builder()
             .build()
 

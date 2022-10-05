@@ -32,7 +32,7 @@ import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.FeatureUploadConfiguration
-import com.datadog.android.v2.api.SDKCore
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
@@ -40,7 +40,7 @@ import com.datadog.opentracing.DDSpan
 import com.google.gson.JsonObject
 
 /**
- * Internal implementation of the [SDKCore] interface.
+ * Internal implementation of the [SdkCore] interface.
  * @param credentials the Datadog credentials for this instance
  */
 internal class DatadogCore(
@@ -48,11 +48,13 @@ internal class DatadogCore(
     internal val credentials: Credentials,
     configuration: Configuration,
     internal val instanceId: String
-) : SDKCore {
+) : SdkCore {
 
     internal var libraryVerbosity = Int.MAX_VALUE
 
     internal lateinit var coreFeature: CoreFeature
+
+    private val features: MutableMap<String, DatadogFeature> = mutableMapOf()
 
     internal var logsFeature: SdkFeature<LogEvent, Configuration.Feature.Logs>? = null
     internal var tracingFeature: SdkFeature<DDSpan, Configuration.Feature.Tracing>? = null
@@ -82,7 +84,7 @@ internal class DatadogCore(
         }
     }
 
-    // region SDKCore
+    // region SdkCore
 
     /** @inheritDoc */
     override fun registerFeature(
@@ -90,13 +92,36 @@ internal class DatadogCore(
         storageConfiguration: FeatureStorageConfiguration,
         uploadConfiguration: FeatureUploadConfiguration
     ) {
-        // TODO-2138
+        // TODO RUMM-0000 read configuration and create storage and uploader instead of taking
+        //  from already initialized SdkFeature
+        val (storage, uploader) = when (featureName) {
+            RumFeature.RUM_FEATURE_NAME ->
+                rumFeature?.persistenceStrategy?.getStorage() to rumFeature?.uploader
+            LogsFeature.LOGS_FEATURE_NAME ->
+                logsFeature?.persistenceStrategy?.getStorage() to logsFeature?.uploader
+            TracingFeature.TRACING_FEATURE_NAME ->
+                tracingFeature?.persistenceStrategy?.getStorage() to tracingFeature?.uploader
+            CrashReportsFeature.CRASH_FEATURE_NAME ->
+                crashReportsFeature?.persistenceStrategy?.getStorage() to
+                    crashReportsFeature?.uploader
+            WebViewRumFeature.WEB_RUM_FEATURE_NAME ->
+                webViewRumFeature?.persistenceStrategy?.getStorage() to webViewRumFeature?.uploader
+            WebViewLogsFeature.WEB_LOGS_FEATURE_NAME ->
+                webViewLogsFeature?.persistenceStrategy?.getStorage() to
+                    webViewLogsFeature?.uploader
+            else -> {
+                null to null
+            }
+        }
+
+        if (storage != null && uploader != null) {
+            features[featureName] = DatadogFeature(this, storage, uploader)
+        }
     }
 
     /** @inheritDoc */
     override fun getFeature(featureName: String): FeatureScope? {
-        // TODO-2138
-        return null
+        return features[featureName]
     }
 
     /** @inheritDoc */
@@ -149,6 +174,8 @@ internal class DatadogCore(
         webViewRumFeature?.stop()
         webViewRumFeature = null
 
+        features.clear()
+
         coreFeature.stop()
     }
 
@@ -175,9 +202,7 @@ internal class DatadogCore(
      * Returns all registered features.
      */
     fun getAllFeatures(): List<FeatureScope> {
-        // TODO-2138
-        // should it be a part of SDKCore?
-        return emptyList()
+        return features.values.toList()
     }
 
     // endregion
@@ -250,8 +275,14 @@ internal class DatadogCore(
         if (configuration != null) {
             logsFeature = LogsFeature(coreFeature)
             webViewLogsFeature = WebViewLogsFeature(coreFeature)
-            logsFeature?.initialize(appContext, configuration)
-            webViewLogsFeature?.initialize(appContext, configuration)
+            logsFeature?.let {
+                it.initialize(appContext, configuration)
+                registerFeature(LogsFeature.LOGS_FEATURE_NAME, it, configuration)
+            }
+            webViewLogsFeature?.let {
+                it.initialize(appContext, configuration)
+                registerFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME, it, configuration)
+            }
         }
     }
 
@@ -261,7 +292,10 @@ internal class DatadogCore(
     ) {
         if (configuration != null) {
             crashReportsFeature = CrashReportsFeature(coreFeature)
-            crashReportsFeature?.initialize(appContext, configuration)
+            crashReportsFeature?.let {
+                it.initialize(appContext, configuration)
+                registerFeature(CrashReportsFeature.CRASH_FEATURE_NAME, it, configuration)
+            }
         }
     }
 
@@ -271,7 +305,10 @@ internal class DatadogCore(
     ) {
         if (configuration != null) {
             tracingFeature = TracingFeature(coreFeature)
-            tracingFeature?.initialize(appContext, configuration)
+            tracingFeature?.let {
+                it.initialize(appContext, configuration)
+                registerFeature(TracingFeature.TRACING_FEATURE_NAME, it, configuration)
+            }
         }
     }
 
@@ -285,9 +322,35 @@ internal class DatadogCore(
             }
             rumFeature = RumFeature(coreFeature)
             webViewRumFeature = WebViewRumFeature(coreFeature)
-            rumFeature?.initialize(appContext, configuration)
-            webViewRumFeature?.initialize(appContext, configuration)
+            rumFeature?.let {
+                it.initialize(appContext, configuration)
+                registerFeature(RumFeature.RUM_FEATURE_NAME, it, configuration)
+            }
+            webViewRumFeature?.let {
+                it.initialize(appContext, configuration)
+                registerFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME, it, configuration)
+            }
         }
+    }
+
+    private fun <T : Configuration.Feature> registerFeature(
+        featureName: String,
+        feature: SdkFeature<*, T>,
+        featureConfiguration: T
+    ) {
+        val filePersistenceConfig = coreFeature.buildFilePersistenceConfig()
+        registerFeature(
+            featureName,
+            storageConfiguration = FeatureStorageConfiguration(
+                maxItemSize = filePersistenceConfig.maxItemSize,
+                maxItemsPerBatch = filePersistenceConfig.maxItemsPerBatch,
+                maxBatchSize = filePersistenceConfig.maxBatchSize,
+                oldBatchThreshold = filePersistenceConfig.oldFileThreshold
+            ),
+            uploadConfiguration = FeatureUploadConfiguration(
+                requestFactory = feature.createRequestFactory(featureConfiguration)
+            )
+        )
     }
 
     @Suppress("FunctionMaxLength")

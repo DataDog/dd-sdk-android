@@ -160,7 +160,7 @@ internal constructor(
 
     /** @inheritdoc */
     override fun intercept(chain: Interceptor.Chain): Response {
-        val rumFeature = (Datadog.globalSDKCore as? DatadogCore)?.rumFeature
+        val rumFeature = (Datadog.globalSdkCore as? DatadogCore)?.rumFeature
         if (rumFeature != null) {
             val request = chain.request()
             val url = request.url().toString()
@@ -186,7 +186,7 @@ internal constructor(
         throwable: Throwable?
     ) {
         super.onRequestIntercepted(request, span, response, throwable)
-        val rumFeature = (Datadog.globalSDKCore as? DatadogCore)?.rumFeature
+        val rumFeature = (Datadog.globalSdkCore as? DatadogCore)?.rumFeature
         if (rumFeature != null) {
             if (response != null) {
                 handleResponse(request, response, span)
@@ -198,7 +198,7 @@ internal constructor(
 
     /** @inheritdoc */
     override fun canSendSpan(): Boolean {
-        val rumFeature = (Datadog.globalSDKCore as? DatadogCore)?.rumFeature
+        val rumFeature = (Datadog.globalSdkCore as? DatadogCore)?.rumFeature
         return rumFeature == null
     }
 

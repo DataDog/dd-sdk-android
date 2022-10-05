@@ -8,6 +8,7 @@ package com.datadog.android.webview.internal.log
 
 import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.FileMover
+import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
@@ -28,7 +29,8 @@ internal class WebViewLogFilePersistenceStrategy(
     storageDir: File,
     executorService: ExecutorService,
     internalLogger: Logger,
-    localDataEncryption: Encryption?
+    localDataEncryption: Encryption?,
+    filePersistenceConfig: FilePersistenceConfig
 ) : BatchFilePersistenceStrategy<JsonObject>(
     contextProvider,
     FeatureFileOrchestrator(
@@ -44,5 +46,6 @@ internal class WebViewLogFilePersistenceStrategy(
     sdkLogger,
     BatchFileReaderWriter.create(internalLogger, localDataEncryption),
     FileReaderWriter.create(internalLogger, localDataEncryption),
-    FileMover(internalLogger)
+    FileMover(internalLogger),
+    filePersistenceConfig
 )

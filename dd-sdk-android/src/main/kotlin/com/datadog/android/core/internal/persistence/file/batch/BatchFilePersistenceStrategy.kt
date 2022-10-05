@@ -34,7 +34,8 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
     internal val internalLogger: Logger,
     internal val fileReaderWriter: BatchFileReaderWriter,
     internal val metadataFileReaderWriter: FileReaderWriter,
-    val fileMover: FileMover
+    internal val fileMover: FileMover,
+    internal val filePersistenceConfig: FilePersistenceConfig
 ) : PersistenceStrategy<T> {
 
     private val dataWriter: DataWriter<T> by lazy {
@@ -61,8 +62,7 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
         fileMover = fileMover,
         // TODO RUMM-0000 create internal logger
         internalLogger = NoOpInternalLogger(),
-        // TODO RUMM-0000 don't use default value
-        filePersistenceConfig = FilePersistenceConfig()
+        filePersistenceConfig = filePersistenceConfig
     )
 
     // region PersistenceStrategy
@@ -110,5 +110,5 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
         )
     }
 
-    //
+    // endregion
 }

@@ -16,8 +16,8 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
-import com.datadog.android.v2.api.NoOpSDKCore
-import com.datadog.android.v2.api.SDKCore
+import com.datadog.android.v2.api.NoOpSdkCore
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.internal.HashGenerator
 import com.datadog.android.v2.core.internal.Sha256HashGenerator
@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 object Datadog {
 
-    internal var globalSDKCore: SDKCore = NoOpSDKCore()
+    internal var globalSdkCore: SdkCore = NoOpSdkCore()
 
     internal var hashGenerator: HashGenerator = Sha256HashGenerator()
 
@@ -69,8 +69,8 @@ object Datadog {
             return
         }
 
-        globalSDKCore = DatadogCore(context, credentials, configuration, sdkInstanceId)
-        globalSDKCore.setTrackingConsent(trackingConsent)
+        globalSdkCore = DatadogCore(context, credentials, configuration, sdkInstanceId)
+        globalSdkCore.setTrackingConsent(trackingConsent)
 
         initialized.set(true)
     }
@@ -93,15 +93,15 @@ object Datadog {
      */
     @JvmStatic
     fun clearAllData() {
-        globalSDKCore.clearAllData()
+        globalSdkCore.clearAllData()
     }
 
     // Stop all Datadog work (for test purposes).
     internal fun stop() {
         if (initialized.get()) {
-            globalSDKCore.stop()
+            globalSdkCore.stop()
             initialized.set(false)
-            globalSDKCore = NoOpSDKCore()
+            globalSdkCore = NoOpSdkCore()
         }
     }
 
@@ -121,7 +121,7 @@ object Datadog {
                 it.stopKeepAliveCallback()
                 it.drainExecutorService()
             }
-            globalSDKCore.flushStoredData()
+            globalSdkCore.flushStoredData()
         }
     }
 
@@ -137,7 +137,7 @@ object Datadog {
      */
     @JvmStatic
     fun setVerbosity(level: Int) {
-        globalSDKCore.setVerbosity(level)
+        globalSdkCore.setVerbosity(level)
     }
 
     /**
@@ -148,7 +148,7 @@ object Datadog {
      */
     @JvmStatic
     fun setTrackingConsent(consent: TrackingConsent) {
-        globalSDKCore.setTrackingConsent(consent)
+        globalSdkCore.setTrackingConsent(consent)
     }
 
     /**
@@ -168,7 +168,7 @@ object Datadog {
         email: String? = null,
         extraInfo: Map<String, Any?> = emptyMap()
     ) {
-        globalSDKCore.setUserInfo(
+        globalSdkCore.setUserInfo(
             UserInfo(
                 id,
                 name,
@@ -192,7 +192,7 @@ object Datadog {
     fun addUserExtraInfo(
         extraInfo: Map<String, Any?> = emptyMap()
     ) {
-        globalSDKCore.addUserProperties(extraInfo)
+        globalSdkCore.addUserProperties(extraInfo)
     }
 
     /**
@@ -204,7 +204,7 @@ object Datadog {
      */
     @JvmStatic
     fun enableRumDebugging(enable: Boolean) {
-        val rumFeature = ((globalSDKCore as? DatadogCore)?.rumFeature) as? RumFeature
+        val rumFeature = ((globalSdkCore as? DatadogCore)?.rumFeature) as? RumFeature
         if (enable) {
             rumFeature?.enableDebugging()
         } else {
@@ -221,7 +221,7 @@ object Datadog {
     val _internal: _InternalProxy by lazy {
         _InternalProxy(
             telemetry,
-            (globalSDKCore as? DatadogCore)?.coreFeature
+            (globalSdkCore as? DatadogCore)?.coreFeature
         )
     }
 

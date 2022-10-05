@@ -60,7 +60,7 @@ class AndroidTracer internal constructor(
         private var bundleWithRumEnabled: Boolean = true
 
         // TODO RUMM-0000 should have a nicer call chain
-        private var serviceName: String? = (Datadog.globalSDKCore as? DatadogCore)
+        private var serviceName: String? = (Datadog.globalSdkCore as? DatadogCore)
             ?.coreFeature
             ?.serviceName
         private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
@@ -80,7 +80,7 @@ class AndroidTracer internal constructor(
          * Builds a [AndroidTracer] based on the current state of this Builder.
          */
         fun build(): AndroidTracer {
-            val datadogCore = Datadog.globalSDKCore as? DatadogCore
+            val datadogCore = Datadog.globalSdkCore as? DatadogCore
             val tracingFeature = datadogCore?.tracingFeature
             val rumFeature = datadogCore?.rumFeature
 
