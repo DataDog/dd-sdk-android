@@ -40,7 +40,7 @@ internal class MutationResolverTest {
     // region adds mutations
 
     @Test
-    fun `M identify the newly added wireframes W resolveMutations`(forge: Forge) {
+    fun `M identify the newly added wireframes W resolveMutations { end }`(forge: Forge) {
         // Given
         val fakePrevSnapshot = forge.aList {
             forge.getForgery(MobileSegment.Wireframe::class.java)
@@ -51,6 +51,63 @@ internal class MutationResolverTest {
         val expectedAdditions = LinkedList<MobileSegment.Add>()
         fakeAddedWireframes.forEach {
             expectedAdditions.add(MobileSegment.Add(lastPrevWireframe.id(), it))
+            lastPrevWireframe = it
+        }
+
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            fakePrevSnapshot,
+            fakeCurrentSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).isEqualTo(expectedAdditions)
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isNullOrEmpty()
+    }
+
+    @Test
+    fun `M identify the newly added wireframes W resolveMutations { middle }`(forge: Forge) {
+        // Given
+        val fakePrevSnapshot = forge.aList(forge.anInt(min = 4, max = 10)) {
+            forge.getForgery(MobileSegment.Wireframe::class.java)
+        }
+        val fakeAddedWireframes = forge.aList { forge.getForgery<MobileSegment.Wireframe>() }
+        val middle = fakePrevSnapshot.size / 2
+        val remaining = Math.max(0, fakePrevSnapshot.size - middle)
+        val fakeCurrentSnapshot = fakePrevSnapshot.take(middle) + fakeAddedWireframes +
+            fakePrevSnapshot.takeLast(remaining)
+        var lastPrevWireframe = if (middle > 0) fakePrevSnapshot[middle - 1] else null
+        val expectedAdditions = LinkedList<MobileSegment.Add>()
+        fakeAddedWireframes.forEach {
+            expectedAdditions.add(MobileSegment.Add(lastPrevWireframe?.id(), it))
+            lastPrevWireframe = it
+        }
+
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            fakePrevSnapshot,
+            fakeCurrentSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).isEqualTo(expectedAdditions)
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isNullOrEmpty()
+    }
+
+    @Test
+    fun `M identify the newly added wireframes W resolveMutations { beginning }`(forge: Forge) {
+        // Given
+        val fakePrevSnapshot = forge.aList {
+            forge.getForgery(MobileSegment.Wireframe::class.java)
+        }
+        val fakeAddedWireframes = forge.aList { forge.getForgery<MobileSegment.Wireframe>() }
+        val fakeCurrentSnapshot = fakeAddedWireframes + fakePrevSnapshot.toMutableList()
+        var lastPrevWireframe: MobileSegment.Wireframe? = null
+        val expectedAdditions = LinkedList<MobileSegment.Add>()
+        fakeAddedWireframes.forEach {
+            expectedAdditions.add(MobileSegment.Add(lastPrevWireframe?.id(), it))
             lastPrevWireframe = it
         }
 
@@ -121,6 +178,41 @@ internal class MutationResolverTest {
         assertThat(mutations?.updates).isNullOrEmpty()
     }
 
+    // endregion
+
+    // region order changed mutations
+
+    @Test
+    fun `M identify the newly added and remove wireframe W resolveMutations { order changed }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 3)) {
+            forge.getForgery(MobileSegment.Wireframe::class.java)
+        }
+        val fakeCurrentSnapshot = fakePrevSnapshot.reversed()
+        val expectedRemovals = fakePrevSnapshot
+            .map { MobileSegment.Remove(it.id()) }
+        val expectedAdds = mutableListOf<MobileSegment.Add>()
+        fakeCurrentSnapshot.forEachIndexed { index, wireframe ->
+            val previousId = if (index > 0) fakeCurrentSnapshot[index - 1].id() else null
+            expectedAdds.add(
+                com.datadog.android.sessionreplay.model.MobileSegment.Add
+                (previousId, wireframe)
+            )
+        }
+
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            fakePrevSnapshot,
+            fakeCurrentSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).containsExactlyInAnyOrder(*expectedAdds.toTypedArray())
+        assertThat(mutations?.removes).containsExactlyInAnyOrder(*expectedRemovals.toTypedArray())
+        assertThat(mutations?.updates).isNullOrEmpty()
+    }
     // endregion
 
     // region ShapeWireframe update mutations
