@@ -76,8 +76,12 @@ internal class RecorderOnDrawListenerTest {
     var fakeDecorHeight: Int = 0
     var fakeOrientation: Int = Configuration.ORIENTATION_UNDEFINED
 
+    @Forgery
+    lateinit var fakeNode: Node
+
     @BeforeEach
     fun `set up`(forge: Forge) {
+        whenever(mockSnapshotProducer.produce(mockDecorView, fakeDensity)).thenReturn(fakeNode)
         whenever(mockDecorView.width).thenReturn(fakeDecorWidth)
         whenever(mockDecorView.height).thenReturn(fakeDecorHeight)
         mockWindow = mock {
@@ -105,24 +109,33 @@ internal class RecorderOnDrawListenerTest {
     }
 
     @Test
-    fun `M take and process snapshot W onDraw()`(@Forgery fakeNode: Node) {
+    fun `M take and process snapshot W onDraw()`() {
         // Given
         stubHandler()
-        whenever(mockSnapshotProducer.produce(mockDecorView, fakeDensity)).thenReturn(fakeNode)
 
         // When
         testedListener.onDraw()
 
         // Then
-        verify(mockProcessor).process(fakeNode)
+        val argumentCaptor = argumentCaptor<OrientationChanged>()
+        verify(mockProcessor).process(
+            eq(fakeNode),
+            argumentCaptor.capture()
+        )
+        assertThat(argumentCaptor.firstValue)
+            .isEqualTo(
+                OrientationChanged(
+                    fakeDecorWidth.densityNormalized(fakeDensity),
+                    fakeDecorHeight.densityNormalized(fakeDensity)
+                )
+            )
     }
 
     @Test
-    fun `M do nothing W onDraw() { activity window is null }`(@Forgery fakeNode: Node) {
+    fun `M do nothing W onDraw() { activity window is null }`() {
         // Given
         whenever(mockActivity.window).thenReturn(null)
         stubHandler()
-        whenever(mockSnapshotProducer.produce(mockDecorView, fakeDensity)).thenReturn(fakeNode)
 
         // When
         testedListener.onDraw()
@@ -132,17 +145,16 @@ internal class RecorderOnDrawListenerTest {
     }
 
     @Test
-    fun `M send OrientationChanged W onDraw() { first time }`(@Forgery fakeNode: Node) {
+    fun `M send OrientationChanged W onDraw() { first time }`() {
         // Given
         stubHandler()
-        whenever(mockSnapshotProducer.produce(mockDecorView, fakeDensity)).thenReturn(fakeNode)
 
         // When
         testedListener.onDraw()
 
         // Then
         val argumentCaptor = argumentCaptor<OrientationChanged>()
-        verify(mockProcessor).process(argumentCaptor.capture())
+        verify(mockProcessor).process(eq(fakeNode), argumentCaptor.capture())
         assertThat(argumentCaptor.firstValue)
             .isEqualTo(
                 OrientationChanged(
@@ -153,10 +165,9 @@ internal class RecorderOnDrawListenerTest {
     }
 
     @Test
-    fun `M send OrientationChanged only once W onDraw() { second time }`(@Forgery fakeNode: Node) {
+    fun `M send OrientationChanged only once W onDraw() { second time }`() {
         // Given
         stubHandler()
-        whenever(mockSnapshotProducer.produce(mockDecorView, fakeDensity)).thenReturn(fakeNode)
 
         // When
         testedListener.onDraw()
@@ -164,7 +175,10 @@ internal class RecorderOnDrawListenerTest {
 
         // Then
         val argumentCaptor = argumentCaptor<OrientationChanged>()
-        verify(mockProcessor).process(argumentCaptor.capture())
+        verify(mockProcessor, times(2)).process(
+            eq(fakeNode),
+            argumentCaptor.capture()
+        )
         assertThat(argumentCaptor.firstValue)
             .isEqualTo(
                 OrientationChanged(
@@ -172,15 +186,13 @@ internal class RecorderOnDrawListenerTest {
                     fakeDecorHeight.densityNormalized(fakeDensity)
                 )
             )
+        assertThat(argumentCaptor.secondValue).isNull()
     }
 
     @Test
-    fun `M send OrientationChanged twice W onDraw() { called 2 times with different orientation }`(
-        @Forgery fakeNode: Node
-    ) {
+    fun `M send OrientationChanged twice W onDraw(){called 2 times with different orientation}`() {
         // Given
         stubHandler()
-        whenever(mockSnapshotProducer.produce(mockDecorView, fakeDensity)).thenReturn(fakeNode)
 
         // When
         val configuration1 =
@@ -194,7 +206,10 @@ internal class RecorderOnDrawListenerTest {
 
         // Then
         val argumentCaptor = argumentCaptor<OrientationChanged>()
-        verify(mockProcessor, times(2)).process(argumentCaptor.capture())
+        verify(mockProcessor, times(2)).process(
+            eq(fakeNode),
+            argumentCaptor.capture()
+        )
         assertThat(argumentCaptor.firstValue)
             .isEqualTo(
                 OrientationChanged(

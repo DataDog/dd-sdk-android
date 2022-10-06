@@ -33,25 +33,26 @@ internal class RecorderOnDrawListener(
     private val takeSnapshotRunnable: Runnable = Runnable {
         trackedActivity.get()?.let { activity ->
             activity.window?.let {
-                checkForViewPortResize(activity, it.decorView)
                 snapshotProducer.produce(it.decorView, pixelsDensity)?.let { node ->
-                    processor.process(node)
+                    processor.process(node, resolveOrientationChange(activity, it.decorView))
                 }
             }
         }
     }
 
-    private fun checkForViewPortResize(activity: Activity, decorView: View) {
+    private fun resolveOrientationChange(activity: Activity, decorView: View): OrientationChanged? {
         val orientation = activity.resources.configuration.orientation
-        if (currentOrientation != orientation) {
-            processor.process(
+        val orientationChanged =
+            if (currentOrientation != orientation) {
                 OrientationChanged(
                     decorView.width.densityNormalized(pixelsDensity),
                     decorView.height.densityNormalized(pixelsDensity)
                 )
-            )
-        }
+            } else {
+                null
+            }
         currentOrientation = orientation
+        return orientationChanged
     }
 
     companion object {

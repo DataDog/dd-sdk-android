@@ -35,7 +35,7 @@ internal class SnapshotProcessor(
     private var lastSnapshotTimestamp = 0L
 
     @MainThread
-    override fun process(node: Node) {
+    override fun process(node: Node, orientationChanged: OrientationChanged?) {
         if (node.wireframes.isEmpty()) {
             // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
             return
@@ -44,17 +44,7 @@ internal class SnapshotProcessor(
         buildRunnable { timestamp, newContext, currentContext ->
             Runnable {
                 @Suppress("ThreadSafety") // this runs inside an executor
-                handleSnapshot(newContext, currentContext, timestamp, node)
-            }
-        }?.let { executeRunnable(it) }
-    }
-
-    @MainThread
-    override fun process(event: OrientationChanged) {
-        buildRunnable { timestamp, newContext, _ ->
-            Runnable {
-                @Suppress("ThreadSafety") // this runs inside an executor
-                handleOrientationChanged(newContext, timestamp, event)
+                handleSnapshot(newContext, currentContext, timestamp, node, orientationChanged)
             }
         }?.let { executeRunnable(it) }
     }
@@ -86,30 +76,12 @@ internal class SnapshotProcessor(
     }
 
     @WorkerThread
-    private fun handleOrientationChanged(
-        rumContext: SessionReplayRumContext,
-        timestamp: Long,
-        orientationChanged: OrientationChanged
-    ) {
-        val viewPortResizeData = MobileSegment.MobileIncrementalData.ViewportResizeData(
-            orientationChanged.width.toLong(),
-            orientationChanged.height.toLong()
-        )
-        val viewportRecord = MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
-            timestamp,
-            data = viewPortResizeData
-        )
-
-        val enrichedRecord = bundleRecordInEnrichedRecord(rumContext, listOf(viewportRecord))
-        writer.write(enrichedRecord)
-    }
-
-    @WorkerThread
     private fun handleSnapshot(
         newRumContext: SessionReplayRumContext,
         prevRumContext: SessionReplayRumContext,
         timestamp: Long,
-        snapshot: Node
+        snapshot: Node,
+        orientationChanged: OrientationChanged?
     ) {
         val wireframes = nodeFlattener.flattenNode(snapshot)
 
@@ -119,9 +91,13 @@ internal class SnapshotProcessor(
         }
 
         val records: MutableList<MobileSegment.MobileRecord> = LinkedList()
-        var fullSnapshotRequired = isLastFullSnapshotTime()
-        if (isNewView(prevRumContext, newRumContext)) {
-            fullSnapshotRequired = true
+        val isNewView = isNewView(prevRumContext, newRumContext)
+        val isTimeForFullSnapshot = isTimeForFullSnapshot()
+        val fullSnapshotRequired = isNewView ||
+            isTimeForFullSnapshot ||
+            (orientationChanged != null)
+
+        if (isNewView) {
             handleViewEndRecord(prevRumContext, timestamp)
             val rootWireframeBounds = wireframes[0].bounds()
             val metaRecord = MobileSegment.MobileRecord.MetaRecord(
@@ -134,6 +110,18 @@ internal class SnapshotProcessor(
             )
             records.add(metaRecord)
             records.add(focusRecord)
+        }
+
+        if (orientationChanged != null) {
+            val viewPortResizeData = MobileSegment.MobileIncrementalData.ViewportResizeData(
+                orientationChanged.width.toLong(),
+                orientationChanged.height.toLong()
+            )
+            val viewportRecord = MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
+                timestamp,
+                data = viewPortResizeData
+            )
+            records.add(viewportRecord)
         }
 
         if (fullSnapshotRequired) {
@@ -159,7 +147,7 @@ internal class SnapshotProcessor(
         }
     }
 
-    private fun isLastFullSnapshotTime(): Boolean {
+    private fun isTimeForFullSnapshot(): Boolean {
         return if (System.nanoTime() - lastSnapshotTimestamp >= FULL_SNAPSHOT_INTERVAL_IN_NS) {
             lastSnapshotTimestamp = System.nanoTime()
             true
