@@ -33,6 +33,8 @@ import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
+import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
+import com.datadog.android.sessionreplay.internal.net.SessionReplayOkHttpUploader
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.FeatureStorageConfiguration
@@ -135,6 +137,9 @@ internal class DatadogCore(
             }
             WebViewLogsFeature.WEB_LOGS_FEATURE_NAME -> {
                 webViewLogsFeature = WebViewLogsFeature(coreFeature, storage, uploader)
+            }
+            SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME -> {
+                sessionReplayFeature = SessionReplayFeature(coreFeature, storage, uploader, this)
             }
         }
 
@@ -364,6 +369,24 @@ internal class DatadogCore(
         }
     }
 
+    private fun initializeSessionReplayFeature(
+        configuration: Configuration.Feature.SessionReplay?,
+        appContext: Context
+    ) {
+        if (configuration != null) {
+            registerFeature(
+                SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME,
+                SessionReplayRequestFactory(
+                    SessionReplayOkHttpUploader(
+                        configuration.endpointUrl,
+                        coreFeature.okHttpClient
+                    )
+                )
+            )
+            sessionReplayFeature?.initialize(appContext, configuration)
+        }
+    }
+
     private fun registerFeature(
         featureName: String,
         requestFactory: RequestFactory
@@ -381,20 +404,6 @@ internal class DatadogCore(
                 requestFactory = requestFactory
             )
         )
-    }
-
-    private fun initializeSessionReplayFeature(
-        configuration: Configuration.Feature.SessionReplay?,
-        appContext: Context
-    ) {
-        if (configuration != null) {
-            sessionReplayFeature = SessionReplayFeature(
-                coreFeature,
-                configuration,
-                this
-            )
-            sessionReplayFeature?.initialize(appContext, configuration)
-        }
     }
 
     @Suppress("FunctionMaxLength")

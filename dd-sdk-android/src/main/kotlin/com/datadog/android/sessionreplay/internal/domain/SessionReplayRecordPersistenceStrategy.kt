@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.domain
 
-import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
@@ -18,6 +17,7 @@ import com.datadog.android.log.Logger
 import com.datadog.android.security.Encryption
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.Storage
 import java.io.File
 import java.util.concurrent.ExecutorService
 
@@ -28,7 +28,8 @@ internal class SessionReplayRecordPersistenceStrategy(
     executorService: ExecutorService,
     internalLogger: Logger,
     localDataEncryption: Encryption?,
-    filePersistenceConfig: FilePersistenceConfig
+    filePersistenceConfig: FilePersistenceConfig,
+    storage: Storage
 ) : BatchFilePersistenceStrategy<String>(
     contextProvider,
     FeatureFileOrchestrator(
@@ -40,10 +41,10 @@ internal class SessionReplayRecordPersistenceStrategy(
     ),
     executorService,
     SessionReplayRecordSerializer(),
-    PayloadDecoration.NEW_LINE_DECORATION,
     internalLogger,
     BatchFileReaderWriter.create(internalLogger, localDataEncryption),
     FileReaderWriter.create(internalLogger, localDataEncryption),
     FileMover(internalLogger),
-    filePersistenceConfig
+    filePersistenceConfig,
+    storage
 )

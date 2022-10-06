@@ -16,29 +16,30 @@ import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.sessionreplay.LifecycleCallback
 import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRecordPersistenceStrategy
-import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.domain.SessionReplaySerializedRecordWriter
-import com.datadog.android.sessionreplay.internal.net.SessionReplayOkHttpUploader
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
-import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.internal.net.DataUploader
+import com.datadog.android.v2.core.internal.storage.Storage
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class SessionReplayFeature(
     coreFeature: CoreFeature,
-    private val configuration: Configuration.Feature.SessionReplay,
+    storage: Storage,
+    uploader: DataUploader,
     sdkCore: SdkCore,
-    private val sessionReplayCallbackProvider: (PersistenceStrategy<String>) ->
-    LifecycleCallback = {
-        SessionReplayLifecycleCallback(
-            SessionReplayRumContextProvider(),
-            configuration.privacy,
-            SessionReplaySerializedRecordWriter(it.getWriter()),
-            SessionReplayTimeProvider(coreFeature.contextProvider),
-            SessionReplayRecordCallback(sdkCore)
-        )
-    }
-) : SdkFeature<String, Configuration.Feature.SessionReplay>(coreFeature) {
+    private val sessionReplayCallbackProvider:
+        (PersistenceStrategy<String>, Configuration.Feature.SessionReplay) ->
+        LifecycleCallback = { persistenceStrategy, configuration ->
+            SessionReplayLifecycleCallback(
+                SessionReplayRumContextProvider(),
+                configuration.privacy,
+                SessionReplaySerializedRecordWriter(persistenceStrategy.getWriter()),
+                SessionReplayTimeProvider(coreFeature.contextProvider),
+                SessionReplayRecordCallback(sdkCore)
+            )
+        }
+) : SdkFeature<String, Configuration.Feature.SessionReplay>(coreFeature, storage, uploader) {
 
     internal lateinit var appContext: Context
     private var isRecording = AtomicBoolean(false)
@@ -52,7 +53,7 @@ internal class SessionReplayFeature(
     ) {
         super.onInitialize(context, configuration)
         appContext = context
-        sessionReplayCallback = sessionReplayCallbackProvider(persistenceStrategy)
+        sessionReplayCallback = sessionReplayCallbackProvider(persistenceStrategy, configuration)
         startRecording()
     }
 
@@ -64,6 +65,7 @@ internal class SessionReplayFeature(
 
     override fun createPersistenceStrategy(
         context: Context,
+        storage: Storage,
         configuration: Configuration.Feature.SessionReplay
     ): PersistenceStrategy<String> {
         return SessionReplayRecordPersistenceStrategy(
@@ -73,17 +75,8 @@ internal class SessionReplayFeature(
             coreFeature.persistenceExecutorService,
             sdkLogger,
             coreFeature.localDataEncryption,
-            coreFeature.buildFilePersistenceConfig()
-        )
-    }
-
-    override fun createRequestFactory(configuration: Configuration.Feature.SessionReplay):
-        RequestFactory {
-        return SessionReplayRequestFactory(
-            SessionReplayOkHttpUploader(
-                configuration.endpointUrl,
-                coreFeature.okHttpClient
-            )
+            coreFeature.buildFilePersistenceConfig(),
+            storage
         )
     }
 

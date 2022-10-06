@@ -51,9 +51,10 @@ internal class SessionReplayFeatureTest :
     override fun createTestedFeature(): SessionReplayFeature {
         return SessionReplayFeature(
             coreFeature.mockInstance,
-            fakeConfigurationFeature,
+            mockStorage,
+            mockUploader,
             mockSDKCore
-        ) { mockSessionReplayLifecycleCallback }
+        ) { _, _ -> mockSessionReplayLifecycleCallback }
     }
 
     override fun forgeConfiguration(forge: Forge): Configuration.Feature.SessionReplay {
@@ -79,7 +80,8 @@ internal class SessionReplayFeatureTest :
         // Given
         testedFeature = SessionReplayFeature(
             coreFeature.mockInstance,
-            fakeConfigurationFeature,
+            mockStorage,
+            mockUploader,
             mockSDKCore
         )
 
@@ -151,7 +153,7 @@ internal class SessionReplayFeatureTest :
             Thread {
                 testedFeature.stopRecording()
                 countDownLatch.countDown()
-            }.run()
+            }.start()
         }
 
         // Then
@@ -217,7 +219,7 @@ internal class SessionReplayFeatureTest :
             Thread {
                 testedFeature.startRecording()
                 countDownLatch.countDown()
-            }.run()
+            }.start()
         }
 
         // Then
