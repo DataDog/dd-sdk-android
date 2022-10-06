@@ -14,17 +14,20 @@ import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.domain.LogFilePersistenceStrategy
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.log.internal.net.LogsRequestFactory
+import com.datadog.android.v2.core.internal.net.DataUploader
+import com.datadog.android.v2.core.internal.storage.Storage
 
 internal class LogsFeature(
-    coreFeature: CoreFeature
-) : SdkFeature<LogEvent, Configuration.Feature.Logs>(coreFeature) {
+    coreFeature: CoreFeature,
+    storage: Storage,
+    uploader: DataUploader
+) : SdkFeature<LogEvent, Configuration.Feature.Logs>(coreFeature, storage, uploader) {
 
     // region SdkFeature
 
     override fun createPersistenceStrategy(
         context: Context,
+        storage: Storage,
         configuration: Configuration.Feature.Logs
     ): PersistenceStrategy<LogEvent> {
         return LogFilePersistenceStrategy(
@@ -35,12 +38,9 @@ internal class LogsFeature(
             sdkLogger,
             configuration.logsEventMapper,
             coreFeature.localDataEncryption,
-            coreFeature.buildFilePersistenceConfig()
+            coreFeature.buildFilePersistenceConfig(),
+            storage
         )
-    }
-
-    override fun createRequestFactory(configuration: Configuration.Feature.Logs): RequestFactory {
-        return LogsRequestFactory(configuration.endpointUrl)
     }
 
     override fun onPostInitialized(context: Context) {}

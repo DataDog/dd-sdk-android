@@ -19,6 +19,7 @@ import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.event.WebViewLogEventSerializer
 import com.datadog.android.security.Encryption
 import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.Storage
 import com.google.gson.JsonObject
 import java.io.File
 import java.util.concurrent.ExecutorService
@@ -30,7 +31,8 @@ internal class WebViewLogFilePersistenceStrategy(
     executorService: ExecutorService,
     internalLogger: Logger,
     localDataEncryption: Encryption?,
-    filePersistenceConfig: FilePersistenceConfig
+    filePersistenceConfig: FilePersistenceConfig,
+    storage: Storage
 ) : BatchFilePersistenceStrategy<JsonObject>(
     contextProvider,
     FeatureFileOrchestrator(
@@ -47,5 +49,6 @@ internal class WebViewLogFilePersistenceStrategy(
     BatchFileReaderWriter.create(internalLogger, localDataEncryption),
     FileReaderWriter.create(internalLogger, localDataEncryption),
     FileMover(internalLogger),
-    filePersistenceConfig
+    filePersistenceConfig,
+    storage
 )

@@ -10,7 +10,6 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.log.internal.net.LogsRequestFactory
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
@@ -50,7 +49,7 @@ internal class CrashReportsFeatureTest :
     }
 
     override fun createTestedFeature(): CrashReportsFeature {
-        return CrashReportsFeature(coreFeature.mockInstance)
+        return CrashReportsFeature(coreFeature.mockInstance, mockStorage, mockUploader)
     }
 
     override fun forgeConfiguration(forge: Forge): Configuration.Feature.CrashReport {
@@ -69,15 +68,6 @@ internal class CrashReportsFeatureTest :
         // Then
         assertThat(testedFeature.persistenceStrategy)
             .isInstanceOf(CrashReportFilePersistenceStrategy::class.java)
-    }
-
-    @Test
-    fun `𝕄 create a crash request factory 𝕎 createRequestFactory()`() {
-        // When
-        val requestFactory = testedFeature.createRequestFactory(fakeConfigurationFeature)
-
-        // Then
-        assertThat(requestFactory).isInstanceOf(LogsRequestFactory::class.java)
     }
 
     @Test

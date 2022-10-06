@@ -14,12 +14,14 @@ import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.log.internal.net.LogsRequestFactory
+import com.datadog.android.v2.core.internal.net.DataUploader
+import com.datadog.android.v2.core.internal.storage.Storage
 
 internal class CrashReportsFeature(
-    coreFeature: CoreFeature
-) : SdkFeature<LogEvent, Configuration.Feature.CrashReport>(coreFeature) {
+    coreFeature: CoreFeature,
+    storage: Storage,
+    uploader: DataUploader
+) : SdkFeature<LogEvent, Configuration.Feature.CrashReport>(coreFeature, storage, uploader) {
 
     internal var originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
 
@@ -35,6 +37,7 @@ internal class CrashReportsFeature(
 
     override fun createPersistenceStrategy(
         context: Context,
+        storage: Storage,
         configuration: Configuration.Feature.CrashReport
     ): PersistenceStrategy<LogEvent> {
         return CrashReportFilePersistenceStrategy(
@@ -44,13 +47,9 @@ internal class CrashReportsFeature(
             coreFeature.persistenceExecutorService,
             sdkLogger,
             coreFeature.localDataEncryption,
-            coreFeature.buildFilePersistenceConfig()
+            coreFeature.buildFilePersistenceConfig(),
+            storage
         )
-    }
-
-    override fun createRequestFactory(configuration: Configuration.Feature.CrashReport):
-        RequestFactory {
-        return LogsRequestFactory(configuration.endpointUrl)
     }
 
     override fun onPostInitialized(context: Context) {}

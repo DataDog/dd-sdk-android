@@ -20,6 +20,7 @@ import com.datadog.android.log.internal.domain.event.LogEventSerializer
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.security.Encryption
 import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.Storage
 import java.io.File
 import java.util.concurrent.ExecutorService
 
@@ -30,7 +31,8 @@ internal class CrashReportFilePersistenceStrategy(
     executorService: ExecutorService,
     internalLogger: Logger,
     localDataEncryption: Encryption?,
-    filePersistenceConfig: FilePersistenceConfig
+    filePersistenceConfig: FilePersistenceConfig,
+    storage: Storage
 ) : BatchFilePersistenceStrategy<LogEvent>(
     contextProvider,
     FeatureFileOrchestrator(
@@ -47,5 +49,6 @@ internal class CrashReportFilePersistenceStrategy(
     BatchFileReaderWriter.create(sdkLogger, localDataEncryption),
     FileReaderWriter.create(sdkLogger, localDataEncryption),
     FileMover(sdkLogger),
-    filePersistenceConfig
+    filePersistenceConfig,
+    storage
 )

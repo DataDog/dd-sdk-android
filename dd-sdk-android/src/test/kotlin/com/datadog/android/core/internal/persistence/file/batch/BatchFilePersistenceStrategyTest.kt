@@ -19,7 +19,7 @@ import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.data.upload.DataFlusher
-import com.datadog.android.v2.core.internal.storage.ConsentAwareStorage
+import com.datadog.android.v2.core.internal.storage.Storage
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
@@ -73,6 +73,9 @@ internal class BatchFilePersistenceStrategyTest {
     @Mock
     lateinit var mockContextProvider: ContextProvider
 
+    @Mock
+    lateinit var mockStorage: Storage
+
     @Forgery
     lateinit var fakePayloadDecoration: PayloadDecoration
 
@@ -98,7 +101,8 @@ internal class BatchFilePersistenceStrategyTest {
             mockFileReaderWriter,
             mockMetaFileReaderWriter,
             mockFileMover,
-            fakeFilePersistenceConfig
+            fakeFilePersistenceConfig,
+            mockStorage
         )
     }
 
@@ -134,22 +138,12 @@ internal class BatchFilePersistenceStrategyTest {
     }
 
     @Test
-    fun `𝕄 return consent aware storage 𝕎 getStorage()`() {
+    fun `𝕄 return same storage 𝕎 getStorage()`() {
         // When
         val storage = testedStrategy.getStorage()
 
         // Then
-        assertThat(storage).isInstanceOf(ConsentAwareStorage::class.java)
-    }
-
-    @Test
-    fun `𝕄 return consent aware storage 𝕎 getStorage() twice`() {
-        // When
-        val storage1 = testedStrategy.getStorage()
-        val storage2 = testedStrategy.getStorage()
-
-        // Then
-        assertThat(storage1).isSameAs(storage2)
+        assertThat(storage).isSameAs(mockStorage)
     }
 
     @Test

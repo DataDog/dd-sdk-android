@@ -13,18 +13,21 @@ import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.tracing.internal.domain.TracesFilePersistenceStrategy
-import com.datadog.android.v2.api.RequestFactory
-import com.datadog.android.v2.tracing.internal.net.TracesRequestFactory
+import com.datadog.android.v2.core.internal.net.DataUploader
+import com.datadog.android.v2.core.internal.storage.Storage
 import com.datadog.opentracing.DDSpan
 
 internal class TracingFeature(
-    coreFeature: CoreFeature
-) : SdkFeature<DDSpan, Configuration.Feature.Tracing>(coreFeature) {
+    coreFeature: CoreFeature,
+    storage: Storage,
+    uploader: DataUploader
+) : SdkFeature<DDSpan, Configuration.Feature.Tracing>(coreFeature, storage, uploader) {
 
     // region SdkFeature
 
     override fun createPersistenceStrategy(
         context: Context,
+        storage: Storage,
         configuration: Configuration.Feature.Tracing
     ): PersistenceStrategy<DDSpan> {
         return TracesFilePersistenceStrategy(
@@ -37,13 +40,9 @@ internal class TracingFeature(
             sdkLogger,
             configuration.spanEventMapper,
             coreFeature.localDataEncryption,
-            coreFeature.buildFilePersistenceConfig()
+            coreFeature.buildFilePersistenceConfig(),
+            storage
         )
-    }
-
-    override fun createRequestFactory(configuration: Configuration.Feature.Tracing):
-        RequestFactory {
-        return TracesRequestFactory(configuration.endpointUrl)
     }
 
     override fun onPostInitialized(context: Context) {}

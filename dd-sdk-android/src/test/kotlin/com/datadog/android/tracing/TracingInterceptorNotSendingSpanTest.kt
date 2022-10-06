@@ -173,7 +173,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         fakeRequest = forgeRequest(forge)
         Datadog.globalSdkCore = mock<DatadogCore>()
         whenever((Datadog.globalSdkCore as DatadogCore).tracingFeature) doReturn
-            TracingFeature(coreFeature.mockInstance)
+            TracingFeature(coreFeature.mockInstance, storage = mock(), uploader = mock())
         doAnswer { false }.whenever(mockDetector).isFirstPartyUrl(any<HttpUrl>())
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(HttpUrl.get(fakeUrl))
 
