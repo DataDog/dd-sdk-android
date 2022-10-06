@@ -144,9 +144,10 @@ internal class SnapshotProcessorTest {
     @Test
     fun `M send FullSnapshot W process { new view }`(forge: Forge) {
         // Given
+        val fakeRumContext2 = forge.getForgery<SessionReplayRumContext>()
         whenever(mockRumContextProvider.getRumContext())
             .thenReturn(fakeRumContext)
-            .thenReturn(forge.getForgery())
+            .thenReturn(fakeRumContext2)
         val fakeSnapshotView1 = forge.aSingleLevelSnapshot()
         val fakeSnapshotView2 = forge.aSingleLevelSnapshot()
         val fakeFlattenedSnapshotView1 = forge.aList {
@@ -166,7 +167,14 @@ internal class SnapshotProcessorTest {
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
+        // one for first view, one for first view end and one for new view
         verify(mockWriter, times(3)).write(captor.capture())
+        assertThat(captor.firstValue.applicationId).isEqualTo(fakeRumContext.applicationId)
+        assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
+        assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
+        assertThat(captor.thirdValue.applicationId).isEqualTo(fakeRumContext2.applicationId)
+        assertThat(captor.thirdValue.sessionId).isEqualTo(fakeRumContext2.sessionId)
+        assertThat(captor.thirdValue.viewId).isEqualTo(fakeRumContext2.viewId)
         assertThat(captor.firstValue.records.size).isEqualTo(3)
         assertThat(captor.thirdValue.records.size).isEqualTo(3)
         assertThat(captor.firstValue.records[2])
@@ -549,25 +557,95 @@ internal class SnapshotProcessorTest {
     @Test
     fun `M send it to the writer as EnrichedRecord W process { OrientationChanged }`(forge: Forge) {
         // Given
+        val fakeSnapshot = forge.aSingleLevelSnapshot()
         val fakeOrientationChanged = OrientationChanged(forge.anInt(), forge.anInt())
 
         // When
-        testedProcessor.process(fakeOrientationChanged)
+        testedProcessor.process(fakeSnapshot, fakeOrientationChanged)
 
         // Then
+
         val captor = argumentCaptor<EnrichedRecord>()
         verify(mockWriter).write(captor.capture())
         assertThat(captor.firstValue.applicationId).isEqualTo(fakeRumContext.applicationId)
         assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
         assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
-        assertThat(captor.firstValue.records.size).isEqualTo(1)
-        val incrementalSnapshotRecord = captor.firstValue.records[0] as
+        assertThat(captor.firstValue.records.size).isEqualTo(4)
+        val incrementalSnapshotRecord = captor.firstValue.records[2] as
             MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord
-        assertThat(incrementalSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
         val viewportResizeData = incrementalSnapshotRecord.data as
             MobileSegment.MobileIncrementalData.ViewportResizeData
         assertThat(viewportResizeData.height).isEqualTo(fakeOrientationChanged.height.toLong())
         assertThat(viewportResizeData.width).isEqualTo(fakeOrientationChanged.width.toLong())
+    }
+
+    @Test
+    fun `M always send a FullSnapshot W process {OrientationChanged}`(forge: Forge) {
+        // Given
+        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
+        val fakeSnapshot2 = forge.aSingleLevelSnapshot()
+        val fakeOrientationChanged1 = OrientationChanged(forge.anInt(), forge.anInt())
+        val fakeOrientationChanged2 = OrientationChanged(forge.anInt(), forge.anInt())
+
+        // When
+        testedProcessor.process(fakeSnapshot1, fakeOrientationChanged1)
+        testedProcessor.process(fakeSnapshot2, fakeOrientationChanged2)
+
+        // Then
+
+        val captor = argumentCaptor<EnrichedRecord>()
+        verify(mockWriter, times(2)).write(captor.capture())
+        assertThat(captor.firstValue.applicationId).isEqualTo(fakeRumContext.applicationId)
+        assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
+        assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
+        assertThat(captor.secondValue.applicationId).isEqualTo(fakeRumContext.applicationId)
+        assertThat(captor.secondValue.sessionId).isEqualTo(fakeRumContext.sessionId)
+        assertThat(captor.secondValue.viewId).isEqualTo(fakeRumContext.viewId)
+        assertThat(captor.firstValue.records.size).isEqualTo(4)
+        assertThat(captor.secondValue.records.size).isEqualTo(2)
+        assertThat(captor.firstValue.records[3])
+            .isInstanceOf(MobileSegment.MobileRecord.MobileFullSnapshotRecord::class.java)
+
+        assertThat(captor.secondValue.records[1])
+            .isInstanceOf(MobileSegment.MobileRecord.MobileFullSnapshotRecord::class.java)
+    }
+
+    @Test
+    fun `M always send a fullsnapshot W process {OrientationChanged, different view}`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeRumContext2 = forge.getForgery<SessionReplayRumContext>()
+        whenever(mockRumContextProvider.getRumContext())
+            .thenReturn(fakeRumContext)
+            .thenReturn(fakeRumContext2)
+        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
+        val fakeSnapshot2 = forge.aSingleLevelSnapshot()
+        val fakeOrientationChanged1 = OrientationChanged(forge.anInt(), forge.anInt())
+        val fakeOrientationChanged2 = OrientationChanged(forge.anInt(), forge.anInt())
+
+        // When
+        testedProcessor.process(fakeSnapshot1, fakeOrientationChanged1)
+        testedProcessor.process(fakeSnapshot2, fakeOrientationChanged2)
+
+        // Then
+
+        val captor = argumentCaptor<EnrichedRecord>()
+        // one for first view, one for first view end and one for new view
+        verify(mockWriter, times(3)).write(captor.capture())
+        assertThat(captor.firstValue.applicationId).isEqualTo(fakeRumContext.applicationId)
+        assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
+        assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
+        assertThat(captor.thirdValue.applicationId).isEqualTo(fakeRumContext2.applicationId)
+        assertThat(captor.thirdValue.sessionId).isEqualTo(fakeRumContext2.sessionId)
+        assertThat(captor.thirdValue.viewId).isEqualTo(fakeRumContext2.viewId)
+        assertThat(captor.firstValue.records.size).isEqualTo(4)
+        assertThat(captor.thirdValue.records.size).isEqualTo(4)
+        assertThat(captor.firstValue.records[3])
+            .isInstanceOf(MobileSegment.MobileRecord.MobileFullSnapshotRecord::class.java)
+
+        assertThat(captor.thirdValue.records[3])
+            .isInstanceOf(MobileSegment.MobileRecord.MobileFullSnapshotRecord::class.java)
     }
 
     // endregion
@@ -648,8 +726,11 @@ internal class SnapshotProcessorTest {
             is MobileSegment.MobileIncrementalData.TouchData -> {
                 testedProcessor.process(argument)
             }
-            is OrientationChanged -> {
-                testedProcessor.process(argument)
+            is Pair<*, *> -> {
+                testedProcessor.process(
+                    argument.first as Node,
+                    argument.second as OrientationChanged
+                )
             }
             else -> fail(
                 "The provided argument of " +
@@ -707,9 +788,10 @@ internal class SnapshotProcessorTest {
                 )
             )
 
-            val fakeOrientationChanged = OrientationChanged(0, 0)
+            val fakeSnapshotWithOrientationChanged =
+                Pair(fakeSnapshot, OrientationChanged(0, 0))
 
-            return listOf(fakeSnapshot, fakeTouchData, fakeOrientationChanged)
+            return listOf(fakeSnapshot, fakeTouchData, fakeSnapshotWithOrientationChanged)
         }
     }
 }
