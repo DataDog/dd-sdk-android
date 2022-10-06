@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.domain
 
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
@@ -53,7 +52,6 @@ internal class RumFilePersistenceStrategy(
         eventMapper,
         RumEventSerializer()
     ),
-    PayloadDecoration.NEW_LINE_DECORATION,
     internalLogger,
     BatchFileReaderWriter.create(internalLogger, localDataEncryption),
     FileReaderWriter.create(internalLogger, localDataEncryption),

@@ -650,6 +650,10 @@ internal class UploadWorkerTest {
         override fun confirmBatchRead(batchId: BatchId, callback: (BatchConfirmation) -> Unit) {
             executor.execute { delegate.confirmBatchRead(batchId, callback) }
         }
+
+        override fun dropAll() {
+            fail("we don't expect this one to be called")
+        }
     }
 
     // endregion

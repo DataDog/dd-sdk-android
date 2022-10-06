@@ -6,7 +6,6 @@
 
 package com.datadog.android.webview.internal.log
 
-import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
@@ -44,7 +43,6 @@ internal class WebViewLogFilePersistenceStrategy(
     ),
     executorService,
     WebViewLogEventSerializer(),
-    PayloadDecoration.JSON_ARRAY_DECORATION,
     sdkLogger,
     BatchFileReaderWriter.create(internalLogger, localDataEncryption),
     FileReaderWriter.create(internalLogger, localDataEncryption),

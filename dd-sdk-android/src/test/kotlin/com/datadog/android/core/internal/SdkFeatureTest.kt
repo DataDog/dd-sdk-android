@@ -10,7 +10,6 @@ import android.app.Application
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
-import com.datadog.android.core.internal.persistence.DataReader
 import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.error.internal.CrashReportsFeature
@@ -82,9 +81,6 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     lateinit var mockPersistenceStrategy: PersistenceStrategy<T>
 
     @Mock
-    lateinit var mockReader: DataReader
-
-    @Mock
     lateinit var mockUploader: DataUploader
 
     @Mock
@@ -97,7 +93,6 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        whenever(mockPersistenceStrategy.getReader()) doReturn mockReader
         whenever(coreFeature.mockTrackingConsentProvider.getConsent()) doReturn fakeConsent
 
         fakeConfigurationFeature = forgeConfiguration(forge)
@@ -268,14 +263,11 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
 
     @Test
     fun `𝕄 clear local storage 𝕎 clearAllData()`() {
-        // Given
-        testedFeature.persistenceStrategy = mockPersistenceStrategy
-
         // When
         testedFeature.clearAllData()
 
         // Then
-        verify(mockReader).dropAll()
+        verify(mockStorage).dropAll()
     }
 
     @Test
