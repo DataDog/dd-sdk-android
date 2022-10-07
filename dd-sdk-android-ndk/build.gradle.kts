@@ -53,6 +53,8 @@ android {
         }
     }
 
+    namespace = "com.datadog.android.ndk"
+
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
     }

@@ -5,8 +5,7 @@
   ~ Copyright 2016-Present Datadog, Inc.
   -->
 
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.datadog.android.timber">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application/>
 
