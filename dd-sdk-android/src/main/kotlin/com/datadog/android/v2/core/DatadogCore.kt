@@ -32,6 +32,9 @@ import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.sessionreplay.internal.SessionReplayFeature
+import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
+import com.datadog.android.sessionreplay.internal.net.SessionReplayOkHttpUploader
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.FeatureStorageConfiguration
@@ -75,6 +78,8 @@ internal class DatadogCore(
         null
     internal var webViewLogsFeature: SdkFeature<JsonObject, Configuration.Feature.Logs>? = null
     internal var webViewRumFeature: SdkFeature<Any, Configuration.Feature.RUM>? = null
+    internal var sessionReplayFeature: SdkFeature<String, Configuration.Feature.SessionReplay>? =
+        null
 
     // TODO RUMM-0000 handle context
     internal val contextProvider: ContextProvider?
@@ -133,6 +138,9 @@ internal class DatadogCore(
             WebViewLogsFeature.WEB_LOGS_FEATURE_NAME -> {
                 webViewLogsFeature = WebViewLogsFeature(coreFeature, storage, uploader)
             }
+            SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME -> {
+                sessionReplayFeature = SessionReplayFeature(coreFeature, storage, uploader, this)
+            }
         }
 
         features[featureName] = DatadogFeature(this, storage, uploader)
@@ -176,6 +184,7 @@ internal class DatadogCore(
         tracingFeature?.clearAllData()
         webViewLogsFeature?.clearAllData()
         webViewRumFeature?.clearAllData()
+        sessionReplayFeature?.clearAllData()
     }
 
     /** @inheritDoc */
@@ -192,6 +201,8 @@ internal class DatadogCore(
         webViewLogsFeature = null
         webViewRumFeature?.stop()
         webViewRumFeature = null
+        sessionReplayFeature?.stop()
+        sessionReplayFeature = null
 
         features.clear()
 
@@ -210,11 +221,16 @@ internal class DatadogCore(
         crashReportsFeature?.flushStoredData()
         webViewLogsFeature?.flushStoredData()
         webViewRumFeature?.flushStoredData()
+        sessionReplayFeature?.flushStoredData()
     }
 
     /** @inheritDoc */
     override fun setFeatureContext(feature: String, context: Map<String, Any?>) {
         contextProvider?.setFeatureContext(feature, context)
+    }
+
+    override fun updateFeatureContext(feature: String, entries: Map<String, Any?>) {
+        contextProvider?.updateFeatureContext(feature, entries)
     }
 
     /**
@@ -258,6 +274,7 @@ internal class DatadogCore(
         initializeTracingFeature(mutableConfig.tracesConfig, appContext)
         initializeRumFeature(mutableConfig.rumConfig, appContext)
         initializeCrashReportFeature(mutableConfig.crashReportConfig, appContext)
+        initializeSessionReplayFeature(mutableConfig.sessionReplayConfig, appContext)
 
         coreFeature.ndkCrashHandler.handleNdkCrash(
             logsFeature?.persistenceStrategy?.getWriter() ?: NoOpDataWriter(),
@@ -349,6 +366,24 @@ internal class DatadogCore(
             )
             rumFeature?.initialize(appContext, configuration)
             webViewRumFeature?.initialize(appContext, configuration)
+        }
+    }
+
+    private fun initializeSessionReplayFeature(
+        configuration: Configuration.Feature.SessionReplay?,
+        appContext: Context
+    ) {
+        if (configuration != null) {
+            registerFeature(
+                SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME,
+                SessionReplayRequestFactory(
+                    SessionReplayOkHttpUploader(
+                        configuration.endpointUrl,
+                        coreFeature.okHttpClient
+                    )
+                )
+            )
+            sessionReplayFeature?.initialize(appContext, configuration)
         }
     }
 

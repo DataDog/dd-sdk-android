@@ -17,6 +17,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.io.ByteArrayOutputStream
 import okhttp3.Interceptor
+import okhttp3.MultipartBody
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.RequestBody
@@ -104,6 +105,43 @@ internal class GzipRequestInterceptorTest {
                 .isEqualTo(fakeBody)
             assertThat(lastValue.header("Content-Encoding"))
                 .isEqualTo("identity")
+        }
+        assertThat(response)
+            .isSameAs(fakeResponse)
+    }
+
+    @Test
+    fun `M keep original body W intercept { MultipartBody }`(forge: Forge) {
+        // Given
+        val fakeMultipartBody = MultipartBody
+            .Builder()
+            .addFormDataPart(
+                forge.aString(),
+                forge.aString(),
+                RequestBody.create(null, fakeBody.toByteArray())
+            )
+            .build()
+
+        fakeRequest = fakeRequest.newBuilder()
+            .post(fakeMultipartBody)
+            .build()
+        fakeResponse = forgeResponse()
+        stubChain()
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            val buffer = Buffer()
+            val stream = ByteArrayOutputStream()
+            val part = (lastValue.body() as MultipartBody).part(0)
+            part.body().writeTo(buffer)
+            buffer.copyTo(stream)
+
+            assertThat(stream.toString())
+                .isEqualTo(fakeBody)
         }
         assertThat(response)
             .isSameAs(fakeResponse)

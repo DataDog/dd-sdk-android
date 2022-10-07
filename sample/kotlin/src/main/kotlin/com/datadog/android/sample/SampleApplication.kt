@@ -130,7 +130,8 @@ class SampleApplication : Application() {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
             .sampleTelemetry(100f)
             .setFirstPartyHosts(tracedHosts)
@@ -161,6 +162,9 @@ class SampleApplication : Application() {
         }
         if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
             configBuilder.useCustomRumEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
+        }
+        if (BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL.isNotBlank()) {
+            configBuilder.useSessionReplayEndpoint(BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL)
         }
         return configBuilder.build()
     }

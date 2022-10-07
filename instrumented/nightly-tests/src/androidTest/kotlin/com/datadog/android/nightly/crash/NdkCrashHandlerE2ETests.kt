@@ -87,7 +87,8 @@ class NdkCrashHandlerE2ETests {
                     logsEnabled = true,
                     tracesEnabled = true,
                     crashReportsEnabled = true,
-                    rumEnabled = true
+                    rumEnabled = true,
+                    sessionReplayEnabled = true
                 )
                 .setSecurityConfig(SecurityConfig(localDataEncryption = NeverUseThatEncryption()))
                 .build()

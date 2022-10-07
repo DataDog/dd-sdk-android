@@ -113,13 +113,15 @@ fun defaultConfigurationBuilder(
     logsEnabled: Boolean = true,
     tracesEnabled: Boolean = true,
     crashReportsEnabled: Boolean = true,
-    rumEnabled: Boolean = true
+    rumEnabled: Boolean = true,
+    sessionReplayEnabled: Boolean = true
 ): Configuration.Builder {
     val configBuilder = Configuration.Builder(
         logsEnabled,
         tracesEnabled,
         crashReportsEnabled,
-        rumEnabled
+        rumEnabled,
+        sessionReplayEnabled
     )
     return configBuilder
         .sampleTelemetry(100f)

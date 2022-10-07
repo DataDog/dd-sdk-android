@@ -16,6 +16,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ResourceEventAssert.Companion.assertThat
+import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -44,6 +45,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -110,6 +112,12 @@ internal class RumResourceScopeTest {
     @Mock
     lateinit var mockRumEventSourceProvider: RumEventSourceProvider
 
+    @BoolForgery
+    var fakeHasReplay: Boolean = false
+
+    @Mock
+    lateinit var mockFeaturesContextResolver: FeaturesContextResolver
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeSourceResourceEvent = forge.aNullable { aValueFrom(ResourceEvent.Source::class.java) }
@@ -133,6 +141,8 @@ internal class RumResourceScopeTest {
         whenever(mockContextProvider.context) doReturn fakeDatadogContext
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         doAnswer { false }.whenever(mockDetector).isFirstPartyUrl(any<String>())
+        whenever(mockFeaturesContextResolver.resolveHasReplay(fakeDatadogContext))
+            .thenReturn(fakeHasReplay)
 
         testedScope = RumResourceScope(
             mockParentScope,
@@ -144,7 +154,8 @@ internal class RumResourceScopeTest {
             fakeServerOffset,
             mockDetector,
             mockRumEventSourceProvider,
-            mockContextProvider
+            mockContextProvider,
+            mockFeaturesContextResolver
         )
     }
 
@@ -210,6 +221,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasReplay(fakeHasReplay)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
@@ -272,6 +284,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasReplay(fakeHasReplay)
                     hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
                     hasProviderDomain(URL(fakeUrl).host)
                     hasLiteSessionPlan()
@@ -315,7 +328,8 @@ internal class RumResourceScopeTest {
             fakeServerOffset,
             mockDetector,
             mockRumEventSourceProvider,
-            mockContextProvider
+            mockContextProvider,
+            mockFeaturesContextResolver
         )
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -348,6 +362,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasReplay(fakeHasReplay)
                     hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
                     hasProviderDomain(brokenUrl)
                     hasLiteSessionPlan()
@@ -415,6 +430,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(fakeTraceId)
                     hasSpanId(fakeSpanId)
+                    hasReplay(fakeHasReplay)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
@@ -478,6 +494,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasReplay(fakeHasReplay)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
@@ -532,6 +549,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasReplay(fakeHasReplay)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
@@ -580,6 +598,7 @@ internal class RumResourceScopeTest {
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
@@ -667,7 +686,8 @@ internal class RumResourceScopeTest {
             fakeServerOffset,
             mockDetector,
             mockRumEventSourceProvider,
-            mockContextProvider
+            mockContextProvider,
+            mockFeaturesContextResolver
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
 
@@ -696,6 +716,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasReplay(fakeHasReplay)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
@@ -760,6 +781,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasReplay(fakeHasReplay)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
@@ -825,6 +847,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasReplay(fakeHasReplay)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
@@ -891,6 +914,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasReplay(fakeHasReplay)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
@@ -960,6 +984,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceErrorEvent)
                     hasDeviceInfo(
@@ -1028,6 +1053,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -1067,7 +1093,8 @@ internal class RumResourceScopeTest {
             fakeServerOffset,
             mockDetector,
             mockRumEventSourceProvider,
-            mockContextProvider
+            mockContextProvider,
+            mockFeaturesContextResolver
         )
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -1109,6 +1136,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceErrorEvent)
                     hasDeviceInfo(
@@ -1150,7 +1178,8 @@ internal class RumResourceScopeTest {
             fakeServerOffset,
             mockDetector,
             mockRumEventSourceProvider,
-            mockContextProvider
+            mockContextProvider,
+            mockFeaturesContextResolver
         )
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -1193,6 +1222,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -1262,6 +1292,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceErrorEvent)
                     hasDeviceInfo(
@@ -1333,6 +1364,7 @@ internal class RumResourceScopeTest {
                     hasErrorType(errorType)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -1401,6 +1433,7 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceErrorEvent)
                     hasDeviceInfo(
@@ -1472,6 +1505,7 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -1546,6 +1580,7 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceErrorEvent)
                     hasDeviceInfo(
@@ -1623,6 +1658,7 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -1775,6 +1811,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
@@ -1836,6 +1873,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
@@ -1899,6 +1937,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
@@ -2011,6 +2050,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -2071,6 +2111,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
+                    hasReplay(fakeHasReplay)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
