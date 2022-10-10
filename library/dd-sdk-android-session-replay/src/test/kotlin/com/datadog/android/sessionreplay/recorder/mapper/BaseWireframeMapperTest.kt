@@ -53,7 +53,7 @@ internal abstract class BaseWireframeMapperTest {
             textStyle = MobileSegment.TextStyle(
                 "sans-serif",
                 0,
-                "#000000FF"
+                "#000000ff"
             ),
             textPosition = MobileSegment.TextPosition(
                 MobileSegment.Padding(0, 0, 0, 0),

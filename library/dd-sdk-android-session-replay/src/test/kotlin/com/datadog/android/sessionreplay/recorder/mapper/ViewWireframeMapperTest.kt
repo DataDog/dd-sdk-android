@@ -89,7 +89,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         forge: Forge
     ) {
         // Given
-        val fakeStyleColor = forge.aStringMatching("#[0-9A-F]{8}")
+        val fakeStyleColor = forge.aStringMatching("#[0-9a-f]{8}")
         val fakeDrawableColor = fakeStyleColor
             .substring(1)
             .toLong(16)
@@ -130,7 +130,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         forge: Forge
     ) {
         // Given
-        val fakeStyleColor = forge.aStringMatching("#[0-9A-F]{8}")
+        val fakeStyleColor = forge.aStringMatching("#[0-9a-f]{8}")
         val fakeDrawableColor = fakeStyleColor
             .substring(1)
             .toLong(16)
@@ -172,7 +172,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         forge: Forge
     ) {
         // Given
-        val fakeStyleColor = forge.aStringMatching("#[0-9A-F]{8}")
+        val fakeStyleColor = forge.aStringMatching("#[0-9a-f]{8}")
         val fakeDrawableColor = fakeStyleColor
             .substring(1)
             .toLong(16)
@@ -199,7 +199,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
 
         // Then
         val expectedWireframe = mockView.toShapeWireframe()
-            .copy(border = MobileSegment.ShapeBorder("#000000FF", 1))
+            .copy(border = MobileSegment.ShapeBorder("#000000ff", 1))
         assertThat(shapeWireframe).isEqualTo(expectedWireframe)
     }
 
@@ -210,7 +210,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         forge: Forge
     ) {
         // Given
-        val fakeStyleColor = forge.aStringMatching("#[0-9A-F]{8}")
+        val fakeStyleColor = forge.aStringMatching("#[0-9a-f]{8}")
         val fakeDrawableColor = fakeStyleColor
             .substring(1)
             .toLong(16)
@@ -253,7 +253,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         forge: Forge
     ) {
         // Given
-        val fakeStyleColor = forge.aStringMatching("#[0-9A-F]{8}")
+        val fakeStyleColor = forge.aStringMatching("#[0-9a-f]{8}")
         val fakeDrawableColor = fakeStyleColor
             .substring(1)
             .toLong(16)
@@ -282,7 +282,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         // Then
         val expectedWireframe = mockView.toShapeWireframe().copy(
             border = MobileSegment.ShapeBorder
-            ("#000000FF", 1)
+            ("#000000ff", 1)
         )
         assertThat(shapeWireframe).isEqualTo(expectedWireframe)
     }
@@ -308,7 +308,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
 
         // Then
         val expectedWireframe = mockView.toShapeWireframe()
-            .copy(border = MobileSegment.ShapeBorder("#000000FF", 1))
+            .copy(border = MobileSegment.ShapeBorder("#000000ff", 1))
         assertThat(shapeWireframe).isEqualTo(expectedWireframe)
     }
 }

@@ -13,12 +13,11 @@ import com.datadog.android.sessionreplay.model.MobileSegment
 // and ImageWireframe. It will be handled in the Session Replay v1.
 internal class ViewScreenshotWireframeMapper(
     private val viewWireframeMapper: ViewWireframeMapper = ViewWireframeMapper()
-) :
-    BaseWireframeMapper<View, MobileSegment.Wireframe.ShapeWireframe>() {
+) : BaseWireframeMapper<View, MobileSegment.Wireframe.ShapeWireframe>() {
 
     override fun map(view: View, pixelsDensity: Float):
         MobileSegment.Wireframe.ShapeWireframe {
         return viewWireframeMapper.map(view, pixelsDensity)
-            .copy(border = MobileSegment.ShapeBorder("#000000FF", 1))
+            .copy(border = MobileSegment.ShapeBorder("#000000ff", 1))
     }
 }

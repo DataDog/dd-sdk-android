@@ -56,7 +56,7 @@ internal class ViewWireframeMapper :
             // bounds.
             // TODO: RUMM-0000 In case the background drawable could not be handled we should
             // instead resolve it as an ImageWireframe.
-            null to MobileSegment.ShapeBorder("#000000FF", 1)
+            null to MobileSegment.ShapeBorder("#000000ff", 1)
         }
     }
 }

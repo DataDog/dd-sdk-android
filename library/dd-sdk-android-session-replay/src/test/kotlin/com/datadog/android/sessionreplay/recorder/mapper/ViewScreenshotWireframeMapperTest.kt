@@ -46,7 +46,7 @@ internal class ViewScreenshotWireframeMapperTest : BaseWireframeMapperTest() {
 
         // Then
         val expectedWireframe = mockView.toShapeWireframe()
-            .copy(border = MobileSegment.ShapeBorder("#000000FF", 1))
+            .copy(border = MobileSegment.ShapeBorder("#000000ff", 1))
         assertThat(shapeWireframe).isEqualTo(expectedWireframe)
     }
 }
