@@ -15,6 +15,7 @@ import com.datadog.android.sessionreplay.recorder.densityNormalized
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,6 +25,9 @@ import org.junit.jupiter.params.provider.MethodSource
 internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTest() {
 
     lateinit var testedTextWireframeMapper: TextWireframeMapper
+
+    @StringForgery
+    lateinit var fakeText: String
 
     @BeforeEach
     fun `set up`() {
@@ -44,7 +48,6 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         // Given
         val fakeFontSize = forge.aFloat(min = 0f)
         val fakeStyleColor = forge.aStringMatching("#[0-9a-f]{6}ff")
-        val fakeText = forge.aString()
         val fakeFontColor = fakeStyleColor
             .substring(1)
             .toLong(16)
@@ -81,7 +84,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
     ) {
         // Given
         val mockTextView: TextView = forge.aMockView<TextView>().apply {
-            whenever(this.text).thenReturn(forge.aString())
+            whenever(this.text).thenReturn(fakeText)
             whenever(this.typeface).thenReturn(mock())
             whenever(this.textAlignment).thenReturn(fakeTextAlignment)
         }
@@ -108,7 +111,6 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         forge: Forge
     ) {
         // Given
-        val fakeText = forge.aString()
         val mockTextView: TextView = forge.aMockView<TextView>().apply {
             whenever(this.text).thenReturn(fakeText)
             whenever(this.typeface).thenReturn(mock())
@@ -133,7 +135,6 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
     @Test
     fun `M resolve a TextWireframe W map() { TextView with textPadding }`(forge: Forge) {
         // Given
-        val fakeText = forge.aString()
         val fakeTextPaddingTop = forge.anInt()
         val fakeTextPaddingBottom = forge.anInt()
         val fakeTextPaddingStart = forge.anInt()
@@ -192,7 +193,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         }
         val mockTextView = forge.aMockView<TextView>().apply {
             whenever(this.background).thenReturn(mockDrawable)
-            whenever(this.text).thenReturn(forge.aString())
+            whenever(this.text).thenReturn(fakeText)
             whenever(this.typeface).thenReturn(mock())
         }
 
