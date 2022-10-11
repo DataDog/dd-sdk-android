@@ -85,7 +85,6 @@ internal class RecorderWindowCallback(
             val pointerId = event.getPointerId(i).toLong()
             val pointerCoordinates = MotionEvent.PointerCoords()
             event.getPointerCoords(i, pointerCoordinates)
-            // TODO: RUMM-2400 Apply the timestamp offset from the SDKContext
             positions.add(
                 MobileSegment.Position(
                     pointerId,

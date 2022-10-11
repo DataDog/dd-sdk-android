@@ -43,7 +43,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
     ) {
         // Given
         val fakeFontSize = forge.aFloat(min = 0f)
-        val fakeStyleColor = forge.aStringMatching("#[0-9A-F]{6}FF")
+        val fakeStyleColor = forge.aStringMatching("#[0-9a-f]{6}ff")
         val fakeText = forge.aString()
         val fakeFontColor = fakeStyleColor
             .substring(1)
@@ -175,7 +175,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
         forge: Forge
     ) {
         // Given
-        val fakeStyleColor = forge.aStringMatching("#[0-9A-F]{8}")
+        val fakeStyleColor = forge.aStringMatching("#[0-9a-f]{8}")
         val fakeDrawableColor = fakeStyleColor
             .substring(1)
             .toLong(16)

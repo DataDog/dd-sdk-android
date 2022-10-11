@@ -8,7 +8,6 @@ package com.datadog.android.sessionreplay.recorder.mapper
 
 import android.view.View
 import com.datadog.android.sessionreplay.model.MobileSegment
-import java.util.Locale
 
 internal abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wireframe> :
     WireframeMapper<T, S> {
@@ -21,8 +20,21 @@ internal abstract class BaseWireframeMapper<T : View, S : MobileSegment.Wirefram
 
     protected fun colorAndAlphaAsStringHexa(color: Int, alphaAsHexa: Long): String {
         // we shift left 8 bits to make room for alpha
-        val colorAndAlphaAsHexa = (color.toLong().shl(8)).or(alphaAsHexa)
-        return String.format(Locale.US, "#%08X", 0xFFFFFFFF and colorAndAlphaAsHexa)
+        val colorAndAlpha = (color.toLong().shl(8)).or(alphaAsHexa)
+        // we are going to use the `Long.toString(radius)` method to produce the hexa
+        // representation of the color and alpha long value because is much more faster than the
+        // String.format(..) approach. Based on our benchmarks, because String.format uses regular
+        // expressions under the hood, this approach is at least 2 times faster.
+        val colorAndAlphaAsHexa = (0xffffffff and colorAndAlpha).toString(16)
+        var requiredLength = 9
+        val sb = StringBuilder(requiredLength)
+        sb.append("#")
+        requiredLength--
+        repeat(requiredLength - colorAndAlphaAsHexa.length) {
+            sb.append('0')
+        }
+        sb.append(colorAndAlphaAsHexa)
+        return sb.toString()
     }
 
     companion object {
