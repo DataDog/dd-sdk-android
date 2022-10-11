@@ -10,13 +10,17 @@ package com.datadog.android.rum
 
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.error.internal.CrashReportsFeature
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.plugin.DatadogContext
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogRumContext
 import com.datadog.android.rum.GlobalRum.get
 import com.datadog.android.rum.GlobalRum.registerIfAbsent
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.v2.core.DatadogCore
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
@@ -166,19 +170,20 @@ object GlobalRum {
         val datadogCore = (Datadog.globalSdkCore as? DatadogCore)
         updateContextInPlugins(
             pluginContext,
-            datadogCore?.rumFeature?.getPlugins().orEmpty()
+            datadogCore?.features?.get(RumFeature.RUM_FEATURE_NAME)?.getPlugins().orEmpty()
         )
         updateContextInPlugins(
             pluginContext,
-            datadogCore?.crashReportsFeature?.getPlugins().orEmpty()
+            datadogCore?.features?.get(CrashReportsFeature.CRASH_FEATURE_NAME)
+                ?.getPlugins().orEmpty()
         )
         updateContextInPlugins(
             pluginContext,
-            datadogCore?.logsFeature?.getPlugins().orEmpty()
+            datadogCore?.features?.get(LogsFeature.LOGS_FEATURE_NAME)?.getPlugins().orEmpty()
         )
         updateContextInPlugins(
             pluginContext,
-            datadogCore?.tracingFeature?.getPlugins().orEmpty()
+            datadogCore?.features?.get(TracingFeature.TRACING_FEATURE_NAME)?.getPlugins().orEmpty()
         )
     }
 

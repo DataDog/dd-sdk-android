@@ -4,49 +4,50 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.core.internal
 
 import android.app.Application
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
-import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
-import com.datadog.android.core.internal.persistence.PersistenceStrategy
-import com.datadog.android.error.internal.CrashReportsFeature
-import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
+import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.core.internal.data.upload.DataFlusher
+import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.FeatureUploadConfiguration
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.NoOpContextProvider
 import com.datadog.android.v2.core.internal.data.upload.DataUploadScheduler
-import com.datadog.android.v2.core.internal.net.DataUploader
+import com.datadog.android.v2.core.internal.net.DataOkHttpUploader
+import com.datadog.android.v2.core.internal.net.NoOpDataUploader
+import com.datadog.android.v2.core.internal.storage.BatchWriter
+import com.datadog.android.v2.core.internal.storage.NoOpStorage
 import com.datadog.android.v2.core.internal.storage.Storage
-import com.datadog.android.webview.internal.log.WebViewLogsFeature
-import com.datadog.android.webview.internal.rum.WebViewRumFeature
-import com.datadog.tools.unit.annotations.ProhibitLeavingStaticMocksIn
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -59,56 +60,45 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ProhibitLeavingStaticMocksExtension::class),
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-@ProhibitLeavingStaticMocksIn(
-    CoreFeature::class,
-    RumFeature::class,
-    LogsFeature::class,
-    TracingFeature::class,
-    WebViewLogsFeature::class,
-    WebViewRumFeature::class,
-    CrashReportsFeature::class
-)
-internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : SdkFeature<T, C>> {
+internal class SdkFeatureTest {
 
-    lateinit var testedFeature: F
-
-    @Mock
-    lateinit var mockPersistenceStrategy: PersistenceStrategy<T>
-
-    @Mock
-    lateinit var mockUploader: DataUploader
+    lateinit var testedFeature: SdkFeature
 
     @Mock
     lateinit var mockStorage: Storage
 
-    lateinit var fakeConfigurationFeature: C
-
     @Forgery
     lateinit var fakeConsent: TrackingConsent
+
+    @StringForgery
+    lateinit var featureName: String
+
+    private lateinit var mockPlugins: List<DatadogPlugin>
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(coreFeature.mockTrackingConsentProvider.getConsent()) doReturn fakeConsent
 
-        fakeConfigurationFeature = forgeConfiguration(forge)
-        testedFeature = createTestedFeature()
+        mockPlugins = forge.aList { mock() }
+
+        testedFeature = SdkFeature(
+            coreFeature = coreFeature.mockInstance,
+            featureName = featureName,
+            storageConfiguration = forge.getForgery(),
+            uploadConfiguration = FeatureUploadConfiguration(
+                requestFactory = mock()
+            )
+        )
     }
-
-    abstract fun createTestedFeature(): F
-
-    abstract fun forgeConfiguration(forge: Forge): C
-
-    abstract fun featureDirName(): String
 
     @Test
     fun `𝕄 mark itself as initialized 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, mockPlugins)
 
         // Then
         assertThat(testedFeature.isInitialized()).isTrue()
@@ -117,7 +107,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 initialize uploader 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, mockPlugins)
 
         // Then
         assertThat(testedFeature.uploadScheduler)
@@ -130,20 +120,17 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
             )
         }
 
-        assertThat(testedFeature.uploader).isSameAs(mockUploader)
+        assertThat(testedFeature.uploader).isInstanceOf(DataOkHttpUploader::class.java)
     }
 
     @Test
     fun `𝕄 register plugins 𝕎 initialize()`() {
-        // Given
-        assumeTrue(fakeConfigurationFeature.plugins.isNotEmpty())
-
         // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, mockPlugins)
 
         // Then
         argumentCaptor<DatadogPluginConfig> {
-            fakeConfigurationFeature.plugins.forEach {
+            mockPlugins.forEach {
                 verify(it).register(capture())
             }
             allValues.forEach {
@@ -159,14 +146,11 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
 
     @Test
     fun `𝕄 register plugins as TrackingConsentCallback 𝕎 initialize()`() {
-        // Given
-        assumeTrue(fakeConfigurationFeature.plugins.isNotEmpty())
-
         // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, mockPlugins)
 
         // Then
-        fakeConfigurationFeature.plugins.forEach {
+        mockPlugins.forEach {
             verify(coreFeature.mockTrackingConsentProvider).registerCallback(it)
         }
     }
@@ -174,9 +158,8 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 unregister plugins 𝕎 stop()`() {
         // Given
-        assumeTrue(fakeConfigurationFeature.plugins.isNotEmpty())
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
-        fakeConfigurationFeature.plugins.forEach {
+        testedFeature.initialize(appContext.mockInstance, mockPlugins)
+        mockPlugins.forEach {
             verify(it).register(any())
         }
 
@@ -184,7 +167,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
         testedFeature.stop()
 
         // Then
-        fakeConfigurationFeature.plugins.forEach {
+        mockPlugins.forEach {
             verify(it).unregister()
             verifyNoMoreInteractions(it)
         }
@@ -193,7 +176,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 stop scheduler 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, mockPlugins)
         val mockUploadScheduler: UploadScheduler = mock()
         testedFeature.uploadScheduler = mockUploadScheduler
 
@@ -207,22 +190,26 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     @Test
     fun `𝕄 cleanup data 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, mockPlugins)
 
         // When
         testedFeature.stop()
 
         // Then
-        assertThat(testedFeature.persistenceStrategy)
-            .isInstanceOf(NoOpPersistenceStrategy::class.java)
         assertThat(testedFeature.uploadScheduler)
             .isInstanceOf(NoOpUploadScheduler::class.java)
+        assertThat(testedFeature.storage)
+            .isInstanceOf(NoOpStorage::class.java)
+        assertThat(testedFeature.uploader)
+            .isInstanceOf(NoOpDataUploader::class.java)
+        assertThat(testedFeature.fileOrchestrator)
+            .isInstanceOf(NoOpFileOrchestrator::class.java)
     }
 
     @Test
     fun `𝕄 mark itself as not initialized 𝕎 stop()`() {
         // Given
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, mockPlugins)
 
         // When
         testedFeature.stop()
@@ -232,21 +219,22 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
     }
 
     @Test
-    fun `𝕄 initialize only once 𝕎 initialize() twice`(
-        forge: Forge
-    ) {
+    fun `𝕄 initialize only once 𝕎 initialize() twice`() {
         // Given
-        val otherConfig = forgeConfiguration(forge)
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
-        val persistenceStrategy = testedFeature.persistenceStrategy
+        testedFeature.initialize(appContext.mockInstance, mockPlugins)
         val uploadScheduler = testedFeature.uploadScheduler
+        val uploader = testedFeature.uploader
+        val storage = testedFeature.storage
+        val fileOrchestrator = testedFeature.fileOrchestrator
 
         // When
-        testedFeature.initialize(appContext.mockInstance, otherConfig)
+        testedFeature.initialize(appContext.mockInstance, mockPlugins)
 
         // Then
-        assertThat(testedFeature.persistenceStrategy).isSameAs(persistenceStrategy)
         assertThat(testedFeature.uploadScheduler).isSameAs(uploadScheduler)
+        assertThat(testedFeature.uploader).isSameAs(uploader)
+        assertThat(testedFeature.storage).isSameAs(storage)
+        assertThat(testedFeature.fileOrchestrator).isSameAs(fileOrchestrator)
     }
 
     @Test
@@ -255,7 +243,7 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
         whenever(testedFeature.coreFeature.isMainProcess) doReturn false
 
         // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance, mockPlugins)
 
         // Then
         assertThat(testedFeature.uploadScheduler).isInstanceOf(NoOpUploadScheduler::class.java)
@@ -263,6 +251,9 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
 
     @Test
     fun `𝕄 clear local storage 𝕎 clearAllData()`() {
+        // Given
+        testedFeature.storage = mockStorage
+
         // When
         testedFeature.clearAllData()
 
@@ -270,19 +261,50 @@ internal abstract class SdkFeatureTest<T : Any, C : Configuration.Feature, F : S
         verify(mockStorage).dropAll()
     }
 
+    // region FeatureScope
+
     @Test
-    fun `M call the DataFlusher W flushData`() {
+    fun `𝕄 provide write context 𝕎 withWriteContext(callback)`(
+        @Forgery fakeContext: DatadogContext,
+        @Mock mockBatchWriter: BatchWriter
+    ) {
         // Given
-        val mockDataFlusher: DataFlusher = mock()
-        whenever(mockPersistenceStrategy.getFlusher()).thenReturn(mockDataFlusher)
-        testedFeature.persistenceStrategy = mockPersistenceStrategy
+        testedFeature.storage = mockStorage
+        val callback = mock<(DatadogContext, EventBatchWriter) -> Unit>()
+        whenever(coreFeature.mockInstance.contextProvider.context) doReturn fakeContext
+
+        whenever(mockStorage.writeCurrentBatch(eq(fakeContext), any())) doAnswer {
+            val storageCallback = it.getArgument<(BatchWriter) -> Unit>(1)
+            storageCallback.invoke(mockBatchWriter)
+        }
 
         // When
-        testedFeature.flushStoredData()
+        testedFeature.withWriteContext(callback)
 
         // Then
-        verify(mockDataFlusher).flush(testedFeature.uploader)
+        verify(callback).invoke(
+            fakeContext,
+            mockBatchWriter
+        )
     }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 withWriteContext(callback) { no Datadog context }`() {
+        // Given
+        testedFeature.storage = mockStorage
+        val callback = mock<(DatadogContext, EventBatchWriter) -> Unit>()
+
+        whenever(coreFeature.mockInstance.contextProvider) doReturn NoOpContextProvider()
+
+        // When
+        testedFeature.withWriteContext(callback)
+
+        // Then
+        verifyZeroInteractions(mockStorage)
+        verifyZeroInteractions(callback)
+    }
+
+    // endRegion
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)

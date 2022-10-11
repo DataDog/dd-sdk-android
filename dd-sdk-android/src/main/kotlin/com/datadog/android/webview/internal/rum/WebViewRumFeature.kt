@@ -6,38 +6,43 @@
 
 package com.datadog.android.webview.internal.rum
 
-import android.content.Context
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.SdkFeature
+import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
-import com.datadog.android.v2.core.internal.net.DataUploader
 import com.datadog.android.v2.core.internal.storage.Storage
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal class WebViewRumFeature(
-    coreFeature: CoreFeature,
-    storage: Storage,
-    uploader: DataUploader
-) : SdkFeature<Any, Configuration.Feature.RUM>(coreFeature, storage, uploader) {
+    private val coreFeature: CoreFeature,
+    private val storage: Storage
+) {
+
+    internal var persistenceStrategy: PersistenceStrategy<Any> = NoOpPersistenceStrategy()
+    internal val initialized = AtomicBoolean(false)
 
     // region SdkFeature
 
-    override fun createPersistenceStrategy(
-        context: Context,
-        storage: Storage,
-        configuration: Configuration.Feature.RUM
+    fun initialize() {
+        persistenceStrategy = createPersistenceStrategy(storage)
+        initialized.set(true)
+    }
+
+    fun stop() {
+        persistenceStrategy = NoOpPersistenceStrategy()
+        initialized.set(false)
+    }
+
+    private fun createPersistenceStrategy(
+        storage: Storage
     ): PersistenceStrategy<Any> {
         return WebViewRumFilePersistenceStrategy(
             coreFeature.contextProvider,
-            coreFeature.trackingConsentProvider,
-            coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
             sdkLogger,
             coreFeature.localDataEncryption,
             DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir),
-            coreFeature.buildFilePersistenceConfig(),
             storage
         )
     }

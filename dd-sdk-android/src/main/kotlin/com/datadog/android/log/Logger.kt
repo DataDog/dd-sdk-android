@@ -10,11 +10,11 @@ import android.util.Log as AndroidLog
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.domain.NoOpLogGenerator
@@ -314,7 +314,7 @@ internal constructor(internal var handler: LogHandler) {
 
         private fun buildDatadogHandler(
             coreFeature: CoreFeature?,
-            logsFeature: SdkFeature<LogEvent, *>?
+            logsFeature: LogsFeature?
         ): LogHandler {
             val writer = buildLogWriter(logsFeature) ?: return NoOpLogHandler()
 
@@ -330,7 +330,7 @@ internal constructor(internal var handler: LogHandler) {
             )
         }
 
-        private fun buildLogWriter(logsFeature: SdkFeature<LogEvent, *>?): DataWriter<LogEvent>? {
+        private fun buildLogWriter(logsFeature: LogsFeature?): DataWriter<LogEvent>? {
             return if (logsFeature != null) {
                 logsFeature.persistenceStrategy.getWriter()
             } else {

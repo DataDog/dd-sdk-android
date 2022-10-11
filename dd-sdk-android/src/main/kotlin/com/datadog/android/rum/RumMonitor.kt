@@ -14,7 +14,6 @@ import androidx.fragment.app.Fragment
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
@@ -283,7 +282,7 @@ interface RumMonitor {
             val datadogCore = Datadog.globalSdkCore as? DatadogCore
             val coreFeature = datadogCore?.coreFeature
             val contextProvider = datadogCore?.contextProvider
-            val rumFeature = datadogCore?.rumFeature as? RumFeature
+            val rumFeature = datadogCore?.rumFeature
             val rumApplicationId = coreFeature?.rumApplicationId
             return if (rumFeature == null || coreFeature == null || contextProvider == null) {
                 devLogger.e(

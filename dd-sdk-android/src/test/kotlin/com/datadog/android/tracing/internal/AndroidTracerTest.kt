@@ -97,16 +97,15 @@ internal class AndroidTracerTest {
         val mockCore = mock<DatadogCore>()
         tracingFeature = TracingFeature(
             coreFeature.mockInstance,
-            storage = mock(),
-            uploader = mock()
+            storage = mock()
         )
-        rumFeature = RumFeature(coreFeature.mockInstance, storage = mock(), uploader = mock())
+        rumFeature = RumFeature(coreFeature.mockInstance, storage = mock())
 
         whenever(mockCore.tracingFeature) doReturn tracingFeature
         whenever(mockCore.rumFeature) doReturn rumFeature
         whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
 
-        tracingFeature.initialize(appContext.mockInstance, Configuration.DEFAULT_TRACING_CONFIG)
+        tracingFeature.initialize(Configuration.DEFAULT_TRACING_CONFIG)
         rumFeature.initialize(appContext.mockInstance, Configuration.DEFAULT_RUM_CONFIG)
 
         Datadog.globalSdkCore = mockCore

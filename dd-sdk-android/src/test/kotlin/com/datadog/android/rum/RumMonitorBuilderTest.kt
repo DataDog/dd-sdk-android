@@ -66,7 +66,7 @@ internal class RumMonitorBuilderTest {
         whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
         whenever(mockCore.contextProvider) doReturn mock()
 
-        rumFeature = RumFeature(coreFeature.mockInstance, storage = mock(), uploader = mock())
+        rumFeature = RumFeature(coreFeature.mockInstance, storage = mock())
         rumFeature.initialize(appContext.mockInstance, fakeConfig)
         whenever(mockCore.rumFeature) doReturn rumFeature
 

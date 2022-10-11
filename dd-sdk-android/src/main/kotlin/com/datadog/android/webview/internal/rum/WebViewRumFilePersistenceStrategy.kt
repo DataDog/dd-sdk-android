@@ -8,14 +8,9 @@ package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.FileMover
-import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
-import com.datadog.android.core.internal.persistence.file.FileReaderWriter
-import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
-import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.log.Logger
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
@@ -27,30 +22,16 @@ import java.util.concurrent.ExecutorService
 
 internal class WebViewRumFilePersistenceStrategy(
     private val contextProvider: ContextProvider,
-    consentProvider: ConsentProvider,
-    storageDir: File,
     executorService: ExecutorService,
     internalLogger: Logger,
-    localDataEncryption: Encryption?,
+    private val localDataEncryption: Encryption?,
     private val lastViewEventFile: File,
-    filePersistenceConfig: FilePersistenceConfig,
-    storage: Storage
+    private val storage: Storage
 ) : BatchFilePersistenceStrategy<Any>(
     contextProvider,
-    FeatureFileOrchestrator(
-        consentProvider,
-        storageDir,
-        WebViewRumFeature.WEB_RUM_FEATURE_NAME,
-        executorService,
-        internalLogger
-    ),
     executorService,
     RumEventSerializer(),
     internalLogger,
-    BatchFileReaderWriter.create(internalLogger, localDataEncryption),
-    FileReaderWriter.create(internalLogger, localDataEncryption),
-    FileMover(internalLogger),
-    filePersistenceConfig,
     storage
 ) {
 
@@ -61,10 +42,10 @@ internal class WebViewRumFilePersistenceStrategy(
     ): DataWriter<Any> {
         return ScheduledWriter(
             RumDataWriter(
-                getStorage(),
+                storage,
                 contextProvider,
                 serializer,
-                fileReaderWriter,
+                BatchFileReaderWriter.create(internalLogger, localDataEncryption),
                 internalLogger,
                 lastViewEventFile
             ),

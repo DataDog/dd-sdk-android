@@ -9,28 +9,17 @@ package com.datadog.android.core.internal.persistence.file.batch
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.FileMover
-import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
-import com.datadog.android.core.internal.persistence.file.FileReaderWriter
-import com.datadog.android.core.internal.persistence.file.advanced.ConsentAwareFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.log.Logger
 import com.datadog.android.v2.core.internal.ContextProvider
-import com.datadog.android.v2.core.internal.data.upload.DataFlusher
-import com.datadog.android.v2.core.internal.data.upload.Flusher
 import com.datadog.android.v2.core.internal.storage.Storage
 import java.util.concurrent.ExecutorService
 
 internal open class BatchFilePersistenceStrategy<T : Any>(
     private val contextProvider: ContextProvider,
-    private val fileOrchestrator: ConsentAwareFileOrchestrator,
     private val executorService: ExecutorService,
     serializer: Serializer<T>,
     internal val internalLogger: Logger,
-    internal val fileReaderWriter: BatchFileReaderWriter,
-    internal val metadataFileReaderWriter: FileReaderWriter,
-    internal val fileMover: FileMover,
-    internal val filePersistenceConfig: FilePersistenceConfig,
     private val storage: Storage
 ) : PersistenceStrategy<T> {
 
@@ -46,20 +35,6 @@ internal open class BatchFilePersistenceStrategy<T : Any>(
 
     override fun getWriter(): DataWriter<T> {
         return dataWriter
-    }
-
-    override fun getStorage(): Storage {
-        return storage
-    }
-
-    override fun getFlusher(): Flusher {
-        return DataFlusher(
-            contextProvider,
-            fileOrchestrator,
-            fileReaderWriter,
-            metadataFileReaderWriter,
-            fileMover
-        )
     }
 
     // endregion

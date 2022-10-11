@@ -6,46 +6,50 @@
 
 package com.datadog.android.tracing.internal
 
-import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.SdkFeature
+import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.tracing.internal.domain.TracesFilePersistenceStrategy
-import com.datadog.android.v2.core.internal.net.DataUploader
 import com.datadog.android.v2.core.internal.storage.Storage
 import com.datadog.opentracing.DDSpan
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal class TracingFeature(
-    coreFeature: CoreFeature,
-    storage: Storage,
-    uploader: DataUploader
-) : SdkFeature<DDSpan, Configuration.Feature.Tracing>(coreFeature, storage, uploader) {
+    private val coreFeature: CoreFeature,
+    private val storage: Storage
+) {
+
+    internal var persistenceStrategy: PersistenceStrategy<DDSpan> = NoOpPersistenceStrategy()
+    internal val initialized = AtomicBoolean(false)
 
     // region SdkFeature
 
-    override fun createPersistenceStrategy(
-        context: Context,
+    fun initialize(configuration: Configuration.Feature.Tracing) {
+        persistenceStrategy = createPersistenceStrategy(storage, configuration)
+        initialized.set(true)
+    }
+
+    fun stop() {
+        persistenceStrategy = NoOpPersistenceStrategy()
+        initialized.set(false)
+    }
+
+    private fun createPersistenceStrategy(
         storage: Storage,
         configuration: Configuration.Feature.Tracing
     ): PersistenceStrategy<DDSpan> {
         return TracesFilePersistenceStrategy(
             coreFeature.contextProvider,
-            coreFeature.trackingConsentProvider,
-            coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
             coreFeature,
             coreFeature.envName,
             sdkLogger,
             configuration.spanEventMapper,
-            coreFeature.localDataEncryption,
-            coreFeature.buildFilePersistenceConfig(),
             storage
         )
     }
-
-    override fun onPostInitialized(context: Context) {}
 
     // endregion
 

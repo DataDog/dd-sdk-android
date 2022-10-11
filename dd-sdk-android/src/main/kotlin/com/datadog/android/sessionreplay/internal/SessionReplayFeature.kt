@@ -10,7 +10,7 @@ import android.app.Application
 import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.SdkFeature
+import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.sessionreplay.LifecycleCallback
@@ -19,14 +19,12 @@ import com.datadog.android.sessionreplay.internal.domain.SessionReplayRecordPers
 import com.datadog.android.sessionreplay.internal.domain.SessionReplaySerializedRecordWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
 import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.internal.net.DataUploader
 import com.datadog.android.v2.core.internal.storage.Storage
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class SessionReplayFeature(
-    coreFeature: CoreFeature,
-    storage: Storage,
-    uploader: DataUploader,
+    private val coreFeature: CoreFeature,
+    private val storage: Storage,
     sdkCore: SdkCore,
     private val sessionReplayCallbackProvider:
         (PersistenceStrategy<String>, Configuration.Feature.SessionReplay) ->
@@ -39,43 +37,42 @@ internal class SessionReplayFeature(
                 SessionReplayRecordCallback(sdkCore)
             )
         }
-) : SdkFeature<String, Configuration.Feature.SessionReplay>(coreFeature, storage, uploader) {
+) {
 
     internal lateinit var appContext: Context
     private var isRecording = AtomicBoolean(false)
     internal var sessionReplayCallback: LifecycleCallback = NoOpLifecycleCallback()
 
+    internal var persistenceStrategy: PersistenceStrategy<String> = NoOpPersistenceStrategy()
+    internal val initialized = AtomicBoolean(false)
+
     // region SDKFeature
 
-    override fun onInitialize(
+    internal fun initialize(
         context: Context,
         configuration: Configuration.Feature.SessionReplay
     ) {
-        super.onInitialize(context, configuration)
         appContext = context
+        persistenceStrategy = createPersistenceStrategy(storage)
         sessionReplayCallback = sessionReplayCallbackProvider(persistenceStrategy, configuration)
+        initialized.set(true)
         startRecording()
     }
 
-    override fun onStop() {
-        super.onStop()
+    internal fun stop() {
         stopRecording()
+        persistenceStrategy = NoOpPersistenceStrategy()
         sessionReplayCallback = NoOpLifecycleCallback()
+        initialized.set(false)
     }
 
-    override fun createPersistenceStrategy(
-        context: Context,
-        storage: Storage,
-        configuration: Configuration.Feature.SessionReplay
+    private fun createPersistenceStrategy(
+        storage: Storage
     ): PersistenceStrategy<String> {
         return SessionReplayRecordPersistenceStrategy(
             coreFeature.contextProvider,
-            coreFeature.trackingConsentProvider,
-            coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
             sdkLogger,
-            coreFeature.localDataEncryption,
-            coreFeature.buildFilePersistenceConfig(),
             storage
         )
     }

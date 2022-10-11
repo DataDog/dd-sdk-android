@@ -12,6 +12,7 @@ import androidx.work.ListenableWorker
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
@@ -19,7 +20,6 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.NoOpSdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.v2.core.DatadogFeature
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.net.DataUploader
 import com.datadog.android.v2.core.internal.storage.BatchConfirmation
@@ -79,7 +79,7 @@ internal class UploadWorkerTest {
     lateinit var mockContextProvider: ContextProvider
 
     @Mock
-    lateinit var mockFeatureA: DatadogFeature
+    lateinit var mockFeatureA: SdkFeature
 
     @Mock
     lateinit var mockStorageA: Storage
@@ -91,7 +91,7 @@ internal class UploadWorkerTest {
     lateinit var mockUploaderA: DataUploader
 
     @Mock
-    lateinit var mockFeatureB: DatadogFeature
+    lateinit var mockFeatureB: SdkFeature
 
     @Mock
     lateinit var mockStorageB: Storage
@@ -556,7 +556,7 @@ internal class UploadWorkerTest {
 
     private fun stubFeatures(
         core: DatadogCore,
-        features: List<DatadogFeature>,
+        features: List<SdkFeature>,
         storages: List<Storage>,
         uploaders: List<DataUploader>
     ) {

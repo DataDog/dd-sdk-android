@@ -6,23 +6,29 @@
 
 package com.datadog.android.tracing.internal
 
+import android.app.Application
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileDataWriter
 import com.datadog.android.tracing.internal.domain.TracesFilePersistenceStrategy
 import com.datadog.android.tracing.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.tracing.internal.domain.event.SpanMapperSerializer
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.opentracing.DDSpan
+import com.datadog.android.v2.core.internal.storage.Storage
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import fr.xgouchet.elmyr.Forge
+import com.datadog.tools.unit.extensions.config.TestConfiguration
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -34,25 +40,25 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class TracingFeatureTest :
-    SdkFeatureTest<DDSpan, Configuration.Feature.Tracing, TracingFeature>() {
+internal class TracingFeatureTest {
 
-    override fun createTestedFeature(): TracingFeature {
-        return TracingFeature(coreFeature.mockInstance, mockStorage, mockUploader)
-    }
+    private lateinit var testedFeature: TracingFeature
 
-    override fun forgeConfiguration(forge: Forge): Configuration.Feature.Tracing {
-        return forge.getForgery()
-    }
+    @Forgery
+    lateinit var fakeConfigurationFeature: Configuration.Feature.Tracing
 
-    override fun featureDirName(): String {
-        return "tracing"
+    @Mock
+    lateinit var mockStorage: Storage
+
+    @BeforeEach
+    fun `set up`() {
+        testedFeature = TracingFeature(coreFeature.mockInstance, mockStorage)
     }
 
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        testedFeature.initialize(fakeConfigurationFeature)
 
         // Then
         assertThat(testedFeature.persistenceStrategy)
@@ -62,7 +68,7 @@ internal class TracingFeatureTest :
     @Test
     fun `𝕄 use the eventMapper 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        testedFeature.initialize(fakeConfigurationFeature)
 
         // Then
         val batchFileDataWriter =
@@ -72,5 +78,16 @@ internal class TracingFeatureTest :
         val spanEventMapperWrapper = spanSerializer?.spanEventMapper as? SpanEventMapperWrapper
         val spanEventMapper = spanEventMapperWrapper?.wrappedEventMapper
         assertThat(spanEventMapper).isSameAs(fakeConfigurationFeature.spanEventMapper)
+    }
+
+    companion object {
+        val appContext = ApplicationContextTestConfiguration(Application::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(appContext, coreFeature)
+        }
     }
 }

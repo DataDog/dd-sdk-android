@@ -14,9 +14,7 @@ import com.datadog.android.core.internal.utils.telemetry
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
-import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.v2.api.NoOpSdkCore
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
@@ -206,7 +204,7 @@ object Datadog {
      */
     @JvmStatic
     fun enableRumDebugging(enable: Boolean) {
-        val rumFeature = ((globalSdkCore as? DatadogCore)?.rumFeature) as? RumFeature
+        val rumFeature = (globalSdkCore as? DatadogCore)?.rumFeature
         if (enable) {
             rumFeature?.enableDebugging()
         } else {
@@ -221,8 +219,7 @@ object Datadog {
      * sessions.
      */
     fun stopSessionRecording() {
-        ((globalSdkCore as? DatadogCore)?.sessionReplayFeature as? SessionReplayFeature)
-            ?.stopRecording()
+        (globalSdkCore as? DatadogCore)?.sessionReplayFeature?.stopRecording()
     }
 
     /**
@@ -232,8 +229,7 @@ object Datadog {
      * sessions.
      */
     fun startSessionRecording() {
-        ((globalSdkCore as? DatadogCore)?.sessionReplayFeature as? SessionReplayFeature)
-            ?.startRecording()
+        (globalSdkCore as? DatadogCore)?.sessionReplayFeature?.startRecording()
     }
 
     /**
