@@ -87,7 +87,8 @@ internal abstract class BaseWireframeMapperTest {
                 Arguments.of(Typeface.DEFAULT_BOLD, TextWireframeMapper.SANS_SERIF_FAMILY_NAME),
                 Arguments.of(Typeface.MONOSPACE, TextWireframeMapper.MONOSPACE_FAMILY_NAME),
                 Arguments.of(Typeface.SERIF, TextWireframeMapper.SERIF_FAMILY_NAME),
-                Arguments.of(mock<Typeface>(), TextWireframeMapper.SANS_SERIF_FAMILY_NAME)
+                Arguments.of(mock<Typeface>(), TextWireframeMapper.SANS_SERIF_FAMILY_NAME),
+                Arguments.of(null, TextWireframeMapper.SANS_SERIF_FAMILY_NAME)
             )
                 .stream()
         }

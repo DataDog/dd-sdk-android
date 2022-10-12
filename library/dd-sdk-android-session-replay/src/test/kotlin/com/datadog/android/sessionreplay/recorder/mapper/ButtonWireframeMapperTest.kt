@@ -47,7 +47,7 @@ internal class ButtonWireframeMapperTest : BaseWireframeMapperTest() {
     @ParameterizedTest
     @MethodSource("textTypefaces")
     fun `M resolve a TextWireframe W map() { Button with fontStyle }`(
-        typeface: Typeface,
+        typeface: Typeface?,
         expectedFontFamily: String,
         forge: Forge
     ) {
