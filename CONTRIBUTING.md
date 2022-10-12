@@ -15,16 +15,16 @@ To setup your enviroment, make sure you installed [Android Studio](https://devel
 
 This project hosts the following modules:
 
-- `dd-sdk-android`: the main library implementing all Datadog features (Logs, Traces, RUM, Crash reports);
-- `dd-sdk-android-ktx`: a set of Kotlin extensions to make the `dd-sdk-android` library more Kotlin friendly;
-- `dd-sdk-android-ndk`: a Plugin to allow tracking NDK information;
-- `dd-sdk-android-glide`: a lightweight library providing a bridge integration between `dd-sdk-android` and [Glide](https://bumptech.github.io/glide/);
-- `dd-sdk-android-timber`: a lightweight library providing a bridge integration between `dd-sdk-android` and [Timber](https://github.com/JakeWharton/timber);
-- `instrumented/integration`: a test module with integration tests using Espresso;
-- `tools/detekt`: a few custom [Detekt](https://github.com/arturbosch/detekt) static analysis rules;
-- `tools/noopfactory`: an annotation processor generating no-op implementation of interfaces;
-- `tools/unit`: a utility library with code to help writing unit tests;
-- `sample/***`: a few sample application showcasing how to use the library features in production code;
+  - `dd-sdk-android`: the main library implementing all Datadog features (Logs, Traces, RUM, Crash reports);
+  - `dd-sdk-android-ktx`: a set of Kotlin extensions to make the `dd-sdk-android` library more Kotlin friendly;
+  - `dd-sdk-android-ndk`: a Plugin to allow tracking NDK information;
+  - `dd-sdk-android-glide`: a lightweight library providing a bridge integration between `dd-sdk-android` and [Glide](https://bumptech.github.io/glide/);
+  - `dd-sdk-android-timber`: a lightweight library providing a bridge integration between `dd-sdk-android` and [Timber](https://github.com/JakeWharton/timber);
+  - `instrumented/integration`: a test module with integration tests using Espresso;
+  - `tools/detekt`: a few custom [Detekt](https://github.com/arturbosch/detekt) static analysis rules;
+  - `tools/noopfactory`: an annotation processor generating no-op implementation of interfaces;
+  - `tools/unit`: a utility library with code to help writing unit tests;
+  - `sample/***`: a few sample application showcasing how to use the library features in production code;
 
 ### Building the SDK
 
@@ -39,7 +39,7 @@ You can build the SDK using the following Gradle command:
 The whole project is covered by a set of static analysis tools, linters and tests, each triggered by a custom global Gradle task, as follows:
 
 ```shell script
-# launches the debug and release unit tests for all modules
+# launches the debug and release unit tests for all modules 
 ./gradlew unitTestAll
 
 # launches the instrumented tests for all modules
@@ -60,13 +60,13 @@ The whole project is covered by a set of static analysis tools, linters and test
 Many great ideas for new features come from the community, and we'd be happy to
 consider yours!
 
-To share your request, you can open an [issue](https://github.com/DataDog/dd-sdk-android/issues/new?labels=enhancement&template=feature_request.md)
+To share your request, you can open an [issue](https://github.com/DataDog/dd-sdk-android/issues/new?labels=enhancement&template=feature_request.md) 
 with the details about what you'd like to see. At a minimum, please provide:
 
-- The goal of the new feature;
-- A description of how it might be used or behave;
-- Links to any important resources (e.g. Github repos, websites, screenshots,
-  specifications, diagrams).
+ - The goal of the new feature;
+ - A description of how it might be used or behave;
+ - Links to any important resources (e.g. Github repos, websites, screenshots,
+     specifications, diagrams).
 
 ## Found a bug?
 
@@ -74,35 +74,35 @@ For any urgent matters (such as outages) or issues concerning the Datadog servic
 or UI, contact our support team via https://docs.datadoghq.com/help/ for direct,
 faster assistance.
 
-You may submit bug reports concerning the Datadog SDK for Android by
+You may submit bug reports concerning the Datadog SDK for Android by 
 [opening a Github issue](https://github.com/DataDog/dd-sdk-android/issues/new?labels=bug&template=bug_report.md).
 At a minimum, please provide:
 
-- A description of the problem;
-- Steps to reproduce;
-- Expected behavior;
-- Actual behavior;
-- Errors (with stack traces) or warnings received;
-- Any details you can share about your configuration including:
-  - Android API level;
-  - Datadog SDK version;
-  - Versions of any other relevant dependencies (OkHttp, …);
-  - Your proguard configuration;
-  - The list of Gradle plugins applied to your project.
+ - A description of the problem;
+ - Steps to reproduce;
+ - Expected behavior;
+ - Actual behavior;
+ - Errors (with stack traces) or warnings received;
+ - Any details you can share about your configuration including:
+    - Android API level;
+    - Datadog SDK version;
+    - Versions of any other relevant dependencies (OkHttp, …);
+    - Your proguard configuration;
+    - The list of Gradle plugins applied to your project.
 
 If at all possible, also provide:
 
-- Logs (from the tracer/application/agent) or other diagnostics;
-- Screenshots, links, or other visual aids that are publicly accessible;
-- Code sample or test that reproduces the problem;
-- An explanation of what causes the bug and/or how it can be fixed.
+ - Logs (from the tracer/application/agent) or other diagnostics;
+ - Screenshots, links, or other visual aids that are publicly accessible;
+ - Code sample or test that reproduces the problem;
+ - An explanation of what causes the bug and/or how it can be fixed.
 
 Reports that include rich detail are better, and ones with code that reproduce
 the bug are best.
 
 ## Have a patch?
 
-We welcome code contributions to the library, which you can
+We welcome code contributions to the library, which you can 
 [submit as a pull request](https://github.com/DataDog/dd-sdk-android/pull/new/master).
 Before you submit a PR, make sure that you first create an Issue to explain the
 bug or the feature your patch covers, and make sure another Issue or PR doesn't
@@ -114,21 +114,22 @@ To create a pull request:
 2. **Make any changes** for your patch;
 3. **Write tests** that demonstrate how the feature works or how the bug is fixed;
 4. **Update any documentation** such as `docs/GettingStarted.md`, especially for
-   new features;
-5. **Submit the pull request** from your fork back to this
-   [repository](https://github.com/DataDog/dd-sdk-android) .
+    new features;
+5. **Submit the pull request** from your fork back to this 
+    [repository](https://github.com/DataDog/dd-sdk-android) .
+
 
 The pull request will be run through our CI pipeline, and a project member will
 review the changes with you. At a minimum, to be accepted and merged, pull
 requests must:
 
-- Have a stated goal and detailed description of the changes made;
-- Include thorough test coverage and documentation, where applicable;
-- Pass all tests and code quality checks (linting/coverage/benchmarks) on CI;
-- Receive at least one approval from a project member with push permissions.
+ - Have a stated goal and detailed description of the changes made;
+ - Include thorough test coverage and documentation, where applicable;
+ - Pass all tests and code quality checks (linting/coverage/benchmarks) on CI;
+ - Receive at least one approval from a project member with push permissions.
 
 Make sure that your code is clean and readable, that your commits are small and
-atomic, with a proper commit message. We tend to use
+atomic, with a proper commit message. We tend to use 
 [gitmoji](https://gitmoji.carloscuesta.me/), but this is not mandatory.
 
 ## Coding Conventions
@@ -147,14 +148,14 @@ follow this rule.
 Current KtLint version: 0.45.1
 
 Classes should group their methods in folding regions named after the declaring
-class. Private methods should be grouped in an `Internal` named folding region.
+class. Private methods should be grouped in an `Internal` named folding region. 
 For example, a class inheriting from `Runnable` and `Observable` should use the
 following regions.
 
 ```kotlin
 
 class Foo :Observable(), Runnable {
-
+    
     // region Observable
 
     override fun addObserver(o: Observer?) {
@@ -169,11 +170,11 @@ class Foo :Observable(), Runnable {
     override fun run() {}
 
     // endregion
-
+    
     // region Internal
-
+    
     private fun doSomething() {}
-
+    
     // endregion
 }
 
@@ -187,15 +188,15 @@ take a look at the `test` folder to get some ideas on how we write them at Datad
 
 We use a variety of tools to help us write tests easy to read and maintain:
 
-- [JUnit5 Jupiter](https://junit.org/junit5/): the test runner, quite similar to
-  JUnit4;
-- [Mockito](https://site.mockito.org/): a mocking framework to decouple concerns
-  in the Unit Tests;
-- [AssertJ](https://assertj.github.io/doc/): a framework to write fluent
-  assertions;
-- [Elmyr](https://github.com/xgouchet/Elmyr): a framework to generate fake data
-  in the Unit Tests.
-
+ - [JUnit5 Jupiter](https://junit.org/junit5/): the test runner, quite similar to
+     JUnit4;
+ - [Mockito](https://site.mockito.org/): a mocking framework to decouple concerns
+     in the Unit Tests;
+ - [AssertJ](https://assertj.github.io/doc/): a framework to write fluent
+     assertions;
+ - [Elmyr](https://github.com/xgouchet/Elmyr): a framework to generate fake data
+     in the Unit Tests.
+     
 ### Test Conventions
 
 In order to make the test classes more readable, here are a set of naming conventions and coding style.
@@ -213,15 +214,15 @@ Fields should appear in the following order, and be named as explained by these 
 - Mocked objects must be named from their class (with an optional qualifier), and prefixed by `mock`. E.g.: `mockListener: Listener`, `mockService: ExecutorService`).
 - Fake data must be named from their class (with an optional qualifier), and prefixed by `fake`. E.g.: `fakeContext: Context`, `fakeApplicationId: UUID`, `fakeRequest: NetworkRequest`.
 - Other fields can be named on case by case basis, but a few rules can still apply:
-  - If the field is annotated by a JUnit 5 extension (e.g.: `@TempDir`), then it should be named after the extension (e.g.: `tempOutputDir`).
-
+    - If the field is annotated by a JUnit 5 extension (e.g.: `@TempDir`), then it should be named after the extension (e.g.: `tempOutputDir`).
+    
 ### Test Methods
 
-Test methods must follow the Given-When-Then principle, that is they must all consist of three steps:
+Test methods must follow the Given-When-Then principle, that is they must all consist of three steps: 
 
 - Given (optional): sets up the instance under test to be in the correct state;
 - When (optional): performs an action — directly or indirectly — on the instance under test;
-- Then (mandatory): performs any number of assertions on the instance under test’s state, the mocks or output values. It must perform at least one assertion.
+- Then (mandatory): performs any number of assertions on the instance under test’s state, the mocks or output values. It must perform at least one assertion. 
 
 If present, these steps will always be intruded by one line comments, e.g.: `// Given`.
 
@@ -229,7 +230,7 @@ Based on this principle, the test name should reflect the intent, and use the fo
 
 Parameters shall have simple local names reflecting their intent, whether they use an `@Forgery` or `@Mock` annotation (or none).
 
-Here's a test method following those conventions:
+Here's a test method following those conventions: 
 
 ```kotlin
     @Test
@@ -269,23 +270,23 @@ Because we sometimes need to reuse some setup or assertions in our tests, we ten
 #### Implementation
 
 Each public API method in the SDK is covered by a test case in the `nightly-tests` module. All test cases are executed on a Bitrise emulator by a Datadog Synthetic Test every 12 hours. Each test case
-output is measured by 2 Datadog Monitors (one for performance and one for functionality). There are some best practices when writing a nightly test as follows:
+output is measured by 2 Datadog Monitors (one for performance and one for functionality). There are some best practices when writing a nightly test as follows: 
 
 - The test method name must follow the following format: `[rootFeature]_[subFeature]_[method]_[additionalInfo]` where:
 
-  1. `rootFeature` is one of the top level features (logs, rum, apm, et)
-
-  2. `subFeature` is the feature under test (logger, monitor, …)
-
-  3. `method` is the method under test (not necessarily exactly the exact method name but the purpose of the feature from a customer’s PoV, e.g: DataScrubbing)
-
-  4. `additionalInfo` is some context to distinguish multiple test on the same method (could be related to the argument, the context, a state)
-
-- We need to add an identifier in the method documentation following the method signature in the [apiSurface](dd-sdk-android/apiSurface).
+    1. `rootFeature` is one of the top level features (logs, rum, apm, et)
+    
+    2. `subFeature` is the feature under test (logger, monitor, …)
+    
+    3. `method` is the method under test (not necessarily exactly the exact method name but the purpose of the feature from a customer’s PoV, e.g: DataScrubbing)
+    
+    4. `additionalInfo` is some context to distinguish multiple test on the same method (could be related to the argument, the context, a state)
+    
+- We need to add an identifier in the method documentation following the method signature in the [apiSurface](dd-sdk-android/apiSurface). 
   This will be used by our test coverage tool.
+  
 
 We have created a Live Template that you can add in your development environment (Android Studio, IntelliJ IDEA) to ease your work when creating a nightly test:
-
 ```
 /**
  * apiMethodSignature: THE API METHOD SIGNATURE HERE
@@ -303,14 +304,12 @@ fun $EXP$(){
 #### Execution
 
 Because of our crash handling [test cases](instrumented/nightly-tests/src/androidTest/kotlin/com/datadog/android/nightly/crash), when running the nightly tests through gradle,  
-the process does not finish properly so it may happen that will keep hanging until it will eventually timeout.To avoid this issue you should run the tests through adb shell directly
-using the instrumentation tool:
-
+the process does not finish properly so it may happen that will keep hanging until it will eventually timeout.To avoid this issue you should run the tests through adb shell directly 
+using the instrumentation tool: 
 ```
 ./gradlew :instrumented:nightly-tests:installDebug
 ./gradlew :instrumented:nightly-tests:installDebugAndroidTest
 adb shell am instrument -w -e package com.datadog.android.nightly.[feature] com.datadog.android.nightly.test/androidx.test.runner.AndroidJUnitRunner
 ```
-
 where `feature` refers to the specific collection of tests (feature to test) and can take one of the following values: `rum`, `crash`, `log`, `trace`. If you want to run
 all the nightly tests just omit the feature in the `package` definition.
