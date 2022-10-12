@@ -24,8 +24,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.File
-import java.util.concurrent.atomic.AtomicBoolean
 import okhttp3.HttpUrl
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterEach
@@ -37,6 +35,8 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Extensions(
     ExtendWith(

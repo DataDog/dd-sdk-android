@@ -7,10 +7,10 @@
 package com.datadog.gradle.plugin.transdeps
 
 import com.datadog.gradle.config.taskConfig
-import java.io.File
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.io.File
 
 class TransitiveDependenciesPlugin : Plugin<Project> {
 

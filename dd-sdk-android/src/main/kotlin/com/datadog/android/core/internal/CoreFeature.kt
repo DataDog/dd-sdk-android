@@ -63,6 +63,11 @@ import com.datadog.android.rum.internal.ndk.NoOpNdkCrashHandler
 import com.datadog.android.security.Encryption
 import com.lyft.kronos.AndroidClockFactory
 import com.lyft.kronos.KronosClock
+import okhttp3.CipherSuite
+import okhttp3.ConnectionSpec
+import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.TlsVersion
 import java.lang.ref.WeakReference
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
@@ -70,11 +75,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import okhttp3.CipherSuite
-import okhttp3.ConnectionSpec
-import okhttp3.OkHttpClient
-import okhttp3.Protocol
-import okhttp3.TlsVersion
 
 internal object CoreFeature {
 

@@ -7,7 +7,6 @@
 package com.datadog.android.log
 
 import android.content.Context
-import android.util.Log as AndroidLog
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.sampling.RateBasedSampler
@@ -39,6 +38,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import android.util.Log as AndroidLog
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

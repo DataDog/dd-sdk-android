@@ -74,11 +74,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.Locale
-import java.util.UUID
-import java.util.concurrent.TimeUnit
-import kotlin.math.max
-import kotlin.math.min
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
@@ -92,6 +87,11 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.Locale
+import java.util.UUID
+import java.util.concurrent.TimeUnit
+import kotlin.math.max
+import kotlin.math.min
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

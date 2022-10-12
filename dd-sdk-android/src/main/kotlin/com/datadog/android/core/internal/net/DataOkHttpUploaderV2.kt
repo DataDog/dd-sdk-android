@@ -9,11 +9,11 @@ package com.datadog.android.core.internal.net
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.Logger
-import java.util.Locale
-import java.util.UUID
 import okhttp3.Call
 import okhttp3.Request
 import okhttp3.RequestBody
+import java.util.Locale
+import java.util.UUID
 
 internal abstract class DataOkHttpUploaderV2(
     internal var intakeUrl: String,

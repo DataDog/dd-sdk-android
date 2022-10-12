@@ -13,7 +13,6 @@ import com.datadog.gradle.plugin.jsonschema.TypeProperty
 import com.datadog.gradle.plugin.jsonschema.variableName
 import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.ARRAY
-import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
@@ -44,7 +43,7 @@ class ClassGenerator(
     ): TypeSpec.Builder {
         val typeBuilder = TypeSpec.classBuilder(definition.name)
 
-        if (definition.parentType != null){
+        if (definition.parentType != null) {
             typeBuilder.superclass(definition.parentType.asKotlinTypeName(rootTypeName))
         }
 
@@ -110,7 +109,7 @@ class ClassGenerator(
         val funBuilder = FunSpec.builder(Identifier.FUN_TO_JSON)
             .returns(ClassNameRef.JsonElement)
 
-        if (definition.parentType != null){
+        if (definition.parentType != null) {
             funBuilder.addModifiers(KModifier.OVERRIDE)
         }
 
@@ -158,7 +157,7 @@ class ClassGenerator(
             is TypeDefinition.Null -> appendNullSerialization(property)
             is TypeDefinition.Array -> appendArraySerialization(property, property.type, refName)
             is TypeDefinition.Class,
-                is TypeDefinition.OneOfClass,
+            is TypeDefinition.OneOfClass,
             is TypeDefinition.Enum -> appendTypeSerialization(property, refName)
         }
 
@@ -374,7 +373,6 @@ class ClassGenerator(
             else -> throw IllegalStateException(
                 "Unable to get Kotlin Value from $value with type $type"
             )
-
         }
     }
 
@@ -453,5 +451,4 @@ class ClassGenerator(
     }
 
     // endregion
-
 }

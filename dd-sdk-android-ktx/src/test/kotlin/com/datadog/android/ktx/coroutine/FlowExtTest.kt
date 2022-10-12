@@ -14,8 +14,6 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.lang.IllegalStateException
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
@@ -32,6 +30,8 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.lang.IllegalStateException
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

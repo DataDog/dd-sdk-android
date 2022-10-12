@@ -7,7 +7,6 @@
 package com.datadog.android.log.internal.logger
 
 import android.content.Context
-import android.util.Log as AndroidLog
 import android.view.Choreographer
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
@@ -51,8 +50,6 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.noop.NoopTracerFactory
 import io.opentracing.util.GlobalTracer
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -65,6 +62,9 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import android.util.Log as AndroidLog
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

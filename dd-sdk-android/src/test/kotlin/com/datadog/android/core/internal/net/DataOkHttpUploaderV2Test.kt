@@ -22,8 +22,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.IOException
-import java.util.UUID
 import okhttp3.Call
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -41,6 +39,8 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.io.IOException
+import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

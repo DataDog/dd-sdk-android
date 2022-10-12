@@ -31,12 +31,12 @@ import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.TracingInterceptor
 import io.opentracing.Span
 import io.opentracing.Tracer
-import java.io.IOException
-import java.util.Locale
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import java.io.IOException
+import java.util.Locale
 
 /**
  * Provides automatic integration for [OkHttpClient] by way of the [Interceptor] system.
