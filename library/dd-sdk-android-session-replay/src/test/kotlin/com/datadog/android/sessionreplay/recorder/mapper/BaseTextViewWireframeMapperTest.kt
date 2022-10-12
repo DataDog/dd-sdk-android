@@ -37,7 +37,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
     @ParameterizedTest
     @MethodSource("textTypefaces")
     fun `M resolve a TextWireframe W map() { TextView with fontStyle }`(
-        fakeTypeface: Typeface,
+        fakeTypeface: Typeface?,
         expectedFontFamily: String,
         forge: Forge
     ) {

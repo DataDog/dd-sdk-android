@@ -47,7 +47,7 @@ internal open class TextWireframeMapper(
         )
     }
 
-    private fun resolveFontFamily(typeface: Typeface): String {
+    private fun resolveFontFamily(typeface: Typeface?): String {
         return when {
             typeface === Typeface.SANS_SERIF -> SANS_SERIF_FAMILY_NAME
             typeface === Typeface.MONOSPACE -> MONOSPACE_FAMILY_NAME

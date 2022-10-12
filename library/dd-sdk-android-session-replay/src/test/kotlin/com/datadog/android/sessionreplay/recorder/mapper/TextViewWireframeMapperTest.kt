@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.recorder.mapper
 
-import android.widget.Button
 import android.widget.TextView
 import com.datadog.android.sessionreplay.recorder.aMockView
 import com.datadog.android.sessionreplay.utils.ForgeConfigurator
@@ -37,16 +36,16 @@ internal class TextViewWireframeMapperTest : BaseTextViewWireframeMapperTest() {
     fun `M resolve a TextWireframe W map() { TextView with text }`(forge: Forge) {
         // Given
         val fakeText = forge.aString()
-        val mockButton: TextView = forge.aMockView<Button>().apply {
+        val mockTextView: TextView = forge.aMockView<TextView>().apply {
             whenever(this.text).thenReturn(fakeText)
             whenever(this.typeface).thenReturn(mock())
         }
 
         // When
-        val textWireframe = testedTextWireframeMapper.map(mockButton, fakePixelDensity)
+        val textWireframe = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
 
         // Then
-        val expectedWireframe = mockButton.toTextWireframe().copy(text = fakeText)
+        val expectedWireframe = mockTextView.toTextWireframe().copy(text = fakeText)
         assertThat(textWireframe).isEqualTo(expectedWireframe)
     }
 }
