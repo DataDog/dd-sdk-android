@@ -17,6 +17,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum._RumInternalProxy
@@ -345,6 +346,10 @@ internal class DatadogRumMonitor(
 
     override fun sendErrorTelemetryEvent(message: String, stack: String?, kind: String?) {
         handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, stack, kind))
+    }
+
+    override fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double) {
+        handleEvent(RumRawEvent.UpdatePerformanceMetric(metric, value))
     }
 
     override fun _getInternal(): _RumInternalProxy? {

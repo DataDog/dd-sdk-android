@@ -9,10 +9,7 @@
       "$ref": "_common-schema.json"
     },
     {
-      "required": [
-        "type",
-        "action"
-      ],
+      "required": ["type", "action"],
       "properties": {
         "type": {
           "type": "string",
@@ -23,9 +20,7 @@
         "action": {
           "type": "object",
           "description": "Action properties",
-          "required": [
-            "type"
-          ],
+          "required": ["type"],
           "properties": {
             "type": {
               "type": "string",
@@ -48,9 +43,7 @@
             "target": {
               "type": "object",
               "description": "Action target properties",
-              "required": [
-                "name"
-              ],
+              "required": ["name"],
               "properties": {
                 "name": {
                   "type": "string",
@@ -63,9 +56,7 @@
             "frustration": {
               "type": "object",
               "description": "Action frustration properties",
-              "required": [
-                "type"
-              ],
+              "required": ["type"],
               "properties": {
                 "type": {
                   "type": "array",
@@ -82,9 +73,7 @@
             "error": {
               "type": "object",
               "description": "Properties of the errors of the action",
-              "required": [
-                "count"
-              ],
+              "required": ["count"],
               "properties": {
                 "count": {
                   "type": "integer",
@@ -98,9 +87,7 @@
             "crash": {
               "type": "object",
               "description": "Properties of the crashes of the action",
-              "required": [
-                "count"
-              ],
+              "required": ["count"],
               "properties": {
                 "count": {
                   "type": "integer",
@@ -114,9 +101,7 @@
             "long_task": {
               "type": "object",
               "description": "Properties of the long tasks of the action",
-              "required": [
-                "count"
-              ],
+              "required": ["count"],
               "properties": {
                 "count": {
                   "type": "integer",
@@ -130,9 +115,7 @@
             "resource": {
               "type": "object",
               "description": "Properties of the resources of the action",
-              "required": [
-                "count"
-              ],
+              "required": ["count"],
               "properties": {
                 "count": {
                   "type": "integer",

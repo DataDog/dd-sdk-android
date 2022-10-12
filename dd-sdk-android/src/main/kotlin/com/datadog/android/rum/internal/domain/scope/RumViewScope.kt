@@ -27,6 +27,7 @@ import com.datadog.android.log.internal.utils.debugWithTelemetry
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
@@ -43,6 +44,7 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
+import kotlin.math.min
 
 @Suppress("LargeClass", "LongParameterList")
 internal open class RumViewScope(
@@ -132,6 +134,8 @@ internal open class RumViewScope(
         }
     }
 
+    private var performanceMetrics: MutableMap<RumPerformanceMetric, VitalInfo> = HashMap()
+
     // endregion
 
     init {
@@ -172,6 +176,8 @@ internal open class RumViewScope(
             is RumRawEvent.UpdateViewLoadingTime -> onUpdateViewLoadingTime(event, writer)
             is RumRawEvent.AddCustomTiming -> onAddCustomTiming(event, writer)
             is RumRawEvent.KeepAlive -> onKeepAlive(event, writer)
+
+            is RumRawEvent.UpdatePerformanceMetric -> onUpdatePerformanceMetric(event)
 
             else -> delegateEventToChildren(event, writer)
         }
@@ -406,6 +412,30 @@ internal open class RumViewScope(
         sendViewUpdate(event, writer)
     }
 
+    private fun onUpdatePerformanceMetric(
+        event: RumRawEvent.UpdatePerformanceMetric
+    ) {
+        if (stopped) return
+
+        val value = event.value
+        val vitalInfo = performanceMetrics[event.metric] ?: VitalInfo.EMPTY
+        val newSampleCount = vitalInfo.sampleCount + 1
+
+        // Assuming M(n) is the mean value of the first n samples
+        // M(n) = ∑ sample(n) / n
+        // n⨉M(n) = ∑ sample(n)
+        // M(n+1) = ∑ sample(n+1) / (n+1)
+        //        = [ sample(n+1) + ∑ sample(n) ] / (n+1)
+        //        = (sample(n+1) + n⨉M(n)) / (n+1)
+        val meanValue = (value + (vitalInfo.sampleCount * vitalInfo.meanValue)) / newSampleCount
+        performanceMetrics[event.metric] = VitalInfo(
+            newSampleCount,
+            min(value, vitalInfo.minValue),
+            max(value, vitalInfo.maxValue),
+            meanValue
+        )
+    }
+
     private fun onKeepAlive(
         event: RumRawEvent.KeepAlive,
         writer: DataWriter<Any>
@@ -588,7 +618,13 @@ internal open class RumViewScope(
                 refreshRateAverage = refreshRateInfo?.meanValue?.let { it * refreshRateScale },
                 refreshRateMin = refreshRateInfo?.minValue?.let { it * refreshRateScale },
                 isSlowRendered = isSlowRendered,
-                frustration = ViewEvent.Frustration(frustrationCount.toLong())
+                frustration = ViewEvent.Frustration(frustrationCount.toLong()),
+                flutterBuildTime = performanceMetrics[RumPerformanceMetric.FLUTTER_BUILD_TIME]
+                    ?.let { it.toPerformanceMetric() },
+                flutterRasterTime = performanceMetrics[RumPerformanceMetric.FLUTTER_RASTER_TIME]
+                    ?.let { it.toPerformanceMetric() },
+                jsRefreshRate = performanceMetrics[RumPerformanceMetric.JS_REFRESH_RATE]
+                    ?.let { it.toPerformanceMetric() }
             ),
             usr = ViewEvent.Usr(
                 id = user.id,
@@ -868,4 +904,12 @@ internal open class RumViewScope(
             )
         }
     }
+}
+
+private fun VitalInfo.toPerformanceMetric(): ViewEvent.FlutterBuildTime {
+    return ViewEvent.FlutterBuildTime(
+        min = minValue,
+        max = maxValue,
+        average = meanValue
+    )
 }
