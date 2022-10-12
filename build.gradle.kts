@@ -23,7 +23,6 @@ buildscript {
         classpath(libs.androidToolsGradlePlugin)
         classpath(libs.kotlinGradlePlugin)
         classpath(libs.kotlinSPGradlePlugin)
-        classpath(libs.ktLintGradlePlugin)
         classpath(libs.dokkaGradlePlugin)
         classpath(libs.unmockGradlePlugin)
         classpath(libs.realmGradlePlugin)
@@ -57,7 +56,6 @@ task<Delete>("clean") {
 
 tasks.register("checkAll") {
     dependsOn(
-        "ktlintCheckAll",
         "detektAll",
         "lintCheckAll",
         "unitTestAll",
@@ -127,26 +125,6 @@ tasks.register("unitTestAll") {
         ":unitTestDebug",
         ":unitTestRelease",
         ":unitTestTools"
-    )
-}
-
-tasks.register("ktlintCheckAll") {
-    dependsOn(
-        ":dd-sdk-android:ktlintCheck",
-        ":dd-sdk-android-coil:ktlintCheck",
-        ":dd-sdk-android-compose:ktlintCheck",
-        ":dd-sdk-android-fresco:ktlintCheck",
-        ":dd-sdk-android-glide:ktlintCheck",
-        ":dd-sdk-android-ktx:ktlintCheck",
-        ":dd-sdk-android-ndk:ktlintCheck",
-        ":dd-sdk-android-rx:ktlintCheck",
-        ":dd-sdk-android-sqldelight:ktlintCheck",
-        ":dd-sdk-android-timber:ktlintCheck",
-        ":dd-sdk-android-tv:ktlintCheck",
-        ":instrumented:integration:ktlintCheck",
-        ":instrumented:nightly-tests:ktlintCheck",
-        ":tools:detekt:ktlintCheck",
-        ":tools:unit:ktlintCheck"
     )
 }
 
