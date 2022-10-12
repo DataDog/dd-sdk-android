@@ -28,13 +28,13 @@ import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -61,7 +61,6 @@ import org.mockito.quality.Strictness
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class),
-    ExtendWith(ProhibitLeavingStaticMocksExtension::class),
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -101,15 +100,14 @@ internal class DatadogCoreTest {
     @EnumSource(TrackingConsent::class)
     fun `M update the ConsentProvider W setConsent`(fakeConsent: TrackingConsent) {
         // Given
-        @Suppress("UNUSED_VARIABLE")
-        val mockedConsentProvider: ConsentProvider = mock()
-        // CoreFeature.trackingConsentProvider = mockedConsentProvider
+        val mockConsentProvider = mock<ConsentProvider>()
+        testedCore.coreFeature.trackingConsentProvider = mockConsentProvider
 
         // When
         testedCore.setTrackingConsent(fakeConsent)
 
         // Then
-        // verify(CoreFeature.trackingConsentProvider).setConsent(fakeConsent)
+        verify(mockConsentProvider).setConsent(fakeConsent)
     }
 
     @Test
@@ -214,53 +212,48 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `𝕄 clear data in all features 𝕎 clearAllData()`() {
+    fun `𝕄 clear data in all features 𝕎 clearAllData()`(
+        forge: Forge
+    ) {
         // Given
-        testedCore.rumFeature = mock()
-        testedCore.tracingFeature = mock()
-        testedCore.logsFeature = mock()
-        testedCore.webViewLogsFeature = mock()
-        testedCore.webViewRumFeature = mock()
-        testedCore.crashReportsFeature = mock()
-        testedCore.sessionReplayFeature = mock()
+        // there are some non-mock features there after initialization
+        testedCore.features.clear()
+        testedCore.features.putAll(
+            forge.aMap {
+                anAlphaNumericalString() to mock()
+            }
+        )
 
         // When
         testedCore.clearAllData()
 
         // Then
-        verify(testedCore.rumFeature)!!.clearAllData()
-        verify(testedCore.tracingFeature)!!.clearAllData()
-        verify(testedCore.logsFeature)!!.clearAllData()
-        verify(testedCore.webViewLogsFeature)!!.clearAllData()
-        verify(testedCore.webViewRumFeature)!!.clearAllData()
-        verify(testedCore.crashReportsFeature)!!.clearAllData()
-        verify(testedCore.sessionReplayFeature)!!.clearAllData()
+        testedCore.features.forEach {
+            verify(it.value).clearAllData()
+        }
     }
 
     @Test
-    fun `𝕄 flush data in all features 𝕎 flushStoredData()`() {
+    fun `𝕄 flush data in all features 𝕎 flushStoredData()`(
+        forge: Forge
+    ) {
         // Given
-        testedCore.coreFeature = mock()
-        testedCore.rumFeature = mock()
-        testedCore.tracingFeature = mock()
-        testedCore.logsFeature = mock()
-        testedCore.webViewLogsFeature = mock()
-        testedCore.webViewRumFeature = mock()
-        testedCore.crashReportsFeature = mock()
-        testedCore.sessionReplayFeature = mock()
+        // there are some non-mock features there after initialization
+        testedCore.features.clear()
+
+        testedCore.features.putAll(
+            forge.aMap {
+                anAlphaNumericalString() to mock()
+            }
+        )
 
         // When
         testedCore.flushStoredData()
 
         // Then
-        verify(testedCore.coreFeature).drainAndShutdownExecutors()
-        verify(testedCore.rumFeature)!!.flushStoredData()
-        verify(testedCore.tracingFeature)!!.flushStoredData()
-        verify(testedCore.logsFeature)!!.flushStoredData()
-        verify(testedCore.webViewLogsFeature)!!.flushStoredData()
-        verify(testedCore.webViewRumFeature)!!.flushStoredData()
-        verify(testedCore.crashReportsFeature)!!.flushStoredData()
-        verify(testedCore.sessionReplayFeature)!!.flushStoredData()
+        testedCore.features.forEach {
+            verify(it.value).flushStoredData()
+        }
     }
 
     @Test
@@ -305,6 +298,8 @@ internal class DatadogCoreTest {
         assertThat(testedCore.crashReportsFeature).isNull()
         assertThat(testedCore.sessionReplayFeature).isNull()
         assertThat(testedCore.contextProvider).isNull()
+
+        assertThat(testedCore.features).isEmpty()
     }
 
     companion object {

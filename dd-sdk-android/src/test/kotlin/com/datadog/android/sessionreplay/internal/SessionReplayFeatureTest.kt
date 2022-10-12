@@ -6,24 +6,30 @@
 
 package com.datadog.android.sessionreplay.internal
 
+import android.app.Application
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRecordPersistenceStrategy
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.internal.storage.Storage
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -39,8 +45,12 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class SessionReplayFeatureTest :
-    SdkFeatureTest<String, Configuration.Feature.SessionReplay, SessionReplayFeature>() {
+internal class SessionReplayFeatureTest {
+
+    private lateinit var testedFeature: SessionReplayFeature
+
+    @Forgery
+    lateinit var fakeConfigurationFeature: Configuration.Feature.SessionReplay
 
     @Mock
     lateinit var mockSessionReplayLifecycleCallback: SessionReplayLifecycleCallback
@@ -48,21 +58,16 @@ internal class SessionReplayFeatureTest :
     @Mock
     lateinit var mockSDKCore: SdkCore
 
-    override fun createTestedFeature(): SessionReplayFeature {
-        return SessionReplayFeature(
+    @Mock
+    lateinit var mockStorage: Storage
+
+    @BeforeEach
+    fun `set up`() {
+        testedFeature = SessionReplayFeature(
             coreFeature.mockInstance,
             mockStorage,
-            mockUploader,
             mockSDKCore
         ) { _, _ -> mockSessionReplayLifecycleCallback }
-    }
-
-    override fun forgeConfiguration(forge: Forge): Configuration.Feature.SessionReplay {
-        return forge.getForgery()
-    }
-
-    override fun featureDirName(): String {
-        return SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME
     }
 
     @Test
@@ -81,7 +86,6 @@ internal class SessionReplayFeatureTest :
         testedFeature = SessionReplayFeature(
             coreFeature.mockInstance,
             mockStorage,
-            mockUploader,
             mockSDKCore
         )
 
@@ -251,5 +255,16 @@ internal class SessionReplayFeatureTest :
 
         // Then
         verifyZeroInteractions(mockSessionReplayLifecycleCallback)
+    }
+
+    companion object {
+        val appContext = ApplicationContextTestConfiguration(Application::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(appContext, coreFeature)
+        }
     }
 }

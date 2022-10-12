@@ -11,11 +11,11 @@ import androidx.annotation.WorkerThread
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.datadog.android.Datadog
+import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.v2.core.DatadogFeature
 import com.datadog.android.v2.core.internal.net.DataUploader
 import java.util.LinkedList
 import java.util.Queue
@@ -47,7 +47,7 @@ internal class UploadWorker(
             // be uploaded we put retry task to the end of queue, so that batches of other features
             // have a chance to go.
             val features =
-                globalSdkCore.getAllFeatures().mapNotNull { it as? DatadogFeature }.shuffled()
+                globalSdkCore.getAllFeatures().mapNotNull { it as? SdkFeature }.shuffled()
 
             val tasksQueue = LinkedList<UploadNextBatchTask>()
 
@@ -71,7 +71,7 @@ internal class UploadWorker(
     class UploadNextBatchTask(
         private val taskQueue: Queue<UploadNextBatchTask>,
         private val datadogCore: DatadogCore,
-        private val feature: DatadogFeature
+        private val feature: SdkFeature
     ) : Runnable {
 
         @WorkerThread

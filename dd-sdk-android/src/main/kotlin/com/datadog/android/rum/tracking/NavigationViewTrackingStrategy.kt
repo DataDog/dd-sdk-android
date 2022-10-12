@@ -114,8 +114,7 @@ class NavigationViewTrackingStrategy(
      */
     fun startTracking() {
         val activity = startedActivity ?: return
-        val rumFeature = (Datadog.globalSdkCore as? DatadogCore)
-            ?.rumFeature as? RumFeature ?: return
+        val rumFeature = (Datadog.globalSdkCore as? DatadogCore)?.rumFeature ?: return
         activity.findNavControllerOrNull(navigationViewId)?.let {
             if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
                 val navControllerFragmentCallbacks = NavControllerFragmentLifecycleCallbacks(

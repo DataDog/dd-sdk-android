@@ -12,7 +12,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallbacks
@@ -47,7 +46,7 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
 
     private val androidXLifecycleCallbacks: FragmentLifecycleCallbacks<FragmentActivity>
         by lazy {
-            val rumFeature = (Datadog.globalSdkCore as? DatadogCore)?.rumFeature as? RumFeature
+            val rumFeature = (Datadog.globalSdkCore as? DatadogCore)?.rumFeature
             if (rumFeature != null) {
                 AndroidXFragmentLifecycleCallbacks(
                     argumentsProvider = {
@@ -65,7 +64,7 @@ class FragmentViewTrackingStrategy @JvmOverloads constructor(
         }
     private val oreoLifecycleCallbacks: FragmentLifecycleCallbacks<Activity>
         by lazy {
-            val rumFeature = (Datadog.globalSdkCore as? DatadogCore)?.rumFeature as? RumFeature
+            val rumFeature = (Datadog.globalSdkCore as? DatadogCore)?.rumFeature
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && rumFeature != null) {
                 OreoFragmentLifecycleCallbacks(
                     argumentsProvider = {

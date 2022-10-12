@@ -6,37 +6,39 @@
 
 package com.datadog.android.webview.internal.log
 
-import android.content.Context
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.SdkFeature
+import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
-import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.v2.core.internal.net.DataUploader
 import com.datadog.android.v2.core.internal.storage.Storage
 import com.google.gson.JsonObject
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal class WebViewLogsFeature(
-    coreFeature: CoreFeature,
-    storage: Storage,
-    uploader: DataUploader
-) : SdkFeature<JsonObject, Configuration.Feature.Logs>(coreFeature, storage, uploader) {
+    private val coreFeature: CoreFeature,
+    private val storage: Storage
+) {
+
+    internal var persistenceStrategy: PersistenceStrategy<JsonObject> = NoOpPersistenceStrategy()
+    internal val initialized = AtomicBoolean(false)
 
     // region SdkFeature
 
-    override fun createPersistenceStrategy(
-        context: Context,
-        storage: Storage,
-        configuration: Configuration.Feature.Logs
+    fun initialize() {
+        persistenceStrategy = createPersistenceStrategy(storage)
+        initialized.set(true)
+    }
+
+    fun stop() {
+        persistenceStrategy = NoOpPersistenceStrategy()
+        initialized.set(false)
+    }
+
+    private fun createPersistenceStrategy(
+        storage: Storage
     ): PersistenceStrategy<JsonObject> {
         return WebViewLogFilePersistenceStrategy(
             coreFeature.contextProvider,
-            coreFeature.trackingConsentProvider,
-            coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
-            sdkLogger,
-            coreFeature.localDataEncryption,
-            coreFeature.buildFilePersistenceConfig(),
             storage
         )
     }

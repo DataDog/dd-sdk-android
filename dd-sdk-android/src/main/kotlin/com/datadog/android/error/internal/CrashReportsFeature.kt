@@ -7,52 +7,45 @@
 package com.datadog.android.error.internal
 
 import android.content.Context
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.SdkFeature
+import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
-import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.v2.core.internal.net.DataUploader
 import com.datadog.android.v2.core.internal.storage.Storage
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal class CrashReportsFeature(
-    coreFeature: CoreFeature,
-    storage: Storage,
-    uploader: DataUploader
-) : SdkFeature<LogEvent, Configuration.Feature.CrashReport>(coreFeature, storage, uploader) {
+    private val coreFeature: CoreFeature,
+    private val storage: Storage
+) {
 
+    internal var persistenceStrategy: PersistenceStrategy<LogEvent> = NoOpPersistenceStrategy()
+    internal val initialized = AtomicBoolean(false)
     internal var originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
 
     // region SdkFeature
 
-    override fun onInitialize(context: Context, configuration: Configuration.Feature.CrashReport) {
+    fun initialize(context: Context) {
+        persistenceStrategy = createPersistenceStrategy(storage)
         setupExceptionHandler(context)
+        initialized.set(true)
     }
 
-    override fun onStop() {
+    fun stop() {
         resetOriginalExceptionHandler()
+        initialized.set(false)
     }
 
-    override fun createPersistenceStrategy(
-        context: Context,
-        storage: Storage,
-        configuration: Configuration.Feature.CrashReport
+    private fun createPersistenceStrategy(
+        storage: Storage
     ): PersistenceStrategy<LogEvent> {
         return CrashReportFilePersistenceStrategy(
             coreFeature.contextProvider,
-            coreFeature.trackingConsentProvider,
-            coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
-            sdkLogger,
-            coreFeature.localDataEncryption,
-            coreFeature.buildFilePersistenceConfig(),
             storage
         )
     }
-
-    override fun onPostInitialized(context: Context) {}
 
     // endregion
 

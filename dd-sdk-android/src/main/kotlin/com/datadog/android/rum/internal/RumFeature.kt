@@ -14,8 +14,8 @@ import android.view.Choreographer
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.event.NoOpEventMapper
+import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.core.internal.utils.devLogger
@@ -42,19 +42,20 @@ import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
-import com.datadog.android.v2.core.internal.net.DataUploader
 import com.datadog.android.v2.core.internal.storage.Storage
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal class RumFeature(
-    coreFeature: CoreFeature,
-    storage: Storage,
-    uploader: DataUploader
-) : SdkFeature<Any, Configuration.Feature.RUM>(coreFeature, storage, uploader) {
+    private val coreFeature: CoreFeature,
+    private val storage: Storage
+) {
+    internal var persistenceStrategy: PersistenceStrategy<Any> = NoOpPersistenceStrategy()
+    internal val initialized = AtomicBoolean(false)
 
     internal var samplingRate: Float = 0f
     internal var telemetrySamplingRate: Float = 0f
@@ -80,7 +81,9 @@ internal class RumFeature(
 
     // region SdkFeature
 
-    override fun onInitialize(context: Context, configuration: Configuration.Feature.RUM) {
+    fun initialize(context: Context, configuration: Configuration.Feature.RUM) {
+        persistenceStrategy = createPersistenceStrategy(configuration)
+
         samplingRate = configuration.samplingRate
         telemetrySamplingRate = configuration.telemetrySamplingRate
         backgroundEventTracking = configuration.backgroundEventTracking
@@ -97,9 +100,11 @@ internal class RumFeature(
         registerTrackingStrategies(context)
 
         appContext = context.applicationContext
+
+        initialized.set(true)
     }
 
-    override fun onStop() {
+    fun stop() {
         unregisterTrackingStrategies(appContext)
 
         viewTrackingStrategy = NoOpViewTrackingStrategy()
@@ -117,26 +122,19 @@ internal class RumFeature(
         vitalExecutorService = NoOpScheduledExecutorService()
     }
 
-    override fun createPersistenceStrategy(
-        context: Context,
-        storage: Storage,
+    private fun createPersistenceStrategy(
         configuration: Configuration.Feature.RUM
     ): PersistenceStrategy<Any> {
         return RumFilePersistenceStrategy(
             coreFeature.contextProvider,
-            coreFeature.trackingConsentProvider,
-            coreFeature.storageDir,
             configuration.rumEventMapper,
             coreFeature.persistenceExecutorService,
             sdkLogger,
             coreFeature.localDataEncryption,
             DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir),
-            coreFeature.buildFilePersistenceConfig(),
             storage
         )
     }
-
-    override fun onPostInitialized(context: Context) {}
 
     // endregion
 
@@ -187,7 +185,7 @@ internal class RumFeature(
         initializeVitalMonitor(CPUVitalReader(), cpuVitalMonitor, periodInMs)
         initializeVitalMonitor(MemoryVitalReader(), memoryVitalMonitor, periodInMs)
 
-        val vitalFrameCallback = VitalFrameCallback(frameRateVitalMonitor) { isInitialized() }
+        val vitalFrameCallback = VitalFrameCallback(frameRateVitalMonitor) { initialized.get() }
         try {
             Choreographer.getInstance().postFrameCallback(vitalFrameCallback)
         } catch (e: IllegalStateException) {

@@ -6,47 +6,22 @@
 
 package com.datadog.android.webview.internal.log
 
-import com.datadog.android.core.internal.persistence.file.FileMover
-import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
-import com.datadog.android.core.internal.persistence.file.FileReaderWriter
-import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFilePersistenceStrategy
-import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
-import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.domain.event.WebViewLogEventSerializer
-import com.datadog.android.security.Encryption
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.Storage
 import com.google.gson.JsonObject
-import java.io.File
 import java.util.concurrent.ExecutorService
 
 internal class WebViewLogFilePersistenceStrategy(
     contextProvider: ContextProvider,
-    consentProvider: ConsentProvider,
-    storageDir: File,
     executorService: ExecutorService,
-    internalLogger: Logger,
-    localDataEncryption: Encryption?,
-    filePersistenceConfig: FilePersistenceConfig,
     storage: Storage
 ) : BatchFilePersistenceStrategy<JsonObject>(
     contextProvider,
-    FeatureFileOrchestrator(
-        consentProvider,
-        storageDir,
-        WebViewLogsFeature.WEB_LOGS_FEATURE_NAME,
-        executorService,
-        internalLogger
-    ),
     executorService,
     WebViewLogEventSerializer(),
     sdkLogger,
-    BatchFileReaderWriter.create(internalLogger, localDataEncryption),
-    FileReaderWriter.create(internalLogger, localDataEncryption),
-    FileMover(internalLogger),
-    filePersistenceConfig,
     storage
 )

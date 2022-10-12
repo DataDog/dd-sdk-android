@@ -6,44 +6,45 @@
 
 package com.datadog.android.log.internal
 
-import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.SdkFeature
+import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
-import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.domain.LogFilePersistenceStrategy
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.v2.core.internal.net.DataUploader
 import com.datadog.android.v2.core.internal.storage.Storage
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal class LogsFeature(
-    coreFeature: CoreFeature,
-    storage: Storage,
-    uploader: DataUploader
-) : SdkFeature<LogEvent, Configuration.Feature.Logs>(coreFeature, storage, uploader) {
+    private val coreFeature: CoreFeature,
+    private val storage: Storage
+) {
+    internal var persistenceStrategy: PersistenceStrategy<LogEvent> = NoOpPersistenceStrategy()
+    internal val initialized = AtomicBoolean(false)
+
+    internal fun initialize(configuration: Configuration.Feature.Logs) {
+        persistenceStrategy = createPersistenceStrategy(storage, configuration)
+        initialized.set(true)
+    }
+
+    internal fun stop() {
+        persistenceStrategy = NoOpPersistenceStrategy()
+        initialized.set(false)
+    }
 
     // region SdkFeature
 
-    override fun createPersistenceStrategy(
-        context: Context,
+    private fun createPersistenceStrategy(
         storage: Storage,
         configuration: Configuration.Feature.Logs
     ): PersistenceStrategy<LogEvent> {
         return LogFilePersistenceStrategy(
             coreFeature.contextProvider,
-            coreFeature.trackingConsentProvider,
-            coreFeature.storageDir,
             coreFeature.persistenceExecutorService,
-            sdkLogger,
             configuration.logsEventMapper,
-            coreFeature.localDataEncryption,
-            coreFeature.buildFilePersistenceConfig(),
             storage
         )
     }
-
-    override fun onPostInitialized(context: Context) {}
 
     // endregion
 

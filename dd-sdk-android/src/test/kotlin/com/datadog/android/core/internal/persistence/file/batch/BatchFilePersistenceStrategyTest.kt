@@ -8,23 +8,18 @@ package com.datadog.android.core.internal.persistence.file.batch
 
 import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.FileMover
-import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
-import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.advanced.ConsentAwareFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.core.internal.ContextProvider
-import com.datadog.android.v2.core.internal.data.upload.DataFlusher
 import com.datadog.android.v2.core.internal.storage.Storage
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import java.util.concurrent.ExecutorService
@@ -64,19 +59,10 @@ internal class BatchFilePersistenceStrategyTest {
     lateinit var mockFileReaderWriter: BatchFileReaderWriter
 
     @Mock
-    lateinit var mockMetaFileReaderWriter: FileReaderWriter
-
-    @Mock
-    lateinit var mockFileMover: FileMover
-
-    @Mock
     lateinit var mockContextProvider: ContextProvider
 
     @Mock
     lateinit var mockStorage: Storage
-
-    @Forgery
-    lateinit var fakeFilePersistenceConfig: FilePersistenceConfig
 
     @BeforeEach
     fun `set up`() {
@@ -89,14 +75,9 @@ internal class BatchFilePersistenceStrategyTest {
 
         testedStrategy = BatchFilePersistenceStrategy(
             mockContextProvider,
-            mockFileOrchestrator,
             mockExecutorService,
             mockSerializer,
             Logger(mockLogHandler),
-            mockFileReaderWriter,
-            mockMetaFileReaderWriter,
-            mockFileMover,
-            fakeFilePersistenceConfig,
             mockStorage
         )
     }
@@ -121,25 +102,5 @@ internal class BatchFilePersistenceStrategyTest {
 
         // Then
         assertThat(writer1).isSameAs(writer2)
-    }
-
-    @Test
-    fun `𝕄 return same storage 𝕎 getStorage()`() {
-        // When
-        val storage = testedStrategy.getStorage()
-
-        // Then
-        assertThat(storage).isSameAs(mockStorage)
-    }
-
-    @Test
-    fun `𝕄 return batch file flusher 𝕎 getFlusher()`() {
-        // When
-        val flusher = testedStrategy.getFlusher()
-
-        // Then
-        check(flusher is DataFlusher)
-        assertThat(flusher.fileOrchestrator).isSameAs(mockFileOrchestrator)
-        assertThat(flusher.fileReader).isSameAs(mockFileReaderWriter)
     }
 }

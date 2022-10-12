@@ -6,19 +6,23 @@
 
 package com.datadog.android.webview.internal.log
 
-import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.SdkFeatureTest
+import android.app.Application
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.core.internal.storage.Storage
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.google.gson.JsonObject
-import fr.xgouchet.elmyr.Forge
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -31,28 +35,36 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class WebViewLogsFeatureTest :
-    SdkFeatureTest<JsonObject, Configuration.Feature.Logs, WebViewLogsFeature>() {
+internal class WebViewLogsFeatureTest {
 
-    override fun createTestedFeature(): WebViewLogsFeature {
-        return WebViewLogsFeature(coreFeature.mockInstance, mockStorage, mockUploader)
-    }
+    private lateinit var testedFeature: WebViewLogsFeature
 
-    override fun forgeConfiguration(forge: Forge): Configuration.Feature.Logs {
-        return forge.getForgery()
-    }
+    @Mock
+    lateinit var mockStorage: Storage
 
-    override fun featureDirName(): String {
-        return "web-logs"
+    @BeforeEach
+    fun `set up`() {
+        testedFeature = WebViewLogsFeature(coreFeature.mockInstance, mockStorage)
     }
 
     @Test
     fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
         // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        testedFeature.initialize()
 
         // Then
         assertThat(testedFeature.persistenceStrategy)
             .isInstanceOf(WebViewLogFilePersistenceStrategy::class.java)
+    }
+
+    companion object {
+        val appContext = ApplicationContextTestConfiguration(Application::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(appContext, coreFeature)
+        }
     }
 }

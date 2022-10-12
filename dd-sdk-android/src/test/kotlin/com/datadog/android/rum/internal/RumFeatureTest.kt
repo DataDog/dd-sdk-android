@@ -10,7 +10,6 @@ import android.app.Application
 import android.view.Choreographer
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
-import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
@@ -23,9 +22,14 @@ import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.core.internal.storage.Storage
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doNothing
@@ -34,7 +38,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -58,27 +62,25 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, RumFeature>() {
+internal class RumFeatureTest {
+
+    private lateinit var testedFeature: RumFeature
+
+    @Forgery
+    lateinit var fakeConfigurationFeature: Configuration.Feature.RUM
 
     @Mock
     lateinit var mockChoreographer: Choreographer
 
-    override fun createTestedFeature(): RumFeature {
-        return RumFeature(coreFeature.mockInstance, mockStorage, mockUploader)
-    }
-
-    override fun forgeConfiguration(forge: Forge): Configuration.Feature.RUM {
-        return forge.getForgery()
-    }
-
-    override fun featureDirName(): String {
-        return "rum"
-    }
+    @Mock
+    lateinit var mockStorage: Storage
 
     @BeforeEach
     fun `set up RUM`() {
         doNothing().whenever(mockChoreographer).postFrameCallback(any())
         mockChoreographerInstance(mockChoreographer)
+
+        testedFeature = RumFeature(coreFeature.mockInstance, mockStorage)
     }
 
     @Test
@@ -449,5 +451,16 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
         assertThat(testedFeature.debugActivityLifecycleListener).isNull()
         verify(testedFeature.appContext as Application)
             .unregisterActivityLifecycleCallbacks(listener)
+    }
+
+    companion object {
+        val appContext = ApplicationContextTestConfiguration(Application::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(appContext, coreFeature)
+        }
     }
 }

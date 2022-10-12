@@ -22,7 +22,6 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.v2.api.NoOpSdkCore
 import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.v2.core.internal.net.DataUploader
 import com.datadog.android.v2.core.internal.storage.Storage
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -74,9 +73,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     @Mock
     lateinit var mockStorage: Storage
 
-    @Mock
-    lateinit var mockUploader: DataUploader
-
     private lateinit var fakeAttributes: Map<String, Any?>
 
     override fun instantiateTestedInterceptor(
@@ -84,7 +80,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         factory: () -> Tracer
     ): TracingInterceptor {
         whenever((Datadog.globalSdkCore as DatadogCore).rumFeature) doReturn
-            RumFeature(coreFeature.mockInstance, mockStorage, mockUploader)
+            RumFeature(coreFeature.mockInstance, mockStorage)
         return DatadogInterceptor(
             tracedHosts = tracedHosts,
             tracedRequestListener = mockRequestListener,
