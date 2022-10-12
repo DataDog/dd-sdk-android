@@ -48,6 +48,9 @@ The whole project is covered by a set of static analysis tools, linters and test
 # launches the detekt static analysis for all modules
 ./gradlew detektAll
 
+# launches the ktlint check and formatter for all Kotlin files (the ktlint client needs to be installed on your machine)
+ktlint -F "**/*.kt" "**/*.kts" '!**/build/generated/**' '!**/build/kspCaches/**'
+
 # launches the Android linter for all modules
 ./gradlew lintCheckAll
 
@@ -178,6 +181,13 @@ class Foo :Observable(), Runnable {
     // endregion
 }
 
+```
+
+There is also a command that you can use to automatically format the code following the
+required styling rules (require ktlint installed on your machine):
+
+```console
+ktlint -F "**/*.kt" "**/*.kts" '!**/build/generated/**' '!**/build/kspCaches/**'
 ```
 
 ### #TestMatters
