@@ -8,7 +8,7 @@ package com.datadog.gradle.plugin.jsonschema
 
 import java.io.File
 
-data class JsonDefinitionReference (
+data class JsonDefinitionReference(
     val typeName: String,
     val definition: JsonDefinition,
     val fromFile: File

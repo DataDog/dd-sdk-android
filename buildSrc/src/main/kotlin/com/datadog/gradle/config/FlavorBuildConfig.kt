@@ -62,8 +62,8 @@ fun configureFlavorForSampleApp(flavor: ApplicationProductFlavor, rootDir: File)
         "\"${config.applicationKey}\""
     )
     flavor.buildConfigField(
-            "String",
-            "DD_SITE_NAME",
-            "\"${flavor.name.toUpperCase(Locale.US)}\""
+        "String",
+        "DD_SITE_NAME",
+        "\"${flavor.name.toUpperCase(Locale.US)}\""
     )
 }

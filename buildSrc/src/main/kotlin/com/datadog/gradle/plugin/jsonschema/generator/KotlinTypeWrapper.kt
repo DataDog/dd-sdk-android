@@ -7,7 +7,6 @@
 package com.datadog.gradle.plugin.jsonschema.generator
 
 import com.datadog.gradle.plugin.jsonschema.TypeDefinition
-import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeName
 
 data class KotlinTypeWrapper(

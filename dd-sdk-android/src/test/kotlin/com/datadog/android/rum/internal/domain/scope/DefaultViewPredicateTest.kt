@@ -8,10 +8,10 @@ package com.datadog.android.rum.internal.domain.scope
 
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
-import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
+import java.util.concurrent.TimeUnit
 
 internal class DefaultViewPredicateTest {
 

@@ -10,8 +10,8 @@ import android.net.Uri
 import coil.request.ImageRequest
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
-import java.io.File
 import okhttp3.HttpUrl
+import java.io.File
 
 /**
  * Provides an implementation of [coil.request.ImageRequest.Listener] already set up to send relevant information

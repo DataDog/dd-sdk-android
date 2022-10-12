@@ -96,7 +96,8 @@ val Book = TypeDefinition.Class(
         TypeProperty("title", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
         TypeProperty("price", TypeDefinition.Primitive(JsonPrimitiveType.NUMBER), false),
         TypeProperty(
-            "author", TypeDefinition.Class(
+            "author",
+            TypeDefinition.Class(
                 name = "Author",
                 properties = listOf(
                     TypeProperty(
@@ -272,14 +273,16 @@ val DateTime = TypeDefinition.Class(
                 properties = listOf(
                     TypeProperty("year", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), true),
                     TypeProperty(
-                        "month", TypeDefinition.Enum(
+                        "month",
+                        TypeDefinition.Enum(
                             "Month",
                             JsonType.STRING,
                             listOf(
                                 "jan", "feb", "mar", "apr", "may", "jun",
                                 "jul", "aug", "sep", "oct", "nov", "dec"
                             )
-                        ), true
+                        ),
+                        true
                     ),
                     TypeProperty("day", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), true)
                 )
@@ -766,7 +769,8 @@ val Version = TypeDefinition.Class(
         TypeProperty("version", TypeDefinition.Constant(JsonType.INTEGER, 42.0), false),
         TypeProperty("delta", TypeDefinition.Constant(JsonType.NUMBER, 3.1415), true),
         TypeProperty(
-            "id", TypeDefinition.Class(
+            "id",
+            TypeDefinition.Class(
                 name = "Id",
                 properties = listOf(
                     TypeProperty(
@@ -779,7 +783,8 @@ val Version = TypeDefinition.Class(
             false
         ),
         TypeProperty(
-            "date", TypeDefinition.Class(
+            "date",
+            TypeDefinition.Class(
                 name = "Date",
                 properties = listOf(
                     TypeProperty(

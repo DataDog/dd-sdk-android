@@ -6,7 +6,7 @@
 
 package com.datadog.gradle.plugin.jsonschema.generator
 
-object Identifier{
+object Identifier {
 
     const val FUN_TO_JSON = "toJson"
     const val FUN_TO_JSON_ELT = "toJsonElement"

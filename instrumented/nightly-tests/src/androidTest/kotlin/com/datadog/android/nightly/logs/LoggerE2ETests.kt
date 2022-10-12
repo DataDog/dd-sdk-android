@@ -31,15 +31,15 @@ import com.datadog.tools.unit.forge.aThrowable
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.junit4.ForgeRule
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.TimeZone
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.TimeZone
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest

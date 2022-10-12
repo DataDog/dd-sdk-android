@@ -15,7 +15,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.ByteArrayOutputStream
 import okhttp3.Interceptor
 import okhttp3.Protocol
 import okhttp3.Request
@@ -31,6 +30,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.io.ByteArrayOutputStream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

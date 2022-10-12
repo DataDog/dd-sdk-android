@@ -62,7 +62,6 @@ class MultiClassGenerator(
         return typeBuilder
     }
 
-
     // endregion
 
     // region Internal

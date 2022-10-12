@@ -28,10 +28,10 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumMonitor
+import kotlinx.coroutines.flow.collect
 import java.lang.Exception
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.roundToInt
-import kotlinx.coroutines.flow.collect
 
 /**
  * Creates a proxy around click listener, which will report clicks to Datadog.
