@@ -690,7 +690,7 @@ datadog:
       # region OkHttp
       - "okhttp3.Call.execute():java.io.IOException"
       - "okhttp3.Dns.lookup(kotlin.String):java.net.UnknownHostException"
-      - "okhttp3.Response.peekBody(kotlin.Long):java.io.IOException"
+      - "okhttp3.Response.peekBody(kotlin.Long):java.io.IOException,java.lang.IllegalArgumentException,java.lang.IllegalStateException"
       - "okhttp3.RequestBody.writeTo(okio.BufferedSink):java.io.IOException"
       - "okhttp3.Response.close():java.lang.IllegalStateException"
       - "okhttp3.Request.Builder.build():java.lang.IllegalStateException"
