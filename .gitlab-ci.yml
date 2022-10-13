@@ -55,15 +55,6 @@ create_key:
 
 # STATIC ANALYSIS
 
-analysis:ktlint:
-  tags: [ "runner:docker" ]
-  stage: analysis
-  timeout: 30m
-  image: "registry.ddbuild.io/mobile/images/ktlint:v0.1.0"
-  script:
-    - echo "Using Ktlint version $(ktlint --version)"
-    - ktlint "**/*.kt" "**/*.kts" "!**/build/generated/**" "!**/build/kspCaches/**"
-
 analysis:android-lint:
   tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
