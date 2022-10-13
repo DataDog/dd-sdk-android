@@ -38,6 +38,7 @@ import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -98,6 +99,9 @@ internal class RumContinuousActionScopeTest {
     var fakeServerOffset: Long = 0L
 
     var fakeSourceActionEvent: ActionEvent.Source? = null
+
+    @BoolForgery
+    var fakeTrackFrustrations: Boolean = true
 
     @Mock
     lateinit var mockRumEventSourceProvider: RumEventSourceProvider
@@ -1172,7 +1176,7 @@ internal class RumContinuousActionScopeTest {
             TEST_MAX_DURATION_MS,
             mockRumEventSourceProvider,
             fakeAndroidInfoProvider,
-            true
+            fakeTrackFrustrations
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.globalAttributes.remove(it) }
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())

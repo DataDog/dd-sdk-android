@@ -134,7 +134,7 @@ internal class DatadogRumMonitorTest {
     var fakeBackgroundTrackingEnabled: Boolean = false
 
     @BoolForgery
-    var fakeFrustrationTracking: Boolean = true
+    var fakeTrackFrustrations: Boolean = true
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -143,7 +143,7 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
-            fakeFrustrationTracking,
+            fakeTrackFrustrations,
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
@@ -164,7 +164,7 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
-            fakeFrustrationTracking,
+            fakeTrackFrustrations,
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
@@ -1164,7 +1164,7 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
-            fakeFrustrationTracking,
+            fakeTrackFrustrations,
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
@@ -1209,7 +1209,7 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
-            fakeFrustrationTracking,
+            fakeTrackFrustrations,
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
@@ -1241,7 +1241,7 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
-            fakeFrustrationTracking,
+            fakeTrackFrustrations,
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,

@@ -176,7 +176,7 @@ internal class RumViewScopeTest {
     lateinit var mockViewUpdatePredicate: ViewUpdatePredicate
 
     @BoolForgery
-    var fakeTrackFrustrations = true
+    var fakeTrackFrustrations: Boolean = true
 
     @BeforeEach
     fun `set up`(forge: Forge) {

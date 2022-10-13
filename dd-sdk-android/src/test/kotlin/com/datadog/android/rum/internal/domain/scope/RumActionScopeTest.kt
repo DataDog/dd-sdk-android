@@ -2093,7 +2093,7 @@ internal class RumActionScopeTest {
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable,
         @StringForgery name: String
-        ) {
+    ) {
 
         // Given
         testedScope = RumActionScope(

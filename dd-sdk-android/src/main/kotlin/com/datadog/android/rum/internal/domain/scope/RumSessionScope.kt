@@ -23,6 +23,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
+@Suppress("LongParameterList")
 internal class RumSessionScope(
     private val parentScope: RumScope,
     internal val samplingRate: Float,
@@ -50,6 +51,7 @@ internal class RumSessionScope(
 
     private val noOpWriter = NoOpDataWriter<Any>()
 
+    @Suppress("LongParameterList")
     internal var childScope: RumScope = RumViewManagerScope(
         this,
         backgroundTrackingEnabled,

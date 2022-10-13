@@ -32,8 +32,8 @@ internal class RumActionScope(
     maxDurationMs: Long = ACTION_MAX_DURATION_MS,
     private val rumEventSourceProvider: RumEventSourceProvider,
     private val androidInfoProvider: AndroidInfoProvider,
-    val trackFrustrations: Boolean
-    ) : RumScope {
+    private val trackFrustrations: Boolean
+) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
     private val maxDurationNs = TimeUnit.MILLISECONDS.toNanos(maxDurationMs)
@@ -250,6 +250,7 @@ internal class RumActionScope(
         internal const val ACTION_INACTIVITY_MS = 100L
         internal const val ACTION_MAX_DURATION_MS = 5000L
 
+        @Suppress("LongParameterList")
         fun fromEvent(
             parentScope: RumScope,
             event: RumRawEvent.StartAction,

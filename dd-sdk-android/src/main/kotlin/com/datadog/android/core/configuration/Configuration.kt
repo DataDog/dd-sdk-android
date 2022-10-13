@@ -421,12 +421,11 @@ internal constructor(
             return this
         }
 
-
         /**
          * Enables/Disables tracking of frustration signals.
          *
          * By default frustration signals are tracked. Currently the SDK supports detecting
-         * error_taps which occur when an error follows a user action tap.
+         * error taps which occur when an error follows a user action tap.
          *
          * @param enabled whether frustration signals should be tracked in RUM.
          */

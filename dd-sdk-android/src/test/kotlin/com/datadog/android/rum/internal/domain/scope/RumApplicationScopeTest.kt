@@ -83,7 +83,6 @@ internal class RumApplicationScopeTest {
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
-
     @BeforeEach
     fun `set up`() {
         testedScope = RumApplicationScope(
