@@ -10,7 +10,6 @@ import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.log.Logger
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.Request as DatadogRequest
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
 import com.nhaarman.mockitokotlin2.any
@@ -30,8 +29,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.IOException
-import java.util.Locale
 import okhttp3.Call
 import okhttp3.Headers
 import okhttp3.HttpUrl
@@ -49,6 +46,9 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.io.IOException
+import java.util.Locale
+import com.datadog.android.v2.api.Request as DatadogRequest
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

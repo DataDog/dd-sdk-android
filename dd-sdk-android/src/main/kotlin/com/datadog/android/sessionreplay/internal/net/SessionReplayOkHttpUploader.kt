@@ -14,13 +14,13 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.net.BytesCompressor
 import com.datadog.android.v2.api.context.DatadogContext
-import java.util.Locale
-import java.util.UUID
 import okhttp3.Call
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.Request
 import okhttp3.RequestBody
+import java.util.Locale
+import java.util.UUID
 
 // TODO: RUMM-2547 Drop this class and return a list of requests
 //  instead from SessionReplayRequestFactory

@@ -9,7 +9,6 @@ package com.datadog.android
 import android.app.Application
 import android.content.Context
 import android.net.ConnectivityManager
-import android.util.Log as AndroidLog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.model.UserInfo
@@ -51,6 +50,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import android.util.Log as AndroidLog
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

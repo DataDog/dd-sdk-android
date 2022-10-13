@@ -17,9 +17,9 @@ import com.bumptech.glide.load.model.GlideUrl
 import com.bumptech.glide.module.AppGlideModule
 import com.datadog.android.DatadogEventListener
 import com.datadog.android.DatadogInterceptor
-import java.io.InputStream
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.InputStream
 
 /**
  * Provides a basic implementation of [AppGlideModule] already set up to send relevant information

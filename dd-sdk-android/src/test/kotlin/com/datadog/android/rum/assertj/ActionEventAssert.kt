@@ -11,10 +11,10 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.toSchemaType
 import com.datadog.android.rum.model.ActionEvent
-import com.datadog.android.v2.api.context.UserInfo as UserInfoV2
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
+import com.datadog.android.v2.api.context.UserInfo as UserInfoV2
 
 internal class ActionEventAssert(actual: ActionEvent) :
     AbstractObjectAssert<ActionEventAssert, ActionEvent>(

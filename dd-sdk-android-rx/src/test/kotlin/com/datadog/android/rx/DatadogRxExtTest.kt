@@ -22,7 +22,6 @@ import io.reactivex.rxjava3.internal.operators.flowable.FlowableError
 import io.reactivex.rxjava3.internal.operators.maybe.MaybeError
 import io.reactivex.rxjava3.internal.operators.observable.ObservableError
 import io.reactivex.rxjava3.internal.operators.single.SingleError
-import java.util.concurrent.atomic.AtomicBoolean
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -32,6 +31,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Extensions(
     ExtendWith(

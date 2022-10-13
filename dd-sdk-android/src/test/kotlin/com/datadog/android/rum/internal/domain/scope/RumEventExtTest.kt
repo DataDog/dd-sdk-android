@@ -17,7 +17,6 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.context.CarrierInfo
 import com.datadog.android.v2.api.context.DeviceType
-import com.datadog.android.v2.api.context.NetworkInfo as NetworkInfoV2
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -32,6 +31,7 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import com.datadog.android.v2.api.context.NetworkInfo as NetworkInfoV2
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

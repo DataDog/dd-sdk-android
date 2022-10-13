@@ -52,8 +52,6 @@ import io.opentracing.Tracer
 import io.opentracing.propagation.TextMapExtract
 import io.opentracing.propagation.TextMapInject
 import io.opentracing.util.GlobalTracer
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
 import okhttp3.MediaType
@@ -73,6 +71,8 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * This test is a duplicate of [TracingInterceptorTest] but assuming the Tracer is not our own

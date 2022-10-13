@@ -11,7 +11,6 @@ package com.datadog.android.core.internal.net.info
 import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
-import android.net.NetworkInfo as AndroidNetworkInfo
 import android.os.Build
 import android.telephony.TelephonyManager
 import com.datadog.android.core.internal.persistence.DataWriter
@@ -26,9 +25,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.stream.Stream
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -40,6 +36,10 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.stream.Stream
+import android.net.NetworkInfo as AndroidNetworkInfo
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

@@ -23,7 +23,6 @@ import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.plugin.DatadogPlugin
-import com.datadog.android.plugin.Feature as PluginFeature
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
@@ -45,9 +44,10 @@ import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import okhttp3.Authenticator
 import java.net.Proxy
 import java.util.Locale
-import okhttp3.Authenticator
+import com.datadog.android.plugin.Feature as PluginFeature
 
 /**
  * An object describing the configuration of the Datadog SDK.

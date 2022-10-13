@@ -7,7 +7,6 @@
 package com.datadog.android.v2.core.internal
 
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.model.NetworkInfo as NetworkInfoV1
 import com.datadog.android.v2.api.context.CarrierInfo
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.DeviceInfo
@@ -16,6 +15,7 @@ import com.datadog.android.v2.api.context.ProcessInfo
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.api.context.UserInfo
 import java.util.concurrent.TimeUnit
+import com.datadog.android.core.model.NetworkInfo as NetworkInfoV1
 
 internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextProvider {
     override val context: DatadogContext

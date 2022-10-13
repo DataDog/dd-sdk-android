@@ -15,7 +15,7 @@ internal class PersonForgeryFactory : ForgeryFactory<Person> {
     override fun getForgery(forge: Forge): Person {
         return Person(
             firstName = forge.aNullable { anAlphabeticalString() },
-        lastName = forge.aNullable { anAlphabeticalString() },
+            lastName = forge.aNullable { anAlphabeticalString() },
             age = forge.aNullable { aLong() }
         )
     }

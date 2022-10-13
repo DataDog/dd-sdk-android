@@ -5,7 +5,6 @@ import kotlin.ByteArray
 import kotlin.Int
 import kotlin.String
 import kotlin.Suppress
-import kotlin.Unit
 import kotlin.collections.List
 import kotlin.collections.Map
 import kotlin.collections.Set
@@ -15,7 +14,7 @@ import kotlin.collections.emptySet
 
 @Suppress("RedundantUnitReturnType")
 internal class NoOpSimpleInterface : SimpleInterface {
-    public override fun doSomething(): Unit {
+    public override fun doSomething() {
     }
 
     public override fun doSomethingWithParams(
@@ -23,7 +22,7 @@ internal class NoOpSimpleInterface : SimpleInterface {
         s: String,
         d: Date,
         ba: ByteArray
-    ): Unit {
+    ) {
     }
 
     public override fun doSomethingWithNullableParams(
@@ -31,7 +30,7 @@ internal class NoOpSimpleInterface : SimpleInterface {
         s: String,
         d: Date,
         ba: ByteArray
-    ): Unit {
+    ) {
     }
 
     public override fun doSomethingWithReturn(): Date = Date()

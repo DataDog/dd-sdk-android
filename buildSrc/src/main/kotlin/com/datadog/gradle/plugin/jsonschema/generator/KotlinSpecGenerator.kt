@@ -136,5 +136,4 @@ abstract class KotlinSpecGenerator<I : Any, O : Any>(
     }
 
     // endregion
-
 }

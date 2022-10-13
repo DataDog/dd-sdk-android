@@ -15,9 +15,9 @@ import com.datadog.android.sessionreplay.recorder.densityNormalized
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.annotation.FloatForgery
-import java.util.stream.Stream
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.params.provider.Arguments
+import java.util.stream.Stream
 
 internal abstract class BaseWireframeMapperTest {
 

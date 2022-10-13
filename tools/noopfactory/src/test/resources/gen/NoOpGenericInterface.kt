@@ -2,7 +2,6 @@ package com.example
 
 import kotlin.CharSequence
 import kotlin.Suppress
-import kotlin.Unit
 import kotlin.collections.List
 import kotlin.collections.Map
 import kotlin.collections.Set
@@ -12,13 +11,13 @@ import kotlin.collections.emptySet
 
 @Suppress("RedundantUnitReturnType")
 internal class NoOpGenericInterface<T : CharSequence> : GenericInterface<T> {
-    public override fun doSomething(): Unit {
+    public override fun doSomething() {
     }
 
-    public override fun doSomethingWithParams(t: T): Unit {
+    public override fun doSomethingWithParams(t: T) {
     }
 
-    public override fun doSomethingWithNullableParams(t: T?): Unit {
+    public override fun doSomethingWithNullableParams(t: T?) {
     }
 
     public override fun doSomethingWithNullableReturn(): T? = null

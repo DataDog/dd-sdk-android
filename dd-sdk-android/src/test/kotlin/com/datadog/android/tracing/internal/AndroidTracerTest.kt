@@ -47,11 +47,6 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.Span
 import io.opentracing.log.Fields
 import io.opentracing.util.GlobalTracer
-import java.math.BigInteger
-import java.util.Random
-import java.util.UUID
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -62,6 +57,11 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.math.BigInteger
+import java.util.Random
+import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

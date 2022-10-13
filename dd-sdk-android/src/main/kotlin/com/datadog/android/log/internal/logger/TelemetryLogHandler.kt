@@ -6,8 +6,8 @@
 
 package com.datadog.android.log.internal.logger
 
-import android.util.Log as AndroidLog
 import com.datadog.android.telemetry.internal.Telemetry
+import android.util.Log as AndroidLog
 
 internal class TelemetryLogHandler(private val telemetry: Telemetry) : LogHandler {
     override fun handleLog(
