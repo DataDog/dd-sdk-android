@@ -258,7 +258,13 @@ internal constructor(
             val contentLength = body.contentLength()
             if (contentLength == 0L) null else contentLength
         } catch (e: IOException) {
-            sdkLogger.e("Unable to peek response body", e)
+            sdkLogger.e(ERROR_PEEK_BODY, e)
+            null
+        } catch (e: IllegalStateException) {
+            sdkLogger.e(ERROR_PEEK_BODY, e)
+            null
+        } catch (e: IllegalArgumentException) {
+            sdkLogger.e(ERROR_PEEK_BODY, e)
             null
         }
     }
@@ -274,6 +280,8 @@ internal constructor(
 
         internal const val ERROR_NO_RESPONSE =
             "The request ended with no response nor any exception."
+
+        internal const val ERROR_PEEK_BODY = "Unable to peek response body."
 
         internal const val ERROR_MSG_FORMAT = "OkHttp request error %s %s"
 
