@@ -104,6 +104,7 @@ internal constructor(
             val longTaskTrackingStrategy: TrackingStrategy?,
             val rumEventMapper: EventMapper<Any>,
             val backgroundEventTracking: Boolean,
+            val trackFrustrations: Boolean,
             val vitalsMonitorUpdateFrequency: VitalsUpdateFrequency
         ) : Feature()
     }
@@ -420,6 +421,22 @@ internal constructor(
             return this
         }
 
+
+        /**
+         * Enables/Disables tracking of frustration signals.
+         *
+         * By default frustration signals are tracked. Currently the SDK supports detecting
+         * error_taps which occur when an error follows a user action tap.
+         *
+         * @param enabled whether frustration signals should be tracked in RUM.
+         */
+        fun trackFrustrations(enabled: Boolean): Builder {
+            applyIfFeatureEnabled(PluginFeature.RUM, "trackFrustrations") {
+                rumConfig = rumConfig.copy(trackFrustrations = enabled)
+            }
+            return this
+        }
+
         /**
          * Sets the [ViewEventMapper] for the RUM [ViewEvent]. You can use this interface implementation
          * to modify the [ViewEvent] attributes before serialisation.
@@ -651,6 +668,7 @@ internal constructor(
             longTaskTrackingStrategy = MainLooperLongTaskStrategy(DEFAULT_LONG_TASK_THRESHOLD_MS),
             rumEventMapper = NoOpEventMapper(),
             backgroundEventTracking = false,
+            trackFrustrations = true,
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE
         )
 

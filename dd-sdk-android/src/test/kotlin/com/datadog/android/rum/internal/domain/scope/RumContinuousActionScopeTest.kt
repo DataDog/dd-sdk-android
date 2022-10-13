@@ -129,7 +129,8 @@ internal class RumContinuousActionScopeTest {
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
             mockRumEventSourceProvider,
-            fakeAndroidInfoProvider
+            fakeAndroidInfoProvider,
+            true
         )
     }
 
@@ -1170,7 +1171,8 @@ internal class RumContinuousActionScopeTest {
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
             mockRumEventSourceProvider,
-            fakeAndroidInfoProvider
+            fakeAndroidInfoProvider,
+            true
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.globalAttributes.remove(it) }
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())

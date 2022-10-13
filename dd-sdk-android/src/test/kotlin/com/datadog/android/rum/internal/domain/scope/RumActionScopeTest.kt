@@ -38,6 +38,7 @@ import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -99,6 +100,9 @@ internal class RumActionScopeTest {
     @Mock
     lateinit var mockRumEventSourceProvider: RumEventSourceProvider
 
+    @BoolForgery
+    var fakeTrackFrustrations: Boolean = true
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeSourceActionEvent = forge.aNullable { aValueFrom(ActionEvent.Source::class.java) }
@@ -131,7 +135,8 @@ internal class RumActionScopeTest {
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
             mockRumEventSourceProvider,
-            fakeAndroidInfoProvider
+            fakeAndroidInfoProvider,
+            true
         )
     }
 
@@ -1222,7 +1227,8 @@ internal class RumActionScopeTest {
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
             mockRumEventSourceProvider,
-            fakeAndroidInfoProvider
+            fakeAndroidInfoProvider,
+            fakeTrackFrustrations
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.globalAttributes.remove(it) }
 
@@ -2079,6 +2085,93 @@ internal class RumActionScopeTest {
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action without frustrations 𝕎 handleEvent(AddError+Tap) {trackFrustration = false}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @StringForgery name: String
+        ) {
+
+        // Given
+        testedScope = RumActionScope(
+            mockParentScope,
+            false,
+            fakeEventTime,
+            fakeType,
+            fakeName,
+            fakeAttributes,
+            fakeServerOffset,
+            TEST_INACTIVITY_MS,
+            TEST_MAX_DURATION_MS,
+            mockRumEventSourceProvider,
+            fakeAndroidInfoProvider,
+            false
+        )
+
+        // When
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            null,
+            false,
+            emptyMap()
+        )
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
+
+        fakeEvent = RumRawEvent.StartAction(
+            RumActionType.TAP,
+            name,
+            false,
+            emptyMap()
+        )
+        val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(1)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasNoFrustration()
+                    hasView(fakeParentContext)
+                    hasUserInfo(fakeUserInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeAndroidInfoProvider.deviceName,
+                        fakeAndroidInfoProvider.deviceModel,
+                        fakeAndroidInfoProvider.deviceBrand,
+                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
+                        fakeAndroidInfoProvider.architecture
+                    )
+                    hasOsInfo(
+                        fakeAndroidInfoProvider.osName,
+                        fakeAndroidInfoProvider.osVersion,
+                        fakeAndroidInfoProvider.osMajorVersion
+                    )
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isNull()
     }
 
     // region Internal

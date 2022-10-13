@@ -175,6 +175,9 @@ internal class RumViewScopeTest {
     @Mock
     lateinit var mockViewUpdatePredicate: ViewUpdatePredicate
 
+    @BoolForgery
+    var fakeTrackFrustrations = true
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeSourceViewEvent = forge.aNullable { aValueFrom(ViewEvent.Source::class.java) }
@@ -235,7 +238,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = true
         )
 
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
@@ -324,7 +328,8 @@ internal class RumViewScopeTest {
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             type = fakeViewEventType,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
 
         // Then
@@ -394,7 +399,8 @@ internal class RumViewScopeTest {
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             type = expectedViewType,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
 
         // When
@@ -560,7 +566,8 @@ internal class RumViewScopeTest {
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             type = viewType,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
 
         // When
@@ -605,7 +612,8 @@ internal class RumViewScopeTest {
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             type = viewType,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
 
         // When
@@ -1116,7 +1124,8 @@ internal class RumViewScopeTest {
             mockTimeProvider,
             rumEventSourceProvider = mockRumEventSourceProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
 
@@ -1267,7 +1276,8 @@ internal class RumViewScopeTest {
             mockTimeProvider,
             rumEventSourceProvider = mockRumEventSourceProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -1356,7 +1366,8 @@ internal class RumViewScopeTest {
             mockTimeProvider,
             rumEventSourceProvider = mockRumEventSourceProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -5412,7 +5423,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5503,7 +5515,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5596,7 +5609,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5689,7 +5703,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5783,7 +5798,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5877,7 +5893,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -6192,7 +6209,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
 
         // When

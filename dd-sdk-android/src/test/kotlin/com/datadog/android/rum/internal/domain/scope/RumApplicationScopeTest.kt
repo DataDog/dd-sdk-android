@@ -80,12 +80,17 @@ internal class RumApplicationScopeTest {
     @BoolForgery
     var fakeBackgroundTrackingEnabled: Boolean = false
 
+    @BoolForgery
+    var fakeTrackFrustrations: Boolean = true
+
+
     @BeforeEach
     fun `set up`() {
         testedScope = RumApplicationScope(
             fakeApplicationId,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,

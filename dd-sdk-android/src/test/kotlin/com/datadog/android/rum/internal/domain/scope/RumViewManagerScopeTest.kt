@@ -123,6 +123,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             mockParentScope,
             true,
+            true,
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -362,6 +363,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             backgroundTrackingEnabled = false,
+            trackFrustrations = true,
             firstPartyHostDetector = mockDetector,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
@@ -388,6 +390,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             backgroundTrackingEnabled = false,
+            trackFrustrations = true,
             firstPartyHostDetector = mockDetector,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
@@ -418,6 +421,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             backgroundTrackingEnabled = false,
+            trackFrustrations = true,
             firstPartyHostDetector = mockDetector,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
@@ -504,6 +508,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             backgroundTrackingEnabled = false,
+            trackFrustrations = true,
             firstPartyHostDetector = mockDetector,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
@@ -545,6 +550,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             backgroundTrackingEnabled = false,
+            trackFrustrations = true,
             firstPartyHostDetector = mockDetector,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
