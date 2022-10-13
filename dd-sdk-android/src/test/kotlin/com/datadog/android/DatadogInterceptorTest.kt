@@ -40,7 +40,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.Tracer
-import java.io.IOException
 import okhttp3.MediaType
 import okhttp3.Protocol
 import okhttp3.Response
@@ -57,6 +56,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.io.IOException
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

@@ -24,7 +24,6 @@ import com.datadog.android.sample.server.LocalServer
 import io.opentracing.Span
 import io.opentracing.log.Fields
 import io.opentracing.util.GlobalTracer
-import java.util.Random
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
@@ -36,6 +35,7 @@ import kotlinx.coroutines.flow.map
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import java.util.Random
 
 class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
 

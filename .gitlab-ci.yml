@@ -55,14 +55,6 @@ create_key:
 
 # STATIC ANALYSIS
 
-analysis:ktlint:
-  tags: [ "runner:main" ]
-  image: $CI_IMAGE_DOCKER
-  stage: analysis
-  timeout: 30m
-  script:
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew :ktlintCheckAll --stacktrace --no-daemon
-
 analysis:android-lint:
   tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER

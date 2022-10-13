@@ -6,15 +6,14 @@
 
 package com.datadog.gradle.plugin.jsonschema
 
+import com.datadog.android.core.internal.utils.fromJsonElement
 import com.example.forgery.ForgeryConfiguration
 import com.example.model.Company
-import com.datadog.android.core.internal.utils.fromJsonElement
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.junit4.ForgeRule
-import java.util.Date
 import org.assertj.core.api.Assertions.assertThat
 import org.everit.json.schema.loader.SchemaLoader
 import org.json.JSONObject
@@ -24,6 +23,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import java.util.Date
 
 @RunWith(Parameterized::class)
 class ModelValidationTest(

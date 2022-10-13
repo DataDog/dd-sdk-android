@@ -6,7 +6,6 @@
 
 package com.datadog.android.log
 
-import android.util.Log as AndroidLog
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
@@ -27,11 +26,12 @@ import com.datadog.android.log.model.LogEvent
 import com.datadog.android.v2.core.DatadogCore
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArraySet
-import org.json.JSONArray
-import org.json.JSONObject
+import android.util.Log as AndroidLog
 
 /**
  * A class enabling Datadog logging features.

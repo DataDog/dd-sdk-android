@@ -6,7 +6,6 @@
 
 package com.datadog.android.log.internal.logger
 
-import android.util.Log as AndroidLog
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
@@ -14,6 +13,7 @@ import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
+import android.util.Log as AndroidLog
 
 internal class DatadogLogHandler(
     internal val logGenerator: LogGenerator,

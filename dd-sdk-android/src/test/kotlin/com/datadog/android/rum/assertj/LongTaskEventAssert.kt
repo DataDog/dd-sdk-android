@@ -10,11 +10,11 @@ import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.model.LongTaskEvent
-import com.datadog.android.v2.api.context.NetworkInfo as NetworkInfoV2
-import com.datadog.android.v2.api.context.UserInfo as UserInfoV2
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
+import com.datadog.android.v2.api.context.NetworkInfo as NetworkInfoV2
+import com.datadog.android.v2.api.context.UserInfo as UserInfoV2
 
 internal class LongTaskEventAssert(actual: LongTaskEvent) :
     AbstractObjectAssert<LongTaskEventAssert, LongTaskEvent>(

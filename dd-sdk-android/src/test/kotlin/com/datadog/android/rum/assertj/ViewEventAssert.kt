@@ -8,12 +8,12 @@ package com.datadog.android.rum.assertj
 
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.v2.api.context.UserInfo as UserInfoV2
-import java.util.concurrent.TimeUnit
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.assertj.core.data.Percentage
+import java.util.concurrent.TimeUnit
+import com.datadog.android.v2.api.context.UserInfo as UserInfoV2
 
 internal class ViewEventAssert(actual: ViewEvent) :
     AbstractObjectAssert<ViewEventAssert, ViewEvent>(

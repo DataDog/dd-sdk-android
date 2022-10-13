@@ -6,13 +6,13 @@
 
 package com.datadog.gradle.plugin.apisurface
 
-import java.io.File
-import java.lang.IllegalStateException
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import java.io.File
+import java.lang.IllegalStateException
 
 internal class KotlinFileVisitorTest {
 
@@ -35,7 +35,7 @@ internal class KotlinFileVisitorTest {
             package foo.bar
             class Spam {
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -52,7 +52,7 @@ internal class KotlinFileVisitorTest {
             """
             class Spam {
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -70,7 +70,7 @@ internal class KotlinFileVisitorTest {
             package foo.bar
             object Spam {
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -88,7 +88,7 @@ internal class KotlinFileVisitorTest {
             package foo.bar
             interface Spam {
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -107,7 +107,7 @@ internal class KotlinFileVisitorTest {
             enum class Spam {
                 A, B, C;
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -131,7 +131,7 @@ internal class KotlinFileVisitorTest {
                 class B : Spam()
                 class C : Spam()
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -154,7 +154,7 @@ internal class KotlinFileVisitorTest {
                 internal class C {}
                 private class D {}
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -173,7 +173,7 @@ internal class KotlinFileVisitorTest {
             class Spam {
                 init {}
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -193,7 +193,7 @@ internal class KotlinFileVisitorTest {
                 internal object C {}
                 private object D {}
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -213,7 +213,7 @@ internal class KotlinFileVisitorTest {
                 internal interface C {}
                 private interface D {}
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -234,7 +234,7 @@ internal class KotlinFileVisitorTest {
                 internal fun youCantSeeThis() {}
                 private fun youCantSeeThisEither() {}
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -256,7 +256,7 @@ internal class KotlinFileVisitorTest {
                 internal fun youCantSeeThis()
                 private fun youCantSeeThisEither()
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -278,7 +278,7 @@ internal class KotlinFileVisitorTest {
                 internal val youCantSeeThis = 0
                 private val youCantSeeThisEither = false
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -298,7 +298,7 @@ internal class KotlinFileVisitorTest {
             class Spam(i : Int) {
                 private constructor(s : String) : this(s.length)
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -319,7 +319,7 @@ internal class KotlinFileVisitorTest {
                 internal constructor(i : Int) {
                 constructor(s : String) : this(s.length)
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -340,7 +340,7 @@ internal class KotlinFileVisitorTest {
                 open class C {}
                 abstract class D {}
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -362,7 +362,7 @@ internal class KotlinFileVisitorTest {
                 open fun doSomething() : String = ""
                 abstract fun doSomethingElse() {}
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -384,7 +384,7 @@ internal class KotlinFileVisitorTest {
                 protected open fun doSomething() {}
                 protected abstract fun doSomethingElse() {}
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -406,7 +406,7 @@ internal class KotlinFileVisitorTest {
                 open val s:String = ""
                 abstract var i : Int = 0
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -427,7 +427,7 @@ internal class KotlinFileVisitorTest {
             import java.io.IOException
             class Spam<T:IOException, R> {
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -453,7 +453,7 @@ internal class KotlinFileVisitorTest {
                     TODO()
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -476,7 +476,7 @@ internal class KotlinFileVisitorTest {
             import java.util.Comparator
             class Spam:IOException, Runnable, Comparator<String> {
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -494,7 +494,7 @@ internal class KotlinFileVisitorTest {
             package foo.bar
             class Spam : Bar.AbstractCallback(), Baz.Listener<String> {
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -513,7 +513,7 @@ internal class KotlinFileVisitorTest {
             class Spam {
                 fun doSomething(i: Int, s: String?, l : List<String?>) {}
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -532,7 +532,7 @@ internal class KotlinFileVisitorTest {
             package foo.bar
             class Spam (i: Int, s: String? = null, l : List<String> = emptyList()) {
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -552,7 +552,7 @@ internal class KotlinFileVisitorTest {
             class Spam {
                 fun doSomething(i: Int, s: String? = null, l : List<String> = emptyList()) {}
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -572,7 +572,7 @@ internal class KotlinFileVisitorTest {
             class Spam : Runnable{
                 override fun run ( ) { }
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -595,7 +595,7 @@ internal class KotlinFileVisitorTest {
                 fun nullable(block : (String) -> Any?) {}
                 fun withReceiver(block : String.() -> Int) {}
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -617,7 +617,7 @@ internal class KotlinFileVisitorTest {
             package foo.bar
             class Spam (block : (String, Char) -> Int) {
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -637,7 +637,7 @@ internal class KotlinFileVisitorTest {
             object Global {
                 const val DATA : String= "Something"
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -659,7 +659,7 @@ internal class KotlinFileVisitorTest {
                     const val DATA : String= "Something"
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -682,7 +682,7 @@ internal class KotlinFileVisitorTest {
                     const val DATA = "Something"
                 }
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -697,7 +697,7 @@ internal class KotlinFileVisitorTest {
             class Spam {
                 fun doSomething() : FooData
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -719,7 +719,7 @@ internal class KotlinFileVisitorTest {
                 fun doSomething() : Data
                 fun doSomethingElse() : not.same.Data
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -738,7 +738,7 @@ internal class KotlinFileVisitorTest {
             """
             typealias StringTransform = (String) -> String?
             typealias StringRepeat = (String, Int) -> String
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -756,7 +756,7 @@ internal class KotlinFileVisitorTest {
             """
             internal typealias StringTransform = (String) -> String?
             private typealias IntTransform = (Int) -> Int
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -775,7 +775,7 @@ internal class KotlinFileVisitorTest {
             @Deprecated
             class Spam {
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -797,7 +797,7 @@ internal class KotlinFileVisitorTest {
                 @Deprecated
                 fun doSomething() {}
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -820,7 +820,7 @@ internal class KotlinFileVisitorTest {
                 @Deprecated
                 constructor(s : String) : this(s.length)
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -844,7 +844,7 @@ internal class KotlinFileVisitorTest {
                 @Deprecated
                 val foo : String = ""
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -867,7 +867,7 @@ internal class KotlinFileVisitorTest {
                 @Deprecated("Don't use anymore")
                 const val foo : String = ""
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)
@@ -889,7 +889,7 @@ internal class KotlinFileVisitorTest {
             class Spam {
                 val data : String = ""
             }
-        """.trimIndent()
+            """.trimIndent()
         )
 
         testedVisitor.visitFile(tempFile)

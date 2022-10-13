@@ -21,8 +21,8 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.v2.api.context.DeviceType
-import com.datadog.android.v2.api.context.NetworkInfo as NetworkInfoV2
 import java.util.Locale
+import com.datadog.android.v2.api.context.NetworkInfo as NetworkInfoV2
 
 internal fun String.toMethod(): ResourceEvent.Method {
     return try {

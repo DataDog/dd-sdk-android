@@ -6,8 +6,8 @@
 
 package com.datadog.android.core.internal.net
 
-import java.util.Locale
 import okhttp3.HttpUrl
+import java.util.Locale
 
 internal class FirstPartyHostDetector(
     hosts: List<String>

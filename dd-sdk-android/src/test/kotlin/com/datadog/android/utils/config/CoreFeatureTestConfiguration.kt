@@ -30,6 +30,7 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import okhttp3.OkHttpClient
 import java.io.File
 import java.lang.ref.WeakReference
 import java.nio.file.Files
@@ -37,7 +38,6 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
-import okhttp3.OkHttpClient
 
 internal class CoreFeatureTestConfiguration<T : Context>(
     val appContext: ApplicationContextTestConfiguration<T>

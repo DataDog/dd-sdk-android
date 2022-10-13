@@ -30,12 +30,12 @@ import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.v2.core.DatadogCore
 import io.opentracing.Span
 import io.opentracing.Tracer
-import java.io.IOException
-import java.util.Locale
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import java.io.IOException
+import java.util.Locale
 
 /**
  * Provides automatic integration for [OkHttpClient] by way of the [Interceptor] system.
@@ -258,7 +258,13 @@ internal constructor(
             val contentLength = body.contentLength()
             if (contentLength == 0L) null else contentLength
         } catch (e: IOException) {
-            sdkLogger.e("Unable to peek response body", e)
+            sdkLogger.e(ERROR_PEEK_BODY, e)
+            null
+        } catch (e: IllegalStateException) {
+            sdkLogger.e(ERROR_PEEK_BODY, e)
+            null
+        } catch (e: IllegalArgumentException) {
+            sdkLogger.e(ERROR_PEEK_BODY, e)
             null
         }
     }
@@ -274,6 +280,8 @@ internal constructor(
 
         internal const val ERROR_NO_RESPONSE =
             "The request ended with no response nor any exception."
+
+        internal const val ERROR_PEEK_BODY = "Unable to peek response body."
 
         internal const val ERROR_MSG_FORMAT = "OkHttp request error %s %s"
 

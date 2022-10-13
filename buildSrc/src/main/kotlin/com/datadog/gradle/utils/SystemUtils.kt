@@ -6,10 +6,10 @@
 
 package com.datadog.gradle.utils
 
+import org.gradle.api.Project
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStreamReader
-import org.gradle.api.Project
 
 fun Project.execShell(vararg command: String): List<String> {
     val outputStream = ByteArrayOutputStream()

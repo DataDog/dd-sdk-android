@@ -6,11 +6,11 @@
 
 package com.datadog.android.log.internal.utils
 
-import android.util.Log as AndroidLog
 import com.datadog.android.log.Logger
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
+import android.util.Log as AndroidLog
 
 internal const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
 

@@ -12,7 +12,6 @@ import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
-import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.config.taskConfig
 
 plugins {
@@ -21,7 +20,6 @@ plugins {
     kotlin("kapt")
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
-    id("org.jlleitschuh.gradle.ktlint")
     id("thirdPartyLicences")
     id("org.jetbrains.dokka")
     id("realm-android")
@@ -189,7 +187,6 @@ taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     }
 }
 detektConfig()
-ktLintConfig()
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()

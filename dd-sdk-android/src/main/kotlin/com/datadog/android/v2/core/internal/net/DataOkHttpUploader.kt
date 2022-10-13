@@ -10,14 +10,14 @@ import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.Logger
-import com.datadog.android.v2.api.Request as DatadogRequest
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
-import java.util.Locale
 import okhttp3.Call
 import okhttp3.MediaType
 import okhttp3.Request
 import okhttp3.RequestBody
+import java.util.Locale
+import com.datadog.android.v2.api.Request as DatadogRequest
 
 internal class DataOkHttpUploader(
     val requestFactory: RequestFactory,

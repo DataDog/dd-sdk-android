@@ -11,9 +11,9 @@ import com.datadog.android.core.configuration.Configuration
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
+import okhttp3.Authenticator
 import java.net.Proxy
 import java.net.URL
-import okhttp3.Authenticator
 
 internal class ConfigurationCoreForgeryFactory :
     ForgeryFactory<Configuration.Core> {

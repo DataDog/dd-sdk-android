@@ -10,7 +10,6 @@ import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
-import com.datadog.gradle.config.ktLintConfig
 import com.datadog.gradle.config.publishingConfig
 import com.datadog.gradle.config.setLibraryVersion
 
@@ -27,7 +26,6 @@ plugins {
     // Analysis tools
     id("com.github.ben-manes.versions")
     id("io.gitlab.arturbosch.detekt")
-    id("org.jlleitschuh.gradle.ktlint")
 
     // Internal Generation
     id("thirdPartyLicences")
@@ -94,7 +92,6 @@ detektConfig(
         "**/com/datadog/android/sessionreplay/model/**"
     )
 )
-ktLintConfig()
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()
