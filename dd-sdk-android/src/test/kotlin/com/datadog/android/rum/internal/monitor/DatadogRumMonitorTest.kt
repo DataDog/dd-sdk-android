@@ -1441,6 +1441,7 @@ internal class DatadogRumMonitorTest {
 
         // When
         testedMonitor.updatePerformanceMetric(metric, value)
+        Thread.sleep(PROCESSING_DELAY)
 
         // Then
         argumentCaptor<RumRawEvent.UpdatePerformanceMetric> {
