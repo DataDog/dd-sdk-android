@@ -9,6 +9,7 @@
 package com.datadog.android.core.internal
 
 import android.app.Application
+import android.util.Log
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
@@ -17,8 +18,10 @@ import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureUploadConfiguration
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.NoOpContextProvider
@@ -55,6 +58,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 @Extensions(
@@ -75,7 +79,7 @@ internal class SdkFeatureTest {
     lateinit var fakeConsent: TrackingConsent
 
     @StringForgery
-    lateinit var featureName: String
+    lateinit var fakeFeatureName: String
 
     private lateinit var mockPlugins: List<DatadogPlugin>
 
@@ -87,7 +91,7 @@ internal class SdkFeatureTest {
 
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
-            featureName = featureName,
+            featureName = fakeFeatureName,
             storageConfiguration = forge.getForgery(),
             uploadConfiguration = FeatureUploadConfiguration(
                 requestFactory = mock()
@@ -304,16 +308,47 @@ internal class SdkFeatureTest {
         verifyZeroInteractions(callback)
     }
 
+    @Test
+    fun `𝕄 send event 𝕎 sendEvent(event)`() {
+        // Given
+        val mockEventReceiver = mock<FeatureEventReceiver>()
+        testedFeature.eventReceiver.set(mockEventReceiver)
+        val fakeEvent = Any()
+
+        // When
+        testedFeature.sendEvent(fakeEvent)
+
+        // Then
+        verify(mockEventReceiver).onReceive(fakeEvent)
+    }
+
+    @Test
+    fun `𝕄 notify no receiver 𝕎 sendEvent(event)`() {
+        // Given
+        val fakeEvent = Any()
+
+        // When
+        testedFeature.sendEvent(fakeEvent)
+
+        // Then
+        verify(logger.mockDevLogHandler)
+            .handleLog(
+                Log.INFO,
+                SdkFeature.NO_EVENT_RECEIVER.format(Locale.US, fakeFeatureName)
+            )
+    }
+
     // endRegion
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
+        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, coreFeature)
+            return listOf(appContext, coreFeature, logger)
         }
     }
 }

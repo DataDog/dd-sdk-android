@@ -105,16 +105,31 @@ interface SdkCore {
     /**
      * Sets the context for the particular feature.
      *
-     * @param feature Feature name.
+     * @param featureName Feature name.
      * @param context Context to set.
      */
-    fun setFeatureContext(feature: String, context: Map<String, Any?>)
+    fun setFeatureContext(featureName: String, context: Map<String, Any?>)
 
     /**
      * Updates the context if exists with the new entries. If there is no context yet for the
-     * provided [feature] name, a new one will be created.
+     * provided [featureName], a new one will be created.
      *
      * @param entries Entries to add to the existing or new context.
      */
-    fun updateFeatureContext(feature: String, entries: Map<String, Any?>)
+    fun updateFeatureContext(featureName: String, entries: Map<String, Any?>)
+
+    /**
+     * Sets event receiver for the given feature.
+     *
+     * @param featureName Feature name.
+     * @param receiver Event receiver.
+     */
+    fun setEventReceiver(featureName: String, receiver: FeatureEventReceiver)
+
+    /**
+     * Removes events receive for the given feature.
+     *
+     * @param featureName Feature name.
+     */
+    fun removeEventReceiver(featureName: String)
 }
