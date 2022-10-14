@@ -307,6 +307,7 @@ interface RumMonitor {
                     memoryVitalMonitor = RumFeature.memoryVitalMonitor,
                     frameRateVitalMonitor = RumFeature.frameRateVitalMonitor,
                     backgroundTrackingEnabled = RumFeature.backgroundEventTracking,
+                    trackFrustrations = RumFeature.trackFrustrations,
                     timeProvider = CoreFeature.timeProvider,
                     sessionListener = sessionListener,
                     androidInfoProvider = CoreFeature.androidInfoProvider

@@ -31,7 +31,8 @@ internal class RumActionScope(
     inactivityThresholdMs: Long = ACTION_INACTIVITY_MS,
     maxDurationMs: Long = ACTION_MAX_DURATION_MS,
     private val rumEventSourceProvider: RumEventSourceProvider,
-    private val androidInfoProvider: AndroidInfoProvider
+    private val androidInfoProvider: AndroidInfoProvider,
+    private val trackFrustrations: Boolean
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
@@ -189,7 +190,7 @@ internal class RumActionScope(
         val user = CoreFeature.userInfoProvider.getUserInfo()
 
         val frustrations = mutableListOf<ActionEvent.Type>()
-        if (errorCount > 0 && actualType == RumActionType.TAP) {
+        if (trackFrustrations && errorCount > 0 && actualType == RumActionType.TAP) {
             frustrations.add(ActionEvent.Type.ERROR_TAP)
         }
 
@@ -249,12 +250,14 @@ internal class RumActionScope(
         internal const val ACTION_INACTIVITY_MS = 100L
         internal const val ACTION_MAX_DURATION_MS = 5000L
 
+        @Suppress("LongParameterList")
         fun fromEvent(
             parentScope: RumScope,
             event: RumRawEvent.StartAction,
             timestampOffset: Long,
             eventSourceProvider: RumEventSourceProvider,
-            androidInfoProvider: AndroidInfoProvider
+            androidInfoProvider: AndroidInfoProvider,
+            trackFrustrations: Boolean
         ): RumScope {
             return RumActionScope(
                 parentScope,
@@ -265,7 +268,8 @@ internal class RumActionScope(
                 event.attributes,
                 timestampOffset,
                 rumEventSourceProvider = eventSourceProvider,
-                androidInfoProvider = androidInfoProvider
+                androidInfoProvider = androidInfoProvider,
+                trackFrustrations = trackFrustrations
             )
         }
     }

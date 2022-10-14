@@ -60,7 +60,8 @@ internal open class RumViewScope(
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val viewUpdatePredicate: ViewUpdatePredicate = DefaultViewUpdatePredicate(),
     internal val type: RumViewType = RumViewType.FOREGROUND,
-    private val androidInfoProvider: AndroidInfoProvider
+    private val androidInfoProvider: AndroidInfoProvider,
+    private val trackFrustrations: Boolean
 ) : RumScope {
 
     internal val url = key.resolveViewUrl().replace('.', '/')
@@ -279,7 +280,8 @@ internal open class RumViewScope(
                     event,
                     serverTimeOffsetInMs,
                     rumEventSourceProvider,
-                    androidInfoProvider
+                    androidInfoProvider,
+                    trackFrustrations
                 )
                 pendingActionCount++
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), writer)
@@ -296,7 +298,8 @@ internal open class RumViewScope(
                 event,
                 serverTimeOffsetInMs,
                 rumEventSourceProvider,
-                androidInfoProvider
+                androidInfoProvider,
+                trackFrustrations
             )
         )
         pendingActionCount++
@@ -850,7 +853,8 @@ internal open class RumViewScope(
             frameRateVitalMonitor: VitalMonitor,
             timeProvider: TimeProvider,
             rumEventSourceProvider: RumEventSourceProvider,
-            androidInfoProvider: AndroidInfoProvider
+            androidInfoProvider: AndroidInfoProvider,
+            trackFrustrations: Boolean
         ): RumViewScope {
             return RumViewScope(
                 parentScope,
@@ -864,7 +868,8 @@ internal open class RumViewScope(
                 frameRateVitalMonitor,
                 timeProvider,
                 rumEventSourceProvider,
-                androidInfoProvider = androidInfoProvider
+                androidInfoProvider = androidInfoProvider,
+                trackFrustrations = trackFrustrations
             )
         }
     }
