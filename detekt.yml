@@ -663,6 +663,7 @@ datadog:
       # region Java misc
       - "java.text.SimpleDateFormat.format(java.util.Date):java.lang.NullPointerException"
       - "java.util.TimeZone.getTimeZone(kotlin.String):java.lang.NullPointerException"
+      - "java.lang.Character.toChars(kotlin.Int):java.lang.IllegalArgumentException"
       - "java.lang.Runtime.addShutdownHook(java.lang.Thread):java.lang.IllegalArgumentException,java.lang.IllegalStateException,java.lang.SecurityException"
       - "java.lang.System.arraycopy(kotlin.Any, kotlin.Int, kotlin.Any, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException,java.lang.ArrayStoreException,java.lang.NullPointerException"
       - "java.lang.System.loadLibrary(kotlin.String):java.lang.SecurityException,java.lang.UnsatisfiedLinkError,java.lang.NullPointerException"
@@ -914,6 +915,7 @@ datadog:
       - "java.util.Stack.isNotEmpty()"
       - "java.util.Stack.pop()"
       - "java.util.Stack.push(com.datadog.android.sessionreplay.recorder.Node)"
+      - "java.util.stream.IntStream.forEach(java.util.function.IntConsumer)"
       # endregion
       # region Java Concurrency
       - "java.lang.Thread.UncaughtExceptionHandler.uncaughtException(java.lang.Thread, kotlin.Throwable)"
@@ -976,6 +978,7 @@ datadog:
       - "java.io.StringWriter.constructor()"
       # endregion
       # region Java misc
+      - "java.lang.Character.isWhitespace(kotlin.Int)"
       - "java.lang.Class.hashCode()"
       - "java.lang.Class.isAssignableFrom(java.lang.Class)"
       - "java.lang.IllegalArgumentException.constructor(kotlin.String)"
@@ -996,6 +999,7 @@ datadog:
       - "java.lang.ref.WeakReference.constructor(kotlin.Any)"
       - "java.lang.ref.WeakReference.get()"
       - "java.lang.StringBuilder.append(kotlin.Char)"
+      - "java.lang.StringBuilder.append(kotlin.CharArray)"
       - "java.lang.StringBuilder.append(kotlin.String)"
       - "java.math.BigInteger.toLong()"
       - "java.nio.charset.Charset.defaultCharset()"
@@ -1199,6 +1203,7 @@ datadog:
       # endregion
       # region Kotlin String
       - "kotlin.String.all(kotlin.Function1)"
+      - "kotlin.String.codePoints()"
       - "kotlin.String.contains(kotlin.Char, kotlin.Boolean)"
       - "kotlin.String.contains(kotlin.CharSequence, kotlin.Boolean)"
       - "kotlin.String.count(kotlin.Function1)"

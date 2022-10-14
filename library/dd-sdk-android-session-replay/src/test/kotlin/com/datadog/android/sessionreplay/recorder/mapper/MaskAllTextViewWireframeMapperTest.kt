@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.recorder.mapper
 
-import android.widget.Button
 import android.widget.TextView
 import com.datadog.android.sessionreplay.recorder.aMockView
 import com.datadog.android.sessionreplay.utils.ForgeConfigurator
@@ -14,12 +13,14 @@ import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -33,14 +34,21 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class MaskAllTextViewWireframeMapperTest : BaseTextViewWireframeMapperTest() {
 
+    @Mock
+    lateinit var mockStringObfuscator: StringObfuscator
+
+    @StringForgery
+    lateinit var fakeMaskedStringValue: String
+
     // region super
 
     override fun initTestedMapper(): TextWireframeMapper {
-        return MaskAllTextWireframeMapper()
+        whenever(mockStringObfuscator.obfuscate(fakeText)).thenReturn(fakeMaskedStringValue)
+        return MaskAllTextWireframeMapper(stringObfuscator = mockStringObfuscator)
     }
 
     override fun resolveTextValue(textView: TextView): String {
-        return String(CharArray(textView.text.length) { 'x' })
+        return fakeMaskedStringValue
     }
 
     // endregion
@@ -48,19 +56,21 @@ internal class MaskAllTextViewWireframeMapperTest : BaseTextViewWireframeMapperT
     // region Unit tests
 
     @Test
-    fun `M resolve a TextWireframe with masked text W map() { TextView with text }`(forge: Forge) {
+    fun `M resolve a TextWireframe with masked text W map(){TextView}`(
+        forge: Forge
+    ) {
         // Given
-        val fakeText = forge.aString { 'x' }
-        val mockButton: TextView = forge.aMockView<Button>().apply {
-            whenever(this.text).thenReturn(forge.aString(fakeText.length))
+        whenever(mockStringObfuscator.obfuscate(fakeText)).thenReturn(fakeMaskedStringValue)
+        val mockTextView: TextView = forge.aMockView<TextView>().apply {
+            whenever(this.text).thenReturn(fakeText)
             whenever(this.typeface).thenReturn(mock())
         }
 
         // When
-        val textWireframe = testedTextWireframeMapper.map(mockButton, fakePixelDensity)
+        val textWireframe = testedTextWireframeMapper.map(mockTextView, fakePixelDensity)
 
         // Then
-        val expectedWireframe = mockButton.toTextWireframe().copy(text = fakeText)
+        val expectedWireframe = mockTextView.toTextWireframe().copy(text = fakeMaskedStringValue)
         assertThat(textWireframe).isEqualTo(expectedWireframe)
     }
 

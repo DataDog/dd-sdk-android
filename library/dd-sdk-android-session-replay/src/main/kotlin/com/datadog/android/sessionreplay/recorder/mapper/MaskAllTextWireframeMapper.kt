@@ -9,14 +9,11 @@ package com.datadog.android.sessionreplay.recorder.mapper
 import android.widget.TextView
 
 internal class MaskAllTextWireframeMapper(
-    viewWireframeMapper: ViewWireframeMapper = ViewWireframeMapper()
+    viewWireframeMapper: ViewWireframeMapper = ViewWireframeMapper(),
+    private val stringObfuscator: StringObfuscator = StringObfuscator()
 ) : TextWireframeMapper(viewWireframeMapper) {
 
     override fun resolveTextValue(textView: TextView): String {
-        return String(CharArray(textView.text.length) { CHARACTER_MASK })
-    }
-
-    companion object {
-        private const val CHARACTER_MASK = 'x'
+        return stringObfuscator.obfuscate(textView.text.toString())
     }
 }
