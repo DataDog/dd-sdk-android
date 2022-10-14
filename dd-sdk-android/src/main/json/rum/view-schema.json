@@ -20,14 +20,7 @@
         "view": {
           "type": "object",
           "description": "View properties",
-          "required": [
-            "id",
-            "url",
-            "time_spent",
-            "action",
-            "error",
-            "resource"
-          ],
+          "required": ["id", "url", "time_spent", "action", "error", "resource"],
           "properties": {
             "loading_time": {
               "type": "integer",
@@ -82,7 +75,7 @@
             },
             "cumulative_layout_shift": {
               "type": "number",
-              "description": "Total layout shift score that occured on the view",
+              "description": "Total layout shift score that occurred on the view",
               "minimum": 0,
               "readOnly": true
             },
@@ -107,6 +100,12 @@
             "load_event": {
               "type": "integer",
               "description": "Duration in ns to the end of the load event handler execution",
+              "minimum": 0,
+              "readOnly": true
+            },
+            "first_byte": {
+              "type": "integer",
+              "description": "Duration in ns to the response start of the document request",
               "minimum": 0,
               "readOnly": true
             },
@@ -282,6 +281,18 @@
               "type": "number",
               "description": "Minimum refresh rate during the view’s lifetime (in frames per second)",
               "readOnly": true
+            },
+            "flutter_build_time": {
+              "description": "Time taken for Flutter 'build' methods.",
+              "allOf": [{ "$ref": "_perf-metric-schema.json" }]
+            },
+            "flutter_raster_time": {
+              "description": "Time taken for Flutter to rasterize the view.",
+              "allOf": [{ "$ref": "_perf-metric-schema.json" }]
+            },
+            "js_refresh_rate": {
+              "description": "The JavaScript refresh rate for React Native",
+              "allOf": [{ "$ref": "_perf-metric-schema.json" }]
             }
           },
           "readOnly": true
