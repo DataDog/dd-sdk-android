@@ -16,12 +16,19 @@ import com.datadog.android.DatadogEventListener
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
+import com.datadog.android.event.EventMapper
+import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.log.Logger
 import com.datadog.android.ndk.NdkCrashReportsPlugin
 import com.datadog.android.plugin.Feature
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumInterceptor
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.model.ActionEvent
+import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.rum.model.LongTaskEvent
+import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
@@ -141,6 +148,38 @@ class SampleApplication : Application() {
             )
             .trackInteractions()
             .trackLongTasks(250L)
+
+        configBuilder
+            .setRumViewEventMapper(object : ViewEventMapper {
+                override fun map(event: ViewEvent): ViewEvent {
+                    event.context?.additionalProperties?.put("is_mapped", true)
+                    return event
+                }
+            })
+            .setRumActionEventMapper(object : EventMapper<ActionEvent> {
+                override fun map(event: ActionEvent): ActionEvent {
+                    event.context?.additionalProperties?.put("is_mapped", true)
+                    return event
+                }
+            })
+            .setRumResourceEventMapper(object : EventMapper<ResourceEvent> {
+                override fun map(event: ResourceEvent): ResourceEvent {
+                    event.context?.additionalProperties?.put("is_mapped", true)
+                    return event
+                }
+            })
+            .setRumErrorEventMapper(object : EventMapper<ErrorEvent> {
+                override fun map(event: ErrorEvent): ErrorEvent {
+                    event.context?.additionalProperties?.put("is_mapped", true)
+                    return event
+                }
+            })
+            .setRumLongTaskEventMapper(object : EventMapper<LongTaskEvent> {
+                override fun map(event: LongTaskEvent): LongTaskEvent {
+                    event.context?.additionalProperties?.put("is_mapped", true)
+                    return event
+                }
+            })
 
         try {
             configBuilder.useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
