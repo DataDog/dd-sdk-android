@@ -279,8 +279,8 @@ internal class DatadogNdkCrashHandler(
             )
             ErrorEvent.Connectivity(connectivityStatus, connectivityInterfaces, cellular)
         }
-        val additionalProperties = viewEvent.context?.additionalProperties ?: emptyMap()
-        val additionalUserProperties = viewEvent.usr?.additionalProperties ?: emptyMap()
+        val additionalProperties = viewEvent.context?.additionalProperties ?: mutableMapOf()
+        val additionalUserProperties = viewEvent.usr?.additionalProperties ?: mutableMapOf()
         return ErrorEvent(
             date = ndkCrashLog.timestamp + timeProvider.getServerOffsetMillis(),
             application = ErrorEvent.Application(viewEvent.application.id),

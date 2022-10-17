@@ -37,7 +37,7 @@ internal class DatadogDataConstraints : DataConstraints {
         keyPrefix: String?,
         attributesGroupName: String?,
         reservedKeys: Set<String>
-    ): Map<String, T> {
+    ): MutableMap<String, T> {
         // prefix = "a.b" => dotCount = 1+1 ("a.b." + key)
         val prefixDotCount = keyPrefix?.let { it.count { character -> character == '.' } + 1 } ?: 0
         val convertedAttributes = attributes.mapNotNull {
@@ -69,10 +69,10 @@ internal class DatadogDataConstraints : DataConstraints {
             )
             devLogger.w(warningMessage)
         }
-        return convertedAttributes.take(MAX_ATTR_COUNT).toMap()
+        return convertedAttributes.take(MAX_ATTR_COUNT).toMap().toMutableMap()
     }
 
-    override fun validateTimings(timings: Map<String, Long>): Map<String, Long> {
+    override fun validateTimings(timings: Map<String, Long>): MutableMap<String, Long> {
         return timings.mapKeys { entry ->
             val sanitizedKey =
                 entry.key.replace(Regex("[^a-zA-Z0-9\\-_.@$]"), "_")
@@ -86,7 +86,7 @@ internal class DatadogDataConstraints : DataConstraints {
                 )
             }
             sanitizedKey
-        }
+        }.toMutableMap()
     }
 
     private fun resolveDiscardedAttrsWarning(
