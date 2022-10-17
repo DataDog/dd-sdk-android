@@ -31,6 +31,7 @@ import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.net.SessionReplayOkHttpUploader
 import com.datadog.android.tracing.internal.TracingFeature
+import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.FeatureUploadConfiguration
@@ -42,6 +43,7 @@ import com.datadog.android.v2.rum.internal.net.RumRequestFactory
 import com.datadog.android.v2.tracing.internal.net.TracesRequestFactory
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
+import java.util.Locale
 
 /**
  * Internal implementation of the [SdkCore] interface.
@@ -177,12 +179,28 @@ internal class DatadogCore(
     }
 
     /** @inheritDoc */
-    override fun setFeatureContext(feature: String, context: Map<String, Any?>) {
-        contextProvider?.setFeatureContext(feature, context)
+    override fun setFeatureContext(featureName: String, context: Map<String, Any?>) {
+        contextProvider?.setFeatureContext(featureName, context)
     }
 
-    override fun updateFeatureContext(feature: String, entries: Map<String, Any?>) {
-        contextProvider?.updateFeatureContext(feature, entries)
+    override fun updateFeatureContext(featureName: String, entries: Map<String, Any?>) {
+        contextProvider?.updateFeatureContext(featureName, entries)
+    }
+
+    override fun setEventReceiver(featureName: String, receiver: FeatureEventReceiver) {
+        val feature = features[featureName]
+        if (feature == null) {
+            devLogger.i(MISSING_FEATURE_FOR_EVENT_RECEIVER.format(Locale.US, featureName))
+        } else {
+            if (feature.eventReceiver.get() != null) {
+                devLogger.i(EVENT_RECEIVER_ALREADY_EXISTS.format(Locale.US, featureName))
+            }
+            feature.eventReceiver.set(receiver)
+        }
+    }
+
+    override fun removeEventReceiver(featureName: String) {
+        features[featureName]?.eventReceiver?.set(null)
     }
 
     /**
@@ -465,5 +483,10 @@ internal class DatadogCore(
                 "Credentials" +
                 "(\"<CLIENT_TOKEN>\", \"<ENVIRONMENT>\", \"<VARIANT>\", \"<APPLICATION_ID>\")\n" +
                 "Datadog.initialize(context, credentials, configuration, trackingConsent);"
+
+        internal const val MISSING_FEATURE_FOR_EVENT_RECEIVER =
+            "Cannot add event receiver for feature \"%s\", it is not registered."
+        internal const val EVENT_RECEIVER_ALREADY_EXISTS =
+            "Feature \"%s\" already has event receiver registered, overwriting it."
     }
 }

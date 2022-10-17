@@ -18,4 +18,11 @@ interface FeatureScope {
      * and an [EventBatchWriter]
      */
     fun withWriteContext(callback: (DatadogContext, EventBatchWriter) -> Unit)
+
+    /**
+     * Send event to a given feature. It will be sent in a synchronous way.
+     *
+     * @param event Event to send.
+     */
+    fun sendEvent(event: Any)
 }

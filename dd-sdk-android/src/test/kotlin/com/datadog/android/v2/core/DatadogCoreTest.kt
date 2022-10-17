@@ -7,9 +7,11 @@
 package com.datadog.android.v2.core
 
 import android.app.Application
+import android.util.Log
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
@@ -24,6 +26,7 @@ import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
@@ -54,6 +57,8 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.Locale
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * This region groups all test about DatadogCore instance (except Initialization).
@@ -209,6 +214,85 @@ internal class DatadogCoreTest {
 
         // Then
         verify(mockContextProvider).updateFeatureContext(feature, context)
+    }
+
+    @Test
+    fun `𝕄 set event receiver 𝕎 setEventReceiver()`(
+        @StringForgery feature: String
+    ) {
+        // Given
+        val mockFeature = mock<SdkFeature>()
+        val mockEventReceiverRef = mock<AtomicReference<FeatureEventReceiver>>()
+        whenever(mockFeature.eventReceiver) doReturn mockEventReceiverRef
+        testedCore.features[feature] = mockFeature
+
+        val fakeReceiver = FeatureEventReceiver { }
+
+        // When
+        testedCore.setEventReceiver(feature, fakeReceiver)
+
+        // Then
+        verify(mockEventReceiverRef).set(fakeReceiver)
+    }
+
+    @Test
+    fun `𝕄 notify no feature registered 𝕎 setEventReceiver() { feature is not registered }`(
+        @StringForgery feature: String
+    ) {
+        // Given
+        val fakeReceiver = FeatureEventReceiver { }
+
+        // When
+        testedCore.setEventReceiver(feature, fakeReceiver)
+
+        // Then
+        verify(logger.mockDevLogHandler)
+            .handleLog(
+                Log.INFO,
+                DatadogCore.MISSING_FEATURE_FOR_EVENT_RECEIVER.format(Locale.US, feature)
+            )
+    }
+
+    @Test
+    fun `𝕄 notify receiver exists 𝕎 setEventReceiver() { feature already has receiver }`(
+        @StringForgery feature: String
+    ) {
+        // Given
+        val mockFeature = mock<SdkFeature>()
+        val mockEventReceiverRef = mock<AtomicReference<FeatureEventReceiver>>()
+        whenever(mockFeature.eventReceiver) doReturn mockEventReceiverRef
+        whenever(mockEventReceiverRef.get()) doReturn mock()
+        testedCore.features[feature] = mockFeature
+
+        val fakeReceiver = FeatureEventReceiver { }
+
+        // When
+        testedCore.setEventReceiver(feature, fakeReceiver)
+
+        // Then
+        verify(logger.mockDevLogHandler)
+            .handleLog(
+                Log.INFO,
+                DatadogCore.EVENT_RECEIVER_ALREADY_EXISTS.format(Locale.US, feature)
+            )
+    }
+
+    @Test
+    fun `𝕄 remove receiver 𝕎 removeEventReceiver()`(
+        @StringForgery feature: String
+    ) {
+        // Given
+        val mockFeature = mock<SdkFeature>()
+        val mockEventReceiverRef = mock<AtomicReference<FeatureEventReceiver>>()
+        whenever(mockFeature.eventReceiver) doReturn mockEventReceiverRef
+        whenever(mockEventReceiverRef.get()) doReturn mock()
+        testedCore.features[feature] = mockFeature
+
+        // When
+        testedCore.removeEventReceiver(feature)
+
+        // Then
+        verify(mockEventReceiverRef).set(null)
     }
 
     @Test

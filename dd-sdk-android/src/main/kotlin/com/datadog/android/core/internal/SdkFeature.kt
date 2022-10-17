@@ -18,10 +18,12 @@ import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.FeatureUploadConfiguration
@@ -36,7 +38,9 @@ import com.datadog.android.v2.core.internal.net.NoOpDataUploader
 import com.datadog.android.v2.core.internal.storage.ConsentAwareStorage
 import com.datadog.android.v2.core.internal.storage.NoOpStorage
 import com.datadog.android.v2.core.internal.storage.Storage
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 @Suppress("TooManyFunctions")
 internal class SdkFeature(
@@ -47,6 +51,7 @@ internal class SdkFeature(
 ) : FeatureScope {
 
     internal val initialized = AtomicBoolean(false)
+    internal val eventReceiver = AtomicReference<FeatureEventReceiver>(null)
 
     internal var storage: Storage = NoOpStorage()
     internal var uploader: DataUploader = NoOpDataUploader()
@@ -128,6 +133,15 @@ internal class SdkFeature(
         val context = contextProvider.context
         storage.writeCurrentBatch(context) {
             callback(context, it)
+        }
+    }
+
+    override fun sendEvent(event: Any) {
+        val receiver = eventReceiver.get()
+        if (receiver == null) {
+            devLogger.i(NO_EVENT_RECEIVER.format(Locale.US, featureName))
+        } else {
+            receiver.onReceive(event)
         }
     }
 
@@ -254,4 +268,9 @@ internal class SdkFeature(
     }
 
     // endregion
+
+    companion object {
+        const val NO_EVENT_RECEIVER =
+            "Feature \"%s\" has no event receiver registered, ignoring event."
+    }
 }
