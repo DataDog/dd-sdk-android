@@ -385,11 +385,19 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
     }
 
     fun hasActionId(expected: String?): ResourceEventAssert {
-        assertThat(actual.action?.id)
-            .overridingErrorMessage(
-                "Expected event data to have action.id $expected but was ${actual.action?.id}"
-            )
-            .isEqualTo(expected)
+        if (expected != null) {
+            assertThat(actual.action?.id)
+                .overridingErrorMessage(
+                    "Expected event data to have action.id $expected but was ${actual.action?.id}"
+                )
+                .contains(expected)
+        } else {
+            assertThat(actual.action?.id)
+                .overridingErrorMessage(
+                    "Expected event data to have no action.id but was ${actual.action?.id}"
+                )
+                .isNullOrEmpty()
+        }
         return this
     }
 

@@ -189,7 +189,7 @@ internal class RumResourceScope(
                 download = finalTiming?.download(),
                 provider = resolveResourceProvider()
             ),
-            action = context.actionId?.let { ResourceEvent.Action(it) },
+            action = context.actionId?.let { ResourceEvent.Action(listOf(it)) },
             view = ResourceEvent.View(
                 id = context.viewId.orEmpty(),
                 name = context.viewName,
@@ -281,7 +281,7 @@ internal class RumResourceScope(
                 type = errorType,
                 sourceType = ErrorEvent.SourceType.ANDROID
             ),
-            action = context.actionId?.let { ErrorEvent.Action(it) },
+            action = context.actionId?.let { ErrorEvent.Action(listOf(it)) },
             view = ErrorEvent.View(
                 id = context.viewId.orEmpty(),
                 name = context.viewName,
