@@ -153,7 +153,7 @@ internal constructor(
         tracedRequestListener = tracedRequestListener,
         firstPartyHostDetector = CoreFeature.firstPartyHostDetector,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
-        traceSampler = RateBasedSampler(traceSamplingRate / 100),
+        traceSampler = RateBasedSampler(traceSamplingRate / 100f),
         localTracerFactory = { AndroidTracer.Builder().build() }
     )
 
@@ -221,7 +221,8 @@ internal constructor(
         } else {
             mapOf(
                 RumAttributes.TRACE_ID to span.context().toTraceId(),
-                RumAttributes.SPAN_ID to span.context().toSpanId()
+                RumAttributes.SPAN_ID to span.context().toSpanId(),
+                RumAttributes.RULE_PSR to traceSampler.getSamplingRate()
             )
         }
         GlobalRum.get().stopResource(

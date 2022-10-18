@@ -13,4 +13,10 @@ internal interface Sampler {
      * @return true if you want to keep the value, false otherwise.
      */
     fun sample(): Boolean
+
+    /**
+     * @return the sampling rate if applicable, as a float between 0 and 1,
+     * or null if not applicable
+     */
+    fun getSamplingRate(): Float?
 }
