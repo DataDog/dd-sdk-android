@@ -419,6 +419,15 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
+    fun hasRulePsr(expected: Number?): ResourceEventAssert {
+        assertThat(actual.dd.rulePsr)
+            .overridingErrorMessage(
+                "Expected event data to have _dd.rule_psr $expected but was ${actual.dd.rulePsr}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasProviderType(expected: ResourceEvent.ProviderType): ResourceEventAssert {
         assertThat(actual.resource.provider?.type)
             .overridingErrorMessage(
