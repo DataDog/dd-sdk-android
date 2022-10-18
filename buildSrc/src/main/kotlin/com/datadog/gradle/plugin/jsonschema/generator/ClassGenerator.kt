@@ -139,7 +139,7 @@ class ClassGenerator(
         val isNullable =
             property.optional && property.type !is TypeDefinition.Constant && property.type !is TypeDefinition.Null
         val refName = if (isNullable) {
-            beginControlFlow("%L?.let { %LNonNull ->", propertyName, propertyName)
+            beginControlFlow("%L?.let·{·%LNonNull·->", propertyName, propertyName)
             "${propertyName}NonNull"
         } else {
             propertyName

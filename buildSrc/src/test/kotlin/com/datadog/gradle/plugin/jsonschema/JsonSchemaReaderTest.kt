@@ -69,6 +69,7 @@ class JsonSchemaReaderTest(
                 arrayOf("read_only", Message),
                 arrayOf("enum_array", Order),
                 arrayOf("description", Opus),
+                arrayOf("one_of_complex", Paper),
                 arrayOf("minimal", Person),
                 arrayOf("required", Product),
                 arrayOf("external_nested_description", Shipping),
