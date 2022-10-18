@@ -16,9 +16,9 @@ internal interface DataConstraints {
         keyPrefix: String? = null,
         attributesGroupName: String? = null,
         reservedKeys: Set<String> = emptySet()
-    ): Map<String, T>
+    ): MutableMap<String, T>
 
     fun validateTags(tags: List<String>): List<String>
 
-    fun validateTimings(timings: Map<String, Long>): Map<String, Long>
+    fun validateTimings(timings: Map<String, Long>): MutableMap<String, Long>
 }
