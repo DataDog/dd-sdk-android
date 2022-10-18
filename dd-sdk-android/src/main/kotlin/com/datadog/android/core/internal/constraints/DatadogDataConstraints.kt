@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.constraints
 
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.toMutableMap
 import java.util.Locale
 
 internal typealias StringTransform = (String) -> String?
@@ -69,7 +70,7 @@ internal class DatadogDataConstraints : DataConstraints {
             )
             devLogger.w(warningMessage)
         }
-        return convertedAttributes.take(MAX_ATTR_COUNT).toMap().toMutableMap()
+        return convertedAttributes.take(MAX_ATTR_COUNT).toMutableMap()
     }
 
     override fun validateTimings(timings: Map<String, Long>): MutableMap<String, Long> {

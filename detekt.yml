@@ -984,6 +984,7 @@ datadog:
       - "kotlin.collections.Collection.withIndex()"
       - "kotlin.collections.Iterable.any(kotlin.Function1)"
       - "kotlin.collections.Iterable.forEach(kotlin.Function1)"
+      - "kotlin.collections.Iterable.toMap(kotlin.collections.MutableMap)"
       - "kotlin.collections.List.any(kotlin.Function1)"
       - "kotlin.collections.List.asSequence()"
       - "kotlin.collections.List.associateWith(kotlin.Function1)"

@@ -306,10 +306,8 @@ internal class DatadogDataConstraintsTest {
             testedConstraints.validateAttributes(attributes, reservedKeys = reservedKeys)
 
         // THEN
-        assertThat(sanitizedAttributes.entries)
-            .containsExactlyElementsOf(
-                attributes.entries.filterNot { reservedKeys.contains(it.key) }
-            )
+        assertThat(sanitizedAttributes)
+            .containsExactlyEntriesOf(attributes.filterNot { reservedKeys.contains(it.key) })
     }
 
     // endregion

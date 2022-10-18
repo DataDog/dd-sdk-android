@@ -115,15 +115,15 @@ internal class SpanEventSerializerTest {
         forge: Forge
     ) {
         // GIVEN
-        val fakeSanitizedAttributes = forge.aMap(size = 10) {
+        val fakeSanitizedAttributes = forge.aMap<String, Number>(size = 10) {
             forge.anAlphabeticalString() to forge.aLong()
-        }
+        }.toMutableMap()
         whenever(
             mockDatadogConstraints
                 .validateAttributes(
                     fakeSpanEvent.metrics.additionalProperties,
                     SpanEventSerializer.METRICS_KEY_PREFIX,
-                    reservedKeys = emptySet<String>()
+                    reservedKeys = emptySet()
                 )
         ).thenReturn(fakeSanitizedAttributes)
 

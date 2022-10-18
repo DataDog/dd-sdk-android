@@ -45,7 +45,7 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
                 loadEvent = forge.aNullable { aPositiveLong() },
                 customTimings = forge.aNullable {
                     ViewEvent.CustomTimings(
-                        aMap { anAlphabeticalString() to aLong() }
+                        aMap { anAlphabeticalString() to aLong() }.toMutableMap()
                     )
                 },
                 isActive = forge.aNullable { aBool() },
