@@ -357,7 +357,7 @@ val Employee = TypeDefinition.Class(
                 name = "Contact",
                 properties = listOf(
                     TypeProperty("phone", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
-                    TypeProperty("address", Address, false),
+                    TypeProperty("address", Address, false)
                 )
             ),
             optional = true

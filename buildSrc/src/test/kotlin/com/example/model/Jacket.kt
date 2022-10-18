@@ -14,7 +14,7 @@ import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
 public data class Jacket(
-    public val size: Size = Size.SIZE_1,
+    public val size: Size = Size.SIZE_1
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
@@ -50,12 +50,12 @@ public data class Jacket(
     }
 
     public enum class Size(
-        private val jsonValue: Number,
+        private val jsonValue: Number
     ) {
         SIZE_1(1),
         SIZE_2(2),
         SIZE_3(3),
-        SIZE_4(4),
+        SIZE_4(4)
         ;
 
         public fun toJson(): JsonElement = JsonPrimitive(jsonValue)

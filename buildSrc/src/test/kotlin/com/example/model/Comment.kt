@@ -19,7 +19,7 @@ public data class Comment(
     public val message: String? = null,
     public val ratings: Ratings? = null,
     public val flags: Flags? = null,
-    public val tags: Tags? = null,
+    public val tags: Tags? = null
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
@@ -76,7 +76,7 @@ public data class Comment(
 
     public data class Ratings(
         public val global: Long,
-        public val additionalProperties: Map<String, Long> = emptyMap(),
+        public val additionalProperties: Map<String, Long> = emptyMap()
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()
@@ -126,7 +126,7 @@ public data class Comment(
     }
 
     public data class Flags(
-        public val additionalProperties: Map<String, Boolean> = emptyMap(),
+        public val additionalProperties: Map<String, Boolean> = emptyMap()
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()
@@ -168,7 +168,7 @@ public data class Comment(
     }
 
     public data class Tags(
-        public val additionalProperties: Map<String, String> = emptyMap(),
+        public val additionalProperties: Map<String, String> = emptyMap()
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()

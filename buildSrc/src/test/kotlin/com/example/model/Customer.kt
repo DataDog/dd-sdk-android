@@ -14,7 +14,7 @@ import kotlin.jvm.Throws
 public data class Customer(
     public val name: String? = null,
     public val billingAddress: Address? = null,
-    public val shippingAddress: Address? = null,
+    public val shippingAddress: Address? = null
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
@@ -66,7 +66,7 @@ public data class Customer(
     public data class Address(
         public val streetAddress: String,
         public val city: String,
-        public val state: String,
+        public val state: String
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()

@@ -58,7 +58,8 @@ class ModelValidationTest(
                 validator.validate(JSONObject(json.toString()))
             } catch (e: Exception) {
                 throw RuntimeException(
-                    "Failed to validate $schemaResourcePath (#$it):\n$entity\n$json\n", e
+                    "Failed to validate $schemaResourcePath (#$it):\n$entity\n$json\n",
+                    e
                 )
             }
         }

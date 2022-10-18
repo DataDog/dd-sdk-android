@@ -22,7 +22,7 @@ public sealed class Animal {
 
     public data class Fish(
         public val water: Water,
-        public val size: Long? = null,
+        public val size: Long? = null
     ) : Animal() {
         public override fun toJson(): JsonElement {
             val json = JsonObject()
@@ -64,7 +64,7 @@ public sealed class Animal {
 
     public data class Bird(
         public val food: Food,
-        public val canFly: Boolean,
+        public val canFly: Boolean
     ) : Animal() {
         public override fun toJson(): JsonElement {
             val json = JsonObject()
@@ -121,7 +121,7 @@ public sealed class Animal {
             }
             val result = arrayOf(
                 asFish,
-                asBird,
+                asBird
             ).firstOrNull { it != null }
             if (result == null) {
                 val message = "Unable to parse json into one of type \n" + "Animal\n" +
@@ -133,10 +133,10 @@ public sealed class Animal {
     }
 
     public enum class Water(
-        private val jsonValue: String,
+        private val jsonValue: String
     ) {
         SALT("salt"),
-        FRESH("fresh"),
+        FRESH("fresh")
         ;
 
         public fun toJson(): JsonElement = JsonPrimitive(jsonValue)
@@ -150,7 +150,7 @@ public sealed class Animal {
     }
 
     public enum class Food(
-        private val jsonValue: String,
+        private val jsonValue: String
     ) {
         FISH("fish"),
         BIRD("bird"),
@@ -158,7 +158,7 @@ public sealed class Animal {
         INSECT("insect"),
         FRUIT("fruit"),
         SEEDS("seeds"),
-        POLLEN("pollen"),
+        POLLEN("pollen")
         ;
 
         public fun toJson(): JsonElement = JsonPrimitive(jsonValue)

@@ -17,7 +17,7 @@ public data class Book(
     public val bookId: Long,
     public val title: String,
     public val price: Number,
-    public val author: Author,
+    public val author: Author
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
@@ -63,7 +63,7 @@ public data class Book(
     public data class Author(
         public val firstName: String,
         public val lastName: String,
-        public val contact: Contact,
+        public val contact: Contact
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()
@@ -107,7 +107,7 @@ public data class Book(
 
     public data class Contact(
         public val phone: String? = null,
-        public val email: String? = null,
+        public val email: String? = null
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()

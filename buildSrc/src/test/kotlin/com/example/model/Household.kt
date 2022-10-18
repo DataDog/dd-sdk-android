@@ -19,7 +19,7 @@ import kotlin.jvm.Throws
 
 public data class Household(
     public val pets: List<Animal>? = null,
-    public val situation: Situation? = null,
+    public val situation: Situation? = null
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
@@ -78,7 +78,7 @@ public data class Household(
 
         public data class Fish(
             public val water: Water,
-            public val size: Long? = null,
+            public val size: Long? = null
         ) : Animal() {
             public override fun toJson(): JsonElement {
                 val json = JsonObject()
@@ -120,7 +120,7 @@ public data class Household(
 
         public data class Bird(
             public val food: Food,
-            public val canFly: Boolean,
+            public val canFly: Boolean
         ) : Animal() {
             public override fun toJson(): JsonElement {
                 val json = JsonObject()
@@ -177,7 +177,7 @@ public data class Household(
                 }
                 val result = arrayOf(
                     asFish,
-                    asBird,
+                    asBird
                 ).firstOrNull { it != null }
                 if (result == null) {
                     val message = "Unable to parse json into one of type \n" + "Animal\n" +
@@ -193,7 +193,7 @@ public data class Household(
         public abstract fun toJson(): JsonElement
 
         public data class Marriage(
-            public val spouses: List<String>,
+            public val spouses: List<String>
         ) : Situation() {
             public override fun toJson(): JsonElement {
                 val json = JsonObject()
@@ -238,7 +238,7 @@ public data class Household(
         }
 
         public data class Cotenancy(
-            public val roommates: List<String>,
+            public val roommates: List<String>
         ) : Situation() {
             public override fun toJson(): JsonElement {
                 val json = JsonObject()
@@ -301,7 +301,7 @@ public data class Household(
                 }
                 val result = arrayOf(
                     asMarriage,
-                    asCotenancy,
+                    asCotenancy
                 ).firstOrNull { it != null }
                 if (result == null) {
                     val message = "Unable to parse json into one of type \n" + "Situation\n" +
@@ -314,10 +314,10 @@ public data class Household(
     }
 
     public enum class Water(
-        private val jsonValue: String,
+        private val jsonValue: String
     ) {
         SALT("salt"),
-        FRESH("fresh"),
+        FRESH("fresh")
         ;
 
         public fun toJson(): JsonElement = JsonPrimitive(jsonValue)
@@ -331,7 +331,7 @@ public data class Household(
     }
 
     public enum class Food(
-        private val jsonValue: String,
+        private val jsonValue: String
     ) {
         FISH("fish"),
         BIRD("bird"),
@@ -339,7 +339,7 @@ public data class Household(
         INSECT("insect"),
         FRUIT("fruit"),
         SEEDS("seeds"),
-        POLLEN("pollen"),
+        POLLEN("pollen")
         ;
 
         public fun toJson(): JsonElement = JsonPrimitive(jsonValue)

@@ -150,7 +150,9 @@ internal class DatadogDataConstraints : DataConstraints {
             if (it == '.') {
                 dotCount++
                 if (dotCount > MAX_DEPTH_LEVEL) '_' else it
-            } else it
+            } else {
+                it
+            }
         }
         return String(mapped.toCharArray())
     }

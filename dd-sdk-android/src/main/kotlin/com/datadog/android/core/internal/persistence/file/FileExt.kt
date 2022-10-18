@@ -44,52 +44,88 @@ private fun <T> File.safeCall(
 }
 
 internal fun File.canWriteSafe(): Boolean {
-    return safeCall(default = false) { @Suppress("UnsafeThirdPartyFunctionCall") canWrite() }
+    return safeCall(default = false) {
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        canWrite()
+    }
 }
 
 internal fun File.canReadSafe(): Boolean {
-    return safeCall(default = false) { @Suppress("UnsafeThirdPartyFunctionCall") canRead() }
+    return safeCall(default = false) {
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        canRead()
+    }
 }
 
 internal fun File.deleteSafe(): Boolean {
-    return safeCall(default = false) { @Suppress("UnsafeThirdPartyFunctionCall") delete() }
+    return safeCall(default = false) {
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        delete()
+    }
 }
 
 internal fun File.existsSafe(): Boolean {
-    return safeCall(default = false) { @Suppress("UnsafeThirdPartyFunctionCall") exists() }
+    return safeCall(default = false) {
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        exists()
+    }
 }
 
 internal fun File.isFileSafe(): Boolean {
-    return safeCall(default = false) { @Suppress("UnsafeThirdPartyFunctionCall") isFile() }
+    return safeCall(default = false) {
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        isFile()
+    }
 }
 
 internal fun File.isDirectorySafe(): Boolean {
-    return safeCall(default = false) { @Suppress("UnsafeThirdPartyFunctionCall") isDirectory() }
+    return safeCall(default = false) {
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        isDirectory()
+    }
 }
 
 internal fun File.listFilesSafe(): Array<File>? {
-    return safeCall(default = null) { @Suppress("UnsafeThirdPartyFunctionCall") listFiles() }
+    return safeCall(default = null) {
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        listFiles()
+    }
 }
 
 internal fun File.listFilesSafe(filter: FileFilter): Array<File>? {
-    return safeCall(default = null) { @Suppress("UnsafeThirdPartyFunctionCall") listFiles(filter) }
+    return safeCall(default = null) {
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        listFiles(filter)
+    }
 }
 
 internal fun File.lengthSafe(): Long {
-    return safeCall(default = 0L) { @Suppress("UnsafeThirdPartyFunctionCall") length() }
+    return safeCall(default = 0L) {
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        length()
+    }
 }
 
 internal fun File.mkdirsSafe(): Boolean {
-    return safeCall(default = false) { @Suppress("UnsafeThirdPartyFunctionCall") mkdirs() }
+    return safeCall(default = false) {
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        mkdirs()
+    }
 }
 
 internal fun File.renameToSafe(dest: File): Boolean {
-    return safeCall(default = false) { @Suppress("UnsafeThirdPartyFunctionCall") renameTo(dest) }
+    return safeCall(default = false) {
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        renameTo(dest)
+    }
 }
 
 internal fun File.readTextSafe(charset: Charset = Charsets.UTF_8): String? {
     return if (existsSafe() && canReadSafe()) {
-        safeCall(default = null) { @Suppress("UnsafeThirdPartyFunctionCall") readText(charset) }
+        safeCall(default = null) {
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            readText(charset)
+        }
     } else {
         null
     }
@@ -97,7 +133,10 @@ internal fun File.readTextSafe(charset: Charset = Charsets.UTF_8): String? {
 
 internal fun File.readBytesSafe(): ByteArray? {
     return if (existsSafe() && canReadSafe()) {
-        safeCall(default = null) { @Suppress("UnsafeThirdPartyFunctionCall") readBytes() }
+        safeCall(default = null) {
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            readBytes()
+        }
     } else {
         null
     }
@@ -105,7 +144,10 @@ internal fun File.readBytesSafe(): ByteArray? {
 
 internal fun File.readLinesSafe(charset: Charset = Charsets.UTF_8): List<String>? {
     return if (existsSafe() && canReadSafe()) {
-        safeCall(default = null) { @Suppress("UnsafeThirdPartyFunctionCall") readLines(charset) }
+        safeCall(default = null) {
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            readLines(charset)
+        }
     } else {
         null
     }

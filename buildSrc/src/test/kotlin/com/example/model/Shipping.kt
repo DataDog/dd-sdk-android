@@ -13,7 +13,7 @@ import kotlin.jvm.Throws
 
 public data class Shipping(
     public val item: String,
-    public val destination: Address,
+    public val destination: Address
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
@@ -55,7 +55,7 @@ public data class Shipping(
     public data class Address(
         public val streetAddress: String,
         public val city: String,
-        public val state: String,
+        public val state: String
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()
