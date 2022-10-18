@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "action-schema.json",
+  "$id": "rum/action-schema.json",
   "title": "RumActionEvent",
   "type": "object",
   "description": "Schema of all properties of an Action event",
