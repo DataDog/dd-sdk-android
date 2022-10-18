@@ -181,6 +181,7 @@ publish:release:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -196,6 +197,7 @@ publish:release-coil:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -211,6 +213,7 @@ publish:release-compose:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -227,6 +230,7 @@ publish:release-fresco:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -242,6 +246,7 @@ publish:release-glide:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -257,6 +262,7 @@ publish:release-ktx:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -272,6 +278,7 @@ publish:release-ndk:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -287,6 +294,7 @@ publish:release-rx:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -302,6 +310,7 @@ publish:release-sqldelight:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -317,6 +326,7 @@ publish:release-timber:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -332,6 +342,7 @@ publish:release-android-tv:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
