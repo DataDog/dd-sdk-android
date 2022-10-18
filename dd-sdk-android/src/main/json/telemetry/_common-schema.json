@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "_common-schema.json",
+  "$id": "telemetry/_common-schema.json",
   "title": "CommonTelemetryProperties",
   "type": "object",
   "description": "Schema of common properties of Telemetry events",
@@ -92,6 +92,14 @@
           "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
         }
       }
+    },
+    "experimental_features": {
+      "type": "array",
+      "description": "Enabled experimental features",
+      "items": {
+        "type": "string"
+      },
+      "readOnly": true
     }
   }
 }

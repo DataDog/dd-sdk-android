@@ -1,0 +1,189 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "telemetry/configuration-schema.json",
+  "title": "TelemetryConfigurationEvent",
+  "type": "object",
+  "description": "Schema of all properties of a telemetry configuration event",
+  "allOf": [
+    {
+      "$ref": "_common-schema.json"
+    },
+    {
+      "required": ["telemetry"],
+      "properties": {
+        "telemetry": {
+          "type": "object",
+          "description": "The telemetry configuration information",
+          "required": ["type", "configuration"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "Telemetry type",
+              "const": "configuration"
+            },
+            "configuration": {
+              "type": "object",
+              "description": "Configuration properties",
+              "properties": {
+                "session_sample_rate": {
+                  "type": "integer",
+                  "description": "The percentage of sessions tracked",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "telemetry_sample_rate": {
+                  "type": "integer",
+                  "description": "The percentage of telemetry events sent",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "telemetry_configuration_sample_rate": {
+                  "type": "integer",
+                  "description": "The percentage of telemetry configuration events sent after being sampled by telemetry_sample_rate",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "trace_sample_rate": {
+                  "type": "integer",
+                  "description": "The percentage of requests traced",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "premium_sample_rate": {
+                  "type": "integer",
+                  "description": "The percentage of sessions with Browser RUM & Session Replay pricing tracked (deprecated in favor of session_replay_sample_rate)",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "replay_sample_rate": {
+                  "type": "integer",
+                  "description": "The percentage of sessions with Browser RUM & Session Replay pricing tracked (deprecated in favor of session_replay_sample_rate)",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "session_replay_sample_rate": {
+                  "type": "integer",
+                  "description": "The percentage of sessions with Browser RUM & Session Replay pricing tracked",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "use_proxy": {
+                  "type": "boolean",
+                  "description": "Whether a proxy configured is used"
+                },
+                "use_before_send": {
+                  "type": "boolean",
+                  "description": "Whether beforeSend callback function is used"
+                },
+                "silent_multiple_init": {
+                  "type": "boolean",
+                  "description": "Whether initialization fails silently if the SDK is already initialized"
+                },
+                "track_session_across_subdomains": {
+                  "type": "boolean",
+                  "description": "Whether sessions across subdomains for the same site are tracked"
+                },
+                "use_cross_site_session_cookie": {
+                  "type": "boolean",
+                  "description": "Whether a secure cross-site session cookie is used"
+                },
+                "use_secure_session_cookie": {
+                  "type": "boolean",
+                  "description": "Whether a secure session cookie is used"
+                },
+                "action_name_attribute": {
+                  "type": "string",
+                  "description": "Attribute to be used to name actions"
+                },
+                "use_allowed_tracing_origins": {
+                  "type": "boolean",
+                  "description": "Whether the allowed tracing origins list is used"
+                },
+                "default_privacy_level": {
+                  "type": "string",
+                  "description": "Session replay default privacy level"
+                },
+                "use_excluded_activity_urls": {
+                  "type": "boolean",
+                  "description": "Whether the request origins list to ignore when computing the page activity is used"
+                },
+                "track_frustrations": {
+                  "type": "boolean",
+                  "description": "Whether user frustrations are tracked"
+                },
+                "track_views_manually": {
+                  "type": "boolean",
+                  "description": "Whether the RUM views creation is handled manually"
+                },
+                "track_interactions": {
+                  "type": "boolean",
+                  "description": "Whether user actions are tracked"
+                },
+                "forward_errors_to_logs": {
+                  "type": "boolean",
+                  "description": "Whether console.error logs, uncaught exceptions and network errors are tracked"
+                },
+                "forward_console_logs": {
+                  "anyOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "const": "all"
+                    }
+                  ],
+                  "description": "The console.* tracked"
+                },
+                "forward_reports": {
+                  "anyOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "const": "all"
+                    }
+                  ],
+                  "description": "The reports from the Reporting API tracked"
+                },
+                "use_local_encryption": {
+                  "type": "boolean",
+                  "description": "Whether local encryption is used"
+                },
+                "view_tracking_strategy": {
+                  "type": "string",
+                  "description": "View tracking strategy",
+                  "enum": [
+                    "ActivityViewTrackingStrategy",
+                    "FragmentViewTrackingStrategy",
+                    "MixedViewTrackingStrategy",
+                    "NavigationViewTrackingStrategy"
+                  ]
+                },
+                "track_background_events": {
+                  "type": "boolean",
+                  "description": "Whether RUM events are tracked when the application is in Background"
+                },
+                "mobile_vitals_update_period": {
+                  "type": "integer",
+                  "description": "The period between each Mobile Vital sample (in milliseconds)"
+                },
+                "track_native_crashes": {
+                  "type": "boolean",
+                  "description": "Whether native crashes are tracked"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
