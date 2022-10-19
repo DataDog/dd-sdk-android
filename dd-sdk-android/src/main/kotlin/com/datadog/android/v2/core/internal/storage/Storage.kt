@@ -6,7 +6,9 @@
 
 package com.datadog.android.v2.core.internal.storage
 
+import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
+import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.tools.annotation.NoOpImplementation
 
@@ -16,13 +18,17 @@ import com.datadog.tools.annotation.NoOpImplementation
 @NoOpImplementation
 internal interface Storage {
 
+    // TODO RUMM-0000 It seems only write part is useful to be async. Having upload part as async
+    //  brings more complexity and is not really needed, because there is a dedicated upload
+    //  thread anyway and upload part is not exposed as public API (except only data ->
+    //   request transformation).
     /**
      * Utility to write data, asynchronously.
-     * @param callback an operation to perform with a [BatchWriter] that will target the current
+     * @param callback an operation to perform with a [EventBatchWriter] that will target the current
      * writeable Batch
      */
-    @WorkerThread
-    fun writeCurrentBatch(datadogContext: DatadogContext, callback: (BatchWriter) -> Unit)
+    @AnyThread
+    fun writeCurrentBatch(datadogContext: DatadogContext, callback: (EventBatchWriter) -> Unit)
 
     /**
      * Utility to read a batch, asynchronously.

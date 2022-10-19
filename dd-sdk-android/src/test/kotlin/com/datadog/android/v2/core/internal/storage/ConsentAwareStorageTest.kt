@@ -13,12 +13,15 @@ import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.BatchWriterListener
+import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
@@ -42,11 +45,12 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.io.File
 import java.util.Locale
+import java.util.concurrent.Executor
+import java.util.concurrent.RejectedExecutionException
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -73,9 +77,6 @@ internal class ConsentAwareStorageTest {
     lateinit var mockFileMover: FileMover
 
     @Mock
-    lateinit var mockListener: BatchWriterListener
-
-    @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
@@ -84,6 +85,8 @@ internal class ConsentAwareStorageTest {
     @BeforeEach
     fun `set up`() {
         testedStorage = ConsentAwareStorage(
+            // same thread executor
+            executor = Runnable::run,
             mockGrantedOrchestrator,
             mockPendingOrchestrator,
             mockBatchReaderWriter,
@@ -92,49 +95,32 @@ internal class ConsentAwareStorageTest {
             mockInternalLogger,
             mockFilePersistenceConfig
         )
-        whenever(mockFilePersistenceConfig.maxItemSize) doReturn Long.MAX_VALUE
     }
 
     // region writeCurrentBatch
 
     @Test
     fun `𝕄 provide writer 𝕎 writeCurrentBatch() {consent=granted}`(
-        @StringForgery data: String,
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String,
-        @Forgery file: File
+        @Forgery file: File,
+        forge: Forge
     ) {
         // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val serializedMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
+        val mockCallback = mock<(EventBatchWriter) -> Unit>()
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
         whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
-        val mockMetaFile: File = mock()
+        val mockMetaFile: File? = forge.aNullable { mock() }
         whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
-        whenever(mockMetaReaderWriter.readData(mockMetaFile)) doReturn serializedMetadata
-        whenever(mockBatchReaderWriter.writeData(file, serializedData, true)) doReturn true
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            val meta = it.currentMetadata()
-            val updatedMeta = meta?.reversedArray()
-            it.write(serializedData, eventId, updatedMeta, mockListener)
-        }
+        testedStorage.writeCurrentBatch(sdkContext, mockCallback)
 
         // Then
         verify(mockGrantedOrchestrator).getWritableFile()
         verify(mockGrantedOrchestrator).getMetadataFile(file)
-        verify(mockBatchReaderWriter).writeData(
-            file,
-            serializedData,
-            append = true
-        )
-        verify(mockMetaReaderWriter).writeData(
-            mockMetaFile,
-            serializedMetadata.reversedArray(),
-            append = false
-        )
-        verify(mockMetaReaderWriter).readData(mockMetaFile)
+        argumentCaptor<EventBatchWriter> {
+            verify(mockCallback).invoke(capture())
+            assertThat(firstValue).isInstanceOf(FileEventBatchWriter::class.java)
+        }
 
         verifyNoMoreInteractions(
             mockGrantedOrchestrator,
@@ -145,319 +131,53 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 write() {consent=granted, empty array}`(
-        @StringForgery eventId: String,
-        @StringForgery batchMetadata: String,
-        @Forgery file: File
-    ) {
+    fun `𝕄 provide no-op writer 𝕎 writeCurrentBatch() {consent=granted, no batch file}`() {
         // Given
-        val serializedData = ByteArray(0)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
+        val mockCallback = mock<(EventBatchWriter) -> Unit>()
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
-        val mockMetaFile: File = mock()
-        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
-        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
+        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn null
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
+        testedStorage.writeCurrentBatch(sdkContext, mockCallback)
 
         // Then
         verify(mockGrantedOrchestrator).getWritableFile()
-        verify(mockGrantedOrchestrator).getMetadataFile(file)
+        argumentCaptor<EventBatchWriter> {
+            verify(mockCallback).invoke(capture())
+            assertThat(firstValue).isInstanceOf(NoOpEventBatchWriter::class.java)
+        }
 
-        verifyZeroInteractions(
+        verifyNoMoreInteractions(
+            mockGrantedOrchestrator,
+            mockPendingOrchestrator,
             mockBatchReaderWriter,
-            mockMetaReaderWriter,
-            mockPendingOrchestrator
+            mockMetaReaderWriter
         )
-        verifyNoMoreInteractions(mockGrantedOrchestrator)
-    }
-
-    @Test
-    fun `𝕄 notify success 𝕎 write() {consent = granted}`(
-        @StringForgery data: String,
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String,
-        @Forgery file: File
-    ) {
-        // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
-        whenever(mockBatchReaderWriter.writeData(file, serializedData, true)) doReturn true
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verify(mockListener).onDataWritten(eventId)
-        verifyNoMoreInteractions(mockListener)
-    }
-
-    @Test
-    fun `𝕄 notify success 𝕎 write() {consent = granted, empty array}`(
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String
-    ) {
-        // Given
-        val serializedData = ByteArray(0)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verify(mockListener).onDataWritten(eventId)
-        verifyNoMoreInteractions(mockListener)
-    }
-
-    @Test
-    fun `𝕄 notify failure 𝕎 write() {consent = granted, no available file}`(
-        @StringForgery data: String,
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String
-    ) {
-        // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
-        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn null
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verify(mockListener).onDataWriteFailed(eventId)
-        verifyNoMoreInteractions(mockListener)
-    }
-
-    @Test
-    fun `𝕄 notify failure 𝕎 write() {consent = granted, item is too big}`(
-        @StringForgery data: String,
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String,
-        @Forgery file: File
-    ) {
-        // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
-        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
-        val maxItemSize = serializedData.size - 1
-        whenever(mockFilePersistenceConfig.maxItemSize) doReturn maxItemSize.toLong()
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verify(mockListener).onDataWriteFailed(eventId)
-        verifyNoMoreInteractions(mockListener)
-        verify(mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            ConsentAwareStorage.ERROR_LARGE_DATA.format(
-                Locale.US,
-                serializedData.size,
-                maxItemSize
-            ),
-            null,
-            emptyMap()
-        )
-    }
-
-    @Test
-    fun `𝕄 notify failure 𝕎 write() {consent = granted, write operation failed}`(
-        @StringForgery data: String,
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String,
-        @Forgery batchFile: File
-    ) {
-        // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
-        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn batchFile
-        whenever(mockBatchReaderWriter.writeData(batchFile, serializedData, true)) doReturn false
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verify(mockListener).onDataWriteFailed(eventId)
-        verifyNoMoreInteractions(mockListener)
-    }
-
-    @Test
-    fun `𝕄 not read metadata 𝕎 currentMetadata() {consent = granted, no available file}`() {
-        // Given
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
-        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn null
-
-        // When
-        var meta: ByteArray? = null
-        testedStorage.writeCurrentBatch(sdkContext) {
-            meta = it.currentMetadata()
-        }
-
-        // Then
-        assertThat(meta).isNull()
-        verifyZeroInteractions(mockBatchReaderWriter, mockMetaReaderWriter)
-    }
-
-    @Test
-    fun `𝕄 not write metadata 𝕎 write() {consent = granted, no available file}`(
-        @StringForgery data: String,
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String
-    ) {
-        // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
-        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn null
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verifyZeroInteractions(mockBatchReaderWriter, mockMetaReaderWriter)
-    }
-
-    @Test
-    fun `𝕄 not write metadata 𝕎 write() {consent = granted, null or empty metadata}`(
-        @StringForgery data: String,
-        @Forgery file: File,
-        @StringForgery eventId: String,
-        forge: Forge
-    ) {
-        // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
-        val mockMetaFile: File = mock()
-        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
-        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, forge.aNullable { ByteArray(0) }, mockListener)
-        }
-
-        // Then
-        verify(mockBatchReaderWriter).writeData(
-            file,
-            serializedData,
-            true
-        )
-        verifyNoMoreInteractions(mockBatchReaderWriter)
-        verifyZeroInteractions(mockMetaReaderWriter)
-    }
-
-    @Test
-    fun `𝕄 not write metadata 𝕎 write() {consent = granted, item is too big}`(
-        @StringForgery data: String,
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String,
-        @Forgery file: File
-    ) {
-        // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
-        val mockMetaFile: File = mock()
-        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
-        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
-        val maxItemSize = serializedData.size - 1
-        whenever(mockFilePersistenceConfig.maxItemSize) doReturn maxItemSize.toLong()
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verifyZeroInteractions(mockMetaReaderWriter)
-    }
-
-    @Test
-    fun `𝕄 not write metadata 𝕎 write() {consent = granted, write operation failed}`(
-        @StringForgery data: String,
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String,
-        @Forgery file: File
-    ) {
-        // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
-        val mockMetaFile: File = mock()
-        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
-        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
-        whenever(mockBatchReaderWriter.writeData(file, serializedData, true)) doReturn false
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verifyZeroInteractions(mockMetaReaderWriter)
     }
 
     @Test
     fun `𝕄 provide writer 𝕎 writeCurrentBatch() {consent=pending}`(
-        @StringForgery data: String,
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String,
-        @Forgery file: File
+        @Forgery file: File,
+        forge: Forge
     ) {
         // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
+        val mockCallback = mock<(EventBatchWriter) -> Unit>()
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
-
-        val mockMetaFile: File = mock()
-        whenever(mockPendingOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
         whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
-        whenever(mockMetaReaderWriter.readData(mockMetaFile)) doReturn serializedBatchMetadata
-        whenever(mockBatchReaderWriter.writeData(file, serializedData, true)) doReturn true
+        val mockMetaFile: File? = forge.aNullable { mock() }
+        whenever(mockPendingOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            val meta = it.currentMetadata()
-            val updatedMeta = meta?.reversedArray()
-            it.write(serializedData, eventId, updatedMeta, mockListener)
-        }
+        testedStorage.writeCurrentBatch(sdkContext, mockCallback)
 
         // Then
         verify(mockPendingOrchestrator).getWritableFile()
         verify(mockPendingOrchestrator).getMetadataFile(file)
-        verify(mockMetaReaderWriter).readData(mockMetaFile)
-        verify(mockBatchReaderWriter).writeData(
-            file,
-            serializedData,
-            append = true
-        )
-        verify(mockMetaReaderWriter).writeData(
-            mockMetaFile,
-            serializedBatchMetadata.reversedArray(),
-            append = false
-        )
+        argumentCaptor<EventBatchWriter> {
+            verify(mockCallback).invoke(capture())
+            assertThat(firstValue).isInstanceOf(FileEventBatchWriter::class.java)
+        }
+
         verifyNoMoreInteractions(
             mockGrantedOrchestrator,
             mockPendingOrchestrator,
@@ -467,379 +187,85 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 write() {consent=pending, empty array}`(
-        @StringForgery eventId: String,
-        @StringForgery batchMetadata: String
-    ) {
+    fun `𝕄 provide no-op writer 𝕎 writeCurrentBatch() {consent=pending, no batch file}`() {
         // Given
-        val serializedData = ByteArray(0)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
+        val mockCallback = mock<(EventBatchWriter) -> Unit>()
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
+        whenever(mockPendingOrchestrator.getWritableFile()) doReturn null
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
+        testedStorage.writeCurrentBatch(sdkContext, mockCallback)
 
         // Then
-        verifyZeroInteractions(
+        verify(mockPendingOrchestrator).getWritableFile()
+        argumentCaptor<EventBatchWriter> {
+            verify(mockCallback).invoke(capture())
+            assertThat(firstValue).isInstanceOf(NoOpEventBatchWriter::class.java)
+        }
+
+        verifyNoMoreInteractions(
+            mockGrantedOrchestrator,
+            mockPendingOrchestrator,
             mockBatchReaderWriter,
-            mockMetaReaderWriter,
-            mockGrantedOrchestrator
+            mockMetaReaderWriter
         )
     }
 
     @Test
-    fun `𝕄 notify success 𝕎 write() {consent = pending}`(
-        @StringForgery data: String,
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String,
-        @Forgery file: File
-    ) {
+    fun `𝕄 provide no-op writer 𝕎 writeCurrentBatch() {consent=not_granted}`() {
         // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
-        whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
-        whenever(mockBatchReaderWriter.writeData(file, serializedData, true)) doReturn true
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verify(mockListener).onDataWritten(eventId)
-        verifyNoMoreInteractions(mockListener)
-    }
-
-    @Test
-    fun `𝕄 notify success 𝕎 write() {consent = pending, empty array}`(
-        @StringForgery eventId: String,
-        @StringForgery batchMetadata: String
-    ) {
-        // Given
-        val serializedData = ByteArray(0)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verify(mockListener).onDataWritten(eventId)
-        verifyNoMoreInteractions(mockListener)
-    }
-
-    @Test
-    fun `𝕄 notify failure 𝕎 write() {consent = pending, no available file}`(
-        @StringForgery data: String,
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String
-    ) {
-        // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
-        whenever(mockPendingOrchestrator.getWritableFile()) doReturn null
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verify(mockListener).onDataWriteFailed(eventId)
-        verifyNoMoreInteractions(mockListener)
-    }
-
-    @Test
-    fun `𝕄 notify failure 𝕎 write() {consent = pending, item is too big}`(
-        @StringForgery data: String,
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String,
-        @Forgery file: File
-    ) {
-        // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
-        whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
-        val maxItemSize = serializedData.size - 1
-        whenever(mockFilePersistenceConfig.maxItemSize) doReturn maxItemSize.toLong()
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verify(mockListener).onDataWriteFailed(eventId)
-        verifyNoMoreInteractions(mockListener)
-        verify(mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            ConsentAwareStorage.ERROR_LARGE_DATA.format(
-                Locale.US,
-                serializedData.size,
-                maxItemSize
-            ),
-            null,
-            emptyMap()
-        )
-    }
-
-    @Test
-    fun `𝕄 notify failure 𝕎 write() {consent = pending, write operation failed}`(
-        @StringForgery data: String,
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String,
-        @Forgery file: File
-    ) {
-        // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
-        whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
-        whenever(mockBatchReaderWriter.writeData(file, serializedData, true)) doReturn false
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verify(mockListener).onDataWriteFailed(eventId)
-        verifyNoMoreInteractions(mockListener)
-    }
-
-    @Test
-    fun `𝕄 not read metadata 𝕎 currentMetadata() {consent = pending, no available file}`() {
-        // Given
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
-        whenever(mockPendingOrchestrator.getWritableFile()) doReturn null
-
-        // When
-        var meta: ByteArray? = null
-        testedStorage.writeCurrentBatch(sdkContext) {
-            meta = it.currentMetadata()
-        }
-
-        // Then
-        assertThat(meta).isNull()
-        verifyZeroInteractions(mockBatchReaderWriter, mockMetaReaderWriter)
-    }
-
-    @Test
-    fun `𝕄 not write metadata 𝕎 write() {consent = pending, no available file}`(
-        @StringForgery data: String,
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String
-    ) {
-        // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
-        whenever(mockPendingOrchestrator.getWritableFile()) doReturn null
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verifyZeroInteractions(mockBatchReaderWriter, mockMetaReaderWriter)
-    }
-
-    @Test
-    fun `𝕄 not write metadata 𝕎 write() {consent = pending, null or empty metadata}`(
-        @StringForgery data: String,
-        @StringForgery eventId: String,
-        @Forgery file: File,
-        forge: Forge
-    ) {
-        // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
-        val mockMetaFile: File = mock()
-        whenever(mockPendingOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
-        whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, forge.aNullable { ByteArray(0) }, mockListener)
-        }
-
-        // Then
-        verify(mockBatchReaderWriter).writeData(
-            file,
-            serializedData,
-            true
-        )
-        verifyNoMoreInteractions(mockBatchReaderWriter)
-        verifyZeroInteractions(mockMetaReaderWriter)
-    }
-
-    @Test
-    fun `𝕄 not write metadata 𝕎 write() {consent = pending, item is too big}`(
-        @StringForgery data: String,
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String,
-        @Forgery file: File
-    ) {
-        // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
-        val mockMetaFile: File = mock()
-        whenever(mockPendingOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
-        whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
-        val maxItemSize = serializedData.size - 1
-        whenever(mockFilePersistenceConfig.maxItemSize) doReturn maxItemSize.toLong()
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verifyZeroInteractions(mockMetaReaderWriter)
-    }
-
-    @Test
-    fun `𝕄 not write metadata 𝕎 write() {consent = pending, write operation failed}`(
-        @StringForgery data: String,
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String,
-        @Forgery file: File
-    ) {
-        // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
-        val mockMetaFile: File = mock()
-        whenever(mockPendingOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
-        whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
-        whenever(mockBatchReaderWriter.writeData(file, serializedData, true)) doReturn false
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verifyZeroInteractions(mockMetaReaderWriter)
-    }
-
-    @Test
-    fun `𝕄 provide no op writer 𝕎 writeCurrentBatch() {consent=not_granted}`(
-        @StringForgery data: String,
-        @StringForgery eventId: String
-    ) {
-        // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
+        val mockCallback = mock<(EventBatchWriter) -> Unit>()
         val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.NOT_GRANTED)
 
         // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            val meta = it.currentMetadata()
-            val updatedMeta = meta?.reversedArray()
-            it.write(serializedData, eventId, updatedMeta, mockListener)
-        }
+        testedStorage.writeCurrentBatch(sdkContext, mockCallback)
 
         // Then
+        argumentCaptor<EventBatchWriter> {
+            verify(mockCallback).invoke(capture())
+            assertThat(firstValue).isInstanceOf(NoOpEventBatchWriter::class.java)
+        }
         verifyZeroInteractions(
             mockBatchReaderWriter,
             mockMetaReaderWriter,
             mockGrantedOrchestrator,
             mockPendingOrchestrator
         )
-    }
-
-    @Test
-    fun `𝕄 do nothing 𝕎 write() {consent=not_granted, empty array}`(
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String
-    ) {
-        // Given
-        val serializedData = ByteArray(0)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.NOT_GRANTED)
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verifyZeroInteractions(
-            mockBatchReaderWriter,
-            mockMetaReaderWriter,
-            mockGrantedOrchestrator,
-            mockPendingOrchestrator
-        )
-    }
-
-    @Test
-    fun `𝕄 notify success 𝕎 write() {consent = not_granted}`(
-        @StringForgery data: String,
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String
-    ) {
-        // Given
-        val serializedData = data.toByteArray(Charsets.UTF_8)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.NOT_GRANTED)
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verify(mockListener).onDataWritten(eventId)
-        verifyNoMoreInteractions(mockListener)
-    }
-
-    @Test
-    fun `𝕄 notify success 𝕎 write() {consent = not_granted, empty array}`(
-        @StringForgery batchMetadata: String,
-        @StringForgery eventId: String
-    ) {
-        // Given
-        val serializedData = ByteArray(0)
-        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.NOT_GRANTED)
-
-        // When
-        testedStorage.writeCurrentBatch(sdkContext) {
-            it.write(serializedData, eventId, serializedBatchMetadata, mockListener)
-        }
-
-        // Then
-        verify(mockListener).onDataWritten(eventId)
-        verifyNoMoreInteractions(mockListener)
-    }
-
-    @Test
-    fun `𝕄 not read metadata 𝕎 currentMetadata() {consent = not_granted}`() {
-        // Given
-        val sdkContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.NOT_GRANTED)
-
-        // When
-        var meta: ByteArray? = null
-        testedStorage.writeCurrentBatch(sdkContext) {
-            meta = it.currentMetadata()
-        }
-
-        // Then
-        assertThat(meta).isNull()
-        verifyZeroInteractions(mockBatchReaderWriter, mockMetaReaderWriter)
     }
 
     // endregion
+
+    @Test
+    fun `𝕄 log error 𝕎 writeCurrentBatch() { task was rejected }`() {
+        // Given
+        val mockExecutor = mock<Executor>()
+        whenever(mockExecutor.execute(any())) doThrow RejectedExecutionException()
+        testedStorage = ConsentAwareStorage(
+            // same thread executor
+            mockExecutor,
+            mockGrantedOrchestrator,
+            mockPendingOrchestrator,
+            mockBatchReaderWriter,
+            mockMetaReaderWriter,
+            mockFileMover,
+            mockInternalLogger,
+            mockFilePersistenceConfig
+        )
+
+        // When
+        testedStorage.writeCurrentBatch(fakeDatadogContext) {
+            // no-op
+        }
+
+        // Then
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.MAINTAINER),
+            eq(ConsentAwareStorage.ERROR_WRITE_CONTEXT_EXECUTION_REJECTED),
+            isA<RejectedExecutionException>(),
+            eq(emptyMap())
+        )
+    }
 
     // region readNextBatch
 
@@ -979,6 +405,7 @@ internal class ConsentAwareStorageTest {
     ) {
         // Given
         testedStorage = ConsentAwareStorage(
+            executor = Runnable::run,
             mockGrantedOrchestrator,
             mockPendingOrchestrator,
             mockBatchReaderWriter,
@@ -1147,6 +574,7 @@ internal class ConsentAwareStorageTest {
     ) {
         // Given
         testedStorage = ConsentAwareStorage(
+            executor = Runnable::run,
             mockGrantedOrchestrator,
             mockPendingOrchestrator,
             mockBatchReaderWriter,
@@ -1188,6 +616,7 @@ internal class ConsentAwareStorageTest {
     ) {
         // Given
         testedStorage = ConsentAwareStorage(
+            executor = Runnable::run,
             mockGrantedOrchestrator,
             mockPendingOrchestrator,
             mockBatchReaderWriter,

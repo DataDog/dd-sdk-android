@@ -14,9 +14,9 @@ import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.BatchWriterListener
+import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.ContextProvider
-import com.datadog.android.v2.core.internal.storage.BatchWriter
 import com.datadog.android.v2.core.internal.storage.Storage
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
@@ -70,7 +70,7 @@ internal class BatchFileDataWriterTest {
     lateinit var mockContextProvider: ContextProvider
 
     @Mock
-    lateinit var mockBatchWriter: BatchWriter
+    lateinit var mockBatchWriter: EventBatchWriter
 
     @Forgery
     lateinit var fakeThrowable: Throwable
@@ -98,7 +98,7 @@ internal class BatchFileDataWriterTest {
             listener.onDataWritten(eventId)
         }
 
-        val callback = it.getArgument<(BatchWriter) -> Unit>(1)
+        val callback = it.getArgument<(EventBatchWriter) -> Unit>(1)
         callback.invoke(mockBatchWriter)
     }
 
@@ -109,7 +109,7 @@ internal class BatchFileDataWriterTest {
             listener.onDataWriteFailed(eventId)
         }
 
-        val callback = it.getArgument<(BatchWriter) -> Unit>(1)
+        val callback = it.getArgument<(EventBatchWriter) -> Unit>(1)
         callback.invoke(mockBatchWriter)
     }
 

@@ -15,7 +15,7 @@ interface FeatureScope {
     /**
      * Utility to write an event, asynchronously.
      * @param callback an operation called with an up-to-date [DatadogContext]
-     * and an [EventBatchWriter]
+     * and an [EventBatchWriter]. Callback will be executed on a worker thread from I/O pool
      */
     fun withWriteContext(callback: (DatadogContext, EventBatchWriter) -> Unit)
 

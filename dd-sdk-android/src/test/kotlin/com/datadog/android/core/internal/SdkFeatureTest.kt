@@ -28,7 +28,6 @@ import com.datadog.android.v2.core.internal.NoOpContextProvider
 import com.datadog.android.v2.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.v2.core.internal.net.DataOkHttpUploader
 import com.datadog.android.v2.core.internal.net.NoOpDataUploader
-import com.datadog.android.v2.core.internal.storage.BatchWriter
 import com.datadog.android.v2.core.internal.storage.NoOpStorage
 import com.datadog.android.v2.core.internal.storage.Storage
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -270,7 +269,7 @@ internal class SdkFeatureTest {
     @Test
     fun `𝕄 provide write context 𝕎 withWriteContext(callback)`(
         @Forgery fakeContext: DatadogContext,
-        @Mock mockBatchWriter: BatchWriter
+        @Mock mockBatchWriter: EventBatchWriter
     ) {
         // Given
         testedFeature.storage = mockStorage
@@ -278,7 +277,7 @@ internal class SdkFeatureTest {
         whenever(coreFeature.mockInstance.contextProvider.context) doReturn fakeContext
 
         whenever(mockStorage.writeCurrentBatch(eq(fakeContext), any())) doAnswer {
-            val storageCallback = it.getArgument<(BatchWriter) -> Unit>(1)
+            val storageCallback = it.getArgument<(EventBatchWriter) -> Unit>(1)
             storageCallback.invoke(mockBatchWriter)
         }
 
