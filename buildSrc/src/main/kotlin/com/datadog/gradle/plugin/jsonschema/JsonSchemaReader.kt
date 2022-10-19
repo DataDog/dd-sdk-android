@@ -272,6 +272,9 @@ class JsonSchemaReader(
             generateTypeAllOf(typeName, definition.allOf, fromFile)
         } else if (!definition.oneOf.isNullOrEmpty()) {
             generateTypeOneOf(typeName, definition.oneOf, definition.description, fromFile)
+        } else if (!definition.anyOf.isNullOrEmpty()) {
+            // for now let's consider anyOf to be equivalent to oneOf
+            generateTypeOneOf(typeName, definition.anyOf, definition.description, fromFile)
         } else if (!definition.ref.isNullOrBlank()) {
             val refDefinition = findDefinitionReference(definition.ref, fromFile)
             if (refDefinition != null) {
@@ -304,9 +307,10 @@ class JsonSchemaReader(
             TypeDefinition.Null(description.orEmpty())
         } else if (options.size == 1) {
             options.first()
-        } else if (asArray != null && options.all { it == asArray || it == asArray.items }) {
-            // we're in a case with `oneOf(<T>, Array<T>)`
+        } else if (asArray != null) {
+            // we're (probably) in a case with `oneOf(<T>, Array<T>)`
             // because we can't make a type matching both, we simplify it to be always an array
+            logger.warn("Simplifying a 'oneOf' constraint to $asArray")
             asArray
         } else if (options.all { it is TypeDefinition.Class }) {
             TypeDefinition.OneOfClass(
