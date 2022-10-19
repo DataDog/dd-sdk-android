@@ -80,7 +80,7 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
                     additionalProperties = exhaustiveAttributes()
                 )
             },
-            action = forge.aNullable { ErrorEvent.Action(getForgery<UUID>().toString()) },
+            action = forge.aNullable { ErrorEvent.Action(aList { getForgery<UUID>().toString() }) },
             application = ErrorEvent.Application(forge.getForgery<UUID>().toString()),
             service = forge.aNullable { anAlphabeticalString() },
             session = ErrorEvent.ErrorEventSession(

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "_common-schema.json",
+  "$id": "rum/_common-schema.json",
   "title": "CommonProperties",
   "type": "object",
   "description": "Schema of common properties of RUM events",

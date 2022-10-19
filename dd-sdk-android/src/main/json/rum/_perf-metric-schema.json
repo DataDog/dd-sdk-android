@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "_perf-metric-schema.json",
+  "$id": "rum/_perf-metric-schema.json",
   "title": "RumPerfMetric",
   "type": "object",
   "description": "Schema of properties for a technical performance metric",

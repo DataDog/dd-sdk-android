@@ -167,7 +167,7 @@ class ClassDeserializerGenerator(
     ) {
         val opt = if (nullable) "?" else ""
         beginControlFlow(
-            "$assignee = $getter$opt.asJsonArray$opt.let { %L ->",
+            "$assignee = $getter$opt.asJsonArray$opt.let·{·%L·->",
             Identifier.PARAM_JSON_ARRAY
         )
         val collectionClassName: ClassName = if (arrayType.uniqueItems) {
