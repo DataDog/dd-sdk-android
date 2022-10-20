@@ -14,7 +14,7 @@ import kotlin.jvm.Throws
 
 public data class Conflict(
     public val type: ConflictType? = null,
-    public val user: User? = null
+    public val user: User? = null,
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
@@ -60,7 +60,7 @@ public data class Conflict(
     }
 
     public data class ConflictType(
-        public val id: String? = null
+        public val id: String? = null,
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()
@@ -100,7 +100,7 @@ public data class Conflict(
 
     public data class User(
         public val name: String? = null,
-        public val type: UserType? = null
+        public val type: UserType? = null,
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()
@@ -145,11 +145,11 @@ public data class Conflict(
     }
 
     public enum class UserType(
-        private val jsonValue: String
+        private val jsonValue: String,
     ) {
         UNKNOWN("unknown"),
         CUSTOMER("customer"),
-        PARTNER("partner")
+        PARTNER("partner"),
         ;
 
         public fun toJson(): JsonElement = JsonPrimitive(jsonValue)

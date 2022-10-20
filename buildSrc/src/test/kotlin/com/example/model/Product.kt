@@ -16,7 +16,7 @@ import kotlin.jvm.Throws
 public data class Product(
     public val productId: Long,
     public val productName: String,
-    public val price: Number
+    public val price: Number,
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()

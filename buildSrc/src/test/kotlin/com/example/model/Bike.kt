@@ -22,7 +22,7 @@ public data class Bike(
     public val price: Number = 55.5,
     public val frameMaterial: FrameMaterial? = FrameMaterial.LIGHT_ALUMINIUM,
     public val inStock: Boolean = true,
-    public val color: Color = Color.LIME_GREEN
+    public val color: Color = Color.LIME_GREEN,
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
@@ -76,11 +76,11 @@ public data class Bike(
     }
 
     public enum class FrameMaterial(
-        private val jsonValue: String
+        private val jsonValue: String,
     ) {
         CARBON("carbon"),
         LIGHT_ALUMINIUM("light_aluminium"),
-        IRON("iron")
+        IRON("iron"),
         ;
 
         public fun toJson(): JsonElement = JsonPrimitive(jsonValue)
@@ -94,14 +94,14 @@ public data class Bike(
     }
 
     public enum class Color(
-        private val jsonValue: String
+        private val jsonValue: String,
     ) {
         RED("red"),
         AMBER("amber"),
         GREEN("green"),
         DARK_BLUE("dark_blue"),
         LIME_GREEN("lime green"),
-        SUNBURST_YELLOW("sunburst-yellow")
+        SUNBURST_YELLOW("sunburst-yellow"),
         ;
 
         public fun toJson(): JsonElement = JsonPrimitive(jsonValue)

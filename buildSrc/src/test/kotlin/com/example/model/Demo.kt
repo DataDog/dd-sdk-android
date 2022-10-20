@@ -26,7 +26,7 @@ public data class Demo(
     public val ni: Long? = null,
     public val nn: Number? = null,
     public val nb: Boolean? = null,
-    public val nl: Nothing? = null
+    public val nl: Nothing? = null,
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()

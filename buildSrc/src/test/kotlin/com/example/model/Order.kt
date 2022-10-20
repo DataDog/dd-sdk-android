@@ -16,7 +16,7 @@ import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
 public data class Order(
-    public val sizes: Set<Size>
+    public val sizes: Set<Size>,
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
@@ -60,13 +60,13 @@ public data class Order(
     }
 
     public enum class Size(
-        private val jsonValue: String
+        private val jsonValue: String,
     ) {
         X_SMALL("x small"),
         SMALL("small"),
         MEDIUM("medium"),
         LARGE("large"),
-        X_LARGE("x large")
+        X_LARGE("x large"),
         ;
 
         public fun toJson(): JsonElement = JsonPrimitive(jsonValue)

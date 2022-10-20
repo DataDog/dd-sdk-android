@@ -20,7 +20,7 @@ public data class Company(
     public val name: String? = null,
     public val ratings: Ratings? = null,
     public val information: Information? = null,
-    public val additionalProperties: Map<String, Any?> = emptyMap()
+    public val additionalProperties: Map<String, Any?> = emptyMap(),
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
@@ -84,7 +84,7 @@ public data class Company(
 
     public data class Ratings(
         public val global: Long,
-        public val additionalProperties: Map<String, Long> = emptyMap()
+        public val additionalProperties: Map<String, Long> = emptyMap(),
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()
@@ -136,7 +136,7 @@ public data class Company(
     public data class Information(
         public val date: Long? = null,
         public val priority: Long? = null,
-        public val additionalProperties: Map<String, Any?> = emptyMap()
+        public val additionalProperties: Map<String, Any?> = emptyMap(),
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()

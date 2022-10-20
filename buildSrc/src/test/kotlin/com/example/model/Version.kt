@@ -15,7 +15,7 @@ import kotlin.jvm.Throws
 
 public data class Version(
     public val id: Id,
-    public val date: Date? = null
+    public val date: Date? = null,
 ) {
     public val version: Long = 42L
 
