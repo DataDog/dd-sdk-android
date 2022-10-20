@@ -651,6 +651,7 @@ datadog:
       - "java.util.concurrent.CopyOnWriteArraySet.removeAll(kotlin.collections.Collection):java.lang.NullPointerException,java.lang.ClassCastException"
       - "java.util.concurrent.CountDownLatch.await(kotlin.Long, java.util.concurrent.TimeUnit):java.lang.InterruptedException"
       - "java.util.concurrent.CountDownLatch.constructor(kotlin.Int):java.lang.IllegalArgumentException"
+      - "java.util.concurrent.Executor.execute(java.lang.Runnable):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       - "java.util.concurrent.ExecutorService.awaitTermination(kotlin.Long, java.util.concurrent.TimeUnit):java.lang.InterruptedException"
       - "java.util.concurrent.ExecutorService.execute(java.lang.Runnable):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       - "java.util.concurrent.ExecutorService.submit(java.lang.Runnable):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"

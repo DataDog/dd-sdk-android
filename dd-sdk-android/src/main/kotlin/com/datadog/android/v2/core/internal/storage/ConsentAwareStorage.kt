@@ -14,13 +14,16 @@ import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.v2.api.BatchWriterListener
+import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import java.io.File
 import java.util.Locale
+import java.util.concurrent.Executor
+import java.util.concurrent.RejectedExecutionException
 
 internal class ConsentAwareStorage(
+    private val executor: Executor,
     private val grantedOrchestrator: FileOrchestrator,
     private val pendingOrchestrator: FileOrchestrator,
     private val batchEventsReaderWriter: BatchFileReaderWriter,
@@ -39,7 +42,7 @@ internal class ConsentAwareStorage(
     @WorkerThread
     override fun writeCurrentBatch(
         datadogContext: DatadogContext,
-        callback: (BatchWriter) -> Unit
+        callback: (EventBatchWriter) -> Unit
     ) {
         val orchestrator = when (datadogContext.trackingConsent) {
             TrackingConsent.GRANTED -> grantedOrchestrator
@@ -47,48 +50,38 @@ internal class ConsentAwareStorage(
             TrackingConsent.NOT_GRANTED -> null
         }
 
-        val batchFile = orchestrator?.getWritableFile()
-        val metadataFile = if (batchFile != null) orchestrator.getMetadataFile(batchFile) else null
-
-        val writer = object : BatchWriter {
-            @WorkerThread
-            override fun currentMetadata(): ByteArray? {
-                if (orchestrator == null || metadataFile == null) return null
-
-                return batchMetadataReaderWriter.readData(metadataFile)
-            }
-
-            @WorkerThread
-            override fun write(
-                event: ByteArray,
-                eventId: String,
-                newMetadata: ByteArray?,
-                listener: BatchWriterListener
-            ) {
-                // prevent useless operation for empty event / null orchestrator
-                if (event.isEmpty() || orchestrator == null) {
-                    listener.onDataWritten(eventId)
-                    return
-                }
-
-                if (!checkEventSize(event.size)) {
-                    listener.onDataWriteFailed(eventId)
-                    return
-                }
-
-                if (batchFile != null &&
-                    batchEventsReaderWriter.writeData(batchFile, event, true)
-                ) {
-                    if (newMetadata?.isNotEmpty() == true && metadataFile != null) {
-                        writeBatchMetadata(metadataFile, newMetadata)
-                    }
-                    listener.onDataWritten(eventId)
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall") // command is never null
+            executor.execute {
+                val batchFile = orchestrator?.getWritableFile()
+                val metadataFile = if (batchFile != null) {
+                    orchestrator.getMetadataFile(batchFile)
                 } else {
-                    listener.onDataWriteFailed(eventId)
+                    null
                 }
+                val writer = if (orchestrator == null || batchFile == null) {
+                    NoOpEventBatchWriter()
+                } else {
+                    FileEventBatchWriter(
+                        batchFile = batchFile,
+                        metadataFile = metadataFile,
+                        eventsWriter = batchEventsReaderWriter,
+                        metadataReaderWriter = batchMetadataReaderWriter,
+                        filePersistenceConfig = filePersistenceConfig,
+                        internalLogger = internalLogger
+                    )
+                }
+                callback.invoke(writer)
             }
+        } catch (rje: RejectedExecutionException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                ERROR_WRITE_CONTEXT_EXECUTION_REJECTED,
+                rje,
+                emptyMap()
+            )
         }
-        callback.invoke(writer)
     }
 
     /** @inheritdoc */
@@ -166,39 +159,6 @@ internal class ConsentAwareStorage(
         }
     }
 
-    private fun checkEventSize(eventSize: Int): Boolean {
-        if (eventSize > filePersistenceConfig.maxItemSize) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                ERROR_LARGE_DATA.format(
-                    Locale.US,
-                    eventSize,
-                    filePersistenceConfig.maxItemSize
-                ),
-                null,
-                emptyMap()
-            )
-            return false
-        }
-        return true
-    }
-
-    @WorkerThread
-    private fun writeBatchMetadata(metadataFile: File, metadata: ByteArray) {
-        val result =
-            batchMetadataReaderWriter.writeData(metadataFile, metadata, false)
-        if (!result) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                WARNING_METADATA_WRITE_FAILED.format(Locale.US, metadataFile.path),
-                null,
-                emptyMap()
-            )
-        }
-    }
-
     @WorkerThread
     private fun deleteBatch(batch: Batch) {
         deleteBatch(batch.file, batch.metaFile)
@@ -244,7 +204,7 @@ internal class ConsentAwareStorage(
 
     companion object {
         internal const val WARNING_DELETE_FAILED = "Unable to delete file: %s"
-        internal const val ERROR_LARGE_DATA = "Can't write data with size %d (max item size is %d)"
-        internal const val WARNING_METADATA_WRITE_FAILED = "Unable to write metadata file: %s"
+        internal const val ERROR_WRITE_CONTEXT_EXECUTION_REJECTED =
+            "Execution in the write context was rejected."
     }
 }

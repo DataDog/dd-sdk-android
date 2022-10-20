@@ -9,7 +9,7 @@ package com.datadog.android.v2.api
 import androidx.annotation.WorkerThread
 
 /**
- * Utility allowing [FeatureScope] to write events in the storage to be uploaded asynchronously.
+ * Writer allowing [FeatureScope] to write events in the storage exposing current batch metadata.
  */
 interface EventBatchWriter {
 

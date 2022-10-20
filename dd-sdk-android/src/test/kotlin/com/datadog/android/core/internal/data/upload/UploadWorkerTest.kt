@@ -17,6 +17,7 @@ import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.NoOpSdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.DatadogCore
@@ -25,7 +26,6 @@ import com.datadog.android.v2.core.internal.net.DataUploader
 import com.datadog.android.v2.core.internal.storage.BatchConfirmation
 import com.datadog.android.v2.core.internal.storage.BatchId
 import com.datadog.android.v2.core.internal.storage.BatchReader
-import com.datadog.android.v2.core.internal.storage.BatchWriter
 import com.datadog.android.v2.core.internal.storage.Storage
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -630,7 +630,7 @@ internal class UploadWorkerTest {
     ) : Storage {
         override fun writeCurrentBatch(
             datadogContext: DatadogContext,
-            callback: (BatchWriter) -> Unit
+            callback: (EventBatchWriter) -> Unit
         ) {
             fail("we don't expect this one to be called")
         }

@@ -8,7 +8,7 @@ package com.datadog.android.core.internal.utils
 
 import com.datadog.android.log.internal.utils.errorWithTelemetry
 import java.util.Locale
-import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executor
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit
 
 internal const val ERROR_TASK_REJECTED = "Unable to schedule %s task on the executor"
 
-internal fun ExecutorService.executeSafe(operationName: String, runnable: Runnable) {
+internal fun Executor.executeSafe(operationName: String, runnable: Runnable) {
     try {
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         execute(runnable)
