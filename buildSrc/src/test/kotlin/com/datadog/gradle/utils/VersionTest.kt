@@ -88,4 +88,11 @@ class VersionTest {
         val expected = "3.12.7-dev"
         assert(name == expected) { " expected name to be $expected but was $name" }
     }
+
+    @Test
+    fun addSuffixForSnapshot() {
+        val name = Version(4, 11, 5, Version.Type.Snapshot).name
+        val expected = "4.11.5-SNAPSHOT"
+        assert(name == expected) { " expected name to be $expected but was $name" }
+    }
 }
