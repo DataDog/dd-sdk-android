@@ -362,7 +362,7 @@ internal open class RumViewScope(
                 type = errorType,
                 sourceType = event.sourceType.toSchemaSourceType()
             ),
-            action = context.actionId?.let { ErrorEvent.Action(it) },
+            action = context.actionId?.let { ErrorEvent.Action(listOf(it)) },
             view = ErrorEvent.View(
                 id = context.viewId.orEmpty(),
                 name = context.viewName,
@@ -780,7 +780,7 @@ internal open class RumViewScope(
                 duration = event.durationNs,
                 isFrozenFrame = isFrozenFrame
             ),
-            action = context.actionId?.let { LongTaskEvent.Action(it) },
+            action = context.actionId?.let { LongTaskEvent.Action(listOf(it)) },
             view = LongTaskEvent.View(
                 id = context.viewId.orEmpty(),
                 name = context.viewName,

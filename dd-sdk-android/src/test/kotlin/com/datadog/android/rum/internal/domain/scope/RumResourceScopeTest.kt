@@ -48,6 +48,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -219,6 +220,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasRulePsr(null)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
@@ -281,6 +283,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasRulePsr(null)
                     hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
                     hasProviderDomain(URL(fakeUrl).host)
                     hasLiteSessionPlan()
@@ -357,6 +360,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasRulePsr(null)
                     hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
                     hasProviderDomain(brokenUrl)
                     hasLiteSessionPlan()
@@ -388,6 +392,7 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long,
         @StringForgery(type = StringForgeryType.HEXADECIMAL) fakeSpanId: String,
         @StringForgery(type = StringForgeryType.HEXADECIMAL) fakeTraceId: String,
+        @FloatForgery(0f, 1f) fakeRulePsr: Float,
         forge: Forge
     ) {
         // Given
@@ -398,6 +403,7 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(attributes)
         attributes[RumAttributes.TRACE_ID] = fakeTraceId
         attributes[RumAttributes.SPAN_ID] = fakeSpanId
+        attributes[RumAttributes.RULE_PSR] = fakeRulePsr
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
@@ -424,6 +430,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(fakeTraceId)
                     hasSpanId(fakeSpanId)
+                    hasRulePsr(fakeRulePsr)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
@@ -487,6 +494,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasRulePsr(null)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
@@ -541,6 +549,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasRulePsr(null)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
@@ -705,6 +714,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasRulePsr(null)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
@@ -769,6 +779,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasRulePsr(null)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
@@ -834,6 +845,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasRulePsr(null)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
@@ -900,6 +912,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasTraceId(null)
                     hasSpanId(null)
+                    hasRulePsr(null)
                     doesNotHaveAResourceProvider()
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)

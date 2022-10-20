@@ -25,6 +25,7 @@ import com.datadog.gradle.plugin.jsonschema.Message
 import com.datadog.gradle.plugin.jsonschema.NoOpLogger
 import com.datadog.gradle.plugin.jsonschema.Opus
 import com.datadog.gradle.plugin.jsonschema.Order
+import com.datadog.gradle.plugin.jsonschema.Paper
 import com.datadog.gradle.plugin.jsonschema.Person
 import com.datadog.gradle.plugin.jsonschema.Product
 import com.datadog.gradle.plugin.jsonschema.Shipping
@@ -117,6 +118,7 @@ class FileGeneratorTest(
                 arrayOf(Message, "Message"),
                 arrayOf(Order, "Order"),
                 arrayOf(Opus, "Opus"),
+                arrayOf(Paper, "Paper"),
                 arrayOf(Product, "Product"),
                 arrayOf(Shipping, "Shipping"),
                 arrayOf(Style, "Style"),

@@ -16,7 +16,7 @@ import com.squareup.kotlinpoet.ARRAY
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.MAP
+import com.squareup.kotlinpoet.MUTABLE_MAP
 import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -138,7 +138,7 @@ class ClassGenerator(
         val isNullable =
             property.optional && property.type !is TypeDefinition.Constant && property.type !is TypeDefinition.Null
         val refName = if (isNullable) {
-            beginControlFlow("%L?.let { %LNonNull ->", propertyName, propertyName)
+            beginControlFlow("%L?.let·{·%LNonNull·->", propertyName, propertyName)
             "${propertyName}NonNull"
         } else {
             propertyName
@@ -309,7 +309,7 @@ class ClassGenerator(
             val mapType = definition.additionalProperties.additionalPropertyType(rootTypeName)
             constructorBuilder.addParameter(
                 ParameterSpec.builder(Identifier.PARAM_ADDITIONAL_PROPS, mapType)
-                    .defaultValue("emptyMap()")
+                    .defaultValue("mutableMapOf()")
                     .build()
             )
         }
@@ -445,7 +445,7 @@ class ClassGenerator(
         } else {
             ANY.copy(nullable = true)
         }
-        return MAP.parameterizedBy(STRING, valueType)
+        return MUTABLE_MAP.parameterizedBy(STRING, valueType)
     }
 
     // endregion

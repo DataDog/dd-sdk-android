@@ -222,7 +222,7 @@ sealed class TypeDefinition {
 
     data class OneOfClass(
         val name: String,
-        val options: List<TypeDefinition>,
+        val options: List<Class>,
         override val description: String = ""
     ) : TypeDefinition() {
 

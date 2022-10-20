@@ -17,17 +17,23 @@ internal class CompanyForgeryFactory : ForgeryFactory<Company> {
             ratings = forge.aNullable {
                 Company.Ratings(
                     global = aLong(),
-                    additionalProperties = aMap { anAlphabeticalString() to aLong() }
+                    additionalProperties = aMap {
+                        anAlphabeticalString() to aLong()
+                    }.toMutableMap()
                 )
             },
             information = forge.aNullable {
                 Company.Information(
                     forge.aNullable { forge.aLong() },
                     forge.aNullable { forge.aLong() },
-                    additionalProperties = forge.aMap { anAlphabeticalString() to aMap { anHexadecimalString() to aLong() } }
+                    additionalProperties = forge.aMap {
+                        anAlphabeticalString() to aMap { anHexadecimalString() to aLong() }
+                    }.toMutableMap()
                 )
             },
-            additionalProperties = forge.aMap { anAlphabeticalString() to aNullable { anHexadecimalString() } }
+            additionalProperties = forge.aMap {
+                anAlphabeticalString() to aNullable { anHexadecimalString() }
+            }.toMutableMap()
         )
     }
 }

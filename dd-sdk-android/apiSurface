@@ -146,7 +146,7 @@ data class com.datadog.android.core.model.NetworkInfo
     companion object 
       fun fromJson(kotlin.String): Connectivity
 data class com.datadog.android.core.model.UserInfo
-  constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+  constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
   fun toJson(): com.google.gson.JsonElement
   companion object 
     fun fromJson(kotlin.String): UserInfo
@@ -239,7 +239,7 @@ class com.datadog.android.log.Logger
   fun removeTag(String)
   fun removeTagsWithKey(String)
 data class com.datadog.android.log.model.LogEvent
-  constructor(Status, kotlin.String, kotlin.String, kotlin.String, Logger, Usr? = null, Network? = null, Error? = null, kotlin.String, kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+  constructor(Status, kotlin.String, kotlin.String, kotlin.String, Logger, Usr? = null, Network? = null, Error? = null, kotlin.String, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
   fun toJson(): com.google.gson.JsonElement
   companion object 
     fun fromJson(kotlin.String): LogEvent
@@ -249,7 +249,7 @@ data class com.datadog.android.log.model.LogEvent
     companion object 
       fun fromJson(kotlin.String): Logger
   data class Usr
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Usr
@@ -334,6 +334,7 @@ object com.datadog.android.rum.RumAttributes
   const val INTERNAL_ERROR_IS_CRASH: String
   const val TRACE_ID: String
   const val SPAN_ID: String
+  const val RULE_PSR: String
   const val RESOURCE_TIMINGS: String
   const val ERROR_RESOURCE_METHOD: String
   const val ERROR_RESOURCE_STATUS_CODE: String
@@ -411,6 +412,16 @@ interface com.datadog.android.rum.RumSessionListener
 class com.datadog.android.rum._RumInternalProxy
   fun addLongTask(Long, String)
   fun updatePerformanceMetric(RumPerformanceMetric, Double)
+data class com.datadog.android.rum.model.ActionChildProperties
+  constructor(Action? = null)
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): ActionChildProperties
+  data class Action
+    constructor(kotlin.collections.List<kotlin.String>)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Action
 data class com.datadog.android.rum.model.ActionEvent
   constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, ActionEventSession, Source? = null, View, Usr? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, ActionEventAction)
   val type: kotlin.String
@@ -433,7 +444,7 @@ data class com.datadog.android.rum.model.ActionEvent
     companion object 
       fun fromJson(kotlin.String): View
   data class Usr
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Usr
@@ -474,7 +485,7 @@ data class com.datadog.android.rum.model.ActionEvent
     companion object 
       fun fromJson(kotlin.String): Dd
   data class Context
-    constructor(kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Context
@@ -626,7 +637,7 @@ data class com.datadog.android.rum.model.ActionEvent
     companion object 
       fun fromJson(kotlin.String): Type
 data class com.datadog.android.rum.model.ErrorEvent
-  constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, ErrorEventSession, ErrorEventSource? = null, View, Usr? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Error, Action? = null)
+  constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, ErrorEventSession, ErrorEventSource? = null, View, Usr? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Action? = null, Error)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 
@@ -647,7 +658,7 @@ data class com.datadog.android.rum.model.ErrorEvent
     companion object 
       fun fromJson(kotlin.String): View
   data class Usr
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Usr
@@ -688,20 +699,20 @@ data class com.datadog.android.rum.model.ErrorEvent
     companion object 
       fun fromJson(kotlin.String): Dd
   data class Context
-    constructor(kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Context
-  data class Error
-    constructor(kotlin.String? = null, kotlin.String, ErrorSource, kotlin.String? = null, kotlin.Boolean? = null, kotlin.String? = null, Handling? = null, kotlin.String? = null, SourceType? = null, Resource? = null)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Error
   data class Action
-    constructor(kotlin.String)
+    constructor(kotlin.collections.List<kotlin.String>)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Action
+  data class Error
+    constructor(kotlin.String? = null, kotlin.String, ErrorSource, kotlin.String? = null, kotlin.collections.List<Cause>? = null, kotlin.Boolean? = null, kotlin.String? = null, Handling? = null, kotlin.String? = null, SourceType? = null, Resource? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Error
   data class Cellular
     constructor(kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
@@ -717,6 +728,11 @@ data class com.datadog.android.rum.model.ErrorEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): DdSession
+  data class Cause
+    constructor(kotlin.String, kotlin.String? = null, kotlin.String? = null, ErrorSource)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Cause
   data class Resource
     constructor(Method, kotlin.Long, kotlin.String, Provider? = null)
     fun toJson(): com.google.gson.JsonElement
@@ -807,6 +823,7 @@ data class com.datadog.android.rum.model.ErrorEvent
     - IOS
     - REACT_NATIVE
     - FLUTTER
+    - ROKU
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): SourceType
@@ -848,7 +865,7 @@ data class com.datadog.android.rum.model.ErrorEvent
     companion object 
       fun fromJson(kotlin.String): ProviderType
 data class com.datadog.android.rum.model.LongTaskEvent
-  constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, LongTaskEventSession, Source? = null, View, Usr? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, LongTask, Action? = null)
+  constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, LongTaskEventSession, Source? = null, View, Usr? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Action? = null, LongTask)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 
@@ -869,7 +886,7 @@ data class com.datadog.android.rum.model.LongTaskEvent
     companion object 
       fun fromJson(kotlin.String): View
   data class Usr
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Usr
@@ -904,26 +921,26 @@ data class com.datadog.android.rum.model.LongTaskEvent
     companion object 
       fun fromJson(kotlin.String): Device
   data class Dd
-    constructor(DdSession? = null, kotlin.String? = null)
+    constructor(DdSession? = null, kotlin.String? = null, kotlin.Boolean? = null)
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Dd
   data class Context
-    constructor(kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Context
+  data class Action
+    constructor(kotlin.collections.List<kotlin.String>)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Action
   data class LongTask
     constructor(kotlin.String? = null, kotlin.Long, kotlin.Boolean? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): LongTask
-  data class Action
-    constructor(kotlin.String)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Action
   data class Cellular
     constructor(kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
@@ -1000,7 +1017,7 @@ data class com.datadog.android.rum.model.LongTaskEvent
     companion object 
       fun fromJson(kotlin.String): Plan
 data class com.datadog.android.rum.model.ResourceEvent
-  constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, ResourceEventSession, Source? = null, View, Usr? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Resource, Action? = null)
+  constructor(kotlin.Long, Application, kotlin.String? = null, kotlin.String? = null, ResourceEventSession, Source? = null, View, Usr? = null, Connectivity? = null, Display? = null, Synthetics? = null, CiTest? = null, Os? = null, Device? = null, Dd, Context? = null, Action? = null, Resource)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 
@@ -1021,7 +1038,7 @@ data class com.datadog.android.rum.model.ResourceEvent
     companion object 
       fun fromJson(kotlin.String): View
   data class Usr
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Usr
@@ -1056,26 +1073,26 @@ data class com.datadog.android.rum.model.ResourceEvent
     companion object 
       fun fromJson(kotlin.String): Device
   data class Dd
-    constructor(DdSession? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+    constructor(DdSession? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Number? = null, kotlin.Boolean? = null)
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Dd
   data class Context
-    constructor(kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Context
+  data class Action
+    constructor(kotlin.collections.List<kotlin.String>)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Action
   data class Resource
     constructor(kotlin.String? = null, ResourceType, Method? = null, kotlin.String, kotlin.Long? = null, kotlin.Long, kotlin.Long? = null, Redirect? = null, Dns? = null, Connect? = null, Ssl? = null, FirstByte? = null, Download? = null, Provider? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Resource
-  data class Action
-    constructor(kotlin.String)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Action
   data class Cellular
     constructor(kotlin.String? = null, kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
@@ -1259,7 +1276,7 @@ data class com.datadog.android.rum.model.ViewEvent
     companion object 
       fun fromJson(kotlin.String): View
   data class Usr
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Usr
@@ -1300,12 +1317,12 @@ data class com.datadog.android.rum.model.ViewEvent
     companion object 
       fun fromJson(kotlin.String): Dd
   data class Context
-    constructor(kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Context
   data class CustomTimings
-    constructor(kotlin.collections.Map<kotlin.String, kotlin.Long> = emptyMap())
+    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.Long> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): CustomTimings
@@ -1676,12 +1693,12 @@ data class com.datadog.android.tracing.model.SpanEvent
   companion object 
     fun fromJson(kotlin.String): SpanEvent
   data class Metrics
-    constructor(kotlin.Long? = null, kotlin.collections.Map<kotlin.String, kotlin.Number> = emptyMap())
+    constructor(kotlin.Long? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Number> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Metrics
   data class Meta
-    constructor(kotlin.String, Dd, Span, Tracer, Usr, Network, kotlin.collections.Map<kotlin.String, kotlin.String> = emptyMap())
+    constructor(kotlin.String, Dd, Span, Tracer, Usr, Network, kotlin.collections.MutableMap<kotlin.String, kotlin.String> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Meta
@@ -1700,7 +1717,7 @@ data class com.datadog.android.tracing.model.SpanEvent
     companion object 
       fun fromJson(kotlin.String): Tracer
   data class Usr
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.Map<kotlin.String, kotlin.Any?> = emptyMap())
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Usr

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "view-schema.json",
+  "$id": "rum/view-schema.json",
   "title": "RumViewEvent",
   "type": "object",
   "description": "Schema of all properties of a View event",
