@@ -89,7 +89,7 @@ static-analysis:
   variables: 
     GRADLE_OPTS: "-Xmx2560m -Dorg.gradle.daemon=false -Dorg.gradle.logging.stacktrace=all"
   trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/release/static-analysis.yml"
+    include: "https://gitlab-templates.ddbuild.io/mobile/v10617593-67a1de90/static-analysis.yml"
     strategy: depend
 
 analysis:nightly-tests-coverage:
