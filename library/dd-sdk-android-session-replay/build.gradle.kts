@@ -43,6 +43,8 @@ android {
         setLibraryVersion()
     }
 
+    namespace = "com.datadog.android.sessionreplay"
+
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
     }
