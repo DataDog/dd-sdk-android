@@ -11,10 +11,8 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.serializeToByteArray
 import com.datadog.android.log.Logger
-import com.datadog.android.v2.api.BatchWriterListener
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.Storage
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * A [DataWriter] storing data in batch files.
@@ -25,25 +23,6 @@ internal open class BatchFileDataWriter<T : Any>(
     internal val serializer: Serializer<T>,
     internal val internalLogger: Logger
 ) : DataWriter<T> {
-
-    // TODO RUMM-0000 this may grow up the heap for big data chunks/slow IO. Can this be avoided?
-    private val pendingWriteEvents: MutableMap<String, Pair<T, ByteArray>> = ConcurrentHashMap()
-
-    private val writeListener = object : BatchWriterListener {
-        @WorkerThread
-        override fun onDataWritten(eventId: String) {
-            pendingWriteEvents.remove(eventId)?.let {
-                this@BatchFileDataWriter.onDataWritten(it.first, it.second)
-            }
-        }
-
-        @WorkerThread
-        override fun onDataWriteFailed(eventId: String) {
-            pendingWriteEvents.remove(eventId)?.let {
-                this@BatchFileDataWriter.onDataWriteFailed(it.first)
-            }
-        }
-    }
 
     // region DataWriter
 
@@ -85,10 +64,13 @@ internal open class BatchFileDataWriter<T : Any>(
 
         synchronized(this) {
             val context = contextProvider.context
-            val eventId = System.identityHashCode(data).toString()
             storage.writeCurrentBatch(context) {
-                pendingWriteEvents[eventId] = data to byteArray
-                it.write(byteArray, eventId, null, writeListener)
+                val result = it.write(byteArray, null)
+                if (result) {
+                    onDataWritten(data, byteArray)
+                } else {
+                    onDataWriteFailed(data)
+                }
             }
         }
     }

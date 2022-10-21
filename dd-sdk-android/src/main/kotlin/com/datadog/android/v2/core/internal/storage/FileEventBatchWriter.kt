@@ -10,7 +10,6 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.FileWriter
-import com.datadog.android.v2.api.BatchWriterListener
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.InternalLogger
 import java.io.File
@@ -35,28 +34,24 @@ internal class FileEventBatchWriter(
     @WorkerThread
     override fun write(
         event: ByteArray,
-        eventId: String,
-        newMetadata: ByteArray?,
-        listener: BatchWriterListener
-    ) {
+        newMetadata: ByteArray?
+    ): Boolean {
         // prevent useless operation for empty event
         if (event.isEmpty()) {
-            listener.onDataWritten(eventId)
-            return
+            return true
         }
 
         if (!checkEventSize(event.size)) {
-            listener.onDataWriteFailed(eventId)
-            return
+            return false
         }
 
-        if (eventsWriter.writeData(batchFile, event, true)) {
+        return if (eventsWriter.writeData(batchFile, event, true)) {
             if (newMetadata?.isNotEmpty() == true && metadataFile != null) {
                 writeBatchMetadata(metadataFile, newMetadata)
             }
-            listener.onDataWritten(eventId)
+            true
         } else {
-            listener.onDataWriteFailed(eventId)
+            false
         }
     }
 
