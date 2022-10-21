@@ -148,7 +148,7 @@ same feature from a Java source code.
 Our coding style is ensured by [KtLint](https://ktlint.github.io/), with the
 default settings. A KtLint check is ran on every PR to ensure that all new code
 follow this rule.
-Current KtLint version: 0.45.1
+Current KtLint version: 0.47.1
 
 Classes should group their methods in folding regions named after the declaring
 class. Private methods should be grouped in an `Internal` named folding region. 

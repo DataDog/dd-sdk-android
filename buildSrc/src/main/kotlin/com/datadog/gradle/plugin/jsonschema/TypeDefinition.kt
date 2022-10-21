@@ -154,7 +154,9 @@ sealed class TypeDefinition {
         fun renameRecursive(duplicates: Set<String>, parentName: String): TypeDefinition {
             val newName = if (name in duplicates) {
                 "$parentName$name"
-            } else name
+            } else {
+                name
+            }
 
             val newProperties = properties.map {
                 if (it.type is Class) {

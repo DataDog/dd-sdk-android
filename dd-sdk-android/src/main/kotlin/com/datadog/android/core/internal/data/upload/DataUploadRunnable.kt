@@ -37,7 +37,9 @@ internal class DataUploadRunnable(
     override fun run() {
         val batch = if (isNetworkAvailable() && isSystemReady()) {
             reader.lockAndReadNext()
-        } else null
+        } else {
+            null
+        }
 
         if (batch != null) {
             consumeBatch(batch)

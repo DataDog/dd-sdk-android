@@ -184,7 +184,6 @@ class JsonSchemaReader(
         typeName: String,
         fromFile: File
     ): TypeDefinition {
-
         if (definition == null) return TypeDefinition.Null()
 
         return when (definition.type) {
@@ -342,7 +341,6 @@ class JsonSchemaReader(
         definition: JsonDefinition,
         fromFile: File
     ): TypeDefinition {
-
         val properties = mutableListOf<TypeProperty>()
         definition.properties?.forEach { (name, property) ->
             val required = (definition.required != null) && (name in definition.required)

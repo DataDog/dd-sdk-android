@@ -70,7 +70,6 @@ class FileGenerator(
         val topLevelTypeBuilder = generateTypeSpec(definition, rootTypeName)
 
         while (knownTypes.any(isUnwrittenClass)) {
-
             val nestedClasses = knownTypes.filter(isUnwrittenClass).toSet()
             nestedClasses.forEach {
                 topLevelTypeBuilder.addType(generateTypeSpec(it.type, rootTypeName).build())

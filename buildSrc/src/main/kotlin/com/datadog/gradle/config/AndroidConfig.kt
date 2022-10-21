@@ -13,6 +13,7 @@ object AndroidConfig {
 
     const val TARGET_SDK = 31
     const val MIN_SDK = 19
+
     // this is temporary, until we bump min sdk. Compose requires min sdk 21.
     const val MIN_SDK_FOR_COMPOSE = 21
     const val BUILD_TOOLS_VERSION = "31.0.0"

@@ -328,7 +328,6 @@ class ClassDeserializerGenerator(
         hasKnownProperties: Boolean,
         rootTypeName: String
     ) {
-
         addStatement(
             "val %L = mutableMapOf<%T, %T>()",
             Identifier.PARAM_ADDITIONAL_PROPS,

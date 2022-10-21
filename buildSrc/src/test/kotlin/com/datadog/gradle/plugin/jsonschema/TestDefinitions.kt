@@ -361,7 +361,7 @@ val Employee = TypeDefinition.Class(
                         TypeDefinition.Primitive(JsonPrimitiveType.STRING),
                         false
                     ),
-                    TypeProperty("address", Address, false),
+                    TypeProperty("address", Address, false)
                 )
             ),
             optional = true

@@ -34,9 +34,9 @@ internal class BroadcastReceiverNetworkInfoProvider(
     private var networkInfo: NetworkInfo =
         NetworkInfo()
         set(value) {
-                field = value
-                dataWriter.write(field)
-            }
+            field = value
+            dataWriter.write(field)
+        }
 
     // region BroadcastReceiver
 

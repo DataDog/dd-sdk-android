@@ -239,17 +239,16 @@ nightlyTestsCoverageConfig(threshold = 0.92f)
 kover {
     isDisabled = false
     disabledProjects = setOf(
-            "instrumented",
-            "sample",
-            "tools",
-            "integration",
-            "nightly-tests",
-            "kotlin",
-            "detekt",
-            "javabackport",
-            "noopfactory",
-            "unit"
+        "instrumented",
+        "sample",
+        "tools",
+        "integration",
+        "nightly-tests",
+        "kotlin",
+        "detekt",
+        "javabackport",
+        "noopfactory",
+        "unit"
     )
     instrumentAndroidPackage = false
 }
-

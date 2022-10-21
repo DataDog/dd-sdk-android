@@ -117,9 +117,13 @@ internal class LogcatLogHandlerTest {
                 // generate from ignored packages prefixes pattern
                 val packagePrefix = LogcatLogHandler.IGNORED_PACKAGE_PREFIXES.random()
                 packagePrefix + ".${anAlphabeticalString(Case.ANY).replaceFirstChar {
-                    if (it.isLowerCase()) it.titlecase(
-                        Locale.US
-                    ) else it.toString()
+                    if (it.isLowerCase()) {
+                        it.titlecase(
+                            Locale.US
+                        )
+                    } else {
+                        it.toString()
+                    }
                 }}"
             }
 

@@ -17,6 +17,7 @@ internal val NULL_MAP_VALUE = Object()
 internal fun <K, V> Iterable<Pair<K, V>>.toMutableMap(): MutableMap<K, V> {
     return toMap(mutableMapOf())
 }
+
 /**
  * @return the [MutableMap] if its not `null`, or the empty [MutableMap] otherwise.
  */

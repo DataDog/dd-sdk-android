@@ -134,7 +134,6 @@ class ClassGenerator(
     private fun FunSpec.Builder.appendPropertySerialization(
         property: TypeProperty
     ) {
-
         val propertyName = property.name.variableName()
         val isNullable =
             property.optional && property.type !is TypeDefinition.Constant && property.type !is TypeDefinition.Null
@@ -390,7 +389,6 @@ class ClassGenerator(
     }
 
     private fun generateReservedPropertiesArray(definition: TypeDefinition.Class): PropertySpec {
-
         val propertyNames = definition.properties.joinToString(", ") { "\"${it.name}\"" }
 
         val propertyBuilder = PropertySpec.builder(

@@ -15,7 +15,6 @@ import java.io.File
 class TransitiveDependenciesPlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
-
         target.tasks.register(TASK_NAME, TransitiveDependenciesTask::class.java) {
             outputFile = File(target.projectDir, FILE_NAME)
         }

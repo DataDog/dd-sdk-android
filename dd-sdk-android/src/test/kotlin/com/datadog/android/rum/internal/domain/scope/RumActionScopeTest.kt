@@ -2094,7 +2094,6 @@ internal class RumActionScopeTest {
         @Forgery throwable: Throwable,
         @StringForgery name: String
     ) {
-
         // Given
         testedScope = RumActionScope(
             mockParentScope,
