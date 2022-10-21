@@ -6,11 +6,7 @@
 
 package com.datadog.android.v2.core.internal.storage
 
-import com.datadog.android.v2.api.BatchWriterListener
 import com.datadog.android.v2.api.EventBatchWriter
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -44,22 +40,15 @@ internal class NoOpEventBatchWriterTest {
     fun `𝕄 notify about successful write 𝕎 write()`(
         @StringForgery fakeData: String,
         @StringForgery fakeMetadata: String,
-        @StringForgery fakeEventId: String,
         forge: Forge
     ) {
-        // Given
-        val mockListener = mock<BatchWriterListener>()
-
         // When
-        testedWriter.write(
+        val result = testedWriter.write(
             fakeData.toByteArray(),
-            fakeEventId,
             forge.aNullable { fakeMetadata.toByteArray() },
-            mockListener
         )
 
         // Then
-        verify(mockListener).onDataWritten(fakeEventId)
-        verifyNoMoreInteractions(mockListener)
+        assertThat(result).isTrue
     }
 }

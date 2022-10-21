@@ -13,7 +13,6 @@ import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.BatchWriterListener
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.ContextProvider
@@ -92,22 +91,14 @@ internal class BatchFileDataWriterTest {
     }
 
     private val stubSuccessfulWriteAnswer = Answer {
-        whenever(mockBatchWriter.write(any(), any(), anyOrNull(), any())) doAnswer {
-            val eventId = it.getArgument<String>(1)
-            val listener = it.getArgument<BatchWriterListener>(3)
-            listener.onDataWritten(eventId)
-        }
+        whenever(mockBatchWriter.write(any(), anyOrNull())) doReturn true
 
         val callback = it.getArgument<(EventBatchWriter) -> Unit>(1)
         callback.invoke(mockBatchWriter)
     }
 
     private val stubFailingWriteAnswer = Answer {
-        whenever(mockBatchWriter.write(any(), any(), anyOrNull(), any())) doAnswer {
-            val eventId = it.getArgument<String>(1)
-            val listener = it.getArgument<BatchWriterListener>(3)
-            listener.onDataWriteFailed(eventId)
-        }
+        whenever(mockBatchWriter.write(any(), anyOrNull())) doReturn false
 
         val callback = it.getArgument<(EventBatchWriter) -> Unit>(1)
         callback.invoke(mockBatchWriter)
@@ -159,9 +150,7 @@ internal class BatchFileDataWriterTest {
         verify(mockBatchWriter)
             .write(
                 eq(serialized),
-                any(),
-                isNull(),
-                any()
+                isNull()
             )
     }
 
@@ -181,9 +170,7 @@ internal class BatchFileDataWriterTest {
             verify(mockBatchWriter, times(data.size))
                 .write(
                     capture(),
-                    any(),
                     isNull(),
-                    any()
                 )
             assertThat(allValues)
                 .containsExactlyElementsOf(
