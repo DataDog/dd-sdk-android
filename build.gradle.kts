@@ -1,4 +1,5 @@
 import com.datadog.gradle.config.nightlyTestsCoverageConfig
+import com.datadog.gradle.config.AndroidConfig
 
 /*
  * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
@@ -11,6 +12,8 @@ plugins {
     id("io.github.gradle-nexus.publish-plugin")
     id("org.jetbrains.kotlinx.kover")
 }
+
+version = AndroidConfig.VERSION.name
 
 buildscript {
     repositories {
