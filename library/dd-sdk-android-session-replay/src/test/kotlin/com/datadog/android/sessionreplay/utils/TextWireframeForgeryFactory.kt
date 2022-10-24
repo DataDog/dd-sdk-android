@@ -53,6 +53,9 @@ internal class TextWireframeForgeryFactory :
                         )
                     }
                 )
+            },
+            clip = forge.aNullable {
+                getForgery()
             }
         )
     }

@@ -8,19 +8,10 @@ package com.datadog.android.sessionreplay.processor
 
 import com.datadog.android.sessionreplay.model.MobileSegment
 
-internal fun MobileSegment.Wireframe.bounds(): Bounds {
+internal fun MobileSegment.Wireframe.copy(clip: MobileSegment.WireframeClip?):
+    MobileSegment.Wireframe {
     return when (this) {
-        is MobileSegment.Wireframe.ShapeWireframe -> this.bounds()
-        is MobileSegment.Wireframe.TextWireframe -> this.bounds()
+        is MobileSegment.Wireframe.ShapeWireframe -> this.copy(clip = clip)
+        is MobileSegment.Wireframe.TextWireframe -> this.copy(clip = clip)
     }
 }
-
-internal fun MobileSegment.Wireframe.ShapeWireframe.bounds(): Bounds {
-    return Bounds(x, y, width, height)
-}
-
-internal fun MobileSegment.Wireframe.TextWireframe.bounds(): Bounds {
-    return Bounds(x, y, width, height)
-}
-
-internal data class Bounds(val x: Long, val y: Long, val width: Long, val height: Long)

@@ -36,11 +36,6 @@ internal class SnapshotProcessor(
 
     @MainThread
     override fun process(node: Node, orientationChanged: OrientationChanged?) {
-        if (node.wireframes.isEmpty()) {
-            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
-            return
-        }
-
         buildRunnable { timestamp, newContext, currentContext ->
             Runnable {
                 @Suppress("ThreadSafety") // this runs inside an executor

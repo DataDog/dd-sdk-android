@@ -34,6 +34,9 @@ internal class ShapeWireframeMutationForgeryFactory :
                     forge.aStringMatching("#[0-9A-F]{6}FF"),
                     forge.aPositiveLong(strict = true)
                 )
+            },
+            clip = forge.aNullable {
+                getForgery()
             }
         )
     }
