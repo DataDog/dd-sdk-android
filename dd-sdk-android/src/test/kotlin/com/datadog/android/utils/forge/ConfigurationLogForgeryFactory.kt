@@ -7,7 +7,6 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.plugin.DatadogPlugin
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -17,7 +16,7 @@ internal class ConfigurationLogForgeryFactory :
     override fun getForgery(forge: Forge): Configuration.Feature.Logs {
         return Configuration.Feature.Logs(
             endpointUrl = forge.aStringMatching("http(s?)://[a-z]+\\.com/\\w+"),
-            plugins = forge.aList { mock<DatadogPlugin>() },
+            plugins = forge.aList { mock() },
             logsEventMapper = mock()
         )
     }

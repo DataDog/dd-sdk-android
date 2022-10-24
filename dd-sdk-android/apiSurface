@@ -88,7 +88,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun disableInteractionTracking(): Builder
     fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
     fun useViewTrackingStrategy(com.datadog.android.rum.tracking.ViewTrackingStrategy?): Builder
-    fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
+    DEPRECATED fun addPlugin(com.datadog.android.plugin.DatadogPlugin, com.datadog.android.plugin.Feature): Builder
     fun setBatchSize(BatchSize): Builder
     fun setUploadFrequency(UploadFrequency): Builder
     fun sampleRumSessions(Float): Builder
@@ -287,7 +287,7 @@ data class com.datadog.android.log.model.LogEvent
       fun fromJson(kotlin.String): Status
 data class com.datadog.android.plugin.DatadogContext
   constructor(DatadogRumContext? = null)
-interface com.datadog.android.plugin.DatadogPlugin : com.datadog.android.privacy.TrackingConsentProviderCallback
+DEPRECATED interface com.datadog.android.plugin.DatadogPlugin : com.datadog.android.privacy.TrackingConsentProviderCallback
   fun register(DatadogPluginConfig)
   fun unregister()
   fun onContextChanged(DatadogContext)
