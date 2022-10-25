@@ -104,6 +104,9 @@ internal class RumActionScopeTest {
     @Mock
     lateinit var mockFeaturesContextResolver: FeaturesContextResolver
 
+    @BoolForgery
+    var fakeTrackFrustrations: Boolean = true
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockFeaturesContextResolver.resolveHasReplay(fakeDatadogContext))
@@ -139,7 +142,8 @@ internal class RumActionScopeTest {
             TEST_MAX_DURATION_MS,
             mockRumEventSourceProvider,
             mockContextProvider,
-            mockFeaturesContextResolver
+            mockFeaturesContextResolver,
+            true
         )
     }
 
@@ -1247,7 +1251,8 @@ internal class RumActionScopeTest {
             TEST_MAX_DURATION_MS,
             mockRumEventSourceProvider,
             mockContextProvider,
-            mockFeaturesContextResolver
+            mockFeaturesContextResolver,
+            fakeTrackFrustrations
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.globalAttributes.remove(it) }
 
@@ -2120,6 +2125,92 @@ internal class RumActionScopeTest {
         verify(mockParentScope, never()).handleEvent(any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isNull()
+    }
+
+    @Test
+    fun `𝕄 send Action without frustrations 𝕎 handleEvent(AddError+Tap) {trackFrustration = false}`(
+        @StringForgery message: String,
+        @Forgery source: RumErrorSource,
+        @Forgery throwable: Throwable,
+        @StringForgery name: String
+    ) {
+        // Given
+        testedScope = RumActionScope(
+            mockParentScope,
+            false,
+            fakeEventTime,
+            fakeType,
+            fakeName,
+            fakeAttributes,
+            fakeServerOffset,
+            TEST_INACTIVITY_MS,
+            TEST_MAX_DURATION_MS,
+            mockRumEventSourceProvider,
+            mockContextProvider,
+            trackFrustrations = false
+        )
+
+        // When
+        fakeEvent = RumRawEvent.AddError(
+            message,
+            source,
+            throwable,
+            null,
+            false,
+            emptyMap()
+        )
+        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        Thread.sleep(TEST_INACTIVITY_MS * 2)
+
+        fakeEvent = RumRawEvent.StartAction(
+            RumActionType.TAP,
+            name,
+            false,
+            emptyMap()
+        )
+        val result2 = testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ActionEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasId(testedScope.actionId)
+                    hasTimestamp(resolveExpectedTimestamp())
+                    hasType(fakeType)
+                    hasTargetName(fakeName)
+                    hasDurationGreaterThan(1)
+                    hasResourceCount(0)
+                    hasErrorCount(1)
+                    hasCrashCount(0)
+                    hasLongTaskCount(0)
+                    hasNoFrustration()
+                    hasView(fakeParentContext)
+                    hasUserInfo(fakeDatadogContext.userInfo)
+                    hasApplicationId(fakeParentContext.applicationId)
+                    hasSessionId(fakeParentContext.sessionId)
+                    hasLiteSessionPlan()
+                    containsExactlyContextAttributes(fakeAttributes)
+                    hasSource(fakeSourceActionEvent)
+                    hasDeviceInfo(
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+                    )
+                    hasOsInfo(
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
+                    )
+                }
+        }
+        verify(mockParentScope, never()).handleEvent(any(), any())
+        verifyNoMoreInteractions(mockWriter)
+
+        assertThat(result).isSameAs(testedScope)
+        assertThat(result2).isNull()
     }
 
     // region Internal

@@ -512,9 +512,67 @@ internal class ViewEventAssert(actual: ViewEvent) :
         assertThat(actual.session.hasReplay)
             .overridingErrorMessage(
                 "Expected event data to have hasReplay $hasReplay " +
-                    "but was ${actual.session.hasReplay}"
+                        "but was ${actual.session.hasReplay}"
             )
             .isEqualTo(hasReplay)
+    }
+
+    fun hasFlutterBuildTime(value: ViewEvent.FlutterBuildTime?): ViewEventAssert {
+        performanceMetricsAreClose("flutterBuildTime", actual.view.flutterBuildTime, value)
+        return this
+    }
+
+    fun hasFlutterRasterTime(value: ViewEvent.FlutterBuildTime?): ViewEventAssert {
+        performanceMetricsAreClose("flutterRasterTime", actual.view.flutterRasterTime, value)
+        return this
+    }
+
+    fun hasJsRefreshRate(value: ViewEvent.FlutterBuildTime?): ViewEventAssert {
+        performanceMetricsAreClose("jsRefreshRate", actual.view.jsRefreshRate, value)
+        return this
+    }
+
+    private fun performanceMetricsAreClose(
+        metric: String,
+        actualBuildTime: ViewEvent.FlutterBuildTime?,
+        expectedBuildTime: ViewEvent.FlutterBuildTime?
+    ) {
+        if (actualBuildTime == null || expectedBuildTime == null) {
+            assertThat(actualBuildTime)
+                .overridingErrorMessage(
+                    "Expected the event data to have view.$metric of" +
+                        " $expectedBuildTime but was $actualBuildTime"
+                )
+                .isEqualTo(expectedBuildTime)
+        } else {
+            assertThat(actualBuildTime.min.toDouble())
+                .overridingErrorMessage(
+                    "Expected the event data to have view.$metric.min to be close to" +
+                        "${expectedBuildTime.min} but was ${actualBuildTime.min}"
+                )
+                .isCloseTo(expectedBuildTime.min.toDouble(), Percentage.withPercentage(0.1))
+
+            assertThat(actualBuildTime.max.toDouble())
+                .overridingErrorMessage(
+                    "Expected the event data to have view.$metric.max to be close to" +
+                        " ${expectedBuildTime.max} but was ${actualBuildTime.max}"
+                )
+                .isCloseTo(expectedBuildTime.max.toDouble(), Percentage.withPercentage(0.1))
+
+            assertThat(actualBuildTime.average.toDouble())
+                .overridingErrorMessage(
+                    "Expected the event data to have view.$metric.min to be close to" +
+                        " ${expectedBuildTime.average} but was ${actualBuildTime.average}"
+                )
+                .isCloseTo(expectedBuildTime.average.toDouble(), Percentage.withPercentage(0.1))
+
+            assertThat(actualBuildTime.metricMax)
+                .overridingErrorMessage(
+                    "Expected the event data to have view.$metric.metricMax to be equal to" +
+                        " ${expectedBuildTime.metricMax} but was ${actualBuildTime.metricMax}"
+                )
+                .isEqualTo(expectedBuildTime.metricMax)
+        }
     }
 
     companion object {

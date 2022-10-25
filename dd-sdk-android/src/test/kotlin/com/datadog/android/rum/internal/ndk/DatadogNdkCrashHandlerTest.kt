@@ -428,7 +428,7 @@ internal class DatadogNdkCrashHandlerTest {
                         fakeViewEvent.usr?.id,
                         fakeViewEvent.usr?.name,
                         fakeViewEvent.usr?.email,
-                        fakeViewEvent.usr?.additionalProperties ?: emptyMap()
+                        fakeViewEvent.usr?.additionalProperties ?: mutableMapOf()
                     )
                 )
                 .hasErrorType(ndkCrashLog.signalName)
@@ -512,7 +512,7 @@ internal class DatadogNdkCrashHandlerTest {
                         fakeViewEvent.usr?.id,
                         fakeViewEvent.usr?.name,
                         fakeViewEvent.usr?.email,
-                        fakeViewEvent.usr?.additionalProperties ?: emptyMap()
+                        fakeViewEvent.usr?.additionalProperties ?: mutableMapOf()
                     )
                 )
                 .hasErrorType(ndkCrashLog.signalName)

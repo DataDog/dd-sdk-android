@@ -171,6 +171,7 @@ internal class RumResourceScope(
         attributes.putAll(GlobalRum.globalAttributes)
         val traceId = attributes.remove(RumAttributes.TRACE_ID)?.toString()
         val spanId = attributes.remove(RumAttributes.SPAN_ID)?.toString()
+        val rulePsr = attributes.remove(RumAttributes.RULE_PSR) as? Number
 
         val sdkContext = contextProvider.context
         val rumContext = getRumContext()
@@ -199,7 +200,7 @@ internal class RumResourceScope(
                 download = finalTiming?.download(),
                 provider = resolveResourceProvider()
             ),
-            action = rumContext.actionId?.let { ResourceEvent.Action(it) },
+            action = rumContext.actionId?.let { ResourceEvent.Action(listOf(it)) },
             view = ResourceEvent.View(
                 id = rumContext.viewId.orEmpty(),
                 name = rumContext.viewName,
@@ -209,7 +210,7 @@ internal class RumResourceScope(
                 id = user.id,
                 name = user.name,
                 email = user.email,
-                additionalProperties = user.additionalProperties
+                additionalProperties = user.additionalProperties.toMutableMap()
             ),
             connectivity = networkInfo.toResourceConnectivity(),
             application = ResourceEvent.Application(rumContext.applicationId),
@@ -235,6 +236,7 @@ internal class RumResourceScope(
             dd = ResourceEvent.Dd(
                 traceId = traceId,
                 spanId = spanId,
+                rulePsr = rulePsr,
                 session = ResourceEvent.DdSession(plan = ResourceEvent.Plan.PLAN_1)
             )
         )
@@ -296,7 +298,7 @@ internal class RumResourceScope(
                 type = errorType,
                 sourceType = ErrorEvent.SourceType.ANDROID
             ),
-            action = rumContext.actionId?.let { ErrorEvent.Action(it) },
+            action = rumContext.actionId?.let { ErrorEvent.Action(listOf(it)) },
             view = ErrorEvent.View(
                 id = rumContext.viewId.orEmpty(),
                 name = rumContext.viewName,
@@ -306,7 +308,7 @@ internal class RumResourceScope(
                 id = user.id,
                 name = user.name,
                 email = user.email,
-                additionalProperties = user.additionalProperties
+                additionalProperties = user.additionalProperties.toMutableMap()
             ),
             connectivity = networkInfo.toErrorConnectivity(),
             application = ErrorEvent.Application(rumContext.applicationId),

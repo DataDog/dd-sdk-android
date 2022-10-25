@@ -82,31 +82,41 @@ internal fun RumErrorSourceType.toSchemaSourceType(): ErrorEvent.SourceType {
 internal fun ResourceTiming.dns(): ResourceEvent.Dns? {
     return if (dnsStart > 0) {
         ResourceEvent.Dns(duration = dnsDuration, start = dnsStart)
-    } else null
+    } else {
+        null
+    }
 }
 
 internal fun ResourceTiming.connect(): ResourceEvent.Connect? {
     return if (connectStart > 0) {
         ResourceEvent.Connect(duration = connectDuration, start = connectStart)
-    } else null
+    } else {
+        null
+    }
 }
 
 internal fun ResourceTiming.ssl(): ResourceEvent.Ssl? {
     return if (sslStart > 0) {
         ResourceEvent.Ssl(duration = sslDuration, start = sslStart)
-    } else null
+    } else {
+        null
+    }
 }
 
 internal fun ResourceTiming.firstByte(): ResourceEvent.FirstByte? {
     return if (firstByteStart >= 0 && firstByteDuration > 0) {
         ResourceEvent.FirstByte(duration = firstByteDuration, start = firstByteStart)
-    } else null
+    } else {
+        null
+    }
 }
 
 internal fun ResourceTiming.download(): ResourceEvent.Download? {
     return if (downloadStart > 0) {
         ResourceEvent.Download(duration = downloadDuration, start = downloadStart)
-    } else null
+    } else {
+        null
+    }
 }
 
 internal fun RumActionType.toSchemaType(): ActionEvent.ActionEventActionType {

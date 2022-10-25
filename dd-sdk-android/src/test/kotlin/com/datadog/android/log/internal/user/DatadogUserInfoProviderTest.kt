@@ -99,7 +99,7 @@ internal class DatadogUserInfoProviderTest {
     ) {
         // Given
         testedProvider.setUserInfo(
-            userInfo.copy(additionalProperties = mapOf(key to value1))
+            userInfo.copy(additionalProperties = mutableMapOf(key to value1))
         )
 
         // When

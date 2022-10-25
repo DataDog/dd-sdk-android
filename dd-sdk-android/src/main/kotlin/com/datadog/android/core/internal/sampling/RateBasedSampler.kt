@@ -20,4 +20,8 @@ internal class RateBasedSampler(internal val sampleRate: Float) : Sampler {
         }
         return random.nextFloat() <= sampleRate
     }
+
+    override fun getSamplingRate(): Float? {
+        return sampleRate
+    }
 }

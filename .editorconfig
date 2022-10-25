@@ -1,0 +1,6 @@
+# Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+# This product includes software developed at Datadog (https://www.datadoghq.com/).
+# Copyright 2016-Present Datadog, Inc.
+
+[buildSrc/src/test/kotlin/com/example/model/*.kt]
+ktlint_disabled_rules = trailing-comma-on-call-site, trailing-comma-on-declaration-site

@@ -25,6 +25,7 @@ internal class ConfigurationRumForgeryFactory :
             rumEventMapper = mock(),
             longTaskTrackingStrategy = mock(),
             backgroundEventTracking = forge.aBool(),
+            trackFrustrations = forge.aBool(),
             vitalsMonitorUpdateFrequency = forge.aValueFrom(VitalsUpdateFrequency::class.java)
         )
     }

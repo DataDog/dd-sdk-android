@@ -26,6 +26,7 @@ import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.junit4.ForgeRule
@@ -175,6 +176,26 @@ class RumMonitorE2ETests {
             Thread.sleep(timing)
             measure(testMethodName) {
                 GlobalRum.get().addTiming(RUM_TIMING_NAME)
+            }
+        }
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.rum._RumInternalProxy#fun updatePerformanceMetric(RumPerformanceMetric, Double)
+     */
+    @Test
+    fun rum_rummonitor_updatePerformanceMetric() {
+        val testMethodName = "rum_rummonitor_updatePerformanceMetric"
+        val viewKey = forge.aViewKey()
+        val viewName = forge.aViewName()
+        val metric = forge.aValueFrom(RumPerformanceMetric::class.java)
+        val value = forge.aDouble(0.25, 1.5)
+        executeInsideView(viewKey, viewName, testMethodName) {
+            measure(testMethodName) {
+                GlobalRum.get()._getInternal()?.updatePerformanceMetric(
+                    metric = metric,
+                    value = value
+                )
             }
         }
     }

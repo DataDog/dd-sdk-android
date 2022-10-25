@@ -179,7 +179,9 @@ internal constructor(val key: String) : EventListener() {
         }
         val (sslS, sslD) = if (sslStart == 0L) {
             0L to 0L
-        } else (sslStart - callStart) to (sslEnd - sslStart)
+        } else {
+            (sslStart - callStart) to (sslEnd - sslStart)
+        }
         val (fbS, fbD) = if (headersStart == 0L) {
             0L to 0L
         } else {

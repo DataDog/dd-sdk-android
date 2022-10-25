@@ -356,8 +356,12 @@ val Employee = TypeDefinition.Class(
             type = TypeDefinition.Class(
                 name = "Contact",
                 properties = listOf(
-                    TypeProperty("phone", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
-                    TypeProperty("address", Address, false),
+                    TypeProperty(
+                        "phone",
+                        TypeDefinition.Primitive(JsonPrimitiveType.STRING),
+                        false
+                    ),
+                    TypeProperty("address", Address, false)
                 )
             ),
             optional = true
@@ -503,6 +507,18 @@ val Product = TypeDefinition.Class(
     )
 )
 
+val Paper = TypeDefinition.Class(
+    name = "Paper",
+    properties = listOf(
+        TypeProperty("title", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
+        TypeProperty(
+            "author",
+            TypeDefinition.Array(TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+            false
+        )
+    )
+)
+
 val Bike = TypeDefinition.Class(
     name = "Bike",
     properties = listOf(
@@ -614,7 +630,11 @@ val Household = TypeDefinition.Class(
                             properties = listOf(
                                 TypeProperty(
                                     name = "water",
-                                    type = TypeDefinition.Enum("Water", JsonType.STRING, listOf("salt", "fresh")),
+                                    type = TypeDefinition.Enum(
+                                        "Water",
+                                        JsonType.STRING,
+                                        listOf("salt", "fresh")
+                                    ),
                                     optional = false
                                 ),
                                 TypeProperty(
@@ -644,7 +664,11 @@ val Household = TypeDefinition.Class(
                                     ),
                                     optional = false
                                 ),
-                                TypeProperty("can_fly", TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN), false)
+                                TypeProperty(
+                                    "can_fly",
+                                    TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN),
+                                    false
+                                )
                             )
                         )
                     ),

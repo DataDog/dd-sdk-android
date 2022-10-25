@@ -181,7 +181,6 @@ class JsonSchemaReader(
         typeName: String,
         fromFile: File
     ): TypeDefinition {
-
         if (definition == null) return TypeDefinition.Null()
 
         return when (definition.type) {
@@ -292,13 +291,32 @@ class JsonSchemaReader(
         description: String?,
         fromFile: File
     ): TypeDefinition {
-        return TypeDefinition.OneOfClass(
-            typeName,
-            oneOf.mapIndexed { i, it ->
-                transform(it, it.title ?: "${typeName}_$i", fromFile)
-            },
-            description.orEmpty()
-        )
+        val options = oneOf.mapIndexed { i, it ->
+            transform(it, it.title ?: "${typeName}_$i", fromFile)
+        }
+
+        val asArray = options.filterIsInstance<TypeDefinition.Array>().firstOrNull()
+
+        return if (options.isEmpty()) {
+            TypeDefinition.Null(description.orEmpty())
+        } else if (options.size == 1) {
+            options.first()
+        } else if (asArray != null && options.all { it == asArray || it == asArray.items }) {
+            // we're in a case with `oneOf(<T>, Array<T>)`
+            // because we can't make a type matching both, we simplify it to be always an array
+            asArray
+        } else if (options.all { it is TypeDefinition.Class }) {
+            TypeDefinition.OneOfClass(
+                typeName,
+                options.filterIsInstance<TypeDefinition.Class>(),
+                description.orEmpty()
+            )
+        } else {
+            throw UnsupportedOperationException(
+                "Unable to implement `oneOf` constraint with types:\n  " +
+                    options.joinToString("\n  ")
+            )
+        }
     }
 
     private fun generateTypeAllOf(
@@ -320,7 +338,6 @@ class JsonSchemaReader(
         definition: JsonDefinition,
         fromFile: File
     ): TypeDefinition {
-
         val properties = mutableListOf<TypeProperty>()
         definition.properties?.forEach { (name, property) ->
             val required = (definition.required != null) && (name in definition.required)

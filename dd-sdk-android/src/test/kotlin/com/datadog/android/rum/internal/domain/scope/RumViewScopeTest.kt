@@ -22,6 +22,7 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
@@ -84,6 +85,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.Arrays
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -168,6 +170,9 @@ internal class RumViewScopeTest {
     @Mock
     lateinit var mockFeaturesContextResolver: FeaturesContextResolver
 
+    @BoolForgery
+    var fakeTrackFrustrations: Boolean = true
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeSourceViewEvent = forge.aNullable { aValueFrom(ViewEvent.Source::class.java) }
@@ -226,7 +231,8 @@ internal class RumViewScopeTest {
             mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
-            mockFeaturesContextResolver
+            mockFeaturesContextResolver,
+            trackFrustrations = true
         )
 
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
@@ -315,7 +321,8 @@ internal class RumViewScopeTest {
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
-            type = fakeViewEventType
+            type = fakeViewEventType,
+            trackFrustrations = fakeTrackFrustrations
         )
 
         // Then
@@ -396,7 +403,8 @@ internal class RumViewScopeTest {
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
-            type = expectedViewType
+            type = expectedViewType,
+            trackFrustrations = fakeTrackFrustrations
         )
 
         // When
@@ -562,7 +570,8 @@ internal class RumViewScopeTest {
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
-            type = viewType
+            type = viewType,
+            trackFrustrations = fakeTrackFrustrations
         )
 
         // When
@@ -607,7 +616,8 @@ internal class RumViewScopeTest {
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             mockFeaturesContextResolver,
-            type = viewType
+            type = viewType,
+            trackFrustrations = fakeTrackFrustrations
         )
 
         // When
@@ -1123,7 +1133,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockContextProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            featuresContextResolver = mockFeaturesContextResolver
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
 
@@ -1273,7 +1284,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockContextProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            featuresContextResolver = mockFeaturesContextResolver
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -1360,7 +1372,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockContextProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            featuresContextResolver = mockFeaturesContextResolver
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -5461,7 +5474,8 @@ internal class RumViewScopeTest {
             mockContextProvider,
             mockBuildSdkVersionProvider,
             featuresContextResolver = mockFeaturesContextResolver,
-            viewUpdatePredicate = mockViewUpdatePredicate
+            viewUpdatePredicate = mockViewUpdatePredicate,
+            trackFrustrations = fakeTrackFrustrations
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5550,7 +5564,8 @@ internal class RumViewScopeTest {
             mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
-            mockFeaturesContextResolver
+            mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5641,7 +5656,8 @@ internal class RumViewScopeTest {
             mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
-            mockFeaturesContextResolver
+            mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5732,7 +5748,8 @@ internal class RumViewScopeTest {
             mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
-            mockFeaturesContextResolver
+            mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5824,7 +5841,8 @@ internal class RumViewScopeTest {
             mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
-            mockFeaturesContextResolver
+            mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5916,7 +5934,8 @@ internal class RumViewScopeTest {
             mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
-            mockFeaturesContextResolver
+            mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -6038,6 +6057,185 @@ internal class RumViewScopeTest {
 
         // Then
         verifyZeroInteractions(mockWriter)
+    }
+
+    // endregion
+
+    // region Cross-platform performance metrics
+
+    @Test
+    fun `𝕄 send update 𝕎 handleEvent(UpdatePerformanceMetric+KeepAlive) { FlutterBuildTime }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val value = forge.aDouble()
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.UpdatePerformanceMetric(
+                metric = RumPerformanceMetric.FLUTTER_BUILD_TIME,
+                value = value
+            ),
+            mockWriter
+        )
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasFlutterBuildTime(ViewEvent.FlutterBuildTime(value, value, value, null))
+                    hasFlutterRasterTime(null)
+                    hasJsRefreshRate(null)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send update 𝕎 handleEvent(UpdatePerformanceMetric+KeepAlive) { FlutterRasterTime }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val value = forge.aDouble()
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.UpdatePerformanceMetric(
+                metric = RumPerformanceMetric.FLUTTER_RASTER_TIME,
+                value = value
+            ),
+            mockWriter
+        )
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasFlutterBuildTime(null)
+                    hasFlutterRasterTime(ViewEvent.FlutterBuildTime(value, value, value, null))
+                    hasJsRefreshRate(null)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send View update 𝕎 handleEvent(UpdatePerformanceMetric+KeepAlive) { JsRefreshRate }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val value = forge.aDouble()
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.UpdatePerformanceMetric(
+                metric = RumPerformanceMetric.JS_REFRESH_RATE,
+                value = value
+            ),
+            mockWriter
+        )
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasFlutterBuildTime(null)
+                    hasFlutterRasterTime(null)
+                    hasJsRefreshRate(ViewEvent.FlutterBuildTime(value, value, value, null))
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send View update with all values 𝕎 handleEvent(UpdatePerformanceMetric+KeepAlive)`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val flutterBuildTimes = DoubleArray(5) { forge.aDouble() }
+        val flutterRasterTimes = DoubleArray(5) { forge.aDouble() }
+        val jsRefreshRates = DoubleArray(5) { forge.aDouble() }
+
+        // WHEN
+        for (i in 0..4) {
+            testedScope.handleEvent(
+                RumRawEvent.UpdatePerformanceMetric(
+                    metric = RumPerformanceMetric.FLUTTER_BUILD_TIME,
+                    value = flutterBuildTimes[i]
+                ),
+                mockWriter
+            )
+            testedScope.handleEvent(
+                RumRawEvent.UpdatePerformanceMetric(
+                    metric = RumPerformanceMetric.FLUTTER_RASTER_TIME,
+                    value = flutterRasterTimes[i]
+                ),
+                mockWriter
+            )
+            testedScope.handleEvent(
+                RumRawEvent.UpdatePerformanceMetric(
+                    metric = RumPerformanceMetric.JS_REFRESH_RATE,
+                    value = jsRefreshRates[i]
+                ),
+                mockWriter
+            )
+        }
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // THEN
+        val flutterBuildTimeStats = Arrays.stream(flutterBuildTimes).summaryStatistics()
+        val flutterRasterTimeStats = Arrays.stream(flutterRasterTimes).summaryStatistics()
+        val jsRefreshRateStats = Arrays.stream(jsRefreshRates).summaryStatistics()
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasFlutterBuildTime(
+                        ViewEvent.FlutterBuildTime(
+                            min = flutterBuildTimeStats.min,
+                            max = flutterBuildTimeStats.max,
+                            average = flutterBuildTimeStats.average
+                        )
+                    )
+                    hasFlutterRasterTime(
+                        ViewEvent.FlutterBuildTime(
+                            min = flutterRasterTimeStats.min,
+                            max = flutterRasterTimeStats.max,
+                            average = flutterRasterTimeStats.average
+                        )
+                    )
+                    hasJsRefreshRate(
+                        ViewEvent.FlutterBuildTime(
+                            min = jsRefreshRateStats.min,
+                            max = jsRefreshRateStats.max,
+                            average = jsRefreshRateStats.average
+                        )
+                    )
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
     }
 
     // endregion
@@ -6235,7 +6433,8 @@ internal class RumViewScopeTest {
             mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
-            mockFeaturesContextResolver
+            mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations
         )
 
         // When

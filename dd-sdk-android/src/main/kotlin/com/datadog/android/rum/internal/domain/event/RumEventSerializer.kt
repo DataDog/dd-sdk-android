@@ -140,7 +140,7 @@ internal class RumEventSerializer(
         return extractKnownAttributes(sanitizedModel.toJson().asJsonObject).toString()
     }
 
-    private fun validateContextAttributes(attributes: Map<String, Any?>): Map<String, Any?> {
+    private fun validateContextAttributes(attributes: Map<String, Any?>): MutableMap<String, Any?> {
         return dataConstraints.validateAttributes(
             attributes.filterKeys {
                 it !in crossPlatformTransitAttributes
@@ -150,7 +150,7 @@ internal class RumEventSerializer(
         )
     }
 
-    private fun validateUserAttributes(attributes: Map<String, Any?>): Map<String, Any?> {
+    private fun validateUserAttributes(attributes: Map<String, Any?>): MutableMap<String, Any?> {
         return dataConstraints.validateAttributes(
             attributes,
             keyPrefix = USER_ATTRIBUTE_PREFIX,

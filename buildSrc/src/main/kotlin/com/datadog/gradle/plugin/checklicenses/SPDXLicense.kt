@@ -6,6 +6,7 @@
 
 package com.datadog.gradle.plugin.checklicenses
 
+@Suppress("ktlint:enum-entry-name-case")
 enum class SPDXLicense(val csvName: String) {
     _0BSD("0BSD"),
     AAL("AAL"),

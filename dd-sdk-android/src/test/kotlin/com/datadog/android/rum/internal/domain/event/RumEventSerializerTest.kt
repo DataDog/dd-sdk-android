@@ -562,7 +562,7 @@ internal class RumEventSerializerTest {
     fun `𝕄 keep known custom attributes as is 𝕎 serialize()`(forge: Forge) {
         val key = forge.anElementFrom(RumEventSerializer.knownAttributes)
         val value = forge.anAlphabeticalString()
-        val event = forge.forgeRumEvent(mapOf(key to value))
+        val event = forge.forgeRumEvent(mutableMapOf(key to value))
 
         val serialized = testedSerializer.serialize(event)
 
@@ -582,7 +582,7 @@ internal class RumEventSerializerTest {
             fakeBadKey.replaceRange(lastIndexOf..lastIndexOf, "_")
         val fakeAttributeValue = forge.anAlphabeticalString()
         val fakeEvent = forge.forgeRumEvent(
-            mapOf(
+            mutableMapOf(
                 fakeBadKey to fakeAttributeValue
             )
         )
@@ -611,7 +611,7 @@ internal class RumEventSerializerTest {
             fakeBadKey.replaceRange(lastIndexOf..lastIndexOf, "_")
         val fakeAttributeValue = forge.anAlphabeticalString()
         val fakeEvent = forge.forgeRumEvent(
-            userAttributes = mapOf(
+            userAttributes = mutableMapOf(
                 fakeBadKey to fakeAttributeValue
             )
         )
@@ -751,7 +751,7 @@ internal class RumEventSerializerTest {
         val fakeErrorSourceType = forge.aString()
         val fakeIsCrash = forge.aBool()
         val fakeEventWithInternalGlobalAttributes = forge.forgeRumEvent(
-            attributes = mapOf(
+            attributes = mutableMapOf(
                 RumAttributes.INTERNAL_ERROR_TYPE to fakeErrorType,
                 RumAttributes.INTERNAL_TIMESTAMP to fakeInternalTimestamp,
                 RumAttributes.INTERNAL_ERROR_SOURCE_TYPE to fakeErrorSourceType,
@@ -793,7 +793,7 @@ internal class RumEventSerializerTest {
         val fakeErrorSourceType = forge.aString()
         val fakeIsCrash = forge.aBool()
         val fakeEventWithInternalGlobalAttributes = forge.forgeRumEvent(
-            attributes = mapOf(
+            attributes = mutableMapOf(
                 RumAttributes.INTERNAL_ERROR_TYPE to fakeErrorType,
                 RumAttributes.INTERNAL_TIMESTAMP to fakeInternalTimestamp,
                 RumAttributes.INTERNAL_ERROR_SOURCE_TYPE to fakeErrorSourceType,
@@ -833,7 +833,7 @@ internal class RumEventSerializerTest {
         val fakeErrorSourceType = forge.aString()
         val fakeIsCrash = forge.aBool()
         val fakeEventWithInternalUserAttributes = forge.forgeRumEvent(
-            userAttributes = mapOf(
+            userAttributes = mutableMapOf(
                 RumAttributes.INTERNAL_ERROR_TYPE to fakeErrorType,
                 RumAttributes.INTERNAL_TIMESTAMP to fakeInternalTimestamp,
                 RumAttributes.INTERNAL_ERROR_SOURCE_TYPE to fakeErrorSourceType,
@@ -869,8 +869,8 @@ internal class RumEventSerializerTest {
     // region Internal
 
     private fun Forge.forgeRumEvent(
-        attributes: Map<String, Any?> = emptyMap(),
-        userAttributes: Map<String, Any?> = emptyMap()
+        attributes: MutableMap<String, Any?> = mutableMapOf(),
+        userAttributes: MutableMap<String, Any?> = mutableMapOf()
     ): Any {
         return when (this.anInt(min = 0, max = 5)) {
             1 -> this.getForgery(ViewEvent::class.java).let {

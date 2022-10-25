@@ -17,17 +17,23 @@ internal class CommentForgeryFactory : ForgeryFactory<Comment> {
             ratings = forge.aNullable {
                 Comment.Ratings(
                     global = aLong(),
-                    additionalProperties = aMap { anAlphabeticalString() to aLong() }
+                    additionalProperties = aMap {
+                        anAlphabeticalString() to aLong()
+                    }.toMutableMap()
                 )
             },
             flags = forge.aNullable {
                 Comment.Flags(
-                    additionalProperties = aMap { anAlphabeticalString() to aBool() }
+                    additionalProperties = aMap {
+                        anAlphabeticalString() to aBool()
+                    }.toMutableMap()
                 )
             },
             tags = forge.aNullable {
                 Comment.Tags(
-                    additionalProperties = aMap { anAlphabeticalString() to anHexadecimalString() }
+                    additionalProperties = aMap {
+                        anAlphabeticalString() to anHexadecimalString()
+                    }.toMutableMap()
                 )
             }
         )

@@ -27,6 +27,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
@@ -44,6 +45,7 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
+import kotlin.math.min
 
 @Suppress("LargeClass", "LongParameterList")
 internal open class RumViewScope(
@@ -61,7 +63,8 @@ internal open class RumViewScope(
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val viewUpdatePredicate: ViewUpdatePredicate = DefaultViewUpdatePredicate(),
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
-    internal val type: RumViewType = RumViewType.FOREGROUND
+    internal val type: RumViewType = RumViewType.FOREGROUND,
+    private val trackFrustrations: Boolean
 ) : RumScope {
 
     internal val url = key.resolveViewUrl().replace('.', '/')
@@ -133,6 +136,8 @@ internal open class RumViewScope(
         }
     }
 
+    private var performanceMetrics: MutableMap<RumPerformanceMetric, VitalInfo> = HashMap()
+
     // endregion
 
     init {
@@ -175,6 +180,8 @@ internal open class RumViewScope(
             is RumRawEvent.UpdateViewLoadingTime -> onUpdateViewLoadingTime(event, writer)
             is RumRawEvent.AddCustomTiming -> onAddCustomTiming(event, writer)
             is RumRawEvent.KeepAlive -> onKeepAlive(event, writer)
+
+            is RumRawEvent.UpdatePerformanceMetric -> onUpdatePerformanceMetric(event)
 
             else -> delegateEventToChildren(event, writer)
         }
@@ -286,7 +293,8 @@ internal open class RumViewScope(
                     serverTimeOffsetInMs,
                     rumEventSourceProvider,
                     contextProvider,
-                    featuresContextResolver
+                    featuresContextResolver,
+                    trackFrustrations
                 )
                 pendingActionCount++
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), writer)
@@ -304,7 +312,8 @@ internal open class RumViewScope(
                 serverTimeOffsetInMs,
                 rumEventSourceProvider,
                 contextProvider,
-                featuresContextResolver
+                featuresContextResolver,
+                trackFrustrations
             )
         )
         pendingActionCount++
@@ -367,7 +376,7 @@ internal open class RumViewScope(
                 type = errorType,
                 sourceType = event.sourceType.toSchemaSourceType()
             ),
-            action = rumContext.actionId?.let { ErrorEvent.Action(it) },
+            action = rumContext.actionId?.let { ErrorEvent.Action(listOf(it)) },
             view = ErrorEvent.View(
                 id = rumContext.viewId.orEmpty(),
                 name = rumContext.viewName,
@@ -377,7 +386,7 @@ internal open class RumViewScope(
                 id = user.id,
                 name = user.name,
                 email = user.email,
-                additionalProperties = user.additionalProperties
+                additionalProperties = user.additionalProperties.toMutableMap()
             ),
             connectivity = networkInfo.toErrorConnectivity(),
             application = ErrorEvent.Application(rumContext.applicationId),
@@ -420,6 +429,30 @@ internal open class RumViewScope(
     ) {
         customTimings[event.name] = max(event.eventTime.nanoTime - startedNanos, 1L)
         sendViewUpdate(event, writer)
+    }
+
+    private fun onUpdatePerformanceMetric(
+        event: RumRawEvent.UpdatePerformanceMetric
+    ) {
+        if (stopped) return
+
+        val value = event.value
+        val vitalInfo = performanceMetrics[event.metric] ?: VitalInfo.EMPTY
+        val newSampleCount = vitalInfo.sampleCount + 1
+
+        // Assuming M(n) is the mean value of the first n samples
+        // M(n) = ∑ sample(n) / n
+        // n⨉M(n) = ∑ sample(n)
+        // M(n+1) = ∑ sample(n+1) / (n+1)
+        //        = [ sample(n+1) + ∑ sample(n) ] / (n+1)
+        //        = (sample(n+1) + n⨉M(n)) / (n+1)
+        val meanValue = (value + (vitalInfo.sampleCount * vitalInfo.meanValue)) / newSampleCount
+        performanceMetrics[event.metric] = VitalInfo(
+            newSampleCount,
+            min(value, vitalInfo.minValue),
+            max(value, vitalInfo.maxValue),
+            meanValue
+        )
     }
 
     @WorkerThread
@@ -616,13 +649,19 @@ internal open class RumViewScope(
                 refreshRateAverage = refreshRateInfo?.meanValue?.let { it * refreshRateScale },
                 refreshRateMin = refreshRateInfo?.minValue?.let { it * refreshRateScale },
                 isSlowRendered = isSlowRendered,
-                frustration = ViewEvent.Frustration(frustrationCount.toLong())
+                frustration = ViewEvent.Frustration(frustrationCount.toLong()),
+                flutterBuildTime = performanceMetrics[RumPerformanceMetric.FLUTTER_BUILD_TIME]
+                    ?.let { it.toPerformanceMetric() },
+                flutterRasterTime = performanceMetrics[RumPerformanceMetric.FLUTTER_RASTER_TIME]
+                    ?.let { it.toPerformanceMetric() },
+                jsRefreshRate = performanceMetrics[RumPerformanceMetric.JS_REFRESH_RATE]
+                    ?.let { it.toPerformanceMetric() }
             ),
             usr = ViewEvent.Usr(
                 id = user.id,
                 name = user.name,
                 email = user.email,
-                additionalProperties = user.additionalProperties
+                additionalProperties = user.additionalProperties.toMutableMap()
             ),
             application = ViewEvent.Application(rumContext.applicationId),
             session = ViewEvent.ViewEventSession(
@@ -724,7 +763,7 @@ internal open class RumViewScope(
                 id = user.id,
                 name = user.name,
                 email = user.email,
-                additionalProperties = user.additionalProperties
+                additionalProperties = user.additionalProperties.toMutableMap()
             ),
             application = ActionEvent.Application(rumContext.applicationId),
             session = ActionEvent.ActionEventSession(
@@ -779,7 +818,7 @@ internal open class RumViewScope(
                 duration = event.durationNs,
                 isFrozenFrame = isFrozenFrame
             ),
-            action = rumContext.actionId?.let { LongTaskEvent.Action(it) },
+            action = rumContext.actionId?.let { LongTaskEvent.Action(listOf(it)) },
             view = LongTaskEvent.View(
                 id = rumContext.viewId.orEmpty(),
                 name = rumContext.viewName,
@@ -789,7 +828,7 @@ internal open class RumViewScope(
                 id = user.id,
                 name = user.name,
                 email = user.email,
-                additionalProperties = user.additionalProperties
+                additionalProperties = user.additionalProperties.toMutableMap()
             ),
             connectivity = networkInfo.toLongTaskConnectivity(),
             application = LongTaskEvent.Application(rumContext.applicationId),
@@ -894,7 +933,8 @@ internal open class RumViewScope(
             memoryVitalMonitor: VitalMonitor,
             frameRateVitalMonitor: VitalMonitor,
             rumEventSourceProvider: RumEventSourceProvider,
-            contextProvider: ContextProvider
+            contextProvider: ContextProvider,
+            trackFrustrations: Boolean
         ): RumViewScope {
             return RumViewScope(
                 parentScope,
@@ -907,8 +947,17 @@ internal open class RumViewScope(
                 memoryVitalMonitor,
                 frameRateVitalMonitor,
                 rumEventSourceProvider,
-                contextProvider
+                contextProvider,
+                trackFrustrations = trackFrustrations
             )
         }
     }
+}
+
+private fun VitalInfo.toPerformanceMetric(): ViewEvent.FlutterBuildTime {
+    return ViewEvent.FlutterBuildTime(
+        min = minValue,
+        max = maxValue,
+        average = meanValue
+    )
 }

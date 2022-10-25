@@ -44,7 +44,6 @@ fun Project.publishingConfig(projectDescription: String) {
         }
 
         publishingExtension.apply {
-
             publications.create(MavenConfig.PUBLICATION, MavenPublication::class.java) {
                 from(components.getByName("release"))
 

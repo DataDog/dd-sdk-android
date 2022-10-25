@@ -167,7 +167,7 @@ class ClassDeserializerGenerator(
     ) {
         val opt = if (nullable) "?" else ""
         beginControlFlow(
-            "$assignee = $getter$opt.asJsonArray$opt.let { %L ->",
+            "$assignee = $getter$opt.asJsonArray$opt.let·{·%L·->",
             Identifier.PARAM_JSON_ARRAY
         )
         val collectionClassName: ClassName = if (arrayType.uniqueItems) {
@@ -328,7 +328,6 @@ class ClassDeserializerGenerator(
         hasKnownProperties: Boolean,
         rootTypeName: String
     ) {
-
         addStatement(
             "val %L = mutableMapOf<%T, %T>()",
             Identifier.PARAM_ADDITIONAL_PROPS,
