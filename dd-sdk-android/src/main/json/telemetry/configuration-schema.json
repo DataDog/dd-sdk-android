@@ -9,12 +9,17 @@
       "$ref": "_common-schema.json"
     },
     {
-      "required": ["telemetry"],
+      "required": [
+        "telemetry"
+      ],
       "properties": {
         "telemetry": {
           "type": "object",
           "description": "The telemetry configuration information",
-          "required": ["type", "configuration"],
+          "required": [
+            "type",
+            "configuration"
+          ],
           "properties": {
             "type": {
               "type": "string",
@@ -175,9 +180,57 @@
                   "type": "integer",
                   "description": "The period between each Mobile Vital sample (in milliseconds)"
                 },
-                "track_native_crashes": {
+                "track_errors": {
                   "type": "boolean",
-                  "description": "Whether native crashes are tracked"
+                  "description": "Whether error monitoring & crash reporting is enabled for the source platform"
+                },
+                "track_network_requests": {
+                  "type": "boolean",
+                  "description": "Whether automatic collection of network requests is enabled"
+                },
+                "use_tracing": {
+                  "type": "boolean",
+                  "description": "Whether tracing features are enabled"
+                },
+                "track_native_views": {
+                  "type": "boolean",
+                  "description": "Whether native views are tracked (for cross platform SDKs)"
+                },
+                "track_native_errors": {
+                  "type": "boolean",
+                  "description": "Whether native error monitoring & crash reporting is enabled (for cross platform SDKs)"
+                },
+                "track_native_long_tasks": {
+                  "type": "boolean",
+                  "description": "Whether long task tracking is performed automatically"
+                },
+                "track_cross_platform_long_tasks": {
+                  "type": "boolean",
+                  "description": "Whether long task tracking is performed automatically for cross platform SDKs"
+                },
+                "use_attach_to_existing": {
+                  "type": "boolean",
+                  "description": "Whether the cross-platform SDK was initialized on top of a pre-existing native SDK instance"
+                },
+                "use_first_party_hosts": {
+                  "type": "boolean",
+                  "description": "Whether the client has provided a list of first party hosts"
+                },
+                "initialization_type": {
+                  "type": "string",
+                  "description": "The type of initialization the SDK used, in case multiple are supported"
+                },
+                "track_flutter_performance": {
+                  "type": "boolean",
+                  "description": "Whether Flutter build and raster time tracking is enabled"
+                },
+                "batch_size": {
+                  "type": "integer",
+                  "description": "The window duration for batches sent by the SDK (in milliseconds)"
+                },
+                "batch_upload_frequency": {
+                  "type": "integer",
+                  "description": "The upload frequency of batches (in milliseconds)"
                 }
               }
             }
