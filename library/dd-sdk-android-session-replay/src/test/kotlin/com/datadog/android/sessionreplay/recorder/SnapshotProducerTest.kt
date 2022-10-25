@@ -244,7 +244,9 @@ internal class SnapshotProducerTest {
                 nodes.add(this.getChildAt(i).toNode())
             }
             nodes
-        } else emptyList()
+        } else {
+            emptyList()
+        }
         return Node(wireframes = listOf(mockViewWireframe), children = children)
     }
 

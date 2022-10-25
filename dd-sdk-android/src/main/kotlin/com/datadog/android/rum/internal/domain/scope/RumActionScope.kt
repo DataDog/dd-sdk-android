@@ -34,7 +34,7 @@ internal class RumActionScope(
     private val rumEventSourceProvider: RumEventSourceProvider,
     private val contextProvider: ContextProvider,
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
-private val trackFrustrations: Boolean
+    private val trackFrustrations: Boolean
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)

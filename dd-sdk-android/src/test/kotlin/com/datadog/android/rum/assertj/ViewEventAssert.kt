@@ -512,7 +512,7 @@ internal class ViewEventAssert(actual: ViewEvent) :
         assertThat(actual.session.hasReplay)
             .overridingErrorMessage(
                 "Expected event data to have hasReplay $hasReplay " +
-                        "but was ${actual.session.hasReplay}"
+                    "but was ${actual.session.hasReplay}"
             )
             .isEqualTo(hasReplay)
     }

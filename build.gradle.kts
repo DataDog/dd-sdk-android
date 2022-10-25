@@ -222,8 +222,8 @@ tasks.register("koverReportAll") {
         ":dd-sdk-android-sqldelight:koverXmlReport",
         ":dd-sdk-android-timber:koverXmlReport",
         ":dd-sdk-android-tv:koverXmlReport",
-        ":library:dd-sdk-android-session-replay:koverXmlReport",
-        )
+        ":library:dd-sdk-android-session-replay:koverXmlReport"
+    )
 }
 
 tasks.register("instrumentTestAll") {

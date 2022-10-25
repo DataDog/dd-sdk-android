@@ -170,7 +170,7 @@ internal class BatchFileDataWriterTest {
             verify(mockBatchWriter, times(data.size))
                 .write(
                     capture(),
-                    isNull(),
+                    isNull()
                 )
             assertThat(allValues)
                 .containsExactlyElementsOf(
