@@ -173,7 +173,7 @@ object Datadog {
                 id,
                 name,
                 email,
-                extraInfo
+                extraInfo.toMutableMap()
             )
         )
     }

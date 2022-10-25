@@ -38,6 +38,10 @@ data class Version(
         object Dev : Type() {
             override val suffix: String = "-dev"
         }
+
+        object Snapshot : Type() {
+            override val suffix: String = "-SNAPSHOT"
+        }
     }
 
     // endregion

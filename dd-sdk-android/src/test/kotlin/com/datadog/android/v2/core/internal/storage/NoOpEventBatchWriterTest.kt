@@ -19,7 +19,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
-    ExtendWith(ForgeExtension::class),
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class NoOpEventBatchWriterTest {
@@ -45,7 +45,7 @@ internal class NoOpEventBatchWriterTest {
         // When
         val result = testedWriter.write(
             fakeData.toByteArray(),
-            forge.aNullable { fakeMetadata.toByteArray() },
+            forge.aNullable { fakeMetadata.toByteArray() }
         )
 
         // Then

@@ -29,7 +29,6 @@ open class CheckThirdPartyLicensesTask : DefaultTask() {
 
     @TaskAction
     fun applyTask() {
-
         val projectDependencies = provider.getThirdPartyDependencies(
             project,
             extension.transitiveDependencies,

@@ -154,7 +154,9 @@ sealed class TypeDefinition {
         fun renameRecursive(duplicates: Set<String>, parentName: String): TypeDefinition {
             val newName = if (name in duplicates) {
                 "$parentName$name"
-            } else name
+            } else {
+                name
+            }
 
             val newProperties = properties.map {
                 if (it.type is Class) {
@@ -220,7 +222,7 @@ sealed class TypeDefinition {
 
     data class OneOfClass(
         val name: String,
-        val options: List<TypeDefinition>,
+        val options: List<Class>,
         override val description: String = ""
     ) : TypeDefinition() {
 

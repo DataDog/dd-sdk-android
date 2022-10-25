@@ -12,7 +12,7 @@ import kotlin.Any
 import kotlin.Array
 import kotlin.Long
 import kotlin.String
-import kotlin.collections.Map
+import kotlin.collections.MutableMap
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
@@ -20,7 +20,7 @@ public data class Company(
     public val name: String? = null,
     public val ratings: Ratings? = null,
     public val information: Information? = null,
-    public val additionalProperties: Map<String, Any?> = emptyMap(),
+    public val additionalProperties: MutableMap<String, Any?> = mutableMapOf(),
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
@@ -84,7 +84,7 @@ public data class Company(
 
     public data class Ratings(
         public val global: Long,
-        public val additionalProperties: Map<String, Long> = emptyMap(),
+        public val additionalProperties: MutableMap<String, Long> = mutableMapOf(),
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()
@@ -136,7 +136,7 @@ public data class Company(
     public data class Information(
         public val date: Long? = null,
         public val priority: Long? = null,
-        public val additionalProperties: Map<String, Any?> = emptyMap(),
+        public val additionalProperties: MutableMap<String, Any?> = mutableMapOf(),
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()

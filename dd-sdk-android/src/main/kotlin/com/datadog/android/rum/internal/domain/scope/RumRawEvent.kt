@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.Time
@@ -183,6 +184,12 @@ internal sealed class RumRawEvent {
     ) : RumRawEvent()
 
     internal data class SendCustomActionNow(
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
+
+    internal data class UpdatePerformanceMetric(
+        val metric: RumPerformanceMetric,
+        val value: Double,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 

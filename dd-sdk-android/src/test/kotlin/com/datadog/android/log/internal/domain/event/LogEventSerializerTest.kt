@@ -49,10 +49,10 @@ internal class LogEventSerializerTest {
     @Test
     fun `ignores reserved attributes`(@Forgery fakeLog: LogEvent, forge: Forge) {
         // Given
-        val logWithoutAttributes = fakeLog.copy(additionalProperties = emptyMap())
-        val attributes = forge.aMap {
+        val logWithoutAttributes = fakeLog.copy(additionalProperties = mutableMapOf())
+        val attributes = forge.aMap<String, Any?> {
             anElementFrom(LogEvent.RESERVED_PROPERTIES.asList()) to forge.anAsciiString()
-        }
+        }.toMutableMap()
         val logWithReservedAttributes = fakeLog.copy(additionalProperties = attributes)
 
         // When
@@ -92,7 +92,7 @@ internal class LogEventSerializerTest {
             fakeBadKey.replaceRange(lastDotIndex..lastDotIndex, "_")
         val attributeValue = forge.anAlphabeticalString()
         val fakeUserInfo = LogEvent.Usr(
-            additionalProperties = mapOf(
+            additionalProperties = mutableMapOf(
                 fakeBadKey to attributeValue
             )
         )

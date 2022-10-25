@@ -33,7 +33,8 @@ internal class RumActionScope(
     maxDurationMs: Long = ACTION_MAX_DURATION_MS,
     private val rumEventSourceProvider: RumEventSourceProvider,
     private val contextProvider: ContextProvider,
-    private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver()
+    private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
+    private val trackFrustrations: Boolean
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
@@ -198,7 +199,7 @@ internal class RumActionScope(
         val hasReplay = featuresContextResolver.resolveHasReplay(sdkContext)
 
         val frustrations = mutableListOf<ActionEvent.Type>()
-        if (errorCount > 0 && actualType == RumActionType.TAP) {
+        if (trackFrustrations && errorCount > 0 && actualType == RumActionType.TAP) {
             frustrations.add(ActionEvent.Type.ERROR_TAP)
         }
 
@@ -231,7 +232,7 @@ internal class RumActionScope(
                 id = user.id,
                 name = user.name,
                 email = user.email,
-                additionalProperties = user.additionalProperties
+                additionalProperties = user.additionalProperties.toMutableMap()
             ),
             os = ActionEvent.Os(
                 name = sdkContext.deviceInfo.osName,
@@ -266,7 +267,8 @@ internal class RumActionScope(
             timestampOffset: Long,
             eventSourceProvider: RumEventSourceProvider,
             contextProvider: ContextProvider,
-            featuresContextResolver: FeaturesContextResolver
+            featuresContextResolver: FeaturesContextResolver,
+            trackFrustrations: Boolean
         ): RumScope {
             return RumActionScope(
                 parentScope,
@@ -278,7 +280,8 @@ internal class RumActionScope(
                 timestampOffset,
                 rumEventSourceProvider = eventSourceProvider,
                 contextProvider = contextProvider,
-                featuresContextResolver = featuresContextResolver
+                featuresContextResolver = featuresContextResolver,
+                trackFrustrations = trackFrustrations
             )
         }
     }

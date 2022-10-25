@@ -255,7 +255,9 @@ internal class NodeFlattenerTest {
                 )
                 node
             }.toList()
-        } else emptyList()
+        } else {
+            emptyList()
+        }
     }
 
     private fun Forge.forgeWireframe(id: Long, x: Long, y: Long, width: Long, height: Long):

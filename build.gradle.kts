@@ -1,3 +1,4 @@
+import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.nightlyTestsCoverageConfig
 
 /*
@@ -11,6 +12,8 @@ plugins {
     id("io.github.gradle-nexus.publish-plugin")
     id("org.jetbrains.kotlinx.kover")
 }
+
+version = AndroidConfig.VERSION.name
 
 buildscript {
     repositories {
@@ -219,8 +222,8 @@ tasks.register("koverReportAll") {
         ":dd-sdk-android-sqldelight:koverXmlReport",
         ":dd-sdk-android-timber:koverXmlReport",
         ":dd-sdk-android-tv:koverXmlReport",
-        ":library:dd-sdk-android-session-replay:koverXmlReport",
-        )
+        ":library:dd-sdk-android-session-replay:koverXmlReport"
+    )
 }
 
 tasks.register("instrumentTestAll") {
@@ -247,17 +250,16 @@ nightlyTestsCoverageConfig(threshold = 0.87f)
 kover {
     isDisabled = false
     disabledProjects = setOf(
-            "instrumented",
-            "sample",
-            "tools",
-            "integration",
-            "nightly-tests",
-            "kotlin",
-            "detekt",
-            "javabackport",
-            "noopfactory",
-            "unit"
+        "instrumented",
+        "sample",
+        "tools",
+        "integration",
+        "nightly-tests",
+        "kotlin",
+        "detekt",
+        "javabackport",
+        "noopfactory",
+        "unit"
     )
     instrumentAndroidPackage = false
 }
-

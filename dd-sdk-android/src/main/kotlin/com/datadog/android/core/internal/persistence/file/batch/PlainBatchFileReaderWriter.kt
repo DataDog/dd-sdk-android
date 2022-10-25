@@ -232,7 +232,7 @@ internal class PlainBatchFileReaderWriter(
 
     private enum class BlockType(val identifier: Short) {
         EVENT(0x00),
-        META(0x01),
+        META(0x01)
     }
 
     // endregion

@@ -13,6 +13,7 @@ import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
@@ -132,6 +133,9 @@ internal class DatadogRumMonitorTest {
     @BoolForgery
     var fakeBackgroundTrackingEnabled: Boolean = false
 
+    @BoolForgery
+    var fakeTrackFrustrations: Boolean = true
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeAttributes = forge.exhaustiveAttributes()
@@ -139,6 +143,7 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
@@ -159,6 +164,7 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
@@ -1158,6 +1164,7 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
@@ -1202,6 +1209,7 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
@@ -1233,6 +1241,7 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
@@ -1426,6 +1435,29 @@ internal class DatadogRumMonitorTest {
             assertThat(lastValue.type).isEqualTo(TelemetryType.ERROR)
             assertThat(lastValue.stack).isEqualTo(throwable?.loggableStackTrace())
             assertThat(lastValue.kind).isEqualTo(throwable?.javaClass?.canonicalName)
+        }
+    }
+
+    @Test
+    fun `M handle performance metric update W updatePerformanceMetric()`(
+        forge: Forge
+    ) {
+        // Given
+        val metric = forge.aValueFrom(RumPerformanceMetric::class.java)
+        val value = forge.aDouble()
+
+        // When
+        testedMonitor.updatePerformanceMetric(metric, value)
+        Thread.sleep(PROCESSING_DELAY)
+
+        // Then
+        argumentCaptor<RumRawEvent.UpdatePerformanceMetric> {
+            verify(mockScope).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            assertThat(lastValue.metric).isEqualTo(metric)
+            assertThat(lastValue.value).isEqualTo(value)
         }
     }
 

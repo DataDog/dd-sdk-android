@@ -310,6 +310,7 @@ interface RumMonitor {
                     memoryVitalMonitor = rumFeature.memoryVitalMonitor,
                     frameRateVitalMonitor = rumFeature.frameRateVitalMonitor,
                     backgroundTrackingEnabled = rumFeature.backgroundEventTracking,
+                    trackFrustrations = rumFeature.trackFrustrations,
                     sessionListener = sessionListener,
                     sourceName = coreFeature.sourceName,
                     contextProvider = contextProvider

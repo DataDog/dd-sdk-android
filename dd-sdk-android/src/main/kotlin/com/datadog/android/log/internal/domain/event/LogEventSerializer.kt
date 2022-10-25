@@ -38,7 +38,7 @@ internal class LogEventSerializer(
         }
         return log.copy(
             ddtags = sanitizedTags,
-            additionalProperties = sanitizedAttributes,
+            additionalProperties = sanitizedAttributes.toMutableMap(),
             usr = usr
         )
     }

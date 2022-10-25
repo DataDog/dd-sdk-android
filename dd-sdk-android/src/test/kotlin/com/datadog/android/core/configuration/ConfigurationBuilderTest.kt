@@ -153,6 +153,7 @@ internal class ConfigurationBuilderTest {
                 rumEventMapper = NoOpEventMapper(),
                 longTaskTrackingStrategy = MainLooperLongTaskStrategy(100L),
                 backgroundEventTracking = false,
+                trackFrustrations = true,
                 vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE
             )
         )

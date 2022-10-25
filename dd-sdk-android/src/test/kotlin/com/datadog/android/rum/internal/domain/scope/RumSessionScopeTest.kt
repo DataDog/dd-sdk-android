@@ -99,6 +99,9 @@ internal class RumSessionScopeTest {
     @BoolForgery
     var fakeBackgroundTrackingEnabled: Boolean = false
 
+    @BoolForgery
+    var fakeTrackFrustrations: Boolean = true
+
     lateinit var fakeInitialViewEvent: RumRawEvent
 
     @BeforeEach
@@ -747,6 +750,7 @@ internal class RumSessionScopeTest {
             mockParentScope,
             samplingRate,
             backgroundTrackingEnabled ?: fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,

@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit
 internal class RumViewManagerScope(
     private val parentScope: RumScope,
     private val backgroundTrackingEnabled: Boolean,
+    private val trackFrustrations: Boolean,
     internal val firstPartyHostDetector: FirstPartyHostDetector,
     private val cpuVitalMonitor: VitalMonitor,
     private val memoryVitalMonitor: VitalMonitor,
@@ -107,7 +108,8 @@ internal class RumViewManagerScope(
             memoryVitalMonitor,
             frameRateVitalMonitor,
             rumEventSourceProvider,
-            contextProvider
+            contextProvider,
+            trackFrustrations
         )
         onViewDisplayed(event, viewScope, writer)
         childrenScopes.add(viewScope)
@@ -163,7 +165,8 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             rumEventSourceProvider,
             type = RumViewScope.RumViewType.BACKGROUND,
-            contextProvider = contextProvider
+            contextProvider = contextProvider,
+            trackFrustrations = trackFrustrations
         )
     }
 
@@ -180,7 +183,8 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             rumEventSourceProvider,
             type = RumViewScope.RumViewType.APPLICATION_LAUNCH,
-            contextProvider = contextProvider
+            contextProvider = contextProvider,
+            trackFrustrations = trackFrustrations
         )
     }
 

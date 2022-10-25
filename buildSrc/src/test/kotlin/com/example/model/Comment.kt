@@ -11,7 +11,7 @@ import kotlin.Array
 import kotlin.Boolean
 import kotlin.Long
 import kotlin.String
-import kotlin.collections.Map
+import kotlin.collections.MutableMap
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
@@ -76,7 +76,7 @@ public data class Comment(
 
     public data class Ratings(
         public val global: Long,
-        public val additionalProperties: Map<String, Long> = emptyMap(),
+        public val additionalProperties: MutableMap<String, Long> = mutableMapOf(),
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()
@@ -126,7 +126,7 @@ public data class Comment(
     }
 
     public data class Flags(
-        public val additionalProperties: Map<String, Boolean> = emptyMap(),
+        public val additionalProperties: MutableMap<String, Boolean> = mutableMapOf(),
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()
@@ -168,7 +168,7 @@ public data class Comment(
     }
 
     public data class Tags(
-        public val additionalProperties: Map<String, String> = emptyMap(),
+        public val additionalProperties: MutableMap<String, String> = mutableMapOf(),
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()

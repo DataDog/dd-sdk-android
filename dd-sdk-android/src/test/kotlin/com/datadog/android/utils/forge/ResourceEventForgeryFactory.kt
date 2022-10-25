@@ -86,7 +86,9 @@ internal class ResourceEventForgeryFactory :
                     additionalProperties = exhaustiveAttributes()
                 )
             },
-            action = forge.aNullable { ResourceEvent.Action(getForgery<UUID>().toString()) },
+            action = forge.aNullable {
+                ResourceEvent.Action(aList { getForgery<UUID>().toString() })
+            },
             application = ResourceEvent.Application(forge.getForgery<UUID>().toString()),
             service = forge.aNullable { anAlphabeticalString() },
             session = ResourceEvent.ResourceEventSession(
