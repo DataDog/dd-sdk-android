@@ -6,7 +6,6 @@
 
 package com.datadog.android.utils.forge
 
-import com.datadog.android.v2.api.context.CarrierInfo
 import com.datadog.android.v2.api.context.NetworkInfo
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -15,12 +14,17 @@ class NetworkInfoV2ForgeryFactory : ForgeryFactory<NetworkInfo> {
     override fun getForgery(forge: Forge): NetworkInfo {
         return NetworkInfo(
             connectivity = forge.aValueFrom(NetworkInfo.Connectivity::class.java),
-            carrier = forge.aNullable {
-                CarrierInfo(
-                    technology = forge.aNullable { forge.aString() },
-                    carrierName = forge.aNullable { forge.aString() }
+            carrierName = forge.aNullable {
+                anElementFrom(
+                    anAlphabeticalString(),
+                    aWhitespaceString()
                 )
-            }
+            },
+            carrierId = forge.aNullable { forge.aLong(0, 10000) },
+            upKbps = forge.aNullable { aLong(1, Long.MAX_VALUE) },
+            downKbps = forge.aNullable { aLong(1, Long.MAX_VALUE) },
+            strength = forge.aNullable { aLong(-100, -30) }, // dBm for wifi signal
+            cellularTechnology = forge.aNullable { anAlphabeticalString() }
         )
     }
 }

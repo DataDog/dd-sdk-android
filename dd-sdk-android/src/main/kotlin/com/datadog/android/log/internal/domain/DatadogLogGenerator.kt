@@ -6,54 +6,24 @@
 
 package com.datadog.android.log.internal.domain
 
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.system.AppVersionProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.log.internal.utils.buildLogDateFormat
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.v2.api.context.DatadogContext
 import io.opentracing.util.GlobalTracer
 import java.util.Date
 
 internal class DatadogLogGenerator(
-    internal val serviceName: String,
-    internal val loggerName: String,
-    internal val networkInfoProvider: NetworkInfoProvider?,
-    internal val userInfoProvider: UserInfoProvider,
-    internal val timeProvider: TimeProvider,
-    internal val sdkVersion: String,
-    envName: String,
-    variant: String,
-    internal val appVersionProvider: AppVersionProvider
+    /**
+     * Custom service name. If not provided, value will be taken from [DatadogContext].
+     */
+    internal val serviceName: String? = null
 ) : LogGenerator {
 
     private val simpleDateFormat = buildLogDateFormat()
-
-    internal val envTag: String? = if (envName.isNotEmpty()) {
-        "${LogAttributes.ENV}:$envName"
-    } else {
-        null
-    }
-
-    private val appVersionTag: String?
-        get() {
-            val appVersion = appVersionProvider.version
-            return if (appVersion.isNotEmpty()) {
-                "${LogAttributes.APPLICATION_VERSION}:$appVersion"
-            } else {
-                null
-            }
-        }
-
-    private val variantTag = if (variant.isNotEmpty()) {
-        "${LogAttributes.VARIANT}:$variant"
-    } else {
-        null
-    }
 
     @Suppress("LongParameterList")
     override fun generateLog(
@@ -63,32 +33,39 @@ internal class DatadogLogGenerator(
         attributes: Map<String, Any?>,
         tags: Set<String>,
         timestamp: Long,
-        threadName: String?,
+        threadName: String,
+        datadogContext: DatadogContext,
+        attachNetworkInfo: Boolean,
+        loggerName: String,
         bundleWithTraces: Boolean,
         bundleWithRum: Boolean,
         userInfo: UserInfo?,
         networkInfo: NetworkInfo?
     ): LogEvent {
-        val resolvedTimestamp = timestamp + timeProvider.getServerOffsetMillis()
+        val resolvedTimestamp = timestamp + datadogContext.time.serverTimeOffsetMs
         val combinedAttributes = resolveAttributes(attributes, bundleWithTraces, bundleWithRum)
         val formattedDate = synchronized(simpleDateFormat) {
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             simpleDateFormat.format(Date(resolvedTimestamp))
         }
-        val combinedTags = resolveTags(tags)
+        val combinedTags = resolveTags(datadogContext, tags)
         val error = throwable?.let {
             val kind = it.javaClass.canonicalName ?: it.javaClass.simpleName
             LogEvent.Error(kind = kind, stack = it.stackTraceToString(), message = it.message)
         }
-        val usr = resolveUserInfo(userInfo)
-        val network = resolveNetworkInfo(networkInfo)
+        val usr = resolveUserInfo(datadogContext, userInfo)
+        val network = if (networkInfo != null || attachNetworkInfo) {
+            resolveNetworkInfo(datadogContext, networkInfo)
+        } else {
+            null
+        }
         val loggerInfo = LogEvent.Logger(
             name = loggerName,
-            threadName = threadName ?: Thread.currentThread().name,
-            version = sdkVersion
+            threadName = threadName,
+            version = datadogContext.sdkVersion
         )
         return LogEvent(
-            service = serviceName,
+            service = serviceName ?: datadogContext.service,
             status = resolveLogLevelStatus(level),
             message = message,
             date = formattedDate,
@@ -101,42 +78,96 @@ internal class DatadogLogGenerator(
         )
     }
 
-    private fun resolveNetworkInfo(networkInfo: NetworkInfo?): LogEvent.Network? {
-        val resolvedNetworkInfo = networkInfo ?: networkInfoProvider?.getLatestNetworkInfo()
-        return resolvedNetworkInfo?.let {
+    // region Internal
+
+    private fun envTag(datadogContext: DatadogContext): String? {
+        val envName = datadogContext.env
+        return if (envName.isNotEmpty()) {
+            "${LogAttributes.ENV}:$envName"
+        } else {
+            null
+        }
+    }
+
+    private fun appVersionTag(datadogContext: DatadogContext): String? {
+        val appVersion = datadogContext.version
+        return if (appVersion.isNotEmpty()) {
+            "${LogAttributes.APPLICATION_VERSION}:$appVersion"
+        } else {
+            null
+        }
+    }
+
+    private fun variantTag(datadogContext: DatadogContext): String? {
+        val variant = datadogContext.variant
+        return if (variant.isNotEmpty()) {
+            "${LogAttributes.VARIANT}:$variant"
+        } else {
+            null
+        }
+    }
+
+    private fun resolveNetworkInfo(
+        datadogContext: DatadogContext,
+        networkInfo: NetworkInfo?
+    ): LogEvent.Network {
+        // TODO RUMM-0000 use V2 (RUM should write V2 version)
+        return if (networkInfo != null) {
             LogEvent.Network(
                 LogEvent.Client(
-                    simCarrier = resolveSimCarrier(it),
-                    signalStrength = it.strength?.toString(),
-                    downlinkKbps = it.downKbps?.toString(),
-                    uplinkKbps = it.upKbps?.toString(),
-                    connectivity = it.connectivity.toString()
+                    simCarrier = resolveSimCarrier(networkInfo),
+                    signalStrength = networkInfo.strength?.toString(),
+                    downlinkKbps = networkInfo.downKbps?.toString(),
+                    uplinkKbps = networkInfo.upKbps?.toString(),
+                    connectivity = networkInfo.connectivity.toString()
+                )
+            )
+        } else {
+            LogEvent.Network(
+                LogEvent.Client(
+                    simCarrier = resolveSimCarrier(datadogContext.networkInfo),
+                    signalStrength = datadogContext.networkInfo.strength?.toString(),
+                    downlinkKbps = datadogContext.networkInfo.downKbps?.toString(),
+                    uplinkKbps = datadogContext.networkInfo.upKbps?.toString(),
+                    connectivity = datadogContext.networkInfo.connectivity.toString()
                 )
             )
         }
     }
 
-    private fun resolveUserInfo(userInfo: UserInfo?): LogEvent.Usr {
-        val resolvedUserInfo = userInfo ?: userInfoProvider.getUserInfo()
-        return LogEvent.Usr(
-            name = resolvedUserInfo.name,
-            email = resolvedUserInfo.email,
-            id = resolvedUserInfo.id,
-            additionalProperties = resolvedUserInfo.additionalProperties
-        )
+    private fun resolveUserInfo(datadogContext: DatadogContext, userInfo: UserInfo?): LogEvent.Usr {
+        // TODO RUMM-0000 use V2 (RUM should write V2 version)
+        return if (userInfo != null) {
+            LogEvent.Usr(
+                name = userInfo.name,
+                email = userInfo.email,
+                id = userInfo.id,
+                additionalProperties = userInfo.additionalProperties
+            )
+        } else {
+            with(datadogContext.userInfo) {
+                LogEvent.Usr(
+                    name = name,
+                    email = email,
+                    id = id,
+                    additionalProperties = additionalProperties.toMutableMap()
+                )
+            }
+        }
     }
 
     private fun resolveTags(
+        datadogContext: DatadogContext,
         tags: Set<String>
     ): MutableSet<String> {
         val combinedTags = mutableSetOf<String>().apply { addAll(tags) }
-        envTag?.let {
+        envTag(datadogContext)?.let {
             combinedTags.add(it)
         }
-        appVersionTag?.let {
+        appVersionTag(datadogContext)?.let {
             combinedTags.add(it)
         }
-        variantTag?.let {
+        variantTag(datadogContext)?.let {
             combinedTags.add(it)
         }
 
@@ -191,6 +222,20 @@ internal class DatadogLogGenerator(
             null
         }
     }
+
+    private fun resolveSimCarrier(networkInfo: com.datadog.android.v2.api.context.NetworkInfo):
+        LogEvent.SimCarrier? {
+        return if (networkInfo.carrierId != null || networkInfo.carrierName != null) {
+            LogEvent.SimCarrier(
+                id = networkInfo.carrierId?.toString(),
+                name = networkInfo.carrierName
+            )
+        } else {
+            null
+        }
+    }
+
+    // endregion
 
     companion object {
         internal const val ISO_8601 = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"

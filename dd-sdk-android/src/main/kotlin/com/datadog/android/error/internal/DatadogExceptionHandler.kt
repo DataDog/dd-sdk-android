@@ -8,26 +8,23 @@ package com.datadog.android.error.internal
 
 import android.content.Context
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.isWorkManagerInitialized
 import com.datadog.android.core.internal.utils.triggerUploadWorker
-import com.datadog.android.log.internal.domain.DatadogLogGenerator
-import com.datadog.android.log.model.LogEvent
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
 import java.lang.ref.WeakReference
 import java.util.concurrent.ThreadPoolExecutor
 
 internal class DatadogExceptionHandler(
-    private val logGenerator: DatadogLogGenerator,
-    private val writer: DataWriter<LogEvent>,
-    appContext: Context?
-) :
-    Thread.UncaughtExceptionHandler {
+    private val sdkCore: SdkCore,
+    appContext: Context
+) : Thread.UncaughtExceptionHandler {
 
     private val contextRef = WeakReference(appContext)
     private var previousHandler: Thread.UncaughtExceptionHandler? = null
@@ -36,8 +33,22 @@ internal class DatadogExceptionHandler(
 
     override fun uncaughtException(t: Thread, e: Throwable) {
         // write the log immediately
-        @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
-        writer.write(createLog(t, e))
+        val logsFeature = sdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)
+        if (logsFeature != null) {
+            logsFeature.sendEvent(
+                mapOf(
+                    "threadName" to t.name,
+                    "throwable" to e,
+                    "syncWrite" to true,
+                    "timestamp" to System.currentTimeMillis(),
+                    "message" to createCrashMessage(e),
+                    "type" to "crash",
+                    "loggerName" to LOGGER_NAME
+                )
+            )
+        } else {
+            devLogger.i("Logs feature is not registered, won't report crash as log.")
+        }
 
         // write a RUM Error too
         (GlobalRum.get() as? AdvancedRumMonitor)?.addCrash(
@@ -80,18 +91,6 @@ internal class DatadogExceptionHandler(
 
     // region Internal
 
-    private fun createLog(thread: Thread, throwable: Throwable): LogEvent {
-        return logGenerator.generateLog(
-            DatadogLogGenerator.CRASH,
-            createCrashMessage(throwable),
-            throwable,
-            emptyMap(),
-            emptySet(),
-            System.currentTimeMillis(),
-            thread.name
-        )
-    }
-
     private fun createCrashMessage(throwable: Throwable): String {
         val rawMessage = throwable.message
         return if (rawMessage.isNullOrBlank()) {
@@ -112,6 +111,6 @@ internal class DatadogExceptionHandler(
         internal const val MAX_WAIT_FOR_IDLE_TIME_IN_MS = 100L
         internal const val EXECUTOR_NOT_IDLED_WARNING_MESSAGE =
             "Datadog SDK is in an unexpected state due to an ongoing crash. " +
-                "Some events could be lost"
+                "Some events could be lost."
     }
 }

@@ -247,7 +247,7 @@ internal class DatadogCore(
         initializeSessionReplayFeature(mutableConfig.sessionReplayConfig, appContext)
 
         coreFeature.ndkCrashHandler.handleNdkCrash(
-            logsFeature?.persistenceStrategy?.getWriter() ?: NoOpDataWriter(),
+            this,
             rumFeature?.persistenceStrategy?.getWriter() ?: NoOpDataWriter()
         )
 
@@ -289,7 +289,7 @@ internal class DatadogCore(
             )
             features[LogsFeature.LOGS_FEATURE_NAME]?.let {
                 it.initialize(appContext, configuration.plugins)
-                logsFeature = LogsFeature(coreFeature, it.storage).also {
+                logsFeature = LogsFeature(this).also {
                     it.initialize(configuration)
                 }
             }
@@ -313,7 +313,7 @@ internal class DatadogCore(
             )
             features[CrashReportsFeature.CRASH_FEATURE_NAME]?.let {
                 it.initialize(appContext, configuration.plugins)
-                crashReportsFeature = CrashReportsFeature(coreFeature, it.storage).also {
+                crashReportsFeature = CrashReportsFeature(this).also {
                     it.initialize(appContext)
                 }
             }

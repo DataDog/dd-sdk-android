@@ -6,18 +6,25 @@
 
 package com.datadog.android.log.internal.logger
 
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
+import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import android.util.Log as AndroidLog
 
 internal class DatadogLogHandler(
+    internal val loggerName: String,
     internal val logGenerator: LogGenerator,
+    internal val sdkCore: SdkCore,
     internal val writer: DataWriter<LogEvent>,
+    internal val attachNetworkInfo: Boolean,
     internal val bundleWithTraces: Boolean = true,
     internal val bundleWithRum: Boolean = true,
     internal val sampler: Sampler = RateBasedSampler(1.0f),
@@ -40,10 +47,27 @@ internal class DatadogLogHandler(
 
         val resolvedTimeStamp = timestamp ?: System.currentTimeMillis()
         if (sampler.sample()) {
-            val log = createLog(level, message, throwable, attributes, tags, resolvedTimeStamp)
-            if (log != null) {
-                @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
-                writer.write(log)
+            val logsFeature = sdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)
+            if (logsFeature != null) {
+                val threadName = Thread.currentThread().name
+                logsFeature.withWriteContext { datadogContext, eventBatchWriter ->
+                    val log = createLog(
+                        level,
+                        datadogContext,
+                        message,
+                        throwable,
+                        attributes,
+                        tags,
+                        threadName,
+                        resolvedTimeStamp
+                    )
+                    if (log != null) {
+                        @Suppress("ThreadSafety") // called in a worker thread context
+                        writer.write(eventBatchWriter, log)
+                    }
+                }
+            } else {
+                devLogger.i("Requested to write log, but Logs feature is not registered.")
             }
         }
 
@@ -59,10 +83,12 @@ internal class DatadogLogHandler(
     @Suppress("LongParameterList")
     private fun createLog(
         level: Int,
+        datadogContext: DatadogContext,
         message: String,
         throwable: Throwable?,
         attributes: Map<String, Any?>,
         tags: Set<String>,
+        threadName: String,
         timestamp: Long
     ): LogEvent? {
         return logGenerator.generateLog(
@@ -72,6 +98,10 @@ internal class DatadogLogHandler(
             attributes,
             tags,
             timestamp,
+            datadogContext = datadogContext,
+            attachNetworkInfo = attachNetworkInfo,
+            loggerName = loggerName,
+            threadName = threadName,
             bundleWithRum = bundleWithRum,
             bundleWithTraces = bundleWithTraces
         )

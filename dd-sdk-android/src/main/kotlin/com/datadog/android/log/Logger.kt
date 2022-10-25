@@ -9,20 +9,17 @@ package com.datadog.android.log
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
-import com.datadog.android.log.internal.domain.LogGenerator
-import com.datadog.android.log.internal.domain.NoOpLogGenerator
 import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
-import com.datadog.android.log.model.LogEvent
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -201,11 +198,11 @@ internal constructor(internal var handler: LogHandler) {
             val handler = when {
                 datadogLogsEnabled && logcatLogsEnabled -> {
                     CombinedLogHandler(
-                        buildDatadogHandler(coreFeature, logsFeature),
+                        buildDatadogHandler(datadogCore, coreFeature, logsFeature),
                         buildLogcatHandler(coreFeature)
                     )
                 }
-                datadogLogsEnabled -> buildDatadogHandler(coreFeature, logsFeature)
+                datadogLogsEnabled -> buildDatadogHandler(datadogCore, coreFeature, logsFeature)
                 logcatLogsEnabled -> buildLogcatHandler(coreFeature)
                 else -> NoOpLogHandler()
             }
@@ -313,56 +310,31 @@ internal constructor(internal var handler: LogHandler) {
         }
 
         private fun buildDatadogHandler(
+            sdkCore: SdkCore?,
             coreFeature: CoreFeature?,
             logsFeature: LogsFeature?
         ): LogHandler {
-            val writer = buildLogWriter(logsFeature) ?: return NoOpLogHandler()
-
-            val logGenerator = buildLogGenerator(coreFeature)
-
-            return DatadogLogHandler(
-                logGenerator = logGenerator,
-                writer = writer,
-                minLogPriority = minDatadogLogsPriority,
-                bundleWithTraces = bundleWithTraceEnabled,
-                bundleWithRum = bundleWithRumEnabled,
-                sampler = RateBasedSampler(sampleRate)
-            )
-        }
-
-        private fun buildLogWriter(logsFeature: LogsFeature?): DataWriter<LogEvent>? {
-            return if (logsFeature != null) {
-                logsFeature.persistenceStrategy.getWriter()
-            } else {
+            if (sdkCore == null || coreFeature == null || logsFeature == null) {
                 devLogger.e(
                     SDK_NOT_INITIALIZED_WARNING_MESSAGE + "\n" +
                         Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
                 )
-                null
+                return NoOpLogHandler()
             }
-        }
 
-        private fun buildLogGenerator(coreFeature: CoreFeature?): LogGenerator {
-            if (coreFeature == null) {
-                return NoOpLogGenerator()
-            } else {
-                val netInfoProvider = if (networkInfoEnabled) {
-                    coreFeature.networkInfoProvider
-                } else {
-                    null
-                }
-                return DatadogLogGenerator(
-                    serviceName ?: coreFeature.serviceName,
-                    loggerName ?: coreFeature.packageName,
-                    netInfoProvider,
-                    coreFeature.userInfoProvider,
-                    coreFeature.timeProvider,
-                    coreFeature.sdkVersion,
-                    coreFeature.envName,
-                    coreFeature.variant,
-                    coreFeature.packageVersionProvider
-                )
-            }
+            return DatadogLogHandler(
+                sdkCore = sdkCore,
+                loggerName = loggerName ?: coreFeature.packageName,
+                logGenerator = DatadogLogGenerator(
+                    serviceName ?: coreFeature.serviceName
+                ),
+                writer = logsFeature.dataWriter,
+                minLogPriority = minDatadogLogsPriority,
+                bundleWithTraces = bundleWithTraceEnabled,
+                bundleWithRum = bundleWithRumEnabled,
+                sampler = RateBasedSampler(sampleRate),
+                attachNetworkInfo = networkInfoEnabled
+            )
         }
 
         // endregion

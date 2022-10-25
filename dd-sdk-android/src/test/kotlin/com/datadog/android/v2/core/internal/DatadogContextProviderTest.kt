@@ -122,10 +122,18 @@ internal class DatadogContextProviderTest {
         // network info
         assertThat(context.networkInfo.connectivity.name)
             .isEqualTo(fakeNetworkInfo.connectivity.name)
-        assertThat(context.networkInfo.carrier?.carrierName)
+        assertThat(context.networkInfo.carrierName)
             .isEqualTo(fakeNetworkInfo.carrierName)
-        assertThat(context.networkInfo.carrier?.technology)
+        assertThat(context.networkInfo.carrierId)
+            .isEqualTo(fakeNetworkInfo.carrierId)
+        assertThat(context.networkInfo.cellularTechnology)
             .isEqualTo(fakeNetworkInfo.cellularTechnology)
+        assertThat(context.networkInfo.upKbps)
+            .isEqualTo(fakeNetworkInfo.upKbps)
+        assertThat(context.networkInfo.downKbps)
+            .isEqualTo(fakeNetworkInfo.downKbps)
+        assertThat(context.networkInfo.strength)
+            .isEqualTo(fakeNetworkInfo.strength)
 
         // device info
         assertThat(context.deviceInfo.deviceBrand).isEqualTo(fakeAndroidInfo.deviceBrand)

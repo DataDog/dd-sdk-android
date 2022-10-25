@@ -16,19 +16,19 @@ import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.readTextSafe
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.domain.DatadogLogGenerator
-import com.datadog.android.log.internal.domain.LogGenerator
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.utils.errorWithTelemetry
-import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.v2.api.SdkCore
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.ExecutorService
@@ -39,7 +39,6 @@ import java.util.concurrent.TimeUnit
 internal class DatadogNdkCrashHandler(
     storageDir: File,
     private val dataPersistenceExecutorService: ExecutorService,
-    internal val logGenerator: LogGenerator,
     private val ndkCrashLogDeserializer: Deserializer<NdkCrashLog>,
     private val rumEventDeserializer: Deserializer<Any>,
     private val networkInfoDeserializer: Deserializer<NetworkInfo>,
@@ -74,14 +73,14 @@ internal class DatadogNdkCrashHandler(
     }
 
     override fun handleNdkCrash(
-        logWriter: DataWriter<LogEvent>,
+        sdkCore: SdkCore,
         rumWriter: DataWriter<Any>
     ) {
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             dataPersistenceExecutorService.submit {
                 @Suppress("ThreadSafety")
-                checkAndHandleNdkCrashReport(logWriter, rumWriter)
+                checkAndHandleNdkCrashReport(sdkCore, rumWriter)
             }
         } catch (e: RejectedExecutionException) {
             internalLogger.errorWithTelemetry(ERROR_TASK_REJECTED, e)
@@ -142,7 +141,7 @@ internal class DatadogNdkCrashHandler(
 
     @WorkerThread
     private fun checkAndHandleNdkCrashReport(
-        logWriter: DataWriter<LogEvent>,
+        sdkCore: SdkCore,
         rumWriter: DataWriter<Any>
     ) {
         val lastSerializedRumViewEvent = lastSerializedRumViewEvent
@@ -161,7 +160,7 @@ internal class DatadogNdkCrashHandler(
                 networkInfoDeserializer.deserialize(it)
             }
             handleNdkCrashLog(
-                logWriter,
+                sdkCore,
                 rumWriter,
                 lastNdkCrashLog,
                 lastRumViewEvent,
@@ -182,7 +181,7 @@ internal class DatadogNdkCrashHandler(
     @SuppressWarnings("LongParameterList")
     @WorkerThread
     private fun handleNdkCrashLog(
-        logWriter: DataWriter<LogEvent>,
+        sdkCore: SdkCore,
         rumWriter: DataWriter<Any>,
         ndkCrashLog: NdkCrashLog?,
         lastViewEvent: ViewEvent?,
@@ -214,7 +213,7 @@ internal class DatadogNdkCrashHandler(
         }
 
         sendCrashLogEvent(
-            logWriter,
+            sdkCore,
             errorLogMessage,
             logAttributes,
             ndkCrashLog,
@@ -247,27 +246,31 @@ internal class DatadogNdkCrashHandler(
     @SuppressWarnings("LongParameterList")
     @WorkerThread
     private fun sendCrashLogEvent(
-        logWriter: DataWriter<LogEvent>,
+        sdkCore: SdkCore,
         errorLogMessage: String,
         logAttributes: Map<String, String>,
         ndkCrashLog: NdkCrashLog,
         lastNetworkInfo: NetworkInfo?,
         lastUserInfo: UserInfo?
     ) {
-        val log = logGenerator.generateLog(
-            level = DatadogLogGenerator.CRASH,
-            errorLogMessage,
-            null,
-            logAttributes,
-            emptySet(),
-            ndkCrashLog.timestamp,
-            bundleWithTraces = false,
-            bundleWithRum = false,
-            networkInfo = lastNetworkInfo,
-            userInfo = lastUserInfo
-        ) ?: return
-
-        logWriter.write(log)
+        val logsFeature = sdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)
+        if (logsFeature != null) {
+            logsFeature.sendEvent(
+                mapOf(
+                    "loggerName" to LOGGER_NAME,
+                    "type" to "crash",
+                    "message" to errorLogMessage,
+                    "attributes" to logAttributes,
+                    "timestamp" to ndkCrashLog.timestamp,
+                    "bundleWithTraces" to false,
+                    "bundleWithRum" to false,
+                    "networkInfo" to lastNetworkInfo,
+                    "userInfo" to lastUserInfo
+                )
+            )
+        } else {
+            devLogger.i("Logs feature is not registered, won't report NDK crash info as log.")
+        }
     }
 
     private fun updateViewEvent(lastViewEvent: ViewEvent): ViewEvent {

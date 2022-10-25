@@ -166,6 +166,52 @@ internal class LogEventAssert(actual: LogEvent) :
         return this
     }
 
+    fun hasNetworkInfo(networkInfo: com.datadog.android.v2.api.context.NetworkInfo): LogEventAssert {
+        assertThat(actual.network?.client?.connectivity)
+            .overridingErrorMessage(
+                "Expected LogEvent to have connectivity: " +
+                    "${networkInfo.connectivity} but " +
+                    "instead was: ${actual.network?.client?.connectivity}"
+            )
+            .isEqualTo(networkInfo.connectivity.toString())
+        assertThat(actual.network?.client?.downlinkKbps)
+            .overridingErrorMessage(
+                "Expected LogEvent to have downlinkKbps: " +
+                    "${networkInfo.downKbps?.toString()} but " +
+                    "instead was: ${actual.network?.client?.downlinkKbps}"
+            )
+            .isEqualTo(networkInfo.downKbps?.toString())
+        assertThat(actual.network?.client?.uplinkKbps)
+            .overridingErrorMessage(
+                "Expected LogEvent to have uplinkKbps: " +
+                    "${networkInfo.upKbps?.toString()} but " +
+                    "instead was: ${actual.network?.client?.uplinkKbps}"
+            )
+            .isEqualTo(networkInfo.upKbps?.toString())
+        assertThat(actual.network?.client?.signalStrength)
+            .overridingErrorMessage(
+                "Expected LogEvent to have signal strength: " +
+                    "${networkInfo.strength?.toString()} but " +
+                    "instead was: ${actual.network?.client?.signalStrength}"
+            )
+            .isEqualTo(networkInfo.strength?.toString())
+        assertThat(actual.network?.client?.simCarrier?.id)
+            .overridingErrorMessage(
+                "Expected LogEvent to have carrier id: " +
+                    "${networkInfo.carrierId?.toString()} but " +
+                    "instead was: ${actual.network?.client?.simCarrier?.id}"
+            )
+            .isEqualTo(networkInfo.carrierId?.toString())
+        assertThat(actual.network?.client?.simCarrier?.name)
+            .overridingErrorMessage(
+                "Expected LogEvent to have carrier name: " +
+                    "${networkInfo.carrierName} but " +
+                    "instead was: ${actual.network?.client?.simCarrier?.name}"
+            )
+            .isEqualTo(networkInfo.carrierName)
+        return this
+    }
+
     fun doesNotHaveError(): LogEventAssert {
         assertThat(actual.error)
             .overridingErrorMessage(
@@ -187,6 +233,34 @@ internal class LogEventAssert(actual: LogEvent) :
     }
 
     fun hasUserInfo(userInfo: UserInfo): LogEventAssert {
+        assertThat(actual.usr?.name)
+            .overridingErrorMessage(
+                "Expected LogEvent to have user name: " +
+                    "${userInfo.name} but " +
+                    "instead was: ${actual.usr?.name}"
+            )
+            .isEqualTo(userInfo.name)
+        assertThat(actual.usr?.email)
+            .overridingErrorMessage(
+                "Expected LogEvent to have user email: " +
+                    "${userInfo.email} but " +
+                    "instead was: ${actual.usr?.email}"
+            )
+            .isEqualTo(userInfo.email)
+        assertThat(actual.usr?.id)
+            .overridingErrorMessage(
+                "Expected LogEvent to have user id: " +
+                    "${userInfo.id} but " +
+                    "instead was: ${actual.usr?.id}"
+            )
+            .isEqualTo(userInfo.id)
+        assertThat(actual.usr?.additionalProperties)
+            .hasSameSizeAs(userInfo.additionalProperties)
+            .containsAllEntriesOf(userInfo.additionalProperties)
+        return this
+    }
+
+    fun hasUserInfo(userInfo: com.datadog.android.v2.api.context.UserInfo): LogEventAssert {
         assertThat(actual.usr?.name)
             .overridingErrorMessage(
                 "Expected LogEvent to have user name: " +
