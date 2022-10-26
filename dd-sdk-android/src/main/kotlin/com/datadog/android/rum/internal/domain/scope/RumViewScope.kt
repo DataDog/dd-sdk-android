@@ -922,8 +922,12 @@ private fun VitalInfo.toPerformanceMetric(): ViewEvent.FlutterBuildTime {
 @Suppress("CommentOverPrivateFunction")
 /**
  * This function is used to inverse frame times metrics into frame rates.
+ *
  * As we take the inverse, the min of the inverse is the inverse of the max and
  * vice-versa.
+ * For instance, if the the min frame time is 20ms (50 fps) and the max is 500ms (2 fps),
+ * the max frame rate is 50 fps (1/minValue) and the min is 2 fps (1/maxValue).
+ *
  * As the frame times are reported in nanoseconds, we need to add a multiplier.
  */
 private fun VitalInfo.toInversePerformanceMetric(): ViewEvent.FlutterBuildTime {
