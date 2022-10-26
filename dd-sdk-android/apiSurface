@@ -389,7 +389,7 @@ interface com.datadog.android.rum.RumMonitor
 enum com.datadog.android.rum.RumPerformanceMetric
   - FLUTTER_BUILD_TIME
   - FLUTTER_RASTER_TIME
-  - JS_REFRESH_RATE
+  - JS_FRAME_TIME
 interface com.datadog.android.rum.RumResourceAttributesProvider
   fun onProvideAttributes(okhttp3.Request, okhttp3.Response?, Throwable?): Map<String, Any?>
 enum com.datadog.android.rum.RumResourceKind

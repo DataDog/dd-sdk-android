@@ -626,8 +626,8 @@ internal open class RumViewScope(
                     ?.let { it.toPerformanceMetric() },
                 flutterRasterTime = performanceMetrics[RumPerformanceMetric.FLUTTER_RASTER_TIME]
                     ?.let { it.toPerformanceMetric() },
-                jsRefreshRate = performanceMetrics[RumPerformanceMetric.JS_REFRESH_RATE]
-                    ?.let { it.toPerformanceMetric() }
+                jsRefreshRate = performanceMetrics[RumPerformanceMetric.JS_FRAME_TIME]
+                    ?.let { it.toInversePerformanceMetric() }
             ),
             usr = ViewEvent.Usr(
                 id = user.id,
@@ -917,4 +917,27 @@ private fun VitalInfo.toPerformanceMetric(): ViewEvent.FlutterBuildTime {
         max = maxValue,
         average = meanValue
     )
+}
+
+@Suppress("CommentOverPrivateFunction")
+/**
+ * This function is used to inverse frame times metrics into frame rates.
+ *
+ * As we take the inverse, the min of the inverse is the inverse of the max and
+ * vice-versa.
+ * For instance, if the the min frame time is 20ms (50 fps) and the max is 500ms (2 fps),
+ * the max frame rate is 50 fps (1/minValue) and the min is 2 fps (1/maxValue).
+ *
+ * As the frame times are reported in nanoseconds, we need to add a multiplier.
+ */
+private fun VitalInfo.toInversePerformanceMetric(): ViewEvent.FlutterBuildTime {
+    return ViewEvent.FlutterBuildTime(
+        min = invertValue(maxValue) * TimeUnit.SECONDS.toNanos(1),
+        max = invertValue(minValue) * TimeUnit.SECONDS.toNanos(1),
+        average = invertValue(meanValue) * TimeUnit.SECONDS.toNanos(1)
+    )
+}
+
+private fun invertValue(value: Double): Double {
+    return if (value == 0.0) 0.0 else 1.0 / value
 }
