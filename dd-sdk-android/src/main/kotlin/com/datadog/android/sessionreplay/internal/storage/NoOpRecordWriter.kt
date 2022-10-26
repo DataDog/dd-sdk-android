@@ -4,14 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.writer
+package com.datadog.android.sessionreplay.internal.storage
 
-import com.datadog.android.sessionreplay.SerializedRecordWriter
+import com.datadog.android.sessionreplay.RecordWriter
 import com.datadog.android.sessionreplay.processor.EnrichedRecord
 
-internal class RecordWriter(private val jsonStringWriter: SerializedRecordWriter) : Writer {
-
+internal class NoOpRecordWriter : RecordWriter {
     override fun write(record: EnrichedRecord) {
-        jsonStringWriter.write(record.toJson())
+        // no-op
     }
 }

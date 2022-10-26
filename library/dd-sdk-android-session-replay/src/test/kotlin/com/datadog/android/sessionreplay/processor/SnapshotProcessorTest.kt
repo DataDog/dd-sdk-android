@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.processor
 
+import com.datadog.android.sessionreplay.RecordWriter
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.Node
 import com.datadog.android.sessionreplay.recorder.OrientationChanged
@@ -13,7 +14,6 @@ import com.datadog.android.sessionreplay.utils.ForgeConfigurator
 import com.datadog.android.sessionreplay.utils.RumContextProvider
 import com.datadog.android.sessionreplay.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.utils.TimeProvider
-import com.datadog.android.sessionreplay.writer.Writer
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.mock
@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit
 internal class SnapshotProcessorTest {
 
     @Mock
-    lateinit var mockWriter: Writer
+    lateinit var mockWriter: RecordWriter
 
     @Mock
     lateinit var mockTimeProvider: TimeProvider

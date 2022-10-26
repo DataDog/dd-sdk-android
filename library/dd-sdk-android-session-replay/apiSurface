@@ -4,10 +4,10 @@ interface com.datadog.android.sessionreplay.LifecycleCallback : android.app.Appl
 interface com.datadog.android.sessionreplay.RecordCallback
   fun onStartRecording()
   fun onStopRecording()
-interface com.datadog.android.sessionreplay.SerializedRecordWriter
-  fun write(String)
+interface com.datadog.android.sessionreplay.RecordWriter
+  fun write(com.datadog.android.sessionreplay.processor.EnrichedRecord)
 class com.datadog.android.sessionreplay.SessionReplayLifecycleCallback : LifecycleCallback
-  constructor(com.datadog.android.sessionreplay.utils.RumContextProvider, SessionReplayPrivacy, SerializedRecordWriter, com.datadog.android.sessionreplay.utils.TimeProvider, RecordCallback = NoOpRecordCallback())
+  constructor(com.datadog.android.sessionreplay.utils.RumContextProvider, SessionReplayPrivacy, RecordWriter, com.datadog.android.sessionreplay.utils.TimeProvider, RecordCallback = NoOpRecordCallback())
   override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
   override fun onActivityStarted(android.app.Activity)
   override fun onActivityResumed(android.app.Activity)

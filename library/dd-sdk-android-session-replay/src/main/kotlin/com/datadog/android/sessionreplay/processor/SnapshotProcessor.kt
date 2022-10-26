@@ -8,13 +8,13 @@ package com.datadog.android.sessionreplay.processor
 
 import androidx.annotation.MainThread
 import androidx.annotation.WorkerThread
+import com.datadog.android.sessionreplay.RecordWriter
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.Node
 import com.datadog.android.sessionreplay.recorder.OrientationChanged
 import com.datadog.android.sessionreplay.utils.RumContextProvider
 import com.datadog.android.sessionreplay.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.utils.TimeProvider
-import com.datadog.android.sessionreplay.writer.Writer
 import java.lang.NullPointerException
 import java.util.LinkedList
 import java.util.concurrent.ExecutorService
@@ -25,7 +25,7 @@ internal class SnapshotProcessor(
     private val rumContextProvider: RumContextProvider,
     private val timeProvider: TimeProvider,
     private val executorService: ExecutorService,
-    private val writer: Writer,
+    private val writer: RecordWriter,
     private val mutationResolver: MutationResolver = MutationResolver(),
     private val nodeFlattener: NodeFlattener = NodeFlattener()
 ) : Processor {
