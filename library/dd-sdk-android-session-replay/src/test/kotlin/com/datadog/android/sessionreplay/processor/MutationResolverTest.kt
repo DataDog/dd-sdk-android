@@ -355,6 +355,75 @@ internal class MutationResolverTest {
     }
 
     @Test
+    fun `M identify the updated wireframes W resolveMutations {Shape, clip}`(forge: Forge) {
+        // Given
+        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
+            forge.getForgery(MobileSegment.Wireframe.ShapeWireframe::class.java)
+        }
+        val fakeUpdateSize = forge.anInt(min = 1, max = fakePrevSnapshot.size)
+        val fakeUpdatedWireframes = fakePrevSnapshot
+            .take(fakeUpdateSize)
+            .map {
+                it.copy(
+                    clip = forge.getForgery()
+                )
+            }
+        val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
+        val expectedUpdates = fakeUpdatedWireframes.map {
+            MobileSegment.WireframeUpdateMutation.ShapeWireframeUpdate(
+                id = it.id(),
+                clip = it.clip
+            )
+        }
+
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            fakePrevSnapshot,
+            fakeCurrentSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
+    }
+
+    @Test
+    fun `M provide an empty clip W resolveMutations {Shape, new clip is null}`(forge: Forge) {
+        // Given
+        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
+            forge.getForgery(MobileSegment.Wireframe.ShapeWireframe::class.java)
+                .copy(clip = forge.getForgery())
+        }
+        val fakeUpdateSize = forge.anInt(min = 1, max = fakePrevSnapshot.size)
+        val fakeUpdatedWireframes = fakePrevSnapshot
+            .take(fakeUpdateSize)
+            .map {
+                it.copy(
+                    clip = null
+                )
+            }
+        val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
+        val expectedUpdates = fakeUpdatedWireframes.map {
+            MobileSegment.WireframeUpdateMutation.ShapeWireframeUpdate(
+                id = it.id(),
+                clip = MobileSegment.WireframeClip(0, 0, 0, 0)
+            )
+        }
+
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            fakePrevSnapshot,
+            fakeCurrentSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
+    }
+
+    @Test
     fun `M return empty mutations W resolveMutation {Shape wireframes types are not matching}`(
         forge: Forge
     ) {
@@ -625,6 +694,75 @@ internal class MutationResolverTest {
             MobileSegment.WireframeUpdateMutation.TextWireframeUpdate(
                 id = it.id(),
                 textPosition = it.textPosition
+            )
+        }
+
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            fakePrevSnapshot,
+            fakeCurrentSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
+    }
+
+    @Test
+    fun `M identify the updated wireframes W resolveMutations {Text, clip}`(forge: Forge) {
+        // Given
+        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
+            forge.getForgery(MobileSegment.Wireframe.TextWireframe::class.java)
+        }
+        val fakeUpdateSize = forge.anInt(min = 1, max = fakePrevSnapshot.size)
+        val fakeUpdatedWireframes = fakePrevSnapshot
+            .take(fakeUpdateSize)
+            .map {
+                it.copy(
+                    clip = forge.getForgery()
+                )
+            }
+        val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
+        val expectedUpdates = fakeUpdatedWireframes.map {
+            MobileSegment.WireframeUpdateMutation.TextWireframeUpdate(
+                id = it.id(),
+                clip = it.clip
+            )
+        }
+
+        // When
+        val mutations = testedMutationResolver.resolveMutations(
+            fakePrevSnapshot,
+            fakeCurrentSnapshot
+        )
+
+        // Then
+        assertThat(mutations?.adds).isNullOrEmpty()
+        assertThat(mutations?.removes).isNullOrEmpty()
+        assertThat(mutations?.updates).isEqualTo(expectedUpdates)
+    }
+
+    @Test
+    fun `M provide an empty clip W resolveMutations {Text, new clip is null}`(forge: Forge) {
+        // Given
+        val fakePrevSnapshot = forge.aList(size = forge.anInt(min = 2, max = 10)) {
+            forge.getForgery(MobileSegment.Wireframe.TextWireframe::class.java)
+                .copy(clip = forge.getForgery())
+        }
+        val fakeUpdateSize = forge.anInt(min = 1, max = fakePrevSnapshot.size)
+        val fakeUpdatedWireframes = fakePrevSnapshot
+            .take(fakeUpdateSize)
+            .map {
+                it.copy(
+                    clip = null
+                )
+            }
+        val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
+        val expectedUpdates = fakeUpdatedWireframes.map {
+            MobileSegment.WireframeUpdateMutation.TextWireframeUpdate(
+                id = it.id(),
+                clip = MobileSegment.WireframeClip(0, 0, 0, 0)
             )
         }
 

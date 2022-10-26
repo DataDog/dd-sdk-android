@@ -6,91 +6,60 @@
 
 package com.datadog.android.sessionreplay.recorder
 
-import android.os.Build
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewStub
-import androidx.appcompat.widget.ActionBarContextView
-import androidx.appcompat.widget.Toolbar
+import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.mapper.GenericWireframeMapper
 import java.util.LinkedList
 
 internal class SnapshotProducer(
-    private val wireframeMapper: GenericWireframeMapper
+    private val wireframeMapper: GenericWireframeMapper,
+    private val viewUtils: ViewUtils = ViewUtils()
 ) {
 
-    private val systemViewIds by lazy {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            setOf(android.R.id.navigationBarBackground, android.R.id.statusBarBackground)
-        } else {
-            emptySet()
-        }
-    }
-
     fun produce(rootView: View, pixelsDensity: Float): Node? {
-        return convertViewToNode(rootView, pixelsDensity)
+        return convertViewToNode(rootView, pixelsDensity, LinkedList())
     }
 
     @Suppress("ComplexMethod")
-    private fun convertViewToNode(view: View, pixelsDensity: Float): Node? {
-        if (view.isNotVisible()) {
+    private fun convertViewToNode(
+        view: View,
+        pixelsDensity: Float,
+        parents: LinkedList<MobileSegment.Wireframe>
+    ): Node? {
+        if (viewUtils.checkIfNotVisible(view)) {
             return null
         }
 
-        if (view.isSystemNoise()) {
+        if (viewUtils.checkIfSystemNoise(view)) {
             return null
         }
 
-        if (view.isToolbar()) {
+        if (viewUtils.checkIsToolbar(view)) {
             // skip adding the children and just take a screenshot of the toolbar.
             // It is too complex to de - structure this in multiple wireframes
             // and we cannot actually get all the details here.
             return Node(
-                wireframes = listOf(wireframeMapper.imageMapper.map(view, pixelsDensity))
+                wireframe = wireframeMapper.imageMapper.map(view, pixelsDensity)
             )
         }
 
         val childNodes = LinkedList<Node>()
+        val wireframe = wireframeMapper.map(view, pixelsDensity)
         if (view is ViewGroup && view.childCount > 0) {
+            val parentsCopy = LinkedList(parents).apply { add(wireframe) }
             for (i in 0 until view.childCount) {
                 val viewChild = view.getChildAt(i) ?: continue
-                convertViewToNode(viewChild, pixelsDensity)?.let {
+                convertViewToNode(viewChild, pixelsDensity, parentsCopy)?.let {
                     childNodes.add(it)
                 }
             }
         }
 
-        return convertViewToNode(view, childNodes, pixelsDensity)
-    }
-
-    private fun convertViewToNode(
-        view: View,
-        childNodes: LinkedList<Node>,
-        pixelsDensity: Float
-    ) = Node(
-        children = childNodes,
-        wireframes = listOf(wireframeMapper.map(view, pixelsDensity))
-    )
-
-    private fun View.isToolbar(): Boolean {
-        return (
-            Toolbar::class.java.isAssignableFrom(this::class.java) &&
-                this.id == androidx.appcompat.R.id.action_bar
-            ) ||
-            (
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
-                    android.widget.Toolbar::class.java
-                        .isAssignableFrom(this::class.java)
-                )
-    }
-
-    private fun View.isNotVisible(): Boolean {
-        return !this.isShown || this.width <= 0 || this.height <= 0
-    }
-
-    private fun View.isSystemNoise(): Boolean {
-        return id in systemViewIds ||
-            this is ViewStub ||
-            this is ActionBarContextView
+        return Node(
+            children = childNodes,
+            wireframe = wireframe,
+            parents = parents
+        )
     }
 }

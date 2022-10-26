@@ -253,18 +253,6 @@ internal class SnapshotProcessorTest {
     }
 
     @Test
-    fun `M do nothing W process { snapshot is empty }`(forge: Forge) {
-        // Given
-        val fakeSnapshot = forge.aSingleLevelSnapshot().copy(wireframes = emptyList())
-
-        // When
-        testedProcessor.process(fakeSnapshot)
-
-        // Then
-        verifyZeroInteractions(mockWriter)
-    }
-
-    @Test
     fun `M send MetaRecord first W process { snapshot on a new view }`(forge: Forge) {
         // Given
         val fakeRootWidth = forge.aLong(min = 400)
@@ -276,11 +264,7 @@ internal class SnapshotProcessorTest {
             fakeRootWidth,
             fakeRootHeight
         )
-        val fakeSnapshot = Node(
-            wireframes = listOf(
-                rootWireframe
-            )
-        )
+        val fakeSnapshot = Node(wireframe = rootWireframe)
         whenever(mockNodeFlattener.flattenNode(fakeSnapshot)).thenReturn(listOf(rootWireframe))
 
         // When
@@ -302,14 +286,13 @@ internal class SnapshotProcessorTest {
         val fakeRootWidth = forge.aLong(min = 400)
         val fakeRootHeight = forge.aLong(min = 700)
         val fakeSnapshot = Node(
-            wireframes = listOf(
-                MobileSegment.Wireframe.ShapeWireframe(
-                    0,
-                    0,
-                    0,
-                    fakeRootWidth,
-                    fakeRootHeight
-                )
+            wireframe =
+            MobileSegment.Wireframe.ShapeWireframe(
+                0,
+                0,
+                0,
+                fakeRootWidth,
+                fakeRootHeight
             )
         )
 
@@ -379,11 +362,7 @@ internal class SnapshotProcessorTest {
             fakeRootWidth,
             fakeRootHeight
         )
-        val fakeSnapshot3 = Node(
-            wireframes = listOf(
-                rootWireframe
-            )
-        )
+        val fakeSnapshot3 = Node(rootWireframe)
         whenever(mockNodeFlattener.flattenNode(fakeSnapshot3)).thenReturn(listOf(rootWireframe))
 
         testedProcessor.process(fakeSnapshot1)
@@ -751,14 +730,12 @@ internal class SnapshotProcessorTest {
 
     private fun Forge.aSingleLevelSnapshot(): Node {
         return Node(
-            wireframes = listOf(
-                MobileSegment.Wireframe.ShapeWireframe(
-                    aLong(min = 0),
-                    aLong(min = 0),
-                    aLong(min = 0),
-                    aLong(min = 0),
-                    aLong(min = 0)
-                )
+            MobileSegment.Wireframe.ShapeWireframe(
+                aLong(min = 0),
+                aLong(min = 0),
+                aLong(min = 0),
+                aLong(min = 0),
+                aLong(min = 0)
             )
         )
     }
@@ -769,14 +746,13 @@ internal class SnapshotProcessorTest {
         @JvmStatic
         fun processorArguments(): List<Any> {
             val fakeSnapshot = Node(
-                wireframes = listOf(
-                    MobileSegment.Wireframe.ShapeWireframe(
-                        0,
-                        0,
-                        0,
-                        0,
-                        0
-                    )
+                wireframe =
+                MobileSegment.Wireframe.ShapeWireframe(
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
                 )
             )
 

@@ -6,22 +6,15 @@
 
 package com.datadog.android.sessionreplay.recorder
 
-import android.os.Build
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewStub
-import androidx.annotation.RequiresApi
-import androidx.appcompat.widget.ActionBarContextView
 import androidx.appcompat.widget.Toolbar
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.mapper.AllowAllWireframeMapper
 import com.datadog.android.sessionreplay.recorder.mapper.ViewScreenshotWireframeMapper
 import com.datadog.android.sessionreplay.utils.ForgeConfigurator
-import com.datadog.tools.unit.annotations.TestTargetApi
-import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -39,8 +32,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(ApiLevelExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
@@ -63,6 +55,9 @@ internal class SnapshotProducerTest {
     @Mock
     lateinit var mockShapeScreenshotWireframe: MobileSegment.Wireframe.ShapeWireframe
 
+    @Mock
+    lateinit var mockViewUtils: ViewUtils
+
     @BeforeEach
     fun `set up`() {
         whenever(mockViewScreenshotWireframeMapper.map(any(), eq(fakePixelDensity)))
@@ -71,7 +66,9 @@ internal class SnapshotProducerTest {
             .thenReturn(mockViewWireframe)
         whenever(mockGenericWireframeMapper.imageMapper)
             .thenReturn(mockViewScreenshotWireframeMapper)
-        testedSnapshotProducer = SnapshotProducer(mockGenericWireframeMapper)
+        whenever(mockViewUtils.checkIfNotVisible(any())).thenReturn(false)
+        whenever(mockViewUtils.checkIfSystemNoise(any())).thenReturn(false)
+        testedSnapshotProducer = SnapshotProducer(mockGenericWireframeMapper, mockViewUtils)
     }
 
     // region Default Tests
@@ -104,40 +101,14 @@ internal class SnapshotProducerTest {
 
     // endregion
 
-    // region validity tests
+    // region visibility tests
 
     @Test
-    fun `M return null W produce() { root is invisible }`(forge: Forge) {
+    fun `M return null W produce() { any view is not visible }`(forge: Forge) {
         // Given
         val fakeRoot = forge
             .aMockViewWithChildren(2, 0, 2)
-            .apply { whenever(this.isShown).thenReturn(false) }
-
-        // Then
-        assertThat(testedSnapshotProducer.produce(fakeRoot, fakePixelDensity)).isNull()
-    }
-
-    @Test
-    fun `M return null W produce() { root width is 0 or less }`(forge: Forge) {
-        // Given
-        val fakeRoot = forge
-            .aMockViewWithChildren(2, 0, 2)
-            .apply {
-                whenever(this.width).thenReturn(forge.anInt(max = 1))
-            }
-
-        // Then
-        assertThat(testedSnapshotProducer.produce(fakeRoot, fakePixelDensity)).isNull()
-    }
-
-    @Test
-    fun `M return null W produce() { root height is 0 or less }`(forge: Forge) {
-        // Given
-        val fakeRoot = forge
-            .aMockViewWithChildren(2, 0, 2)
-            .apply {
-                whenever(this.height).thenReturn(forge.anInt(max = 1))
-            }
+            .apply { whenever(mockViewUtils.checkIfNotVisible(this)).thenReturn(true) }
 
         // Then
         assertThat(testedSnapshotProducer.produce(fakeRoot, fakePixelDensity)).isNull()
@@ -148,48 +119,11 @@ internal class SnapshotProducerTest {
     // region System Noise
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    fun `M exclude the navigationBarBackground W produce()`(forge: Forge) {
+    fun `M return null W produce() { any view is system noise }`(forge: Forge) {
         // Given
         val fakeRoot = forge
             .aMockViewWithChildren(2, 0, 2)
-            .apply {
-                whenever(this.id).thenReturn(android.R.id.navigationBarBackground)
-            }
-
-        // Then
-        assertThat(testedSnapshotProducer.produce(fakeRoot, fakePixelDensity)).isNull()
-    }
-
-    @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    fun `M exclude the statusBarBackground W produce()`(forge: Forge) {
-        // Given
-        val fakeRoot = forge
-            .aMockViewWithChildren(2, 0, 2)
-            .apply {
-                whenever(this.id).thenReturn(android.R.id.statusBarBackground)
-            }
-
-        // Then
-        assertThat(testedSnapshotProducer.produce(fakeRoot, fakePixelDensity)).isNull()
-    }
-
-    @Test
-    fun `M exclude the ViewStub W produce()`() {
-        // Given
-        val fakeRoot: ViewStub = mock()
-
-        // Then
-        assertThat(testedSnapshotProducer.produce(fakeRoot, fakePixelDensity)).isNull()
-    }
-
-    @Test
-    fun `M exclude the ActionBarContextView W produce()`() {
-        // Given
-        val fakeRoot: ActionBarContextView = mock()
+            .apply { whenever(mockViewUtils.checkIfSystemNoise(this)).thenReturn(true) }
 
         // Then
         assertThat(testedSnapshotProducer.produce(fakeRoot, fakePixelDensity)).isNull()
@@ -200,36 +134,19 @@ internal class SnapshotProducerTest {
     // region Toolbar
 
     @Test
-    fun `M resolve a Node with screenshot with border W produce() { androidx Toolbar }`(
+    fun `M resolve a Node with screenshot with border W produce() { view is Toolbar }`(
         forge: Forge
     ) {
         // Given
         val mockToolBar: Toolbar = forge.aMockView<Toolbar>().apply {
-            whenever(this.id).thenReturn(androidx.appcompat.R.id.action_bar)
+            whenever(mockViewUtils.checkIsToolbar(this)).thenReturn(true)
         }
 
         // When
         val snapshot = testedSnapshotProducer.produce(mockToolBar, fakePixelDensity)
 
         // Then
-        val shapeWireframe = snapshot?.wireframes?.get(0) as MobileSegment.Wireframe.ShapeWireframe
-        assertThat(shapeWireframe).isEqualTo(mockShapeScreenshotWireframe)
-    }
-
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    @Test
-    fun `M resolve a Node with screenshot with border W produce() { android Toolbar }`(
-        forge: Forge
-    ) {
-        // Given
-        val mockToolBar: android.widget.Toolbar = forge.aMockView()
-
-        // When
-        val snapshot = testedSnapshotProducer.produce(mockToolBar, fakePixelDensity)
-
-        // Then
-        val shapeWireframe = snapshot?.wireframes?.get(0) as MobileSegment.Wireframe.ShapeWireframe
+        val shapeWireframe = snapshot?.wireframe as MobileSegment.Wireframe.ShapeWireframe
         assertThat(shapeWireframe).isEqualTo(mockShapeScreenshotWireframe)
     }
 
@@ -237,17 +154,21 @@ internal class SnapshotProducerTest {
 
     // region Internals
 
-    private fun View.toNode(): Node {
+    private fun View.toNode(level: Int = 0): Node {
         val children = if (this is ViewGroup) {
             val nodes = mutableListOf<Node>()
             for (i in 0 until childCount) {
-                nodes.add(this.getChildAt(i).toNode())
+                nodes.add(this.getChildAt(i).toNode(level + 1))
             }
             nodes
         } else {
             emptyList()
         }
-        return Node(wireframes = listOf(mockViewWireframe), children = children)
+        return Node(
+            wireframe = mockViewWireframe,
+            children = children,
+            parents = List(level) { mockViewWireframe }
+        )
     }
 
     // endregion

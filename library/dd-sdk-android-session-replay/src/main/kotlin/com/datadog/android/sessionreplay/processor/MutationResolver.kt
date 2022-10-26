@@ -218,6 +218,12 @@ internal class MutationResolver {
         if (prevWireframe.shapeStyle != currentWireframe.shapeStyle) {
             mutation = mutation.copy(shapeStyle = currentWireframe.shapeStyle)
         }
+        if (prevWireframe.clip != currentWireframe.clip) {
+            mutation = mutation.copy(
+                clip = currentWireframe.clip
+                    ?: MobileSegment.WireframeClip(0, 0, 0, 0)
+            )
+        }
 
         return mutation
     }
@@ -279,6 +285,12 @@ internal class MutationResolver {
         }
         if (prevWireframe.textPosition != currentWireframe.textPosition) {
             mutation = mutation.copy(textPosition = currentWireframe.textPosition)
+        }
+        if (prevWireframe.clip != currentWireframe.clip) {
+            mutation = mutation.copy(
+                clip = currentWireframe.clip
+                    ?: MobileSegment.WireframeClip(0, 0, 0, 0)
+            )
         }
 
         return mutation

@@ -30,6 +30,9 @@
       "type": "integer",
       "description": "The height in pixels of the UI element, normalized based on the device pixels per inch density (DPI). Example: if a device has a DPI = 2, the height of all UI elements is divided by 2 to get a normalized height.",
       "readOnly": true
+    },
+    "clip": {
+      "$ref": "wireframe-clip-schema.json"
     }
   }
 }

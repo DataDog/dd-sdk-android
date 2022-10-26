@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.recorder
 
 import android.view.View
 import android.view.ViewGroup
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -38,8 +39,7 @@ internal inline fun <reified T : View> Forge.aMockView(): T {
     return mock {
         val absX = anInt(min = 0)
         val absY = anInt(min = 0)
-        val locationInWindow = intArrayOf(absX, absY)
-        whenever(it.getLocationInWindow(locationInWindow)).then {
+        whenever(it.getLocationOnScreen(any())).thenAnswer {
             val location = (
                 it.arguments[0]
                     as IntArray

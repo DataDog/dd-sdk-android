@@ -26,7 +26,7 @@ internal abstract class BaseWireframeMapperTest {
 
     protected fun View.toShapeWireframe(): MobileSegment.Wireframe.ShapeWireframe {
         val coordinates = IntArray(2)
-        this.getLocationInWindow(coordinates)
+        this.getLocationOnScreen(coordinates)
         val x = coordinates[0].densityNormalized(fakePixelDensity).toLong()
         val y = coordinates[1].densityNormalized(fakePixelDensity).toLong()
         return MobileSegment.Wireframe.ShapeWireframe(
@@ -40,7 +40,7 @@ internal abstract class BaseWireframeMapperTest {
 
     protected fun TextView.toTextWireframe(): MobileSegment.Wireframe.TextWireframe {
         val coordinates = IntArray(2)
-        this.getLocationInWindow(coordinates)
+        this.getLocationOnScreen(coordinates)
         val x = coordinates[0].densityNormalized(fakePixelDensity).toLong()
         val y = coordinates[1].densityNormalized(fakePixelDensity).toLong()
         return MobileSegment.Wireframe.TextWireframe(

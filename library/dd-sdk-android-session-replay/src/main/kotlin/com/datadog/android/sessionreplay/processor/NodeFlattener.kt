@@ -11,7 +11,7 @@ import com.datadog.android.sessionreplay.recorder.Node
 import java.util.LinkedList
 import java.util.Stack
 
-internal class NodeFlattener {
+internal class NodeFlattener(private val wireframeUtils: WireframeUtils = WireframeUtils()) {
 
     internal fun flattenNode(root: Node): List<MobileSegment.Wireframe> {
         val stack = Stack<Node>()
@@ -19,7 +19,12 @@ internal class NodeFlattener {
         stack.push(root)
         while (stack.isNotEmpty()) {
             val node = stack.pop()
-            list.addAll(node.wireframes)
+            var wireframe = node.wireframe
+            wireframeUtils.resolveWireframeClip(wireframe, node.parents)?.let { clip ->
+                wireframe = wireframe.copy(clip = clip)
+            }
+            list.add(wireframe)
+
             for (i in node.children.count() - 1 downTo 0) {
                 stack.push(node.children[i])
             }
@@ -30,30 +35,7 @@ internal class NodeFlattener {
     private fun filterOutInvalidWireframes(wireframes: List<MobileSegment.Wireframe>):
         List<MobileSegment.Wireframe> {
         return wireframes.filterIndexed { index, wireframe ->
-            isValidWireframe(wireframe, wireframes.drop(index + 1))
+            wireframeUtils.checkIsValidWireframe(wireframe, wireframes.drop(index + 1))
         }
-    }
-
-    private fun isValidWireframe(
-        wireframe: MobileSegment.Wireframe,
-        topWireframes: List<MobileSegment.Wireframe>
-    ): Boolean {
-        val wireframeBounds = wireframe.bounds()
-        if (wireframeBounds.width <= 0 || wireframeBounds.height <= 0) {
-            return false
-        }
-        topWireframes.forEach {
-            if (it.bounds().isCovering(wireframeBounds)) {
-                return false
-            }
-        }
-        return true
-    }
-
-    private fun Bounds.isCovering(other: Bounds): Boolean {
-        return this.x <= other.x &&
-            x + width >= other.x + other.width &&
-            y <= other.y &&
-            y + height >= other.y + other.height
     }
 }

@@ -30,5 +30,6 @@ internal class ForgeConfigurator : BaseConfigurator() {
         forge.addFactory(MetaRecordForgeryFactory())
         forge.addFactory(ViewEndRecordForgeryFactory())
         forge.addFactory(EnrichedRecordForgeryFactory())
+        forge.addFactory(WireframeClipForgeryFactory())
     }
 }

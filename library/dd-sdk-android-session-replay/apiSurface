@@ -126,13 +126,13 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
   sealed class Wireframe
     abstract fun toJson(): com.google.gson.JsonElement
     data class ShapeWireframe : Wireframe
-      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, ShapeStyle? = null, ShapeBorder? = null)
+      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null)
       val type: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
       companion object 
         fun fromJson(kotlin.String): ShapeWireframe
     data class TextWireframe : Wireframe
-      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, ShapeStyle? = null, ShapeBorder? = null, kotlin.String, TextStyle, TextPosition? = null)
+      constructor(kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, kotlin.Long, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String, TextStyle, TextPosition? = null)
       val type: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
       companion object 
@@ -152,13 +152,13 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
   sealed class WireframeUpdateMutation
     abstract fun toJson(): com.google.gson.JsonElement
     data class TextWireframeUpdate : WireframeUpdateMutation
-      constructor(kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String? = null, TextStyle? = null, TextPosition? = null)
+      constructor(kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null, kotlin.String? = null, TextStyle? = null, TextPosition? = null)
       val type: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
       companion object 
         fun fromJson(kotlin.String): TextWireframeUpdate
     data class ShapeWireframeUpdate : WireframeUpdateMutation
-      constructor(kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, ShapeStyle? = null, ShapeBorder? = null)
+      constructor(kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, WireframeClip? = null, ShapeStyle? = null, ShapeBorder? = null)
       val type: kotlin.String
       override fun toJson(): com.google.gson.JsonElement
       companion object 
@@ -170,6 +170,11 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Position
+  data class WireframeClip
+    constructor(kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): WireframeClip
   data class ShapeStyle
     constructor(kotlin.String? = null, kotlin.Number? = null, kotlin.Number? = null)
     fun toJson(): com.google.gson.JsonElement
