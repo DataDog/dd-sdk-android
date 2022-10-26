@@ -6,12 +6,27 @@
 
 package com.datadog.android.tracing.internal.data
 
-import com.datadog.android.core.internal.persistence.DataWriter
+import androidx.annotation.WorkerThread
+import com.datadog.android.event.EventMapper
+import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.tracing.internal.TracingFeature
+import com.datadog.android.tracing.model.SpanEvent
+import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.storage.ContextAwareMapper
+import com.datadog.android.v2.core.internal.storage.ContextAwareSerializer
 import com.datadog.opentracing.DDSpan
 import com.datadog.trace.common.writer.Writer
+import java.util.Locale
 
 internal class TraceWriter(
-    val writer: DataWriter<DDSpan>
+    private val sdkCore: SdkCore,
+    private val legacyMapper: ContextAwareMapper<DDSpan, SpanEvent>,
+    internal val eventMapper: EventMapper<SpanEvent>,
+    private val serializer: ContextAwareSerializer<SpanEvent>,
+    private val internalLogger: Logger
 ) : Writer {
 
     // region Writer
@@ -20,10 +35,14 @@ internal class TraceWriter(
     }
 
     override fun write(trace: MutableList<DDSpan>?) {
-        trace?.let {
-            @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
-            writer.write(it)
-        }
+        if (trace == null) return
+        sdkCore.getFeature(TracingFeature.TRACING_FEATURE_NAME)
+            ?.withWriteContext { datadogContext, eventBatchWriter ->
+                trace.forEach { span ->
+                    @Suppress("ThreadSafety") // called in the worker context
+                    writeSpan(datadogContext, eventBatchWriter, span)
+                }
+            }
     }
 
     override fun close() {
@@ -35,4 +54,31 @@ internal class TraceWriter(
     }
 
     // endregion
+
+    @WorkerThread
+    private fun writeSpan(
+        datadogContext: DatadogContext,
+        writer: EventBatchWriter,
+        span: DDSpan
+    ) {
+        val spanEvent = legacyMapper.map(datadogContext, span)
+        val mapped = eventMapper.map(spanEvent) ?: return
+        try {
+            val serialized = serializer
+                .serialize(datadogContext, mapped)
+                ?.toByteArray(Charsets.UTF_8) ?: return
+            synchronized(this) {
+                writer.write(serialized, null)
+            }
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            internalLogger.errorWithTelemetry(
+                ERROR_SERIALIZING.format(Locale.US, mapped.javaClass.simpleName),
+                e
+            )
+        }
+    }
+
+    companion object {
+        internal const val ERROR_SERIALIZING = "Error serializing %s model"
+    }
 }

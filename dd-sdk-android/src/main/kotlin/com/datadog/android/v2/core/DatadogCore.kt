@@ -331,7 +331,7 @@ internal class DatadogCore(
             )
             features[TracingFeature.TRACING_FEATURE_NAME]?.let {
                 it.initialize(appContext, configuration.plugins)
-                tracingFeature = TracingFeature(coreFeature, it.storage).also {
+                tracingFeature = TracingFeature(this).also {
                     it.initialize(configuration)
                 }
             }

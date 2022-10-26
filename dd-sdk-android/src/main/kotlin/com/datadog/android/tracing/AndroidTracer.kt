@@ -7,17 +7,17 @@
 package com.datadog.android.tracing
 
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.persistence.NoOpDataWriter
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.tracing.internal.data.TraceWriter
+import com.datadog.android.tracing.internal.data.NoOpWriter
 import com.datadog.android.tracing.internal.handlers.AndroidSpanLogsHandler
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.opentracing.DDTracer
 import com.datadog.opentracing.LogHandler
 import com.datadog.trace.api.Config
+import com.datadog.trace.common.writer.Writer
 import io.opentracing.Span
 import io.opentracing.log.Fields
 import java.security.SecureRandom
@@ -34,7 +34,7 @@ import java.util.Random
  */
 class AndroidTracer internal constructor(
     config: Config,
-    writer: TraceWriter,
+    writer: Writer,
     random: Random,
     private val logsHandler: LogHandler,
     private val bundleWithRum: Boolean
@@ -95,10 +95,9 @@ class AndroidTracer internal constructor(
                 devLogger.e(RUM_NOT_ENABLED_ERROR_MESSAGE)
                 bundleWithRumEnabled = false
             }
-            val writer = tracingFeature?.persistenceStrategy?.getWriter() ?: NoOpDataWriter()
             return AndroidTracer(
                 config(),
-                TraceWriter(writer),
+                tracingFeature?.dataWriter ?: NoOpWriter(),
                 random,
                 logsHandler,
                 bundleWithRumEnabled

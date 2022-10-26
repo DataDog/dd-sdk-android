@@ -7,47 +7,44 @@
 package com.datadog.android.tracing.internal
 
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
-import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.tracing.internal.domain.TracesFilePersistenceStrategy
-import com.datadog.android.v2.core.internal.storage.Storage
-import com.datadog.opentracing.DDSpan
+import com.datadog.android.tracing.internal.data.NoOpWriter
+import com.datadog.android.tracing.internal.data.TraceWriter
+import com.datadog.android.tracing.internal.domain.event.DdSpanToSpanEventMapper
+import com.datadog.android.tracing.internal.domain.event.SpanEventMapperWrapper
+import com.datadog.android.tracing.internal.domain.event.SpanEventSerializer
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.trace.common.writer.Writer
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class TracingFeature(
-    private val coreFeature: CoreFeature,
-    private val storage: Storage
+    private val sdkCore: SdkCore
 ) {
 
-    internal var persistenceStrategy: PersistenceStrategy<DDSpan> = NoOpPersistenceStrategy()
+    internal var dataWriter: Writer = NoOpWriter()
     internal val initialized = AtomicBoolean(false)
 
     // region SdkFeature
 
     fun initialize(configuration: Configuration.Feature.Tracing) {
-        persistenceStrategy = createPersistenceStrategy(storage, configuration)
+        dataWriter = createDataWriter(configuration)
         initialized.set(true)
     }
 
     fun stop() {
-        persistenceStrategy = NoOpPersistenceStrategy()
+        dataWriter = NoOpWriter()
         initialized.set(false)
     }
 
-    private fun createPersistenceStrategy(
-        storage: Storage,
+    private fun createDataWriter(
         configuration: Configuration.Feature.Tracing
-    ): PersistenceStrategy<DDSpan> {
-        return TracesFilePersistenceStrategy(
-            coreFeature.contextProvider,
-            coreFeature.persistenceExecutorService,
-            coreFeature,
-            coreFeature.envName,
-            sdkLogger,
-            configuration.spanEventMapper,
-            storage
+    ): Writer {
+        return TraceWriter(
+            sdkCore,
+            legacyMapper = DdSpanToSpanEventMapper(),
+            eventMapper = SpanEventMapperWrapper(configuration.spanEventMapper),
+            serializer = SpanEventSerializer(),
+            internalLogger = sdkLogger
         )
     }
 

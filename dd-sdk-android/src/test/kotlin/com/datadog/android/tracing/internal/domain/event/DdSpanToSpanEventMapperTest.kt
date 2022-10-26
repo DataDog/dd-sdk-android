@@ -6,24 +6,14 @@
 
 package com.datadog.android.tracing.internal.domain.event
 
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.system.AppVersionProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.toHexString
-import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.core.model.UserInfo
-import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.tracing.assertj.SpanEventAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.setFieldValue
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.LongForgery
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
@@ -31,7 +21,6 @@ import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -48,64 +37,19 @@ internal class DdSpanToSpanEventMapperTest {
     lateinit var testedMapper: DdSpanToSpanEventMapper
 
     @Forgery
-    lateinit var fakeUserInfo: UserInfo
-
-    @Forgery
-    lateinit var fakeNetworkInfo: NetworkInfo
-
-    @Mock
-    lateinit var mockTimeProvider: TimeProvider
-
-    @Mock
-    lateinit var mockUserInfoProvider: MutableUserInfoProvider
-
-    @Mock
-    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
-
-    @Mock
-    lateinit var mockAppVersionProvider: AppVersionProvider
-
-    @Mock
-    lateinit var mockCoreFeature: CoreFeature
-
-    @StringForgery(regex = "[0-9]\\.[0-9]\\.[0-9]")
-    lateinit var fakeClientPackageVersion: String
-
-    @StringForgery
-    lateinit var fakeSdkVersion: String
-
-    @StringForgery
-    lateinit var fakeSource: String
-
-    @LongForgery
-    var fakeServerOffsetNanos: Long = 0L
+    lateinit var fakeDatadogContext: DatadogContext
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockCoreFeature.packageVersionProvider) doReturn mockAppVersionProvider
-        whenever(mockAppVersionProvider.version) doReturn fakeClientPackageVersion
-        whenever(mockCoreFeature.sdkVersion) doReturn fakeSdkVersion
-        whenever(mockCoreFeature.sourceName) doReturn fakeSource
-
-        whenever(mockCoreFeature.timeProvider) doReturn mockTimeProvider
-        whenever(mockCoreFeature.networkInfoProvider) doReturn mockNetworkInfoProvider
-        whenever(mockCoreFeature.userInfoProvider) doReturn mockUserInfoProvider
-
-        whenever(mockTimeProvider.getServerOffsetNanos()).thenReturn(fakeServerOffsetNanos)
-        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
-        whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
-        testedMapper = DdSpanToSpanEventMapper(mockCoreFeature)
+        testedMapper = DdSpanToSpanEventMapper()
     }
 
     @RepeatedTest(4)
     fun `M map a DdSpan to a SpanEvent W map`(
         @Forgery fakeSpan: DDSpan
     ) {
-        // GIVEN
-        whenever(mockTimeProvider.getServerOffsetNanos()).thenReturn(fakeServerOffsetNanos)
-
         // WHEN
-        val event = testedMapper.map(fakeSpan)
+        val event = testedMapper.map(fakeDatadogContext, fakeSpan)
 
         // THEN
         assertThat(event)
@@ -116,14 +60,14 @@ internal class DdSpanToSpanEventMapperTest {
             .hasOperationName(fakeSpan.operationName)
             .hasResourceName(fakeSpan.resourceName)
             .hasSpanType("custom")
-            .hasSpanSource(fakeSource)
+            .hasSpanSource(fakeDatadogContext.source)
             .hasErrorFlag(fakeSpan.error.toLong())
-            .hasSpanStartTime(fakeSpan.startTime + fakeServerOffsetNanos)
+            .hasSpanStartTime(fakeSpan.startTime + fakeDatadogContext.time.serverTimeOffsetNs)
             .hasSpanDuration(fakeSpan.durationNano)
-            .hasTracerVersion(fakeSdkVersion)
-            .hasClientPackageVersion(fakeClientPackageVersion)
-            .hasNetworkInfo(fakeNetworkInfo)
-            .hasUserInfo(fakeUserInfo)
+            .hasTracerVersion(fakeDatadogContext.sdkVersion)
+            .hasClientPackageVersion(fakeDatadogContext.version)
+            .hasNetworkInfo(fakeDatadogContext.networkInfo)
+            .hasUserInfo(fakeDatadogContext.userInfo)
             .hasMeta(fakeSpan.meta)
             .hasMetrics(fakeSpan.metrics)
     }
@@ -136,7 +80,7 @@ internal class DdSpanToSpanEventMapperTest {
         fakeSpan.setFieldValue("parentId", 0)
 
         // WHEN
-        val event = testedMapper.map(fakeSpan)
+        val event = testedMapper.map(fakeDatadogContext, fakeSpan)
 
         // THEN
         assertThat(event)
@@ -152,7 +96,7 @@ internal class DdSpanToSpanEventMapperTest {
         fakeSpan.context().setFieldValue("parentId", BigInteger.valueOf(forge.aLong(min = 1)))
 
         // WHEN
-        val event = testedMapper.map(fakeSpan)
+        val event = testedMapper.map(fakeDatadogContext, fakeSpan)
 
         // THEN
         assertThat(event)

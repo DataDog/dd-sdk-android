@@ -8,29 +8,29 @@ package com.datadog.android.tracing.internal.domain.event
 
 import com.datadog.android.core.internal.constraints.DataConstraints
 import com.datadog.android.core.internal.constraints.DatadogDataConstraints
-import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.tracing.model.SpanEvent
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.storage.ContextAwareSerializer
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import java.util.Date
 
 internal class SpanEventSerializer(
-    private val envName: String,
     private val dataConstraints: DataConstraints = DatadogDataConstraints()
-) : Serializer<SpanEvent> {
+) : ContextAwareSerializer<SpanEvent> {
 
     // region Serializer
 
-    override fun serialize(model: SpanEvent): String {
+    override fun serialize(datadogContext: DatadogContext, model: SpanEvent): String {
         val span = sanitizeKeys(model).toJson()
         val spans = JsonArray(1)
         spans.add(span)
 
         val jsonObject = JsonObject()
         jsonObject.add(TAG_SPANS, spans)
-        jsonObject.addProperty(TAG_ENV, envName)
+        jsonObject.addProperty(TAG_ENV, datadogContext.env)
 
         return jsonObject.toString()
     }

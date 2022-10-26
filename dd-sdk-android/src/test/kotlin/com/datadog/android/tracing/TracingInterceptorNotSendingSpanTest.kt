@@ -12,7 +12,6 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
@@ -172,8 +171,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         fakeUrl = forgeUrl(forge)
         fakeRequest = forgeRequest(forge)
         Datadog.globalSdkCore = mock<DatadogCore>()
-        whenever((Datadog.globalSdkCore as DatadogCore).tracingFeature) doReturn
-            TracingFeature(coreFeature.mockInstance, storage = mock())
+        whenever((Datadog.globalSdkCore as DatadogCore).tracingFeature) doReturn mock()
         doAnswer { false }.whenever(mockDetector).isFirstPartyUrl(any<HttpUrl>())
         doAnswer { true }.whenever(mockDetector).isFirstPartyUrl(HttpUrl.get(fakeUrl))
 

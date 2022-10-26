@@ -9,7 +9,6 @@ package com.datadog.android.tracing.internal
 import android.content.Context
 import android.util.Log
 import com.datadog.android.Datadog
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
@@ -19,8 +18,6 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
-import com.datadog.android.utils.config.MainLooperTestConfiguration
-import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.NoOpSdkCore
 import com.datadog.android.v2.core.DatadogCore
@@ -31,6 +28,7 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.trace.api.Config
+import com.datadog.trace.common.writer.Writer
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.inOrder
@@ -81,32 +79,28 @@ internal class AndroidTracerTest {
     @Mock
     lateinit var mockLogsHandler: LogHandler
 
-    lateinit var tracingFeature: TracingFeature
+    @Mock
+    lateinit var mockTracingFeature: TracingFeature
 
-    lateinit var rumFeature: RumFeature
+    @Mock
+    lateinit var mockTraceWriter: Writer
+
+    @Mock
+    lateinit var mockRumFeature: RumFeature
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        // Prevent crash when initializing RumFeature
-        mockChoreographerInstance()
-
         fakeServiceName = forge.anAlphabeticalString()
         fakeEnvName = forge.anAlphabeticalString()
         fakeToken = forge.anHexadecimalString()
 
         val mockCore = mock<DatadogCore>()
-        tracingFeature = TracingFeature(
-            coreFeature.mockInstance,
-            storage = mock()
-        )
-        rumFeature = RumFeature(coreFeature.mockInstance, storage = mock())
 
-        whenever(mockCore.tracingFeature) doReturn tracingFeature
-        whenever(mockCore.rumFeature) doReturn rumFeature
+        whenever(mockCore.tracingFeature) doReturn mockTracingFeature
+        whenever(mockCore.rumFeature) doReturn mockRumFeature
         whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
 
-        tracingFeature.initialize(Configuration.DEFAULT_TRACING_CONFIG)
-        rumFeature.initialize(appContext.mockInstance, Configuration.DEFAULT_RUM_CONFIG)
+        whenever(mockTracingFeature.dataWriter) doReturn mockTraceWriter
 
         Datadog.globalSdkCore = mockCore
 
@@ -506,13 +500,12 @@ internal class AndroidTracerTest {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val mainLooper = MainLooperTestConfiguration()
         val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, coreFeature, rumMonitor, mainLooper)
+            return listOf(logger, appContext, coreFeature, rumMonitor)
         }
     }
 }
