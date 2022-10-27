@@ -6,23 +6,21 @@
 
 package com.datadog.android.tracing.internal.domain.event
 
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.Mapper
 import com.datadog.android.core.internal.utils.toHexString
-import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.tracing.model.SpanEvent
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.api.context.NetworkInfo
+import com.datadog.android.v2.core.internal.storage.ContextAwareMapper
 import com.datadog.opentracing.DDSpan
 
-internal class DdSpanToSpanEventMapper(
-    private val coreFeature: CoreFeature
-) : Mapper<DDSpan, SpanEvent> {
+internal class DdSpanToSpanEventMapper : ContextAwareMapper<DDSpan, SpanEvent> {
 
     // region Mapper
 
-    override fun map(model: DDSpan): SpanEvent {
-        val serverOffset = coreFeature.timeProvider.getServerOffsetNanos()
+    override fun map(datadogContext: DatadogContext, model: DDSpan): SpanEvent {
+        val serverOffset = datadogContext.time.serverTimeOffsetNs
         val metrics = resolveMetrics(model)
-        val metadata = resolveMeta(model)
+        val metadata = resolveMeta(datadogContext, model)
         return SpanEvent(
             traceId = model.traceId.toHexString(),
             spanId = model.spanId.toHexString(),
@@ -47,8 +45,8 @@ internal class DdSpanToSpanEventMapper(
         additionalProperties = event.metrics
     )
 
-    private fun resolveMeta(event: DDSpan): SpanEvent.Meta {
-        val networkInfo = coreFeature.networkInfoProvider.getLatestNetworkInfo()
+    private fun resolveMeta(datadogContext: DatadogContext, event: DDSpan): SpanEvent.Meta {
+        val networkInfo = datadogContext.networkInfo
         val simCarrier = resolveSimCarrier(networkInfo)
         val networkInfoClient = SpanEvent.Client(
             simCarrier = simCarrier,
@@ -58,19 +56,19 @@ internal class DdSpanToSpanEventMapper(
             connectivity = networkInfo.connectivity.toString()
         )
         val networkInfoMeta = SpanEvent.Network(networkInfoClient)
-        val userInfo = coreFeature.userInfoProvider.getUserInfo()
+        val userInfo = datadogContext.userInfo
         val usrMeta = SpanEvent.Usr(
             id = userInfo.id,
             name = userInfo.name,
             email = userInfo.email,
-            additionalProperties = userInfo.additionalProperties
+            additionalProperties = userInfo.additionalProperties.toMutableMap()
         )
         return SpanEvent.Meta(
-            version = coreFeature.packageVersionProvider.version,
-            dd = SpanEvent.Dd(source = coreFeature.sourceName),
+            version = datadogContext.version,
+            dd = SpanEvent.Dd(source = datadogContext.source),
             span = SpanEvent.Span(),
             tracer = SpanEvent.Tracer(
-                version = coreFeature.sdkVersion
+                version = datadogContext.sdkVersion
             ),
             usr = usrMeta,
             network = networkInfoMeta,

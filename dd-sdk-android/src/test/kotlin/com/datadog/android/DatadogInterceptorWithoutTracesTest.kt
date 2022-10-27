@@ -19,7 +19,6 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorTest
-import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
@@ -170,8 +169,7 @@ internal class DatadogInterceptorWithoutTracesTest {
             traceSampler = mockTraceSampler
         ) { mockLocalTracer }
         Datadog.globalSdkCore = mock<DatadogCore>()
-        whenever((Datadog.globalSdkCore as DatadogCore).tracingFeature) doReturn
-            TracingFeature(coreFeature.mockInstance, storage = mock())
+        whenever((Datadog.globalSdkCore as DatadogCore).tracingFeature) doReturn mock()
         whenever((Datadog.globalSdkCore as DatadogCore).rumFeature) doReturn
             RumFeature(coreFeature.mockInstance, storage = mock())
 

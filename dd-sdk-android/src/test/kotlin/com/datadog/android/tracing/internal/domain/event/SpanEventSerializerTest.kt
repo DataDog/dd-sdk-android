@@ -12,6 +12,7 @@ import com.datadog.android.tracing.model.SpanEvent
 import com.datadog.android.utils.extension.getString
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
+import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.tools.unit.assertj.JsonObjectAssert
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -20,7 +21,6 @@ import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions
@@ -42,8 +42,8 @@ import java.util.Date
 @ForgeConfiguration(Configurator::class)
 internal class SpanEventSerializerTest {
 
-    @StringForgery
-    lateinit var fakeEnvName: String
+    @Forgery
+    lateinit var fakeDatadogContext: DatadogContext
 
     @Mock
     lateinit var mockDatadogConstraints: DatadogDataConstraints
@@ -63,7 +63,7 @@ internal class SpanEventSerializerTest {
             it.getArgument(0)
         }
         testedSerializer =
-            SpanEventSerializer(fakeEnvName, dataConstraints = mockDatadogConstraints)
+            SpanEventSerializer(dataConstraints = mockDatadogConstraints)
     }
 
     // region tests
@@ -71,13 +71,13 @@ internal class SpanEventSerializerTest {
     @Test
     fun `M serialize a SpanEvent W serialize`(@Forgery fakeSpanEvent: SpanEvent) {
         // WHEN
-        val serialized = testedSerializer.serialize(fakeSpanEvent)
+        val serialized = testedSerializer.serialize(fakeDatadogContext, fakeSpanEvent)
 
         // THEN
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
         val spanObject = jsonObject.getAsJsonArray(KEY_SPANS).first() as JsonObject
         assertJsonMatchesInputSpan(spanObject, fakeSpanEvent)
-        Assertions.assertThat(jsonObject.getString(KEY_ENV)).isEqualTo(fakeEnvName)
+        Assertions.assertThat(jsonObject.getString(KEY_ENV)).isEqualTo(fakeDatadogContext.env)
     }
 
     @Test
@@ -97,7 +97,7 @@ internal class SpanEventSerializerTest {
         ).thenReturn(fakeSanitizedAttributes)
 
         // WHEN
-        val serialized = testedSerializer.serialize(fakeSpanEvent)
+        val serialized = testedSerializer.serialize(fakeDatadogContext, fakeSpanEvent)
 
         // THEN
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
@@ -128,7 +128,7 @@ internal class SpanEventSerializerTest {
         ).thenReturn(fakeSanitizedAttributes)
 
         // WHEN
-        val serialized = testedSerializer.serialize(fakeSpanEvent)
+        val serialized = testedSerializer.serialize(fakeDatadogContext, fakeSpanEvent)
 
         // THEN
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
