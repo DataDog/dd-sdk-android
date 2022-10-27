@@ -293,11 +293,9 @@ internal class SessionReplayOkHttpUploader(
         internal const val RAW_SEGMENT_SIZE_FORM_KEY = "raw_segment_size"
         internal const val START_TIMESTAMP_FORM_KEY = "start"
         internal const val END_TIMESTAMP_FORM_KEY = "end"
-        internal const val SOURCE_FORM_KEY = "end"
+        internal const val SOURCE_FORM_KEY = "source"
         internal const val SEGMENT_FORM_KEY = "segment"
         internal const val CONTENT_TYPE_BINARY = "application/octet-stream"
         internal const val CONTENT_TYPE_MULTIPART_FORM = "multipart/form-data"
-        private const val HEADER_ENCODING = "Content-Encoding"
-        private const val ENCODING_GZIP = "gzip"
     }
 }
