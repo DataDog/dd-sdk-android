@@ -15,7 +15,6 @@ import com.datadog.android.sessionreplay.recorder.ScreenRecorder
 import com.datadog.android.sessionreplay.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.utils.RumContextProvider
 import com.datadog.android.sessionreplay.utils.TimeProvider
-import com.datadog.android.sessionreplay.writer.RecordWriter
 import java.util.WeakHashMap
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.ThreadPoolExecutor
@@ -28,7 +27,7 @@ import java.util.concurrent.TimeUnit
 class SessionReplayLifecycleCallback(
     rumContextProvider: RumContextProvider,
     privacy: SessionReplayPrivacy,
-    serializedRecordWriter: SerializedRecordWriter,
+    recordWriter: RecordWriter,
     timeProvider: TimeProvider,
     private val recordCallback: RecordCallback = NoOpRecordCallback()
 ) : LifecycleCallback {
@@ -46,7 +45,7 @@ class SessionReplayLifecycleCallback(
             rumContextProvider,
             timeProvider,
             processorExecutorService,
-            RecordWriter(serializedRecordWriter)
+            recordWriter
         ),
         SnapshotProducer(privacy.mapper()),
         timeProvider

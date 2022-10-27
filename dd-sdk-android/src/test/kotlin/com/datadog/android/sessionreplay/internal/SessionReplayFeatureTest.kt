@@ -9,12 +9,11 @@ package com.datadog.android.sessionreplay.internal
 import android.app.Application
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
-import com.datadog.android.sessionreplay.internal.domain.SessionReplayRecordPersistenceStrategy
+import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.internal.storage.Storage
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -58,26 +57,22 @@ internal class SessionReplayFeatureTest {
     @Mock
     lateinit var mockSDKCore: SdkCore
 
-    @Mock
-    lateinit var mockStorage: Storage
-
     @BeforeEach
     fun `set up`() {
         testedFeature = SessionReplayFeature(
             coreFeature.mockInstance,
-            mockStorage,
             mockSDKCore
         ) { _, _ -> mockSessionReplayLifecycleCallback }
     }
 
     @Test
-    fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
+    fun `𝕄 initialize writer 𝕎 initialize()`() {
         // When
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // Then
-        assertThat(testedFeature.persistenceStrategy)
-            .isInstanceOf(SessionReplayRecordPersistenceStrategy::class.java)
+        assertThat(testedFeature.dataWriter)
+            .isInstanceOf(SessionReplayRecordWriter::class.java)
     }
 
     @Test
@@ -85,7 +80,6 @@ internal class SessionReplayFeatureTest {
         // Given
         testedFeature = SessionReplayFeature(
             coreFeature.mockInstance,
-            mockStorage,
             mockSDKCore
         )
 

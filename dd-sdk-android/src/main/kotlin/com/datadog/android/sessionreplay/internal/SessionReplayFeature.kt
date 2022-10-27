@@ -10,29 +10,25 @@ import android.app.Application
 import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
-import com.datadog.android.core.internal.persistence.PersistenceStrategy
-import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.sessionreplay.LifecycleCallback
+import com.datadog.android.sessionreplay.RecordWriter
 import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
-import com.datadog.android.sessionreplay.internal.domain.SessionReplayRecordPersistenceStrategy
-import com.datadog.android.sessionreplay.internal.domain.SessionReplaySerializedRecordWriter
+import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
+import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
 import com.datadog.android.v2.api.SdkCore
-import com.datadog.android.v2.core.internal.storage.Storage
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class SessionReplayFeature(
     private val coreFeature: CoreFeature,
-    private val storage: Storage,
-    sdkCore: SdkCore,
+    private val sdkCore: SdkCore,
     private val sessionReplayCallbackProvider:
-        (PersistenceStrategy<String>, Configuration.Feature.SessionReplay) ->
-        LifecycleCallback = { persistenceStrategy, configuration ->
+        (RecordWriter, Configuration.Feature.SessionReplay) ->
+        LifecycleCallback = { recordWriter, configuration ->
             SessionReplayLifecycleCallback(
                 SessionReplayRumContextProvider(),
                 configuration.privacy,
-                SessionReplaySerializedRecordWriter(persistenceStrategy.getWriter()),
+                recordWriter,
                 SessionReplayTimeProvider(coreFeature.contextProvider),
                 SessionReplayRecordCallback(sdkCore)
             )
@@ -43,7 +39,7 @@ internal class SessionReplayFeature(
     private var isRecording = AtomicBoolean(false)
     internal var sessionReplayCallback: LifecycleCallback = NoOpLifecycleCallback()
 
-    internal var persistenceStrategy: PersistenceStrategy<String> = NoOpPersistenceStrategy()
+    internal var dataWriter: RecordWriter = NoOpRecordWriter()
     internal val initialized = AtomicBoolean(false)
 
     // region SDKFeature
@@ -53,28 +49,21 @@ internal class SessionReplayFeature(
         configuration: Configuration.Feature.SessionReplay
     ) {
         appContext = context
-        persistenceStrategy = createPersistenceStrategy(storage)
-        sessionReplayCallback = sessionReplayCallbackProvider(persistenceStrategy, configuration)
+        dataWriter = createDataWriter()
+        sessionReplayCallback = sessionReplayCallbackProvider(dataWriter, configuration)
         initialized.set(true)
         startRecording()
     }
 
     internal fun stop() {
         stopRecording()
-        persistenceStrategy = NoOpPersistenceStrategy()
+        dataWriter = NoOpRecordWriter()
         sessionReplayCallback = NoOpLifecycleCallback()
         initialized.set(false)
     }
 
-    private fun createPersistenceStrategy(
-        storage: Storage
-    ): PersistenceStrategy<String> {
-        return SessionReplayRecordPersistenceStrategy(
-            coreFeature.contextProvider,
-            coreFeature.persistenceExecutorService,
-            sdkLogger,
-            storage
-        )
+    private fun createDataWriter(): RecordWriter {
+        return SessionReplayRecordWriter(sdkCore)
     }
 
     // endregion

@@ -4,10 +4,17 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.writer
+package com.datadog.android.sessionreplay
 
 import com.datadog.android.sessionreplay.processor.EnrichedRecord
 
-internal interface Writer {
+/**
+ * Will persists the serialized EnrichedRecord in the allocated Session Replay caching location.
+ */
+interface RecordWriter {
+    /**
+     * Writes the record to disk.
+     * @param record to write
+     */
     fun write(record: EnrichedRecord)
 }

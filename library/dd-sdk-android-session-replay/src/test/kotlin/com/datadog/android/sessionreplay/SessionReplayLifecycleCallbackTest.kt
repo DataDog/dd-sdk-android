@@ -41,7 +41,7 @@ class SessionReplayLifecycleCallbackTest {
     private lateinit var mockRumContextProvider: RumContextProvider
 
     @Mock
-    private lateinit var mockSerializedRecordWriter: SerializedRecordWriter
+    private lateinit var mockRecordWriter: RecordWriter
 
     @Forgery
     private lateinit var fakePrivacy: SessionReplayPrivacy
@@ -57,7 +57,7 @@ class SessionReplayLifecycleCallbackTest {
         testedCallback = SessionReplayLifecycleCallback(
             mockRumContextProvider,
             fakePrivacy,
-            mockSerializedRecordWriter,
+            mockRecordWriter,
             mockTimeProvider,
             mockRecordCallback
         )

@@ -385,7 +385,7 @@ internal class DatadogCore(
             )
             features[SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME]?.let {
                 it.initialize(appContext, configuration.plugins)
-                sessionReplayFeature = SessionReplayFeature(coreFeature, it.storage, this).also {
+                sessionReplayFeature = SessionReplayFeature(coreFeature, this).also {
                     it.initialize(appContext, configuration)
                 }
             }
