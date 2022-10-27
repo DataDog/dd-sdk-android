@@ -1825,7 +1825,7 @@ enum com.datadog.android.v2.api.context.DeviceType
   - DESKTOP
   - OTHER
 data class com.datadog.android.v2.api.context.NetworkInfo
-  constructor(Connectivity, CarrierInfo?)
+  constructor(Connectivity, String?, Long?, Long?, Long?, Long?, String?)
   enum Connectivity
     - NETWORK_NOT_CONNECTED
     - NETWORK_ETHERNET

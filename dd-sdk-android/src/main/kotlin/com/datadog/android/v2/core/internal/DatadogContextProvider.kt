@@ -7,7 +7,6 @@
 package com.datadog.android.v2.core.internal
 
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.v2.api.context.CarrierInfo
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.DeviceInfo
 import com.datadog.android.v2.api.context.NetworkInfo
@@ -47,10 +46,12 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
                 networkInfo = with(coreFeature.networkInfoProvider.getLatestNetworkInfo()) {
                     NetworkInfo(
                         connectivity = connectivity.asV2(),
-                        carrier = CarrierInfo(
-                            technology = cellularTechnology,
-                            carrierName = carrierName
-                        )
+                        carrierName = carrierName,
+                        carrierId = carrierId,
+                        upKbps = upKbps,
+                        downKbps = downKbps,
+                        strength = strength,
+                        cellularTechnology = cellularTechnology
                     )
                 },
                 deviceInfo = with(coreFeature.androidInfoProvider) {

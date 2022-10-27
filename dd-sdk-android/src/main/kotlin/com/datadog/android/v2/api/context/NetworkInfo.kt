@@ -10,11 +10,21 @@ package com.datadog.android.v2.api.context
  * Holds information about the current network state.
  *
  * @property connectivity the current connectivity
- * @property carrier information about the network carrier, or null
+ * @property carrierName information about the network carrier, or null
+ * @property carrierId network carrier ID, or null
+ * @property upKbps the upload speed in kilobytes per second
+ * @property downKbps the download speed in kilobytes per second
+ * @property strength the strength of the signal (the unit depends on the type of the signal)
+ * @property cellularTechnology the type of cellular technology if known (e.g.: GPRS, LTE, 5G)
  */
 data class NetworkInfo(
     val connectivity: Connectivity,
-    val carrier: CarrierInfo?
+    val carrierName: String?,
+    val carrierId: Long?,
+    val upKbps: Long?,
+    val downKbps: Long?,
+    val strength: Long?,
+    val cellularTechnology: String?
 ) {
     /**
      * The type of connectivity currently available.

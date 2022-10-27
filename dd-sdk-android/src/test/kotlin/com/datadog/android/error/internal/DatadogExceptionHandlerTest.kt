@@ -15,30 +15,22 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.data.upload.UploadWorker
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.thread.waitToIdle
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
-import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.core.model.UserInfo
-import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
-import com.datadog.android.log.internal.domain.DatadogLogGenerator
-import com.datadog.android.log.internal.user.UserInfoProvider
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -61,6 +53,8 @@ import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.util.GlobalTracer
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
@@ -87,7 +81,7 @@ import java.util.concurrent.TimeUnit
 @ForgeConfiguration(Configurator::class)
 internal class DatadogExceptionHandlerTest {
 
-    var originalHandler: Thread.UncaughtExceptionHandler? = null
+    private var originalHandler: Thread.UncaughtExceptionHandler? = null
 
     lateinit var testedHandler: DatadogExceptionHandler
 
@@ -95,31 +89,16 @@ internal class DatadogExceptionHandlerTest {
     lateinit var mockPreviousHandler: Thread.UncaughtExceptionHandler
 
     @Mock
-    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+    lateinit var mockSdkCore: SdkCore
 
     @Mock
-    lateinit var mockUserInfoProvider: UserInfoProvider
-
-    @Mock
-    lateinit var mockTimeProvider: TimeProvider
-
-    @Mock
-    lateinit var mockLogWriter: DataWriter<LogEvent>
+    lateinit var mockLogsFeatureScope: FeatureScope
 
     @Mock
     lateinit var mockWorkManager: WorkManagerImpl
 
-    @Mock
-    lateinit var mockPackageVersionProvider: AppVersionProvider
-
     @Forgery
     lateinit var fakeThrowable: Throwable
-
-    @Forgery
-    lateinit var fakeNetworkInfo: NetworkInfo
-
-    @Forgery
-    lateinit var fakeUserInfo: UserInfo
 
     @StringForgery(StringForgeryType.HEXADECIMAL)
     lateinit var fakeToken: String
@@ -130,9 +109,6 @@ internal class DatadogExceptionHandlerTest {
     @StringForgery(regex = "([a-z]{2,8}\\.){1,4}[a-z]{2,8}")
     lateinit var fakeServiceName: String
 
-    @StringForgery(regex = "[0-9](\\.[0-9]{1,2}){1,3}")
-    lateinit var fakeSdkVersion: String
-
     @StringForgery
     lateinit var fakeVariant: String
 
@@ -140,9 +116,7 @@ internal class DatadogExceptionHandlerTest {
     fun `set up`() {
         mockChoreographerInstance()
 
-        whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
-        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
-        whenever(mockPackageVersionProvider.version) doReturn appContext.fakeVersionName
+        whenever(mockSdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)) doReturn mockLogsFeatureScope
 
         Datadog.initialize(
             appContext.mockInstance,
@@ -160,18 +134,7 @@ internal class DatadogExceptionHandlerTest {
         originalHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler(mockPreviousHandler)
         testedHandler = DatadogExceptionHandler(
-            DatadogLogGenerator(
-                fakeServiceName,
-                DatadogExceptionHandler.LOGGER_NAME,
-                mockNetworkInfoProvider,
-                mockUserInfoProvider,
-                mockTimeProvider,
-                fakeSdkVersion,
-                fakeEnvName,
-                fakeVariant,
-                mockPackageVersionProvider
-            ),
-            writer = mockLogWriter,
+            sdkCore = mockSdkCore,
             appContext = appContext.mockInstance
         )
         testedHandler.register()
@@ -187,44 +150,44 @@ internal class DatadogExceptionHandlerTest {
 
     @Test
     fun `M log exception W caught with no previous handler`() {
+        // Given
         Thread.setDefaultUncaughtExceptionHandler(null)
         testedHandler.register()
         val currentThread = Thread.currentThread()
-
         val now = System.currentTimeMillis()
+
+        // When
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
-        argumentCaptor<LogEvent> {
-            verify(mockLogWriter).write(capture())
-            assertThat(lastValue)
-                .hasThreadName(currentThread.name)
-                .hasMessage(fakeThrowable.message!!)
-                .hasStatus(LogEvent.Status.EMERGENCY)
-                .hasError(fakeThrowable.asLogError())
-                .hasNetworkInfo(fakeNetworkInfo)
-                .hasUserInfo(fakeUserInfo)
-                .hasDateAround(now)
-                .hasExactlyTags(
-                    listOf(
-                        "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}",
-                        "${LogAttributes.VARIANT}:$fakeVariant"
-                    )
+        // Then
+        argumentCaptor<Any> {
+            verify(mockLogsFeatureScope).sendEvent(capture())
+
+            assertThat(lastValue).isInstanceOf(Map::class.java)
+
+            @Suppress("UNCHECKED_CAST")
+            val logEvent =
+                (lastValue as Map<String, Any?>).toMutableMap()
+            val timestamp = logEvent.remove("timestamp") as? Long
+
+            assertThat(timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent).isEqualTo(
+                mapOf(
+                    "threadName" to currentThread.name,
+                    "throwable" to fakeThrowable,
+                    "syncWrite" to true,
+                    "message" to fakeThrowable.message,
+                    "type" to "crash",
+                    "loggerName" to DatadogExceptionHandler.LOGGER_NAME
                 )
-                .hasExactlyAttributes(
-                    mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
-                    )
-                )
+            )
         }
         verifyZeroInteractions(mockPreviousHandler)
     }
 
     @Test
     fun `M wait for the executor to idle W exception caught`() {
+        // Given
         val mockScheduledThreadExecutor: ThreadPoolExecutor = mock()
         (Datadog.globalSdkCore as DatadogCore).coreFeature
             .persistenceExecutorService = mockScheduledThreadExecutor
@@ -232,8 +195,10 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.register()
         val currentThread = Thread.currentThread()
 
+        // When
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
+        // Then
         verify(mockScheduledThreadExecutor)
             .waitToIdle(DatadogExceptionHandler.MAX_WAIT_FOR_IDLE_TIME_IN_MS)
         verify(logger.mockDevLogHandler, never()).handleLog(
@@ -244,6 +209,7 @@ internal class DatadogExceptionHandlerTest {
 
     @Test
     fun `M log warning message W exception caught { executor could not be idled }`() {
+        // Given
         val mockScheduledThreadExecutor: ThreadPoolExecutor = mock {
             whenever(it.taskCount).thenReturn(2)
             whenever(it.completedTaskCount).thenReturn(0)
@@ -254,8 +220,10 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.register()
         val currentThread = Thread.currentThread()
 
+        // When
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
+        // Then
         verify(logger.mockDevLogHandler).handleLog(
             Log.WARN,
             DatadogExceptionHandler.EXECUTOR_NOT_IDLED_WARNING_MESSAGE
@@ -264,6 +232,7 @@ internal class DatadogExceptionHandlerTest {
 
     @Test
     fun `M schedule the worker W logging an exception`() {
+        // Given
         whenever(
             mockWorkManager.enqueueUniqueWork(
                 ArgumentMatchers.anyString(),
@@ -277,8 +246,10 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.register()
         val currentThread = Thread.currentThread()
 
+        // When
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
+        // Then
         verify(mockWorkManager)
             .enqueueUniqueWork(
                 eq(UPLOAD_WORKER_NAME),
@@ -292,120 +263,118 @@ internal class DatadogExceptionHandlerTest {
 
     @Test
     fun `M log exception W caught { exception with message }`() {
+        // Given
         val currentThread = Thread.currentThread()
         val now = System.currentTimeMillis()
 
+        // When
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
-        argumentCaptor<LogEvent> {
-            verify(mockLogWriter).write(capture())
-            assertThat(lastValue)
-                .hasThreadName(currentThread.name)
-                .hasMessage(fakeThrowable.message!!)
-                .hasStatus(LogEvent.Status.EMERGENCY)
-                .hasError(fakeThrowable.asLogError())
-                .hasNetworkInfo(fakeNetworkInfo)
-                .hasUserInfo(fakeUserInfo)
-                .hasDateAround(now)
-                .hasExactlyTags(
-                    listOf(
-                        "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}",
-                        "${LogAttributes.VARIANT}:$fakeVariant"
-                    )
+        // Then
+        argumentCaptor<Any> {
+            verify(mockLogsFeatureScope).sendEvent(capture())
+
+            assertThat(lastValue).isInstanceOf(Map::class.java)
+
+            @Suppress("UNCHECKED_CAST")
+            val logEvent =
+                (lastValue as Map<String, Any?>).toMutableMap()
+            val timestamp = logEvent.remove("timestamp") as? Long
+
+            assertThat(timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent).isEqualTo(
+                mapOf(
+                    "threadName" to currentThread.name,
+                    "throwable" to fakeThrowable,
+                    "syncWrite" to true,
+                    "message" to fakeThrowable.message,
+                    "type" to "crash",
+                    "loggerName" to DatadogExceptionHandler.LOGGER_NAME
                 )
-                .hasExactlyAttributes(
-                    mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
-                    )
-                )
+            )
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
     }
 
     @RepeatedTest(2)
     fun `M log exception W caught { exception without message }`(forge: Forge) {
+        // Given
         val currentThread = Thread.currentThread()
         val now = System.currentTimeMillis()
         val throwable = forge.aThrowableWithoutMessage()
 
+        // When
         testedHandler.uncaughtException(currentThread, throwable)
 
-        argumentCaptor<LogEvent> {
-            verify(mockLogWriter).write(capture())
-            assertThat(lastValue)
-                .hasThreadName(currentThread.name)
-                .hasMessage("Application crash detected: ${throwable.javaClass.canonicalName}")
-                .hasStatus(LogEvent.Status.EMERGENCY)
-                .hasError(throwable.asLogError())
-                .hasNetworkInfo(fakeNetworkInfo)
-                .hasUserInfo(fakeUserInfo)
-                .hasDateAround(now)
-                .hasExactlyTags(
-                    listOf(
-                        "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}",
-                        "${LogAttributes.VARIANT}:$fakeVariant"
-                    )
+        // Then
+        argumentCaptor<Any> {
+            verify(mockLogsFeatureScope).sendEvent(capture())
+
+            assertThat(lastValue).isInstanceOf(Map::class.java)
+
+            @Suppress("UNCHECKED_CAST")
+            val logEvent =
+                (lastValue as Map<String, Any?>).toMutableMap()
+            val timestamp = logEvent.remove("timestamp") as? Long
+
+            assertThat(timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent).isEqualTo(
+                mapOf(
+                    "threadName" to currentThread.name,
+                    "throwable" to throwable,
+                    "syncWrite" to true,
+                    "message" to "Application crash detected: ${throwable.javaClass.canonicalName}",
+                    "type" to "crash",
+                    "loggerName" to DatadogExceptionHandler.LOGGER_NAME
                 )
-                .hasExactlyAttributes(
-                    mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
-                    )
-                )
+            )
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
     }
 
     @Test
     fun `M log exception W caught { exception without message or class }`() {
+        // Given
         val currentThread = Thread.currentThread()
-
         val now = System.currentTimeMillis()
-
         val throwable = object : RuntimeException() {}
 
+        // When
         testedHandler.uncaughtException(currentThread, throwable)
 
-        argumentCaptor<LogEvent> {
-            verify(mockLogWriter).write(capture())
-            assertThat(lastValue)
-                .hasThreadName(currentThread.name)
-                .hasMessage("Application crash detected: ${throwable.javaClass.simpleName}")
-                .hasStatus(LogEvent.Status.EMERGENCY)
-                .hasError(throwable.asLogError())
-                .hasNetworkInfo(fakeNetworkInfo)
-                .hasUserInfo(fakeUserInfo)
-                .hasDateAround(now)
-                .hasExactlyTags(
-                    listOf(
-                        "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}",
-                        "${LogAttributes.VARIANT}:$fakeVariant"
-                    )
+        // Then
+        argumentCaptor<Any> {
+            verify(mockLogsFeatureScope).sendEvent(capture())
+
+            assertThat(lastValue).isInstanceOf(Map::class.java)
+
+            @Suppress("UNCHECKED_CAST")
+            val logEvent =
+                (lastValue as Map<String, Any?>).toMutableMap()
+            val timestamp = logEvent.remove("timestamp") as? Long
+
+            assertThat(timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent).isEqualTo(
+                mapOf(
+                    "threadName" to currentThread.name,
+                    "throwable" to throwable,
+                    "syncWrite" to true,
+                    "message" to "Application crash detected: ${throwable.javaClass.simpleName}",
+                    "type" to "crash",
+                    "loggerName" to DatadogExceptionHandler.LOGGER_NAME
                 )
-                .hasExactlyAttributes(
-                    mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
-                    )
-                )
+            )
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
     }
 
     @Test
     fun `M log exception W caught on background thread`(forge: Forge) {
+        // Given
         val latch = CountDownLatch(1)
         val threadName = forge.anAlphabeticalString()
+
+        // When
         val thread = Thread(
             {
                 testedHandler.uncaughtException(Thread.currentThread(), fakeThrowable)
@@ -418,71 +387,41 @@ internal class DatadogExceptionHandlerTest {
         thread.start()
         latch.await(1, TimeUnit.SECONDS)
 
-        argumentCaptor<LogEvent> {
-            verify(mockLogWriter).write(capture())
-            assertThat(lastValue)
-                .hasThreadName(threadName)
-                .hasMessage(fakeThrowable.message!!)
-                .hasStatus(LogEvent.Status.EMERGENCY)
-                .hasError(fakeThrowable.asLogError())
-                .hasNetworkInfo(fakeNetworkInfo)
-                .hasUserInfo(fakeUserInfo)
-                .hasDateAround(now)
-                .hasExactlyTags(
-                    listOf(
-                        "${LogAttributes.ENV}:$fakeEnvName",
-                        "${LogAttributes.APPLICATION_VERSION}:${appContext.fakeVersionName}",
-                        "${LogAttributes.VARIANT}:$fakeVariant"
-                    )
+        // Then
+        argumentCaptor<Any> {
+            verify(mockLogsFeatureScope).sendEvent(capture())
+
+            assertThat(lastValue).isInstanceOf(Map::class.java)
+
+            @Suppress("UNCHECKED_CAST")
+            val logEvent =
+                (lastValue as Map<String, Any?>).toMutableMap()
+            val timestamp = logEvent.remove("timestamp") as? Long
+
+            assertThat(timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent).isEqualTo(
+                mapOf(
+                    "threadName" to thread.name,
+                    "throwable" to fakeThrowable,
+                    "syncWrite" to true,
+                    "message" to fakeThrowable.message,
+                    "type" to "crash",
+                    "loggerName" to DatadogExceptionHandler.LOGGER_NAME
                 )
-                .hasExactlyAttributes(
-                    mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
-                    )
-                )
+            )
         }
         verify(mockPreviousHandler).uncaughtException(thread, fakeThrowable)
     }
 
     @Test
-    fun `M add current span information W tracer is active`(
-        @StringForgery operation: String
-    ) {
-        val currentThread = Thread.currentThread()
-        val tracer = AndroidTracer.Builder().build()
-        val span = tracer.buildSpan(operation).start()
-        tracer.activateSpan(span)
-        GlobalTracer.registerIfAbsent(tracer)
-
-        testedHandler.uncaughtException(currentThread, fakeThrowable)
-
-        argumentCaptor<LogEvent> {
-            verify(mockLogWriter).write(capture())
-
-            assertThat(lastValue)
-                .hasExactlyAttributes(
-                    mapOf(
-                        LogAttributes.DD_TRACE_ID to tracer.traceId,
-                        LogAttributes.DD_SPAN_ID to tracer.spanId,
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
-                    )
-                )
-        }
-        Datadog.stop()
-    }
-
-    @Test
     fun `M register RUM Error W RumMonitor registered { exception with message }`() {
+        // Given
         val currentThread = Thread.currentThread()
 
+        // When
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
+        // Then
         verify(rumMonitor.mockInstance).addCrash(
             fakeThrowable.message!!,
             RumErrorSource.SOURCE,
@@ -495,11 +434,14 @@ internal class DatadogExceptionHandlerTest {
     fun `M register RUM Error W RumMonitor registered { exception without message }`(
         forge: Forge
     ) {
+        // Given
         val currentThread = Thread.currentThread()
         val throwable = forge.aThrowableWithoutMessage()
 
+        // When
         testedHandler.uncaughtException(currentThread, throwable)
 
+        // Then
         verify(rumMonitor.mockInstance).addCrash(
             "Application crash detected: ${throwable.javaClass.canonicalName}",
             RumErrorSource.SOURCE,
@@ -510,11 +452,14 @@ internal class DatadogExceptionHandlerTest {
 
     @Test
     fun `M register RUM Error W RumMonitor registered { exception without message or class }`() {
+        // Given
         val currentThread = Thread.currentThread()
         val throwable = object : RuntimeException() {}
 
+        // When
         testedHandler.uncaughtException(currentThread, throwable)
 
+        // Then
         verify(rumMonitor.mockInstance).addCrash(
             "Application crash detected: ${throwable.javaClass.simpleName}",
             RumErrorSource.SOURCE,
@@ -525,16 +470,36 @@ internal class DatadogExceptionHandlerTest {
 
     @Test
     fun `M not add RUM information W no RUM Monitor registered`() {
+        // Given
         val currentThread = Thread.currentThread()
         GlobalRum.isRegistered.set(false)
+        val now = System.currentTimeMillis()
 
+        // When
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
-        argumentCaptor<LogEvent> {
-            verify(mockLogWriter).write(capture())
+        // Then
+        argumentCaptor<Any> {
+            verify(mockLogsFeatureScope).sendEvent(capture())
 
-            assertThat(lastValue)
-                .hasExactlyAttributes(emptyMap())
+            assertThat(lastValue).isInstanceOf(Map::class.java)
+
+            @Suppress("UNCHECKED_CAST")
+            val logEvent =
+                (lastValue as Map<String, Any?>).toMutableMap()
+            val timestamp = logEvent.remove("timestamp") as? Long
+
+            assertThat(timestamp).isCloseTo(now, Offset.offset(200))
+            assertThat(logEvent).isEqualTo(
+                mapOf(
+                    "threadName" to currentThread.name,
+                    "throwable" to fakeThrowable,
+                    "syncWrite" to true,
+                    "message" to fakeThrowable.message,
+                    "type" to "crash",
+                    "loggerName" to DatadogExceptionHandler.LOGGER_NAME
+                )
+            )
         }
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
     }

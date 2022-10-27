@@ -255,18 +255,18 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         assertThat(actual.connectivity?.cellular?.technology)
             .overridingErrorMessage(
                 "Expected RUM event to connectivity usr.cellular.technology " +
-                    "${expected?.carrier?.technology} " +
+                    "${expected?.cellularTechnology} " +
                     "but was ${actual.connectivity?.cellular?.technology}"
             )
-            .isEqualTo(expected?.carrier?.technology)
+            .isEqualTo(expected?.cellularTechnology)
 
         assertThat(actual.connectivity?.cellular?.carrierName)
             .overridingErrorMessage(
                 "Expected RUM event to connectivity usr.cellular.carrierName " +
-                    "${expected?.carrier?.carrierName} " +
+                    "${expected?.carrierName} " +
                     "but was ${actual.connectivity?.cellular?.carrierName}"
             )
-            .isEqualTo(expected?.carrier?.carrierName)
+            .isEqualTo(expected?.carrierName)
 
         assertThat(actual.connectivity?.interfaces)
             .overridingErrorMessage(

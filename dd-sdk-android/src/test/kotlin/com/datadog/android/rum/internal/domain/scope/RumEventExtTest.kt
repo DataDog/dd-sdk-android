@@ -15,9 +15,9 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.context.CarrierInfo
 import com.datadog.android.v2.api.context.DeviceType
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -608,7 +608,12 @@ internal class RumEventExtTest {
         // Given
         val networkInfo = NetworkInfoV2(
             connectivity = NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED,
-            carrier = null
+            carrierName = null,
+            carrierId = null,
+            upKbps = null,
+            downKbps = null,
+            strength = null,
+            cellularTechnology = null
         )
 
         // When
@@ -625,11 +630,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Wifi, v2}`() {
+    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Wifi, v2}`(
+        @Forgery fakeNetworkInfo: NetworkInfoV2
+    ) {
         // Given
-        val networkInfo = NetworkInfoV2(
+        val networkInfo = fakeNetworkInfo.copy(
             connectivity = NetworkInfoV2.Connectivity.NETWORK_WIFI,
-            carrier = null
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -646,11 +655,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Wimax, v2}`() {
+    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Wimax, v2}`(
+        @Forgery fakeNetworkInfo: NetworkInfoV2
+    ) {
         // Given
-        val networkInfo = NetworkInfoV2(
+        val networkInfo = fakeNetworkInfo.copy(
             connectivity = NetworkInfoV2.Connectivity.NETWORK_WIMAX,
-            carrier = null
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -667,11 +680,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Ethernet, v2}`() {
+    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Ethernet, v2}`(
+        @Forgery fakeNetworkInfo: NetworkInfoV2
+    ) {
         // Given
-        val networkInfo = NetworkInfoV2(
+        val networkInfo = fakeNetworkInfo.copy(
             connectivity = NetworkInfoV2.Connectivity.NETWORK_ETHERNET,
-            carrier = null
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -688,11 +705,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Bluetooth, v2}`() {
+    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Bluetooth, v2}`(
+        @Forgery fakeNetworkInfo: NetworkInfoV2
+    ) {
         // Given
-        val networkInfo = NetworkInfoV2(
+        val networkInfo = fakeNetworkInfo.copy(
             connectivity = NetworkInfoV2.Connectivity.NETWORK_BLUETOOTH,
-            carrier = null
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -718,14 +739,15 @@ internal class RumEventExtTest {
     )
     fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Cellular, v2}`(
         connectivity: NetworkInfoV2.Connectivity,
-        forge: Forge
+        @Forgery fakeNetworkInfo: NetworkInfoV2,
+        @StringForgery fakeCarrierName: String,
+        @StringForgery fakeCellularTechnology: String
     ) {
         // Given
-        val fakeTechnology = forge.aNullable { forge.anAlphabeticalString() }
-        val fakeCarrierName = forge.aNullable { forge.anAlphabeticalString() }
-        val networkInfo = NetworkInfoV2(
-            connectivity,
-            carrier = CarrierInfo(fakeTechnology, fakeCarrierName)
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = connectivity,
+            carrierName = fakeCarrierName,
+            cellularTechnology = fakeCellularTechnology
         )
 
         // When
@@ -736,17 +758,21 @@ internal class RumEventExtTest {
             ResourceEvent.Connectivity(
                 ResourceEvent.Status.CONNECTED,
                 listOf(ResourceEvent.Interface.CELLULAR),
-                ResourceEvent.Cellular(fakeTechnology, fakeCarrierName)
+                ResourceEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
             )
         )
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Other, v2}`() {
+    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Other, v2}`(
+        @Forgery fakeNetworkInfo: NetworkInfoV2
+    ) {
         // Given
-        val networkInfo = NetworkInfoV2(
+        val networkInfo = fakeNetworkInfo.copy(
             connectivity = NetworkInfoV2.Connectivity.NETWORK_OTHER,
-            carrier = null
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -767,7 +793,12 @@ internal class RumEventExtTest {
         // Given
         val networkInfo = NetworkInfoV2(
             connectivity = NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED,
-            carrier = null
+            carrierName = null,
+            carrierId = null,
+            upKbps = null,
+            downKbps = null,
+            strength = null,
+            cellularTechnology = null
         )
 
         // When
@@ -784,11 +815,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Wifi, v2}`() {
+    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Wifi, v2}`(
+        @Forgery fakeNetworkInfo: NetworkInfoV2
+    ) {
         // Given
-        val networkInfo = NetworkInfoV2(
+        val networkInfo = fakeNetworkInfo.copy(
             connectivity = NetworkInfoV2.Connectivity.NETWORK_WIFI,
-            carrier = null
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -805,11 +840,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Wimax, v2}`() {
+    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Wimax, v2}`(
+        @Forgery fakeNetworkInfo: NetworkInfoV2
+    ) {
         // Given
-        val networkInfo = NetworkInfoV2(
+        val networkInfo = fakeNetworkInfo.copy(
             connectivity = NetworkInfoV2.Connectivity.NETWORK_WIMAX,
-            carrier = null
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -826,11 +865,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Ethernet, v2}`() {
+    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Ethernet, v2}`(
+        @Forgery fakeNetworkInfo: NetworkInfoV2
+    ) {
         // Given
-        val networkInfo = NetworkInfoV2(
+        val networkInfo = fakeNetworkInfo.copy(
             connectivity = NetworkInfoV2.Connectivity.NETWORK_ETHERNET,
-            carrier = null
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -847,11 +890,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Bluetooth, v2}`() {
+    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Bluetooth, v2}`(
+        @Forgery fakeNetworkInfo: NetworkInfoV2
+    ) {
         // Given
-        val networkInfo = NetworkInfoV2(
+        val networkInfo = fakeNetworkInfo.copy(
             connectivity = NetworkInfoV2.Connectivity.NETWORK_BLUETOOTH,
-            carrier = null
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -877,14 +924,15 @@ internal class RumEventExtTest {
     )
     fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Cellular, v2}`(
         connectivity: NetworkInfoV2.Connectivity,
-        forge: Forge
+        @Forgery fakeNetworkInfo: NetworkInfoV2,
+        @StringForgery fakeCarrierName: String,
+        @StringForgery fakeCellularTechnology: String
     ) {
         // Given
-        val fakeTechnology = forge.aNullable { forge.anAlphabeticalString() }
-        val fakeCarrierName = forge.aNullable { forge.anAlphabeticalString() }
-        val networkInfo = NetworkInfoV2(
-            connectivity,
-            carrier = CarrierInfo(fakeTechnology, fakeCarrierName)
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = connectivity,
+            carrierName = fakeCarrierName,
+            cellularTechnology = fakeCellularTechnology
         )
 
         // When
@@ -895,17 +943,21 @@ internal class RumEventExtTest {
             ErrorEvent.Connectivity(
                 ErrorEvent.Status.CONNECTED,
                 listOf(ErrorEvent.Interface.CELLULAR),
-                ErrorEvent.Cellular(fakeTechnology, fakeCarrierName)
+                ErrorEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
             )
         )
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Other, v2}`() {
+    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Other, v2}`(
+        @Forgery fakeNetworkInfo: NetworkInfoV2
+    ) {
         // Given
-        val networkInfo = NetworkInfoV2(
+        val networkInfo = fakeNetworkInfo.copy(
             connectivity = NetworkInfoV2.Connectivity.NETWORK_OTHER,
-            carrier = null
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -926,7 +978,12 @@ internal class RumEventExtTest {
         // Given
         val networkInfo = NetworkInfoV2(
             connectivity = NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED,
-            carrier = null
+            carrierName = null,
+            carrierId = null,
+            upKbps = null,
+            downKbps = null,
+            strength = null,
+            cellularTechnology = null
         )
 
         // When
@@ -943,11 +1000,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Wifi, v2}`() {
+    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Wifi, v2}`(
+        @Forgery fakeNetworkInfo: NetworkInfoV2
+    ) {
         // Given
-        val networkInfo = NetworkInfoV2(
+        val networkInfo = fakeNetworkInfo.copy(
             connectivity = NetworkInfoV2.Connectivity.NETWORK_WIFI,
-            carrier = null
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -964,11 +1025,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Wimax, v2}`() {
+    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Wimax, v2}`(
+        @Forgery fakeNetworkInfo: NetworkInfoV2
+    ) {
         // Given
-        val networkInfo = NetworkInfoV2(
+        val networkInfo = fakeNetworkInfo.copy(
             connectivity = NetworkInfoV2.Connectivity.NETWORK_WIMAX,
-            carrier = null
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -985,11 +1050,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Ethernet, v2}`() {
+    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Ethernet, v2}`(
+        @Forgery fakeNetworkInfo: NetworkInfoV2
+    ) {
         // Given
-        val networkInfo = NetworkInfoV2(
+        val networkInfo = fakeNetworkInfo.copy(
             connectivity = NetworkInfoV2.Connectivity.NETWORK_ETHERNET,
-            carrier = null
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -1006,11 +1075,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Bluetooth, v2}`() {
+    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Bluetooth, v2}`(
+        @Forgery fakeNetworkInfo: NetworkInfoV2
+    ) {
         // Given
-        val networkInfo = NetworkInfoV2(
+        val networkInfo = fakeNetworkInfo.copy(
             connectivity = NetworkInfoV2.Connectivity.NETWORK_BLUETOOTH,
-            carrier = null
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -1036,14 +1109,15 @@ internal class RumEventExtTest {
     )
     fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Cellular, v2}`(
         connectivity: NetworkInfoV2.Connectivity,
-        forge: Forge
+        @Forgery fakeNetworkInfo: NetworkInfoV2,
+        @StringForgery fakeCarrierName: String,
+        @StringForgery fakeCellularTechnology: String
     ) {
         // Given
-        val fakeTechnology = forge.aNullable { forge.anAlphabeticalString() }
-        val fakeCarrierName = forge.aNullable { forge.anAlphabeticalString() }
-        val networkInfo = NetworkInfoV2(
-            connectivity,
-            carrier = CarrierInfo(fakeTechnology, fakeCarrierName)
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = connectivity,
+            carrierName = fakeCarrierName,
+            cellularTechnology = fakeCellularTechnology
         )
 
         // When
@@ -1054,17 +1128,21 @@ internal class RumEventExtTest {
             LongTaskEvent.Connectivity(
                 LongTaskEvent.Status.CONNECTED,
                 listOf(LongTaskEvent.Interface.CELLULAR),
-                LongTaskEvent.Cellular(fakeTechnology, fakeCarrierName)
+                LongTaskEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
             )
         )
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Other, v2}`() {
+    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Other, v2}`(
+        @Forgery fakeNetworkInfo: NetworkInfoV2
+    ) {
         // Given
-        val networkInfo = NetworkInfoV2(
+        val networkInfo = fakeNetworkInfo.copy(
             connectivity = NetworkInfoV2.Connectivity.NETWORK_OTHER,
-            carrier = null
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When

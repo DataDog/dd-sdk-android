@@ -37,7 +37,12 @@ internal class NoOpContextProvider : ContextProvider {
             processInfo = ProcessInfo(isMainProcess = true, processImportance = 0),
             networkInfo = NetworkInfo(
                 connectivity = NetworkInfo.Connectivity.NETWORK_OTHER,
-                carrier = null
+                carrierName = null,
+                carrierId = null,
+                upKbps = null,
+                downKbps = null,
+                strength = null,
+                cellularTechnology = null
             ),
             deviceInfo = DeviceInfo("", "", "", DeviceType.OTHER, "", "", "", "", ""),
             userInfo = UserInfo(null, null, null, emptyMap()),

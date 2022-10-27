@@ -9,6 +9,7 @@ package com.datadog.android.log.internal.domain
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.model.LogEvent
+import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
@@ -22,7 +23,10 @@ internal interface LogGenerator {
         attributes: Map<String, Any?>,
         tags: Set<String>,
         timestamp: Long,
-        threadName: String? = null,
+        threadName: String,
+        datadogContext: DatadogContext,
+        attachNetworkInfo: Boolean,
+        loggerName: String,
         bundleWithTraces: Boolean = true,
         bundleWithRum: Boolean = true,
         userInfo: UserInfo? = null,

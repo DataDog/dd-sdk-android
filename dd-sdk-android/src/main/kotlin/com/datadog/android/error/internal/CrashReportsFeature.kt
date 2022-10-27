@@ -7,27 +7,19 @@
 package com.datadog.android.error.internal
 
 import android.content.Context
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
-import com.datadog.android.core.internal.persistence.PersistenceStrategy
-import com.datadog.android.log.internal.domain.DatadogLogGenerator
-import com.datadog.android.log.model.LogEvent
-import com.datadog.android.v2.core.internal.storage.Storage
+import com.datadog.android.v2.api.SdkCore
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class CrashReportsFeature(
-    private val coreFeature: CoreFeature,
-    private val storage: Storage
+    private val sdkCore: SdkCore
 ) {
 
-    internal var persistenceStrategy: PersistenceStrategy<LogEvent> = NoOpPersistenceStrategy()
     internal val initialized = AtomicBoolean(false)
     internal var originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
 
     // region SdkFeature
 
     fun initialize(context: Context) {
-        persistenceStrategy = createPersistenceStrategy(storage)
         setupExceptionHandler(context)
         initialized.set(true)
     }
@@ -35,16 +27,6 @@ internal class CrashReportsFeature(
     fun stop() {
         resetOriginalExceptionHandler()
         initialized.set(false)
-    }
-
-    private fun createPersistenceStrategy(
-        storage: Storage
-    ): PersistenceStrategy<LogEvent> {
-        return CrashReportFilePersistenceStrategy(
-            coreFeature.contextProvider,
-            coreFeature.persistenceExecutorService,
-            storage
-        )
     }
 
     // endregion
@@ -56,18 +38,7 @@ internal class CrashReportsFeature(
     ) {
         originalUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
         DatadogExceptionHandler(
-            DatadogLogGenerator(
-                coreFeature.serviceName,
-                DatadogExceptionHandler.LOGGER_NAME,
-                coreFeature.networkInfoProvider,
-                coreFeature.userInfoProvider,
-                coreFeature.timeProvider,
-                coreFeature.sdkVersion,
-                coreFeature.envName,
-                coreFeature.variant,
-                coreFeature.packageVersionProvider
-            ),
-            writer = persistenceStrategy.getWriter(),
+            sdkCore = sdkCore,
             appContext = appContext
         ).register()
     }

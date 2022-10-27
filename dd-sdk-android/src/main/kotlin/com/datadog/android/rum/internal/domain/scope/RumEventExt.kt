@@ -265,10 +265,10 @@ internal fun NetworkInfoV2.toResourceConnectivity(): ResourceEvent.Connectivity 
         NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
     }
 
-    val cellular = if (carrier != null) {
+    val cellular = if (cellularTechnology != null || carrierName != null) {
         ResourceEvent.Cellular(
-            technology = carrier.technology,
-            carrierName = carrier.carrierName
+            technology = cellularTechnology,
+            carrierName = carrierName
         )
     } else {
         null
@@ -301,10 +301,10 @@ internal fun NetworkInfoV2.toErrorConnectivity(): ErrorEvent.Connectivity {
         NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
     }
 
-    val cellular = if (carrier != null) {
+    val cellular = if (cellularTechnology != null || carrierName != null) {
         ErrorEvent.Cellular(
-            technology = carrier.technology,
-            carrierName = carrier.carrierName
+            technology = cellularTechnology,
+            carrierName = carrierName
         )
     } else {
         null
@@ -337,10 +337,10 @@ internal fun NetworkInfoV2.toLongTaskConnectivity(): LongTaskEvent.Connectivity 
         NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
     }
 
-    val cellular = if (carrier != null) {
+    val cellular = if (cellularTechnology != null || carrierName != null) {
         LongTaskEvent.Cellular(
-            technology = carrier.technology,
-            carrierName = carrier.carrierName
+            technology = cellularTechnology,
+            carrierName = carrierName
         )
     } else {
         null

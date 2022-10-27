@@ -6,20 +6,17 @@
 
 package com.datadog.android.log.internal.domain
 
-import com.datadog.android.core.internal.net.info.NetworkInfoProvider
-import com.datadog.android.core.internal.system.AppVersionProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
-import com.datadog.android.log.internal.user.UserInfoProvider
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.extension.asLogStatus
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -58,10 +55,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class DatadogLogGeneratorTest {
 
-    lateinit var testedLogGenerator: LogGenerator
-
-    @Mock
-    lateinit var mockNetworkInfoProvider: NetworkInfoProvider
+    lateinit var testedLogGenerator: DatadogLogGenerator
 
     @Mock
     lateinit var mockTracer: Tracer
@@ -72,27 +66,12 @@ internal class DatadogLogGeneratorTest {
     @Mock(extraInterfaces = [MutableSpan::class])
     lateinit var mockSpan: Span
 
-    @Mock
-    lateinit var mockUserInfoProvider: UserInfoProvider
-
-    @Mock
-    lateinit var mockTimeProvider: TimeProvider
-
-    @Mock
-    lateinit var mockAppVersionProvider: AppVersionProvider
-
     lateinit var fakeServiceName: String
     lateinit var fakeLoggerName: String
     lateinit var fakeAttributes: Map<String, Any?>
     lateinit var fakeTags: Set<String>
-    lateinit var fakeAppVersion: String
-    lateinit var fakeEnvName: String
-    lateinit var fakeVariant: String
     lateinit var fakeLogMessage: String
     lateinit var fakeThrowable: Throwable
-
-    @StringForgery
-    lateinit var fakeSdkVersion: String
 
     @StringForgery(StringForgeryType.HEXADECIMAL)
     lateinit var fakeSpanId: String
@@ -101,10 +80,8 @@ internal class DatadogLogGeneratorTest {
     lateinit var fakeTraceId: String
 
     @Forgery
-    lateinit var fakeNetworkInfo: NetworkInfo
+    lateinit var fakeDatadogContext: DatadogContext
 
-    @Forgery
-    lateinit var fakeUserInfo: UserInfo
     var fakeTimestamp = 0L
     var fakeLevel: Int = 0
     lateinit var fakeThreadName: String
@@ -118,9 +95,6 @@ internal class DatadogLogGeneratorTest {
         fakeLevel = forge.anInt(2, 8)
         fakeAttributes = forge.aMap { anAlphabeticalString() to anInt() }
         fakeTags = forge.aList { anAlphabeticalString() }.toSet()
-        fakeAppVersion = forge.aStringMatching("^[0-9]\\.[0-9]\\.[0-9]")
-        fakeEnvName = forge.aStringMatching("[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]")
-        fakeVariant = forge.anAlphabeticalString()
         fakeThrowable = forge.aThrowable()
         fakeTimestamp = System.currentTimeMillis()
         fakeThreadName = forge.anAlphabeticalString()
@@ -129,25 +103,19 @@ internal class DatadogLogGeneratorTest {
             max = Long.MAX_VALUE - fakeTimestamp
         )
 
-        whenever(mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
-        whenever(mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        fakeDatadogContext = fakeDatadogContext.copy(
+            time = fakeDatadogContext.time.copy(
+                serverTimeOffsetMs = fakeTimeOffset
+            )
+        )
+
         whenever(mockTracer.activeSpan()).thenReturn(mockSpan)
         whenever(mockSpan.context()) doReturn mockSpanContext
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
         whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId
-        whenever(mockTimeProvider.getServerOffsetMillis()) doReturn fakeTimeOffset
-        whenever(mockAppVersionProvider.version) doReturn fakeAppVersion
         GlobalTracer.registerIfAbsent(mockTracer)
         testedLogGenerator = DatadogLogGenerator(
-            fakeServiceName,
-            fakeLoggerName,
-            mockNetworkInfoProvider,
-            mockUserInfoProvider,
-            mockTimeProvider,
-            fakeSdkVersion,
-            fakeEnvName,
-            fakeVariant,
-            mockAppVersionProvider
+            fakeServiceName
         )
     }
 
@@ -165,11 +133,15 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        assertThat(log!!).hasMessage(fakeLogMessage)
+        assertThat(log).hasMessage(fakeLogMessage)
     }
 
     @Test
@@ -181,11 +153,15 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        assertThat(log!!).hasStatus(fakeLevel.asLogStatus())
+        assertThat(log).hasStatus(fakeLevel.asLogStatus())
     }
 
     @Test
@@ -197,11 +173,36 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        assertThat(log!!).hasServiceName(fakeServiceName)
+        assertThat(log).hasServiceName(fakeServiceName)
+    }
+
+    @Test
+    fun `M add the service name from Datadog context W creating the Log { no service name }`() {
+        // WHEN
+        testedLogGenerator = DatadogLogGenerator()
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
+        )
+
+        // THEN
+        assertThat(log).hasServiceName(fakeDatadogContext.service)
     }
 
     @Test
@@ -213,11 +214,15 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        assertThat(log!!).hasLoggerName(fakeLoggerName)
+        assertThat(log).hasLoggerName(fakeLoggerName)
     }
 
     @Test
@@ -229,11 +234,15 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        assertThat(log!!).hasLoggerVersion(fakeSdkVersion)
+        assertThat(log).hasLoggerVersion(fakeDatadogContext.sdkVersion)
     }
 
     @Test
@@ -246,27 +255,14 @@ internal class DatadogLogGeneratorTest {
             fakeAttributes,
             fakeTags,
             fakeTimestamp,
-            fakeThreadName
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        assertThat(log!!).hasThreadName(fakeThreadName)
-    }
-
-    @Test
-    fun `M add the thread name as current thread W creating the Log {threadName not provided}`() {
-        // WHEN
-        val log = testedLogGenerator.generateLog(
-            fakeLevel,
-            fakeLogMessage,
-            fakeThrowable,
-            fakeAttributes,
-            fakeTags,
-            fakeTimestamp
-        )
-
-        // THEN
-        assertThat(log!!).hasThreadName(Thread.currentThread().name)
+        assertThat(log).hasThreadName(fakeThreadName)
     }
 
     @Test
@@ -278,12 +274,17 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        val expected = (fakeTimestamp + fakeTimeOffset).toIsoFormattedTimestamp()
-        assertThat(log!!).hasDate(expected)
+        val expected = (fakeTimestamp + fakeTimeOffset)
+            .toIsoFormattedTimestamp()
+        assertThat(log).hasDate(expected)
     }
 
     @Test
@@ -295,11 +296,15 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        assertThat(log!!).hasError(
+        assertThat(log).hasError(
             LogEvent.Error(
                 kind = fakeThrowable.javaClass.canonicalName,
                 stack = fakeThrowable.stackTraceToString(),
@@ -318,11 +323,15 @@ internal class DatadogLogGeneratorTest {
             fakeAnonymousThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        assertThat(log!!).hasError(
+        assertThat(log).hasError(
             LogEvent.Error(
                 kind = fakeAnonymousThrowable.javaClass.simpleName,
                 stack = fakeAnonymousThrowable.stackTraceToString(),
@@ -343,11 +352,15 @@ internal class DatadogLogGeneratorTest {
             fakeAttributes,
             fakeTags,
             fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName,
             userInfo = fakeCustomUserInfo
         )
 
         // THEN
-        assertThat(log!!).hasUserInfo(fakeCustomUserInfo)
+        assertThat(log).hasUserInfo(fakeCustomUserInfo)
     }
 
     @Test
@@ -359,11 +372,15 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        assertThat(log!!).hasUserInfo(fakeUserInfo)
+        assertThat(log).hasUserInfo(fakeDatadogContext.userInfo)
     }
 
     @Test
@@ -375,56 +392,22 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        assertThat(log!!).hasNetworkInfo(fakeNetworkInfo)
+        assertThat(log).hasNetworkInfo(fakeDatadogContext.networkInfo)
     }
 
     @Test
     fun `M not add the networkInfo W creating Log {networkInfoProvider is null}`() {
         // GIVEN
         testedLogGenerator = DatadogLogGenerator(
-            fakeServiceName,
-            fakeLoggerName,
-            null,
-            mockUserInfoProvider,
-            mockTimeProvider,
-            fakeSdkVersion,
-            fakeEnvName,
-            fakeVariant,
-            mockAppVersionProvider
-        )
-        // WHEN
-        val log = testedLogGenerator.generateLog(
-            fakeLevel,
-            fakeLogMessage,
-            fakeThrowable,
-            fakeAttributes,
-            fakeTags,
-            fakeTimestamp
-        )
-
-        // THEN
-        assertThat(log!!).doesNotHaveNetworkInfo()
-    }
-
-    @Test
-    fun `M use custom networkInfo W creating Log { networkInfo provided }`(
-        @Forgery fakeCustomNetworkInfo: NetworkInfo
-    ) {
-        // GIVEN
-        testedLogGenerator = DatadogLogGenerator(
-            fakeServiceName,
-            fakeLoggerName,
-            null,
-            mockUserInfoProvider,
-            mockTimeProvider,
-            fakeSdkVersion,
-            fakeEnvName,
-            fakeVariant,
-            mockAppVersionProvider
+            fakeServiceName
         )
         // WHEN
         val log = testedLogGenerator.generateLog(
@@ -434,11 +417,41 @@ internal class DatadogLogGeneratorTest {
             fakeAttributes,
             fakeTags,
             fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = false,
+            fakeLoggerName
+        )
+
+        // THEN
+        assertThat(log).doesNotHaveNetworkInfo()
+    }
+
+    @Test
+    fun `M use custom networkInfo W creating Log { networkInfo provided }`(
+        @Forgery fakeCustomNetworkInfo: NetworkInfo
+    ) {
+        // GIVEN
+        testedLogGenerator = DatadogLogGenerator(
+            fakeServiceName
+        )
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = false,
+            fakeLoggerName,
             networkInfo = fakeCustomNetworkInfo
         )
 
         // THEN
-        assertThat(log!!).hasNetworkInfo(fakeCustomNetworkInfo)
+        assertThat(log).hasNetworkInfo(fakeCustomNetworkInfo)
     }
 
     @Test
@@ -450,27 +463,24 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        val deserializedTags = log!!.ddtags.split(",")
-        Assertions.assertThat(deserializedTags).contains("${LogAttributes.ENV}:$fakeEnvName")
+        val deserializedTags = log.ddtags.split(",")
+        Assertions.assertThat(deserializedTags)
+            .contains("${LogAttributes.ENV}:${fakeDatadogContext.env}")
     }
 
     @Test
     fun `M not add the envNameTag W empty`() {
         // GIVEN
-        testedLogGenerator = DatadogLogGenerator(
-            fakeServiceName,
-            fakeLoggerName,
-            mockNetworkInfoProvider,
-            mockUserInfoProvider,
-            mockTimeProvider,
-            fakeSdkVersion,
-            "",
-            fakeVariant,
-            mockAppVersionProvider
+        fakeDatadogContext = fakeDatadogContext.copy(
+            env = ""
         )
 
         // WHEN
@@ -480,14 +490,18 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
         val expectedTags = fakeTags +
-            "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion" +
-            "${LogAttributes.VARIANT}:$fakeVariant"
-        assertThat(log!!).hasExactlyTags(expectedTags)
+            "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}" +
+            "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}"
+        assertThat(log).hasExactlyTags(expectedTags)
     }
 
     @Test
@@ -499,29 +513,24 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        val deserializedTags = log!!.ddtags.split(",")
+        val deserializedTags = log.ddtags.split(",")
         Assertions.assertThat(deserializedTags)
-            .contains("${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion")
+            .contains("${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}")
     }
 
     @Test
     fun `M not add the appVersionTag W empty`() {
         // GIVEN
-        whenever(mockAppVersionProvider.version) doReturn ""
-        testedLogGenerator = DatadogLogGenerator(
-            fakeServiceName,
-            fakeLoggerName,
-            mockNetworkInfoProvider,
-            mockUserInfoProvider,
-            mockTimeProvider,
-            fakeSdkVersion,
-            fakeEnvName,
-            fakeVariant,
-            mockAppVersionProvider
+        fakeDatadogContext = fakeDatadogContext.copy(
+            version = ""
         )
 
         // WHEN
@@ -531,14 +540,18 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
         val expectedTags = fakeTags +
-            "${LogAttributes.ENV}:$fakeEnvName" +
-            "${LogAttributes.VARIANT}:$fakeVariant"
-        assertThat(log!!).hasExactlyTags(expectedTags)
+            "${LogAttributes.ENV}:${fakeDatadogContext.env}" +
+            "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}"
+        assertThat(log).hasExactlyTags(expectedTags)
     }
 
     @Test
@@ -550,28 +563,24 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        val deserializedTags = log!!.ddtags.split(",")
+        val deserializedTags = log.ddtags.split(",")
         Assertions.assertThat(deserializedTags)
-            .contains("${LogAttributes.VARIANT}:$fakeVariant")
+            .contains("${LogAttributes.VARIANT}:${fakeDatadogContext.variant}")
     }
 
     @Test
     fun `M not add the variantTag W empty`() {
         // GIVEN
-        testedLogGenerator = DatadogLogGenerator(
-            fakeServiceName,
-            fakeLoggerName,
-            mockNetworkInfoProvider,
-            mockUserInfoProvider,
-            mockTimeProvider,
-            fakeSdkVersion,
-            fakeEnvName,
-            "",
-            mockAppVersionProvider
+        fakeDatadogContext = fakeDatadogContext.copy(
+            variant = ""
         )
 
         // WHEN
@@ -581,14 +590,18 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
         val expectedTags = fakeTags +
-            "${LogAttributes.ENV}:$fakeEnvName" +
-            "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion"
-        assertThat(log!!).hasExactlyTags(expectedTags)
+            "${LogAttributes.ENV}:${fakeDatadogContext.env}" +
+            "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}"
+        assertThat(log).hasExactlyTags(expectedTags)
     }
 
     @Test
@@ -600,11 +613,15 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        Assertions.assertThat(log!!.additionalProperties).containsAllEntriesOf(
+        Assertions.assertThat(log.additionalProperties).containsAllEntriesOf(
             mapOf(
                 LogAttributes.DD_TRACE_ID to fakeTraceId,
                 LogAttributes.DD_SPAN_ID to fakeSpanId
@@ -624,7 +641,11 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
@@ -634,7 +655,7 @@ internal class DatadogLogGeneratorTest {
             LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
             LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
         )
-        assertThat(log!!).hasExactlyAttributes(expectedAttributes)
+        assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
 
     @Test
@@ -649,7 +670,11 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
@@ -659,7 +684,7 @@ internal class DatadogLogGeneratorTest {
             LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
             LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
         )
-        assertThat(log!!).hasExactlyAttributes(expectedAttributes)
+        assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
 
     @Test
@@ -675,6 +700,10 @@ internal class DatadogLogGeneratorTest {
             fakeAttributes,
             fakeTags,
             fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName,
             bundleWithTraces = false
         )
 
@@ -685,7 +714,7 @@ internal class DatadogLogGeneratorTest {
             LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
             LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
         )
-        assertThat(log!!).hasExactlyAttributes(expectedAttributes)
+        assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
 
     @Test
@@ -697,11 +726,15 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        Assertions.assertThat(log!!.additionalProperties).containsAllEntriesOf(
+        Assertions.assertThat(log.additionalProperties).containsAllEntriesOf(
             mapOf(
                 LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
                 LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
@@ -723,7 +756,11 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
@@ -731,7 +768,7 @@ internal class DatadogLogGeneratorTest {
             LogAttributes.DD_TRACE_ID to fakeTraceId,
             LogAttributes.DD_SPAN_ID to fakeSpanId
         )
-        assertThat(log!!).hasExactlyAttributes(expectedAttributes)
+        assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
 
     @Test
@@ -747,6 +784,10 @@ internal class DatadogLogGeneratorTest {
             fakeAttributes,
             fakeTags,
             fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName,
             bundleWithRum = false
         )
 
@@ -755,7 +796,7 @@ internal class DatadogLogGeneratorTest {
             LogAttributes.DD_TRACE_ID to fakeTraceId,
             LogAttributes.DD_SPAN_ID to fakeSpanId
         )
-        assertThat(log!!).hasExactlyAttributes(expectedAttributes)
+        assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
 
     @Test
@@ -767,11 +808,15 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        assertThat(log!!).hasStatus(LogEvent.Status.CRITICAL)
+        assertThat(log).hasStatus(LogEvent.Status.CRITICAL)
     }
 
     @Test
@@ -783,11 +828,15 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        assertThat(log!!).hasStatus(LogEvent.Status.ERROR)
+        assertThat(log).hasStatus(LogEvent.Status.ERROR)
     }
 
     @Test
@@ -799,11 +848,15 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        assertThat(log!!).hasStatus(LogEvent.Status.EMERGENCY)
+        assertThat(log).hasStatus(LogEvent.Status.EMERGENCY)
     }
 
     @Test
@@ -815,11 +868,15 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        assertThat(log!!).hasStatus(LogEvent.Status.WARN)
+        assertThat(log).hasStatus(LogEvent.Status.WARN)
     }
 
     @Test
@@ -831,11 +888,15 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        assertThat(log!!).hasStatus(LogEvent.Status.INFO)
+        assertThat(log).hasStatus(LogEvent.Status.INFO)
     }
 
     @Test
@@ -847,11 +908,15 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        assertThat(log!!).hasStatus(LogEvent.Status.DEBUG)
+        assertThat(log).hasStatus(LogEvent.Status.DEBUG)
     }
 
     @Test
@@ -863,11 +928,15 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        assertThat(log!!).hasStatus(LogEvent.Status.TRACE)
+        assertThat(log).hasStatus(LogEvent.Status.TRACE)
     }
 
     @Test
@@ -879,11 +948,15 @@ internal class DatadogLogGeneratorTest {
             fakeThrowable,
             fakeAttributes,
             fakeTags,
-            fakeTimestamp
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
         )
 
         // THEN
-        assertThat(log!!).hasStatus(LogEvent.Status.DEBUG)
+        assertThat(log).hasStatus(LogEvent.Status.DEBUG)
     }
 
     companion object {

@@ -50,7 +50,6 @@ import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
@@ -231,17 +230,6 @@ internal class CoreFeature {
             ndkCrashHandler = DatadogNdkCrashHandler(
                 storageDir,
                 persistenceExecutorService,
-                DatadogLogGenerator(
-                    serviceName,
-                    DatadogNdkCrashHandler.LOGGER_NAME,
-                    networkInfoProvider,
-                    userInfoProvider,
-                    timeProvider,
-                    sdkVersion,
-                    envName,
-                    variant,
-                    packageVersionProvider
-                ),
                 NdkCrashLogDeserializer(sdkLogger),
                 RumEventDeserializer(),
                 NetworkInfoDeserializer(sdkLogger),
