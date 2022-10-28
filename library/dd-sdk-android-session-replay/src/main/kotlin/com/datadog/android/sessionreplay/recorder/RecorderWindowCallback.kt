@@ -23,11 +23,14 @@ internal class RecorderWindowCallback(
     private val copyEvent: (MotionEvent) -> MotionEvent = {
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         MotionEvent.obtain(it)
-    }
+    },
+    private val motionUpdateThresholdInNs: Long = MOTION_UPDATE_DELAY_THRESHOLD_NS,
+    private val flushPositionBufferThresholdInNs: Long = FLUSH_BUFFER_THRESHOLD_NS
 ) : Window.Callback by wrappedCallback {
 
     internal var positions: MutableList<MobileSegment.Position> = LinkedList()
-    private var lastOnMoveUpdate: Long = 0L
+    private var lastOnMoveUpdateTimeInNs: Long = 0L
+    private var lastPerformedFlushTimeInNs: Long = System.nanoTime()
 
     // region Window.Callback
 
@@ -63,19 +66,28 @@ internal class RecorderWindowCallback(
     private fun handleEvent(event: MotionEvent) {
         when (event.action.and(MotionEvent.ACTION_MASK)) {
             MotionEvent.ACTION_DOWN -> {
+                // reset the flush time to avoid flush in the next event
+                lastPerformedFlushTimeInNs = System.nanoTime()
                 updatePositions(event)
-                lastOnMoveUpdate = 0
+                // reset the on move update time in order to take into account the first move event
+                lastOnMoveUpdateTimeInNs = 0
             }
             MotionEvent.ACTION_MOVE -> {
-                if (System.nanoTime() - lastOnMoveUpdate >= MOTION_UPDATE_DELAY_NS) {
+                if (System.nanoTime() - lastOnMoveUpdateTimeInNs >= motionUpdateThresholdInNs) {
                     updatePositions(event)
-                    lastOnMoveUpdate = System.nanoTime()
+                    lastOnMoveUpdateTimeInNs = System.nanoTime()
+                }
+                // make sure we flush from time to time to avoid glitches in the player
+                if (System.nanoTime() - lastPerformedFlushTimeInNs >=
+                    flushPositionBufferThresholdInNs
+                ) {
+                    flushPositions()
                 }
             }
             MotionEvent.ACTION_UP -> {
                 updatePositions(event)
                 flushPositions()
-                lastOnMoveUpdate = 0
+                lastOnMoveUpdateTimeInNs = 0
             }
         }
     }
@@ -97,16 +109,26 @@ internal class RecorderWindowCallback(
     }
 
     private fun flushPositions() {
+        if (positions.isEmpty()) {
+            return
+        }
         val touchData = MobileSegment.MobileIncrementalData
             .TouchData(LinkedList(positions))
         processor.process(touchData)
         positions.clear()
+        lastPerformedFlushTimeInNs = System.nanoTime()
     }
 
     // endregion
 
     companion object {
         private const val EVENT_CONSUMED: Boolean = true
-        internal val MOTION_UPDATE_DELAY_NS: Long = TimeUnit.MILLISECONDS.toNanos(20)
+
+        // every frame we collect the move event positions
+        internal val MOTION_UPDATE_DELAY_THRESHOLD_NS: Long =
+            TimeUnit.MILLISECONDS.toNanos(16)
+
+        // every 10 frames we flush the buffer
+        internal val FLUSH_BUFFER_THRESHOLD_NS: Long = MOTION_UPDATE_DELAY_THRESHOLD_NS * 10
     }
 }
