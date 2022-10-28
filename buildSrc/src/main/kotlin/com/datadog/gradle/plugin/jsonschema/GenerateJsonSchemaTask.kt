@@ -36,13 +36,21 @@ open class GenerateJsonSchemaTask : DefaultTask() {
     // region Input/Output
 
     /**
-     * The [InputFiles] (E.g.: all the json files in `resources/json`).
+     * The [InputFiles] (E.g.: all the json files in `resources/json`). Note, that it will get all
+     * files recursively in order to keep Gradle build cache state in a proper way, but only
+     * top-level files are used for the model generation (they can be just a reference to the
+     * deeper files, so they may receive no changes making Gradle build cache to have
+     * a wrong caching decision when deeper files actually change).
      */
     @PathSensitive(PathSensitivity.RELATIVE)
     @InputFiles
     fun getInputFiles(): List<File> {
-        return getInputDir().listFiles().orEmpty().toList()
-            .filter { it.extension == "json" }
+        return getInputDir()
+            .walkBottomUp()
+            .filter {
+                it.isFile && it.extension == "json"
+            }
+            .toList()
     }
 
     /**
@@ -95,7 +103,10 @@ open class GenerateJsonSchemaTask : DefaultTask() {
     fun performTask() {
         val inputDir = getInputDir()
         val outputDir = getOutputDir()
-        val files = getInputFiles().filter { it.name !in ignoredFiles }
+        val files = getInputFiles()
+            .filter {
+                it.name !in ignoredFiles && it.parentFile == inputDir
+            }
 
         logger.info("Found ${files.size} files in input dir: $inputDir")
 
