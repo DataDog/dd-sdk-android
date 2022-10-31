@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.AndroidInfoProvider
@@ -348,6 +349,13 @@ internal class DatadogRumMonitor(
 
     override fun sendErrorTelemetryEvent(message: String, stack: String?, kind: String?) {
         handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, stack, kind, null))
+    }
+
+    @Suppress("FunctionMaxLength")
+    override fun sendConfigurationTelemetryEvent(configuration: Configuration) {
+        handleEvent(
+            RumRawEvent.SendTelemetry(TelemetryType.CONFIGURATION, "", null, null, configuration)
+        )
     }
 
     override fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double) {
