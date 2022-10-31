@@ -56,6 +56,6 @@ internal class RecorderOnDrawListener(
     }
 
     companion object {
-        const val DEBOUNCE_DURATION_IN_MILLIS: Long = 16
+        const val DEBOUNCE_DURATION_IN_MILLIS: Long = 4
     }
 }
