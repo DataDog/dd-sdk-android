@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumPerformanceMetric
@@ -200,6 +201,7 @@ internal sealed class RumRawEvent {
         val message: String,
         val stack: String?,
         val kind: String?,
+        val configuration: Configuration?,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 }
