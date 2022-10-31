@@ -302,14 +302,18 @@ internal constructor(
          * Any long running operation on the main thread will appear as Long Tasks in Datadog
          * RUM Explorer
          * @param longTaskThresholdMs the threshold in milliseconds above which a task running on
-         * the Main thread [Looper] is considered as a long task (default 100ms)
+         * the Main thread [Looper] is considered as a long task (default 100ms). Setting a
+         * value less than or equal to 0 disables the long task tracking
          */
         @JvmOverloads
         fun trackLongTasks(longTaskThresholdMs: Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder {
             applyIfFeatureEnabled(PluginFeature.RUM, "trackLongTasks") {
-                rumConfig = rumConfig.copy(
-                    longTaskTrackingStrategy = MainLooperLongTaskStrategy(longTaskThresholdMs)
-                )
+                val strategy = if (longTaskThresholdMs > 0) {
+                    MainLooperLongTaskStrategy(longTaskThresholdMs)
+                } else {
+                    null
+                }
+                rumConfig = rumConfig.copy(longTaskTrackingStrategy = strategy)
             }
             return this
         }
