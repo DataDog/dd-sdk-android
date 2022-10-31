@@ -129,6 +129,7 @@ class SampleApplication : Application() {
     }
 
     private fun createDatadogConfiguration(): Configuration {
+        @Suppress("DEPRECATION")
         val configBuilder = Configuration.Builder(
             logsEnabled = true,
             tracesEnabled = true,
