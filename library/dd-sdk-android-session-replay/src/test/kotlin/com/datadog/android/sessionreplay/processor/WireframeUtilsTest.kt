@@ -47,7 +47,7 @@ internal class WireframeUtilsTest {
         forge: Forge
     ) {
         // Given
-        val fakeExpectedClipLeft = forge.aLong(min = 0, max = 100)
+        val fakeExpectedClipLeft = forge.aLong(min = 1, max = 100)
 
         val fakeParentWireframe = fakeWireframe.copy(
             x = fakeWireframe.x() + fakeExpectedClipLeft,
@@ -75,7 +75,7 @@ internal class WireframeUtilsTest {
         forge: Forge
     ) {
         // Given
-        val fakeExpectedClipRight = forge.aLong(min = 0, max = 100)
+        val fakeExpectedClipRight = forge.aLong(min = 1, max = 100)
 
         val fakeParentWireframe = fakeWireframe.copy(
             x = fakeWireframe.x(),
@@ -103,7 +103,7 @@ internal class WireframeUtilsTest {
         forge: Forge
     ) {
         // Given
-        val fakeExpectedClipTop = forge.aLong(min = 0, max = 100)
+        val fakeExpectedClipTop = forge.aLong(min = 1, max = 100)
 
         val fakeParentWireframe = fakeWireframe.copy(
             x = fakeWireframe.x(),
@@ -131,7 +131,7 @@ internal class WireframeUtilsTest {
         forge: Forge
     ) {
         // Given
-        val fakeExpectedClipBottom = forge.aLong(min = 0, max = 100)
+        val fakeExpectedClipBottom = forge.aLong(min = 1, max = 100)
 
         val fakeParentWireframe = fakeWireframe.copy(
             x = fakeWireframe.x(),
@@ -159,10 +159,10 @@ internal class WireframeUtilsTest {
         forge: Forge
     ) {
         // Given
-        val fakeExpectedClipBottom = forge.aLong(min = 0, max = 5)
-        val fakeExpectedClipTop = forge.aLong(min = 0, max = 5)
-        val fakeExpectedClipLeft = forge.aLong(min = 0, max = 5)
-        val fakeExpectedClipRight = forge.aLong(min = 0, max = 5)
+        val fakeExpectedClipBottom = forge.aLong(min = 1, max = 5)
+        val fakeExpectedClipTop = forge.aLong(min = 1, max = 5)
+        val fakeExpectedClipLeft = forge.aLong(min = 1, max = 5)
+        val fakeExpectedClipRight = forge.aLong(min = 1, max = 5)
 
         val fakeParentWireframe = fakeWireframe.copy(
             x = fakeWireframe.x() + fakeExpectedClipLeft,
@@ -681,8 +681,8 @@ internal class WireframeUtilsTest {
             ForgeConfigurator().configure(forge)
             val negativeCoordinatesWireframe = forge.getForgery<MobileSegment.Wireframe>()
                 .copy(
-                    x = forge.aLong(min = -100, max = 0),
-                    y = forge.aLong(min = -100, max = 0),
+                    x = forge.aLong(min = -99, max = 0),
+                    y = forge.aLong(min = -99, max = 0),
                     width = forge.aLong(min = 1, max = 100),
                     height = forge.aLong(min = 1, max = 100),
                     clip = forge.getForgery()
@@ -697,8 +697,8 @@ internal class WireframeUtilsTest {
                 )
             val negativeCoordinatesWireframeNoClip = forge.getForgery<MobileSegment.Wireframe>()
                 .copy(
-                    x = forge.aLong(min = -100, max = 0),
-                    y = forge.aLong(min = -100, max = 0),
+                    x = forge.aLong(min = -99, max = 0),
+                    y = forge.aLong(min = -99, max = 0),
                     width = forge.aLong(min = 2, max = 100),
                     height = forge.aLong(min = 2, max = 100),
                     clip = null
