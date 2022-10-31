@@ -40,6 +40,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -58,19 +59,21 @@ internal class RumMonitorBuilderTest {
     @Forgery
     lateinit var fakeConfig: Configuration.Feature.RUM
 
+    @Mock
+    lateinit var mockSdkCore: DatadogCore
+
     private lateinit var rumFeature: RumFeature
 
     @BeforeEach
     fun `set up`() {
-        val mockCore = mock<DatadogCore>()
-        whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
-        whenever(mockCore.contextProvider) doReturn mock()
+        whenever(mockSdkCore.coreFeature) doReturn coreFeature.mockInstance
+        whenever(mockSdkCore.contextProvider) doReturn mock()
 
-        rumFeature = RumFeature(coreFeature.mockInstance, storage = mock())
+        rumFeature = RumFeature(coreFeature.mockInstance)
         rumFeature.initialize(appContext.mockInstance, fakeConfig)
-        whenever(mockCore.rumFeature) doReturn rumFeature
+        whenever(mockSdkCore.rumFeature) doReturn rumFeature
 
-        Datadog.globalSdkCore = mockCore
+        Datadog.globalSdkCore = mockSdkCore
 
         testedBuilder = RumMonitor.Builder()
     }
@@ -101,8 +104,7 @@ internal class RumMonitorBuilderTest {
         assertThat(monitor.samplingRate).isEqualTo(fakeConfig.samplingRate)
         assertThat(monitor.backgroundTrackingEnabled).isEqualTo(fakeConfig.backgroundEventTracking)
 
-        assertThat(monitor.telemetryEventHandler.sdkVersion)
-            .isEqualTo(coreFeature.mockInstance.sdkVersion)
+        assertThat(monitor.telemetryEventHandler.sdkCore).isSameAs(mockSdkCore)
 
         val telemetrySampler = monitor.telemetryEventHandler.eventSampler
         check(telemetrySampler is RateBasedSampler)

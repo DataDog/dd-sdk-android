@@ -7,43 +7,41 @@
 package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
-import com.datadog.android.core.internal.persistence.PersistenceStrategy
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.rum.internal.domain.RumDataWriter
+import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
-import com.datadog.android.v2.core.internal.storage.Storage
+import com.datadog.android.v2.core.internal.storage.DataWriter
+import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class WebViewRumFeature(
-    private val coreFeature: CoreFeature,
-    private val storage: Storage
+    private val coreFeature: CoreFeature
 ) {
 
-    internal var persistenceStrategy: PersistenceStrategy<Any> = NoOpPersistenceStrategy()
+    internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
     internal val initialized = AtomicBoolean(false)
 
     // region SdkFeature
 
     fun initialize() {
-        persistenceStrategy = createPersistenceStrategy(storage)
+        dataWriter = createDataWriter()
         initialized.set(true)
     }
 
     fun stop() {
-        persistenceStrategy = NoOpPersistenceStrategy()
+        dataWriter = NoOpDataWriter()
         initialized.set(false)
     }
 
-    private fun createPersistenceStrategy(
-        storage: Storage
-    ): PersistenceStrategy<Any> {
-        return WebViewRumFilePersistenceStrategy(
-            coreFeature.contextProvider,
-            coreFeature.persistenceExecutorService,
-            sdkLogger,
-            coreFeature.localDataEncryption,
-            DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir),
-            storage
+    private fun createDataWriter(): DataWriter<Any> {
+        return RumDataWriter(
+            serializer = RumEventSerializer(),
+            fileWriter = BatchFileReaderWriter.create(sdkLogger, coreFeature.localDataEncryption),
+            internalLogger = sdkLogger,
+            lastViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir)
+
         )
     }
 

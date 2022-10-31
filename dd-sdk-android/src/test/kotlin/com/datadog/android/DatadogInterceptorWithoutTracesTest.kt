@@ -8,14 +8,12 @@ package com.datadog.android
 
 import android.content.Context
 import android.util.Log
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorTest
@@ -125,12 +123,6 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     lateinit var fakeUrl: String
 
-    @Forgery
-    lateinit var fakeConfig: Configuration.Feature.Tracing
-
-    @Forgery
-    lateinit var fakeRumConfig: Configuration.Feature.RUM
-
     lateinit var fakeRequest: Request
     lateinit var fakeResponse: Response
 
@@ -170,8 +162,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         ) { mockLocalTracer }
         Datadog.globalSdkCore = mock<DatadogCore>()
         whenever((Datadog.globalSdkCore as DatadogCore).tracingFeature) doReturn mock()
-        whenever((Datadog.globalSdkCore as DatadogCore).rumFeature) doReturn
-            RumFeature(coreFeature.mockInstance, storage = mock())
+        whenever((Datadog.globalSdkCore as DatadogCore).rumFeature) doReturn mock()
 
         fakeResourceAttributes = forge.exhaustiveAttributes()
 

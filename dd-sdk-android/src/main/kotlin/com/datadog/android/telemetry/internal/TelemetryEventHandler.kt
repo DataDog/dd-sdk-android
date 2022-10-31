@@ -7,21 +7,24 @@
 package com.datadog.android.telemetry.internal
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import java.util.Locale
 
 internal class TelemetryEventHandler(
-    internal val sdkVersion: String,
+    internal val sdkCore: SdkCore,
     private val sourceProvider: RumEventSourceProvider,
     private val timeProvider: TimeProvider,
     internal val eventSampler: Sampler
@@ -39,22 +42,26 @@ internal class TelemetryEventHandler(
 
         val rumContext = GlobalRum.getRumContext()
 
-        val telemetryEvent: Any = when (event.type) {
-            TelemetryType.DEBUG -> {
-                createDebugEvent(timestamp, rumContext, event.message)
-            }
-            TelemetryType.ERROR -> {
-                createErrorEvent(
-                    timestamp,
-                    rumContext,
-                    event.message,
-                    event.stack,
-                    event.kind
-                )
-            }
-        }
+        sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+            ?.withWriteContext { datadogContext, eventBatchWriter ->
+                val telemetryEvent: Any = when (event.type) {
+                    TelemetryType.DEBUG -> {
+                        createDebugEvent(datadogContext, timestamp, rumContext, event.message)
+                    }
+                    TelemetryType.ERROR -> {
+                        createErrorEvent(
+                            datadogContext,
+                            timestamp,
+                            rumContext,
+                            event.message,
+                            event.stack,
+                            event.kind
+                        )
+                    }
+                }
 
-        writer.write(telemetryEvent)
+                writer.write(eventBatchWriter, telemetryEvent)
+            }
     }
 
     override fun onSessionStarted(sessionId: String, isDiscarded: Boolean) {
@@ -82,6 +89,7 @@ internal class TelemetryEventHandler(
     }
 
     private fun createDebugEvent(
+        datadogContext: DatadogContext,
         timestamp: Long,
         rumContext: RumContext,
         message: String
@@ -92,7 +100,7 @@ internal class TelemetryEventHandler(
             source = sourceProvider.telemetryDebugEventSource
                 ?: TelemetryDebugEvent.Source.ANDROID,
             service = TELEMETRY_SERVICE_NAME,
-            version = sdkVersion,
+            version = datadogContext.sdkVersion,
             application = TelemetryDebugEvent.Application(rumContext.applicationId),
             session = TelemetryDebugEvent.Session(rumContext.sessionId),
             view = rumContext.viewId?.let { TelemetryDebugEvent.View(it) },
@@ -103,7 +111,9 @@ internal class TelemetryEventHandler(
         )
     }
 
+    @Suppress("LongParameterList")
     private fun createErrorEvent(
+        datadogContext: DatadogContext,
         timestamp: Long,
         rumContext: RumContext,
         message: String,
@@ -116,7 +126,7 @@ internal class TelemetryEventHandler(
             source = sourceProvider.telemetryErrorEventSource
                 ?: TelemetryErrorEvent.Source.ANDROID,
             service = TELEMETRY_SERVICE_NAME,
-            version = sdkVersion,
+            version = datadogContext.sdkVersion,
             application = TelemetryErrorEvent.Application(rumContext.applicationId),
             session = TelemetryErrorEvent.Session(rumContext.sessionId),
             view = rumContext.viewId?.let { TelemetryErrorEvent.View(it) },

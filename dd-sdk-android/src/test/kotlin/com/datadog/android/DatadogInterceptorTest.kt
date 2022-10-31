@@ -13,7 +13,6 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.NoOpTracedRequestListener
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorNotSendingSpanTest
@@ -22,7 +21,6 @@ import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.v2.api.NoOpSdkCore
 import com.datadog.android.v2.core.DatadogCore
-import com.datadog.android.v2.core.internal.storage.Storage
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -71,9 +69,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     @Mock
     lateinit var mockRumAttributesProvider: RumResourceAttributesProvider
 
-    @Mock
-    lateinit var mockStorage: Storage
-
     @FloatForgery(0f, 1f)
     var fakeTracingSamplingRate: Float = 0f
 
@@ -83,8 +78,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         tracedHosts: List<String>,
         factory: () -> Tracer
     ): TracingInterceptor {
-        whenever((Datadog.globalSdkCore as DatadogCore).rumFeature) doReturn
-            RumFeature(coreFeature.mockInstance, mockStorage)
+        whenever((Datadog.globalSdkCore as DatadogCore).rumFeature) doReturn mock()
         return DatadogInterceptor(
             tracedHosts = tracedHosts,
             tracedRequestListener = mockRequestListener,

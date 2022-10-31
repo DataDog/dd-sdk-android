@@ -11,7 +11,6 @@ import android.os.Build
 import android.util.Log
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
@@ -20,8 +19,10 @@ import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -93,6 +94,9 @@ internal class RumViewManagerScopeTest {
     @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
     @Forgery
     lateinit var fakeParentContext: RumContext
 
@@ -113,6 +117,7 @@ internal class RumViewManagerScopeTest {
 
         testedScope = RumViewManagerScope(
             mockParentScope,
+            mockSdkCore,
             true,
             fakeTrackFrustrations,
             mockDetector,
@@ -357,6 +362,7 @@ internal class RumViewManagerScopeTest {
         // Given
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
+            sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             firstPartyHostDetector = mockDetector,
@@ -383,6 +389,7 @@ internal class RumViewManagerScopeTest {
         // Given
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
+            sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             firstPartyHostDetector = mockDetector,
@@ -413,6 +420,7 @@ internal class RumViewManagerScopeTest {
         // Given
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
+            sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             firstPartyHostDetector = mockDetector,
@@ -500,6 +508,7 @@ internal class RumViewManagerScopeTest {
         )
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
+            sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             firstPartyHostDetector = mockDetector,
@@ -541,6 +550,7 @@ internal class RumViewManagerScopeTest {
         // Given
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
+            sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             firstPartyHostDetector = mockDetector,

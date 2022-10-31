@@ -7,10 +7,11 @@
 package com.datadog.android.webview.internal.rum
 
 import android.app.Application
+import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.core.internal.storage.Storage
+import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -22,7 +23,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -39,22 +39,31 @@ internal class WebViewRumFeatureTest {
 
     private lateinit var testedFeature: WebViewRumFeature
 
-    @Mock
-    lateinit var mockStorage: Storage
-
     @BeforeEach
     fun `set up`() {
-        testedFeature = WebViewRumFeature(coreFeature.mockInstance, mockStorage)
+        testedFeature = WebViewRumFeature(coreFeature.mockInstance)
     }
 
     @Test
-    fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
+    fun `𝕄 initialize data writer 𝕎 initialize()`() {
         // When
         testedFeature.initialize()
 
         // Then
-        assertThat(testedFeature.persistenceStrategy)
-            .isInstanceOf(WebViewRumFilePersistenceStrategy::class.java)
+        assertThat(testedFeature.dataWriter)
+            .isInstanceOf(RumDataWriter::class.java)
+    }
+
+    @Test
+    fun `𝕄 reset data writer 𝕎 stop()`() {
+        // Given
+        testedFeature.initialize()
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        assertThat(testedFeature.dataWriter).isInstanceOf(NoOpDataWriter::class.java)
     }
 
     companion object {

@@ -141,7 +141,8 @@ internal constructor(
             } else {
                 return MixedWebViewEventConsumer(
                     WebViewRumEventConsumer(
-                        dataWriter = webViewRumFeature.persistenceStrategy.getWriter(),
+                        sdkCore = datadogCore,
+                        dataWriter = webViewRumFeature.dataWriter,
                         timeProvider = coreFeature.timeProvider,
                         contextProvider = contextProvider
                     ),

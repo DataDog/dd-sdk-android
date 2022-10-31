@@ -70,13 +70,10 @@ internal class DatadogEventBridgeTest {
         val mockWebViewRumFeature = mock<WebViewRumFeature>()
         val mockWebViewLogsFeature = mock<WebViewLogsFeature>()
 
-        val mockWebViewRumPersistenceStrategy = mock<PersistenceStrategy<Any>>()
-        whenever(mockWebViewRumPersistenceStrategy.getWriter()) doReturn mock()
         val mockWebViewLogsPersistenceStrategy = mock<PersistenceStrategy<JsonObject>>()
         whenever(mockWebViewLogsPersistenceStrategy.getWriter()) doReturn mock()
 
-        whenever(mockWebViewRumFeature.persistenceStrategy) doReturn
-            mockWebViewRumPersistenceStrategy
+        whenever(mockWebViewRumFeature.dataWriter) doReturn mock()
         whenever(mockWebViewLogsFeature.persistenceStrategy) doReturn
             mockWebViewLogsPersistenceStrategy
         whenever(mockCore.webViewRumFeature) doReturn mockWebViewRumFeature

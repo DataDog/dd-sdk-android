@@ -8,8 +8,6 @@ package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.persistence.NoOpDataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.rum.GlobalRum
@@ -17,7 +15,10 @@ import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.DataWriter
+import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
 import java.security.SecureRandom
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -26,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong
 @Suppress("LongParameterList")
 internal class RumSessionScope(
     private val parentScope: RumScope,
+    sdkCore: SdkCore,
     internal val samplingRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
@@ -53,6 +55,7 @@ internal class RumSessionScope(
     @Suppress("LongParameterList")
     internal var childScope: RumScope = RumViewManagerScope(
         this,
+        sdkCore,
         backgroundTrackingEnabled,
         trackFrustrations,
         firstPartyHostDetector,
