@@ -166,9 +166,7 @@ test:kover:
 
 publish:release:
   tags: [ "runner:main" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -182,9 +180,7 @@ publish:release:
 
 publish:release-coil:
   tags: [ "runner:main" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -198,9 +194,7 @@ publish:release-coil:
 
 publish:release-compose:
   tags: [ "runner:main" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -215,9 +209,7 @@ publish:release-compose:
 
 publish:release-fresco:
   tags: [ "runner:main" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -231,9 +223,7 @@ publish:release-fresco:
 
 publish:release-glide:
   tags: [ "runner:main" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -247,9 +237,7 @@ publish:release-glide:
 
 publish:release-ktx:
   tags: [ "runner:main" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -263,9 +251,7 @@ publish:release-ktx:
 
 publish:release-ndk:
   tags: [ "runner:main" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -279,9 +265,7 @@ publish:release-ndk:
 
 publish:release-rx:
   tags: [ "runner:main" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -295,9 +279,7 @@ publish:release-rx:
 
 publish:release-sqldelight:
   tags: [ "runner:main" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -311,9 +293,7 @@ publish:release-sqldelight:
 
 publish:release-timber:
   tags: [ "runner:main" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -327,9 +307,7 @@ publish:release-timber:
 
 publish:release-android-tv:
   tags: [ "runner:main" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -343,9 +321,7 @@ publish:release-android-tv:
 
 publish:release-session-replay:
   tags: [ "runner:main" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
