@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.core.configuration
 
 import android.os.Build
@@ -15,6 +17,7 @@ import com.datadog.android.DatadogInterceptor
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpSpanEventMapper
 import com.datadog.android.event.SpanEventMapper
@@ -341,7 +344,19 @@ internal constructor(
          * @see [Feature.Tracing]
          * @see [Feature.RUM]
          */
-        fun addPlugin(plugin: DatadogPlugin, feature: PluginFeature): Builder {
+        @Deprecated(
+            "Datadog Plugins will be removed in SDK v2.0.0. You will then need to" +
+                " write your own Feature (check our own code for guidance)."
+        )
+        fun addPlugin(
+            @Suppress("DEPRECATION") plugin: DatadogPlugin,
+            feature: PluginFeature
+        ): Builder {
+            warnDeprecated(
+                target = "Configuration.Builder#addPlugin",
+                deprecatedSince = "1.15.0",
+                removedInVersion = "2.0.0"
+            )
             applyIfFeatureEnabled(feature, "addPlugin") {
                 when (feature) {
                     PluginFeature.RUM -> rumConfig = rumConfig.copy(

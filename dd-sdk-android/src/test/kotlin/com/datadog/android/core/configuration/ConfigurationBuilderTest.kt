@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.core.configuration
 
 import android.os.Build
@@ -1103,6 +1105,33 @@ internal class ConfigurationBuilderTest {
                 Feature.RUM.featureName,
                 "addPlugin"
             )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user about deprecation 𝕎 addPlugin()`(
+        forge: Forge
+    ) {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = forge.aBool(),
+            tracesEnabled = forge.aBool(),
+            crashReportsEnabled = forge.aBool(),
+            rumEnabled = forge.aBool()
+        )
+        val mockPlugin: DatadogPlugin = mock()
+
+        // When
+        testedBuilder.addPlugin(
+            mockPlugin,
+            forge.anElementFrom(Feature.CRASH, Feature.RUM, Feature.LOG, Feature.TRACE)
+        )
+
+        // Then
+        verify(logger.mockDevLogHandler).handleLog(
+            Log.WARN,
+            "Configuration.Builder#addPlugin has been deprecated since version 1.15.0, " +
+                "and will be removed in version 2.0.0."
         )
     }
 
