@@ -6,7 +6,6 @@
 
 package com.datadog.android.webview.internal.rum
 
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.rum.GlobalRum
@@ -20,6 +19,11 @@ import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.config.SessionScopeTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aRumEventAsJson
+import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -28,11 +32,14 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.anyOrNull
+import com.nhaarman.mockitokotlin2.doAnswer
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -86,6 +93,18 @@ internal class WebViewRumEventConsumerTest {
     @Mock
     lateinit var mockRumContextProvider: WebViewRumEventContextProvider
 
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
+    @Mock
+    lateinit var mockWebViewRumFeatureScope: FeatureScope
+
+    @Mock
+    lateinit var mockEventBatchWriter: EventBatchWriter
+
+    @Forgery
+    lateinit var fakeDatadogContext: DatadogContext
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockRumContextProvider.getRumContext())
@@ -97,8 +116,18 @@ internal class WebViewRumEventConsumerTest {
         } else {
             emptyMap()
         }
+
         whenever(mockTimeProvider.getServerOffsetMillis()).thenReturn(fakeServerTimeOffsetInMillis)
+        whenever(
+            mockSdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
+        ) doReturn mockWebViewRumFeatureScope
+        whenever(mockWebViewRumFeatureScope.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+        }
+
         testedConsumer = WebViewRumEventConsumer(
+            mockSdkCore,
             mockDataWriter,
             mockTimeProvider,
             mockWebViewRumEventMapper,
@@ -153,7 +182,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeViewEventAsJson)
 
         // Then
-        verify(mockDataWriter).write(fakeMappedViewEvent)
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedViewEvent)
     }
 
     @Test
@@ -174,7 +203,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeViewEventAsJson)
 
         // Then
-        verify(mockDataWriter).write(fakeMappedViewEvent)
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedViewEvent)
     }
 
     // endregion
@@ -220,7 +249,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeActionEventAsJson)
 
         // Then
-        verify(mockDataWriter).write(fakeMappedActionEvent)
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedActionEvent)
     }
 
     @Test
@@ -241,7 +270,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeActionEventAsJson)
 
         // Then
-        verify(mockDataWriter).write(fakeMappedActionEvent)
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedActionEvent)
     }
 
     // endregion
@@ -286,7 +315,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeResourceEventAsJson)
 
         // Then
-        verify(mockDataWriter).write(fakeMappedResourceEvent)
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedResourceEvent)
     }
 
     @Test
@@ -307,7 +336,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeResourceEventAsJson)
 
         // Then
-        verify(mockDataWriter).write(fakeMappedResourceEvent)
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedResourceEvent)
     }
 
     // endregion
@@ -352,7 +381,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeErrorEventAsJson)
 
         // Then
-        verify(mockDataWriter).write(fakeMappedErrorEvent)
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedErrorEvent)
     }
 
     @Test
@@ -373,7 +402,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeErrorEventAsJson)
 
         // Then
-        verify(mockDataWriter).write(fakeMappedErrorEvent)
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedErrorEvent)
     }
 
     // endregion
@@ -419,7 +448,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeLongTaskEventAsJson)
 
         // Then
-        verify(mockDataWriter).write(fakeMappedLongTaskEvent)
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedLongTaskEvent)
     }
 
     @Test
@@ -440,7 +469,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeLongTaskEventAsJson)
 
         // Then
-        verify(mockDataWriter).write(fakeMappedLongTaskEvent)
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedLongTaskEvent)
     }
 
     // endregion
@@ -467,7 +496,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeRumEvent)
 
         // Then
-        verify(mockDataWriter).write(fakeRumEvent)
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeRumEvent)
     }
 
     @ParameterizedTest
@@ -512,7 +541,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeRumEvent)
 
         // Then
-        verify(mockDataWriter).write(fakeMappedRumEvent)
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeMappedRumEvent)
     }
 
     @Test
@@ -534,7 +563,7 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeRumEvent)
 
         // Then
-        verify(mockDataWriter).write(fakeRumEvent)
+        verify(mockDataWriter).write(mockEventBatchWriter, fakeRumEvent)
     }
 
     @Test

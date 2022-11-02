@@ -13,7 +13,6 @@ import android.view.Display
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
@@ -45,15 +44,21 @@ import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aFilteredMap
 import com.datadog.android.utils.forge.exhaustiveAttributes
+import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.reset
 import com.nhaarman.mockitokotlin2.times
@@ -129,6 +134,15 @@ internal class RumViewScopeTest {
 
     @Mock
     lateinit var mockContextProvider: ContextProvider
+
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
+    @Mock
+    lateinit var mockRumFeatureScope: FeatureScope
+
+    @Mock
+    lateinit var mockEventBatchWriter: EventBatchWriter
 
     @StringForgery(regex = "([a-z]+\\.)+[A-Z][a-z]+")
     lateinit var fakeName: String
@@ -217,8 +231,15 @@ internal class RumViewScopeTest {
         whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(true)
         whenever(mockFeaturesContextResolver.resolveHasReplay(fakeDatadogContext))
             .thenReturn(fakeHasReplay)
+        whenever(mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        whenever(mockRumFeatureScope.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+        }
+
         testedScope = RumViewScope(
             mockParentScope,
+            mockSdkCore,
             fakeKey,
             fakeName,
             fakeEventTime,
@@ -308,6 +329,7 @@ internal class RumViewScopeTest {
         // When
         testedScope = RumViewScope(
             mockParentScope,
+            mockSdkCore,
             fakeKey,
             fakeName,
             fakeEventTime,
@@ -331,7 +353,7 @@ internal class RumViewScopeTest {
 
     @Test
     fun `M update the feature context with the view timestamp offset W initializing`() {
-        verify(mockContextProvider).updateFeatureContext(
+        verify(mockSdkCore).updateFeatureContext(
             RumFeature.RUM_FEATURE_NAME,
             mapOf(
                 RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY to
@@ -390,6 +412,7 @@ internal class RumViewScopeTest {
 
         val anotherScope = RumViewScope(
             mockParentScope,
+            mockSdkCore,
             fakeKey,
             fakeName,
             fakeEventTime,
@@ -557,6 +580,7 @@ internal class RumViewScopeTest {
         )
         RumViewScope(
             mockParentScope,
+            mockSdkCore,
             key,
             name,
             fakeEventTime,
@@ -603,6 +627,7 @@ internal class RumViewScopeTest {
         )
         RumViewScope(
             mockParentScope,
+            mockSdkCore,
             key,
             name,
             fakeEventTime,
@@ -663,7 +688,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue).apply {
                 hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                 hasName(fakeName)
@@ -728,7 +753,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -794,7 +819,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -866,7 +891,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -935,7 +960,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -1004,7 +1029,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -1061,7 +1086,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -1122,6 +1147,7 @@ internal class RumViewScopeTest {
 
         testedScope = RumViewScope(
             mockParentScope,
+            mockSdkCore,
             fakeKey,
             fakeName,
             fakeEventTime,
@@ -1146,7 +1172,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -1214,7 +1240,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -1273,6 +1299,7 @@ internal class RumViewScopeTest {
 
         testedScope = RumViewScope(
             mockParentScope,
+            mockSdkCore,
             fakeKey,
             fakeName,
             fakeEventTime,
@@ -1300,7 +1327,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -1361,6 +1388,7 @@ internal class RumViewScopeTest {
 
         testedScope = RumViewScope(
             mockParentScope,
+            mockSdkCore,
             fakeKey,
             fakeName,
             fakeEventTime,
@@ -1388,7 +1416,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -1457,7 +1485,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -1525,7 +1553,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -1586,7 +1614,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -1690,7 +1718,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -1771,7 +1799,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -1853,7 +1881,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -1937,7 +1965,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -2001,7 +2029,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -2087,7 +2115,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue)
                 .apply {
                     hasNonNullId()
@@ -2135,7 +2163,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -2216,7 +2244,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -2299,7 +2327,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -2381,7 +2409,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -2468,7 +2496,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter, times(2)).write(capture())
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue)
                 .apply {
                     hasNonNullId()
@@ -2521,7 +2549,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue)
                 .apply {
                     hasNonNullId()
@@ -2583,7 +2611,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -2854,7 +2882,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter, times(1)).write(capture())
+            verify(mockWriter, times(1)).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue)
                 .apply {
                     hasNonNullId()
@@ -3303,7 +3331,7 @@ internal class RumViewScopeTest {
         // Then
         val expectedMessage = "$message: ${throwable.message}"
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(firstValue)
                 .apply {
@@ -3364,7 +3392,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(firstValue)
                 .apply {
@@ -3427,7 +3455,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(firstValue)
                 .apply {
@@ -3492,7 +3520,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(firstValue)
                 .apply {
@@ -3550,7 +3578,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(firstValue)
                 .apply {
@@ -3601,7 +3629,7 @@ internal class RumViewScopeTest {
         // Then
         val expectedMessage = "$message: ${throwable.message}"
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(firstValue)
                 .apply {
@@ -3665,7 +3693,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(firstValue)
                 .apply {
@@ -3729,7 +3757,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<Any> {
-            verify(mockWriter, times(2)).write(capture())
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue as ErrorEvent)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
@@ -3838,7 +3866,7 @@ internal class RumViewScopeTest {
         // Then
         val expectedMessage = "$message: ${throwable.message}"
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(firstValue)
                 .apply {
@@ -3904,7 +3932,7 @@ internal class RumViewScopeTest {
         // Then
         val expectedMessage = "$message: ${throwable.message}"
         argumentCaptor<Any> {
-            verify(mockWriter, times(2)).write(capture())
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue as ErrorEvent)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
@@ -4014,7 +4042,7 @@ internal class RumViewScopeTest {
         // Then
         val expectedMessage = "$message: ${throwable.message}"
         argumentCaptor<Any> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue as ErrorEvent)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
@@ -4080,7 +4108,7 @@ internal class RumViewScopeTest {
         // Then
         val expectedMessage = "$message: ${throwable.message}"
         argumentCaptor<Any> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue as ErrorEvent)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
@@ -4147,7 +4175,7 @@ internal class RumViewScopeTest {
         // Then
         val expectedMessage = "$message: ${throwable.message}"
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(firstValue)
                 .apply {
@@ -4214,7 +4242,7 @@ internal class RumViewScopeTest {
         // Then
         val expectedMessage = "$message: ${throwable.message}"
         argumentCaptor<Any> {
-            verify(mockWriter, times(2)).write(capture())
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue as ErrorEvent)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
@@ -4450,7 +4478,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         argumentCaptor<LongTaskEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(firstValue)
                 .apply {
@@ -4498,7 +4526,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         argumentCaptor<LongTaskEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(firstValue)
                 .apply {
@@ -4556,7 +4584,7 @@ internal class RumViewScopeTest {
         val expectedTimestamp =
             resolveExpectedTimestamp(fakeLongTaskEvent.eventTime.timestamp) - durationMs
         argumentCaptor<LongTaskEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(firstValue)
                 .apply {
@@ -4612,7 +4640,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<LongTaskEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(firstValue)
                 .apply {
@@ -4832,7 +4860,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -4898,7 +4926,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -4983,7 +5011,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -5051,7 +5079,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter, times(2)).write(capture())
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -5178,7 +5206,7 @@ internal class RumViewScopeTest {
             null
         }
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -5245,7 +5273,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -5322,7 +5350,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -5399,7 +5427,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -5462,6 +5490,7 @@ internal class RumViewScopeTest {
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
+            mockSdkCore,
             mockActivity,
             fakeName,
             fakeEventTime,
@@ -5490,7 +5519,7 @@ internal class RumViewScopeTest {
         val expectedAverage = (meanRefreshRate * 60.0) / deviceRefreshRate
         val expectedMinimum = (minRefreshRate * 60.0) / deviceRefreshRate
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -5552,6 +5581,7 @@ internal class RumViewScopeTest {
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
+            mockSdkCore,
             mockActivity,
             fakeName,
             fakeEventTime,
@@ -5580,7 +5610,7 @@ internal class RumViewScopeTest {
         val expectedAverage = (meanRefreshRate * 60.0) / deviceRefreshRate
         val expectedMinimum = (minRefreshRate * 60.0) / deviceRefreshRate
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -5644,6 +5674,7 @@ internal class RumViewScopeTest {
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
+            mockSdkCore,
             mockFragment,
             fakeName,
             fakeEventTime,
@@ -5672,7 +5703,7 @@ internal class RumViewScopeTest {
         val expectedAverage = (meanRefreshRate * 60.0) / deviceRefreshRate
         val expectedMinimum = (minRefreshRate * 60.0) / deviceRefreshRate
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -5736,6 +5767,7 @@ internal class RumViewScopeTest {
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
+            mockSdkCore,
             mockFragment,
             fakeName,
             fakeEventTime,
@@ -5764,7 +5796,7 @@ internal class RumViewScopeTest {
         val expectedAverage = (meanRefreshRate * 60.0) / deviceRefreshRate
         val expectedMinimum = (minRefreshRate * 60.0) / deviceRefreshRate
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -5829,6 +5861,7 @@ internal class RumViewScopeTest {
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
+            mockSdkCore,
             mockFragment,
             fakeName,
             fakeEventTime,
@@ -5857,7 +5890,7 @@ internal class RumViewScopeTest {
         val expectedAverage = (meanRefreshRate * 60.0) / deviceRefreshRate
         val expectedMinimum = (minRefreshRate * 60.0) / deviceRefreshRate
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -5922,6 +5955,7 @@ internal class RumViewScopeTest {
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.R
         val testedScope = RumViewScope(
             mockParentScope,
+            mockSdkCore,
             mockFragment,
             fakeName,
             fakeEventTime,
@@ -5950,7 +5984,7 @@ internal class RumViewScopeTest {
         val expectedAverage = (meanRefreshRate * 60.0) / deviceRefreshRate
         val expectedMinimum = (minRefreshRate * 60.0) / deviceRefreshRate
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
@@ -6085,7 +6119,7 @@ internal class RumViewScopeTest {
 
         // THEN
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasFlutterBuildTime(ViewEvent.FlutterBuildTime(value, value, value, null))
@@ -6119,7 +6153,7 @@ internal class RumViewScopeTest {
 
         // THEN
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasFlutterBuildTime(null)
@@ -6153,7 +6187,7 @@ internal class RumViewScopeTest {
 
         // THEN
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasFlutterBuildTime(null)
@@ -6208,7 +6242,7 @@ internal class RumViewScopeTest {
         val flutterRasterTimeStats = Arrays.stream(flutterRasterTimes).summaryStatistics()
         val jsRefreshRateStats = Arrays.stream(jsRefreshRates).summaryStatistics()
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasFlutterBuildTime(
@@ -6260,7 +6294,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue)
                 .apply {
                     hasNonNullId()
@@ -6311,7 +6345,7 @@ internal class RumViewScopeTest {
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
 
         argumentCaptor<LongTaskEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(firstValue)
                 .apply {
@@ -6374,7 +6408,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ErrorEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(firstValue)
                 .apply {
@@ -6421,6 +6455,7 @@ internal class RumViewScopeTest {
         // Given
         testedScope = RumViewScope(
             mockParentScope,
+            mockSdkCore,
             rawEventData.viewKey,
             fakeName,
             fakeEventTime,
@@ -6442,7 +6477,7 @@ internal class RumViewScopeTest {
 
         // Then
         argumentCaptor<ViewEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue)
                 .apply {
                     hasDuration(1)

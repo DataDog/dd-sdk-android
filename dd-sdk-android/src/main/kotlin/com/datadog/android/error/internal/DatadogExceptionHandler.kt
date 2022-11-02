@@ -50,6 +50,7 @@ internal class DatadogExceptionHandler(
             devLogger.i("Logs feature is not registered, won't report crash as log.")
         }
 
+        // TODO RUMM-2697 Use message bus to communicate with RUM
         // write a RUM Error too
         (GlobalRum.get() as? AdvancedRumMonitor)?.addCrash(
             createCrashMessage(e),

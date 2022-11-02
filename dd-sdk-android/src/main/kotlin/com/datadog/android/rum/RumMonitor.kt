@@ -242,7 +242,7 @@ interface RumMonitor {
      *
      * @see _RumInternalProxy
      */
-    @Suppress("FunctionNaming")
+    @Suppress("FunctionName")
     fun _getInternal(): _RumInternalProxy?
 
     // region Builder
@@ -296,11 +296,12 @@ interface RumMonitor {
             } else {
                 DatadogRumMonitor(
                     applicationId = rumApplicationId,
+                    sdkCore = datadogCore,
                     samplingRate = samplingRate ?: rumFeature.samplingRate,
-                    writer = rumFeature.persistenceStrategy.getWriter(),
+                    writer = rumFeature.dataWriter,
                     handler = Handler(Looper.getMainLooper()),
                     telemetryEventHandler = TelemetryEventHandler(
-                        coreFeature.sdkVersion,
+                        sdkCore = datadogCore,
                         RumEventSourceProvider(coreFeature.sourceName),
                         coreFeature.timeProvider,
                         RateBasedSampler(rumFeature.telemetrySamplingRate / 100)

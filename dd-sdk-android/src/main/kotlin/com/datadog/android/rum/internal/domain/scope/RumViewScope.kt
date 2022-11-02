@@ -14,7 +14,6 @@ import android.view.WindowManager
 import androidx.annotation.WorkerThread
 import androidx.fragment.app.Fragment
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.devLogger
@@ -38,7 +37,9 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
 import java.util.Locale
@@ -50,6 +51,7 @@ import kotlin.math.min
 @Suppress("LargeClass", "LongParameterList")
 internal open class RumViewScope(
     private val parentScope: RumScope,
+    private val sdkCore: SdkCore,
     key: Any,
     internal val name: String,
     eventTime: Time,
@@ -93,6 +95,8 @@ internal open class RumViewScope(
     private var longTaskCount: Long = 0
     private var frozenFrameCount: Long = 0
 
+    // TODO RUMM-0000 We have now access to the event write result through the closure,
+    // we probably can drop AdvancedRumMonitor#eventSent/eventDropped usage
     internal var pendingResourceCount: Long = 0
     internal var pendingActionCount: Long = 0
     internal var pendingErrorCount: Long = 0
@@ -136,7 +140,7 @@ internal open class RumViewScope(
         }
     }
 
-    private var performanceMetrics: MutableMap<RumPerformanceMetric, VitalInfo> = HashMap()
+    private var performanceMetrics: MutableMap<RumPerformanceMetric, VitalInfo> = mutableMapOf()
 
     // endregion
 
@@ -289,10 +293,10 @@ internal open class RumViewScope(
                 // deliver it anyway, even if there is active action ongoing
                 val customActionScope = RumActionScope.fromEvent(
                     this,
+                    sdkCore,
                     event,
                     serverTimeOffsetInMs,
                     rumEventSourceProvider,
-                    contextProvider,
                     featuresContextResolver,
                     trackFrustrations
                 )
@@ -308,10 +312,10 @@ internal open class RumViewScope(
         updateActiveActionScope(
             RumActionScope.fromEvent(
                 this,
+                sdkCore,
                 event,
                 serverTimeOffsetInMs,
                 rumEventSourceProvider,
-                contextProvider,
                 featuresContextResolver,
                 trackFrustrations
             )
@@ -332,6 +336,7 @@ internal open class RumViewScope(
         )
         activeResourceScopes[event.key] = RumResourceScope.fromEvent(
             this,
+            sdkCore,
             updatedEvent,
             firstPartyHostDetector,
             serverTimeOffsetInMs,
@@ -352,66 +357,73 @@ internal open class RumViewScope(
         if (stopped) return
 
         val rumContext = getRumContext()
-        val sdkContext = contextProvider.context
 
-        val user = sdkContext.userInfo
         val updatedAttributes = addExtraAttributes(event.attributes)
         val isFatal = updatedAttributes.remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean
-        val networkInfo = sdkContext.networkInfo
         val errorType = event.type ?: event.throwable?.javaClass?.canonicalName
         val throwableMessage = event.throwable?.message ?: ""
-        val hasReplay = featuresContextResolver.resolveHasReplay(sdkContext)
         val message = if (throwableMessage.isNotBlank() && event.message != throwableMessage) {
             "${event.message}: $throwableMessage"
         } else {
             event.message
         }
-        val errorEvent = ErrorEvent(
-            date = event.eventTime.timestamp + serverTimeOffsetInMs,
-            error = ErrorEvent.Error(
-                message = message,
-                source = event.source.toSchemaSource(),
-                stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
-                isCrash = event.isFatal || (isFatal ?: false),
-                type = errorType,
-                sourceType = event.sourceType.toSchemaSourceType()
-            ),
-            action = rumContext.actionId?.let { ErrorEvent.Action(listOf(it)) },
-            view = ErrorEvent.View(
-                id = rumContext.viewId.orEmpty(),
-                name = rumContext.viewName,
-                url = rumContext.viewUrl.orEmpty()
-            ),
-            usr = ErrorEvent.Usr(
-                id = user.id,
-                name = user.name,
-                email = user.email,
-                additionalProperties = user.additionalProperties.toMutableMap()
-            ),
-            connectivity = networkInfo.toErrorConnectivity(),
-            application = ErrorEvent.Application(rumContext.applicationId),
-            session = ErrorEvent.ErrorEventSession(
-                id = rumContext.sessionId,
-                type = ErrorEvent.ErrorEventSessionType.USER,
-                hasReplay = hasReplay
-            ),
-            source = rumEventSourceProvider.errorEventSource,
-            os = ErrorEvent.Os(
-                name = sdkContext.deviceInfo.osName,
-                version = sdkContext.deviceInfo.osVersion,
-                versionMajor = sdkContext.deviceInfo.osMajorVersion
-            ),
-            device = ErrorEvent.Device(
-                type = sdkContext.deviceInfo.deviceType.toErrorSchemaType(),
-                name = sdkContext.deviceInfo.deviceName,
-                model = sdkContext.deviceInfo.deviceModel,
-                brand = sdkContext.deviceInfo.deviceBrand,
-                architecture = sdkContext.deviceInfo.architecture
-            ),
-            context = ErrorEvent.Context(additionalProperties = updatedAttributes),
-            dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
-        )
-        writer.write(errorEvent)
+
+        sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+            ?.withWriteContext { datadogContext, eventBatchWriter ->
+
+                val user = datadogContext.userInfo
+                val networkInfo = datadogContext.networkInfo
+                val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext)
+
+                val errorEvent = ErrorEvent(
+                    date = event.eventTime.timestamp + serverTimeOffsetInMs,
+                    error = ErrorEvent.Error(
+                        message = message,
+                        source = event.source.toSchemaSource(),
+                        stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
+                        isCrash = event.isFatal || (isFatal ?: false),
+                        type = errorType,
+                        sourceType = event.sourceType.toSchemaSourceType()
+                    ),
+                    action = rumContext.actionId?.let { ErrorEvent.Action(listOf(it)) },
+                    view = ErrorEvent.View(
+                        id = rumContext.viewId.orEmpty(),
+                        name = rumContext.viewName,
+                        url = rumContext.viewUrl.orEmpty()
+                    ),
+                    usr = ErrorEvent.Usr(
+                        id = user.id,
+                        name = user.name,
+                        email = user.email,
+                        additionalProperties = user.additionalProperties.toMutableMap()
+                    ),
+                    connectivity = networkInfo.toErrorConnectivity(),
+                    application = ErrorEvent.Application(rumContext.applicationId),
+                    session = ErrorEvent.ErrorEventSession(
+                        id = rumContext.sessionId,
+                        type = ErrorEvent.ErrorEventSessionType.USER,
+                        hasReplay = hasReplay
+                    ),
+                    source = rumEventSourceProvider.errorEventSource,
+                    os = ErrorEvent.Os(
+                        name = datadogContext.deviceInfo.osName,
+                        version = datadogContext.deviceInfo.osVersion,
+                        versionMajor = datadogContext.deviceInfo.osMajorVersion
+                    ),
+                    device = ErrorEvent.Device(
+                        type = datadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                        name = datadogContext.deviceInfo.deviceName,
+                        model = datadogContext.deviceInfo.deviceModel,
+                        brand = datadogContext.deviceInfo.deviceBrand,
+                        architecture = datadogContext.deviceInfo.architecture
+                    ),
+                    context = ErrorEvent.Context(additionalProperties = updatedAttributes),
+                    dd = ErrorEvent.Dd(
+                        session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1)
+                    )
+                )
+                writer.write(eventBatchWriter, errorEvent)
+            }
 
         if (event.isFatal) {
             errorCount++
@@ -617,79 +629,84 @@ internal open class RumViewScope(
         version++
         val updatedDurationNs = resolveViewDuration(event)
         val rumContext = getRumContext()
-        val sdkContext = contextProvider.context
 
-        val user = sdkContext.userInfo
         val timings = resolveCustomTimings()
         val memoryInfo = lastMemoryInfo
         val refreshRateInfo = lastFrameRateInfo
-        val hasReplay = featuresContextResolver.resolveHasReplay(sdkContext)
         val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo)
-        val viewEvent = ViewEvent(
-            date = eventTimestamp,
-            view = ViewEvent.View(
-                id = rumContext.viewId.orEmpty(),
-                name = rumContext.viewName.orEmpty(),
-                url = rumContext.viewUrl.orEmpty(),
-                loadingTime = loadingTime,
-                loadingType = loadingType,
-                timeSpent = updatedDurationNs,
-                action = ViewEvent.Action(actionCount),
-                resource = ViewEvent.Resource(resourceCount),
-                error = ViewEvent.Error(errorCount),
-                crash = ViewEvent.Crash(crashCount),
-                longTask = ViewEvent.LongTask(longTaskCount),
-                frozenFrame = ViewEvent.FrozenFrame(frozenFrameCount),
-                customTimings = timings,
-                isActive = !viewComplete,
-                cpuTicksCount = cpuTicks,
-                cpuTicksPerSecond = cpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs },
-                memoryAverage = memoryInfo?.meanValue,
-                memoryMax = memoryInfo?.maxValue,
-                refreshRateAverage = refreshRateInfo?.meanValue?.let { it * refreshRateScale },
-                refreshRateMin = refreshRateInfo?.minValue?.let { it * refreshRateScale },
-                isSlowRendered = isSlowRendered,
-                frustration = ViewEvent.Frustration(frustrationCount.toLong()),
-                flutterBuildTime = performanceMetrics[RumPerformanceMetric.FLUTTER_BUILD_TIME]
-                    ?.let { it.toPerformanceMetric() },
-                flutterRasterTime = performanceMetrics[RumPerformanceMetric.FLUTTER_RASTER_TIME]
-                    ?.let { it.toPerformanceMetric() },
-                jsRefreshRate = performanceMetrics[RumPerformanceMetric.JS_REFRESH_RATE]
-                    ?.let { it.toPerformanceMetric() }
-            ),
-            usr = ViewEvent.Usr(
-                id = user.id,
-                name = user.name,
-                email = user.email,
-                additionalProperties = user.additionalProperties.toMutableMap()
-            ),
-            application = ViewEvent.Application(rumContext.applicationId),
-            session = ViewEvent.ViewEventSession(
-                id = rumContext.sessionId,
-                type = ViewEvent.ViewEventSessionType.USER,
-                hasReplay = hasReplay
-            ),
-            source = rumEventSourceProvider.viewEventSource,
-            os = ViewEvent.Os(
-                name = sdkContext.deviceInfo.osName,
-                version = sdkContext.deviceInfo.osVersion,
-                versionMajor = sdkContext.deviceInfo.osMajorVersion
-            ),
-            device = ViewEvent.Device(
-                type = sdkContext.deviceInfo.deviceType.toViewSchemaType(),
-                name = sdkContext.deviceInfo.deviceName,
-                model = sdkContext.deviceInfo.deviceModel,
-                brand = sdkContext.deviceInfo.deviceBrand,
-                architecture = sdkContext.deviceInfo.architecture
-            ),
-            context = ViewEvent.Context(additionalProperties = attributes),
-            dd = ViewEvent.Dd(
-                documentVersion = version,
-                session = ViewEvent.DdSession(plan = ViewEvent.Plan.PLAN_1)
-            )
-        )
 
-        writer.write(viewEvent)
+        sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+            ?.withWriteContext { datadogContext, eventBatchWriter ->
+
+                val user = datadogContext.userInfo
+                val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext)
+
+                val viewEvent = ViewEvent(
+                    date = eventTimestamp,
+                    view = ViewEvent.View(
+                        id = rumContext.viewId.orEmpty(),
+                        name = rumContext.viewName.orEmpty(),
+                        url = rumContext.viewUrl.orEmpty(),
+                        loadingTime = loadingTime,
+                        loadingType = loadingType,
+                        timeSpent = updatedDurationNs,
+                        action = ViewEvent.Action(actionCount),
+                        resource = ViewEvent.Resource(resourceCount),
+                        error = ViewEvent.Error(errorCount),
+                        crash = ViewEvent.Crash(crashCount),
+                        longTask = ViewEvent.LongTask(longTaskCount),
+                        frozenFrame = ViewEvent.FrozenFrame(frozenFrameCount),
+                        customTimings = timings,
+                        isActive = !viewComplete,
+                        cpuTicksCount = cpuTicks,
+                        cpuTicksPerSecond = cpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs },
+                        memoryAverage = memoryInfo?.meanValue,
+                        memoryMax = memoryInfo?.maxValue,
+                        refreshRateAverage = refreshRateInfo?.meanValue?.let { it * refreshRateScale },
+                        refreshRateMin = refreshRateInfo?.minValue?.let { it * refreshRateScale },
+                        isSlowRendered = isSlowRendered,
+                        frustration = ViewEvent.Frustration(frustrationCount.toLong()),
+                        flutterBuildTime = performanceMetrics[RumPerformanceMetric.FLUTTER_BUILD_TIME]
+                            ?.toPerformanceMetric(),
+                        flutterRasterTime = performanceMetrics[RumPerformanceMetric.FLUTTER_RASTER_TIME]
+                            ?.toPerformanceMetric(),
+                        jsRefreshRate = performanceMetrics[RumPerformanceMetric.JS_REFRESH_RATE]
+                            ?.toPerformanceMetric()
+                    ),
+                    usr = ViewEvent.Usr(
+                        id = user.id,
+                        name = user.name,
+                        email = user.email,
+                        additionalProperties = user.additionalProperties.toMutableMap()
+                    ),
+                    application = ViewEvent.Application(rumContext.applicationId),
+                    session = ViewEvent.ViewEventSession(
+                        id = rumContext.sessionId,
+                        type = ViewEvent.ViewEventSessionType.USER,
+                        hasReplay = hasReplay
+                    ),
+                    source = rumEventSourceProvider.viewEventSource,
+                    os = ViewEvent.Os(
+                        name = datadogContext.deviceInfo.osName,
+                        version = datadogContext.deviceInfo.osVersion,
+                        versionMajor = datadogContext.deviceInfo.osMajorVersion
+                    ),
+                    device = ViewEvent.Device(
+                        type = datadogContext.deviceInfo.deviceType.toViewSchemaType(),
+                        name = datadogContext.deviceInfo.deviceName,
+                        model = datadogContext.deviceInfo.deviceModel,
+                        brand = datadogContext.deviceInfo.deviceBrand,
+                        architecture = datadogContext.deviceInfo.architecture
+                    ),
+                    context = ViewEvent.Context(additionalProperties = attributes),
+                    dd = ViewEvent.Dd(
+                        documentVersion = version,
+                        session = ViewEvent.DdSession(plan = ViewEvent.Plan.PLAN_1)
+                    )
+                )
+
+                writer.write(eventBatchWriter, viewEvent)
+            }
     }
 
     private fun resolveViewDuration(event: RumRawEvent): Long {
@@ -743,51 +760,57 @@ internal open class RumViewScope(
     ) {
         pendingActionCount++
         val rumContext = getRumContext()
-        val sdkContext = contextProvider.context
 
-        val user = sdkContext.userInfo
+        val attributes = GlobalRum.globalAttributes
 
-        val actionEvent = ActionEvent(
-            date = eventTimestamp,
-            action = ActionEvent.ActionEventAction(
-                type = ActionEvent.ActionEventActionType.APPLICATION_START,
-                id = UUID.randomUUID().toString(),
-                loadingTime = getStartupTime(event)
-            ),
-            view = ActionEvent.View(
-                id = rumContext.viewId.orEmpty(),
-                name = rumContext.viewName,
-                url = rumContext.viewUrl.orEmpty()
-            ),
-            usr = ActionEvent.Usr(
-                id = user.id,
-                name = user.name,
-                email = user.email,
-                additionalProperties = user.additionalProperties.toMutableMap()
-            ),
-            application = ActionEvent.Application(rumContext.applicationId),
-            session = ActionEvent.ActionEventSession(
-                id = rumContext.sessionId,
-                type = ActionEvent.ActionEventSessionType.USER,
-                hasReplay = false
-            ),
-            source = rumEventSourceProvider.actionEventSource,
-            os = ActionEvent.Os(
-                name = sdkContext.deviceInfo.osName,
-                version = sdkContext.deviceInfo.osVersion,
-                versionMajor = sdkContext.deviceInfo.osMajorVersion
-            ),
-            device = ActionEvent.Device(
-                type = sdkContext.deviceInfo.deviceType.toActionSchemaType(),
-                name = sdkContext.deviceInfo.deviceName,
-                model = sdkContext.deviceInfo.deviceModel,
-                brand = sdkContext.deviceInfo.deviceBrand,
-                architecture = sdkContext.deviceInfo.architecture
-            ),
-            context = ActionEvent.Context(additionalProperties = GlobalRum.globalAttributes),
-            dd = ActionEvent.Dd(session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1))
-        )
-        writer.write(actionEvent)
+        sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+            ?.withWriteContext { datadogContext, eventBatchWriter ->
+                val user = datadogContext.userInfo
+
+                val actionEvent = ActionEvent(
+                    date = eventTimestamp,
+                    action = ActionEvent.ActionEventAction(
+                        type = ActionEvent.ActionEventActionType.APPLICATION_START,
+                        id = UUID.randomUUID().toString(),
+                        loadingTime = getStartupTime(event)
+                    ),
+                    view = ActionEvent.View(
+                        id = rumContext.viewId.orEmpty(),
+                        name = rumContext.viewName,
+                        url = rumContext.viewUrl.orEmpty()
+                    ),
+                    usr = ActionEvent.Usr(
+                        id = user.id,
+                        name = user.name,
+                        email = user.email,
+                        additionalProperties = user.additionalProperties.toMutableMap()
+                    ),
+                    application = ActionEvent.Application(rumContext.applicationId),
+                    session = ActionEvent.ActionEventSession(
+                        id = rumContext.sessionId,
+                        type = ActionEvent.ActionEventSessionType.USER,
+                        hasReplay = false
+                    ),
+                    source = rumEventSourceProvider.actionEventSource,
+                    os = ActionEvent.Os(
+                        name = datadogContext.deviceInfo.osName,
+                        version = datadogContext.deviceInfo.osVersion,
+                        versionMajor = datadogContext.deviceInfo.osMajorVersion
+                    ),
+                    device = ActionEvent.Device(
+                        type = datadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        name = datadogContext.deviceInfo.deviceName,
+                        model = datadogContext.deviceInfo.deviceModel,
+                        brand = datadogContext.deviceInfo.deviceBrand,
+                        architecture = datadogContext.deviceInfo.architecture
+                    ),
+                    context = ActionEvent.Context(
+                        additionalProperties = attributes
+                    ),
+                    dd = ActionEvent.Dd(session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1))
+                )
+                writer.write(eventBatchWriter, actionEvent)
+            }
     }
 
     private fun getStartupTime(event: RumRawEvent.ApplicationStarted): Long {
@@ -796,64 +819,72 @@ internal open class RumViewScope(
         return max(now - startupTime, 1L)
     }
 
+    @Suppress("LongMethod")
     @WorkerThread
     private fun onAddLongTask(event: RumRawEvent.AddLongTask, writer: DataWriter<Any>) {
         delegateEventToChildren(event, writer)
         if (stopped) return
 
         val rumContext = getRumContext()
-        val sdkContext = contextProvider.context
-
-        val user = sdkContext.userInfo
         val updatedAttributes = addExtraAttributes(
             mapOf(RumAttributes.LONG_TASK_TARGET to event.target)
         )
-        val networkInfo = sdkContext.networkInfo
         val timestamp = event.eventTime.timestamp + serverTimeOffsetInMs
         val isFrozenFrame = event.durationNs > FROZEN_FRAME_THRESHOLD_NS
-        val hasReplay = featuresContextResolver.resolveHasReplay(sdkContext)
-        val longTaskEvent = LongTaskEvent(
-            date = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
-            longTask = LongTaskEvent.LongTask(
-                duration = event.durationNs,
-                isFrozenFrame = isFrozenFrame
-            ),
-            action = rumContext.actionId?.let { LongTaskEvent.Action(listOf(it)) },
-            view = LongTaskEvent.View(
-                id = rumContext.viewId.orEmpty(),
-                name = rumContext.viewName,
-                url = rumContext.viewUrl.orEmpty()
-            ),
-            usr = LongTaskEvent.Usr(
-                id = user.id,
-                name = user.name,
-                email = user.email,
-                additionalProperties = user.additionalProperties.toMutableMap()
-            ),
-            connectivity = networkInfo.toLongTaskConnectivity(),
-            application = LongTaskEvent.Application(rumContext.applicationId),
-            session = LongTaskEvent.LongTaskEventSession(
-                id = rumContext.sessionId,
-                type = LongTaskEvent.LongTaskEventSessionType.USER,
-                hasReplay = hasReplay
-            ),
-            source = rumEventSourceProvider.longTaskEventSource,
-            os = LongTaskEvent.Os(
-                name = sdkContext.deviceInfo.osName,
-                version = sdkContext.deviceInfo.osVersion,
-                versionMajor = sdkContext.deviceInfo.osMajorVersion
-            ),
-            device = LongTaskEvent.Device(
-                type = sdkContext.deviceInfo.deviceType.toLongTaskSchemaType(),
-                name = sdkContext.deviceInfo.deviceName,
-                model = sdkContext.deviceInfo.deviceModel,
-                brand = sdkContext.deviceInfo.deviceBrand,
-                architecture = sdkContext.deviceInfo.architecture
-            ),
-            context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
-            dd = LongTaskEvent.Dd(session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1))
-        )
-        writer.write(longTaskEvent)
+
+        sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+            ?.withWriteContext { datadogContext, eventBatchWriter ->
+
+                val user = datadogContext.userInfo
+                val networkInfo = datadogContext.networkInfo
+                val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext)
+
+                val longTaskEvent = LongTaskEvent(
+                    date = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
+                    longTask = LongTaskEvent.LongTask(
+                        duration = event.durationNs,
+                        isFrozenFrame = isFrozenFrame
+                    ),
+                    action = rumContext.actionId?.let { LongTaskEvent.Action(listOf(it)) },
+                    view = LongTaskEvent.View(
+                        id = rumContext.viewId.orEmpty(),
+                        name = rumContext.viewName,
+                        url = rumContext.viewUrl.orEmpty()
+                    ),
+                    usr = LongTaskEvent.Usr(
+                        id = user.id,
+                        name = user.name,
+                        email = user.email,
+                        additionalProperties = user.additionalProperties.toMutableMap()
+                    ),
+                    connectivity = networkInfo.toLongTaskConnectivity(),
+                    application = LongTaskEvent.Application(rumContext.applicationId),
+                    session = LongTaskEvent.LongTaskEventSession(
+                        id = rumContext.sessionId,
+                        type = LongTaskEvent.LongTaskEventSessionType.USER,
+                        hasReplay = hasReplay
+                    ),
+                    source = rumEventSourceProvider.longTaskEventSource,
+                    os = LongTaskEvent.Os(
+                        name = datadogContext.deviceInfo.osName,
+                        version = datadogContext.deviceInfo.osVersion,
+                        versionMajor = datadogContext.deviceInfo.osMajorVersion
+                    ),
+                    device = LongTaskEvent.Device(
+                        type = datadogContext.deviceInfo.deviceType.toLongTaskSchemaType(),
+                        name = datadogContext.deviceInfo.deviceName,
+                        model = datadogContext.deviceInfo.deviceModel,
+                        brand = datadogContext.deviceInfo.deviceBrand,
+                        architecture = datadogContext.deviceInfo.architecture
+                    ),
+                    context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
+                    dd = LongTaskEvent.Dd(
+                        session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1)
+                    )
+                )
+                writer.write(eventBatchWriter, longTaskEvent)
+            }
+
         pendingLongTaskCount++
         if (isFrozenFrame) pendingFrozenFrameCount++
     }
@@ -899,7 +930,7 @@ internal open class RumViewScope(
     }
 
     private fun updateOffsetInFeatureContext() {
-        contextProvider.updateFeatureContext(
+        sdkCore.updateFeatureContext(
             RumFeature.RUM_FEATURE_NAME,
             mapOf(RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY to serverTimeOffsetInMs)
         )
@@ -927,6 +958,7 @@ internal open class RumViewScope(
 
         internal fun fromEvent(
             parentScope: RumScope,
+            sdkCore: SdkCore,
             event: RumRawEvent.StartView,
             firstPartyHostDetector: FirstPartyHostDetector,
             cpuVitalMonitor: VitalMonitor,
@@ -938,6 +970,7 @@ internal open class RumViewScope(
         ): RumViewScope {
             return RumViewScope(
                 parentScope,
+                sdkCore,
                 event.key,
                 event.name,
                 event.eventTime,
@@ -951,13 +984,13 @@ internal open class RumViewScope(
                 trackFrustrations = trackFrustrations
             )
         }
-    }
-}
 
-private fun VitalInfo.toPerformanceMetric(): ViewEvent.FlutterBuildTime {
-    return ViewEvent.FlutterBuildTime(
-        min = minValue,
-        max = maxValue,
-        average = meanValue
-    )
+        private fun VitalInfo.toPerformanceMetric(): ViewEvent.FlutterBuildTime {
+            return ViewEvent.FlutterBuildTime(
+                min = minValue,
+                max = maxValue,
+                average = meanValue
+            )
+        }
+    }
 }

@@ -7,11 +7,11 @@
 package com.datadog.android.telemetry.internal
 
 import android.util.Log
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.telemetry.assertj.TelemetryDebugEventAssert
@@ -21,21 +21,28 @@ import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.atLeastOnce
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -74,8 +81,17 @@ internal class TelemetryEventHandlerTest {
     @Mock
     lateinit var mockSampler: Sampler
 
-    @StringForgery
-    lateinit var mockSdkVersion: String
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
+    @Mock
+    lateinit var mockRumFeatureScope: FeatureScope
+
+    @Mock
+    lateinit var mockEventBatchWriter: EventBatchWriter
+
+    @Forgery
+    lateinit var fakeDatadogContext: DatadogContext
 
     private var fakeServerOffset: Long = 0L
 
@@ -92,9 +108,17 @@ internal class TelemetryEventHandlerTest {
 
         whenever(mockSampler.sample()) doReturn true
 
+        whenever(
+            mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+        ) doReturn mockRumFeatureScope
+        whenever(mockRumFeatureScope.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+        }
+
         testedTelemetryHandler =
             TelemetryEventHandler(
-                mockSdkVersion,
+                mockSdkCore,
                 mockSourceProvider,
                 mockTimeProvider,
                 mockSampler
@@ -113,13 +137,13 @@ internal class TelemetryEventHandlerTest {
 
         // Then
         argumentCaptor<TelemetryDebugEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             TelemetryDebugEventAssert.assertThat(lastValue).apply {
                 hasDate(debugRawEvent.eventTime.timestamp + fakeServerOffset)
                 hasSource(TelemetryDebugEvent.Source.ANDROID)
                 hasMessage(debugRawEvent.message)
                 hasService(TelemetryEventHandler.TELEMETRY_SERVICE_NAME)
-                hasVersion(mockSdkVersion)
+                hasVersion(fakeDatadogContext.sdkVersion)
                 hasApplicationId(rumContext.applicationId)
                 hasSessionId(rumContext.sessionId)
                 hasViewId(rumContext.viewId)
@@ -140,13 +164,13 @@ internal class TelemetryEventHandlerTest {
 
         // Then
         argumentCaptor<TelemetryErrorEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             TelemetryErrorEventAssert.assertThat(lastValue).apply {
                 hasDate(errorRawEvent.eventTime.timestamp + fakeServerOffset)
                 hasSource(TelemetryErrorEvent.Source.ANDROID)
                 hasMessage(errorRawEvent.message)
                 hasService(TelemetryEventHandler.TELEMETRY_SERVICE_NAME)
-                hasVersion(mockSdkVersion)
+                hasVersion(fakeDatadogContext.sdkVersion)
                 hasApplicationId(rumContext.applicationId)
                 hasSessionId(rumContext.sessionId)
                 hasViewId(rumContext.viewId)
@@ -196,8 +220,7 @@ internal class TelemetryEventHandlerTest {
             )
 
         argumentCaptor<Any> {
-            verify(mockWriter)
-                .write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             when (val capturedValue = lastValue) {
                 is TelemetryDebugEvent -> {
                     TelemetryDebugEventAssert.assertThat(capturedValue).apply {
@@ -205,7 +228,7 @@ internal class TelemetryEventHandlerTest {
                         hasSource(TelemetryDebugEvent.Source.ANDROID)
                         hasMessage(rawEvent.message)
                         hasService(TelemetryEventHandler.TELEMETRY_SERVICE_NAME)
-                        hasVersion(mockSdkVersion)
+                        hasVersion(fakeDatadogContext.sdkVersion)
                         hasApplicationId(rumContext.applicationId)
                         hasSessionId(rumContext.sessionId)
                         hasViewId(rumContext.viewId)
@@ -218,7 +241,7 @@ internal class TelemetryEventHandlerTest {
                         hasSource(TelemetryErrorEvent.Source.ANDROID)
                         hasMessage(rawEvent.message)
                         hasService(TelemetryEventHandler.TELEMETRY_SERVICE_NAME)
-                        hasVersion(mockSdkVersion)
+                        hasVersion(fakeDatadogContext.sdkVersion)
                         hasApplicationId(rumContext.applicationId)
                         hasSessionId(rumContext.sessionId)
                         hasViewId(rumContext.viewId)
@@ -263,7 +286,7 @@ internal class TelemetryEventHandlerTest {
 
         argumentCaptor<Any> {
             verify(mockWriter, times(expectedInvocations))
-                .write(capture())
+                .write(eq(mockEventBatchWriter), capture())
             allValues.withIndex().forEach {
                 when (val capturedValue = it.value) {
                     is TelemetryDebugEvent -> {
@@ -272,7 +295,7 @@ internal class TelemetryEventHandlerTest {
                             hasSource(TelemetryDebugEvent.Source.ANDROID)
                             hasMessage(events[it.index].message)
                             hasService(TelemetryEventHandler.TELEMETRY_SERVICE_NAME)
-                            hasVersion(mockSdkVersion)
+                            hasVersion(fakeDatadogContext.sdkVersion)
                             hasApplicationId(rumContext.applicationId)
                             hasSessionId(rumContext.sessionId)
                             hasViewId(rumContext.viewId)
@@ -285,7 +308,7 @@ internal class TelemetryEventHandlerTest {
                             hasSource(TelemetryErrorEvent.Source.ANDROID)
                             hasMessage(events[it.index].message)
                             hasService(TelemetryEventHandler.TELEMETRY_SERVICE_NAME)
-                            hasVersion(mockSdkVersion)
+                            hasVersion(fakeDatadogContext.sdkVersion)
                             hasApplicationId(rumContext.applicationId)
                             hasSessionId(rumContext.sessionId)
                             hasViewId(rumContext.viewId)
@@ -346,7 +369,7 @@ internal class TelemetryEventHandlerTest {
 
         argumentCaptor<Any> {
             verify(mockWriter, times(expectedInvocations))
-                .write(capture())
+                .write(eq(mockEventBatchWriter), capture())
             allValues.withIndex().forEach {
                 when (val capturedValue = it.value) {
                     is TelemetryDebugEvent -> {
@@ -355,7 +378,7 @@ internal class TelemetryEventHandlerTest {
                             hasSource(TelemetryDebugEvent.Source.ANDROID)
                             hasMessage(expectedEvents[it.index].message)
                             hasService(TelemetryEventHandler.TELEMETRY_SERVICE_NAME)
-                            hasVersion(mockSdkVersion)
+                            hasVersion(fakeDatadogContext.sdkVersion)
                             hasApplicationId(rumContext.applicationId)
                             hasSessionId(rumContext.sessionId)
                             hasViewId(rumContext.viewId)
@@ -368,7 +391,7 @@ internal class TelemetryEventHandlerTest {
                             hasSource(TelemetryErrorEvent.Source.ANDROID)
                             hasMessage(expectedEvents[it.index].message)
                             hasService(TelemetryEventHandler.TELEMETRY_SERVICE_NAME)
-                            hasVersion(mockSdkVersion)
+                            hasVersion(fakeDatadogContext.sdkVersion)
                             hasApplicationId(rumContext.applicationId)
                             hasSessionId(rumContext.sessionId)
                             hasViewId(rumContext.viewId)
@@ -411,7 +434,7 @@ internal class TelemetryEventHandlerTest {
 
         argumentCaptor<Any> {
             verify(mockWriter, atLeastOnce())
-                .write(capture())
+                .write(eq(mockEventBatchWriter), capture())
             assertThat(allValues.size).isCloseTo(expectedWrites, Percentage.withPercentage(25.0))
         }
     }

@@ -19,7 +19,6 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
-import com.datadog.android.core.internal.persistence.NoOpDataWriter
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.UserInfo
@@ -38,6 +37,7 @@ import com.datadog.android.v2.api.FeatureUploadConfiguration
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
 import com.datadog.android.v2.log.internal.net.LogsRequestFactory
 import com.datadog.android.v2.rum.internal.net.RumRequestFactory
 import com.datadog.android.v2.tracing.internal.net.TracesRequestFactory
@@ -248,7 +248,7 @@ internal class DatadogCore(
 
         coreFeature.ndkCrashHandler.handleNdkCrash(
             this,
-            rumFeature?.persistenceStrategy?.getWriter() ?: NoOpDataWriter()
+            rumFeature?.dataWriter ?: NoOpDataWriter()
         )
 
         setupLifecycleMonitorCallback(appContext)
@@ -356,13 +356,13 @@ internal class DatadogCore(
             )
             features[RumFeature.RUM_FEATURE_NAME]?.let {
                 it.initialize(appContext, configuration.plugins)
-                rumFeature = RumFeature(coreFeature, it.storage).also {
+                rumFeature = RumFeature(coreFeature).also {
                     it.initialize(appContext, configuration)
                 }
             }
             features[WebViewRumFeature.WEB_RUM_FEATURE_NAME]?.let {
                 it.initialize(appContext, configuration.plugins)
-                webViewRumFeature = WebViewRumFeature(coreFeature, it.storage).also {
+                webViewRumFeature = WebViewRumFeature(coreFeature).also {
                     it.initialize()
                 }
             }

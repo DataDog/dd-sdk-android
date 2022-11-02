@@ -7,12 +7,13 @@
 package com.datadog.android.webview.internal.rum
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.google.gson.JsonObject
 import java.lang.IllegalStateException
@@ -21,6 +22,7 @@ import java.lang.UnsupportedOperationException
 import kotlin.collections.LinkedHashMap
 
 internal class WebViewRumEventConsumer(
+    private val sdkCore: SdkCore,
     private val dataWriter: DataWriter<Any>,
     private val timeProvider: TimeProvider,
     private val webViewRumEventMapper: WebViewRumEventMapper = WebViewRumEventMapper(),
@@ -35,7 +37,10 @@ internal class WebViewRumEventConsumer(
         GlobalRum.notifyIngestedWebViewEvent()
         val rumContext = contextProvider.getRumContext()
         val mappedEvent = map(event, rumContext)
-        dataWriter.write(mappedEvent)
+        sdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
+            ?.withWriteContext { _, eventBatchWriter ->
+                dataWriter.write(eventBatchWriter, mappedEvent)
+            }
     }
 
     private fun map(

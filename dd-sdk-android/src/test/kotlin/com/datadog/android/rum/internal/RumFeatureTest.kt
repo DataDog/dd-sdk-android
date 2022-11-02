@@ -12,7 +12,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
-import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
+import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
@@ -26,7 +26,7 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.core.internal.storage.Storage
+import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -72,15 +72,12 @@ internal class RumFeatureTest {
     @Mock
     lateinit var mockChoreographer: Choreographer
 
-    @Mock
-    lateinit var mockStorage: Storage
-
     @BeforeEach
     fun `set up RUM`() {
         doNothing().whenever(mockChoreographer).postFrameCallback(any())
         mockChoreographerInstance(mockChoreographer)
 
-        testedFeature = RumFeature(coreFeature.mockInstance, mockStorage)
+        testedFeature = RumFeature(coreFeature.mockInstance)
     }
 
     @Test
@@ -89,8 +86,8 @@ internal class RumFeatureTest {
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // Then
-        assertThat(testedFeature.persistenceStrategy)
-            .isInstanceOf(RumFilePersistenceStrategy::class.java)
+        assertThat(testedFeature.dataWriter)
+            .isInstanceOf(RumDataWriter::class.java)
     }
 
     @Test
@@ -347,6 +344,18 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.rumEventMapper).isInstanceOf(NoOpEventMapper::class.java)
+    }
+
+    @Test
+    fun `𝕄 reset data writer 𝕎 stop()`() {
+        // Given
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        assertThat(testedFeature.dataWriter).isInstanceOf(NoOpDataWriter::class.java)
     }
 
     @ParameterizedTest

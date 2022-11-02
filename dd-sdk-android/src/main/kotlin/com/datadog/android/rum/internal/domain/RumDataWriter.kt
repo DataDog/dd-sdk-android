@@ -9,8 +9,8 @@ package com.datadog.android.rum.internal.domain
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileWriter
-import com.datadog.android.core.internal.persistence.file.batch.BatchFileDataWriter
 import com.datadog.android.core.internal.persistence.file.existsSafe
+import com.datadog.android.core.internal.persistence.serializeToByteArray
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.Logger
 import com.datadog.android.rum.GlobalRum
@@ -21,27 +21,39 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.v2.core.internal.ContextProvider
-import com.datadog.android.v2.core.internal.storage.Storage
+import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import java.io.File
 import java.util.Locale
 
 internal class RumDataWriter(
-    storage: Storage,
-    contextProvider: ContextProvider,
-    serializer: Serializer<Any>,
+    private val serializer: Serializer<Any>,
     private val fileWriter: FileWriter,
-    internalLogger: Logger,
+    private val internalLogger: Logger,
     private val lastViewEventFile: File
-) : BatchFileDataWriter<Any>(
-    storage,
-    contextProvider,
-    serializer,
-    internalLogger
-) {
+) : DataWriter<Any> {
+
+    // region DataWriter
 
     @WorkerThread
-    override fun onDataWritten(data: Any, rawData: ByteArray) {
+    override fun write(writer: EventBatchWriter, element: Any): Boolean {
+        val byteArray = serializer.serializeToByteArray(element, internalLogger) ?: return false
+
+        synchronized(this) {
+            val result = writer.write(byteArray, null)
+            if (result) {
+                onDataWritten(element, byteArray)
+            }
+            return result
+        }
+    }
+
+    // endregion
+
+    // region Internal
+
+    @WorkerThread
+    internal fun onDataWritten(data: Any, rawData: ByteArray) {
         when (data) {
             is ViewEvent -> persistViewEvent(rawData)
             is ActionEvent -> notifyEventSent(
@@ -63,10 +75,6 @@ internal class RumDataWriter(
             }
         }
     }
-
-    // endregion
-
-    // region Internal
 
     @WorkerThread
     private fun persistViewEvent(data: ByteArray) {

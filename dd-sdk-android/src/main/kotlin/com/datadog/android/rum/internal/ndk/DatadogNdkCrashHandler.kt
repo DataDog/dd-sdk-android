@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.ndk
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.file.FileReader
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
@@ -24,11 +23,13 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.ExecutorService
@@ -100,6 +101,8 @@ internal class DatadogNdkCrashHandler(
             ndkCrashDataDirectory.listFilesSafe()?.forEach {
                 when (it.name) {
                     // TODO RUMM-1944 Data from NDK should be also encrypted
+                    // TODO RUMM-2697 Use message bus to communicate with RUM, RUM classes
+                    //  won't be explicitly available
                     CRASH_DATA_FILE_NAME -> lastSerializedNdkCrashLog = it.readTextSafe()
                     RUM_VIEW_EVENT_FILE_NAME ->
                         lastSerializedRumViewEvent =
@@ -201,6 +204,7 @@ internal class DatadogNdkCrashHandler(
                 LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace
             )
             updateViewEventAndSendError(
+                sdkCore,
                 rumWriter,
                 errorLogMessage,
                 ndkCrashLog,
@@ -224,6 +228,7 @@ internal class DatadogNdkCrashHandler(
 
     @WorkerThread
     private fun updateViewEventAndSendError(
+        sdkCore: SdkCore,
         rumWriter: DataWriter<Any>,
         errorLogMessage: String,
         ndkCrashLog: NdkCrashLog,
@@ -234,12 +239,19 @@ internal class DatadogNdkCrashHandler(
             ndkCrashLog,
             lastViewEvent
         )
-        rumWriter.write(toSendErrorEvent)
-        val sessionsTimeDifference = System.currentTimeMillis() - lastViewEvent.date
-        if (sessionsTimeDifference < VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD
-        ) {
-            val updatedViewEvent = updateViewEvent(lastViewEvent)
-            rumWriter.write(updatedViewEvent)
+        val now = System.currentTimeMillis()
+        val rumFeature = sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+        if (rumFeature != null) {
+            rumFeature.withWriteContext { _, eventBatchWriter ->
+                rumWriter.write(eventBatchWriter, toSendErrorEvent)
+                val sessionsTimeDifference = now - lastViewEvent.date
+                if (sessionsTimeDifference < VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD) {
+                    val updatedViewEvent = updateViewEvent(lastViewEvent)
+                    rumWriter.write(eventBatchWriter, updatedViewEvent)
+                }
+            }
+        } else {
+            devLogger.i(INFO_RUM_FEATURE_NOT_REGISTERED)
         }
     }
 
@@ -269,7 +281,7 @@ internal class DatadogNdkCrashHandler(
                 )
             )
         } else {
-            devLogger.i("Logs feature is not registered, won't report NDK crash info as log.")
+            devLogger.i(INFO_LOGS_FEATURE_NOT_REGISTERED)
         }
     }
 
@@ -382,6 +394,11 @@ internal class DatadogNdkCrashHandler(
         internal const val ERROR_READ_NDK_DIR = "Error while trying to read the NDK crash directory"
 
         internal const val ERROR_TASK_REJECTED = "Unable to schedule operation on the executor"
+
+        internal const val INFO_LOGS_FEATURE_NOT_REGISTERED =
+            "Logs feature is not registered, won't report NDK crash info as log."
+        internal const val INFO_RUM_FEATURE_NOT_REGISTERED =
+            "RUM feature is not registered, won't report NDK crash info as RUM error."
 
         private const val STORAGE_VERSION = 2
 

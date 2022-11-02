@@ -8,15 +8,18 @@ package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.DataWriter
 
+@Suppress("LongParameterList")
 internal class RumApplicationScope(
     applicationId: String,
+    sdkCore: SdkCore,
     internal val samplingRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
@@ -33,6 +36,7 @@ internal class RumApplicationScope(
     private val rumContext = RumContext(applicationId = applicationId)
     internal val childScope: RumScope = RumSessionScope(
         this,
+        sdkCore,
         samplingRate,
         backgroundTrackingEnabled,
         trackFrustrations,
