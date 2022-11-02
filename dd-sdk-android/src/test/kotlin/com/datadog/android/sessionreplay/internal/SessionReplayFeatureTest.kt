@@ -7,21 +7,25 @@
 package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
+import android.util.Log
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -34,6 +38,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -89,6 +94,24 @@ internal class SessionReplayFeatureTest {
         // Then
         assertThat(testedFeature.sessionReplayCallback)
             .isInstanceOf(SessionReplayLifecycleCallback::class.java)
+    }
+
+    @Test
+    fun `𝕄 set the feature event receiver 𝕎 initialize()`() {
+        // Given
+        testedFeature = SessionReplayFeature(
+            coreFeature.mockInstance,
+            mockSDKCore
+        )
+
+        // When
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+
+        // Then
+        verify(mockSDKCore).setEventReceiver(
+            SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME,
+            testedFeature
+        )
     }
 
     @Test
@@ -251,14 +274,152 @@ internal class SessionReplayFeatureTest {
         verifyZeroInteractions(mockSessionReplayLifecycleCallback)
     }
 
+    @Test
+    fun `M stopRecording W rum session updated { session not tracked }`() {
+        // Given
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        val rumSessionUpdateBusMessage = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                false
+        )
+
+        // When
+        testedFeature.onReceive(rumSessionUpdateBusMessage)
+
+        // Then
+        inOrder(mockSessionReplayLifecycleCallback) {
+            verify(mockSessionReplayLifecycleCallback).register(appContext.mockInstance)
+            verify(mockSessionReplayLifecycleCallback)
+                .unregisterAndStopRecorders(appContext.mockInstance)
+        }
+        verifyNoMoreInteractions(mockSessionReplayLifecycleCallback)
+    }
+
+    @Test
+    fun `M startRecording W rum session updated { session tracked }`() {
+        // Given
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        testedFeature.stopRecording()
+        val rumSessionUpdateBusMessage = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                true
+        )
+
+        // When
+        testedFeature.onReceive(rumSessionUpdateBusMessage)
+
+        // Then
+        inOrder(mockSessionReplayLifecycleCallback) {
+            verify(mockSessionReplayLifecycleCallback).register(appContext.mockInstance)
+            verify(mockSessionReplayLifecycleCallback)
+                .unregisterAndStopRecorders(appContext.mockInstance)
+            verify(mockSessionReplayLifecycleCallback).register(appContext.mockInstance)
+        }
+        verifyNoMoreInteractions(mockSessionReplayLifecycleCallback)
+    }
+
+    @Test
+    fun `𝕄 log warning and do nothing 𝕎 onReceive() { unknown event type }`() {
+        // When
+        testedFeature.onReceive(Any())
+
+        // Then
+        verify(logger.mockDevLogHandler)
+            .handleLog(
+                Log.WARN,
+                SessionReplayFeature.UNSUPPORTED_EVENT_TYPE.format(
+                    Locale.US,
+                    Any()::class.java.canonicalName
+                )
+            )
+
+        verifyZeroInteractions(mockSessionReplayLifecycleCallback)
+    }
+
+    @Test
+    fun `𝕄 log warning and do nothing 𝕎 onReceive() { unknown type property value }`(
+        forge: Forge
+    ) {
+        // Given
+        val event = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                forge.anAlphabeticalString()
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        val expectedMessage = SessionReplayFeature.UNKNOWN_EVENT_TYPE_PROPERTY_VALUE
+            .format(Locale.US, event[SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY])
+        verify(logger.mockDevLogHandler)
+            .handleLog(
+                Log.WARN,
+                expectedMessage
+            )
+
+        verifyZeroInteractions(mockSessionReplayLifecycleCallback)
+    }
+
+    @Test
+    fun `𝕄 log warning and do nothing 𝕎 onReceive() { missing mandatory fields }`() {
+        // Given
+        val event = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(logger.mockDevLogHandler)
+            .handleLog(
+                Log.WARN,
+                SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
+            )
+
+        verifyZeroInteractions(mockSessionReplayLifecycleCallback)
+    }
+
+    @Test
+    fun `𝕄 log warning and do nothing 𝕎 onReceive() { mandatory fields have wrong format }`(
+        forge: Forge
+    ) {
+        // Given
+        val event = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                forge.anAlphabeticalString()
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(logger.mockDevLogHandler)
+            .handleLog(
+                Log.WARN,
+                SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
+            )
+
+        verifyZeroInteractions(mockSessionReplayLifecycleCallback)
+    }
+
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
+        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, coreFeature)
+            return listOf(appContext, coreFeature, logger)
         }
     }
 }

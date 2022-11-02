@@ -323,7 +323,7 @@ internal class ConfigurationBuilderTest {
             .useCustomTracesEndpoint(tracesUrl)
             .useCustomCrashReportsEndpoint(crashReportsUrl)
             .useCustomRumEndpoint(rumUrl)
-            .useSessionReplayEndpoint(sessionReplayUrl)
+            .useCustomSessionReplayEndpoint(sessionReplayUrl)
             .build()
 
         // Then
@@ -365,7 +365,7 @@ internal class ConfigurationBuilderTest {
             .useCustomTracesEndpoint(tracesUrl)
             .useCustomCrashReportsEndpoint(crashReportsUrl)
             .useCustomRumEndpoint(rumUrl)
-            .useSessionReplayEndpoint(sessionReplayUrl)
+            .useCustomSessionReplayEndpoint(sessionReplayUrl)
             .build()
 
         // Then

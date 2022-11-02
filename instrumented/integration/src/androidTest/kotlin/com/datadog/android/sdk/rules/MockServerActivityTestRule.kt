@@ -64,7 +64,12 @@ internal open class MockServerActivityTestRule<T : Activity>(
         mockWebServer.setDispatcher(
             object : Dispatcher() {
                 override fun dispatch(request: RecordedRequest): MockResponse {
-                    if (keepRequests) {
+                    val requestUrl = request.requestUrl.toString()
+                    if (keepRequests &&
+                        !requestUrl.startsWith(RuntimeConfig.sessionReplayEndpointUrl)
+                    ) {
+                        // for now the SR requests will be dropped as we do not support them
+                        // in our integration tests
                         handleRequest(request)
                     } else {
                         Log.w(TAG, "Dropping @request:$request")
@@ -83,6 +88,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
             RuntimeConfig.logsEndpointUrl = "$it/$LOGS_URL_SUFFIX"
             RuntimeConfig.tracesEndpointUrl = "$it/$TRACES_URL_SUFFIX"
             RuntimeConfig.rumEndpointUrl = "$it/$RUM_URL_SUFFIX"
+            RuntimeConfig.sessionReplayEndpointUrl = "$it/$SESSION_REPlAY_URL_SUFFIX"
         }
 
         super.beforeActivityLaunched()
@@ -191,6 +197,7 @@ internal open class MockServerActivityTestRule<T : Activity>(
         const val LOGS_URL_SUFFIX = "logs"
         const val TRACES_URL_SUFFIX = "traces"
         const val RUM_URL_SUFFIX = "rum"
+        const val SESSION_REPlAY_URL_SUFFIX = "session-replay"
         const val CONNECTION_ISSUE_PATH = "/connection-issue"
     }
 }
