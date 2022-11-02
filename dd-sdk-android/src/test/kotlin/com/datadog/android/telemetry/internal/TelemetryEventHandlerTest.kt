@@ -184,7 +184,6 @@ internal class TelemetryEventHandlerTest {
         argumentCaptor<TelemetryConfigurationEvent> {
             verify(mockWriter).write(capture())
             assertConfigEventMatchesRawEvent(firstValue, configRawEvent, rumContext)
-            assertThat(firstValue)
         }
     }
 
@@ -387,6 +386,39 @@ internal class TelemetryEventHandlerTest {
             assertConfigEventMatchesRawEvent(firstValue, configRawEvent, rumContext)
             assertThat(firstValue)
                 .hasUseTracing(useTracing)
+        }
+    }
+
+    @Test
+    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration with interceptor }`(
+        forge: Forge
+    ) {
+        // Given
+        val trackNetworkRequests = forge.aBool()
+        val configuration = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        ).build()
+        val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)
+        val rumContext = GlobalRum.getRumContext()
+
+        // When
+        if (trackNetworkRequests) {
+            testedTelemetryHandler.handleEvent(
+                RumRawEvent.SendTelemetry(TelemetryType.INTERCEPTOR_SETUP, "", null, null, null),
+                mockWriter
+            )
+        }
+        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(capture())
+            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, rumContext)
+            assertThat(firstValue)
+                .hasTrackNetworkRequests(trackNetworkRequests)
         }
     }
 

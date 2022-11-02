@@ -9,5 +9,6 @@ package com.datadog.android.telemetry.internal
 internal enum class TelemetryType {
     DEBUG,
     ERROR,
-    CONFIGURATION
+    CONFIGURATION,
+    INTERCEPTOR_SETUP
 }

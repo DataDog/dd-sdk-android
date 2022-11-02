@@ -52,5 +52,7 @@ internal interface AdvancedRumMonitor : RumMonitor {
     @Suppress("FunctionMaxLength")
     fun sendConfigurationTelemetryEvent(configuration: Configuration)
 
+    fun notifyInterceptorInstantiated()
+
     fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double)
 }

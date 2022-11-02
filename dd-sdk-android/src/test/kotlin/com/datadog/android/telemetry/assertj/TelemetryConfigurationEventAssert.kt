@@ -180,11 +180,11 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         return this
     }
 
-    fun hasTrackActions(expected: Boolean?): TelemetryConfigurationEventAssert {
-        assertThat(actual.telemetry.configuration.trackActions)
+    fun hasTrackInteractions(expected: Boolean?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.trackInteractions)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.trackActions $expected " +
-                    "but was ${actual.telemetry.configuration.trackActions}"
+                    "but was ${actual.telemetry.configuration.trackInteractions}"
             )
             .isEqualTo(expected)
         return this
@@ -195,6 +195,16 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.trackErrors $expected " +
                     "but was ${actual.telemetry.configuration.trackErrors}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasTrackNetworkRequests(expected: Boolean?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.trackNetworkRequests)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.trackNetworkRequests $expected " +
+                    "but was ${actual.telemetry.configuration.trackNetworkRequests}"
             )
             .isEqualTo(expected)
         return this

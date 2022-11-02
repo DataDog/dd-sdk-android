@@ -30,6 +30,7 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -117,6 +118,16 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     override fun `tear down`() {
         super.`tear down`()
         RumFeature.stop()
+    }
+
+    @Test
+    fun `M notify monitor W init()`() {
+        // Given
+
+        // When
+
+        // Then
+        verify(rumMonitor.mockInstance).notifyInterceptorInstantiated()
     }
 
     @Test

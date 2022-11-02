@@ -1487,6 +1487,25 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M handle interceptor event W notifyInterceptorInstantiated()`() {
+        // When
+        testedMonitor.notifyInterceptorInstantiated()
+
+        // Then
+        argumentCaptor<RumRawEvent.SendTelemetry> {
+            verify(mockTelemetryEventHandler).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            assertThat(lastValue.message).isEmpty()
+            assertThat(lastValue.type).isEqualTo(TelemetryType.INTERCEPTOR_SETUP)
+            assertThat(lastValue.stack).isNull()
+            assertThat(lastValue.kind).isNull()
+            assertThat(lastValue.configuration).isNull()
+        }
+    }
+
+    @Test
     fun `M handle performance metric update W updatePerformanceMetric()`(
         forge: Forge
     ) {

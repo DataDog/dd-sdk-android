@@ -358,6 +358,12 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun notifyInterceptorInstantiated() {
+        handleEvent(
+            RumRawEvent.SendTelemetry(TelemetryType.INTERCEPTOR_SETUP, "", null, null, null)
+        )
+    }
+
     override fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double) {
         handleEvent(RumRawEvent.UpdatePerformanceMetric(metric, value))
     }

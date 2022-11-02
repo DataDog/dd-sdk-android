@@ -34,6 +34,8 @@ internal class TelemetryEventHandler(
     internal val maxEventCountPerSession: Int = MAX_EVENTS_PER_SESSION
 ) : RumSessionListener {
 
+    private var trackNetworkRequests = false
+
     private val seenInCurrentSession = mutableSetOf<TelemetryEventId>()
 
     fun handleEvent(event: RumRawEvent.SendTelemetry, writer: DataWriter<Any>) {
@@ -45,7 +47,7 @@ internal class TelemetryEventHandler(
 
         val rumContext = GlobalRum.getRumContext()
 
-        val telemetryEvent: Any = when (event.type) {
+        val telemetryEvent: Any? = when (event.type) {
             TelemetryType.DEBUG -> {
                 createDebugEvent(timestamp, rumContext, event.message)
             }
@@ -71,9 +73,14 @@ internal class TelemetryEventHandler(
                     createConfigurationEvent(timestamp, rumContext, event.configuration)
                 }
             }
+            TelemetryType.INTERCEPTOR_SETUP -> {
+                trackNetworkRequests = true
+                null
+            }
         }
-
-        writer.write(telemetryEvent)
+        if (telemetryEvent != null) {
+            writer.write(telemetryEvent)
+        }
     }
 
     override fun onSessionStarted(sessionId: String, isDiscarded: Boolean) {
@@ -191,13 +198,14 @@ internal class TelemetryEventHandler(
                     useLocalEncryption = coreConfig?.securityConfig?.localDataEncryption != null,
                     viewTrackingStrategy = viewTrackingStrategy,
                     trackBackgroundEvents = rumConfig?.backgroundEventTracking,
-                    trackActions = rumConfig?.userActionTrackingStrategy != null,
+                    trackInteractions = rumConfig?.userActionTrackingStrategy != null,
                     trackErrors = crashConfig != null,
                     trackNativeLongTasks = rumConfig?.longTaskTrackingStrategy != null,
                     batchSize = coreConfig?.batchSize?.windowDurationMs,
                     batchUploadFrequency = coreConfig?.uploadFrequency?.baseStepMs,
                     mobileVitalsUpdatePeriod = rumConfig?.vitalsMonitorUpdateFrequency?.periodInMs,
-                    useTracing = traceConfig != null && GlobalTracer.isRegistered()
+                    useTracing = traceConfig != null && GlobalTracer.isRegistered(),
+                    trackNetworkRequests = trackNetworkRequests
                 )
             )
         )
