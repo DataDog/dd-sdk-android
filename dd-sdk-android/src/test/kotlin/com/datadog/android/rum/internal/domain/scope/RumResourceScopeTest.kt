@@ -20,7 +20,6 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.utils.asTimingsPayload
@@ -124,9 +123,6 @@ internal class RumResourceScopeTest {
     var fakeSourceResourceEvent: ResourceEvent.Source? = null
     var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
 
-    @Mock
-    lateinit var mockRumEventSourceProvider: RumEventSourceProvider
-
     @BoolForgery
     var fakeHasReplay: Boolean = false
 
@@ -135,14 +131,32 @@ internal class RumResourceScopeTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeSourceResourceEvent = forge.aNullable { aValueFrom(ResourceEvent.Source::class.java) }
-        fakeSourceErrorEvent = forge.aNullable {
-            aValueFrom(ErrorEvent.ErrorEventSource::class.java)
+        val isValidSource = forge.aBool()
+
+        val fakeSource = if (isValidSource) {
+            forge.anElementFrom(
+                ErrorEvent.ErrorEventSource.values().map { it.toJson().asString }
+            )
+        } else {
+            forge.anAlphabeticalString()
         }
-        whenever(mockRumEventSourceProvider.resourceEventSource)
-            .thenReturn(fakeSourceResourceEvent)
-        whenever(mockRumEventSourceProvider.errorEventSource)
-            .thenReturn(fakeSourceErrorEvent)
+
+        fakeDatadogContext = fakeDatadogContext.copy(
+            source = fakeSource
+        )
+
+        fakeSourceResourceEvent = if (isValidSource) {
+            ResourceEvent.Source.fromJson(fakeSource)
+        } else {
+            null
+        }
+
+        fakeSourceErrorEvent = if (isValidSource) {
+            ErrorEvent.ErrorEventSource.fromJson(fakeSource)
+        } else {
+            null
+        }
+
         fakeEventTime = Time()
         val maxLimit = Long.MAX_VALUE - fakeEventTime.timestamp
         val minLimit = -fakeEventTime.timestamp
@@ -174,7 +188,6 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockDetector,
-            mockRumEventSourceProvider,
             mockContextProvider,
             mockFeaturesContextResolver
         )
@@ -351,7 +364,6 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockDetector,
-            mockRumEventSourceProvider,
             mockContextProvider,
             mockFeaturesContextResolver
         )
@@ -716,7 +728,6 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockDetector,
-            mockRumEventSourceProvider,
             mockContextProvider,
             mockFeaturesContextResolver
         )
@@ -1128,7 +1139,6 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockDetector,
-            mockRumEventSourceProvider,
             mockContextProvider,
             mockFeaturesContextResolver
         )
@@ -1214,7 +1224,6 @@ internal class RumResourceScopeTest {
             fakeAttributes,
             fakeServerOffset,
             mockDetector,
-            mockRumEventSourceProvider,
             mockContextProvider,
             mockFeaturesContextResolver
         )

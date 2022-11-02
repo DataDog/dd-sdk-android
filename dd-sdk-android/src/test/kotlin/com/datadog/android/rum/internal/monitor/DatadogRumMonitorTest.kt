@@ -123,9 +123,6 @@ internal class DatadogRumMonitorTest {
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
-    @StringForgery
-    lateinit var fakeSourceName: String
-
     lateinit var fakeAttributes: Map<String, Any?>
 
     @FloatForgery(min = 0f, max = 100f)
@@ -157,7 +154,6 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            fakeSourceName,
             mockContextProvider
         )
         testedMonitor.rootScope = mockScope
@@ -179,7 +175,6 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            fakeSourceName,
             mockContextProvider
         )
 
@@ -1180,7 +1175,6 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            fakeSourceName,
             mockContextProvider,
             mockExecutor
         )
@@ -1226,7 +1220,6 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            fakeSourceName,
             mockContextProvider,
             mockExecutorService
         )
@@ -1259,7 +1252,6 @@ internal class DatadogRumMonitorTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            fakeSourceName,
             mockContextProvider,
             mockExecutorService
         )

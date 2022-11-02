@@ -7,6 +7,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.internal.utils.errorWithTelemetry
@@ -409,5 +410,62 @@ internal fun DeviceType.toErrorSchemaType(): ErrorEvent.DeviceType {
         else -> ErrorEvent.DeviceType.OTHER
     }
 }
+
+// endregion
+
+// region Source
+
+internal fun ViewEvent.Source.Companion.tryFromSource(source: String):
+    ViewEvent.Source? {
+    return try {
+        fromJson(source)
+    } catch (e: NoSuchElementException) {
+        devLogger.e(UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source), e)
+        null
+    }
+}
+
+internal fun LongTaskEvent.Source.Companion.tryFromSource(source: String):
+    LongTaskEvent.Source? {
+    return try {
+        fromJson(source)
+    } catch (e: NoSuchElementException) {
+        devLogger.e(UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source), e)
+        null
+    }
+}
+
+internal fun ErrorEvent.ErrorEventSource.Companion.tryFromSource(source: String):
+    ErrorEvent.ErrorEventSource? {
+    return try {
+        fromJson(source)
+    } catch (e: NoSuchElementException) {
+        devLogger.e(UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source), e)
+        null
+    }
+}
+
+internal fun ActionEvent.Source.Companion.tryFromSource(source: String):
+    ActionEvent.Source? {
+    return try {
+        fromJson(source)
+    } catch (e: NoSuchElementException) {
+        devLogger.e(UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source), e)
+        null
+    }
+}
+
+internal fun ResourceEvent.Source.Companion.tryFromSource(source: String):
+    ResourceEvent.Source? {
+    return try {
+        fromJson(source)
+    } catch (e: NoSuchElementException) {
+        devLogger.e(UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source), e)
+        null
+    }
+}
+
+internal const val UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT = "You are using an unknown " +
+    "source %s for your events"
 
 // endregion

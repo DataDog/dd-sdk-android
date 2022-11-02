@@ -74,9 +74,6 @@ internal class RumApplicationScopeTest {
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
-    @StringForgery
-    lateinit var fakeSourceName: String
-
     @FloatForgery(min = 0f, max = 100f)
     var fakeSamplingRate: Float = 0f
 
@@ -99,7 +96,6 @@ internal class RumApplicationScopeTest {
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
             mockSessionListener,
-            fakeSourceName,
             mockContextProvider
         )
     }

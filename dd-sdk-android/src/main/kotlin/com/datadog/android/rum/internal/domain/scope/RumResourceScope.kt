@@ -19,7 +19,6 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.v2.api.SdkCore
@@ -41,7 +40,6 @@ internal class RumResourceScope(
     initialAttributes: Map<String, Any?>,
     serverTimeOffsetInMs: Long,
     internal val firstPartyHostDetector: FirstPartyHostDetector,
-    private val rumEventSourceProvider: RumEventSourceProvider,
     contextProvider: ContextProvider,
     private val featuresContextResolver: FeaturesContextResolver
 ) : RumScope {
@@ -225,7 +223,7 @@ internal class RumResourceScope(
                         type = ResourceEvent.ResourceEventSessionType.USER,
                         hasReplay = hasReplay
                     ),
-                    source = rumEventSourceProvider.resourceEventSource,
+                    source = ResourceEvent.Source.tryFromSource(datadogContext.source),
                     os = ResourceEvent.Os(
                         name = datadogContext.deviceInfo.osName,
                         version = datadogContext.deviceInfo.osVersion,
@@ -273,7 +271,7 @@ internal class RumResourceScope(
         }
     }
 
-    @SuppressWarnings("LongParameterList", "LongMethod")
+    @SuppressWarnings("LongMethod")
     @WorkerThread
     private fun sendError(
         message: String,
@@ -326,7 +324,7 @@ internal class RumResourceScope(
                         type = ErrorEvent.ErrorEventSessionType.USER,
                         hasReplay = hasReplay
                     ),
-                    source = rumEventSourceProvider.errorEventSource,
+                    source = ErrorEvent.ErrorEventSource.tryFromSource(datadogContext.source),
                     os = ErrorEvent.Os(
                         name = datadogContext.deviceInfo.osName,
                         version = datadogContext.deviceInfo.osVersion,
@@ -382,7 +380,6 @@ internal class RumResourceScope(
             event: RumRawEvent.StartResource,
             firstPartyHostDetector: FirstPartyHostDetector,
             timestampOffset: Long,
-            rumEventSourceProvider: RumEventSourceProvider,
             contextProvider: ContextProvider,
             featuresContextResolver: FeaturesContextResolver
         ): RumScope {
@@ -396,7 +393,6 @@ internal class RumResourceScope(
                 event.attributes,
                 timestampOffset,
                 firstPartyHostDetector,
-                rumEventSourceProvider,
                 contextProvider,
                 featuresContextResolver
             )

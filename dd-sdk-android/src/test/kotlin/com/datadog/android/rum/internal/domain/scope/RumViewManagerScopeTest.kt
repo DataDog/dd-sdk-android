@@ -14,7 +14,6 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.config.LoggerTestConfiguration
@@ -86,9 +85,6 @@ internal class RumViewManagerScopeTest {
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
 
     @Mock
-    lateinit var mockRumEventSourceProvider: RumEventSourceProvider
-
-    @Mock
     lateinit var mockContextProvider: ContextProvider
 
     @Mock
@@ -124,7 +120,6 @@ internal class RumViewManagerScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             mockContextProvider
         )
@@ -369,7 +364,6 @@ internal class RumViewManagerScopeTest {
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            rumEventSourceProvider = mockRumEventSourceProvider,
             contextProvider = mockContextProvider
         )
         testedScope.applicationDisplayed = true
@@ -396,7 +390,6 @@ internal class RumViewManagerScopeTest {
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            rumEventSourceProvider = mockRumEventSourceProvider,
             buildSdkVersionProvider = mockBuildSdkVersionProvider,
             contextProvider = mockContextProvider
         )
@@ -427,7 +420,6 @@ internal class RumViewManagerScopeTest {
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            rumEventSourceProvider = mockRumEventSourceProvider,
             buildSdkVersionProvider = mockBuildSdkVersionProvider,
             contextProvider = mockContextProvider
         )
@@ -515,7 +507,6 @@ internal class RumViewManagerScopeTest {
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            rumEventSourceProvider = mockRumEventSourceProvider,
             contextProvider = mockContextProvider
         )
         testedScope.applicationDisplayed = false
@@ -557,7 +548,6 @@ internal class RumViewManagerScopeTest {
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            rumEventSourceProvider = mockRumEventSourceProvider,
             buildSdkVersionProvider = mockBuildSdkVersionProvider,
             contextProvider = mockContextProvider
         )

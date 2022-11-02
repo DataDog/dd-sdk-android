@@ -29,7 +29,6 @@ import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -60,7 +59,6 @@ internal open class RumViewScope(
     internal val cpuVitalMonitor: VitalMonitor,
     internal val memoryVitalMonitor: VitalMonitor,
     internal val frameRateVitalMonitor: VitalMonitor,
-    private val rumEventSourceProvider: RumEventSourceProvider,
     private val contextProvider: ContextProvider,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val viewUpdatePredicate: ViewUpdatePredicate = DefaultViewUpdatePredicate(),
@@ -296,7 +294,6 @@ internal open class RumViewScope(
                     sdkCore,
                     event,
                     serverTimeOffsetInMs,
-                    rumEventSourceProvider,
                     featuresContextResolver,
                     trackFrustrations
                 )
@@ -315,7 +312,6 @@ internal open class RumViewScope(
                 sdkCore,
                 event,
                 serverTimeOffsetInMs,
-                rumEventSourceProvider,
                 featuresContextResolver,
                 trackFrustrations
             )
@@ -340,7 +336,6 @@ internal open class RumViewScope(
             updatedEvent,
             firstPartyHostDetector,
             serverTimeOffsetInMs,
-            rumEventSourceProvider,
             contextProvider,
             featuresContextResolver
         )
@@ -404,7 +399,7 @@ internal open class RumViewScope(
                         type = ErrorEvent.ErrorEventSessionType.USER,
                         hasReplay = hasReplay
                     ),
-                    source = rumEventSourceProvider.errorEventSource,
+                    source = ErrorEvent.ErrorEventSource.tryFromSource(datadogContext.source),
                     os = ErrorEvent.Os(
                         name = datadogContext.deviceInfo.osName,
                         version = datadogContext.deviceInfo.osVersion,
@@ -685,7 +680,7 @@ internal open class RumViewScope(
                         type = ViewEvent.ViewEventSessionType.USER,
                         hasReplay = hasReplay
                     ),
-                    source = rumEventSourceProvider.viewEventSource,
+                    source = ViewEvent.Source.tryFromSource(datadogContext.source),
                     os = ViewEvent.Os(
                         name = datadogContext.deviceInfo.osName,
                         version = datadogContext.deviceInfo.osVersion,
@@ -791,7 +786,7 @@ internal open class RumViewScope(
                         type = ActionEvent.ActionEventSessionType.USER,
                         hasReplay = false
                     ),
-                    source = rumEventSourceProvider.actionEventSource,
+                    source = ActionEvent.Source.tryFromSource(datadogContext.source),
                     os = ActionEvent.Os(
                         name = datadogContext.deviceInfo.osName,
                         version = datadogContext.deviceInfo.osVersion,
@@ -864,7 +859,7 @@ internal open class RumViewScope(
                         type = LongTaskEvent.LongTaskEventSessionType.USER,
                         hasReplay = hasReplay
                     ),
-                    source = rumEventSourceProvider.longTaskEventSource,
+                    source = LongTaskEvent.Source.tryFromSource(datadogContext.source),
                     os = LongTaskEvent.Os(
                         name = datadogContext.deviceInfo.osName,
                         version = datadogContext.deviceInfo.osVersion,
@@ -964,7 +959,6 @@ internal open class RumViewScope(
             cpuVitalMonitor: VitalMonitor,
             memoryVitalMonitor: VitalMonitor,
             frameRateVitalMonitor: VitalMonitor,
-            rumEventSourceProvider: RumEventSourceProvider,
             contextProvider: ContextProvider,
             trackFrustrations: Boolean
         ): RumViewScope {
@@ -979,7 +973,6 @@ internal open class RumViewScope(
                 cpuVitalMonitor,
                 memoryVitalMonitor,
                 frameRateVitalMonitor,
-                rumEventSourceProvider,
                 contextProvider,
                 trackFrustrations = trackFrustrations
             )

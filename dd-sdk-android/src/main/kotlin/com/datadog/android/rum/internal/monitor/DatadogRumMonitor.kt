@@ -59,7 +59,6 @@ internal class DatadogRumMonitor(
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     sessionListener: RumSessionListener?,
-    sourceName: String,
     contextProvider: ContextProvider,
     private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 ) : RumMonitor, AdvancedRumMonitor {
@@ -79,7 +78,6 @@ internal class DatadogRumMonitor(
         } else {
             telemetryEventHandler
         },
-        sourceName,
         contextProvider
     )
 

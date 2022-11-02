@@ -28,16 +28,11 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.quality.Strictness
 import com.datadog.android.v2.api.context.NetworkInfo as NetworkInfoV2
 
 @Extensions(
-    ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
-@MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class RumEventExtTest {
 

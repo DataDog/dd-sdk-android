@@ -15,7 +15,6 @@ import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -110,9 +109,6 @@ internal class RumActionScopeTest {
 
     var fakeSourceActionEvent: ActionEvent.Source? = null
 
-    @Mock
-    lateinit var mockRumEventSourceProvider: RumEventSourceProvider
-
     @BoolForgery
     var fakeHasReplay: Boolean = false
 
@@ -124,11 +120,14 @@ internal class RumActionScopeTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        whenever(mockFeaturesContextResolver.resolveHasReplay(fakeDatadogContext))
-            .thenReturn(fakeHasReplay)
         fakeSourceActionEvent = forge.aNullable { aValueFrom(ActionEvent.Source::class.java) }
-        whenever(mockRumEventSourceProvider.actionEventSource)
-            .thenReturn(fakeSourceActionEvent)
+
+        fakeDatadogContext = fakeDatadogContext.copy(
+            source = with(fakeSourceActionEvent) {
+                this?.toJson()?.asString ?: forge.anAlphabeticalString()
+            }
+        )
+
         fakeEventTime = Time()
         val maxLimit = Long.MAX_VALUE - fakeEventTime.timestamp
         val minLimit = -fakeEventTime.timestamp
@@ -149,6 +148,8 @@ internal class RumActionScopeTest {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
+        whenever(mockFeaturesContextResolver.resolveHasReplay(fakeDatadogContext))
+            .thenReturn(fakeHasReplay)
 
         testedScope = RumActionScope(
             mockParentScope,
@@ -161,7 +162,6 @@ internal class RumActionScopeTest {
             fakeServerOffset,
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
-            mockRumEventSourceProvider,
             mockFeaturesContextResolver,
             true
         )
@@ -1270,7 +1270,6 @@ internal class RumActionScopeTest {
             fakeServerOffset,
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
-            mockRumEventSourceProvider,
             mockFeaturesContextResolver,
             fakeTrackFrustrations
         )
@@ -2166,7 +2165,6 @@ internal class RumActionScopeTest {
             fakeServerOffset,
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
-            mockRumEventSourceProvider,
             trackFrustrations = false
         )
 

@@ -20,7 +20,6 @@ import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.v2.api.SdkCore
@@ -37,7 +36,6 @@ internal class RumViewManagerScope(
     private val cpuVitalMonitor: VitalMonitor,
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,
-    private val rumEventSourceProvider: RumEventSourceProvider,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val contextProvider: ContextProvider
 ) : RumScope {
@@ -110,7 +108,6 @@ internal class RumViewManagerScope(
             cpuVitalMonitor,
             memoryVitalMonitor,
             frameRateVitalMonitor,
-            rumEventSourceProvider,
             contextProvider,
             trackFrustrations
         )
@@ -167,7 +164,6 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
-            rumEventSourceProvider,
             type = RumViewScope.RumViewType.BACKGROUND,
             contextProvider = contextProvider,
             trackFrustrations = trackFrustrations
@@ -186,7 +182,6 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
-            rumEventSourceProvider,
             type = RumViewScope.RumViewType.APPLICATION_LAUNCH,
             contextProvider = contextProvider,
             trackFrustrations = trackFrustrations

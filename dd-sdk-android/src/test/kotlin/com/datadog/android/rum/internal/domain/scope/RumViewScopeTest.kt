@@ -31,7 +31,6 @@ import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -173,9 +172,6 @@ internal class RumViewScopeTest {
     var fakeSourceLongTaskEvent: LongTaskEvent.Source? = null
 
     @Mock
-    lateinit var mockRumEventSourceProvider: RumEventSourceProvider
-
-    @Mock
     lateinit var mockViewUpdatePredicate: ViewUpdatePredicate
 
     @BoolForgery
@@ -189,21 +185,40 @@ internal class RumViewScopeTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeSourceViewEvent = forge.aNullable { aValueFrom(ViewEvent.Source::class.java) }
-        fakeSourceErrorEvent = forge.aNullable {
-            aValueFrom(ErrorEvent.ErrorEventSource::class.java)
-        }
-        fakeSourceActionEvent = forge.aNullable { aValueFrom(ActionEvent.Source::class.java) }
-        fakeSourceLongTaskEvent = forge.aNullable { aValueFrom(LongTaskEvent.Source::class.java) }
+        val isValidSource = forge.aBool()
 
-        whenever(mockRumEventSourceProvider.viewEventSource)
-            .thenReturn(fakeSourceViewEvent)
-        whenever(mockRumEventSourceProvider.errorEventSource)
-            .thenReturn(fakeSourceErrorEvent)
-        whenever(mockRumEventSourceProvider.actionEventSource)
-            .thenReturn(fakeSourceActionEvent)
-        whenever(mockRumEventSourceProvider.longTaskEventSource)
-            .thenReturn(fakeSourceLongTaskEvent)
+        val fakeSource = if (isValidSource) {
+            forge.anElementFrom(
+                ViewEvent.Source.values().map { it.toJson().asString }
+            )
+        } else {
+            forge.anAlphabeticalString()
+        }
+
+        fakeSourceViewEvent = if (isValidSource) {
+            ViewEvent.Source.fromJson(fakeSource)
+        } else {
+            null
+        }
+        fakeSourceErrorEvent = if (isValidSource) {
+            ErrorEvent.ErrorEventSource.fromJson(fakeSource)
+        } else {
+            null
+        }
+        fakeSourceActionEvent = if (isValidSource) {
+            ActionEvent.Source.fromJson(fakeSource)
+        } else {
+            null
+        }
+        fakeSourceLongTaskEvent = if (isValidSource) {
+            LongTaskEvent.Source.fromJson(fakeSource)
+        } else {
+            null
+        }
+
+        fakeDatadogContext = fakeDatadogContext.copy(
+            source = fakeSource
+        )
 
         val fakeOffset = -forge.aLong(1000, 50000)
         val fakeTimestamp = System.currentTimeMillis() + fakeOffset
@@ -248,7 +263,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockRumEventSourceProvider,
             mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
@@ -338,7 +352,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockRumEventSourceProvider,
             mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
@@ -421,7 +434,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockRumEventSourceProvider,
             mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
@@ -589,7 +601,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockRumEventSourceProvider,
             mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
@@ -636,7 +647,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockRumEventSourceProvider,
             mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
@@ -1156,7 +1166,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockRumEventSourceProvider,
             mockContextProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
             featuresContextResolver = mockFeaturesContextResolver,
@@ -1308,7 +1317,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockRumEventSourceProvider,
             mockContextProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
             featuresContextResolver = mockFeaturesContextResolver,
@@ -1397,7 +1405,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockRumEventSourceProvider,
             mockContextProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
             featuresContextResolver = mockFeaturesContextResolver,
@@ -2916,7 +2923,6 @@ internal class RumViewScopeTest {
                 }
         }
         verifyNoMoreInteractions(mockWriter)
-        verifyZeroInteractions(logger.mockDevLogHandler)
 
         assertThat(result).isSameAs(testedScope)
         assertThat(testedScope.activeActionScope).isSameAs(mockChildScope)
@@ -5499,7 +5505,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockRumEventSourceProvider,
             mockContextProvider,
             mockBuildSdkVersionProvider,
             featuresContextResolver = mockFeaturesContextResolver,
@@ -5590,7 +5595,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockRumEventSourceProvider,
             mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
@@ -5683,7 +5687,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockRumEventSourceProvider,
             mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
@@ -5776,7 +5779,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockRumEventSourceProvider,
             mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
@@ -5870,7 +5872,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockRumEventSourceProvider,
             mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
@@ -5964,7 +5965,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockRumEventSourceProvider,
             mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
@@ -6464,7 +6464,6 @@ internal class RumViewScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockRumEventSourceProvider,
             mockContextProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,

@@ -14,7 +14,6 @@ import androidx.fragment.app.Fragment
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.v2.core.DatadogCore
@@ -302,7 +301,6 @@ interface RumMonitor {
                     handler = Handler(Looper.getMainLooper()),
                     telemetryEventHandler = TelemetryEventHandler(
                         sdkCore = datadogCore,
-                        RumEventSourceProvider(coreFeature.sourceName),
                         coreFeature.timeProvider,
                         RateBasedSampler(rumFeature.telemetrySamplingRate / 100)
                     ),
@@ -313,7 +311,6 @@ interface RumMonitor {
                     backgroundTrackingEnabled = rumFeature.backgroundEventTracking,
                     trackFrustrations = rumFeature.trackFrustrations,
                     sessionListener = sessionListener,
-                    sourceName = coreFeature.sourceName,
                     contextProvider = contextProvider
                 )
             }

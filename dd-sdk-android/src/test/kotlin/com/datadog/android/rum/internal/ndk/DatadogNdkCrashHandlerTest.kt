@@ -22,7 +22,6 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.ErrorEventAssert
 import com.datadog.android.rum.assertj.ViewEventAssert
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
@@ -128,11 +127,6 @@ internal class DatadogNdkCrashHandlerTest {
     @Mock
     lateinit var mockTimeProvider: TimeProvider
 
-    var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
-
-    @Mock
-    lateinit var mockRumEventSourceProvider: RumEventSourceProvider
-
     @TempDir
     lateinit var tempDir: File
 
@@ -140,12 +134,7 @@ internal class DatadogNdkCrashHandlerTest {
     lateinit var fakeDatadogContext: DatadogContext
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
-        fakeSourceErrorEvent = forge.aNullable {
-            aValueFrom(ErrorEvent.ErrorEventSource::class.java)
-        }
-        whenever(mockRumEventSourceProvider.errorEventSource)
-            .thenReturn(fakeSourceErrorEvent)
+    fun `set up`() {
         fakeNdkCacheDir = File(tempDir, DatadogNdkCrashHandler.NDK_CRASH_REPORTS_FOLDER_NAME)
         whenever(mockRumFileReader.readData(any())) doAnswer {
             listOf(
@@ -180,7 +169,6 @@ internal class DatadogNdkCrashHandlerTest {
             mockTimeProvider,
             mockRumFileReader,
             mockEnvFileReader,
-            mockRumEventSourceProvider,
             fakeAndroidInfoProvider
         )
     }
@@ -532,6 +520,13 @@ internal class DatadogNdkCrashHandlerTest {
         whenever(mockRumEventDeserializer.deserialize(viewEventStr))
             .doReturn(fakeViewEvent)
         val expectedLogEvent = createLogEvent(ndkCrashLog, null, null, fakeViewEvent)
+        val expectedErrorEventSource = with(fakeViewEvent.source) {
+            if (this != null) {
+                ErrorEvent.ErrorEventSource.fromJson(this.toJson().asString)
+            } else {
+                null
+            }
+        }
 
         // When
         testedHandler.handleNdkCrash(mockSdkCore, mockRumWriter)
@@ -572,7 +567,7 @@ internal class DatadogNdkCrashHandlerTest {
                 )
                 .hasErrorType(ndkCrashLog.signalName)
                 .hasLiteSessionPlan()
-                .hasSource(fakeSourceErrorEvent)
+                .hasSource(expectedErrorEventSource)
                 .hasDeviceInfo(
                     fakeAndroidInfoProvider.deviceName,
                     fakeAndroidInfoProvider.deviceModel,
