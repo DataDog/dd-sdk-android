@@ -6,7 +6,6 @@
 
 package com.datadog.android.webview.internal.rum
 
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -54,6 +53,8 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -68,9 +69,6 @@ internal class WebViewRumEventConsumerTest {
 
     @Mock
     lateinit var mockDataWriter: DataWriter<Any>
-
-    @Mock
-    lateinit var mockTimeProvider: TimeProvider
 
     lateinit var fakeMappedViewEvent: JsonObject
 
@@ -107,8 +105,6 @@ internal class WebViewRumEventConsumerTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        whenever(mockRumContextProvider.getRumContext())
-            .thenReturn(sessionScopeTestConfiguration.fakeRumContext)
         fakeTags = if (forge.aBool()) {
             forge.aMap {
                 forge.anAlphabeticalString() to forge.anAlphaNumericalString()
@@ -117,10 +113,20 @@ internal class WebViewRumEventConsumerTest {
             emptyMap()
         }
 
-        whenever(mockTimeProvider.getServerOffsetMillis()).thenReturn(fakeServerTimeOffsetInMillis)
+        fakeDatadogContext = fakeDatadogContext.copy(
+            time = fakeDatadogContext.time.copy(
+                serverTimeOffsetMs = fakeServerTimeOffsetInMillis
+            )
+        )
+
+        whenever(
+            mockRumContextProvider.getRumContext()
+        ) doReturn sessionScopeTestConfiguration.fakeRumContext
+
         whenever(
             mockSdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
         ) doReturn mockWebViewRumFeatureScope
+
         whenever(mockWebViewRumFeatureScope.withWriteContext(any())) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
@@ -129,7 +135,6 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer = WebViewRumEventConsumer(
             mockSdkCore,
             mockDataWriter,
-            mockTimeProvider,
             mockWebViewRumEventMapper,
             mockRumContextProvider
         )
@@ -602,9 +607,25 @@ internal class WebViewRumEventConsumerTest {
     @Test
     fun `M use same offset correct W consume { consecutive event updates }`(forge: Forge) {
         // Given
-        whenever(mockTimeProvider.getServerOffsetMillis())
-            .thenReturn(fakeServerTimeOffsetInMillis)
-            .thenReturn(forge.aLong())
+        var invocationCount = 0
+        whenever(mockWebViewRumFeatureScope.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+            callback.invoke(
+                fakeDatadogContext.copy(
+                    time = fakeDatadogContext.time.copy(
+                        serverTimeOffsetMs = if (invocationCount == 0) {
+                            fakeServerTimeOffsetInMillis
+                        } else {
+                            forge.aLong()
+                        }
+                    )
+                ),
+                mockEventBatchWriter
+            )
+            invocationCount++
+            Unit
+        }
+
         val fakeEvent = forge.aRumEventAsJson()
         whenever(
             mockWebViewRumEventMapper.mapEvent(
@@ -633,9 +654,25 @@ internal class WebViewRumEventConsumerTest {
     ) {
         // Given
         val fakeSecondServerTimeOffset = forge.aLong()
-        whenever(mockTimeProvider.getServerOffsetMillis())
-            .thenReturn(fakeServerTimeOffsetInMillis)
-            .thenReturn(fakeSecondServerTimeOffset)
+        var invocationCount = 0
+        whenever(mockWebViewRumFeatureScope.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+            callback.invoke(
+                fakeDatadogContext.copy(
+                    time = fakeDatadogContext.time.copy(
+                        serverTimeOffsetMs = if (invocationCount == 0) {
+                            fakeServerTimeOffsetInMillis
+                        } else {
+                            fakeSecondServerTimeOffset
+                        }
+                    )
+                ),
+                mockEventBatchWriter
+            )
+            invocationCount++
+            Unit
+        }
+
         val fakeEvent = forge.aRumEventAsJson()
         val fakeEvent2 = forge.aRumEventAsJson()
         whenever(
@@ -681,8 +718,22 @@ internal class WebViewRumEventConsumerTest {
         val fakeViewEvents = forge.aList(size) {
             forge.getForgery(ViewEvent::class.java)
         }
-        whenever(mockTimeProvider.getServerOffsetMillis())
-            .thenReturn(fakeServerOffsets[0], *(fakeServerOffsets.drop(1).toTypedArray()))
+
+        var invocationCount = 0
+        whenever(mockWebViewRumFeatureScope.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+            callback.invoke(
+                fakeDatadogContext.copy(
+                    time = fakeDatadogContext.time.copy(
+                        serverTimeOffsetMs = fakeServerOffsets[invocationCount]
+                    )
+                ),
+                mockEventBatchWriter
+            )
+            invocationCount++
+            Unit
+        }
+
         val expectedOffsets = LinkedHashMap<String, Long>()
         val expectedOffsetsKeys =
             fakeViewEvents
@@ -705,6 +756,69 @@ internal class WebViewRumEventConsumerTest {
         fakeViewEvents.forEach {
             testedConsumer.consume(it.toJson().asJsonObject)
         }
+
+        // Then
+        val rumEventConsumer = testedConsumer as WebViewRumEventConsumer
+        assertThat(rumEventConsumer.offsets.entries)
+            .containsExactlyElementsOf(expectedOffsets.entries)
+    }
+
+    @Test
+    fun `M purge the last used view W consume{ consecutive different views, async EWC }`(
+        forge: Forge
+    ) {
+        // Given
+        val size = forge.anInt(min = 1, max = 10)
+        val fakeServerOffsets = forge.aList(size) {
+            forge.aLong()
+        }
+        val fakeViewEvents = forge.aList(size) {
+            forge.getForgery(ViewEvent::class.java)
+        }
+
+        var invocationCount = 0
+        val latch = CountDownLatch(size)
+        whenever(mockWebViewRumFeatureScope.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+            val invocation = invocationCount
+            Thread {
+                callback.invoke(
+                    fakeDatadogContext.copy(
+                        time = fakeDatadogContext.time.copy(
+                            serverTimeOffsetMs = fakeServerOffsets[invocation]
+                        )
+                    ),
+                    mockEventBatchWriter
+                )
+                latch.countDown()
+            }.start()
+            invocationCount++
+            Unit
+        }
+
+        val expectedOffsets = LinkedHashMap<String, Long>()
+        val expectedOffsetsKeys =
+            fakeViewEvents
+                .takeLast(WebViewRumEventConsumer.MAX_VIEW_TIME_OFFSETS_RETAIN)
+                .map { it.view.id }
+        val expectedOffsetsValues =
+            fakeServerOffsets.takeLast(WebViewRumEventConsumer.MAX_VIEW_TIME_OFFSETS_RETAIN)
+        expectedOffsetsKeys.forEachIndexed { index, key ->
+            expectedOffsets[key] = expectedOffsetsValues[index]
+        }
+        whenever(
+            mockWebViewRumEventMapper.mapEvent(
+                any(),
+                eq(sessionScopeTestConfiguration.fakeRumContext),
+                any()
+            )
+        ).thenReturn(fakeMappedViewEvent)
+
+        // When
+        fakeViewEvents.forEach {
+            testedConsumer.consume(it.toJson().asJsonObject)
+        }
+        latch.await(1, TimeUnit.SECONDS)
 
         // Then
         val rumEventConsumer = testedConsumer as WebViewRumEventConsumer

@@ -131,26 +131,23 @@ internal constructor(
 
         private fun buildWebViewEventConsumer(): WebViewEventConsumer<String> {
             val datadogCore = Datadog.globalSdkCore as? DatadogCore
-            val coreFeature = datadogCore?.coreFeature
             val webViewRumFeature = datadogCore?.webViewRumFeature
             val webViewLogsFeature = datadogCore?.webViewLogsFeature
             val contextProvider = WebViewRumEventContextProvider()
 
-            if (coreFeature == null || webViewLogsFeature == null || webViewRumFeature == null) {
+            if (webViewLogsFeature == null || webViewRumFeature == null) {
                 return NoOpWebViewEventConsumer()
             } else {
                 return MixedWebViewEventConsumer(
                     WebViewRumEventConsumer(
                         sdkCore = datadogCore,
                         dataWriter = webViewRumFeature.dataWriter,
-                        timeProvider = coreFeature.timeProvider,
                         contextProvider = contextProvider
                     ),
                     WebViewLogEventConsumer(
-                        userLogsWriter = webViewLogsFeature.persistenceStrategy.getWriter(),
-                        rumContextProvider = contextProvider,
-                        timeProvider = coreFeature.timeProvider,
-                        coreFeature = coreFeature
+                        sdkCore = datadogCore,
+                        userLogsWriter = webViewLogsFeature.dataWriter,
+                        rumContextProvider = contextProvider
                     )
                 )
             }

@@ -7,41 +7,42 @@
 package com.datadog.android.webview.internal.log
 
 import androidx.annotation.WorkerThread
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
 import com.google.gson.JsonObject
 
 internal class WebViewLogEventConsumer(
+    private val sdkCore: SdkCore,
     private val userLogsWriter: DataWriter<JsonObject>,
-    private val rumContextProvider: WebViewRumEventContextProvider,
-    private val timeProvider: TimeProvider,
-    coreFeature: CoreFeature
+    private val rumContextProvider: WebViewRumEventContextProvider
 ) : WebViewEventConsumer<Pair<JsonObject, String>> {
-
-    private val ddTags: String by lazy {
-        "${LogAttributes.APPLICATION_VERSION}:${coreFeature.packageVersionProvider.version}" +
-            ",${LogAttributes.ENV}:${coreFeature.envName}"
-    }
 
     @WorkerThread
     override fun consume(event: Pair<JsonObject, String>) {
-        map(event.first).let {
-            if (event.second == USER_LOG_EVENT_TYPE) {
-                userLogsWriter.write(it)
-            }
+        if (event.second == USER_LOG_EVENT_TYPE) {
+            val rumContext = rumContextProvider.getRumContext()
+            sdkCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
+                ?.withWriteContext { datadogContext, eventBatchWriter ->
+                    val mappedEvent = map(event.first, rumContext, datadogContext)
+                    userLogsWriter.write(eventBatchWriter, mappedEvent)
+                }
         }
     }
 
-    private fun map(event: JsonObject): JsonObject {
-        addDdTags(event)
-        correctDate(event)
-        val rumContext = rumContextProvider.getRumContext()
+    private fun map(
+        event: JsonObject,
+        rumContext: RumContext?,
+        datadogContext: DatadogContext
+    ): JsonObject {
+        addDdTags(event, datadogContext)
+        correctDate(event, datadogContext)
         if (rumContext != null) {
             event.addProperty(LogAttributes.RUM_APPLICATION_ID, rumContext.applicationId)
             event.addProperty(LogAttributes.RUM_SESSION_ID, rumContext.sessionId)
@@ -49,12 +50,12 @@ internal class WebViewLogEventConsumer(
         return event
     }
 
-    private fun correctDate(event: JsonObject) {
+    private fun correctDate(event: JsonObject, datadogContext: DatadogContext) {
         try {
             event.get(DATE_KEY_NAME)?.asLong?.let {
                 event.addProperty(
                     DATE_KEY_NAME,
-                    it + timeProvider.getServerOffsetMillis()
+                    it + datadogContext.time.serverTimeOffsetMs
                 )
             }
         } catch (e: ClassCastException) {
@@ -68,7 +69,9 @@ internal class WebViewLogEventConsumer(
         }
     }
 
-    private fun addDdTags(event: JsonObject) {
+    private fun addDdTags(event: JsonObject, datadogContext: DatadogContext) {
+        val sdkDdTags = "${LogAttributes.APPLICATION_VERSION}:${datadogContext.version}" +
+            ",${LogAttributes.ENV}:${datadogContext.env}"
         var eventDdTags: String? = null
         try {
             eventDdTags = event.get(DDTAGS_KEY_NAME)?.asString
@@ -80,9 +83,9 @@ internal class WebViewLogEventConsumer(
             sdkLogger.errorWithTelemetry(JSON_PARSING_ERROR_MESSAGE, e)
         }
         if (eventDdTags.isNullOrEmpty()) {
-            event.addProperty(DDTAGS_KEY_NAME, ddTags)
+            event.addProperty(DDTAGS_KEY_NAME, sdkDdTags)
         } else {
-            event.addProperty(DDTAGS_KEY_NAME, ddTags + DDTAGS_SEPARATOR + eventDdTags)
+            event.addProperty(DDTAGS_KEY_NAME, sdkDdTags + DDTAGS_SEPARATOR + eventDdTags)
         }
     }
 
@@ -93,6 +96,6 @@ internal class WebViewLogEventConsumer(
         const val USER_LOG_EVENT_TYPE = "log"
         const val INTERNAL_LOG_EVENT_TYPE = "internal_log"
         const val JSON_PARSING_ERROR_MESSAGE = "The bundled web log event could not be deserialized"
-        val LOG_EVENT_TYPES = setOf(USER_LOG_EVENT_TYPE, INTERNAL_LOG_EVENT_TYPE)
+        val LOG_EVENT_TYPES = setOf(USER_LOG_EVENT_TYPE)
     }
 }

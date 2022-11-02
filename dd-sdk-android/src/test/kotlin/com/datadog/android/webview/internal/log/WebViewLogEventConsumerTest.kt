@@ -6,15 +6,16 @@
 
 package com.datadog.android.webview.internal.log
 
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.system.AppVersionProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.datadog.android.webview.internal.rum.WebViewRumEventContextProvider
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -23,8 +24,10 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
@@ -32,7 +35,6 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
@@ -66,19 +68,16 @@ internal class WebViewLogEventConsumerTest {
     lateinit var mockRumContextProvider: WebViewRumEventContextProvider
 
     @Mock
-    lateinit var mockAppVersionProvider: AppVersionProvider
-
-    @StringForgery(regex = "[0-9]\\.[0-9]\\.[0-9]")
-    lateinit var fakePackageVersion: String
-
-    @StringForgery
-    lateinit var fakeEnvName: String
+    lateinit var mockSdkCore: SdkCore
 
     @Mock
-    lateinit var mockTimeProvider: TimeProvider
+    lateinit var mockWebViewLogsFeatureScope: FeatureScope
 
     @Mock
-    lateinit var mockCoreFeature: CoreFeature
+    lateinit var mockEventBatchWriter: EventBatchWriter
+
+    @Forgery
+    lateinit var fakeDatadogContext: DatadogContext
 
     lateinit var fakeWebLogEvent: JsonObject
 
@@ -90,18 +89,26 @@ internal class WebViewLogEventConsumerTest {
     fun `set up`(forge: Forge) {
         fakeWebLogEvent = forge.aWebLogEvent()
         fakeTimeOffset = forge.aLong()
-        whenever(mockCoreFeature.envName) doReturn fakeEnvName
-        whenever(mockCoreFeature.packageVersionProvider) doReturn mockAppVersionProvider
-        whenever(mockAppVersionProvider.version) doReturn fakePackageVersion
+        fakeDatadogContext = fakeDatadogContext.copy(
+            time = fakeDatadogContext.time.copy(
+                serverTimeOffsetMs = fakeTimeOffset
+            )
+        )
+
+        whenever(
+            mockSdkCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
+        ) doReturn mockWebViewLogsFeatureScope
+
+        whenever(mockWebViewLogsFeatureScope.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+        }
 
         testedConsumer = WebViewLogEventConsumer(
+            mockSdkCore,
             mockUserLogsWriter,
-            mockRumContextProvider,
-            mockTimeProvider,
-            mockCoreFeature
+            mockRumContextProvider
         )
-        whenever(mockTimeProvider.getServerOffsetMillis()) doReturn fakeTimeOffset
-        whenever(mockAppVersionProvider.version) doReturn fakePackageVersion
     }
 
     @Test
@@ -121,7 +128,7 @@ internal class WebViewLogEventConsumerTest {
 
         // Then
         argumentCaptor<JsonObject> {
-            verify(mockUserLogsWriter).write(capture())
+            verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
             assertThat(firstValue).hasField(
                 WebViewLogEventConsumer.DDTAGS_KEY_NAME,
@@ -165,7 +172,7 @@ internal class WebViewLogEventConsumerTest {
 
         // Then
         argumentCaptor<JsonObject> {
-            verify(mockUserLogsWriter).write(capture())
+            verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
             assertThat(firstValue).hasField(
                 WebViewLogEventConsumer.DDTAGS_KEY_NAME,
@@ -198,7 +205,7 @@ internal class WebViewLogEventConsumerTest {
 
         // Then
         argumentCaptor<JsonObject> {
-            verify(mockUserLogsWriter).write(capture())
+            verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue).doesNotHaveField(WebViewLogEventConsumer.DATE_KEY_NAME)
             assertThat(firstValue).hasField(
                 WebViewLogEventConsumer.DDTAGS_KEY_NAME,
@@ -218,7 +225,7 @@ internal class WebViewLogEventConsumerTest {
         )
 
         // Then
-        verify(mockUserLogsWriter).write(fakeBrokenJsonObject)
+        verify(mockUserLogsWriter).write(mockEventBatchWriter, fakeBrokenJsonObject)
     }
 
     @ParameterizedTest
@@ -230,7 +237,7 @@ internal class WebViewLogEventConsumerTest {
     ) {
         // When
         testedConsumer.consume(
-            fakeBrokenJsonObject to forge.anElementFrom(WebViewLogEventConsumer.LOG_EVENT_TYPES)
+            fakeBrokenJsonObject to forge.anElementFrom(WebViewLogEventConsumer.USER_LOG_EVENT_TYPE)
         )
 
         // Then
@@ -261,7 +268,7 @@ internal class WebViewLogEventConsumerTest {
 
         // Then
         argumentCaptor<JsonObject> {
-            verify(mockUserLogsWriter).write(capture())
+            verify(mockUserLogsWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(firstValue).hasField(WebViewLogEventConsumer.DATE_KEY_NAME, expectedDate)
             assertThat(firstValue).hasField(
                 WebViewLogEventConsumer.DDTAGS_KEY_NAME,
@@ -284,8 +291,8 @@ internal class WebViewLogEventConsumerTest {
     }
 
     private fun mobileSdkDdtags(): String {
-        return "${LogAttributes.APPLICATION_VERSION}:$fakePackageVersion" +
-            ",${LogAttributes.ENV}:$fakeEnvName"
+        return "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}" +
+            ",${LogAttributes.ENV}:${fakeDatadogContext.env}"
     }
 
     // endregion
