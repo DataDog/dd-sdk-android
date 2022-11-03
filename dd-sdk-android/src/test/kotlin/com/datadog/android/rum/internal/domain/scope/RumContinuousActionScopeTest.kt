@@ -14,7 +14,6 @@ import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -111,14 +110,16 @@ internal class RumContinuousActionScopeTest {
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
-    @Mock
-    lateinit var mockRumEventSourceProvider: RumEventSourceProvider
-
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeSourceActionEvent = forge.aNullable { aValueFrom(ActionEvent.Source::class.java) }
-        whenever(mockRumEventSourceProvider.actionEventSource)
-            .thenReturn(fakeSourceActionEvent)
+
+        fakeDatadogContext = fakeDatadogContext.copy(
+            source = with(fakeSourceActionEvent) {
+                this?.toJson()?.asString ?: forge.anAlphabeticalString()
+            }
+        )
+
         fakeEventTime = Time()
         val maxLimit = Long.MAX_VALUE - fakeEventTime.timestamp
         val minLimit = -fakeEventTime.timestamp
@@ -145,7 +146,6 @@ internal class RumContinuousActionScopeTest {
             fakeServerOffset,
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
-            mockRumEventSourceProvider,
             trackFrustrations = true
         )
     }
@@ -1191,7 +1191,6 @@ internal class RumContinuousActionScopeTest {
             fakeServerOffset,
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
-            mockRumEventSourceProvider,
             trackFrustrations = fakeTrackFrustrations
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.globalAttributes.remove(it) }

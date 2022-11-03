@@ -14,8 +14,8 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
+import com.datadog.android.rum.internal.domain.scope.tryFromSource
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.v2.api.SdkCore
@@ -25,7 +25,6 @@ import java.util.Locale
 
 internal class TelemetryEventHandler(
     internal val sdkCore: SdkCore,
-    private val sourceProvider: RumEventSourceProvider,
     private val timeProvider: TimeProvider,
     internal val eventSampler: Sampler
 ) : RumSessionListener {
@@ -97,7 +96,7 @@ internal class TelemetryEventHandler(
         return TelemetryDebugEvent(
             dd = TelemetryDebugEvent.Dd(),
             date = timestamp,
-            source = sourceProvider.telemetryDebugEventSource
+            source = TelemetryDebugEvent.Source.tryFromSource(datadogContext.source)
                 ?: TelemetryDebugEvent.Source.ANDROID,
             service = TELEMETRY_SERVICE_NAME,
             version = datadogContext.sdkVersion,
@@ -123,7 +122,7 @@ internal class TelemetryEventHandler(
         return TelemetryErrorEvent(
             dd = TelemetryErrorEvent.Dd(),
             date = timestamp,
-            source = sourceProvider.telemetryErrorEventSource
+            source = TelemetryErrorEvent.Source.tryFromSource(datadogContext.source)
                 ?: TelemetryErrorEvent.Source.ANDROID,
             service = TELEMETRY_SERVICE_NAME,
             version = datadogContext.sdkVersion,

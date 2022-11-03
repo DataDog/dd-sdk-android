@@ -12,7 +12,6 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.telemetry.assertj.TelemetryDebugEventAssert
 import com.datadog.android.telemetry.assertj.TelemetryErrorEventAssert
@@ -76,9 +75,6 @@ internal class TelemetryEventHandlerTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockSourceProvider: RumEventSourceProvider
-
-    @Mock
     lateinit var mockSampler: Sampler
 
     @Mock
@@ -101,10 +97,9 @@ internal class TelemetryEventHandlerTest {
 
         whenever(mockTimeProvider.getServerOffsetMillis()) doReturn fakeServerOffset
 
-        whenever(mockSourceProvider.telemetryDebugEventSource) doReturn
-            TelemetryDebugEvent.Source.ANDROID
-        whenever(mockSourceProvider.telemetryErrorEventSource) doReturn
-            TelemetryErrorEvent.Source.ANDROID
+        fakeDatadogContext = fakeDatadogContext.copy(
+            source = "android"
+        )
 
         whenever(mockSampler.sample()) doReturn true
 
@@ -119,7 +114,6 @@ internal class TelemetryEventHandlerTest {
         testedTelemetryHandler =
             TelemetryEventHandler(
                 mockSdkCore,
-                mockSourceProvider,
                 mockTimeProvider,
                 mockSampler
             )

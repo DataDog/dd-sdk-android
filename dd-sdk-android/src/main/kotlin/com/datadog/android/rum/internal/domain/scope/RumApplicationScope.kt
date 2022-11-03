@@ -10,7 +10,6 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
@@ -28,11 +27,9 @@ internal class RumApplicationScope(
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     sessionListener: RumSessionListener?,
-    sourceName: String,
     contextProvider: ContextProvider
 ) : RumScope {
 
-    private val rumEventSourceProvider = RumEventSourceProvider(sourceName)
     private val rumContext = RumContext(applicationId = applicationId)
     internal val childScope: RumScope = RumSessionScope(
         this,
@@ -45,7 +42,6 @@ internal class RumApplicationScope(
         memoryVitalMonitor,
         frameRateVitalMonitor,
         sessionListener,
-        rumEventSourceProvider,
         contextProvider
     )
 

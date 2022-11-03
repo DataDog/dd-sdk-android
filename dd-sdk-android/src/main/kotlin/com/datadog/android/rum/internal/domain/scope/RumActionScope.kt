@@ -13,7 +13,6 @@ import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.storage.DataWriter
@@ -33,7 +32,6 @@ internal class RumActionScope(
     serverTimeOffsetInMs: Long,
     inactivityThresholdMs: Long = ACTION_INACTIVITY_MS,
     maxDurationMs: Long = ACTION_MAX_DURATION_MS,
-    private val rumEventSourceProvider: RumEventSourceProvider,
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
     private val trackFrustrations: Boolean
 ) : RumScope {
@@ -229,7 +227,7 @@ internal class RumActionScope(
                         type = ActionEvent.ActionEventSessionType.USER,
                         hasReplay = hasReplay
                     ),
-                    source = rumEventSourceProvider.actionEventSource,
+                    source = ActionEvent.Source.tryFromSource(datadogContext.source),
                     usr = ActionEvent.Usr(
                         id = user.id,
                         name = user.name,
@@ -271,7 +269,6 @@ internal class RumActionScope(
             sdkCore: SdkCore,
             event: RumRawEvent.StartAction,
             timestampOffset: Long,
-            eventSourceProvider: RumEventSourceProvider,
             featuresContextResolver: FeaturesContextResolver,
             trackFrustrations: Boolean
         ): RumScope {
@@ -284,7 +281,6 @@ internal class RumActionScope(
                 event.name,
                 event.attributes,
                 timestampOffset,
-                rumEventSourceProvider = eventSourceProvider,
                 featuresContextResolver = featuresContextResolver,
                 trackFrustrations = trackFrustrations
             )

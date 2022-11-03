@@ -56,7 +56,6 @@ import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.log.internal.user.UserInfoDeserializer
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.domain.event.RumEventDeserializer
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.rum.internal.ndk.NdkCrashHandler
 import com.datadog.android.rum.internal.ndk.NdkCrashLogDeserializer
@@ -238,7 +237,6 @@ internal class CoreFeature {
                 timeProvider,
                 rumFileReader = BatchFileReaderWriter.create(sdkLogger, localDataEncryption),
                 envFileReader = FileReaderWriter.create(sdkLogger, localDataEncryption),
-                rumEventSourceProvider = RumEventSourceProvider(sourceName),
                 androidInfoProvider = androidInfoProvider
             )
             ndkCrashHandler.prepareData()

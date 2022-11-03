@@ -13,7 +13,6 @@ import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.ContextProvider
@@ -36,7 +35,6 @@ internal class RumSessionScope(
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     internal val sessionListener: RumSessionListener?,
-    rumEventSourceProvider: RumEventSourceProvider,
     contextProvider: ContextProvider,
     buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
@@ -62,7 +60,6 @@ internal class RumSessionScope(
         cpuVitalMonitor,
         memoryVitalMonitor,
         frameRateVitalMonitor,
-        rumEventSourceProvider,
         buildSdkVersionProvider,
         contextProvider
     )

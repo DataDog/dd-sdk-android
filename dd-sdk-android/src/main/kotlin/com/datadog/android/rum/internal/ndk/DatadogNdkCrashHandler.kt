@@ -24,8 +24,8 @@ import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
+import com.datadog.android.rum.internal.domain.scope.tryFromSource
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.v2.api.SdkCore
@@ -48,7 +48,6 @@ internal class DatadogNdkCrashHandler(
     internal val timeProvider: TimeProvider,
     private val rumFileReader: BatchFileReader,
     private val envFileReader: FileReader,
-    private val rumEventSourceProvider: RumEventSourceProvider,
     private val androidInfoProvider: AndroidInfoProvider
 ) : NdkCrashHandler {
 
@@ -181,7 +180,6 @@ internal class DatadogNdkCrashHandler(
         lastSerializedUserInformation = null
     }
 
-    @SuppressWarnings("LongParameterList")
     @WorkerThread
     private fun handleNdkCrashLog(
         sdkCore: SdkCore,
@@ -255,7 +253,6 @@ internal class DatadogNdkCrashHandler(
         }
     }
 
-    @SuppressWarnings("LongParameterList")
     @WorkerThread
     private fun sendCrashLogEvent(
         sdkCore: SdkCore,
@@ -299,6 +296,7 @@ internal class DatadogNdkCrashHandler(
         )
     }
 
+    @Suppress("LongMethod")
     private fun resolveErrorEventFromViewEvent(
         errorLogMessage: String,
         ndkCrashLog: NdkCrashLog,
@@ -324,7 +322,11 @@ internal class DatadogNdkCrashHandler(
                 viewEvent.session.id,
                 ErrorEvent.ErrorEventSessionType.USER
             ),
-            source = rumEventSourceProvider.errorEventSource,
+            source = viewEvent.source?.toJson()?.asString?.let {
+                ErrorEvent.ErrorEventSource.tryFromSource(
+                    it
+                )
+            },
             view = ErrorEvent.View(
                 id = viewEvent.view.id,
                 name = viewEvent.view.name,
