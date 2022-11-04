@@ -295,7 +295,7 @@ internal class DatadogCore(
             }
             features[WebViewLogsFeature.WEB_LOGS_FEATURE_NAME]?.let {
                 it.initialize(appContext, configuration.plugins)
-                webViewLogsFeature = WebViewLogsFeature(coreFeature, it.storage).also {
+                webViewLogsFeature = WebViewLogsFeature().also {
                     it.initialize()
                 }
             }

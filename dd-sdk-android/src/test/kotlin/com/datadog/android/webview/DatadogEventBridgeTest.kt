@@ -11,7 +11,6 @@ import android.util.Log
 import android.webkit.WebSettings
 import android.webkit.WebView
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
@@ -26,7 +25,6 @@ import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
@@ -66,16 +64,12 @@ internal class DatadogEventBridgeTest {
     @BeforeEach
     fun `set up`() {
         val mockCore = mock<DatadogCore>()
-        whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
         val mockWebViewRumFeature = mock<WebViewRumFeature>()
         val mockWebViewLogsFeature = mock<WebViewLogsFeature>()
 
-        val mockWebViewLogsPersistenceStrategy = mock<PersistenceStrategy<JsonObject>>()
-        whenever(mockWebViewLogsPersistenceStrategy.getWriter()) doReturn mock()
-
+        whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
         whenever(mockWebViewRumFeature.dataWriter) doReturn mock()
-        whenever(mockWebViewLogsFeature.persistenceStrategy) doReturn
-            mockWebViewLogsPersistenceStrategy
+        whenever(mockWebViewLogsFeature.dataWriter) doReturn mock()
         whenever(mockCore.webViewRumFeature) doReturn mockWebViewRumFeature
         whenever(mockCore.webViewLogsFeature) doReturn mockWebViewLogsFeature
         Datadog.globalSdkCore = mockCore
