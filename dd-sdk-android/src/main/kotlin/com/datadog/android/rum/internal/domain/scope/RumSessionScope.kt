@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong
 @Suppress("LongParameterList")
 internal class RumSessionScope(
     private val parentScope: RumScope,
-    sdkCore: SdkCore,
+    private val sdkCore: SdkCore,
     internal val samplingRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
@@ -146,12 +146,22 @@ internal class RumSessionScope(
         sessionId = UUID.randomUUID().toString()
         sessionStartNs.set(nanoTime)
         sessionListener?.onSessionStarted(sessionId, !keepSession)
+        sdkCore.getFeature(SESSION_REPLAY_FEATURE_NAME)?.sendEvent(
+            mapOf(
+                SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RUM_KEEP_SESSION_BUS_MESSAGE_KEY to keepSession
+            )
+        )
     }
 
     // endregion
 
     companion object {
 
+        internal const val SESSION_REPLAY_FEATURE_NAME = "session-replay"
+        internal const val SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY = "type"
+        internal const val RUM_SESSION_RENEWED_BUS_MESSAGE = "rum_session_renewed"
+        internal const val RUM_KEEP_SESSION_BUS_MESSAGE_KEY = "keepSession"
         internal val DEFAULT_SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)
         internal val DEFAULT_SESSION_MAX_DURATION_NS = TimeUnit.HOURS.toNanos(4)
     }

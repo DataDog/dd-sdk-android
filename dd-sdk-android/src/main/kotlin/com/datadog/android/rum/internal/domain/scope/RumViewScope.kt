@@ -629,7 +629,7 @@ internal open class RumViewScope(
         val memoryInfo = lastMemoryInfo
         val refreshRateInfo = lastFrameRateInfo
         val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo)
-
+        val documentVersion = version
         sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
 
@@ -695,7 +695,7 @@ internal open class RumViewScope(
                     ),
                     context = ViewEvent.Context(additionalProperties = attributes),
                     dd = ViewEvent.Dd(
-                        documentVersion = version,
+                        documentVersion = documentVersion,
                         session = ViewEvent.DdSession(plan = ViewEvent.Plan.PLAN_1)
                     )
                 )

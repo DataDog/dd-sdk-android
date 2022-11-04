@@ -278,7 +278,7 @@ internal constructor(
         /**
          * Let the SDK target a custom server for the Session Replay feature.
          */
-        fun useSessionReplayEndpoint(endpoint: String): Builder {
+        fun useCustomSessionReplayEndpoint(endpoint: String): Builder {
             applyIfFeatureEnabled(
                 PluginFeature.SESSION_REPLAY,
                 "useCustomSessionReplayEndpoint"

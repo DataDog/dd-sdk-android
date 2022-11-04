@@ -10,13 +10,16 @@ import android.app.Application
 import android.content.Context
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.sessionreplay.LifecycleCallback
 import com.datadog.android.sessionreplay.RecordWriter
 import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.storage.NoOpRecordWriter
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
+import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.SdkCore
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class SessionReplayFeature(
@@ -33,7 +36,7 @@ internal class SessionReplayFeature(
                 SessionReplayRecordCallback(sdkCore)
             )
         }
-) {
+) : FeatureEventReceiver {
 
     internal lateinit var appContext: Context
     private var isRecording = AtomicBoolean(false)
@@ -48,6 +51,7 @@ internal class SessionReplayFeature(
         context: Context,
         configuration: Configuration.Feature.SessionReplay
     ) {
+        sdkCore.setEventReceiver(SESSION_REPLAY_FEATURE_NAME, this)
         appContext = context
         dataWriter = createDataWriter()
         sessionReplayCallback = sessionReplayCallbackProvider(dataWriter, configuration)
@@ -84,6 +88,39 @@ internal class SessionReplayFeature(
 
     // endregion
 
+    // region EventReceiver
+
+    override fun onReceive(event: Any) {
+        if (event !is Map<*, *>) {
+            devLogger.w(UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName))
+            return
+        }
+
+        if (event[SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY] == RUM_SESSION_RENEWED_BUS_MESSAGE) {
+            val keepSession = event[RUM_KEEP_SESSION_BUS_MESSAGE_KEY] as? Boolean
+
+            if (keepSession == null) {
+                devLogger.w(EVENT_MISSING_MANDATORY_FIELDS)
+                return
+            }
+
+            if (keepSession) {
+                startRecording()
+            } else {
+                stopRecording()
+            }
+        } else {
+            devLogger.w(
+                UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(
+                    Locale.US,
+                    event[SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY]
+                )
+            )
+        }
+    }
+
+    // endregion
+
     // region Internal
 
     private fun registerCallback(context: Context) {
@@ -101,7 +138,17 @@ internal class SessionReplayFeature(
     // endregion
 
     companion object {
+        internal const val UNSUPPORTED_EVENT_TYPE =
+            "Session Replay feature receive an event of unsupported type=%s."
+        internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =
+            "Session Replay feature received an event with unknown value of \"type\" property=%s."
+        internal const val EVENT_MISSING_MANDATORY_FIELDS = "Session Replay feature received an " +
+            "event where one or more mandatory (keepSession) fields" +
+            " are either missing or have wrong type."
         const val SESSION_REPLAY_FEATURE_NAME = "session-replay"
+        const val SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY = "type"
+        const val RUM_SESSION_RENEWED_BUS_MESSAGE = "rum_session_renewed"
+        const val RUM_KEEP_SESSION_BUS_MESSAGE_KEY = "keepSession"
         const val IS_RECORDING_CONTEXT_KEY = "is_recording"
     }
 }

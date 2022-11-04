@@ -27,6 +27,7 @@ internal object RuntimeConfig {
     var logsEndpointUrl: String = LOCALHOST
     var tracesEndpointUrl: String = LOCALHOST
     var rumEndpointUrl: String = LOCALHOST
+    var sessionReplayEndpointUrl: String = LOCALHOST
 
     val LONG_TASK_LARGE_THRESHOLD = Long.MAX_VALUE
 
@@ -71,6 +72,7 @@ internal object RuntimeConfig {
             .useCustomLogsEndpoint(logsEndpointUrl)
             .useCustomRumEndpoint(rumEndpointUrl)
             .useCustomTracesEndpoint(tracesEndpointUrl)
+            .useCustomSessionReplayEndpoint(sessionReplayEndpointUrl)
             .setUploadFrequency(UploadFrequency.FREQUENT)
     }
 
