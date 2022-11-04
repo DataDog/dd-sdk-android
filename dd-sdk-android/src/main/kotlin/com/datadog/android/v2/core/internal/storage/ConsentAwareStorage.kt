@@ -19,11 +19,11 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import java.io.File
 import java.util.Locale
-import java.util.concurrent.Executor
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
 
 internal class ConsentAwareStorage(
-    private val executor: Executor,
+    private val executorService: ExecutorService,
     private val grantedOrchestrator: FileOrchestrator,
     private val pendingOrchestrator: FileOrchestrator,
     private val batchEventsReaderWriter: BatchFileReaderWriter,
@@ -52,7 +52,7 @@ internal class ConsentAwareStorage(
 
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // command is never null
-            executor.execute {
+            executorService.submit {
                 val batchFile = orchestrator?.getWritableFile()
                 val metadataFile = if (batchFile != null) {
                     orchestrator.getMetadataFile(batchFile)
