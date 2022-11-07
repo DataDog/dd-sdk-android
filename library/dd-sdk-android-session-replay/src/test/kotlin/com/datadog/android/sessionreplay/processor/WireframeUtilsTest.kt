@@ -679,12 +679,16 @@ internal class WireframeUtilsTest {
         @JvmStatic
         fun coverAllWireframes(): List<MobileSegment.Wireframe> {
             ForgeConfigurator().configure(forge)
+            // we need to start from 2 when generating the random width and height as we have
+            // some scenarios in our tests where we generate a test wireframe from these
+            // wireframe using forge.min(0, fakeWireframe.height/width - 1). If we do not
+            // start from 2 the code will crash in the case of: forge.min(0, 0) with IAE
             val negativeCoordinatesWireframe = forge.getForgery<MobileSegment.Wireframe>()
                 .copy(
                     x = forge.aLong(min = -99, max = 0),
                     y = forge.aLong(min = -99, max = 0),
-                    width = forge.aLong(min = 1, max = 100),
-                    height = forge.aLong(min = 1, max = 100),
+                    width = forge.aLong(min = 2, max = 100),
+                    height = forge.aLong(min = 2, max = 100),
                     clip = forge.getForgery()
                 )
             val positiveCoordinatesWireframe = forge.getForgery<MobileSegment.Wireframe>()
