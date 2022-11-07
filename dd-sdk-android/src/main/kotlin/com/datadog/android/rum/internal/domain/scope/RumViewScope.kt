@@ -622,6 +622,32 @@ internal open class RumViewScope(
         }
         attributes.putAll(GlobalRum.globalAttributes)
         version++
+
+        // make a local copy, so that closure captures the state as of now
+        val eventVersion = version
+        val eventLoadingTime = loadingTime
+        val eventLoadingType = loadingType
+
+        val eventActionCount = actionCount
+        val eventErrorCount = errorCount
+        val eventResourceCount = resourceCount
+        val eventCrashCount = crashCount
+        val eventLongTaskCount = longTaskCount
+        val eventFrozenFramesCount = frozenFrameCount
+
+        val eventCpuTicks = cpuTicks
+
+        val eventFrustrationCount = frustrationCount
+
+        val eventFlutterBuildTime = performanceMetrics[RumPerformanceMetric.FLUTTER_BUILD_TIME]
+            ?.toPerformanceMetric()
+        val eventFlutterRasterTime = performanceMetrics[RumPerformanceMetric.FLUTTER_RASTER_TIME]
+            ?.toPerformanceMetric()
+        val eventJsRefreshRate = performanceMetrics[RumPerformanceMetric.JS_REFRESH_RATE]
+            ?.toPerformanceMetric()
+
+        val eventRefreshRateScale = refreshRateScale
+
         val updatedDurationNs = resolveViewDuration(event)
         val rumContext = getRumContext()
 
@@ -629,7 +655,7 @@ internal open class RumViewScope(
         val memoryInfo = lastMemoryInfo
         val refreshRateInfo = lastFrameRateInfo
         val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo)
-        val documentVersion = version
+
         sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
 
@@ -642,31 +668,28 @@ internal open class RumViewScope(
                         id = rumContext.viewId.orEmpty(),
                         name = rumContext.viewName.orEmpty(),
                         url = rumContext.viewUrl.orEmpty(),
-                        loadingTime = loadingTime,
-                        loadingType = loadingType,
+                        loadingTime = eventLoadingTime,
+                        loadingType = eventLoadingType,
                         timeSpent = updatedDurationNs,
-                        action = ViewEvent.Action(actionCount),
-                        resource = ViewEvent.Resource(resourceCount),
-                        error = ViewEvent.Error(errorCount),
-                        crash = ViewEvent.Crash(crashCount),
-                        longTask = ViewEvent.LongTask(longTaskCount),
-                        frozenFrame = ViewEvent.FrozenFrame(frozenFrameCount),
+                        action = ViewEvent.Action(eventActionCount),
+                        resource = ViewEvent.Resource(eventResourceCount),
+                        error = ViewEvent.Error(eventErrorCount),
+                        crash = ViewEvent.Crash(eventCrashCount),
+                        longTask = ViewEvent.LongTask(eventLongTaskCount),
+                        frozenFrame = ViewEvent.FrozenFrame(eventFrozenFramesCount),
                         customTimings = timings,
                         isActive = !viewComplete,
-                        cpuTicksCount = cpuTicks,
-                        cpuTicksPerSecond = cpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs },
+                        cpuTicksCount = eventCpuTicks,
+                        cpuTicksPerSecond = eventCpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs },
                         memoryAverage = memoryInfo?.meanValue,
                         memoryMax = memoryInfo?.maxValue,
-                        refreshRateAverage = refreshRateInfo?.meanValue?.let { it * refreshRateScale },
-                        refreshRateMin = refreshRateInfo?.minValue?.let { it * refreshRateScale },
+                        refreshRateAverage = refreshRateInfo?.meanValue?.let { it * eventRefreshRateScale },
+                        refreshRateMin = refreshRateInfo?.minValue?.let { it * eventRefreshRateScale },
                         isSlowRendered = isSlowRendered,
-                        frustration = ViewEvent.Frustration(frustrationCount.toLong()),
-                        flutterBuildTime = performanceMetrics[RumPerformanceMetric.FLUTTER_BUILD_TIME]
-                            ?.toPerformanceMetric(),
-                        flutterRasterTime = performanceMetrics[RumPerformanceMetric.FLUTTER_RASTER_TIME]
-                            ?.toPerformanceMetric(),
-                        jsRefreshRate = performanceMetrics[RumPerformanceMetric.JS_REFRESH_RATE]
-                            ?.toPerformanceMetric()
+                        frustration = ViewEvent.Frustration(eventFrustrationCount.toLong()),
+                        flutterBuildTime = eventFlutterBuildTime,
+                        flutterRasterTime = eventFlutterRasterTime,
+                        jsRefreshRate = eventJsRefreshRate
                     ),
                     usr = ViewEvent.Usr(
                         id = user.id,
@@ -695,7 +718,7 @@ internal open class RumViewScope(
                     ),
                     context = ViewEvent.Context(additionalProperties = attributes),
                     dd = ViewEvent.Dd(
-                        documentVersion = documentVersion,
+                        documentVersion = eventVersion,
                         session = ViewEvent.DdSession(plan = ViewEvent.Plan.PLAN_1)
                     )
                 )

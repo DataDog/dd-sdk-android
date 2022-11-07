@@ -193,13 +193,22 @@ internal class RumActionScope(
         attributes.putAll(GlobalRum.globalAttributes)
         val rumContext = getRumContext()
 
+        // make a copy so that closure captures at the state as of now
+        // normally not needed, because it should be only single event for this scope, but
+        // just in case
+        val eventName = name
+        val eventErrorCount = errorCount
+        val eventCrashCount = crashCount
+        val eventLongTaskCount = longTaskCount
+        val eventResourceCount = resourceCount
+
         sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val user = datadogContext.userInfo
                 val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext)
 
                 val frustrations = mutableListOf<ActionEvent.Type>()
-                if (trackFrustrations && errorCount > 0 && actualType == RumActionType.TAP) {
+                if (trackFrustrations && eventErrorCount > 0 && actualType == RumActionType.TAP) {
                     frustrations.add(ActionEvent.Type.ERROR_TAP)
                 }
 
@@ -208,11 +217,11 @@ internal class RumActionScope(
                     action = ActionEvent.ActionEventAction(
                         type = actualType.toSchemaType(),
                         id = actionId,
-                        target = ActionEvent.ActionEventActionTarget(name),
-                        error = ActionEvent.Error(errorCount),
-                        crash = ActionEvent.Crash(crashCount),
-                        longTask = ActionEvent.LongTask(longTaskCount),
-                        resource = ActionEvent.Resource(resourceCount),
+                        target = ActionEvent.ActionEventActionTarget(eventName),
+                        error = ActionEvent.Error(eventErrorCount),
+                        crash = ActionEvent.Crash(eventCrashCount),
+                        longTask = ActionEvent.LongTask(eventLongTaskCount),
+                        resource = ActionEvent.Resource(eventResourceCount),
                         loadingTime = max(endNanos - startedNanos, 1L),
                         frustration = ActionEvent.Frustration(frustrations)
                     ),
