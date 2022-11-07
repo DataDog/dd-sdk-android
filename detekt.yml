@@ -636,6 +636,7 @@ datadog:
       # endregion
       # region Java Concurrency
       - "java.lang.Thread.constructor(java.lang.Runnable, kotlin.String):java.lang.NullPointerException,java.lang.SecurityException,java.lang.IllegalArgumentException"
+      - "java.lang.Thread.constructor(java.lang.Runnable, kotlin.String):java.lang.NullPointerException,java.lang.SecurityException,java.lang.IllegalArgumentException"
       - "java.lang.Thread.sleep(kotlin.Long):java.lang.IllegalArgumentException,java.lang.InterruptedException"
       - "java.lang.Thread.interrupt():java.lang.SecurityException"
       - "java.util.concurrent.BlockingQueue.drainTo(kotlin.collections.MutableCollection):java.lang.UnsupportedOperationException,java.lang.ClassCastException,java.lang.NullPointerException,java.lang.IllegalArgumentException"
@@ -1061,10 +1062,11 @@ datadog:
       - "kotlin.collections.MutableMap.remove(com.datadog.android.rum.internal.vitals.VitalListener)"
       - "kotlin.collections.MutableMap.remove(kotlin.String)"
       - "kotlin.collections.MutableSet.add(com.datadog.android.telemetry.internal.TelemetryEventHandler.EventIdentity)"
+      - "kotlin.collections.MutableSet.add(com.datadog.android.telemetry.internal.TelemetryEventId)"
       - "kotlin.collections.MutableSet.add(kotlin.String)"
       - "kotlin.collections.MutableSet.addAll(kotlin.collections.Collection)"
       - "kotlin.collections.MutableSet.clear()"
-      - "kotlin.collections.MutableSet.contains(com.datadog.android.telemetry.internal.TelemetryEventHandler.EventIdentity)"
+      - "kotlin.collections.MutableSet.contains(com.datadog.android.telemetry.internal.TelemetryEventId)"
       - "kotlin.collections.MutableSet.filter(kotlin.Function1)"
       - "kotlin.collections.MutableSet.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableSet.joinToString(kotlin.CharSequence, kotlin.CharSequence, kotlin.CharSequence, kotlin.Int, kotlin.CharSequence, kotlin.Function1?)"
@@ -1084,6 +1086,7 @@ datadog:
       - "kotlin.Double.rangeTo(kotlin.Double)"
       - "kotlin.Double.toInt()"
       - "kotlin.Double.toLong()"
+      - "kotlin.Float.toLong()"
       - "kotlin.Int.inv()"
       - "kotlin.Int.toChar()"
       - "kotlin.Int.toLong()"

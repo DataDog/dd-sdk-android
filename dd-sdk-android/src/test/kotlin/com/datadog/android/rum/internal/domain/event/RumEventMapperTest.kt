@@ -15,6 +15,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
@@ -93,7 +94,7 @@ internal class RumEventMapperTest {
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
 
         // THEN
-        assertThat(mappedRumEvent).isNotNull()
+        assertThat(mappedRumEvent).isNotNull
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
     }
 
@@ -107,7 +108,7 @@ internal class RumEventMapperTest {
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
 
         // THEN
-        assertThat(mappedRumEvent).isNotNull()
+        assertThat(mappedRumEvent).isNotNull
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
     }
 
@@ -121,7 +122,7 @@ internal class RumEventMapperTest {
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
 
         // THEN
-        assertThat(mappedRumEvent).isNotNull()
+        assertThat(mappedRumEvent).isNotNull
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
     }
 
@@ -135,7 +136,7 @@ internal class RumEventMapperTest {
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
 
         // THEN
-        assertThat(mappedRumEvent).isNotNull()
+        assertThat(mappedRumEvent).isNotNull
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
     }
 
@@ -149,7 +150,7 @@ internal class RumEventMapperTest {
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
 
         // THEN
-        assertThat(mappedRumEvent).isNotNull()
+        assertThat(mappedRumEvent).isNotNull
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
     }
 
@@ -163,7 +164,7 @@ internal class RumEventMapperTest {
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
 
         // THEN
-        assertThat(mappedRumEvent).isNotNull()
+        assertThat(mappedRumEvent).isNotNull
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
     }
 
@@ -207,6 +208,18 @@ internal class RumEventMapperTest {
         // THEN
         verifyZeroInteractions(logger.mockSdkLogHandler)
         assertThat(mappedRumEvent).isSameAs(telemetryErrorEvent)
+    }
+
+    @Test
+    fun `M return the original event W map { TelemetryConfigurationEvent }`(
+        @Forgery telemetryConfigurationEvent: TelemetryConfigurationEvent
+    ) {
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(telemetryConfigurationEvent)
+
+        // THEN
+        verifyZeroInteractions(logger.mockSdkLogHandler)
+        assertThat(mappedRumEvent).isSameAs(telemetryConfigurationEvent)
     }
 
     @Test

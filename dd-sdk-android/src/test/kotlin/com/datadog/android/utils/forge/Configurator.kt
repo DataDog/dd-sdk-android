@@ -18,6 +18,7 @@ internal class Configurator :
         // Datadog Core
         forge.addFactory(ConfigurationCoreForgeryFactory())
         forge.addFactory(SecurityConfigForgeryFactory())
+        forge.addFactory(ConfigurationForgeryFactory())
         forge.addFactory(ConfigurationFeatureForgeryFactory())
         forge.addFactory(ConfigurationLogForgeryFactory())
         forge.addFactory(ConfigurationCrashReportForgeryFactory())
@@ -56,6 +57,7 @@ internal class Configurator :
         // Telemetry
         forge.addFactory(TelemetryDebugEventForgeryFactory())
         forge.addFactory(TelemetryErrorEventForgeryFactory())
+        forge.addFactory(TelemetryConfigurationEventForgeryFactory())
 
         // NDK Crash
         forge.addFactory(NdkCrashLogForgeryFactory())

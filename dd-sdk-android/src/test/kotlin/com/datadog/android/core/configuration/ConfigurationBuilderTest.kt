@@ -506,6 +506,30 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
+    fun `𝕄 build config with long tasks disabled 𝕎 trackLongTasks() and build()`(
+        @LongForgery(0L, 65536L) durationMs: Long
+    ) {
+        // Given
+
+        // When
+        val config = testedBuilder
+            .trackLongTasks(-durationMs)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(
+                longTaskTrackingStrategy = null
+            )
+        )
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
     fun `𝕄 build config with view strategy enabled 𝕎 useViewTrackingStrategy() and build()`() {
         // Given
         val strategy: ViewTrackingStrategy = mock()
@@ -1638,14 +1662,6 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(vitalsMonitorUpdateFrequency = fakeFrequency)
         )
-    }
-
-    private fun Configuration.Builder.setSecurityConfig(
-        securityConfig: SecurityConfig
-    ): Configuration.Builder {
-        val method = this.javaClass.declaredMethods.find { it.name == "setSecurityConfig" }
-        method!!.isAccessible = true
-        return method.invoke(this, securityConfig) as Configuration.Builder
     }
 
     companion object {
