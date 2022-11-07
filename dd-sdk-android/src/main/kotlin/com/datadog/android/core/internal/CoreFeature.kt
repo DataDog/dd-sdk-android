@@ -44,6 +44,8 @@ import com.datadog.android.core.internal.system.NoOpAndroidInfoProvider
 import com.datadog.android.core.internal.system.NoOpAppVersionProvider
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
+import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
+import com.datadog.android.core.internal.thread.LoggingThreadPoolExecutor
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.LoggingSyncListener
 import com.datadog.android.core.internal.time.NoOpTimeProvider
@@ -393,14 +395,16 @@ internal class CoreFeature {
 
     private fun setupExecutors() {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
-        uploadExecutorService = ScheduledThreadPoolExecutor(CORE_DEFAULT_POOL_SIZE)
+        uploadExecutorService =
+            LoggingScheduledThreadPoolExecutor(CORE_DEFAULT_POOL_SIZE, devLogger)
         @Suppress("UnsafeThirdPartyFunctionCall") // workQueue can't be null
-        persistenceExecutorService = ThreadPoolExecutor(
+        persistenceExecutorService = LoggingThreadPoolExecutor(
             CORE_DEFAULT_POOL_SIZE,
             Runtime.getRuntime().availableProcessors(),
             THREAD_POOL_MAX_KEEP_ALIVE_MS,
             TimeUnit.MILLISECONDS,
-            LinkedBlockingDeque()
+            LinkedBlockingDeque(),
+            devLogger
         )
     }
 

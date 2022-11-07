@@ -219,7 +219,7 @@ internal class SdkFeature(
         this.fileOrchestrator = fileOrchestrator
 
         return ConsentAwareStorage(
-            executor = coreFeature.persistenceExecutorService,
+            executorService = coreFeature.persistenceExecutorService,
             grantedOrchestrator = fileOrchestrator.grantedOrchestrator,
             pendingOrchestrator = fileOrchestrator.pendingOrchestrator,
             batchEventsReaderWriter = BatchFileReaderWriter.create(

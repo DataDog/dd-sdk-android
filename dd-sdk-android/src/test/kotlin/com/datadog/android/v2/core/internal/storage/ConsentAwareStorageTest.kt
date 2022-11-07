@@ -45,8 +45,10 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.io.File
 import java.util.Locale
-import java.util.concurrent.Executor
+import java.util.concurrent.AbstractExecutorService
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -86,7 +88,7 @@ internal class ConsentAwareStorageTest {
     fun `set up`() {
         testedStorage = ConsentAwareStorage(
             // same thread executor
-            executor = Runnable::run,
+            executorService = FakeSameThreadExecutorService(),
             mockGrantedOrchestrator,
             mockPendingOrchestrator,
             mockBatchReaderWriter,
@@ -238,8 +240,8 @@ internal class ConsentAwareStorageTest {
     @Test
     fun `𝕄 log error 𝕎 writeCurrentBatch() { task was rejected }`() {
         // Given
-        val mockExecutor = mock<Executor>()
-        whenever(mockExecutor.execute(any())) doThrow RejectedExecutionException()
+        val mockExecutor = mock<ExecutorService>()
+        whenever(mockExecutor.submit(any())) doThrow RejectedExecutionException()
         testedStorage = ConsentAwareStorage(
             // same thread executor
             mockExecutor,
@@ -405,7 +407,7 @@ internal class ConsentAwareStorageTest {
     ) {
         // Given
         testedStorage = ConsentAwareStorage(
-            executor = Runnable::run,
+            executorService = FakeSameThreadExecutorService(),
             mockGrantedOrchestrator,
             mockPendingOrchestrator,
             mockBatchReaderWriter,
@@ -574,7 +576,7 @@ internal class ConsentAwareStorageTest {
     ) {
         // Given
         testedStorage = ConsentAwareStorage(
-            executor = Runnable::run,
+            executorService = FakeSameThreadExecutorService(),
             mockGrantedOrchestrator,
             mockPendingOrchestrator,
             mockBatchReaderWriter,
@@ -616,7 +618,7 @@ internal class ConsentAwareStorageTest {
     ) {
         // Given
         testedStorage = ConsentAwareStorage(
-            executor = Runnable::run,
+            executorService = FakeSameThreadExecutorService(),
             mockGrantedOrchestrator,
             mockPendingOrchestrator,
             mockBatchReaderWriter,
@@ -647,4 +649,30 @@ internal class ConsentAwareStorageTest {
     }
 
     // endregion
+
+    class FakeSameThreadExecutorService : AbstractExecutorService() {
+
+        private var isShutdown = false
+
+        override fun execute(command: Runnable?) {
+            command?.run()
+        }
+
+        override fun shutdown() {
+            isShutdown = true
+        }
+
+        override fun shutdownNow(): MutableList<Runnable> {
+            isShutdown = true
+            return mutableListOf()
+        }
+
+        override fun isShutdown(): Boolean = isShutdown
+
+        override fun isTerminated(): Boolean = isShutdown
+
+        override fun awaitTermination(timeout: Long, unit: TimeUnit?): Boolean {
+            return true
+        }
+    }
 }
