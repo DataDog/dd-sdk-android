@@ -11,7 +11,7 @@ object Dependencies {
     object Versions {
 
         // NDK
-        const val Ndk = "22.1.7171670"
+        const val Ndk = "25.1.8937393"
         const val CMake = "3.22.1"
     }
 
