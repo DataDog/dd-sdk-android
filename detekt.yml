@@ -588,6 +588,7 @@ datadog:
     knownThrowingCalls:
       # region Android
       - "android.app.Activity.findNavController(kotlin.Int):java.lang.IllegalStateException"
+      - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, android.content.pm.PackageManager.PackageInfoFlags):android.content.pm.PackageManager.NameNotFoundException"
       - "android.content.pm.PackageManager.getPackageInfo(kotlin.String, kotlin.Int):android.content.pm.PackageManager.NameNotFoundException"
       - "android.content.res.Resources.getResourceEntryName(kotlin.Int):android.content.res.Resources.NotFoundException"
       - "android.database.sqlite.SQLiteDatabase.beginTransaction():java.lang.IllegalStateException"
@@ -744,6 +745,7 @@ datadog:
       - "android.content.IntentFilter.constructor()"
       - "android.content.IntentFilter.constructor(kotlin.String)"
       - "android.content.pm.PackageManager.hasSystemFeature(kotlin.String)"
+      - "android.content.pm.PackageManager.PackageInfoFlags.of(kotlin.Long)"
       - "android.content.res.AssetManager.open(kotlin.String, kotlin.Int)"
       - "android.database.DatabaseErrorHandler.onCorruption(android.database.sqlite.SQLiteDatabase)"
       - "android.database.DefaultDatabaseErrorHandler.constructor()"
