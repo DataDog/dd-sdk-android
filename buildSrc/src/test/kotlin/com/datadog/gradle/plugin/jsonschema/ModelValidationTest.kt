@@ -6,15 +6,14 @@
 
 package com.datadog.gradle.plugin.jsonschema
 
+import com.datadog.android.core.internal.utils.fromJsonElement
 import com.example.forgery.ForgeryConfiguration
 import com.example.model.Company
-import com.example.model.fromJsonElement
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.junit4.ForgeRule
-import java.util.Date
 import org.assertj.core.api.Assertions.assertThat
 import org.everit.json.schema.loader.SchemaLoader
 import org.json.JSONObject
@@ -24,6 +23,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import java.util.Date
 
 @RunWith(Parameterized::class)
 class ModelValidationTest(
@@ -58,7 +58,8 @@ class ModelValidationTest(
                 validator.validate(JSONObject(json.toString()))
             } catch (e: Exception) {
                 throw RuntimeException(
-                    "Failed to validate $schemaResourcePath:\n$entity\n$json\n", e
+                    "Failed to validate $schemaResourcePath (#$it):\n$entity\n$json\n",
+                    e
                 )
             }
         }
@@ -81,7 +82,11 @@ class ModelValidationTest(
             assertThat(generatedModel)
                 .overridingErrorMessage(
                     "Deserialized model was not the same " +
-                        "with the serialized for type: [$type] and test iteration: [$it]"
+                        "with the serialized for type: [$type] and test iteration: [$it]\n" +
+                        " -  input: $entity \n" +
+                        " -   json: $json \n" +
+                        " - output: $generatedModel"
+
                 )
                 .usingRecursiveComparison()
                 .withComparatorForType(numberTypeComparator, Number::class.java)
@@ -176,6 +181,8 @@ class ModelValidationTest(
         fun data(): Collection<Array<Any>> {
             return listOf(
                 arrayOf("arrays", OutputInfo("Article")),
+                arrayOf("one_of", OutputInfo("Animal")),
+                arrayOf("defaults_with_optionals", OutputInfo("Bike")),
                 arrayOf("nested", OutputInfo("Book")),
                 arrayOf("additional_props", OutputInfo("Comment")),
                 arrayOf("additional_props_any", OutputInfo("Company")),
@@ -186,6 +193,8 @@ class ModelValidationTest(
                 arrayOf("external_description", OutputInfo("Delivery")),
                 arrayOf("types", OutputInfo("Demo")),
                 arrayOf("top_level_definition", OutputInfo("Foo")),
+                arrayOf("one_of_ref", OutputInfo("Household")),
+                arrayOf("enum_number", OutputInfo("Jacket")),
                 arrayOf("constant", OutputInfo("Location", true)),
                 arrayOf("read_only", OutputInfo("Message")),
                 arrayOf("enum_array", OutputInfo("Order")),
@@ -197,9 +206,7 @@ class ModelValidationTest(
                 arrayOf("all_of", OutputInfo("User")),
                 arrayOf("all_of_merged", OutputInfo("UserMerged")),
                 arrayOf("constant_number", OutputInfo("Version")),
-                arrayOf("sets", OutputInfo("Video")),
-                arrayOf("defaults_with_optionals", OutputInfo("Bike")),
-                arrayOf("enum_number", OutputInfo("Jacket"))
+                arrayOf("sets", OutputInfo("Video"))
             )
         }
     }

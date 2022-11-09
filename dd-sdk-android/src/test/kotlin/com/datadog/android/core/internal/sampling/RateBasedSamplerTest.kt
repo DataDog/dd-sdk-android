@@ -9,9 +9,6 @@ package com.datadog.android.core.internal.sampling
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.Random
-import kotlin.math.pow
-import kotlin.math.sqrt
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.junit.jupiter.api.BeforeEach
@@ -21,6 +18,9 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.Random
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

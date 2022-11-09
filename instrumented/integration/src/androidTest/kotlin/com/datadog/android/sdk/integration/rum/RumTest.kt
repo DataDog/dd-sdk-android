@@ -13,8 +13,8 @@ import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.android.sdk.utils.isRumUrl
 import com.google.gson.JsonObject
-import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
+import java.util.concurrent.TimeUnit
 
 internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>> {
 
@@ -32,7 +32,11 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
                     .isNotNull
                     .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.CONTENT_TYPE_TEXT)
                 if (request.textBody != null) {
-                    sentGestureEvents += rumPayloadToJsonList(request.textBody)
+                    val rumPayload = rumPayloadToJsonList(request.textBody).filterNot {
+                        it.has("type") &&
+                            it.getAsJsonPrimitive("type").asString == "telemetry"
+                    }
+                    sentGestureEvents += rumPayload
                 }
             }
         sentGestureEvents.verifyEventMatches(expectedEvents)

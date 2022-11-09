@@ -20,7 +20,6 @@ import com.datadog.android.sdk.utils.isRumUrl
 import com.datadog.tools.unit.ConditionWatcher
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.junit4.ForgeRule
-import java.io.IOException
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -29,6 +28,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.IOException
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest

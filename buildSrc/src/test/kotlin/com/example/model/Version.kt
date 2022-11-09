@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.lang.IllegalStateException
+import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.Long
 import kotlin.Number
@@ -25,25 +26,38 @@ public data class Version(
         json.addProperty("version", version)
         json.addProperty("delta", delta)
         json.add("id", id.toJson())
-        date?.let { json.add("date", it.toJson()) }
+        date?.let { dateNonNull ->
+            json.add("date", dateNonNull.toJson())
+        }
         return json
     }
 
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(serializedObject: String): Version {
+        public fun fromJson(jsonString: String): Version {
             try {
-                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val id = Id()
                 val date = jsonObject.get("date")?.toString()?.let {
                     Date()
                 }
                 return Version(id, date)
             } catch (e: IllegalStateException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException(
+                    "Unable to parse json into type Version",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException(
+                    "Unable to parse json into type Version",
+                    e
+                )
+            } catch (e: NullPointerException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Version",
+                    e
+                )
             }
         }
     }

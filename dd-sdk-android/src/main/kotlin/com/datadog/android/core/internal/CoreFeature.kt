@@ -8,6 +8,7 @@ package com.datadog.android.core.internal
 
 import android.app.ActivityManager
 import android.content.Context
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Process
@@ -20,6 +21,7 @@ import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.net.CurlInterceptor
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.GzipRequestInterceptor
+import com.datadog.android.core.internal.net.RotatingDnsResolver
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NetworkInfoDeserializer
@@ -62,6 +64,11 @@ import com.datadog.android.rum.internal.ndk.NoOpNdkCrashHandler
 import com.datadog.android.security.Encryption
 import com.lyft.kronos.AndroidClockFactory
 import com.lyft.kronos.KronosClock
+import okhttp3.CipherSuite
+import okhttp3.ConnectionSpec
+import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.TlsVersion
 import java.lang.ref.WeakReference
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
@@ -69,11 +76,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import okhttp3.CipherSuite
-import okhttp3.ConnectionSpec
-import okhttp3.OkHttpClient
-import okhttp3.Protocol
-import okhttp3.TlsVersion
 
 internal object CoreFeature {
 
@@ -200,6 +202,11 @@ internal object CoreFeature {
             contextRef.clear()
 
             trackingConsentProvider.unregisterAllCallbacks()
+
+            cleanupApplicationInfo()
+            cleanupProviders()
+            shutDownExecutors()
+
             try {
                 kronosClock.shutdown()
             } catch (ise: IllegalStateException) {
@@ -208,9 +215,6 @@ internal object CoreFeature {
                 sdkLogger.e("Trying to shut down Kronos when it is already not running", ise)
             }
 
-            cleanupApplicationInfo()
-            cleanupProviders()
-            shutDownExecutors()
             initialized.set(false)
             ndkCrashHandler = NoOpNdkCrashHandler()
             trackingConsentProvider = NoOpConsentProvider()
@@ -303,14 +307,8 @@ internal object CoreFeature {
 
     private fun readApplicationInformation(appContext: Context, credentials: Credentials) {
         packageName = appContext.packageName
-        val packageInfo = try {
-            appContext.packageManager.getPackageInfo(packageName, 0)
-        } catch (e: PackageManager.NameNotFoundException) {
-            devLogger.e("Unable to read your application's version name", e)
-            null
-        }
         packageVersionProvider = DefaultAppVersionProvider(
-            packageInfo?.let {
+            getPackageInfo(appContext)?.let {
                 // we need to use the deprecated method because getLongVersionCode method is only
                 // available from API 28 and above
                 @Suppress("DEPRECATION")
@@ -323,6 +321,22 @@ internal object CoreFeature {
         envName = credentials.envName
         variant = credentials.variant
         contextRef = WeakReference(appContext)
+    }
+
+    private fun getPackageInfo(appContext: Context): PackageInfo? {
+        return try {
+            with(appContext.packageManager) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+                } else {
+                    @Suppress("DEPRECATION")
+                    getPackageInfo(packageName, 0)
+                }
+            }
+        } catch (e: PackageManager.NameNotFoundException) {
+            devLogger.e("Unable to read your application's version name", e)
+            null
+        }
     }
 
     private fun readConfigurationSettings(configuration: Configuration.Core) {
@@ -406,8 +420,10 @@ internal object CoreFeature {
             .connectionSpecs(listOf(connectionSpec))
 
         if (BuildConfig.DEBUG) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             builder.addNetworkInterceptor(CurlInterceptor())
         } else {
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             builder.addInterceptor(GzipRequestInterceptor())
         }
 
@@ -415,6 +431,10 @@ internal object CoreFeature {
             builder.proxy(configuration.proxy)
             builder.proxyAuthenticator(configuration.proxyAuth)
         }
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+        builder.dns(RotatingDnsResolver())
+
         okHttpClient = builder.build()
     }
 

@@ -31,13 +31,6 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.io.BufferedReader
-import java.io.IOException
-import java.io.InputStream
-import java.lang.RuntimeException
-import java.util.concurrent.TimeUnit
-import kotlin.math.min
-import kotlin.system.measureNanoTime
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -48,6 +41,13 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.io.BufferedReader
+import java.io.IOException
+import java.io.InputStream
+import java.lang.RuntimeException
+import java.util.concurrent.TimeUnit
+import kotlin.math.min
+import kotlin.system.measureNanoTime
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

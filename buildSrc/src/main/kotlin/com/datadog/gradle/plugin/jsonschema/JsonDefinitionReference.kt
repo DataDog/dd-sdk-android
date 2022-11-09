@@ -4,13 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.monitor
+package com.datadog.gradle.plugin.jsonschema
 
-internal enum class EventType {
-    VIEW,
-    ACTION,
-    RESOURCE,
-    ERROR,
-    LONG_TASK,
-    FROZEN_FRAME
-}
+import java.io.File
+
+data class JsonDefinitionReference(
+    val typeName: String,
+    val definition: JsonDefinition,
+    val fromFile: File
+)

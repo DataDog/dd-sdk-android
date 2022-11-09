@@ -9,6 +9,7 @@ package com.datadog.android.rum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.verify
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -43,5 +44,22 @@ internal class RumInternalProxyTest {
 
         // Then
         verify(mockRumMonitor).addLongTask(time, target)
+    }
+
+    @Test
+    fun `M proxy updatePerformanceMetric to RumMonitor W updatePerformanceMetric()`(
+        forge: Forge
+    ) {
+        // Given
+        val metric = forge.aValueFrom(RumPerformanceMetric::class.java)
+        val value = forge.aDouble()
+        val mockRumMonitor = mock(AdvancedRumMonitor::class.java)
+        val proxy = _RumInternalProxy(mockRumMonitor)
+
+        // When
+        proxy.updatePerformanceMetric(metric, value)
+
+        // Then
+        verify(mockRumMonitor).updatePerformanceMetric(metric, value)
     }
 }

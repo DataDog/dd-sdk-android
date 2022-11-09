@@ -126,7 +126,9 @@ internal class ANRDetectorRunnableTest {
             reset(mockHandler)
 
             lastValue.run()
-            Thread.sleep(TEST_ANR_TEST_DELAY_MS)
+            // +10 is to remove flakiness, otherwise it seems current thread can resume execution
+            // before AND test thread
+            Thread.sleep(TEST_ANR_TEST_DELAY_MS + 10)
             verify(mockHandler).post(capture())
             lastValue.run()
         }

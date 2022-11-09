@@ -6,6 +6,8 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.core.internal.utils.orEmpty
+import com.datadog.android.core.internal.utils.toMutableMap
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.tracing.model.SpanEvent
@@ -74,20 +76,20 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
         )
     }
 
-    fun Forge.exhaustiveMetrics(): Map<String, Number> {
+    fun Forge.exhaustiveMetrics(): MutableMap<String, Number> {
         return listOf(
             aLong(),
             anInt(),
             aFloat(),
             aDouble()
         ).map { anAlphabeticalString() to it as Number }
-            .toMap()
+            .toMutableMap()
     }
 
-    fun Forge.exhaustiveMeta(): Map<String, String> {
+    fun Forge.exhaustiveMeta(): MutableMap<String, String> {
         return listOf(
             aString()
         ).map { anAlphabeticalString() to it }
-            .toMap()
+            .toMutableMap()
     }
 }

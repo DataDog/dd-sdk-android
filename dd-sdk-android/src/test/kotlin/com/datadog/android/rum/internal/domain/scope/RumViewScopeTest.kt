@@ -27,6 +27,7 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
@@ -68,16 +69,12 @@ import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.Locale
-import java.util.UUID
-import java.util.concurrent.TimeUnit
-import kotlin.math.max
-import kotlin.math.min
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
@@ -91,6 +88,12 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.Arrays
+import java.util.Locale
+import java.util.UUID
+import java.util.concurrent.TimeUnit
+import kotlin.math.max
+import kotlin.math.min
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -174,6 +177,9 @@ internal class RumViewScopeTest {
     @Mock
     lateinit var mockViewUpdatePredicate: ViewUpdatePredicate
 
+    @BoolForgery
+    var fakeTrackFrustrations: Boolean = true
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeSourceViewEvent = forge.aNullable { aValueFrom(ViewEvent.Source::class.java) }
@@ -234,7 +240,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = true
         )
 
         assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
@@ -323,7 +330,8 @@ internal class RumViewScopeTest {
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             type = fakeViewEventType,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
 
         // Then
@@ -393,7 +401,8 @@ internal class RumViewScopeTest {
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             type = expectedViewType,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
 
         // When
@@ -559,7 +568,8 @@ internal class RumViewScopeTest {
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             type = viewType,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
 
         // When
@@ -604,7 +614,8 @@ internal class RumViewScopeTest {
             mockBuildSdkVersionProvider,
             mockViewUpdatePredicate,
             type = viewType,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
 
         // When
@@ -661,6 +672,7 @@ internal class RumViewScopeTest {
                 hasCrashCount(0)
                 hasResourceCount(0)
                 hasActionCount(0)
+                hasFrustrationCount(0)
                 hasLongTaskCount(0)
                 hasFrozenFrameCount(0)
                 hasCpuMetric(null)
@@ -725,6 +737,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -789,6 +802,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -859,6 +873,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -926,6 +941,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -993,6 +1009,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1048,6 +1065,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1108,7 +1126,8 @@ internal class RumViewScopeTest {
             mockTimeProvider,
             rumEventSourceProvider = mockRumEventSourceProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
 
@@ -1132,6 +1151,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1198,6 +1218,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1257,7 +1278,8 @@ internal class RumViewScopeTest {
             mockTimeProvider,
             rumEventSourceProvider = mockRumEventSourceProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -1284,6 +1306,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1345,7 +1368,8 @@ internal class RumViewScopeTest {
             mockTimeProvider,
             rumEventSourceProvider = mockRumEventSourceProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -1372,6 +1396,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1439,6 +1464,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1505,6 +1531,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1564,6 +1591,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1666,6 +1694,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1745,6 +1774,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(1)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1801,10 +1831,11 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 send event 𝕎 handleEvent(ActionSent) on active view`(
-        @LongForgery(1) pending: Long
+        @LongForgery(1) pending: Long,
+        @IntForgery(0) frustrationCount: Int
     ) {
         // Given
-        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId)
+        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount)
         testedScope.pendingActionCount = pending
 
         // When
@@ -1824,6 +1855,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(1)
+                    hasFrustrationCount(frustrationCount.toLong())
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1861,12 +1893,13 @@ internal class RumViewScopeTest {
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(ActionSent) on active view {unknown viewId}`(
         @Forgery viewUuid: UUID,
-        @LongForgery(1) pending: Long
+        @LongForgery(1) pending: Long,
+        @IntForgery(0) frustrationCount: Int
     ) {
         // Given
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
-        fakeEvent = RumRawEvent.ActionSent(viewId)
+        fakeEvent = RumRawEvent.ActionSent(viewId, frustrationCount)
         testedScope.pendingActionCount = pending
 
         // When
@@ -1905,6 +1938,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(1)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -1967,6 +2001,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(1)
                     hasFrozenFrameCount(1)
                     hasCpuMetric(null)
@@ -2044,7 +2079,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasNonNullId()
                     hasTimestamp(testedScope.eventTimestamp)
-                    hasType(ActionEvent.ActionType.APPLICATION_START)
+                    hasType(ActionEvent.ActionEventActionType.APPLICATION_START)
                     hasNoTarget()
                     hasDuration(duration)
                     hasResourceCount(0)
@@ -2098,6 +2133,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -2177,6 +2213,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(1)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -2233,11 +2270,13 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `𝕄 send event 𝕎 handleEvent(ActionSent) on stopped view`() {
+    fun `𝕄 send event 𝕎 handleEvent(ActionSent) on stopped view`(
+        @IntForgery(0) frustrationCount: Int
+    ) {
         // Given
         testedScope.stopped = true
         testedScope.pendingActionCount = 1
-        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId)
+        fakeEvent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -2256,6 +2295,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(1)
+                    hasFrustrationCount(frustrationCount.toLong())
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -2293,14 +2333,15 @@ internal class RumViewScopeTest {
     @Test
     fun `𝕄 do nothing 𝕎 handleEvent(ActionSent) on stopped view {unknown viewId}`(
         @Forgery viewUuid: UUID,
-        @LongForgery(1) pending: Long
+        @LongForgery(1) pending: Long,
+        @IntForgery(0) frustrationCount: Int
     ) {
         // Given
         testedScope.stopped = true
         testedScope.pendingActionCount = pending
         val viewId = viewUuid.toString()
         assumeTrue(viewId != testedScope.viewId)
-        fakeEvent = RumRawEvent.ActionSent(viewId)
+        fakeEvent = RumRawEvent.ActionSent(viewId, frustrationCount)
 
         // When
         val result = testedScope.handleEvent(fakeEvent, mockWriter)
@@ -2335,6 +2376,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(1)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -2392,14 +2434,15 @@ internal class RumViewScopeTest {
 
     @Test
     fun `𝕄 close the scope 𝕎 handleEvent(ActionSent) on stopped view { ApplicationStarted }`(
-        @LongForgery(0) duration: Long
+        @LongForgery(0) duration: Long,
+        @IntForgery(0) frustrationCount: Int
     ) {
         // Given
         testedScope.stopped = true
         val eventTime = Time()
         val startedNanos = eventTime.nanoTime - duration
         fakeEvent = RumRawEvent.ApplicationStarted(eventTime, startedNanos)
-        val fakeActionSent = RumRawEvent.ActionSent(testedScope.viewId)
+        val fakeActionSent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount)
 
         // When
         testedScope.handleEvent(fakeEvent, mockWriter)
@@ -2412,7 +2455,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasNonNullId()
                     hasTimestamp(testedScope.eventTimestamp)
-                    hasType(ActionEvent.ActionType.APPLICATION_START)
+                    hasType(ActionEvent.ActionEventActionType.APPLICATION_START)
                     hasNoTarget()
                     hasDuration(duration)
                     hasResourceCount(0)
@@ -2464,7 +2507,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasNonNullId()
                     hasTimestamp(testedScope.eventTimestamp)
-                    hasType(ActionEvent.ActionType.APPLICATION_START)
+                    hasType(ActionEvent.ActionEventActionType.APPLICATION_START)
                     hasNoTarget()
                     hasDuration(duration)
                     hasResourceCount(0)
@@ -2532,6 +2575,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -3701,6 +3745,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(1)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -3872,6 +3917,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(1)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -4176,6 +4222,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(1)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -4755,6 +4802,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -4819,6 +4867,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -4902,6 +4951,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -4968,6 +5018,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5008,6 +5059,7 @@ internal class RumViewScopeTest {
                     hasErrorCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5090,6 +5142,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(expectedTotal)
@@ -5155,6 +5208,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5230,6 +5284,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5305,6 +5360,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5369,7 +5425,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5395,6 +5452,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5459,7 +5517,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5485,6 +5544,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5551,7 +5611,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5577,6 +5638,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5643,7 +5705,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5669,6 +5732,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5736,7 +5800,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5762,6 +5827,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5829,7 +5895,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
@@ -5855,6 +5922,7 @@ internal class RumViewScopeTest {
                     hasCrashCount(0)
                     hasResourceCount(0)
                     hasActionCount(0)
+                    hasFrustrationCount(0)
                     hasLongTaskCount(0)
                     hasFrozenFrameCount(0)
                     hasCpuMetric(null)
@@ -5907,7 +5975,7 @@ internal class RumViewScopeTest {
                 forge.aBool(),
                 emptyMap()
             ),
-            RumRawEvent.ActionSent(forge.anAlphabeticalString()),
+            RumRawEvent.ActionSent(forge.anAlphabeticalString(), forge.aPositiveInt()),
             RumRawEvent.StartResource(
                 forge.anAlphabeticalString(),
                 forge.anAlphabeticalString(),
@@ -5953,6 +6021,186 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    // region Cross-platform performance metrics
+
+    @Test
+    fun `𝕄 send update 𝕎 handleEvent(UpdatePerformanceMetric+KeepAlive) { FlutterBuildTime }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val value = forge.aDouble()
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.UpdatePerformanceMetric(
+                metric = RumPerformanceMetric.FLUTTER_BUILD_TIME,
+                value = value
+            ),
+            mockWriter
+        )
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasFlutterBuildTime(ViewEvent.FlutterBuildTime(value, value, value, null))
+                    hasFlutterRasterTime(null)
+                    hasJsRefreshRate(null)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send update 𝕎 handleEvent(UpdatePerformanceMetric+KeepAlive) { FlutterRasterTime }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val value = forge.aDouble()
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.UpdatePerformanceMetric(
+                metric = RumPerformanceMetric.FLUTTER_RASTER_TIME,
+                value = value
+            ),
+            mockWriter
+        )
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasFlutterBuildTime(null)
+                    hasFlutterRasterTime(ViewEvent.FlutterBuildTime(value, value, value, null))
+                    hasJsRefreshRate(null)
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send View update 𝕎 handleEvent(UpdatePerformanceMetric+KeepAlive) { JsRefreshRate }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val value = forge.aPositiveDouble(true)
+        val frameRate = TimeUnit.SECONDS.toNanos(1) / value
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.UpdatePerformanceMetric(
+                metric = RumPerformanceMetric.JS_FRAME_TIME,
+                value = value
+            ),
+            mockWriter
+        )
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasFlutterBuildTime(null)
+                    hasFlutterRasterTime(null)
+                    hasJsRefreshRate(ViewEvent.FlutterBuildTime(frameRate, frameRate, frameRate, null))
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `𝕄 send View update with all values 𝕎 handleEvent(UpdatePerformanceMetric+KeepAlive)`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val flutterBuildTimes = DoubleArray(5) { forge.aDouble() }
+        val flutterRasterTimes = DoubleArray(5) { forge.aDouble() }
+        val jsFrameTimes = DoubleArray(5) { forge.aPositiveDouble(true) }
+
+        // WHEN
+        for (i in 0..4) {
+            testedScope.handleEvent(
+                RumRawEvent.UpdatePerformanceMetric(
+                    metric = RumPerformanceMetric.FLUTTER_BUILD_TIME,
+                    value = flutterBuildTimes[i]
+                ),
+                mockWriter
+            )
+            testedScope.handleEvent(
+                RumRawEvent.UpdatePerformanceMetric(
+                    metric = RumPerformanceMetric.FLUTTER_RASTER_TIME,
+                    value = flutterRasterTimes[i]
+                ),
+                mockWriter
+            )
+            testedScope.handleEvent(
+                RumRawEvent.UpdatePerformanceMetric(
+                    metric = RumPerformanceMetric.JS_FRAME_TIME,
+                    value = jsFrameTimes[i]
+                ),
+                mockWriter
+            )
+        }
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // THEN
+        val flutterBuildTimeStats = Arrays.stream(flutterBuildTimes).summaryStatistics()
+        val flutterRasterTimeStats = Arrays.stream(flutterRasterTimes).summaryStatistics()
+        val jsFrameTimeStats = Arrays.stream(jsFrameTimes).summaryStatistics()
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(capture())
+            assertThat(lastValue)
+                .apply {
+                    hasFlutterBuildTime(
+                        ViewEvent.FlutterBuildTime(
+                            min = flutterBuildTimeStats.min,
+                            max = flutterBuildTimeStats.max,
+                            average = flutterBuildTimeStats.average
+                        )
+                    )
+                    hasFlutterRasterTime(
+                        ViewEvent.FlutterBuildTime(
+                            min = flutterRasterTimeStats.min,
+                            max = flutterRasterTimeStats.max,
+                            average = flutterRasterTimeStats.average
+                        )
+                    )
+                    hasJsRefreshRate(
+                        ViewEvent.FlutterBuildTime(
+                            min = TimeUnit.SECONDS.toNanos(1) / jsFrameTimeStats.max,
+                            max = TimeUnit.SECONDS.toNanos(1) / jsFrameTimeStats.min,
+                            average = TimeUnit.SECONDS.toNanos(1) / jsFrameTimeStats.average
+                        )
+                    )
+                }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    // endregion
+
     // region ViewUpdatePredicate
 
     @Test
@@ -5978,7 +6226,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasNonNullId()
                     hasTimestamp(testedScope.eventTimestamp)
-                    hasType(ActionEvent.ActionType.APPLICATION_START)
+                    hasType(ActionEvent.ActionEventActionType.APPLICATION_START)
                     hasNoTarget()
                     hasDuration(duration)
                     hasResourceCount(0)
@@ -6143,7 +6391,8 @@ internal class RumViewScopeTest {
             mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
             viewUpdatePredicate = mockViewUpdatePredicate,
-            androidInfoProvider = fakeAndroidInfoProvider
+            androidInfoProvider = fakeAndroidInfoProvider,
+            trackFrustrations = fakeTrackFrustrations
         )
 
         // When

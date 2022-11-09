@@ -11,16 +11,16 @@ import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import java.io.IOException
-import java.net.InetAddress
-import java.net.InetSocketAddress
-import java.net.Proxy
 import okhttp3.Call
 import okhttp3.EventListener
 import okhttp3.Handshake
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Response
+import java.io.IOException
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.Proxy
 
 /**
  * Datadog's RUM implementation of OkHttp [EventListener].
@@ -179,7 +179,9 @@ internal constructor(val key: String) : EventListener() {
         }
         val (sslS, sslD) = if (sslStart == 0L) {
             0L to 0L
-        } else (sslStart - callStart) to (sslEnd - sslStart)
+        } else {
+            (sslStart - callStart) to (sslEnd - sslStart)
+        }
         val (fbS, fbD) = if (headersStart == 0L) {
             0L to 0L
         } else {

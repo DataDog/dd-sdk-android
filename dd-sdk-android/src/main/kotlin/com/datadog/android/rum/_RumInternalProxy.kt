@@ -31,4 +31,8 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
     fun addLongTask(durationNs: Long, target: String) {
         rumMonitor.addLongTask(durationNs, target)
     }
+
+    fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double) {
+        rumMonitor.updatePerformanceMetric(metric, value)
+    }
 }

@@ -20,15 +20,24 @@ internal class ActionEventForgeryFactory :
     override fun getForgery(forge: Forge): ActionEvent {
         return ActionEvent(
             date = forge.aTimestamp(),
-            action = ActionEvent.Action(
+            action = ActionEvent.ActionEventAction(
                 type = forge.getForgery(),
                 id = forge.aNullable { getForgery<UUID>().toString() },
-                target = forge.aNullable { ActionEvent.Target(anAlphabeticalString()) },
+                target = forge.aNullable {
+                    ActionEvent.ActionEventActionTarget(anAlphabeticalString())
+                },
                 error = forge.aNullable { ActionEvent.Error(aLong(0, 512)) },
                 crash = forge.aNullable { ActionEvent.Crash(aLong(0, 512)) },
                 resource = forge.aNullable { ActionEvent.Resource(aLong(0, 512)) },
                 longTask = forge.aNullable { ActionEvent.LongTask(aLong(0, 512)) },
-                loadingTime = forge.aNullable { aPositiveLong(strict = true) }
+                loadingTime = forge.aNullable { aPositiveLong(strict = true) },
+                frustration = forge.aNullable {
+                    ActionEvent.Frustration(
+                        type = forge.aList {
+                            forge.aValueFrom(ActionEvent.Type::class.java)
+                        }.distinct()
+                    )
+                }
             ),
             view = ActionEvent.View(
                 id = forge.getForgery<UUID>().toString(),

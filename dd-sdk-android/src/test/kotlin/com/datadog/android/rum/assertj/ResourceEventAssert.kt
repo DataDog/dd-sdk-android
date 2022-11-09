@@ -385,11 +385,19 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
     }
 
     fun hasActionId(expected: String?): ResourceEventAssert {
-        assertThat(actual.action?.id)
-            .overridingErrorMessage(
-                "Expected event data to have action.id $expected but was ${actual.action?.id}"
-            )
-            .isEqualTo(expected)
+        if (expected != null) {
+            assertThat(actual.action?.id)
+                .overridingErrorMessage(
+                    "Expected event data to have action.id $expected but was ${actual.action?.id}"
+                )
+                .contains(expected)
+        } else {
+            assertThat(actual.action?.id)
+                .overridingErrorMessage(
+                    "Expected event data to have no action.id but was ${actual.action?.id}"
+                )
+                .isNullOrEmpty()
+        }
         return this
     }
 
@@ -406,6 +414,15 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         assertThat(actual.dd.spanId)
             .overridingErrorMessage(
                 "Expected event data to have _dd.span_id $expected but was ${actual.dd.spanId}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasRulePsr(expected: Number?): ResourceEventAssert {
+        assertThat(actual.dd.rulePsr)
+            .overridingErrorMessage(
+                "Expected event data to have _dd.rule_psr $expected but was ${actual.dd.rulePsr}"
             )
             .isEqualTo(expected)
         return this

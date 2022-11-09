@@ -39,11 +39,11 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.junit.jupiter.api.AfterEach
@@ -55,6 +55,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -109,6 +110,9 @@ internal class RumViewManagerScopeTest {
     @Forgery
     lateinit var fakeAndroidInfoProvider: AndroidInfoProvider
 
+    @BoolForgery
+    var fakeTrackFrustrations: Boolean = true
+
     @BeforeEach
     fun `set up`() {
         whenever(coreFeature.mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
@@ -123,6 +127,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             mockParentScope,
             true,
+            fakeTrackFrustrations,
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
@@ -362,6 +367,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             backgroundTrackingEnabled = false,
+            trackFrustrations = fakeTrackFrustrations,
             firstPartyHostDetector = mockDetector,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
@@ -388,6 +394,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             backgroundTrackingEnabled = false,
+            trackFrustrations = fakeTrackFrustrations,
             firstPartyHostDetector = mockDetector,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
@@ -418,6 +425,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             backgroundTrackingEnabled = false,
+            trackFrustrations = fakeTrackFrustrations,
             firstPartyHostDetector = mockDetector,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
@@ -504,6 +512,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             backgroundTrackingEnabled = false,
+            trackFrustrations = fakeTrackFrustrations,
             firstPartyHostDetector = mockDetector,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
@@ -545,6 +554,7 @@ internal class RumViewManagerScopeTest {
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
             backgroundTrackingEnabled = false,
+            trackFrustrations = fakeTrackFrustrations,
             firstPartyHostDetector = mockDetector,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,

@@ -64,7 +64,7 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
-    fun hasType(expected: ActionEvent.ActionType): ActionEventAssert {
+    fun hasType(expected: ActionEvent.ActionEventActionType): ActionEventAssert {
         assertThat(actual.action.type)
             .overridingErrorMessage(
                 "Expected event data to have action.type $expected but was ${actual.action.type}"
@@ -130,6 +130,20 @@ internal class ActionEventAssert(actual: ActionEvent) :
                     "but was ${actual.action.longTask?.count}"
             )
             .isEqualTo(expected)
+        return this
+    }
+
+    fun hasNoFrustration(): ActionEventAssert {
+        val frustration = actual.action.frustration ?: return this
+        assertThat(frustration.type).isEmpty()
+        return this
+    }
+
+    fun hasFrustration(vararg frustrationType: ActionEvent.Type): ActionEventAssert {
+        val frustration = actual.action.frustration
+        assertThat(frustration).isNotNull()
+
+        assertThat(frustration!!.type).containsExactlyInAnyOrder(*frustrationType)
         return this
     }
 

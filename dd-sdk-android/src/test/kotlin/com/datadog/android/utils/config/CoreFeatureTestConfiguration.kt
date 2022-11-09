@@ -21,10 +21,10 @@ import com.lyft.kronos.KronosClock
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
+import okhttp3.OkHttpClient
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
-import okhttp3.OkHttpClient
 
 internal class CoreFeatureTestConfiguration<T : Context>(
     val appContext: ApplicationContextTestConfiguration<T>

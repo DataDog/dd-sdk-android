@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.core.configuration
 
 import android.os.Build
@@ -51,9 +53,6 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.net.Proxy
-import java.net.URL
-import java.util.Locale
 import okhttp3.Authenticator
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -62,6 +61,9 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import java.net.Proxy
+import java.net.URL
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -148,6 +150,7 @@ internal class ConfigurationBuilderTest {
                 rumEventMapper = NoOpEventMapper(),
                 longTaskTrackingStrategy = MainLooperLongTaskStrategy(100L),
                 backgroundEventTracking = false,
+                trackFrustrations = true,
                 vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE
             )
         )
@@ -497,6 +500,30 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 longTaskTrackingStrategy = MainLooperLongTaskStrategy(durationMs)
+            )
+        )
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 build config with long tasks disabled 𝕎 trackLongTasks() and build()`(
+        @LongForgery(0L, 65536L) durationMs: Long
+    ) {
+        // Given
+
+        // When
+        val config = testedBuilder
+            .trackLongTasks(-durationMs)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(
+                longTaskTrackingStrategy = null
             )
         )
         assertThat(config.additionalConfig).isEmpty()
@@ -1106,6 +1133,33 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
+    fun `𝕄 warn user about deprecation 𝕎 addPlugin()`(
+        forge: Forge
+    ) {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = forge.aBool(),
+            tracesEnabled = forge.aBool(),
+            crashReportsEnabled = forge.aBool(),
+            rumEnabled = forge.aBool()
+        )
+        val mockPlugin: DatadogPlugin = mock()
+
+        // When
+        testedBuilder.addPlugin(
+            mockPlugin,
+            forge.anElementFrom(Feature.CRASH, Feature.RUM, Feature.LOG, Feature.TRACE)
+        )
+
+        // Then
+        verify(logger.mockDevLogHandler).handleLog(
+            Log.WARN,
+            "Configuration.Builder#addPlugin has been deprecated since version 1.15.0, " +
+                "and will be removed in version 2.0.0."
+        )
+    }
+
+    @Test
     fun `𝕄 warn user 𝕎 useCustomLogsEndpoint() {Logs feature disabled}`(
         @StringForgery(regex = "https://[a-z]+\\.com") url: String
     ) {
@@ -1608,14 +1662,6 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(vitalsMonitorUpdateFrequency = fakeFrequency)
         )
-    }
-
-    private fun Configuration.Builder.setSecurityConfig(
-        securityConfig: SecurityConfig
-    ): Configuration.Builder {
-        val method = this.javaClass.declaredMethods.find { it.name == "setSecurityConfig" }
-        method!!.isAccessible = true
-        return method.invoke(this, securityConfig) as Configuration.Builder
     }
 
     companion object {

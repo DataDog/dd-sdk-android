@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "resource-schema.json",
+  "$id": "rum/resource-schema.json",
   "title": "RumResourceEvent",
   "type": "object",
   "description": "Schema of all properties of a Resource event",
@@ -9,10 +9,10 @@
       "$ref": "_common-schema.json"
     },
     {
-      "required": [
-        "type",
-        "resource"
-      ],
+      "$ref": "_action-child-schema.json"
+    },
+    {
+      "required": ["type", "resource"],
       "properties": {
         "type": {
           "type": "string",
@@ -23,11 +23,7 @@
         "resource": {
           "type": "object",
           "description": "Resource properties",
-          "required": [
-            "type",
-            "url",
-            "duration"
-          ],
+          "required": ["type", "url", "duration"],
           "properties": {
             "id": {
               "type": "string",
@@ -73,10 +69,7 @@
             "redirect": {
               "type": "object",
               "description": "Redirect phase properties",
-              "required": [
-                "duration",
-                "start"
-              ],
+              "required": ["duration", "start"],
               "properties": {
                 "duration": {
                   "type": "integer",
@@ -96,10 +89,7 @@
             "dns": {
               "type": "object",
               "description": "DNS phase properties",
-              "required": [
-                "duration",
-                "start"
-              ],
+              "required": ["duration", "start"],
               "properties": {
                 "duration": {
                   "type": "integer",
@@ -119,10 +109,7 @@
             "connect": {
               "type": "object",
               "description": "Connect phase properties",
-              "required": [
-                "duration",
-                "start"
-              ],
+              "required": ["duration", "start"],
               "properties": {
                 "duration": {
                   "type": "integer",
@@ -142,10 +129,7 @@
             "ssl": {
               "type": "object",
               "description": "SSL phase properties",
-              "required": [
-                "duration",
-                "start"
-              ],
+              "required": ["duration", "start"],
               "properties": {
                 "duration": {
                   "type": "integer",
@@ -165,10 +149,7 @@
             "first_byte": {
               "type": "object",
               "description": "First Byte phase properties",
-              "required": [
-                "duration",
-                "start"
-              ],
+              "required": ["duration", "start"],
               "properties": {
                 "duration": {
                   "type": "integer",
@@ -188,10 +169,7 @@
             "download": {
               "type": "object",
               "description": "Download phase properties",
-              "required": [
-                "duration",
-                "start"
-              ],
+              "required": ["duration", "start"],
               "properties": {
                 "duration": {
                   "type": "integer",
@@ -225,26 +203,25 @@
                 "type": {
                   "type": "string",
                   "description": "The type of provider",
-                  "enum": ["ad", "advertising", "analytics", "cdn", "content", "customer-success", "first party", "hosting", "marketing", "other", "social", "tag-manager", "utility", "video"],
+                  "enum": [
+                    "ad",
+                    "advertising",
+                    "analytics",
+                    "cdn",
+                    "content",
+                    "customer-success",
+                    "first party",
+                    "hosting",
+                    "marketing",
+                    "other",
+                    "social",
+                    "tag-manager",
+                    "utility",
+                    "video"
+                  ],
                   "readOnly": true
                 }
               },
-              "readOnly": true
-            }
-          },
-          "readOnly": true
-        },
-        "action": {
-          "type": "object",
-          "description": "Action properties",
-          "required": [
-            "id"
-          ],
-          "properties": {
-            "id": {
-              "type": "string",
-              "description": "UUID of the action",
-              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
               "readOnly": true
             }
           },
@@ -264,6 +241,18 @@
               "type": "string",
               "description": "trace identifier in decimal format",
               "pattern": "^[0-9]+$",
+              "readOnly": true
+            },
+            "rule_psr": {
+              "type": "number",
+              "description": "tracing sample rate in decimal format",
+              "minimum": 0,
+              "maximum": 1,
+              "readOnly": true
+            },
+            "discarded": {
+              "type": "boolean",
+              "description": "Whether the resource should be discarded or indexed",
               "readOnly": true
             }
           },

@@ -76,6 +76,7 @@ internal open class NdkCrashService : CrashService() {
             rumEnabled = rumEnabled
         ).sampleTelemetry(100f)
         if (ndkCrashReportsEnabled) {
+            @Suppress("DEPRECATION")
             configBuilder.addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
         }
         if (encryptionEnabled) {

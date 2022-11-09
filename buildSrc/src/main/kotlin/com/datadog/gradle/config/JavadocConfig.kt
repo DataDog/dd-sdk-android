@@ -10,8 +10,7 @@ import org.gradle.api.Project
 import org.jetbrains.dokka.gradle.DokkaTask
 
 fun Project.javadocConfig() {
-
-    tasks.withType(DokkaTask::class.java) {
+    tasks.withType(DokkaTask::class.java).configureEach {
         val toOutputDirectory = file("${buildDir.canonicalPath}/reports/javadoc")
         outputDirectory.set(toOutputDirectory)
         doFirst {

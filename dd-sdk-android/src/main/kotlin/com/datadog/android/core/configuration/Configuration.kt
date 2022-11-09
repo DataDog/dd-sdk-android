@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.core.configuration
 
 import android.os.Build
@@ -15,13 +17,13 @@ import com.datadog.android.DatadogInterceptor
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpSpanEventMapper
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.event.ViewEventMapper
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.plugin.DatadogPlugin
-import com.datadog.android.plugin.Feature as PluginFeature
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
@@ -42,9 +44,10 @@ import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import okhttp3.Authenticator
 import java.net.Proxy
 import java.util.Locale
-import okhttp3.Authenticator
+import com.datadog.android.plugin.Feature as PluginFeature
 
 /**
  * An object describing the configuration of the Datadog SDK.
@@ -104,6 +107,7 @@ internal constructor(
             val longTaskTrackingStrategy: TrackingStrategy?,
             val rumEventMapper: EventMapper<Any>,
             val backgroundEventTracking: Boolean,
+            val trackFrustrations: Boolean,
             val vitalsMonitorUpdateFrequency: VitalsUpdateFrequency
         ) : Feature()
     }
@@ -298,14 +302,18 @@ internal constructor(
          * Any long running operation on the main thread will appear as Long Tasks in Datadog
          * RUM Explorer
          * @param longTaskThresholdMs the threshold in milliseconds above which a task running on
-         * the Main thread [Looper] is considered as a long task (default 100ms)
+         * the Main thread [Looper] is considered as a long task (default 100ms). Setting a
+         * value less than or equal to 0 disables the long task tracking
          */
         @JvmOverloads
         fun trackLongTasks(longTaskThresholdMs: Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder {
             applyIfFeatureEnabled(PluginFeature.RUM, "trackLongTasks") {
-                rumConfig = rumConfig.copy(
-                    longTaskTrackingStrategy = MainLooperLongTaskStrategy(longTaskThresholdMs)
-                )
+                val strategy = if (longTaskThresholdMs > 0) {
+                    MainLooperLongTaskStrategy(longTaskThresholdMs)
+                } else {
+                    null
+                }
+                rumConfig = rumConfig.copy(longTaskTrackingStrategy = strategy)
             }
             return this
         }
@@ -340,7 +348,19 @@ internal constructor(
          * @see [Feature.Tracing]
          * @see [Feature.RUM]
          */
-        fun addPlugin(plugin: DatadogPlugin, feature: PluginFeature): Builder {
+        @Deprecated(
+            "Datadog Plugins will be removed in SDK v2.0.0. You will then need to" +
+                " write your own Feature (check our own code for guidance)."
+        )
+        fun addPlugin(
+            @Suppress("DEPRECATION") plugin: DatadogPlugin,
+            feature: PluginFeature
+        ): Builder {
+            warnDeprecated(
+                target = "Configuration.Builder#addPlugin",
+                deprecatedSince = "1.15.0",
+                removedInVersion = "2.0.0"
+            )
             applyIfFeatureEnabled(feature, "addPlugin") {
                 when (feature) {
                     PluginFeature.RUM -> rumConfig = rumConfig.copy(
@@ -416,6 +436,21 @@ internal constructor(
         fun trackBackgroundRumEvents(enabled: Boolean): Builder {
             applyIfFeatureEnabled(PluginFeature.RUM, "trackBackgroundRumEvents") {
                 rumConfig = rumConfig.copy(backgroundEventTracking = enabled)
+            }
+            return this
+        }
+
+        /**
+         * Enables/Disables tracking of frustration signals.
+         *
+         * By default frustration signals are tracked. Currently the SDK supports detecting
+         * error taps which occur when an error follows a user action tap.
+         *
+         * @param enabled whether frustration signals should be tracked in RUM.
+         */
+        fun trackFrustrations(enabled: Boolean): Builder {
+            applyIfFeatureEnabled(PluginFeature.RUM, "trackFrustrations") {
+                rumConfig = rumConfig.copy(trackFrustrations = enabled)
             }
             return this
         }
@@ -651,6 +686,7 @@ internal constructor(
             longTaskTrackingStrategy = MainLooperLongTaskStrategy(DEFAULT_LONG_TASK_THRESHOLD_MS),
             rumEventMapper = NoOpEventMapper(),
             backgroundEventTracking = false,
+            trackFrustrations = true,
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE
         )
 

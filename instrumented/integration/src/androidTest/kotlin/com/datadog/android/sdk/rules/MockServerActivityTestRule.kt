@@ -20,16 +20,16 @@ import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.addTrackingConsent
 import com.datadog.tools.unit.getFieldValue
 import com.google.gson.JsonParser
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.File
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.zip.GZIPInputStream
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import okhttp3.mockwebserver.SocketPolicy
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.zip.GZIPInputStream
 
 internal open class MockServerActivityTestRule<T : Activity>(
     val activityClass: Class<T>,

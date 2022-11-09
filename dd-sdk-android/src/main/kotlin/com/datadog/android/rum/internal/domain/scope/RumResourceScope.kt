@@ -163,6 +163,7 @@ internal class RumResourceScope(
         attributes.putAll(GlobalRum.globalAttributes)
         val traceId = attributes.remove(RumAttributes.TRACE_ID)?.toString()
         val spanId = attributes.remove(RumAttributes.SPAN_ID)?.toString()
+        val rulePsr = attributes.remove(RumAttributes.RULE_PSR) as? Number
 
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
@@ -189,7 +190,7 @@ internal class RumResourceScope(
                 download = finalTiming?.download(),
                 provider = resolveResourceProvider()
             ),
-            action = context.actionId?.let { ResourceEvent.Action(it) },
+            action = context.actionId?.let { ResourceEvent.Action(listOf(it)) },
             view = ResourceEvent.View(
                 id = context.viewId.orEmpty(),
                 name = context.viewName,
@@ -224,6 +225,7 @@ internal class RumResourceScope(
             dd = ResourceEvent.Dd(
                 traceId = traceId,
                 spanId = spanId,
+                rulePsr = rulePsr,
                 session = ResourceEvent.DdSession(plan = ResourceEvent.Plan.PLAN_1)
             )
         )
@@ -281,7 +283,7 @@ internal class RumResourceScope(
                 type = errorType,
                 sourceType = ErrorEvent.SourceType.ANDROID
             ),
-            action = context.actionId?.let { ErrorEvent.Action(it) },
+            action = context.actionId?.let { ErrorEvent.Action(listOf(it)) },
             view = ErrorEvent.View(
                 id = context.viewId.orEmpty(),
                 name = context.viewName,

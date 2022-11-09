@@ -24,7 +24,6 @@ import fr.xgouchet.elmyr.Case
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.Locale
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -32,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -306,10 +306,8 @@ internal class DatadogDataConstraintsTest {
             testedConstraints.validateAttributes(attributes, reservedKeys = reservedKeys)
 
         // THEN
-        assertThat(sanitizedAttributes.entries)
-            .containsExactlyElementsOf(
-                attributes.entries.filterNot { reservedKeys.contains(it.key) }
-            )
+        assertThat(sanitizedAttributes)
+            .containsExactlyEntriesOf(attributes.filterNot { reservedKeys.contains(it.key) })
     }
 
     // endregion

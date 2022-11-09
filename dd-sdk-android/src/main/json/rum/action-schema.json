@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "action-schema.json",
+  "$id": "rum/action-schema.json",
   "title": "RumActionEvent",
   "type": "object",
   "description": "Schema of all properties of an Action event",
@@ -9,10 +9,7 @@
       "$ref": "_common-schema.json"
     },
     {
-      "required": [
-        "type",
-        "action"
-      ],
+      "required": ["type", "action"],
       "properties": {
         "type": {
           "type": "string",
@@ -23,9 +20,7 @@
         "action": {
           "type": "object",
           "description": "Action properties",
-          "required": [
-            "type"
-          ],
+          "required": ["type"],
           "properties": {
             "type": {
               "type": "string",
@@ -48,9 +43,7 @@
             "target": {
               "type": "object",
               "description": "Action target properties",
-              "required": [
-                "name"
-              ],
+              "required": ["name"],
               "properties": {
                 "name": {
                   "type": "string",
@@ -60,12 +53,27 @@
               },
               "readOnly": true
             },
+            "frustration": {
+              "type": "object",
+              "description": "Action frustration properties",
+              "required": ["type"],
+              "properties": {
+                "type": {
+                  "type": "array",
+                  "description": "Action frustration types",
+                  "readOnly": true,
+                  "items": {
+                    "type": "string",
+                    "enum": ["rage_click", "dead_click", "error_click", "rage_tap", "error_tap"]
+                  }
+                }
+              },
+              "readOnly": true
+            },
             "error": {
               "type": "object",
               "description": "Properties of the errors of the action",
-              "required": [
-                "count"
-              ],
+              "required": ["count"],
               "properties": {
                 "count": {
                   "type": "integer",
@@ -79,9 +87,7 @@
             "crash": {
               "type": "object",
               "description": "Properties of the crashes of the action",
-              "required": [
-                "count"
-              ],
+              "required": ["count"],
               "properties": {
                 "count": {
                   "type": "integer",
@@ -95,9 +101,7 @@
             "long_task": {
               "type": "object",
               "description": "Properties of the long tasks of the action",
-              "required": [
-                "count"
-              ],
+              "required": ["count"],
               "properties": {
                 "count": {
                   "type": "integer",
@@ -111,9 +115,7 @@
             "resource": {
               "type": "object",
               "description": "Properties of the resources of the action",
-              "required": [
-                "count"
-              ],
+              "required": ["count"],
               "properties": {
                 "count": {
                   "type": "integer",
@@ -139,6 +141,58 @@
             }
           },
           "readOnly": true
+        },
+        "_dd": {
+          "type": "object",
+          "description": "Internal properties",
+          "properties": {
+            "action": {
+              "type": "object",
+              "description": "Action properties",
+              "properties": {
+                "position": {
+                  "type": "object",
+                  "description": "Action position properties",
+                  "required": ["x", "y"],
+                  "properties": {
+                    "x": {
+                      "type": "integer",
+                      "description": "X coordinate relative to the target element of the action (in pixels)",
+                      "readOnly": true
+                    },
+                    "y": {
+                      "type": "integer",
+                      "description": "Y coordinate relative to the target element of the action (in pixels)",
+                      "readOnly": true
+                    }
+                  },
+                  "readOnly": true
+                },
+                "target": {
+                  "type": "object",
+                  "description": "Target properties",
+                  "properties": {
+                    "selector": {
+                      "type": "string",
+                      "description": "CSS selector path of the target element",
+                      "readOnly": true
+                    },
+                    "width": {
+                      "type": "integer",
+                      "description": "Width of the target element (in pixels)",
+                      "readOnly": true
+                    },
+                    "height": {
+                      "type": "integer",
+                      "description": "Height of the target element (in pixels)",
+                      "readOnly": true
+                    }
+                  }
+                }
+              },
+              "readOnly": true
+            }
+          }
         }
       }
     }

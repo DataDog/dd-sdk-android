@@ -6,17 +6,26 @@
 
 package com.datadog.gradle.plugin.jsonschema
 
+import java.util.Locale
+import kotlin.reflect.KClass
+
 sealed class TypeDefinition {
 
     abstract val description: String
 
     abstract fun mergedWith(other: TypeDefinition): TypeDefinition
 
+    abstract fun matches(other: TypeDefinition): Boolean
+
     data class Null(
         override val description: String = ""
     ) : TypeDefinition() {
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
             return other
+        }
+
+        override fun matches(other: TypeDefinition): Boolean {
+            return other is Null
         }
     }
 
@@ -28,17 +37,36 @@ sealed class TypeDefinition {
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
             throw IllegalStateException("Can't merge Constant with type $other")
         }
+
+        override fun matches(other: TypeDefinition): Boolean {
+            return (other is Constant) && (other.type == type) && (other.value == value)
+        }
     }
 
     data class Primitive(
         val type: JsonPrimitiveType,
         override val description: String = ""
     ) : TypeDefinition() {
+
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
             if (other is Primitive && type == other.type) {
                 return Primitive(type, "$description\n${other.description}".trim())
             } else {
                 throw IllegalStateException("Can't merge Primitive with type $other")
+            }
+        }
+
+        override fun matches(other: TypeDefinition): Boolean {
+            return (other is Primitive) && (other.type == type)
+        }
+
+        fun asPrimitiveTypeFun(): String {
+            return when (type) {
+                JsonPrimitiveType.BOOLEAN -> "asBoolean"
+                JsonPrimitiveType.DOUBLE -> "asDouble"
+                JsonPrimitiveType.STRING -> "asString"
+                JsonPrimitiveType.INTEGER -> "asLong"
+                JsonPrimitiveType.NUMBER -> "asNumber"
             }
         }
     }
@@ -49,7 +77,11 @@ sealed class TypeDefinition {
         override val description: String = ""
     ) : TypeDefinition() {
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
-            TODO("Not yet implemented")
+            throw IllegalStateException("Can't merge Array with type $other")
+        }
+
+        override fun matches(other: TypeDefinition): Boolean {
+            return (other is Array) && (other.items == items) && (other.uniqueItems == uniqueItems)
         }
     }
 
@@ -57,8 +89,10 @@ sealed class TypeDefinition {
         val name: String,
         val properties: List<TypeProperty>,
         override val description: String = "",
-        val additionalProperties: TypeDefinition? = null
+        val additionalProperties: TypeDefinition? = null,
+        val parentType: OneOfClass? = null
     ) : TypeDefinition() {
+
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
             check(other is Class) { "Cannot merge Class with ${other.javaClass}" }
 
@@ -86,7 +120,22 @@ sealed class TypeDefinition {
             )
         }
 
-        internal fun getChildrenTypeNames(): List<Pair<String, String>> {
+        override fun matches(other: TypeDefinition): Boolean {
+            return (other is Class) && (other.properties == properties) &&
+                (other.additionalProperties == additionalProperties)
+        }
+
+        fun isConstantClass(): Boolean {
+            // all the properties are of type Constant and the additionalProperties is null
+            this.properties.forEach {
+                if (it.type !is Constant) {
+                    return false
+                }
+            }
+            return this.additionalProperties == null // TODO false
+        }
+
+        fun getChildrenTypeNames(): List<Pair<String, String>> {
             val direct = properties.map { it.type }
                 .mapNotNull {
                     when (it) {
@@ -105,7 +154,9 @@ sealed class TypeDefinition {
         fun renameRecursive(duplicates: Set<String>, parentName: String): TypeDefinition {
             val newName = if (name in duplicates) {
                 "$parentName$name"
-            } else name
+            } else {
+                name
+            }
 
             val newProperties = properties.map {
                 if (it.type is Class) {
@@ -124,11 +175,24 @@ sealed class TypeDefinition {
     data class Enum(
         val name: String,
         val type: JsonType?,
-        val values: List<String>,
+        val values: List<String?>,
         override val description: String = ""
     ) : TypeDefinition() {
+
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
-            TODO("Not yet implemented")
+            throw IllegalStateException("Can't merge Enum with type $other")
+        }
+
+        override fun matches(other: TypeDefinition): Boolean {
+            return (other is Enum) && (other.type == type) && (other.values == values)
+        }
+
+        fun jsonValueType(): KClass<*> {
+            return when (type) {
+                JsonType.NUMBER -> Number::class
+                JsonType.STRING, JsonType.OBJECT, null -> String::class
+                else -> throw IllegalStateException("Not yet implemented")
+            }
         }
 
         internal fun rename(duplicates: Set<String>, parentName: String): TypeDefinition {
@@ -137,6 +201,37 @@ sealed class TypeDefinition {
             } else {
                 this
             }
+        }
+
+        internal fun allowsNull(): Boolean = values.any { it == null }
+
+        internal fun enumConstantName(constantName: String?): String {
+            return if (constantName == null) {
+                "${name.toUpperCase(Locale.US)}_NULL"
+            } else if (type == JsonType.NUMBER) {
+                "${name.toUpperCase(Locale.US)}_${constantName.sanitizedName()}"
+            } else {
+                constantName.sanitizedName()
+            }
+        }
+
+        private fun String.sanitizedName(): String {
+            return toUpperCase(Locale.US).replace(Regex("[^A-Z0-9]+"), "_")
+        }
+    }
+
+    data class OneOfClass(
+        val name: String,
+        val options: List<Class>,
+        override val description: String = ""
+    ) : TypeDefinition() {
+
+        override fun mergedWith(other: TypeDefinition): TypeDefinition {
+            throw IllegalStateException("Can't merge Multiclass with type $other")
+        }
+
+        override fun matches(other: TypeDefinition): Boolean {
+            return (other is OneOfClass) && (other.options == options)
         }
     }
 }

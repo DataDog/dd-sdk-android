@@ -9,10 +9,67 @@ package com.datadog.gradle.plugin.jsonschema
 val Address = TypeDefinition.Class(
     name = "Address",
     properties = listOf(
-        TypeProperty("street_address", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
-        TypeProperty("city", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
-        TypeProperty("state", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false)
+        TypeProperty(
+            name = "street_address",
+            type = TypeDefinition.Primitive(JsonPrimitiveType.STRING),
+            optional = false
+        ),
+        TypeProperty(
+            name = "city",
+            type = TypeDefinition.Primitive(JsonPrimitiveType.STRING),
+            optional = false
+        ),
+        TypeProperty(
+            name = "state",
+            type = TypeDefinition.Primitive(JsonPrimitiveType.STRING),
+            optional = false
+        )
     )
+)
+
+val Animal = TypeDefinition.OneOfClass(
+    name = "Animal",
+    options = listOf(
+        TypeDefinition.Class(
+            name = "Fish",
+            properties = listOf(
+                TypeProperty(
+                    name = "water",
+                    type = TypeDefinition.Enum("Water", JsonType.STRING, listOf("salt", "fresh")),
+                    optional = false
+                ),
+                TypeProperty(
+                    name = "size",
+                    type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                    optional = true
+                )
+            )
+        ),
+        TypeDefinition.Class(
+            name = "Bird",
+            properties = listOf(
+                TypeProperty(
+                    name = "food",
+                    type = TypeDefinition.Enum(
+                        name = "Food",
+                        type = JsonType.STRING,
+                        values = listOf(
+                            "fish",
+                            "bird",
+                            "rodent",
+                            "insect",
+                            "fruit",
+                            "seeds",
+                            "pollen"
+                        )
+                    ),
+                    optional = false
+                ),
+                TypeProperty("can_fly", TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN), false)
+            )
+        )
+    ),
+    description = "A representation of the animal kingdom"
 )
 
 val Article = TypeDefinition.Class(
@@ -39,7 +96,8 @@ val Book = TypeDefinition.Class(
         TypeProperty("title", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
         TypeProperty("price", TypeDefinition.Primitive(JsonPrimitiveType.NUMBER), false),
         TypeProperty(
-            "author", TypeDefinition.Class(
+            "author",
+            TypeDefinition.Class(
                 name = "Author",
                 properties = listOf(
                     TypeProperty(
@@ -215,14 +273,16 @@ val DateTime = TypeDefinition.Class(
                 properties = listOf(
                     TypeProperty("year", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), true),
                     TypeProperty(
-                        "month", TypeDefinition.Enum(
+                        "month",
+                        TypeDefinition.Enum(
                             "Month",
                             JsonType.STRING,
                             listOf(
                                 "jan", "feb", "mar", "apr", "may", "jun",
                                 "jul", "aug", "sep", "oct", "nov", "dec"
                             )
-                        ), true
+                        ),
+                        true
                     ),
                     TypeProperty("day", TypeDefinition.Primitive(JsonPrimitiveType.INTEGER), true)
                 )
@@ -287,6 +347,28 @@ val Delivery = TypeDefinition.Class(
     )
 )
 
+val Employee = TypeDefinition.Class(
+    name = "Employee",
+    properties = listOf(
+        TypeProperty("name", TypeDefinition.Primitive(JsonPrimitiveType.STRING), true),
+        TypeProperty(
+            name = "contact",
+            type = TypeDefinition.Class(
+                name = "Contact",
+                properties = listOf(
+                    TypeProperty(
+                        "phone",
+                        TypeDefinition.Primitive(JsonPrimitiveType.STRING),
+                        false
+                    ),
+                    TypeProperty("address", Address, false)
+                )
+            ),
+            optional = true
+        )
+    )
+)
+
 val Foo = TypeDefinition.Class(
     name = "Foo",
     properties = listOf(
@@ -298,7 +380,8 @@ val Foo = TypeDefinition.Class(
 val Location = TypeDefinition.Class(
     name = "Location",
     properties = listOf(
-        TypeProperty("planet", TypeDefinition.Constant(JsonType.STRING, "earth"), false)
+        TypeProperty("planet", TypeDefinition.Constant(JsonType.STRING, "earth"), false),
+        TypeProperty("solar_system", TypeDefinition.Constant(JsonType.STRING, "sol"), false)
     )
 )
 
@@ -424,6 +507,18 @@ val Product = TypeDefinition.Class(
     )
 )
 
+val Paper = TypeDefinition.Class(
+    name = "Paper",
+    properties = listOf(
+        TypeProperty("title", TypeDefinition.Primitive(JsonPrimitiveType.STRING), false),
+        TypeProperty(
+            "author",
+            TypeDefinition.Array(TypeDefinition.Primitive(JsonPrimitiveType.STRING)),
+            false
+        )
+    )
+)
+
 val Bike = TypeDefinition.Class(
     name = "Bike",
     properties = listOf(
@@ -502,13 +597,118 @@ val Style = TypeDefinition.Class(
     name = "Style",
     properties = listOf(
         TypeProperty(
-            "color",
-            TypeDefinition.Enum(
-                "Color",
-                JsonType.STRING,
-                listOf("red", "amber", "green", "dark_blue", "lime green", "sunburst-yellow")
+            name = "color",
+            type = TypeDefinition.Enum(
+                name = "Color",
+                type = null,
+                values = listOf(
+                    "red",
+                    "amber",
+                    "green",
+                    "dark_blue",
+                    "lime green",
+                    "sunburst-yellow",
+                    null
+                )
             ),
-            false
+            optional = false
+        )
+    )
+)
+
+val Household = TypeDefinition.Class(
+    name = "Household",
+    properties = listOf(
+        TypeProperty(
+            name = "pets",
+            type = TypeDefinition.Array(
+                items = TypeDefinition.OneOfClass(
+                    name = "Animal",
+                    options = listOf(
+                        TypeDefinition.Class(
+                            name = "Fish",
+                            properties = listOf(
+                                TypeProperty(
+                                    name = "water",
+                                    type = TypeDefinition.Enum(
+                                        "Water",
+                                        JsonType.STRING,
+                                        listOf("salt", "fresh")
+                                    ),
+                                    optional = false
+                                ),
+                                TypeProperty(
+                                    name = "size",
+                                    type = TypeDefinition.Primitive(JsonPrimitiveType.INTEGER),
+                                    optional = true
+                                )
+                            )
+                        ),
+                        TypeDefinition.Class(
+                            name = "Bird",
+                            properties = listOf(
+                                TypeProperty(
+                                    name = "food",
+                                    type = TypeDefinition.Enum(
+                                        name = "Food",
+                                        type = JsonType.STRING,
+                                        values = listOf(
+                                            "fish",
+                                            "bird",
+                                            "rodent",
+                                            "insect",
+                                            "fruit",
+                                            "seeds",
+                                            "pollen"
+                                        )
+                                    ),
+                                    optional = false
+                                ),
+                                TypeProperty(
+                                    "can_fly",
+                                    TypeDefinition.Primitive(JsonPrimitiveType.BOOLEAN),
+                                    false
+                                )
+                            )
+                        )
+                    ),
+                    description = "A representation of the animal kingdom"
+                )
+            ),
+            optional = true
+        ),
+        TypeProperty(
+            name = "situation",
+            type = TypeDefinition.OneOfClass(
+                name = "Situation",
+                options = listOf(
+                    TypeDefinition.Class(
+                        name = "Marriage",
+                        properties = listOf(
+                            TypeProperty(
+                                name = "spouses",
+                                type = TypeDefinition.Array(
+                                    items = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
+                                ),
+                                optional = false
+                            )
+                        )
+                    ),
+                    TypeDefinition.Class(
+                        name = "Cotenancy",
+                        properties = listOf(
+                            TypeProperty(
+                                name = "roommates",
+                                type = TypeDefinition.Array(
+                                    items = TypeDefinition.Primitive(JsonPrimitiveType.STRING)
+                                ),
+                                optional = false
+                            )
+                        )
+                    )
+                )
+            ),
+            optional = true
         )
     )
 )
@@ -593,7 +793,8 @@ val Version = TypeDefinition.Class(
         TypeProperty("version", TypeDefinition.Constant(JsonType.INTEGER, 42.0), false),
         TypeProperty("delta", TypeDefinition.Constant(JsonType.NUMBER, 3.1415), true),
         TypeProperty(
-            "id", TypeDefinition.Class(
+            "id",
+            TypeDefinition.Class(
                 name = "Id",
                 properties = listOf(
                     TypeProperty(
@@ -606,7 +807,8 @@ val Version = TypeDefinition.Class(
             false
         ),
         TypeProperty(
-            "date", TypeDefinition.Class(
+            "date",
+            TypeDefinition.Class(
                 name = "Date",
                 properties = listOf(
                     TypeProperty(

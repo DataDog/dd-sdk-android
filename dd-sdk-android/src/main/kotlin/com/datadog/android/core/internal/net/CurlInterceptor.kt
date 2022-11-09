@@ -7,15 +7,15 @@
 package com.datadog.android.core.internal.net
 
 import android.util.Log
-import java.io.IOException
-import java.nio.charset.Charset
-import java.util.Locale
-import kotlin.jvm.Throws
 import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import okio.Buffer
+import java.io.IOException
+import java.nio.charset.Charset
+import java.util.Locale
+import kotlin.jvm.Throws
 
 /**
  * This interceptor logs the request as a valid CURL command line.

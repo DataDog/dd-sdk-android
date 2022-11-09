@@ -6,6 +6,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.lang.IllegalStateException
+import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.String
 import kotlin.collections.HashSet
@@ -21,14 +22,14 @@ public data class Video(
     public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("title", title)
-        tags?.let { temp ->
-            val tagsArray = JsonArray(temp.size)
-            temp.forEach { tagsArray.add(it) }
+        tags?.let { tagsNonNull ->
+            val tagsArray = JsonArray(tagsNonNull.size)
+            tagsNonNull.forEach { tagsArray.add(it) }
             json.add("tags", tagsArray)
         }
-        links?.let { temp ->
-            val linksArray = JsonArray(temp.size)
-            temp.forEach { linksArray.add(it) }
+        links?.let { linksNonNull ->
+            val linksArray = JsonArray(linksNonNull.size)
+            linksNonNull.forEach { linksArray.add(it) }
             json.add("links", linksArray)
         }
         return json
@@ -37,9 +38,9 @@ public data class Video(
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(serializedObject: String): Video {
+        public fun fromJson(jsonString: String): Video {
             try {
-                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val title = jsonObject.get("title").asString
                 val tags = jsonObject.get("tags")?.asJsonArray?.let { jsonArray ->
                     val collection = HashSet<String>(jsonArray.size())
@@ -57,9 +58,20 @@ public data class Video(
                 }
                 return Video(title, tags, links)
             } catch (e: IllegalStateException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException(
+                    "Unable to parse json into type Video",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException(
+                    "Unable to parse json into type Video",
+                    e
+                )
+            } catch (e: NullPointerException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Video",
+                    e
+                )
             }
         }
     }

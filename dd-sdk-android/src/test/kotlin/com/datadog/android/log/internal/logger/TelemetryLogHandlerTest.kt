@@ -6,7 +6,6 @@
 
 package com.datadog.android.log.internal.logger
 
-import android.util.Log as AndroidLog
 import com.datadog.android.telemetry.internal.Telemetry
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.forge.aThrowable
@@ -24,6 +23,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import android.util.Log as AndroidLog
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

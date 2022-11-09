@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.AndroidInfoProvider
@@ -17,6 +18,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum._RumInternalProxy
@@ -48,6 +50,7 @@ internal class DatadogRumMonitor(
     applicationId: String,
     internal val samplingRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
+    internal val trackFrustrations: Boolean,
     private val writer: DataWriter<Any>,
     internal val handler: Handler,
     internal val telemetryEventHandler: TelemetryEventHandler,
@@ -65,6 +68,7 @@ internal class DatadogRumMonitor(
         applicationId,
         samplingRate,
         backgroundTrackingEnabled,
+        trackFrustrations,
         firstPartyHostDetector,
         cpuVitalMonitor,
         memoryVitalMonitor,
@@ -298,27 +302,32 @@ internal class DatadogRumMonitor(
         )
     }
 
-    override fun eventSent(viewId: String, type: EventType) {
-        when (type) {
-            EventType.ACTION -> handleEvent(RumRawEvent.ActionSent(viewId))
-            EventType.RESOURCE -> handleEvent(RumRawEvent.ResourceSent(viewId))
-            EventType.ERROR -> handleEvent(RumRawEvent.ErrorSent(viewId))
-            EventType.LONG_TASK -> handleEvent(RumRawEvent.LongTaskSent(viewId, false))
-            EventType.FROZEN_FRAME -> handleEvent(RumRawEvent.LongTaskSent(viewId, true))
-            EventType.VIEW -> {
+    override fun eventSent(viewId: String, event: StorageEvent) {
+        when (event) {
+            is StorageEvent.Action -> handleEvent(
+                RumRawEvent.ActionSent(
+                    viewId,
+                    event.frustrationCount
+                )
+            )
+            is StorageEvent.Resource -> handleEvent(RumRawEvent.ResourceSent(viewId))
+            is StorageEvent.Error -> handleEvent(RumRawEvent.ErrorSent(viewId))
+            is StorageEvent.LongTask -> handleEvent(RumRawEvent.LongTaskSent(viewId, false))
+            is StorageEvent.FrozenFrame -> handleEvent(RumRawEvent.LongTaskSent(viewId, true))
+            is StorageEvent.View -> {
                 // Nothing to do
             }
         }
     }
 
-    override fun eventDropped(viewId: String, type: EventType) {
-        when (type) {
-            EventType.ACTION -> handleEvent(RumRawEvent.ActionDropped(viewId))
-            EventType.RESOURCE -> handleEvent(RumRawEvent.ResourceDropped(viewId))
-            EventType.ERROR -> handleEvent(RumRawEvent.ErrorDropped(viewId))
-            EventType.LONG_TASK -> handleEvent(RumRawEvent.LongTaskDropped(viewId, false))
-            EventType.FROZEN_FRAME -> handleEvent(RumRawEvent.LongTaskDropped(viewId, true))
-            EventType.VIEW -> {
+    override fun eventDropped(viewId: String, event: StorageEvent) {
+        when (event) {
+            is StorageEvent.Action -> handleEvent(RumRawEvent.ActionDropped(viewId))
+            is StorageEvent.Resource -> handleEvent(RumRawEvent.ResourceDropped(viewId))
+            is StorageEvent.Error -> handleEvent(RumRawEvent.ErrorDropped(viewId))
+            is StorageEvent.LongTask -> handleEvent(RumRawEvent.LongTaskDropped(viewId, false))
+            is StorageEvent.FrozenFrame -> handleEvent(RumRawEvent.LongTaskDropped(viewId, true))
+            is StorageEvent.View -> {
                 // Nothing to do
             }
         }
@@ -329,17 +338,34 @@ internal class DatadogRumMonitor(
     }
 
     override fun sendDebugTelemetryEvent(message: String) {
-        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.DEBUG, message, null, null))
+        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.DEBUG, message, null, null, null))
     }
 
     override fun sendErrorTelemetryEvent(message: String, throwable: Throwable?) {
-        var stack: String? = throwable?.loggableStackTrace()
-        var kind: String? = throwable?.javaClass?.canonicalName ?: throwable?.javaClass?.simpleName
-        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, stack, kind))
+        val stack: String? = throwable?.loggableStackTrace()
+        val kind: String? = throwable?.javaClass?.canonicalName ?: throwable?.javaClass?.simpleName
+        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, stack, kind, null))
     }
 
     override fun sendErrorTelemetryEvent(message: String, stack: String?, kind: String?) {
-        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, stack, kind))
+        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, stack, kind, null))
+    }
+
+    @Suppress("FunctionMaxLength")
+    override fun sendConfigurationTelemetryEvent(configuration: Configuration) {
+        handleEvent(
+            RumRawEvent.SendTelemetry(TelemetryType.CONFIGURATION, "", null, null, configuration)
+        )
+    }
+
+    override fun notifyInterceptorInstantiated() {
+        handleEvent(
+            RumRawEvent.SendTelemetry(TelemetryType.INTERCEPTOR_SETUP, "", null, null, null)
+        )
+    }
+
+    override fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double) {
+        handleEvent(RumRawEvent.UpdatePerformanceMetric(metric, value))
     }
 
     override fun _getInternal(): _RumInternalProxy? {

@@ -6,6 +6,7 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.core.internal.utils.toMutableMap
 import com.datadog.android.log.internal.utils.ISO_8601
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -16,14 +17,14 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.jvm.ext.aTimestamp
+import org.json.JSONArray
+import org.json.JSONObject
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-import org.json.JSONArray
-import org.json.JSONObject
-import org.junit.jupiter.api.Assumptions.assumeTrue
 
 /**
  * Will generate an alphaNumericalString which is not matching any values provided in the set.
@@ -43,7 +44,7 @@ internal fun Forge.aStringNotMatchingSet(set: Set<String>): String {
 internal fun Forge.exhaustiveAttributes(
     excludedKeys: Set<String> = emptySet(),
     filterThreshold: Float = 0.5f
-): Map<String, Any?> {
+): MutableMap<String, Any?> {
     val map = generateMapWithExhaustiveValues(this).toMutableMap()
 
     map[""] = anHexadecimalString()
@@ -56,7 +57,7 @@ internal fun Forge.exhaustiveAttributes(
 
     assumeDifferenceIsNoMore(filtered.size, map.size, filterThreshold)
 
-    return filtered
+    return filtered.toMutableMap()
 }
 
 /**
@@ -121,7 +122,7 @@ private fun assumeDifferenceIsNoMore(result: Int, base: Int, maxDifference: Floa
     )
 }
 
-private fun generateMapWithExhaustiveValues(forge: Forge): Map<String, Any?> {
+private fun generateMapWithExhaustiveValues(forge: Forge): MutableMap<String, Any?> {
     return forge.run {
         listOf(
             aBool(),
@@ -143,6 +144,6 @@ private fun generateMapWithExhaustiveValues(forge: Forge): Map<String, Any?> {
             null
         )
             .map { anAlphaNumericalString() to it }
-            .toMap()
+            .toMutableMap()
     }
 }

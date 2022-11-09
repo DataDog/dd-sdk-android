@@ -55,14 +55,6 @@ create_key:
 
 # STATIC ANALYSIS
 
-analysis:ktlint:
-  tags: [ "runner:main" ]
-  image: $CI_IMAGE_DOCKER
-  stage: analysis
-  timeout: 30m
-  script:
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew :ktlintCheckAll --stacktrace --no-daemon
-
 analysis:android-lint:
   tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
@@ -92,13 +84,13 @@ analysis:licenses:
   script:
     - GRADLE_OPTS="-Xmx2560m" ./gradlew checkThirdPartyLicensesAll --stacktrace --no-daemon
 
-analysis:api-surface:
-  tags: [ "runner:main" ]
-  image: $CI_IMAGE_DOCKER
+static-analysis:
   stage: analysis
-  timeout: 30m
-  script:
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew checkApiSurfaceChangesAll --stacktrace --no-daemon
+  variables: 
+    GRADLE_OPTS: "-Xmx2560m -Dorg.gradle.daemon=false -Dorg.gradle.logging.stacktrace=all"
+  trigger:
+    include: "https://gitlab-templates.ddbuild.io/mobile/release/static-analysis.yml"
+    strategy: depend
 
 analysis:nightly-tests-coverage:
   tags: [ "runner:main" ]
@@ -189,6 +181,7 @@ publish:release:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -204,6 +197,7 @@ publish:release-coil:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -219,6 +213,7 @@ publish:release-compose:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -235,6 +230,7 @@ publish:release-fresco:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -250,6 +246,7 @@ publish:release-glide:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -265,6 +262,7 @@ publish:release-ktx:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -280,6 +278,7 @@ publish:release-ndk:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -295,6 +294,7 @@ publish:release-rx:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -310,6 +310,7 @@ publish:release-sqldelight:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -325,6 +326,7 @@ publish:release-timber:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -340,6 +342,7 @@ publish:release-android-tv:
   tags: [ "runner:main" ]
   only:
     - tags
+    - develop
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -410,18 +413,6 @@ notify:dogfood-bridge:
     - pip3 install GitPython requests
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_token --with-decryption --query "Parameter.Value" --out text >> ./gh_token
     - python3 dogfood.py -v $CI_COMMIT_TAG -t bridge
-
-notify:dogfood-flutter:
-  tags: [ "runner:main" ]
-  only:
-    - tags
-  image: $CI_IMAGE_DOCKER
-  stage: notify
-  when: on_success
-  script:
-    - pip3 install GitPython requests
-    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_token --with-decryption --query "Parameter.Value" --out text >> ./gh_token
-    - python3 dogfood.py -v $CI_COMMIT_TAG -t flutter
 
 notify:dogfood-gradle-plugin:
   tags: [ "runner:main" ]

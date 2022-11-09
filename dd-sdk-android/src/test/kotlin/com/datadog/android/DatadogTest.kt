@@ -10,7 +10,6 @@ import android.app.Application
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.net.ConnectivityManager
-import android.util.Log as AndroidLog
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
@@ -69,6 +68,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import android.util.Log as AndroidLog
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

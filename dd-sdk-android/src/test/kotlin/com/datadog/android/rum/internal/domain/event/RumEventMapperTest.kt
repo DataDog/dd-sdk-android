@@ -9,12 +9,13 @@ package com.datadog.android.rum.internal.domain.event
 import android.util.Log
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.internal.utils.WARN_WITH_TELEMETRY_LEVEL
-import com.datadog.android.rum.internal.monitor.EventType
+import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
@@ -33,7 +34,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.Locale
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -43,6 +43,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -93,7 +94,7 @@ internal class RumEventMapperTest {
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
 
         // THEN
-        assertThat(mappedRumEvent).isNotNull()
+        assertThat(mappedRumEvent).isNotNull
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
     }
 
@@ -107,7 +108,7 @@ internal class RumEventMapperTest {
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
 
         // THEN
-        assertThat(mappedRumEvent).isNotNull()
+        assertThat(mappedRumEvent).isNotNull
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
     }
 
@@ -121,7 +122,7 @@ internal class RumEventMapperTest {
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
 
         // THEN
-        assertThat(mappedRumEvent).isNotNull()
+        assertThat(mappedRumEvent).isNotNull
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
     }
 
@@ -135,7 +136,7 @@ internal class RumEventMapperTest {
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
 
         // THEN
-        assertThat(mappedRumEvent).isNotNull()
+        assertThat(mappedRumEvent).isNotNull
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
     }
 
@@ -149,7 +150,7 @@ internal class RumEventMapperTest {
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
 
         // THEN
-        assertThat(mappedRumEvent).isNotNull()
+        assertThat(mappedRumEvent).isNotNull
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
     }
 
@@ -163,7 +164,7 @@ internal class RumEventMapperTest {
         val mappedRumEvent = testedRumEventMapper.map(fakeRumEvent)
 
         // THEN
-        assertThat(mappedRumEvent).isNotNull()
+        assertThat(mappedRumEvent).isNotNull
         assertThat(mappedRumEvent).isEqualTo(fakeRumEvent)
     }
 
@@ -207,6 +208,18 @@ internal class RumEventMapperTest {
         // THEN
         verifyZeroInteractions(logger.mockSdkLogHandler)
         assertThat(mappedRumEvent).isSameAs(telemetryErrorEvent)
+    }
+
+    @Test
+    fun `M return the original event W map { TelemetryConfigurationEvent }`(
+        @Forgery telemetryConfigurationEvent: TelemetryConfigurationEvent
+    ) {
+        // WHEN
+        val mappedRumEvent = testedRumEventMapper.map(telemetryConfigurationEvent)
+
+        // THEN
+        verifyZeroInteractions(logger.mockSdkLogHandler)
+        assertThat(mappedRumEvent).isSameAs(telemetryConfigurationEvent)
     }
 
     @Test
@@ -436,7 +449,13 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance).eventDropped(fakeRumEvent.view.id, EventType.ACTION)
+        verify(rumMonitor.mockInstance)
+            .eventDropped(
+                fakeRumEvent.view.id,
+                StorageEvent.Action(
+                    frustrationCount = fakeRumEvent.action.frustration?.type?.size ?: 0
+                )
+            )
     }
 
     @Test
@@ -451,7 +470,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance).eventDropped(fakeRumEvent.view.id, EventType.RESOURCE)
+        verify(rumMonitor.mockInstance).eventDropped(fakeRumEvent.view.id, StorageEvent.Resource)
     }
 
     @Test
@@ -469,7 +488,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance).eventDropped(fakeNoCrashEvent.view.id, EventType.ERROR)
+        verify(rumMonitor.mockInstance).eventDropped(fakeNoCrashEvent.view.id, StorageEvent.Error)
     }
 
     @Test
@@ -490,7 +509,7 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance).eventDropped(longTaskEvent.view.id, EventType.LONG_TASK)
+        verify(rumMonitor.mockInstance).eventDropped(longTaskEvent.view.id, StorageEvent.LongTask)
     }
 
     @Test
@@ -511,7 +530,10 @@ internal class RumEventMapperTest {
 
         // THEN
         assertThat(mappedRumEvent).isNull()
-        verify(rumMonitor.mockInstance).eventDropped(longTaskEvent.view.id, EventType.FROZEN_FRAME)
+        verify(rumMonitor.mockInstance).eventDropped(
+            longTaskEvent.view.id,
+            StorageEvent.FrozenFrame
+        )
     }
 
     companion object {

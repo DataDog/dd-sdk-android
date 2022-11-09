@@ -12,6 +12,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import java.util.Locale
@@ -75,6 +76,15 @@ internal class RumEventSourceProvider(source: String) {
     val telemetryErrorEventSource: TelemetryErrorEvent.Source? by lazy {
         try {
             TelemetryErrorEvent.Source.fromJson(source)
+        } catch (e: NoSuchElementException) {
+            devLogger.e(UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source), e)
+            null
+        }
+    }
+
+    val telemetryConfigurationEventSource: TelemetryConfigurationEvent.Source? by lazy {
+        try {
+            TelemetryConfigurationEvent.Source.fromJson(source)
         } catch (e: NoSuchElementException) {
             devLogger.e(UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source), e)
             null

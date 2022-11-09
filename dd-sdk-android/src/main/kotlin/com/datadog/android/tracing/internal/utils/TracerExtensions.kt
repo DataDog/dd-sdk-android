@@ -14,12 +14,16 @@ internal fun Tracer.traceId(): String? {
     val activeSpan: Span? = activeSpan()
     return if (activeSpan is DDSpan) {
         activeSpan.traceId.toString()
-    } else null
+    } else {
+        null
+    }
 }
 
 internal fun Tracer.spanId(): String? {
     val activeSpan: Span? = activeSpan()
     return if (activeSpan is DDSpan) {
         activeSpan.spanId.toString()
-    } else null
+    } else {
+        null
+    }
 }

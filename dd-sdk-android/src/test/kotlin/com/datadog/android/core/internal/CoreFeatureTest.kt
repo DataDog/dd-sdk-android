@@ -56,13 +56,6 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.net.Proxy
-import java.util.Locale
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 import okhttp3.Authenticator
 import okhttp3.CipherSuite
 import okhttp3.ConnectionSpec
@@ -78,6 +71,13 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.net.Proxy
+import java.util.Locale
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -253,7 +253,32 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes app info 𝕎 initialize()`() {
+    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
+    fun `𝕄 initializes app info 𝕎 initialize() { LOLLIPOP }`() {
+        // When
+        CoreFeature.initialize(
+            appContext.mockInstance,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
+        assertThat(CoreFeature.packageVersionProvider.version).isEqualTo(appContext.fakeVersionName)
+        assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
+        assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
+        assertThat(CoreFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
+        assertThat(CoreFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
+        assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.TIRAMISU)
+    fun `𝕄 initializes app info 𝕎 initialize() { TIRAMISU }`() {
         // When
         CoreFeature.initialize(
             appContext.mockInstance,
@@ -352,9 +377,48 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes app info 𝕎 initialize() {unknown package name}`() {
+    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
+    fun `𝕄 initializes app info 𝕎 initialize() {unknown package name, LOLLIPOP}`() {
         // Given
+        @Suppress("DEPRECATION")
         whenever(appContext.mockPackageManager.getPackageInfo(appContext.fakePackageName, 0))
+            .doThrow(PackageManager.NameNotFoundException())
+        whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
+            .doReturn(mockConnectivityMgr)
+
+        // When
+        CoreFeature.initialize(
+            appContext.mockInstance,
+            fakeCredentials.copy(rumApplicationId = null),
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(CoreFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(CoreFeature.packageName).isEqualTo(appContext.fakePackageName)
+        assertThat(CoreFeature.packageVersionProvider.version).isEqualTo(
+            CoreFeature.DEFAULT_APP_VERSION
+        )
+        assertThat(CoreFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
+        assertThat(CoreFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(CoreFeature.variant).isEqualTo(fakeCredentials.variant)
+        assertThat(CoreFeature.rumApplicationId).isNull()
+        assertThat(CoreFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(CoreFeature.batchSize).isEqualTo(fakeConfig.batchSize)
+        assertThat(CoreFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.TIRAMISU)
+    fun `𝕄 initializes app info 𝕎 initialize() {unknown package name, TIRAMISU}`() {
+        // Given
+        whenever(
+            appContext.mockPackageManager.getPackageInfo(
+                appContext.fakePackageName,
+                PackageManager.PackageInfoFlags.of(0)
+            )
+        )
             .doThrow(PackageManager.NameNotFoundException())
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
             .doReturn(mockConnectivityMgr)

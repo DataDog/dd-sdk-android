@@ -8,11 +8,11 @@ package com.datadog.android.rum.assertj
 
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.model.ViewEvent
-import java.util.concurrent.TimeUnit
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.assertj.core.data.Percentage
+import java.util.concurrent.TimeUnit
 
 internal class ViewEventAssert(actual: ViewEvent) :
     AbstractObjectAssert<ViewEventAssert, ViewEvent>(
@@ -117,6 +117,16 @@ internal class ViewEventAssert(actual: ViewEvent) :
             .overridingErrorMessage(
                 "Expected event data to have view.action.count $expected " +
                     "but was ${actual.view.action.count}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasFrustrationCount(expected: Long?): ViewEventAssert {
+        assertThat(actual.view.frustration?.count)
+            .overridingErrorMessage(
+                "Expected event data to have view.frustration.count $expected " +
+                    "but was ${actual.view.frustration?.count}"
             )
             .isEqualTo(expected)
         return this
@@ -466,6 +476,64 @@ internal class ViewEventAssert(actual: ViewEvent) :
             )
             .isEqualTo(versionMajor)
         return this
+    }
+
+    fun hasFlutterBuildTime(value: ViewEvent.FlutterBuildTime?): ViewEventAssert {
+        performanceMetricsAreClose("flutterBuildTime", actual.view.flutterBuildTime, value)
+        return this
+    }
+
+    fun hasFlutterRasterTime(value: ViewEvent.FlutterBuildTime?): ViewEventAssert {
+        performanceMetricsAreClose("flutterRasterTime", actual.view.flutterRasterTime, value)
+        return this
+    }
+
+    fun hasJsRefreshRate(value: ViewEvent.FlutterBuildTime?): ViewEventAssert {
+        performanceMetricsAreClose("jsRefreshRate", actual.view.jsRefreshRate, value)
+        return this
+    }
+
+    private fun performanceMetricsAreClose(
+        metric: String,
+        actualBuildTime: ViewEvent.FlutterBuildTime?,
+        expectedBuildTime: ViewEvent.FlutterBuildTime?
+    ) {
+        if (actualBuildTime == null || expectedBuildTime == null) {
+            assertThat(actualBuildTime)
+                .overridingErrorMessage(
+                    "Expected the event data to have view.$metric of" +
+                        " $expectedBuildTime but was $actualBuildTime"
+                )
+                .isEqualTo(expectedBuildTime)
+        } else {
+            assertThat(actualBuildTime.min.toDouble())
+                .overridingErrorMessage(
+                    "Expected the event data to have view.$metric.min to be close to" +
+                        "${expectedBuildTime.min} but was ${actualBuildTime.min}"
+                )
+                .isCloseTo(expectedBuildTime.min.toDouble(), Percentage.withPercentage(0.1))
+
+            assertThat(actualBuildTime.max.toDouble())
+                .overridingErrorMessage(
+                    "Expected the event data to have view.$metric.max to be close to" +
+                        " ${expectedBuildTime.max} but was ${actualBuildTime.max}"
+                )
+                .isCloseTo(expectedBuildTime.max.toDouble(), Percentage.withPercentage(0.1))
+
+            assertThat(actualBuildTime.average.toDouble())
+                .overridingErrorMessage(
+                    "Expected the event data to have view.$metric.min to be close to" +
+                        " ${expectedBuildTime.average} but was ${actualBuildTime.average}"
+                )
+                .isCloseTo(expectedBuildTime.average.toDouble(), Percentage.withPercentage(0.1))
+
+            assertThat(actualBuildTime.metricMax)
+                .overridingErrorMessage(
+                    "Expected the event data to have view.$metric.metricMax to be equal to" +
+                        " ${expectedBuildTime.metricMax} but was ${actualBuildTime.metricMax}"
+                )
+                .isEqualTo(expectedBuildTime.metricMax)
+        }
     }
 
     companion object {

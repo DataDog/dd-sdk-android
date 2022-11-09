@@ -9,7 +9,6 @@ package com.datadog.android
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.stream.Stream
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -19,6 +18,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.stream.Stream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),

@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.core.internal
 
 import android.content.Context
@@ -89,6 +91,10 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature> {
         }
     }
 
+    @Deprecated(
+        "Datadog Plugins will be removed in SDK v2.0.0. You will then need to" +
+            " write your own Feature (check our own code for guidance)."
+    )
     fun getPlugins(): List<DatadogPlugin> {
         return featurePlugins
     }

@@ -10,7 +10,6 @@ import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import kotlin.system.measureTimeMillis
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.junit.jupiter.api.Test
@@ -19,6 +18,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import kotlin.system.measureTimeMillis
 
 @Extensions(
     ExtendWith(

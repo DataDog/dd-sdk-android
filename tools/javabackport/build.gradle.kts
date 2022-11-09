@@ -6,12 +6,10 @@
 
 import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.kotlinConfig
-import com.datadog.gradle.config.ktLintConfig
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
     id("io.gitlab.arturbosch.detekt")
-    id("org.jlleitschuh.gradle.ktlint")
 }
 
 dependencies {
@@ -20,4 +18,3 @@ dependencies {
 
 kotlinConfig()
 detektConfig()
-ktLintConfig()

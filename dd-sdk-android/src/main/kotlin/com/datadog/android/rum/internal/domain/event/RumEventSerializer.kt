@@ -15,6 +15,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.google.gson.JsonObject
@@ -46,6 +47,9 @@ internal class RumEventSerializer(
                 model.toJson().toString()
             }
             is TelemetryErrorEvent -> {
+                model.toJson().toString()
+            }
+            is TelemetryConfigurationEvent -> {
                 model.toJson().toString()
             }
             is JsonObject -> {
@@ -140,7 +144,7 @@ internal class RumEventSerializer(
         return extractKnownAttributes(sanitizedModel.toJson().asJsonObject).toString()
     }
 
-    private fun validateContextAttributes(attributes: Map<String, Any?>): Map<String, Any?> {
+    private fun validateContextAttributes(attributes: Map<String, Any?>): MutableMap<String, Any?> {
         return dataConstraints.validateAttributes(
             attributes.filterKeys {
                 it !in crossPlatformTransitAttributes
@@ -150,7 +154,7 @@ internal class RumEventSerializer(
         )
     }
 
-    private fun validateUserAttributes(attributes: Map<String, Any?>): Map<String, Any?> {
+    private fun validateUserAttributes(attributes: Map<String, Any?>): MutableMap<String, Any?> {
         return dataConstraints.validateAttributes(
             attributes,
             keyPrefix = USER_ATTRIBUTE_PREFIX,

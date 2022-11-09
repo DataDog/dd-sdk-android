@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.AndroidInfoProvider
@@ -15,6 +16,7 @@ import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
@@ -59,10 +61,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.ScheduledThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
@@ -75,6 +73,10 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -133,6 +135,9 @@ internal class DatadogRumMonitorTest {
     @BoolForgery
     var fakeBackgroundTrackingEnabled: Boolean = false
 
+    @BoolForgery
+    var fakeTrackFrustrations: Boolean = true
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeAttributes = forge.exhaustiveAttributes()
@@ -140,6 +145,7 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
@@ -160,6 +166,7 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
@@ -228,7 +235,7 @@ internal class DatadogRumMonitorTest {
             val event = firstValue as RumRawEvent.StartAction
             assertThat(event.type).isEqualTo(type)
             assertThat(event.name).isEqualTo(name)
-            assertThat(event.waitForStop).isFalse()
+            assertThat(event.waitForStop).isFalse
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -248,7 +255,7 @@ internal class DatadogRumMonitorTest {
             val event = firstValue as RumRawEvent.StartAction
             assertThat(event.type).isEqualTo(type)
             assertThat(event.name).isEqualTo(name)
-            assertThat(event.waitForStop).isTrue()
+            assertThat(event.waitForStop).isTrue
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -446,7 +453,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.stacktrace).isNull()
-            assertThat(event.isFatal).isFalse()
+            assertThat(event.isFatal).isFalse
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
@@ -470,7 +477,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isNull()
             assertThat(event.stacktrace).isEqualTo(stacktrace)
-            assertThat(event.isFatal).isFalse()
+            assertThat(event.isFatal).isFalse
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
@@ -551,7 +558,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.message).isEqualTo(message)
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
-            assertThat(event.isFatal).isTrue()
+            assertThat(event.isFatal).isTrue
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.attributes).isEmpty()
         }
@@ -655,7 +662,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
             assertThat(event.type).isEqualTo(type)
             assertThat(event.name).isEqualTo(name)
-            assertThat(event.waitForStop).isFalse()
+            assertThat(event.waitForStop).isFalse
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -678,7 +685,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
             assertThat(event.type).isEqualTo(type)
             assertThat(event.name).isEqualTo(name)
-            assertThat(event.waitForStop).isTrue()
+            assertThat(event.waitForStop).isTrue
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
@@ -776,7 +783,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.stacktrace).isNull()
-            assertThat(event.isFatal).isFalse()
+            assertThat(event.isFatal).isFalse
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
@@ -803,7 +810,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isNull()
             assertThat(event.stacktrace).isEqualTo(stacktrace)
-            assertThat(event.isFatal).isFalse()
+            assertThat(event.isFatal).isFalse
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
@@ -830,7 +837,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.stacktrace).isNull()
-            assertThat(event.isFatal).isFalse()
+            assertThat(event.isFatal).isFalse
             assertThat(event.type).isEqualTo(errorType)
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorType)
@@ -863,7 +870,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isNull()
             assertThat(event.stacktrace).isEqualTo(stacktrace)
-            assertThat(event.isFatal).isFalse()
+            assertThat(event.isFatal).isFalse
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorType)
             assertThat(event.type).isEqualTo(errorType)
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
@@ -908,7 +915,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.source).isEqualTo(source)
             assertThat(event.throwable).isNull()
             assertThat(event.stacktrace).isEqualTo(stacktrace)
-            assertThat(event.isFatal).isFalse()
+            assertThat(event.isFatal).isFalse
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorSourceType)
             assertThat(event.sourceType).isEqualTo(sourceTypeExpectations[sourceType])
         }
@@ -934,9 +941,10 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W eventSent {action}`(
-        @StringForgery viewId: String
+        @StringForgery viewId: String,
+        @IntForgery(0) frustrationCount: Int
     ) {
-        testedMonitor.eventSent(viewId, EventType.ACTION)
+        testedMonitor.eventSent(viewId, StorageEvent.Action(frustrationCount))
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -944,6 +952,7 @@ internal class DatadogRumMonitorTest {
 
             val event = firstValue as RumRawEvent.ActionSent
             assertThat(event.viewId).isEqualTo(viewId)
+            assertThat(event.frustrationCount).isEqualTo(frustrationCount)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }
@@ -952,7 +961,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventSent {resource}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventSent(viewId, EventType.RESOURCE)
+        testedMonitor.eventSent(viewId, StorageEvent.Resource)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -968,7 +977,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventSent {error}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventSent(viewId, EventType.ERROR)
+        testedMonitor.eventSent(viewId, StorageEvent.Error)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -984,7 +993,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventSent {longTask}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventSent(viewId, EventType.LONG_TASK)
+        testedMonitor.eventSent(viewId, StorageEvent.LongTask)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1001,7 +1010,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventSent {frozenFrame}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventSent(viewId, EventType.FROZEN_FRAME)
+        testedMonitor.eventSent(viewId, StorageEvent.FrozenFrame)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1016,9 +1025,10 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W eventDropped {action}`(
-        @StringForgery viewId: String
+        @StringForgery viewId: String,
+        @IntForgery(0) frustrationCount: Int
     ) {
-        testedMonitor.eventDropped(viewId, EventType.ACTION)
+        testedMonitor.eventDropped(viewId, StorageEvent.Action(frustrationCount))
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1034,7 +1044,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventDropped {resource}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventDropped(viewId, EventType.RESOURCE)
+        testedMonitor.eventDropped(viewId, StorageEvent.Resource)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1050,7 +1060,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventDropped {error}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventDropped(viewId, EventType.ERROR)
+        testedMonitor.eventDropped(viewId, StorageEvent.Error)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1066,7 +1076,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventDropped {longTask}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventDropped(viewId, EventType.LONG_TASK)
+        testedMonitor.eventDropped(viewId, StorageEvent.LongTask)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1083,7 +1093,7 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W eventDropped {frozenFrame}`(
         @StringForgery viewId: String
     ) {
-        testedMonitor.eventDropped(viewId, EventType.FROZEN_FRAME)
+        testedMonitor.eventDropped(viewId, StorageEvent.FrozenFrame)
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
@@ -1156,6 +1166,7 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
@@ -1200,6 +1211,7 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
@@ -1231,6 +1243,7 @@ internal class DatadogRumMonitorTest {
             fakeApplicationId,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
             mockWriter,
             mockHandler,
             mockTelemetryEventHandler,
@@ -1402,11 +1415,35 @@ internal class DatadogRumMonitorTest {
             assertThat(lastValue.type).isEqualTo(TelemetryType.DEBUG)
             assertThat(lastValue.stack).isNull()
             assertThat(lastValue.kind).isNull()
+            assertThat(lastValue.configuration).isNull()
         }
     }
 
     @Test
-    fun `M handle error telemetry event W sendErrorTelemetryEvent()`(
+    fun `M handle error telemetry event W sendErrorTelemetryEvent() {stack+kind}`(
+        @StringForgery message: String,
+        @StringForgery stackTrace: String,
+        @StringForgery kind: String
+    ) {
+        // When
+        testedMonitor.sendErrorTelemetryEvent(message, stackTrace, kind)
+
+        // Then
+        argumentCaptor<RumRawEvent.SendTelemetry> {
+            verify(mockTelemetryEventHandler).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            assertThat(lastValue.message).isEqualTo(message)
+            assertThat(lastValue.type).isEqualTo(TelemetryType.ERROR)
+            assertThat(lastValue.stack).isEqualTo(stackTrace)
+            assertThat(lastValue.kind).isEqualTo(kind)
+            assertThat(lastValue.configuration).isNull()
+        }
+    }
+
+    @Test
+    fun `M handle error telemetry event W sendErrorTelemetryEvent() {throwable}`(
         @StringForgery message: String,
         forge: Forge
     ) {
@@ -1424,6 +1461,70 @@ internal class DatadogRumMonitorTest {
             assertThat(lastValue.type).isEqualTo(TelemetryType.ERROR)
             assertThat(lastValue.stack).isEqualTo(throwable?.loggableStackTrace())
             assertThat(lastValue.kind).isEqualTo(throwable?.javaClass?.canonicalName)
+            assertThat(lastValue.configuration).isNull()
+        }
+    }
+
+    @Test
+    fun `M handle configuration telemetry event W sendConfigurationTelemetryEvent()`(
+        @Forgery configuration: Configuration
+    ) {
+        // When
+        testedMonitor.sendConfigurationTelemetryEvent(configuration)
+
+        // Then
+        argumentCaptor<RumRawEvent.SendTelemetry> {
+            verify(mockTelemetryEventHandler).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            assertThat(lastValue.message).isEmpty()
+            assertThat(lastValue.type).isEqualTo(TelemetryType.CONFIGURATION)
+            assertThat(lastValue.stack).isNull()
+            assertThat(lastValue.kind).isNull()
+            assertThat(lastValue.configuration).isSameAs(configuration)
+        }
+    }
+
+    @Test
+    fun `M handle interceptor event W notifyInterceptorInstantiated()`() {
+        // When
+        testedMonitor.notifyInterceptorInstantiated()
+
+        // Then
+        argumentCaptor<RumRawEvent.SendTelemetry> {
+            verify(mockTelemetryEventHandler).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            assertThat(lastValue.message).isEmpty()
+            assertThat(lastValue.type).isEqualTo(TelemetryType.INTERCEPTOR_SETUP)
+            assertThat(lastValue.stack).isNull()
+            assertThat(lastValue.kind).isNull()
+            assertThat(lastValue.configuration).isNull()
+        }
+    }
+
+    @Test
+    fun `M handle performance metric update W updatePerformanceMetric()`(
+        forge: Forge
+    ) {
+        // Given
+        val metric = forge.aValueFrom(RumPerformanceMetric::class.java)
+        val value = forge.aDouble()
+
+        // When
+        testedMonitor.updatePerformanceMetric(metric, value)
+        Thread.sleep(PROCESSING_DELAY)
+
+        // Then
+        argumentCaptor<RumRawEvent.UpdatePerformanceMetric> {
+            verify(mockScope).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            assertThat(lastValue.metric).isEqualTo(metric)
+            assertThat(lastValue.value).isEqualTo(value)
         }
     }
 
