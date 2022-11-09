@@ -101,6 +101,15 @@ internal class LogEventAssert(actual: LogEvent) :
         return this
     }
 
+    fun hasDeviceArchitecture(expected: String): LogEventAssert {
+        assertThat(actual.device.architecture)
+            .overridingErrorMessage(
+                "Expected device to have architecture $expected but was ${actual.device.architecture}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasThreadName(expected: String): LogEventAssert {
         assertThat(actual.logger.threadName)
             .overridingErrorMessage(

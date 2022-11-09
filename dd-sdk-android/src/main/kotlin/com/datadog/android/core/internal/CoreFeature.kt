@@ -263,7 +263,8 @@ internal object CoreFeature {
                     sdkVersion,
                     envName,
                     variant,
-                    packageVersionProvider
+                    packageVersionProvider,
+                    androidInfoProvider
                 ),
                 NdkCrashLogDeserializer(sdkLogger),
                 RumEventDeserializer(),

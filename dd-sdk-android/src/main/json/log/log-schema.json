@@ -60,6 +60,21 @@
       ],
       "readOnly": true
     },
+    "device": {
+      "type": "object",
+      "description": "Information about the device that produced this log.",
+      "properties": {
+        "architecture": {
+          "type": "string",
+          "description": "The CPU architecture of the device",
+          "readOnly": true
+        }
+      },
+      "required": [
+        "architecture"
+      ],
+      "readOnly": true
+    },
     "usr": {
       "type": "object",
       "description": "User properties",
@@ -167,6 +182,7 @@
     "date",
     "service",
     "logger",
+    "device",
     "ddtags"
   ],
   "additionalProperties": {

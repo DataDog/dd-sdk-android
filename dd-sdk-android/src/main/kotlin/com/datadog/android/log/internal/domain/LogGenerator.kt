@@ -7,6 +7,7 @@
 package com.datadog.android.log.internal.domain
 
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
@@ -28,7 +29,8 @@ internal class LogGenerator(
     internal val sdkVersion: String,
     envName: String,
     variant: String,
-    internal val appVersionProvider: AppVersionProvider
+    internal val appVersionProvider: AppVersionProvider,
+    internal val androidInfoProvider: AndroidInfoProvider
 ) {
 
     private val simpleDateFormat = buildLogDateFormat()
@@ -71,6 +73,7 @@ internal class LogGenerator(
     ): LogEvent {
         val resolvedTimestamp = timestamp + timeProvider.getServerOffsetMillis()
         val combinedAttributes = resolveAttributes(attributes, bundleWithTraces, bundleWithRum)
+        val architecture = androidInfoProvider.architecture
         val formattedDate = synchronized(simpleDateFormat) {
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             simpleDateFormat.format(Date(resolvedTimestamp))
@@ -94,6 +97,9 @@ internal class LogGenerator(
             date = formattedDate,
             error = error,
             logger = loggerInfo,
+            device = LogEvent.Device(
+                architecture = architecture
+            ),
             usr = usr,
             network = network,
             ddtags = combinedTags.joinToString(separator = ","),

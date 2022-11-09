@@ -345,7 +345,8 @@ internal constructor(internal var handler: LogHandler) {
                 CoreFeature.sdkVersion,
                 CoreFeature.envName,
                 CoreFeature.variant,
-                CoreFeature.packageVersionProvider
+                CoreFeature.packageVersionProvider,
+                CoreFeature.androidInfoProvider
             )
         }
 
