@@ -57,6 +57,7 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
     internal var samplingRate: Float = 0f
     internal var telemetrySamplingRate: Float = 0f
     internal var backgroundEventTracking: Boolean = false
+    internal var trackFrustrations: Boolean = false
 
     internal var viewTrackingStrategy: ViewTrackingStrategy = NoOpViewTrackingStrategy()
     internal var actionTrackingStrategy: UserActionTrackingStrategy =
@@ -82,6 +83,7 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
         samplingRate = configuration.samplingRate
         telemetrySamplingRate = configuration.telemetrySamplingRate
         backgroundEventTracking = configuration.backgroundEventTracking
+        trackFrustrations = configuration.trackFrustrations
         rumEventMapper = configuration.rumEventMapper
 
         configuration.viewTrackingStrategy?.let { viewTrackingStrategy = it }

@@ -65,7 +65,7 @@ internal class RumOkHttpUploaderV2Test : DataOkHttpUploaderV2Test<RumOkHttpUploa
         return "/api/v2/rum"
     }
 
-    override fun expectedQueryParams(): Map<String, String> {
+    override fun expectedQueryParams(source: String): Map<String, String> {
         // SDK version is also in the header, where it is sanitized. So we should sanitize
         // it here as well.
         val sanitizedSdkVersion =
@@ -82,7 +82,7 @@ internal class RumOkHttpUploaderV2Test : DataOkHttpUploaderV2Test<RumOkHttpUploa
         }
 
         return mapOf(
-            DataOkHttpUploaderV2.QUERY_PARAM_SOURCE to fakeSource,
+            DataOkHttpUploaderV2.QUERY_PARAM_SOURCE to source,
             DataOkHttpUploaderV2.QUERY_PARAM_TAGS to tags.joinToString(",")
         )
     }

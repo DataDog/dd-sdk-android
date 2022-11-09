@@ -14,14 +14,14 @@ import com.datadog.android.rum.RumInterceptor
 import fr.xgouchet.elmyr.Forge
 import io.ktor.http.HttpStatusCode
 import io.ktor.response.respond
-import java.io.IOException
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import java.io.IOException
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 internal class ResourceTrackingTraceSamplingActivity : AppCompatActivity() {
 

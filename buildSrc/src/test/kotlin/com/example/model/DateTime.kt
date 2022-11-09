@@ -6,6 +6,7 @@ import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import java.lang.IllegalStateException
+import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.Long
 import kotlin.String
@@ -18,17 +19,21 @@ public data class DateTime(
 ) {
     public fun toJson(): JsonElement {
         val json = JsonObject()
-        date?.let { json.add("date", it.toJson()) }
-        time?.let { json.add("time", it.toJson()) }
+        date?.let { dateNonNull ->
+            json.add("date", dateNonNull.toJson())
+        }
+        time?.let { timeNonNull ->
+            json.add("time", timeNonNull.toJson())
+        }
         return json
     }
 
     public companion object {
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJson(serializedObject: String): DateTime {
+        public fun fromJson(jsonString: String): DateTime {
             try {
-                val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val date = jsonObject.get("date")?.toString()?.let {
                     Date.fromJson(it)
                 }
@@ -37,9 +42,20 @@ public data class DateTime(
                 }
                 return DateTime(date, time)
             } catch (e: IllegalStateException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException(
+                    "Unable to parse json into type DateTime",
+                    e
+                )
             } catch (e: NumberFormatException) {
-                throw JsonParseException(e.message)
+                throw JsonParseException(
+                    "Unable to parse json into type DateTime",
+                    e
+                )
+            } catch (e: NullPointerException) {
+                throw JsonParseException(
+                    "Unable to parse json into type DateTime",
+                    e
+                )
             }
         }
     }
@@ -51,18 +67,24 @@ public data class DateTime(
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()
-            year?.let { json.addProperty("year", it) }
-            month?.let { json.add("month", it.toJson()) }
-            day?.let { json.addProperty("day", it) }
+            year?.let { yearNonNull ->
+                json.addProperty("year", yearNonNull)
+            }
+            month?.let { monthNonNull ->
+                json.add("month", monthNonNull.toJson())
+            }
+            day?.let { dayNonNull ->
+                json.addProperty("day", dayNonNull)
+            }
             return json
         }
 
         public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJson(serializedObject: String): Date {
+            public fun fromJson(jsonString: String): Date {
                 try {
-                    val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val year = jsonObject.get("year")?.asLong
                     val month = jsonObject.get("month")?.asString?.let {
                         Month.fromJson(it)
@@ -70,9 +92,20 @@ public data class DateTime(
                     val day = jsonObject.get("day")?.asLong
                     return Date(year, month, day)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException(
+                        "Unable to parse json into type Date",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException(
+                        "Unable to parse json into type Date",
+                        e
+                    )
+                } catch (e: NullPointerException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Date",
+                        e
+                    )
                 }
             }
         }
@@ -85,26 +118,43 @@ public data class DateTime(
     ) {
         public fun toJson(): JsonElement {
             val json = JsonObject()
-            hour?.let { json.addProperty("hour", it) }
-            minute?.let { json.addProperty("minute", it) }
-            seconds?.let { json.addProperty("seconds", it) }
+            hour?.let { hourNonNull ->
+                json.addProperty("hour", hourNonNull)
+            }
+            minute?.let { minuteNonNull ->
+                json.addProperty("minute", minuteNonNull)
+            }
+            seconds?.let { secondsNonNull ->
+                json.addProperty("seconds", secondsNonNull)
+            }
             return json
         }
 
         public companion object {
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJson(serializedObject: String): Time {
+            public fun fromJson(jsonString: String): Time {
                 try {
-                    val jsonObject = JsonParser.parseString(serializedObject).asJsonObject
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val hour = jsonObject.get("hour")?.asLong
                     val minute = jsonObject.get("minute")?.asLong
                     val seconds = jsonObject.get("seconds")?.asLong
                     return Time(hour, minute, seconds)
                 } catch (e: IllegalStateException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException(
+                        "Unable to parse json into type Time",
+                        e
+                    )
                 } catch (e: NumberFormatException) {
-                    throw JsonParseException(e.message)
+                    throw JsonParseException(
+                        "Unable to parse json into type Time",
+                        e
+                    )
+                } catch (e: NullPointerException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Time",
+                        e
+                    )
                 }
             }
         }
@@ -131,8 +181,8 @@ public data class DateTime(
 
         public companion object {
             @JvmStatic
-            public fun fromJson(serializedObject: String): Month = values().first {
-                it.jsonValue == serializedObject
+            public fun fromJson(jsonString: String): Month = values().first {
+                it.jsonValue == jsonString
             }
         }
     }

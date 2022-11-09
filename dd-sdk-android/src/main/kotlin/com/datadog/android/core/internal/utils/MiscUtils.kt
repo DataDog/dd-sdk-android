@@ -12,9 +12,9 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
-import java.util.Date
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.Date
 
 internal fun retryWithDelay(
     times: Int,
@@ -60,10 +60,11 @@ internal fun Any?.toJsonElement(): JsonElement {
         is Double -> JsonPrimitive(this)
         is String -> JsonPrimitive(this)
         is Date -> JsonPrimitive(this.time)
+        // this line should come before Iterable, otherwise this branch is never executed
+        is JsonArray -> this
         is Iterable<*> -> this.toJsonArray()
         is Map<*, *> -> this.toJsonObject()
         is JsonObject -> this
-        is JsonArray -> this
         is JsonPrimitive -> this
         is JSONObject -> this.toJsonObject()
         is JSONArray -> this.toJsonArray()

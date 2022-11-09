@@ -8,6 +8,7 @@ package com.datadog.android.rum
 
 import android.app.Activity
 import android.os.Bundle
+import com.datadog.android.core.internal.utils.toMutableMap
 import com.datadog.android.rum.internal.tracking.ViewLoadingTimer
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
@@ -283,7 +284,7 @@ internal class ActivityViewTrackingStrategyTest :
         whenever(mockActivity.intent).thenReturn(mockIntent)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
         val expectedAttributes = extras.map { (k, v) -> "view.arguments.$k" to v }
-            .toMap().toMutableMap()
+            .toMutableMap()
         expectedAttributes["view.intent.action"] = action
         expectedAttributes["view.intent.uri"] = uri
 

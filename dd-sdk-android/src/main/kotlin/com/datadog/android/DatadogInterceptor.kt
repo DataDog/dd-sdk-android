@@ -31,12 +31,12 @@ import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.TracingInterceptor
 import io.opentracing.Span
 import io.opentracing.Tracer
-import java.io.IOException
-import java.util.Locale
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import java.io.IOException
+import java.util.Locale
 
 /**
  * Provides automatic integration for [OkHttpClient] by way of the [Interceptor] system.
@@ -153,9 +153,13 @@ internal constructor(
         tracedRequestListener = tracedRequestListener,
         firstPartyHostDetector = CoreFeature.firstPartyHostDetector,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
-        traceSampler = RateBasedSampler(traceSamplingRate / 100),
+        traceSampler = RateBasedSampler(traceSamplingRate / 100f),
         localTracerFactory = { AndroidTracer.Builder().build() }
     )
+
+    init {
+        GlobalRum.notifyInterceptorInstantiated()
+    }
 
     // region Interceptor
 
@@ -221,7 +225,8 @@ internal constructor(
         } else {
             mapOf(
                 RumAttributes.TRACE_ID to span.context().toTraceId(),
-                RumAttributes.SPAN_ID to span.context().toSpanId()
+                RumAttributes.SPAN_ID to span.context().toSpanId(),
+                RumAttributes.RULE_PSR to traceSampler.getSamplingRate()
             )
         }
         GlobalRum.get().stopResource(
@@ -256,7 +261,13 @@ internal constructor(
             val contentLength = body.contentLength()
             if (contentLength == 0L) null else contentLength
         } catch (e: IOException) {
-            sdkLogger.e("Unable to peek response body", e)
+            sdkLogger.e(ERROR_PEEK_BODY, e)
+            null
+        } catch (e: IllegalStateException) {
+            sdkLogger.e(ERROR_PEEK_BODY, e)
+            null
+        } catch (e: IllegalArgumentException) {
+            sdkLogger.e(ERROR_PEEK_BODY, e)
             null
         }
     }
@@ -272,6 +283,8 @@ internal constructor(
 
         internal const val ERROR_NO_RESPONSE =
             "The request ended with no response nor any exception."
+
+        internal const val ERROR_PEEK_BODY = "Unable to peek response body."
 
         internal const val ERROR_MSG_FORMAT = "OkHttp request error %s %s"
 

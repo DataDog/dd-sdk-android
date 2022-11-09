@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.rum
 
 import com.datadog.android.core.internal.utils.devLogger
@@ -143,6 +145,10 @@ object GlobalRum {
 
     internal fun notifyIngestedWebViewEvent() {
         (monitor as? AdvancedRumMonitor)?.sendWebViewEvent()
+    }
+
+    internal fun notifyInterceptorInstantiated() {
+        (monitor as? AdvancedRumMonitor)?.notifyInterceptorInstantiated()
     }
 
     internal fun getRumContext(): RumContext {

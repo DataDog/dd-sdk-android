@@ -38,12 +38,12 @@ import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.concurrent.TimeUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -55,6 +55,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -99,6 +100,9 @@ internal class RumContinuousActionScopeTest {
 
     var fakeSourceActionEvent: ActionEvent.Source? = null
 
+    @BoolForgery
+    var fakeTrackFrustrations: Boolean = true
+
     @Mock
     lateinit var mockRumEventSourceProvider: RumEventSourceProvider
 
@@ -129,7 +133,8 @@ internal class RumContinuousActionScopeTest {
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
             mockRumEventSourceProvider,
-            fakeAndroidInfoProvider
+            fakeAndroidInfoProvider,
+            true
         )
     }
 
@@ -205,6 +210,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -264,6 +270,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -322,6 +329,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -384,6 +392,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -455,6 +464,11 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(1)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -531,6 +545,11 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(1)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -591,6 +610,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -656,6 +676,11 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(1)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -714,6 +739,11 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(1)
                     hasCrashCount(1)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -779,6 +809,11 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(2)
                     hasCrashCount(1)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -825,6 +860,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -875,6 +911,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -925,6 +962,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(count)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -975,6 +1013,11 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(count)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1028,6 +1071,11 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(nonFatalCount + fatalCount)
                     hasCrashCount(fatalCount)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1076,6 +1124,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1126,7 +1175,8 @@ internal class RumContinuousActionScopeTest {
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
             mockRumEventSourceProvider,
-            fakeAndroidInfoProvider
+            fakeAndroidInfoProvider,
+            fakeTrackFrustrations
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.globalAttributes.remove(it) }
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
@@ -1150,6 +1200,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1210,6 +1261,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1264,6 +1316,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1318,6 +1371,11 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(count)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1373,6 +1431,11 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(nonFatalCount + fatalCount)
                     hasCrashCount(fatalCount)
                     hasLongTaskCount(0)
+                    if (fakeType == RumActionType.TAP) {
+                        hasFrustration(ActionEvent.Type.ERROR_TAP)
+                    } else {
+                        hasNoFrustration()
+                    }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1425,6 +1488,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1482,6 +1546,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1534,6 +1599,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
@@ -1652,6 +1718,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1708,6 +1775,7 @@ internal class RumContinuousActionScopeTest {
                     hasErrorCount(0)
                     hasCrashCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1750,7 +1818,7 @@ internal class RumContinuousActionScopeTest {
                 .apply {
                     hasId(testedScope.actionId)
                     hasTimestamp(resolveExpectedTimestamp())
-                    hasType(ActionEvent.ActionType.CUSTOM)
+                    hasType(ActionEvent.ActionEventActionType.CUSTOM)
                     hasTargetName(fakeName)
                     hasDurationGreaterThan(1)
                     hasResourceCount(0)
@@ -1758,6 +1826,7 @@ internal class RumContinuousActionScopeTest {
                     hasCrashCount(0)
                     hasLongTaskCount(0)
                     hasLongTaskCount(0)
+                    hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeUserInfo)
                     hasApplicationId(fakeParentContext.applicationId)

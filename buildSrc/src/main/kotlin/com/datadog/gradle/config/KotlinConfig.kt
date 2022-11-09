@@ -7,13 +7,12 @@
 package com.datadog.gradle.config
 
 import com.android.build.gradle.tasks.factory.AndroidUnitTest
-import java.io.File
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.io.File
 
 fun Project.kotlinConfig(evaluateWarningsAsErrors: Boolean = true) {
-
     taskConfig<KotlinCompile> {
         kotlinOptions {
             jvmTarget = JavaVersion.VERSION_11.toString()

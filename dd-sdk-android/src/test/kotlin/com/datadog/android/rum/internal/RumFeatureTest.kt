@@ -40,8 +40,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.lang.ref.WeakReference
-import java.util.concurrent.ScheduledThreadPoolExecutor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -53,6 +51,8 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.lang.ref.WeakReference
+import java.util.concurrent.ScheduledThreadPoolExecutor
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -141,12 +141,14 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
     @Test
     fun `𝕄 store and register viewTrackingStrategy 𝕎 initialize()`() {
         // When
+        val mockViewTrackingStrategy = mock<ViewTrackingStrategy>()
+        fakeConfigurationFeature =
+            fakeConfigurationFeature.copy(viewTrackingStrategy = mockViewTrackingStrategy)
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // Then
-        assertThat(testedFeature.viewTrackingStrategy)
-            .isEqualTo(fakeConfigurationFeature.viewTrackingStrategy)
-        verify(fakeConfigurationFeature.viewTrackingStrategy!!).register(appContext.mockInstance)
+        assertThat(testedFeature.viewTrackingStrategy).isEqualTo(mockViewTrackingStrategy)
+        verify(mockViewTrackingStrategy).register(appContext.mockInstance)
     }
 
     @Test

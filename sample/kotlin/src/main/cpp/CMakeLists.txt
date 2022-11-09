@@ -1,5 +1,5 @@
 project("datadog-native-sample")
-cmake_minimum_required(VERSION 3.10.2)
+cmake_minimum_required(VERSION 3.22.1)
 
 add_library( # Sets the name of the library.
         datadog-native-sample-lib

@@ -28,5 +28,17 @@ enum class JsonType {
     STRING,
 
     @SerializedName("integer")
-    INTEGER
+    INTEGER;
+
+    fun asJsonPrimitiveType(): JsonPrimitiveType? {
+        return when (this) {
+            BOOLEAN -> JsonPrimitiveType.BOOLEAN
+            NUMBER -> JsonPrimitiveType.NUMBER
+            STRING -> JsonPrimitiveType.STRING
+            INTEGER -> JsonPrimitiveType.INTEGER
+            ARRAY,
+            OBJECT,
+            NULL -> null
+        }
+    }
 }

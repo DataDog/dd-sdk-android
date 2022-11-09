@@ -7,17 +7,17 @@
 package com.datadog.gradle.plugin.transdeps
 
 import com.datadog.gradle.config.taskConfig
-import java.io.File
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.io.File
 
 class TransitiveDependenciesPlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
-
-        val task = target.tasks.create(TASK_NAME, TransitiveDependenciesTask::class.java)
-        task.outputFile = File(target.projectDir, FILE_NAME)
+        target.tasks.register(TASK_NAME, TransitiveDependenciesTask::class.java) {
+            outputFile = File(target.projectDir, FILE_NAME)
+        }
 
         target.taskConfig<KotlinCompile> {
             finalizedBy(TASK_NAME)

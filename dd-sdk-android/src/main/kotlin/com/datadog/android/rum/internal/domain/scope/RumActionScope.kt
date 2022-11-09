@@ -31,7 +31,8 @@ internal class RumActionScope(
     inactivityThresholdMs: Long = ACTION_INACTIVITY_MS,
     maxDurationMs: Long = ACTION_MAX_DURATION_MS,
     private val rumEventSourceProvider: RumEventSourceProvider,
-    private val androidInfoProvider: AndroidInfoProvider
+    private val androidInfoProvider: AndroidInfoProvider,
+    private val trackFrustrations: Boolean
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
@@ -188,17 +189,23 @@ internal class RumActionScope(
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
 
+        val frustrations = mutableListOf<ActionEvent.Type>()
+        if (trackFrustrations && errorCount > 0 && actualType == RumActionType.TAP) {
+            frustrations.add(ActionEvent.Type.ERROR_TAP)
+        }
+
         val actionEvent = ActionEvent(
             date = eventTimestamp,
-            action = ActionEvent.Action(
+            action = ActionEvent.ActionEventAction(
                 type = actualType.toSchemaType(),
                 id = actionId,
-                target = ActionEvent.Target(name),
+                target = ActionEvent.ActionEventActionTarget(name),
                 error = ActionEvent.Error(errorCount),
                 crash = ActionEvent.Crash(crashCount),
                 longTask = ActionEvent.LongTask(longTaskCount),
                 resource = ActionEvent.Resource(resourceCount),
-                loadingTime = max(endNanos - startedNanos, 1L)
+                loadingTime = max(endNanos - startedNanos, 1L),
+                frustration = ActionEvent.Frustration(frustrations)
             ),
             view = ActionEvent.View(
                 id = context.viewId.orEmpty(),
@@ -243,12 +250,14 @@ internal class RumActionScope(
         internal const val ACTION_INACTIVITY_MS = 100L
         internal const val ACTION_MAX_DURATION_MS = 5000L
 
+        @Suppress("LongParameterList")
         fun fromEvent(
             parentScope: RumScope,
             event: RumRawEvent.StartAction,
             timestampOffset: Long,
             eventSourceProvider: RumEventSourceProvider,
-            androidInfoProvider: AndroidInfoProvider
+            androidInfoProvider: AndroidInfoProvider,
+            trackFrustrations: Boolean
         ): RumScope {
             return RumActionScope(
                 parentScope,
@@ -259,7 +268,8 @@ internal class RumActionScope(
                 event.attributes,
                 timestampOffset,
                 rumEventSourceProvider = eventSourceProvider,
-                androidInfoProvider = androidInfoProvider
+                androidInfoProvider = androidInfoProvider,
+                trackFrustrations = trackFrustrations
             )
         }
     }

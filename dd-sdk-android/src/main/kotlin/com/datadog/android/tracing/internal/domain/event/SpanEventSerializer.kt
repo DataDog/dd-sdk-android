@@ -51,7 +51,7 @@ internal class SpanEventSerializer(
             META_USR_KEY_PREFIX
         ).mapValues { toMetaString(it.value) }.filterValues { it != null }
         return usr.copy(
-            additionalProperties = transformedAttributes
+            additionalProperties = transformedAttributes.toMutableMap()
         )
     }
 

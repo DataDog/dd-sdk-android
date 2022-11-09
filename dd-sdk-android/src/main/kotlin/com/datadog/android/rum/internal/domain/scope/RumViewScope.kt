@@ -27,6 +27,7 @@ import com.datadog.android.log.internal.utils.debugWithTelemetry
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
@@ -43,6 +44,7 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
+import kotlin.math.min
 
 @Suppress("LargeClass", "LongParameterList")
 internal open class RumViewScope(
@@ -60,7 +62,8 @@ internal open class RumViewScope(
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val viewUpdatePredicate: ViewUpdatePredicate = DefaultViewUpdatePredicate(),
     internal val type: RumViewType = RumViewType.FOREGROUND,
-    private val androidInfoProvider: AndroidInfoProvider
+    private val androidInfoProvider: AndroidInfoProvider,
+    private val trackFrustrations: Boolean
 ) : RumScope {
 
     internal val url = key.resolveViewUrl().replace('.', '/')
@@ -83,6 +86,7 @@ internal open class RumViewScope(
 
     private var resourceCount: Long = 0
     private var actionCount: Long = 0
+    private var frustrationCount: Int = 0
     private var errorCount: Long = 0
     private var crashCount: Long = 0
     private var longTaskCount: Long = 0
@@ -131,6 +135,8 @@ internal open class RumViewScope(
         }
     }
 
+    private var performanceMetrics: MutableMap<RumPerformanceMetric, VitalInfo> = HashMap()
+
     // endregion
 
     init {
@@ -171,6 +177,8 @@ internal open class RumViewScope(
             is RumRawEvent.UpdateViewLoadingTime -> onUpdateViewLoadingTime(event, writer)
             is RumRawEvent.AddCustomTiming -> onAddCustomTiming(event, writer)
             is RumRawEvent.KeepAlive -> onKeepAlive(event, writer)
+
+            is RumRawEvent.UpdatePerformanceMetric -> onUpdatePerformanceMetric(event)
 
             else -> delegateEventToChildren(event, writer)
         }
@@ -278,7 +286,8 @@ internal open class RumViewScope(
                     event,
                     serverTimeOffsetInMs,
                     rumEventSourceProvider,
-                    androidInfoProvider
+                    androidInfoProvider,
+                    trackFrustrations
                 )
                 pendingActionCount++
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), writer)
@@ -295,7 +304,8 @@ internal open class RumViewScope(
                 event,
                 serverTimeOffsetInMs,
                 rumEventSourceProvider,
-                androidInfoProvider
+                androidInfoProvider,
+                trackFrustrations
             )
         )
         pendingActionCount++
@@ -352,7 +362,7 @@ internal open class RumViewScope(
                 type = errorType,
                 sourceType = event.sourceType.toSchemaSourceType()
             ),
-            action = context.actionId?.let { ErrorEvent.Action(it) },
+            action = context.actionId?.let { ErrorEvent.Action(listOf(it)) },
             view = ErrorEvent.View(
                 id = context.viewId.orEmpty(),
                 name = context.viewName,
@@ -403,6 +413,30 @@ internal open class RumViewScope(
     ) {
         customTimings[event.name] = max(event.eventTime.nanoTime - startedNanos, 1L)
         sendViewUpdate(event, writer)
+    }
+
+    private fun onUpdatePerformanceMetric(
+        event: RumRawEvent.UpdatePerformanceMetric
+    ) {
+        if (stopped) return
+
+        val value = event.value
+        val vitalInfo = performanceMetrics[event.metric] ?: VitalInfo.EMPTY
+        val newSampleCount = vitalInfo.sampleCount + 1
+
+        // Assuming M(n) is the mean value of the first n samples
+        // M(n) = ∑ sample(n) / n
+        // n⨉M(n) = ∑ sample(n)
+        // M(n+1) = ∑ sample(n+1) / (n+1)
+        //        = [ sample(n+1) + ∑ sample(n) ] / (n+1)
+        //        = (sample(n+1) + n⨉M(n)) / (n+1)
+        val meanValue = (value + (vitalInfo.sampleCount * vitalInfo.meanValue)) / newSampleCount
+        performanceMetrics[event.metric] = VitalInfo(
+            newSampleCount,
+            min(value, vitalInfo.minValue),
+            max(value, vitalInfo.maxValue),
+            meanValue
+        )
     }
 
     private fun onKeepAlive(
@@ -490,6 +524,7 @@ internal open class RumViewScope(
         if (event.viewId == viewId) {
             pendingActionCount--
             actionCount++
+            frustrationCount += event.frustrationCount
             sendViewUpdate(event, writer)
         }
     }
@@ -585,7 +620,14 @@ internal open class RumViewScope(
                 memoryMax = memoryInfo?.maxValue,
                 refreshRateAverage = refreshRateInfo?.meanValue?.let { it * refreshRateScale },
                 refreshRateMin = refreshRateInfo?.minValue?.let { it * refreshRateScale },
-                isSlowRendered = isSlowRendered
+                isSlowRendered = isSlowRendered,
+                frustration = ViewEvent.Frustration(frustrationCount.toLong()),
+                flutterBuildTime = performanceMetrics[RumPerformanceMetric.FLUTTER_BUILD_TIME]
+                    ?.let { it.toPerformanceMetric() },
+                flutterRasterTime = performanceMetrics[RumPerformanceMetric.FLUTTER_RASTER_TIME]
+                    ?.let { it.toPerformanceMetric() },
+                jsRefreshRate = performanceMetrics[RumPerformanceMetric.JS_FRAME_TIME]
+                    ?.let { it.toInversePerformanceMetric() }
             ),
             usr = ViewEvent.Usr(
                 id = user.id,
@@ -674,8 +716,8 @@ internal open class RumViewScope(
 
         val actionEvent = ActionEvent(
             date = eventTimestamp,
-            action = ActionEvent.Action(
-                type = ActionEvent.ActionType.APPLICATION_START,
+            action = ActionEvent.ActionEventAction(
+                type = ActionEvent.ActionEventActionType.APPLICATION_START,
                 id = UUID.randomUUID().toString(),
                 loadingTime = getStartupTime(event)
             ),
@@ -738,7 +780,7 @@ internal open class RumViewScope(
                 duration = event.durationNs,
                 isFrozenFrame = isFrozenFrame
             ),
-            action = context.actionId?.let { LongTaskEvent.Action(it) },
+            action = context.actionId?.let { LongTaskEvent.Action(listOf(it)) },
             view = LongTaskEvent.View(
                 id = context.viewId.orEmpty(),
                 name = context.viewName,
@@ -847,7 +889,8 @@ internal open class RumViewScope(
             frameRateVitalMonitor: VitalMonitor,
             timeProvider: TimeProvider,
             rumEventSourceProvider: RumEventSourceProvider,
-            androidInfoProvider: AndroidInfoProvider
+            androidInfoProvider: AndroidInfoProvider,
+            trackFrustrations: Boolean
         ): RumViewScope {
             return RumViewScope(
                 parentScope,
@@ -861,8 +904,40 @@ internal open class RumViewScope(
                 frameRateVitalMonitor,
                 timeProvider,
                 rumEventSourceProvider,
-                androidInfoProvider = androidInfoProvider
+                androidInfoProvider = androidInfoProvider,
+                trackFrustrations = trackFrustrations
             )
         }
     }
+}
+
+private fun VitalInfo.toPerformanceMetric(): ViewEvent.FlutterBuildTime {
+    return ViewEvent.FlutterBuildTime(
+        min = minValue,
+        max = maxValue,
+        average = meanValue
+    )
+}
+
+@Suppress("CommentOverPrivateFunction")
+/**
+ * This function is used to inverse frame times metrics into frame rates.
+ *
+ * As we take the inverse, the min of the inverse is the inverse of the max and
+ * vice-versa.
+ * For instance, if the the min frame time is 20ms (50 fps) and the max is 500ms (2 fps),
+ * the max frame rate is 50 fps (1/minValue) and the min is 2 fps (1/maxValue).
+ *
+ * As the frame times are reported in nanoseconds, we need to add a multiplier.
+ */
+private fun VitalInfo.toInversePerformanceMetric(): ViewEvent.FlutterBuildTime {
+    return ViewEvent.FlutterBuildTime(
+        min = invertValue(maxValue) * TimeUnit.SECONDS.toNanos(1),
+        max = invertValue(minValue) * TimeUnit.SECONDS.toNanos(1),
+        average = invertValue(meanValue) * TimeUnit.SECONDS.toNanos(1)
+    )
+}
+
+private fun invertValue(value: Double): Double {
+    return if (value == 0.0) 0.0 else 1.0 / value
 }

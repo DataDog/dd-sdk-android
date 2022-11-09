@@ -32,6 +32,10 @@ If you use Fresco to load images in your application, take a look at Datadog's [
 
 If you use Glide to load images in your application, take a look at Datadog's [dedicated library](dd-sdk-android-glide/README.md).
 
+### Jetpack Compose
+
+If you use Jetpack Compose in your application, take a look at Datadog's [dedicated library](dd-sdk-android-compose/README.md).
+
 ### Picasso
 
 If you use Picasso, let it use your `OkHttpClient`, and you can get RUM and APM information about network requests made by Picasso.

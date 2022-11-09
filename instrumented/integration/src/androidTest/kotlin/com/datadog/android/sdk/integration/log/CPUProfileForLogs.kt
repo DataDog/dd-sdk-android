@@ -14,11 +14,11 @@ import com.datadog.android.sdk.rules.CPUProfilingRule
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.tools.unit.forge.ThrowableForgeryFactory
 import fr.xgouchet.elmyr.junit4.ForgeRule
-import java.util.concurrent.TimeUnit
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.TimeUnit
 
 @LargeTest
 @RunWith(AndroidJUnit4::class)

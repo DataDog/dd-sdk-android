@@ -6,7 +6,7 @@
 
 package com.datadog.gradle.plugin.jsonschema
 
-import java.io.File
+import com.datadog.gradle.plugin.jsonschema.generator.FileGenerator
 import org.gradle.api.DefaultTask
 import org.gradle.api.Task
 import org.gradle.api.tasks.CacheableTask
@@ -16,6 +16,7 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import java.io.File
 
 // TODO test all from https://github.com/json-schema-org/JSON-Schema-Test-Suite/tree/master/tests/draft2019-09
 
@@ -94,13 +95,12 @@ open class GenerateJsonSchemaTask : DefaultTask() {
     fun performTask() {
         val inputDir = getInputDir()
         val outputDir = getOutputDir()
-        val files = getInputFiles()
-            .filter { it.name !in ignoredFiles }
+        val files = getInputFiles().filter { it.name !in ignoredFiles }
 
         logger.info("Found ${files.size} files in input dir: $inputDir")
 
-        val reader = JsonSchemaReader(inputNameMapping)
-        val generator = PokoGenerator(outputDir, targetPackageName)
+        val reader = JsonSchemaReader(inputNameMapping, logger)
+        val generator = FileGenerator(outputDir, targetPackageName, logger)
         files.forEach {
             val type = reader.readSchema(it)
             generator.generate(type)

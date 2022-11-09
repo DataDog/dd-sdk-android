@@ -57,7 +57,9 @@ internal class LongTaskEventForgeryFactory :
                     additionalProperties = exhaustiveAttributes()
                 )
             },
-            action = forge.aNullable { LongTaskEvent.Action(getForgery<UUID>().toString()) },
+            action = forge.aNullable {
+                LongTaskEvent.Action(aList { getForgery<UUID>().toString() })
+            },
             application = LongTaskEvent.Application(forge.getForgery<UUID>().toString()),
             service = forge.aNullable { anAlphabeticalString() },
             session = LongTaskEvent.LongTaskEventSession(

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema",
-  "$id": "error-schema.json",
+  "$id": "telemetry/error-schema.json",
   "title": "TelemetryErrorEvent",
   "type": "object",
   "description": "Schema of all properties of a telemetry error event",
@@ -13,9 +13,14 @@
       "properties": {
         "telemetry": {
           "type": "object",
-          "description": "The telemetry information",
+          "description": "The telemetry log information",
           "required": ["status", "message"],
           "properties": {
+            "type": {
+              "type": "string",
+              "description": "Telemetry type",
+              "const": "log"
+            },
             "status": {
               "type": "string",
               "description": "Level/severity of the log",

@@ -6,11 +6,11 @@
 
 package com.datadog.gradle.plugin.checklicenses
 
-import java.io.File
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.TaskAction
+import java.io.File
 
 open class CheckThirdPartyLicensesTask : DefaultTask() {
 
@@ -29,7 +29,6 @@ open class CheckThirdPartyLicensesTask : DefaultTask() {
 
     @TaskAction
     fun applyTask() {
-
         val projectDependencies = provider.getThirdPartyDependencies(
             project,
             extension.transitiveDependencies,

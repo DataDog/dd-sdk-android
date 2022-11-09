@@ -13,12 +13,13 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.log.internal.utils.warningWithTelemetry
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.rum.internal.monitor.EventType
+import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import java.util.Locale
@@ -54,7 +55,9 @@ internal data class RumEventMapper(
             }
             is ResourceEvent -> resourceEventMapper.map(event)
             is LongTaskEvent -> longTaskEventMapper.map(event)
-            is TelemetryDebugEvent, is TelemetryErrorEvent -> event
+            is TelemetryDebugEvent,
+            is TelemetryErrorEvent,
+            is TelemetryConfigurationEvent -> event
             else -> {
                 sdkLogger.warningWithTelemetry(
                     NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE
@@ -98,14 +101,17 @@ internal data class RumEventMapper(
     private fun notifyEventDropped(event: Any) {
         val monitor = (GlobalRum.get() as? AdvancedRumMonitor) ?: return
         when (event) {
-            is ActionEvent -> monitor.eventDropped(event.view.id, EventType.ACTION)
-            is ResourceEvent -> monitor.eventDropped(event.view.id, EventType.RESOURCE)
-            is ErrorEvent -> monitor.eventDropped(event.view.id, EventType.ERROR)
+            is ActionEvent -> monitor.eventDropped(
+                event.view.id,
+                StorageEvent.Action(frustrationCount = event.action.frustration?.type?.size ?: 0)
+            )
+            is ResourceEvent -> monitor.eventDropped(event.view.id, StorageEvent.Resource)
+            is ErrorEvent -> monitor.eventDropped(event.view.id, StorageEvent.Error)
             is LongTaskEvent -> {
                 if (event.longTask.isFrozenFrame == true) {
-                    monitor.eventDropped(event.view.id, EventType.FROZEN_FRAME)
+                    monitor.eventDropped(event.view.id, StorageEvent.FrozenFrame)
                 } else {
-                    monitor.eventDropped(event.view.id, EventType.LONG_TASK)
+                    monitor.eventDropped(event.view.id, StorageEvent.LongTask)
                 }
             }
             else -> {

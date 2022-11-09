@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Animal",
+  "type": "object",
+  "description": "A representation of the animal kingdom",
+  "oneOf": [
+    {
+      "type": "object",
+      "title": "Fish",
+      "properties": {
+        "water": {
+          "type": "string",
+          "enum": ["salt", "fresh"]
+        },
+        "size": {
+          "type": "integer"
+        }
+      },
+      "required": ["water"]
+    },
+    {
+      "type": "object",
+      "title": "Bird",
+      "properties": {
+        "food": {
+          "type": "string",
+          "enum": ["fish", "bird", "rodent", "insect", "fruit", "seeds", "pollen"]
+        },
+        "can_fly": {
+          "type": "boolean"
+        }
+      },
+      "required": ["food", "can_fly"]
+    }
+  ]
+}

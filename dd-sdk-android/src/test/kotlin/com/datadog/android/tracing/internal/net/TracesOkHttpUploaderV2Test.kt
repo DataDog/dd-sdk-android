@@ -40,7 +40,7 @@ internal class TracesOkHttpUploaderV2Test : DataOkHttpUploaderV2Test<TracesOkHtt
         return "/api/v2/spans"
     }
 
-    override fun expectedQueryParams(): Map<String, String> {
+    override fun expectedQueryParams(source: String): Map<String, String> {
         return emptyMap()
     }
 }

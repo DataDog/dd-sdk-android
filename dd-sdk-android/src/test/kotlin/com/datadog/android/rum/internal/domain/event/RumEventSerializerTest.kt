@@ -14,6 +14,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.utils.config.LoggerTestConfiguration
@@ -34,7 +35,6 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.Locale
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
@@ -44,6 +44,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -531,6 +532,224 @@ internal class RumEventSerializerTest {
         }
     }
 
+    @RepeatedTest(8)
+    fun `𝕄 serialize RUM event 𝕎 serialize() with TelemetryConfigurationEvent`(
+        @Forgery event: TelemetryConfigurationEvent
+    ) {
+        val serialized = testedSerializer.serialize(event)
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        assertThat(jsonObject)
+            .hasField("type", "telemetry")
+            .hasField("_dd") {
+                hasField("format_version", 2L)
+            }
+            .hasField("date", event.date)
+            .hasField("source", event.source.name.lowercase(Locale.US).replace('_', '-'))
+            .hasField("service", event.service)
+            .hasField("version", event.version)
+            .hasField("telemetry") {
+                hasField("configuration") {
+                    val configuration = event.telemetry.configuration
+                    if (configuration.sessionSampleRate != null) {
+                        hasField("session_sample_rate", configuration.sessionSampleRate!!)
+                    }
+                    if (configuration.telemetrySampleRate != null) {
+                        hasField("telemetry_sample_rate", configuration.telemetrySampleRate!!)
+                    }
+                    if (configuration.telemetryConfigurationSampleRate != null) {
+                        hasField(
+                            "telemetry_configuration_sample_rate",
+                            configuration.telemetryConfigurationSampleRate!!
+                        )
+                    }
+                    if (configuration.traceSampleRate != null) {
+                        hasField("trace_sample_rate", configuration.traceSampleRate!!)
+                    }
+                    if (configuration.premiumSampleRate != null) {
+                        hasField("premium_sample_rate", configuration.premiumSampleRate!!)
+                    }
+                    if (configuration.replaySampleRate != null) {
+                        hasField("replay_sample_rate", configuration.replaySampleRate!!)
+                    }
+                    if (configuration.sessionReplaySampleRate != null) {
+                        hasField(
+                            "session_replay_sample_rate",
+                            configuration.sessionReplaySampleRate!!
+                        )
+                    }
+                    if (configuration.useProxy != null) {
+                        hasField("use_proxy", configuration.useProxy!!)
+                    }
+                    if (configuration.useBeforeSend != null) {
+                        hasField("use_before_send", configuration.useBeforeSend!!)
+                    }
+                    if (configuration.silentMultipleInit != null) {
+                        hasField("silent_multiple_init", configuration.silentMultipleInit!!)
+                    }
+                    if (configuration.trackSessionAcrossSubdomains != null) {
+                        hasField(
+                            "track_session_across_subdomains",
+                            configuration.trackSessionAcrossSubdomains!!
+                        )
+                    }
+                    if (configuration.useCrossSiteSessionCookie != null) {
+                        hasField(
+                            "use_cross_site_session_cookie",
+                            configuration.useCrossSiteSessionCookie!!
+                        )
+                    }
+                    if (configuration.useSecureSessionCookie != null) {
+                        hasField(
+                            "use_secure_session_cookie",
+                            configuration.useSecureSessionCookie!!
+                        )
+                    }
+                    if (configuration.actionNameAttribute != null) {
+                        hasField("action_name_attribute", configuration.actionNameAttribute!!)
+                    }
+                    if (configuration.useAllowedTracingOrigins != null) {
+                        hasField(
+                            "use_allowed_tracing_origins",
+                            configuration.useAllowedTracingOrigins!!
+                        )
+                    }
+                    if (configuration.defaultPrivacyLevel != null) {
+                        hasField("default_privacy_level", configuration.defaultPrivacyLevel!!)
+                    }
+                    if (configuration.useExcludedActivityUrls != null) {
+                        hasField(
+                            "use_excluded_activity_urls",
+                            configuration.useExcludedActivityUrls!!
+                        )
+                    }
+                    if (configuration.trackFrustrations != null) {
+                        hasField("track_frustrations", configuration.trackFrustrations!!)
+                    }
+                    if (configuration.trackViewsManually != null) {
+                        hasField("track_views_manually", configuration.trackViewsManually!!)
+                    }
+                    if (configuration.trackInteractions != null) {
+                        hasField("track_interactions", configuration.trackInteractions!!)
+                    }
+                    if (configuration.forwardErrorsToLogs != null) {
+                        hasField("forward_errors_to_logs", configuration.forwardErrorsToLogs!!)
+                    }
+                    if (configuration.forwardConsoleLogs != null) {
+                        hasField("forward_console_logs", configuration.forwardConsoleLogs!!)
+                    }
+                    if (configuration.forwardReports != null) {
+                        hasField("forward_reports", configuration.forwardReports!!)
+                    }
+                    if (configuration.useLocalEncryption != null) {
+                        hasField("use_local_encryption", configuration.useLocalEncryption!!)
+                    }
+                    if (configuration.viewTrackingStrategy != null) {
+                        hasField(
+                            "view_tracking_strategy",
+                            configuration.viewTrackingStrategy!!.toJson()
+                        )
+                    }
+                    if (configuration.trackBackgroundEvents != null) {
+                        hasField("track_background_events", configuration.trackBackgroundEvents!!)
+                    }
+                    if (configuration.mobileVitalsUpdatePeriod != null) {
+                        hasField(
+                            "mobile_vitals_update_period",
+                            configuration.mobileVitalsUpdatePeriod!!
+                        )
+                    }
+                    if (configuration.trackInteractions != null) {
+                        hasField("track_interactions", configuration.trackInteractions!!)
+                    }
+                    if (configuration.trackErrors != null) {
+                        hasField("track_errors", configuration.trackErrors!!)
+                    }
+                    if (configuration.trackNetworkRequests != null) {
+                        hasField("track_network_requests", configuration.trackNetworkRequests!!)
+                    }
+                    if (configuration.useTracing != null) {
+                        hasField("use_tracing", configuration.useTracing!!)
+                    }
+                    if (configuration.trackNativeViews != null) {
+                        hasField("track_native_views", configuration.trackNativeViews!!)
+                    }
+                    if (configuration.trackNativeErrors != null) {
+                        hasField("track_native_errors", configuration.trackNativeErrors!!)
+                    }
+                    if (configuration.trackNativeLongTasks != null) {
+                        hasField("track_native_long_tasks", configuration.trackNativeLongTasks!!)
+                    }
+                    if (configuration.trackCrossPlatformLongTasks != null) {
+                        hasField(
+                            "track_cross_platform_long_tasks",
+                            configuration.trackCrossPlatformLongTasks!!
+                        )
+                    }
+                    if (configuration.useAttachToExisting != null) {
+                        hasField("use_attach_to_existing", configuration.useAttachToExisting!!)
+                    }
+                    if (configuration.useFirstPartyHosts != null) {
+                        hasField("use_first_party_hosts", configuration.useFirstPartyHosts!!)
+                    }
+                    if (configuration.initializationType != null) {
+                        hasField("initialization_type", configuration.initializationType!!)
+                    }
+                    if (configuration.trackFlutterPerformance != null) {
+                        hasField(
+                            "track_flutter_performance",
+                            configuration.trackFlutterPerformance!!
+                        )
+                    }
+                    if (configuration.batchSize != null) {
+                        hasField("batch_size", configuration.batchSize!!)
+                    }
+                    if (configuration.batchUploadFrequency != null) {
+                        hasField("batch_upload_frequency", configuration.batchUploadFrequency!!)
+                    }
+                }
+            }
+
+        val application = event.application
+        if (application != null) {
+            assertThat(jsonObject)
+                .hasField("application") {
+                    hasField("id", application.id)
+                }
+        } else {
+            assertThat(jsonObject).doesNotHaveField("application")
+        }
+
+        val session = event.session
+        if (session != null) {
+            assertThat(jsonObject)
+                .hasField("session") {
+                    hasField("id", session.id)
+                }
+        } else {
+            assertThat(jsonObject).doesNotHaveField("session")
+        }
+
+        val view = event.view
+        if (view != null) {
+            assertThat(jsonObject)
+                .hasField("view") {
+                    hasField("id", view.id)
+                }
+        } else {
+            assertThat(jsonObject).doesNotHaveField("view")
+        }
+
+        val action = event.action
+        if (action != null) {
+            assertThat(jsonObject)
+                .hasField("action") {
+                    hasField("id", action.id)
+                }
+        } else {
+            assertThat(jsonObject).doesNotHaveField("action")
+        }
+    }
+
     @Test
     fun `𝕄 serialize RUM event 𝕎 serialize() with unknown event`(
         @Forgery unknownEvent: UserInfo
@@ -562,7 +781,7 @@ internal class RumEventSerializerTest {
     fun `𝕄 keep known custom attributes as is 𝕎 serialize()`(forge: Forge) {
         val key = forge.anElementFrom(RumEventSerializer.knownAttributes)
         val value = forge.anAlphabeticalString()
-        val event = forge.forgeRumEvent(mapOf(key to value))
+        val event = forge.forgeRumEvent(mutableMapOf(key to value))
 
         val serialized = testedSerializer.serialize(event)
 
@@ -582,7 +801,7 @@ internal class RumEventSerializerTest {
             fakeBadKey.replaceRange(lastIndexOf..lastIndexOf, "_")
         val fakeAttributeValue = forge.anAlphabeticalString()
         val fakeEvent = forge.forgeRumEvent(
-            mapOf(
+            mutableMapOf(
                 fakeBadKey to fakeAttributeValue
             )
         )
@@ -611,7 +830,7 @@ internal class RumEventSerializerTest {
             fakeBadKey.replaceRange(lastIndexOf..lastIndexOf, "_")
         val fakeAttributeValue = forge.anAlphabeticalString()
         val fakeEvent = forge.forgeRumEvent(
-            userAttributes = mapOf(
+            userAttributes = mutableMapOf(
                 fakeBadKey to fakeAttributeValue
             )
         )
@@ -751,7 +970,7 @@ internal class RumEventSerializerTest {
         val fakeErrorSourceType = forge.aString()
         val fakeIsCrash = forge.aBool()
         val fakeEventWithInternalGlobalAttributes = forge.forgeRumEvent(
-            attributes = mapOf(
+            attributes = mutableMapOf(
                 RumAttributes.INTERNAL_ERROR_TYPE to fakeErrorType,
                 RumAttributes.INTERNAL_TIMESTAMP to fakeInternalTimestamp,
                 RumAttributes.INTERNAL_ERROR_SOURCE_TYPE to fakeErrorSourceType,
@@ -793,7 +1012,7 @@ internal class RumEventSerializerTest {
         val fakeErrorSourceType = forge.aString()
         val fakeIsCrash = forge.aBool()
         val fakeEventWithInternalGlobalAttributes = forge.forgeRumEvent(
-            attributes = mapOf(
+            attributes = mutableMapOf(
                 RumAttributes.INTERNAL_ERROR_TYPE to fakeErrorType,
                 RumAttributes.INTERNAL_TIMESTAMP to fakeInternalTimestamp,
                 RumAttributes.INTERNAL_ERROR_SOURCE_TYPE to fakeErrorSourceType,
@@ -833,7 +1052,7 @@ internal class RumEventSerializerTest {
         val fakeErrorSourceType = forge.aString()
         val fakeIsCrash = forge.aBool()
         val fakeEventWithInternalUserAttributes = forge.forgeRumEvent(
-            userAttributes = mapOf(
+            userAttributes = mutableMapOf(
                 RumAttributes.INTERNAL_ERROR_TYPE to fakeErrorType,
                 RumAttributes.INTERNAL_TIMESTAMP to fakeInternalTimestamp,
                 RumAttributes.INTERNAL_ERROR_SOURCE_TYPE to fakeErrorSourceType,
@@ -869,8 +1088,8 @@ internal class RumEventSerializerTest {
     // region Internal
 
     private fun Forge.forgeRumEvent(
-        attributes: Map<String, Any?> = emptyMap(),
-        userAttributes: Map<String, Any?> = emptyMap()
+        attributes: MutableMap<String, Any?> = mutableMapOf(),
+        userAttributes: MutableMap<String, Any?> = mutableMapOf()
     ): Any {
         return when (this.anInt(min = 0, max = 5)) {
             1 -> this.getForgery(ViewEvent::class.java).let {

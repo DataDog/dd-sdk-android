@@ -7,14 +7,12 @@
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.kotlinConfig
-import com.datadog.gradle.config.ktLintConfig
 import org.gradle.api.JavaVersion
 
 plugins {
     id("com.android.application")
     kotlin("android")
     id("io.gitlab.arturbosch.detekt")
-    id("org.jlleitschuh.gradle.ktlint")
 }
 
 android {
@@ -33,6 +31,8 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+
+    namespace = "com.datadog.android.sdk.integration"
 
     testOptions {
         unitTests.isReturnDefaultValues = true
@@ -117,4 +117,3 @@ dependencies {
 
 kotlinConfig()
 detektConfig()
-ktLintConfig()

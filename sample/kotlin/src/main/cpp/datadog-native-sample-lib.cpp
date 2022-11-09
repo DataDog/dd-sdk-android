@@ -16,9 +16,12 @@ void crash_with_sigabrt_signal() {
 }
 #pragma clang diagnostic pop
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreturn-type"
 int crash_with_sigill_signal() {
     // do not return anything to simulate the SIGILL
 }
+#pragma clang diagnostic pop
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_datadog_android_sample_crash_CrashFragment_simulateNdkCrash(

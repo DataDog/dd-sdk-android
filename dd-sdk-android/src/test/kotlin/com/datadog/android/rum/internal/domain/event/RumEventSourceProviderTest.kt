@@ -12,6 +12,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.utils.config.LoggerTestConfiguration
@@ -24,9 +25,9 @@ import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import java.util.Locale
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -48,7 +50,6 @@ internal class RumEventSourceProviderTest {
     lateinit var testedRumEventSourceProvider: RumEventSourceProvider
 
     lateinit var fakeInvalidSource: String
-    lateinit var fakeValidSource: String
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -60,19 +61,20 @@ internal class RumEventSourceProviderTest {
                     it.toJson().asString
                 }.toSet()
         )
-        fakeValidSource = forge.aValueFrom(ViewEvent.Source::class.java).toJson().asString
     }
 
     // region ViewEvent
 
     @Test
-    fun `M resolve the ViewEvent source W viewEventSource`() {
+    fun `M resolve the ViewEvent source W viewEventSource`(
+        @Forgery source: ViewEvent.Source
+    ) {
         // Given
-        testedRumEventSourceProvider = RumEventSourceProvider(fakeValidSource)
+        testedRumEventSourceProvider = RumEventSourceProvider(source.toJson().asString)
 
         // Then
         assertThat(testedRumEventSourceProvider.viewEventSource)
-            .isEqualTo(ViewEvent.Source.fromJson(fakeValidSource))
+            .isEqualTo(source)
     }
 
     @Test
@@ -111,13 +113,15 @@ internal class RumEventSourceProviderTest {
     // region ActionEvent
 
     @Test
-    fun `M resolve the Action source W actionEventSource`() {
+    fun `M resolve the Action source W actionEventSource`(
+        @Forgery source: ActionEvent.Source
+    ) {
         // Given
-        testedRumEventSourceProvider = RumEventSourceProvider(fakeValidSource)
+        testedRumEventSourceProvider = RumEventSourceProvider(source.toJson().asString)
 
         // Then
         assertThat(testedRumEventSourceProvider.actionEventSource)
-            .isEqualTo(ActionEvent.Source.fromJson(fakeValidSource))
+            .isEqualTo(source)
     }
 
     @Test
@@ -151,16 +155,20 @@ internal class RumEventSourceProviderTest {
         )
     }
 
+    // endregion
+
     // region ErrorEvent
 
     @Test
-    fun `M resolve the ErrorEvent source W errorEventSource`() {
+    fun `M resolve the ErrorEvent source W errorEventSource`(
+        @Forgery source: ErrorEvent.ErrorEventSource
+    ) {
         // Given
-        testedRumEventSourceProvider = RumEventSourceProvider(fakeValidSource)
+        testedRumEventSourceProvider = RumEventSourceProvider(source.toJson().asString)
 
         // Then
         assertThat(testedRumEventSourceProvider.errorEventSource)
-            .isEqualTo(ErrorEvent.ErrorEventSource.fromJson(fakeValidSource))
+            .isEqualTo(source)
     }
 
     @Test
@@ -199,13 +207,15 @@ internal class RumEventSourceProviderTest {
     // region ResourceEvent
 
     @Test
-    fun `M resolve the ResourceEvent source W resourceEventSource`() {
+    fun `M resolve the ResourceEvent source W resourceEventSource`(
+        @Forgery source: ResourceEvent.Source
+    ) {
         // Given
-        testedRumEventSourceProvider = RumEventSourceProvider(fakeValidSource)
+        testedRumEventSourceProvider = RumEventSourceProvider(source.toJson().asString)
 
         // Then
         assertThat(testedRumEventSourceProvider.resourceEventSource)
-            .isEqualTo(ResourceEvent.Source.fromJson(fakeValidSource))
+            .isEqualTo(source)
     }
 
     @Test
@@ -244,13 +254,15 @@ internal class RumEventSourceProviderTest {
     // region LongTaskEvent
 
     @Test
-    fun `M resolve the LongTaskEvent source W longTaskEventSource`() {
+    fun `M resolve the LongTaskEvent source W longTaskEventSource`(
+        @Forgery source: LongTaskEvent.Source
+    ) {
         // Given
-        testedRumEventSourceProvider = RumEventSourceProvider(fakeValidSource)
+        testedRumEventSourceProvider = RumEventSourceProvider(source.toJson().asString)
 
         // Then
         assertThat(testedRumEventSourceProvider.longTaskEventSource)
-            .isEqualTo(LongTaskEvent.Source.fromJson(fakeValidSource))
+            .isEqualTo(source)
     }
 
     @Test
@@ -289,13 +301,15 @@ internal class RumEventSourceProviderTest {
     // region TelemetryDebugEvent
 
     @Test
-    fun `M resolve the TelemetryDebugEvent source W telemetryDebugEventSource`() {
+    fun `M resolve the TelemetryDebugEvent source W telemetryDebugEventSource`(
+        @Forgery source: TelemetryDebugEvent.Source
+    ) {
         // Given
-        testedRumEventSourceProvider = RumEventSourceProvider(fakeValidSource)
+        testedRumEventSourceProvider = RumEventSourceProvider(source.toJson().asString)
 
         // Then
         assertThat(testedRumEventSourceProvider.telemetryDebugEventSource)
-            .isEqualTo(TelemetryDebugEvent.Source.fromJson(fakeValidSource))
+            .isEqualTo(source)
     }
 
     @Test
@@ -334,13 +348,15 @@ internal class RumEventSourceProviderTest {
     // region TelemetryErrorEvent
 
     @Test
-    fun `M resolve the TelemetryErrorEvent source W telemetryErrorEventSource`() {
+    fun `M resolve the TelemetryErrorEvent source W telemetryErrorEventSource`(
+        @Forgery source: TelemetryErrorEvent.Source
+    ) {
         // Given
-        testedRumEventSourceProvider = RumEventSourceProvider(fakeValidSource)
+        testedRumEventSourceProvider = RumEventSourceProvider(source.toJson().asString)
 
         // Then
         assertThat(testedRumEventSourceProvider.telemetryErrorEventSource)
-            .isEqualTo(TelemetryErrorEvent.Source.fromJson(fakeValidSource))
+            .isEqualTo(source)
     }
 
     @Test
@@ -359,6 +375,53 @@ internal class RumEventSourceProviderTest {
 
         // When
         testedRumEventSourceProvider.telemetryErrorEventSource
+
+        // Then
+        verify(logger.mockDevLogHandler).handleLog(
+            eq(Log.ERROR),
+            eq(
+                RumEventSourceProvider.UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
+                    .format(Locale.US, fakeInvalidSource)
+            ),
+            argThat { this is NoSuchElementException },
+            eq(emptyMap()),
+            eq(emptySet()),
+            eq(null)
+        )
+    }
+
+    // endregion
+
+    // region TelemetryConfigurationEvent
+
+    @Test
+    fun `M resolve the TelemetryConfigurationEvent source W telemetryConfigurationEventSource`(
+        @Forgery source: TelemetryConfigurationEvent.Source
+    ) {
+        // Given
+        testedRumEventSourceProvider = RumEventSourceProvider(source.toJson().asString)
+
+        // Then
+        assertThat(testedRumEventSourceProvider.telemetryConfigurationEventSource)
+            .isEqualTo(source)
+    }
+
+    @Test
+    fun `M return null W telemetryConfigurationEventSource { unknown source }`() {
+        // Given
+        testedRumEventSourceProvider = RumEventSourceProvider(fakeInvalidSource)
+
+        // Then
+        assertThat(testedRumEventSourceProvider.telemetryConfigurationEventSource).isNull()
+    }
+
+    @Test
+    fun `M send an Error dev log W telemetryConfigurationEventSource { unknown source }`() {
+        // Given
+        testedRumEventSourceProvider = RumEventSourceProvider(fakeInvalidSource)
+
+        // When
+        testedRumEventSourceProvider.telemetryConfigurationEventSource
 
         // Then
         verify(logger.mockDevLogHandler).handleLog(

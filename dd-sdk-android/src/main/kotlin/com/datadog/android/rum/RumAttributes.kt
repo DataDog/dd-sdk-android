@@ -96,6 +96,12 @@ object RumAttributes {
     const val SPAN_ID: String = "_dd.span_id"
 
     /**
+     * Tracing Sample Rate for the resource tracking, between zero and one. (Number)
+     * This value is filled automatically by the [DatadogInterceptor].
+     */
+    const val RULE_PSR: String = "_dd.rule_psr"
+
+    /**
      * Timings coming from external sources, as object { startTime (number) + duration (number) }.
      */
     const val RESOURCE_TIMINGS: String = "_dd.resource_timings"
