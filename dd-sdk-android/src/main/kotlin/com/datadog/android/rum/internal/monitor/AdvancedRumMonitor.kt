@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.monitor
 
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumPerformanceMetric
@@ -47,6 +48,11 @@ internal interface AdvancedRumMonitor : RumMonitor {
     fun sendErrorTelemetryEvent(message: String, throwable: Throwable?)
 
     fun sendErrorTelemetryEvent(message: String, stack: String?, kind: String?)
+
+    @Suppress("FunctionMaxLength")
+    fun sendConfigurationTelemetryEvent(configuration: Configuration)
+
+    fun notifyInterceptorInstantiated()
 
     fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double)
 }

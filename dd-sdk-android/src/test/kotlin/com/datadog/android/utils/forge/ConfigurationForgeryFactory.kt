@@ -10,7 +10,8 @@ import com.datadog.android.core.configuration.Configuration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-internal class ConfigurationForgeryFactory : ForgeryFactory<Configuration> {
+internal class ConfigurationForgeryFactory :
+    ForgeryFactory<Configuration> {
     override fun getForgery(forge: Forge): Configuration {
         return Configuration(
             coreConfig = forge.getForgery(),
@@ -19,7 +20,7 @@ internal class ConfigurationForgeryFactory : ForgeryFactory<Configuration> {
             crashReportConfig = forge.getForgery(),
             rumConfig = forge.getForgery(),
             sessionReplayConfig = forge.getForgery(),
-            additionalConfig = emptyMap()
+            additionalConfig = forge.aMap { aString() to aString() }
         )
     }
 }

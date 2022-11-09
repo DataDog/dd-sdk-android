@@ -25,16 +25,11 @@ RUN set -x \
  && rm -rf /var/lib/apt/lists/*
 
 ENV GRADLE_VERSION 7.5
-ENV ANDROID_COMPILE_SDK 31
-ENV ANDROID_BUILD_TOOLS 31.0.0
-ENV ANDROID_SDK_TOOLS 7583922
-ENV NDK_VERSION 22.1.7171670
+ENV ANDROID_COMPILE_SDK 33
+ENV ANDROID_BUILD_TOOLS 33.0.0
+ENV ANDROID_SDK_TOOLS 8512546
+ENV NDK_VERSION 25.1.8937393
 ENV CMAKE_VERSION 3.22.1
-# Docker image is shared between branches and some older versions (1.14 and below) need to have CMAKE 3.10
-# Can be removed at some point
-ENV CMAKE_VERSION_LEGACY 3.10.2.4988404
-
-
 
 RUN apt update && apt install -y python3
 
@@ -73,7 +68,6 @@ RUN \
     echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager "build-tools;${ANDROID_BUILD_TOOLS}" >/dev/null && \
     echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager --install "ndk;${NDK_VERSION}" >/dev/null && \
     echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager --install "cmake;${CMAKE_VERSION}" >/dev/null && \
-    echo y | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager --install "cmake;${CMAKE_VERSION_LEGACY}" >/dev/null && \
     yes | android-sdk-linux/cmdline-tools/latest/bin/sdkmanager --licenses
 
 RUN set -x \

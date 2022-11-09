@@ -7,6 +7,7 @@
 package com.datadog.android.telemetry.internal
 
 import android.util.Log
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.utils.config.LoggerTestConfiguration
@@ -109,6 +110,43 @@ internal class TelemetryEventExtTest {
     fun `M send an error dev log W telemetryErrorEventSource { unknown source }`() {
         // When
         TelemetryErrorEvent.Source.tryFromSource(fakeInvalidSource)
+
+        // Then
+        verify(logger.mockDevLogHandler).handleLog(
+            eq(Log.ERROR),
+            eq(
+                UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
+                    .format(Locale.US, fakeInvalidSource)
+            ),
+            argThat { this is NoSuchElementException },
+            eq(emptyMap()),
+            eq(emptySet()),
+            eq(null)
+        )
+    }
+
+    // endregion
+
+    // region TelemetryConfigurationEvent
+
+    @Test
+    fun `M resolve the TelemetryConfigurationEvent source W telemetryConfigurationEventSource`() {
+        assertThat(
+            TelemetryConfigurationEvent.Source.tryFromSource(fakeValidTelemetrySource)
+                ?.toJson()?.asString
+        )
+            .isEqualTo(fakeValidTelemetrySource)
+    }
+
+    @Test
+    fun `M return null W telemetryConfigurationEventSource { unknown source }`() {
+        assertThat(TelemetryConfigurationEvent.Source.tryFromSource(fakeInvalidSource)).isNull()
+    }
+
+    @Test
+    fun `M send an error dev log W telemetryConfigurationEventSource { unknown source }`() {
+        // When
+        TelemetryConfigurationEvent.Source.tryFromSource(fakeInvalidSource)
 
         // Then
         verify(logger.mockDevLogHandler).handleLog(

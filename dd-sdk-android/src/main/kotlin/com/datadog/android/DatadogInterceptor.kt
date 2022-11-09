@@ -156,6 +156,10 @@ internal constructor(
         localTracerFactory = { AndroidTracer.Builder().build() }
     )
 
+    init {
+        GlobalRum.notifyInterceptorInstantiated()
+    }
+
     // region Interceptor
 
     /** @inheritdoc */

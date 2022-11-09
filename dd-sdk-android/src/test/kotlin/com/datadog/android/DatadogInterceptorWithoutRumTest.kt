@@ -19,6 +19,7 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -92,7 +93,8 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         testedInterceptor.intercept(mockChain)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verify(rumMonitor.mockInstance).notifyInterceptorInstantiated()
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
         verifyZeroInteractions(mockRumAttributesProvider)
     }
 
@@ -107,7 +109,8 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         testedInterceptor.intercept(mockChain)
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verify(rumMonitor.mockInstance).notifyInterceptorInstantiated()
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
         verifyZeroInteractions(mockRumAttributesProvider)
     }
 
@@ -125,7 +128,8 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
         }
 
         // Then
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        verify(rumMonitor.mockInstance).notifyInterceptorInstantiated()
+        verifyNoMoreInteractions(rumMonitor.mockInstance)
         verifyZeroInteractions(mockRumAttributesProvider)
     }
 

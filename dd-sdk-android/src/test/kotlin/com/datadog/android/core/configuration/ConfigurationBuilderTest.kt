@@ -574,6 +574,30 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
+    fun `𝕄 build config with long tasks disabled 𝕎 trackLongTasks() and build()`(
+        @LongForgery(0L, 65536L) durationMs: Long
+    ) {
+        // Given
+
+        // When
+        val config = testedBuilder
+            .trackLongTasks(-durationMs)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(
+                longTaskTrackingStrategy = null
+            )
+        )
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
     fun `𝕄 build config with view strategy enabled 𝕎 useViewTrackingStrategy() and build()`() {
         // Given
         val strategy: ViewTrackingStrategy = mock()
@@ -1236,6 +1260,34 @@ internal class ConfigurationBuilderTest {
                 Feature.RUM.featureName,
                 "addPlugin"
             )
+        )
+    }
+
+    @Test
+    fun `𝕄 warn user about deprecation 𝕎 addPlugin()`(
+        forge: Forge
+    ) {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = forge.aBool(),
+            tracesEnabled = forge.aBool(),
+            crashReportsEnabled = forge.aBool(),
+            rumEnabled = forge.aBool(),
+            sessionReplayEnabled = forge.aBool()
+        )
+        val mockPlugin: DatadogPlugin = mock()
+
+        // When
+        testedBuilder.addPlugin(
+            mockPlugin,
+            forge.anElementFrom(Feature.CRASH, Feature.RUM, Feature.LOG, Feature.TRACE)
+        )
+
+        // Then
+        verify(logger.mockDevLogHandler).handleLog(
+            Log.WARN,
+            "Configuration.Builder#addPlugin has been deprecated since version 1.15.0, " +
+                "and will be removed in version 2.0.0."
         )
     }
 

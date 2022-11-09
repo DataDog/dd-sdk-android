@@ -8,6 +8,7 @@ package com.datadog.android.core.internal
 
 import android.app.ActivityManager
 import android.content.Context
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Process
@@ -176,6 +177,11 @@ internal class CoreFeature {
             contextRef.clear()
 
             trackingConsentProvider.unregisterAllCallbacks()
+
+            cleanupApplicationInfo()
+            cleanupProviders()
+            shutDownExecutors()
+
             try {
                 kronosClock.shutdown()
             } catch (ise: IllegalStateException) {
@@ -184,10 +190,8 @@ internal class CoreFeature {
                 sdkLogger.e("Trying to shut down Kronos when it is already not running", ise)
             }
 
-            cleanupApplicationInfo()
-            cleanupProviders()
-            shutDownExecutors()
             featuresContext.clear()
+
             initialized.set(false)
             ndkCrashHandler = NoOpNdkCrashHandler()
             trackingConsentProvider = NoOpConsentProvider()
@@ -271,14 +275,8 @@ internal class CoreFeature {
 
     private fun readApplicationInformation(appContext: Context, credentials: Credentials) {
         packageName = appContext.packageName
-        val packageInfo = try {
-            appContext.packageManager.getPackageInfo(packageName, 0)
-        } catch (e: PackageManager.NameNotFoundException) {
-            devLogger.e("Unable to read your application's version name", e)
-            null
-        }
         packageVersionProvider = DefaultAppVersionProvider(
-            packageInfo?.let {
+            getPackageInfo(appContext)?.let {
                 // we need to use the deprecated method because getLongVersionCode method is only
                 // available from API 28 and above
                 @Suppress("DEPRECATION")
@@ -291,6 +289,22 @@ internal class CoreFeature {
         envName = credentials.envName
         variant = credentials.variant
         contextRef = WeakReference(appContext)
+    }
+
+    private fun getPackageInfo(appContext: Context): PackageInfo? {
+        return try {
+            with(appContext.packageManager) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+                } else {
+                    @Suppress("DEPRECATION")
+                    getPackageInfo(packageName, 0)
+                }
+            }
+        } catch (e: PackageManager.NameNotFoundException) {
+            devLogger.e("Unable to read your application's version name", e)
+            null
+        }
     }
 
     private fun readConfigurationSettings(configuration: Configuration.Core) {
