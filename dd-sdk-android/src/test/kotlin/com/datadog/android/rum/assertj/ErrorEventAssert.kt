@@ -99,6 +99,11 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasNoUserInfo(): ErrorEventAssert {
+        assertThat(actual.usr).isNull()
+        return this
+    }
+
     fun hasUserInfo(expected: UserInfo?): ErrorEventAssert {
         assertThat(actual.usr?.id)
             .overridingErrorMessage(

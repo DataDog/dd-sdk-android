@@ -177,6 +177,7 @@ internal class RumActionScope(
         longTaskCount++
     }
 
+    @Suppress("LongMethod", "ComplexMethod")
     private fun sendAction(
         endNanos: Long,
         writer: DataWriter<Any>
@@ -188,11 +189,14 @@ internal class RumActionScope(
 
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
+        val hasUserInfo = user.id != null || user.name != null ||
+            user.email != null || user.additionalProperties.isNotEmpty()
 
         val frustrations = mutableListOf<ActionEvent.Type>()
         if (trackFrustrations && errorCount > 0 && actualType == RumActionType.TAP) {
             frustrations.add(ActionEvent.Type.ERROR_TAP)
         }
+        val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
 
         val actionEvent = ActionEvent(
             date = eventTimestamp,
@@ -205,7 +209,11 @@ internal class RumActionScope(
                 longTask = ActionEvent.LongTask(longTaskCount),
                 resource = ActionEvent.Resource(resourceCount),
                 loadingTime = max(endNanos - startedNanos, 1L),
-                frustration = ActionEvent.Frustration(frustrations)
+                frustration = if (frustrations.isEmpty()) {
+                    null
+                } else {
+                    ActionEvent.Frustration(frustrations)
+                }
             ),
             view = ActionEvent.View(
                 id = context.viewId.orEmpty(),
@@ -218,12 +226,16 @@ internal class RumActionScope(
                 type = ActionEvent.ActionEventSessionType.USER
             ),
             source = rumEventSourceProvider.actionEventSource,
-            usr = ActionEvent.Usr(
-                id = user.id,
-                name = user.name,
-                email = user.email,
-                additionalProperties = user.additionalProperties
-            ),
+            usr = if (!hasUserInfo) {
+                null
+            } else {
+                ActionEvent.Usr(
+                    id = user.id,
+                    name = user.name,
+                    email = user.email,
+                    additionalProperties = user.additionalProperties
+                )
+            },
             os = ActionEvent.Os(
                 name = androidInfoProvider.osName,
                 version = androidInfoProvider.osVersion,
@@ -237,7 +249,10 @@ internal class RumActionScope(
                 architecture = androidInfoProvider.architecture
             ),
             context = ActionEvent.Context(additionalProperties = attributes),
-            dd = ActionEvent.Dd(session = ActionEvent.DdSession(plan = ActionEvent.Plan.PLAN_1))
+            dd = ActionEvent.Dd(session = ActionEvent.DdSession(plan = ActionEvent.Plan.PLAN_1)),
+            connectivity = networkInfo.toActionConnectivity(),
+            service = CoreFeature.serviceName,
+            version = CoreFeature.packageVersionProvider.version
         )
         writer.write(actionEvent)
 

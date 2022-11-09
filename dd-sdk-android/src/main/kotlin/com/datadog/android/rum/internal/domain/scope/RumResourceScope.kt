@@ -167,6 +167,8 @@ internal class RumResourceScope(
 
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
+        val hasUserInfo = user.id != null || user.name != null ||
+            user.email != null || user.additionalProperties.isNotEmpty()
 
         @Suppress("UNCHECKED_CAST")
         val finalTiming = timing ?: extractResourceTiming(
@@ -196,12 +198,16 @@ internal class RumResourceScope(
                 name = context.viewName,
                 url = context.viewUrl.orEmpty()
             ),
-            usr = ResourceEvent.Usr(
-                id = user.id,
-                name = user.name,
-                email = user.email,
-                additionalProperties = user.additionalProperties
-            ),
+            usr = if (!hasUserInfo) {
+                null
+            } else {
+                ResourceEvent.Usr(
+                    id = user.id,
+                    name = user.name,
+                    email = user.email,
+                    additionalProperties = user.additionalProperties
+                )
+            },
             connectivity = networkInfo.toResourceConnectivity(),
             application = ResourceEvent.Application(context.applicationId),
             session = ResourceEvent.ResourceEventSession(
@@ -227,7 +233,9 @@ internal class RumResourceScope(
                 spanId = spanId,
                 rulePsr = rulePsr,
                 session = ResourceEvent.DdSession(plan = ResourceEvent.Plan.PLAN_1)
-            )
+            ),
+            service = CoreFeature.serviceName,
+            version = CoreFeature.packageVersionProvider.version
         )
         writer.write(resourceEvent)
         sent = true
@@ -254,7 +262,7 @@ internal class RumResourceScope(
         }
     }
 
-    @SuppressWarnings("LongParameterList")
+    @SuppressWarnings("LongParameterList", "LongMethod")
     private fun sendError(
         message: String,
         source: RumErrorSource,
@@ -267,6 +275,9 @@ internal class RumResourceScope(
 
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
+        val hasUserInfo = user.id != null || user.name != null ||
+            user.email != null || user.additionalProperties.isNotEmpty()
+
         val errorEvent = ErrorEvent(
             date = eventTimestamp,
             error = ErrorEvent.Error(
@@ -289,12 +300,16 @@ internal class RumResourceScope(
                 name = context.viewName,
                 url = context.viewUrl.orEmpty()
             ),
-            usr = ErrorEvent.Usr(
-                id = user.id,
-                name = user.name,
-                email = user.email,
-                additionalProperties = user.additionalProperties
-            ),
+            usr = if (!hasUserInfo) {
+                null
+            } else {
+                ErrorEvent.Usr(
+                    id = user.id,
+                    name = user.name,
+                    email = user.email,
+                    additionalProperties = user.additionalProperties
+                )
+            },
             connectivity = networkInfo.toErrorConnectivity(),
             application = ErrorEvent.Application(context.applicationId),
             session = ErrorEvent.ErrorEventSession(
@@ -315,7 +330,9 @@ internal class RumResourceScope(
                 architecture = androidInfoProvider.architecture
             ),
             context = ErrorEvent.Context(additionalProperties = attributes),
-            dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
+            dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1)),
+            service = CoreFeature.serviceName,
+            version = CoreFeature.packageVersionProvider.version
         )
         writer.write(errorEvent)
         sent = true

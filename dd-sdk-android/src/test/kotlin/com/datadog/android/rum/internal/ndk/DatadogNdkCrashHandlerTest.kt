@@ -380,12 +380,20 @@ internal class DatadogNdkCrashHandlerTest {
         testedHandler.lastSerializedNdkCrashLog = crashData
         testedHandler.lastSerializedRumViewEvent = viewEventStr
         whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn ndkCrashLog
+        val fakeUserInfo: UserInfo = forge.getForgery()
         val fakeViewEvent = viewEvent.copy(
             date = System.currentTimeMillis() - forge.aLong(
                 min = 0L,
                 max = DatadogNdkCrashHandler.VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD - 1000
+            ),
+            usr = ViewEvent.Usr(
+                id = fakeUserInfo.id,
+                name = fakeUserInfo.name,
+                email = fakeUserInfo.email,
+                additionalProperties = fakeUserInfo.additionalProperties
             )
         )
+
         whenever(mockRumEventDeserializer.deserialize(viewEventStr))
             .doReturn(fakeViewEvent)
         stubLogGenerator(ndkCrashLog, null, null, fakeViewEvent)
@@ -451,7 +459,7 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `𝕄 send log 𝕎 handleNdkCrash() {with RUM last view, view is too old}`(
+    fun `𝕄 send log 𝕎 handleNdkCrash() {with RUM last view, view without usr}`(
         @StringForgery crashData: String,
         @StringForgery viewEventStr: String,
         @Forgery ndkCrashLog: NdkCrashLog,
@@ -467,7 +475,94 @@ internal class DatadogNdkCrashHandlerTest {
         whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn ndkCrashLog
         val fakeViewEvent = viewEvent.copy(
             date = System.currentTimeMillis() - forge.aLong(
+                min = 0L,
+                max = DatadogNdkCrashHandler.VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD - 1000
+            ),
+            usr = null
+        )
+
+        whenever(mockRumEventDeserializer.deserialize(viewEventStr))
+            .doReturn(fakeViewEvent)
+        stubLogGenerator(ndkCrashLog, null, null, fakeViewEvent)
+
+        // When
+        testedHandler.handleNdkCrash(mockLogWriter, mockRumWriter)
+
+        // Then
+        verify(mockExecutorService).submit(captureRunnable.capture())
+        verifyZeroInteractions(mockLogWriter)
+        captureRunnable.firstValue.run()
+        argumentCaptor<Any> {
+            verify(mockRumWriter, times(2)).write(capture())
+
+            ErrorEventAssert.assertThat(firstValue as ErrorEvent)
+                .hasApplicationId(fakeViewEvent.application.id)
+                .hasSessionId(fakeViewEvent.session.id)
+                .hasView(
+                    fakeViewEvent.view.id,
+                    fakeViewEvent.view.name,
+                    fakeViewEvent.view.url
+                )
+                .hasMessage(
+                    DatadogNdkCrashHandler.LOG_CRASH_MSG.format(
+                        Locale.US,
+                        ndkCrashLog.signalName
+                    )
+                )
+                .hasStackTrace(ndkCrashLog.stacktrace)
+                .isCrash(true)
+                .hasErrorSource(RumErrorSource.SOURCE)
+                .hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
+                .hasTimestamp(ndkCrashLog.timestamp + fakeServerOffset)
+                .hasNoUserInfo()
+                .hasErrorType(ndkCrashLog.signalName)
+                .hasLiteSessionPlan()
+                .hasDeviceInfo(
+                    fakeAndroidInfoProvider.deviceName,
+                    fakeAndroidInfoProvider.deviceModel,
+                    fakeAndroidInfoProvider.deviceBrand,
+                    fakeAndroidInfoProvider.deviceType.toErrorSchemaType(),
+                    fakeAndroidInfoProvider.architecture
+                )
+                .hasOsInfo(
+                    fakeAndroidInfoProvider.osName,
+                    fakeAndroidInfoProvider.osVersion,
+                    fakeAndroidInfoProvider.osMajorVersion
+                )
+
+            ViewEventAssert.assertThat(secondValue as ViewEvent)
+                .hasVersion(fakeViewEvent.dd.documentVersion + 1)
+                .hasCrashCount((fakeViewEvent.view.crash?.count ?: 0) + 1)
+                .isActive(false)
+        }
+        verify(mockLogWriter).write(fakeLog)
+    }
+
+    @Test
+    fun `𝕄 send log 𝕎 handleNdkCrash() {with RUM last view, view is too old}`(
+        @StringForgery crashData: String,
+        @StringForgery viewEventStr: String,
+        @Forgery ndkCrashLog: NdkCrashLog,
+        @Forgery viewEvent: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        val fakeServerOffset =
+            forge.aLong(min = -ndkCrashLog.timestamp, max = Long.MAX_VALUE - ndkCrashLog.timestamp)
+        whenever(mockTimeProvider.getServerOffsetMillis()).thenReturn(fakeServerOffset)
+        testedHandler.lastSerializedNdkCrashLog = crashData
+        testedHandler.lastSerializedRumViewEvent = viewEventStr
+        whenever(mockNdkCrashLogDeserializer.deserialize(crashData)) doReturn ndkCrashLog
+        val fakeUserInfo: UserInfo = forge.getForgery()
+        val fakeViewEvent = viewEvent.copy(
+            date = System.currentTimeMillis() - forge.aLong(
                 min = DatadogNdkCrashHandler.VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD + 1
+            ),
+            usr = ViewEvent.Usr(
+                id = fakeUserInfo.id,
+                name = fakeUserInfo.name,
+                email = fakeUserInfo.email,
+                additionalProperties = fakeUserInfo.additionalProperties
             )
         )
         whenever(mockRumEventDeserializer.deserialize(viewEventStr))

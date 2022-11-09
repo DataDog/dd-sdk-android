@@ -342,6 +342,8 @@ internal open class RumViewScope(
 
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
+        val hasUserInfo = user.id != null || user.name != null ||
+            user.email != null || user.additionalProperties.isNotEmpty()
         val updatedAttributes = addExtraAttributes(event.attributes)
         val isFatal = updatedAttributes.remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean
         val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
@@ -368,12 +370,16 @@ internal open class RumViewScope(
                 name = context.viewName,
                 url = context.viewUrl.orEmpty()
             ),
-            usr = ErrorEvent.Usr(
-                id = user.id,
-                name = user.name,
-                email = user.email,
-                additionalProperties = user.additionalProperties
-            ),
+            usr = if (!hasUserInfo) {
+                null
+            } else {
+                ErrorEvent.Usr(
+                    id = user.id,
+                    name = user.name,
+                    email = user.email,
+                    additionalProperties = user.additionalProperties
+                )
+            },
             connectivity = networkInfo.toErrorConnectivity(),
             application = ErrorEvent.Application(context.applicationId),
             session = ErrorEvent.ErrorEventSession(
@@ -394,7 +400,9 @@ internal open class RumViewScope(
                 architecture = androidInfoProvider.architecture
             ),
             context = ErrorEvent.Context(additionalProperties = updatedAttributes),
-            dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
+            dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1)),
+            service = CoreFeature.serviceName,
+            version = CoreFeature.packageVersionProvider.version
         )
         writer.write(errorEvent)
 
@@ -582,7 +590,7 @@ internal open class RumViewScope(
         }
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "ComplexMethod")
     private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<Any>) {
         val viewComplete = isViewComplete()
         if (!viewUpdatePredicate.canUpdateView(viewComplete, event)) {
@@ -593,15 +601,18 @@ internal open class RumViewScope(
         val updatedDurationNs = resolveViewDuration(event)
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
+        val hasUserInfo = user.id != null || user.name != null ||
+            user.email != null || user.additionalProperties.isNotEmpty()
         val timings = resolveCustomTimings()
         val memoryInfo = lastMemoryInfo
         val refreshRateInfo = lastFrameRateInfo
-        val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo)
+        val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo) ?: false
+        val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
         val viewEvent = ViewEvent(
             date = eventTimestamp,
             view = ViewEvent.View(
                 id = context.viewId.orEmpty(),
-                name = context.viewName.orEmpty(),
+                name = context.viewName,
                 url = context.viewUrl.orEmpty(),
                 loadingTime = loadingTime,
                 loadingType = loadingType,
@@ -629,12 +640,16 @@ internal open class RumViewScope(
                 jsRefreshRate = performanceMetrics[RumPerformanceMetric.JS_FRAME_TIME]
                     ?.let { it.toInversePerformanceMetric() }
             ),
-            usr = ViewEvent.Usr(
-                id = user.id,
-                name = user.name,
-                email = user.email,
-                additionalProperties = user.additionalProperties
-            ),
+            usr = if (!hasUserInfo) {
+                null
+            } else {
+                ViewEvent.Usr(
+                    id = user.id,
+                    name = user.name,
+                    email = user.email,
+                    additionalProperties = user.additionalProperties
+                )
+            },
             application = ViewEvent.Application(context.applicationId),
             session = ViewEvent.ViewEventSession(
                 id = context.sessionId,
@@ -657,7 +672,10 @@ internal open class RumViewScope(
             dd = ViewEvent.Dd(
                 documentVersion = version,
                 session = ViewEvent.DdSession(plan = ViewEvent.Plan.PLAN_1)
-            )
+            ),
+            connectivity = networkInfo.toViewConnectivity(),
+            service = CoreFeature.serviceName,
+            version = CoreFeature.packageVersionProvider.version
         )
 
         writer.write(viewEvent)
@@ -713,12 +731,20 @@ internal open class RumViewScope(
         pendingActionCount++
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
+        val hasUserInfo = user.id != null || user.name != null ||
+            user.email != null || user.additionalProperties.isNotEmpty()
+
+        val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
 
         val actionEvent = ActionEvent(
             date = eventTimestamp,
             action = ActionEvent.ActionEventAction(
                 type = ActionEvent.ActionEventActionType.APPLICATION_START,
                 id = UUID.randomUUID().toString(),
+                error = ActionEvent.Error(0),
+                crash = ActionEvent.Crash(0),
+                longTask = ActionEvent.LongTask(0),
+                resource = ActionEvent.Resource(0),
                 loadingTime = getStartupTime(event)
             ),
             view = ActionEvent.View(
@@ -726,12 +752,16 @@ internal open class RumViewScope(
                 name = context.viewName,
                 url = context.viewUrl.orEmpty()
             ),
-            usr = ActionEvent.Usr(
-                id = user.id,
-                name = user.name,
-                email = user.email,
-                additionalProperties = user.additionalProperties
-            ),
+            usr = if (!hasUserInfo) {
+                null
+            } else {
+                ActionEvent.Usr(
+                    id = user.id,
+                    name = user.name,
+                    email = user.email,
+                    additionalProperties = user.additionalProperties
+                )
+            },
             application = ActionEvent.Application(context.applicationId),
             session = ActionEvent.ActionEventSession(
                 id = context.sessionId,
@@ -751,7 +781,10 @@ internal open class RumViewScope(
                 architecture = androidInfoProvider.architecture
             ),
             context = ActionEvent.Context(additionalProperties = GlobalRum.globalAttributes),
-            dd = ActionEvent.Dd(session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1))
+            dd = ActionEvent.Dd(session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1)),
+            connectivity = networkInfo.toActionConnectivity(),
+            service = CoreFeature.serviceName,
+            version = CoreFeature.packageVersionProvider.version
         )
         writer.write(actionEvent)
     }
@@ -762,12 +795,15 @@ internal open class RumViewScope(
         return max(now - startupTime, 1L)
     }
 
+    @Suppress("LongMethod")
     private fun onAddLongTask(event: RumRawEvent.AddLongTask, writer: DataWriter<Any>) {
         delegateEventToChildren(event, writer)
         if (stopped) return
 
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
+        val hasUserInfo = user.id != null || user.name != null ||
+            user.email != null || user.additionalProperties.isNotEmpty()
         val updatedAttributes = addExtraAttributes(
             mapOf(RumAttributes.LONG_TASK_TARGET to event.target)
         )
@@ -786,12 +822,16 @@ internal open class RumViewScope(
                 name = context.viewName,
                 url = context.viewUrl.orEmpty()
             ),
-            usr = LongTaskEvent.Usr(
-                id = user.id,
-                name = user.name,
-                email = user.email,
-                additionalProperties = user.additionalProperties
-            ),
+            usr = if (!hasUserInfo) {
+                null
+            } else {
+                LongTaskEvent.Usr(
+                    id = user.id,
+                    name = user.name,
+                    email = user.email,
+                    additionalProperties = user.additionalProperties
+                )
+            },
             connectivity = networkInfo.toLongTaskConnectivity(),
             application = LongTaskEvent.Application(context.applicationId),
             session = LongTaskEvent.LongTaskEventSession(
@@ -812,7 +852,9 @@ internal open class RumViewScope(
                 architecture = androidInfoProvider.architecture
             ),
             context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
-            dd = LongTaskEvent.Dd(session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1))
+            dd = LongTaskEvent.Dd(session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1)),
+            service = CoreFeature.serviceName,
+            version = CoreFeature.packageVersionProvider.version
         )
         writer.write(longTaskEvent)
         pendingLongTaskCount++
