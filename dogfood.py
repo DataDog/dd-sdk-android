@@ -132,7 +132,6 @@ def update_dependant(version: str, target: str, gh_token: str, dry_run: bool) ->
     repo.git.checkout('HEAD', b=branch_name)
 
     previous_version = generate_target_code(target, temp_dir_path, version)
-    update_version_table(target, temp_dir_path, version)
 
     if not repo.is_dirty():
         print("Nothing to commit, all is in order-")
