@@ -19,6 +19,9 @@ internal abstract class CrashService : Service() {
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
         extras?.let { bundle ->
             bundle.keySet().forEach {
+                // TODO RUMM-2717 Bundle#get is deprecated, but there is no replacement for it.
+                // Issue is opened in the Google Issue Tracker.
+                @Suppress("DEPRECATION")
                 GlobalRum.addAttribute(it, bundle[it])
             }
         }
