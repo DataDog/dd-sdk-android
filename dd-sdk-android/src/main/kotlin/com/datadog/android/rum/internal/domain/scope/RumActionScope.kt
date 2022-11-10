@@ -45,6 +45,7 @@ internal class RumActionScope(
     internal var name: String = initialName
     private val startedNanos: Long = eventTime.nanoTime
     private var lastInteractionNanos: Long = startedNanos
+    val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
 
     internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap().apply {
         putAll(GlobalRum.globalAttributes)
@@ -194,7 +195,6 @@ internal class RumActionScope(
         if (trackFrustrations && errorCount > 0 && actualType == RumActionType.TAP) {
             frustrations.add(ActionEvent.Type.ERROR_TAP)
         }
-        val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
 
         val actionEvent = ActionEvent(
             date = eventTimestamp,

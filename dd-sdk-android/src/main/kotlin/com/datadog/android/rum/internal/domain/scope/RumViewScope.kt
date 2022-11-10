@@ -604,7 +604,6 @@ internal open class RumViewScope(
         val memoryInfo = lastMemoryInfo
         val refreshRateInfo = lastFrameRateInfo
         val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo) ?: false
-        val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
         val viewEvent = ViewEvent(
             date = eventTimestamp,
             view = ViewEvent.View(
@@ -670,7 +669,6 @@ internal open class RumViewScope(
                 documentVersion = version,
                 session = ViewEvent.DdSession(plan = ViewEvent.Plan.PLAN_1)
             ),
-            connectivity = networkInfo.toViewConnectivity(),
             service = CoreFeature.serviceName,
             version = CoreFeature.packageVersionProvider.version
         )
