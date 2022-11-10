@@ -11,6 +11,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.hasUserData
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
@@ -167,8 +168,6 @@ internal class RumResourceScope(
 
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
-        val hasUserInfo = user.id != null || user.name != null ||
-            user.email != null || user.additionalProperties.isNotEmpty()
 
         @Suppress("UNCHECKED_CAST")
         val finalTiming = timing ?: extractResourceTiming(
@@ -198,7 +197,7 @@ internal class RumResourceScope(
                 name = context.viewName,
                 url = context.viewUrl.orEmpty()
             ),
-            usr = if (!hasUserInfo) {
+            usr = if (!user.hasUserData()) {
                 null
             } else {
                 ResourceEvent.Usr(
@@ -275,8 +274,6 @@ internal class RumResourceScope(
 
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
-        val hasUserInfo = user.id != null || user.name != null ||
-            user.email != null || user.additionalProperties.isNotEmpty()
 
         val errorEvent = ErrorEvent(
             date = eventTimestamp,
@@ -300,7 +297,7 @@ internal class RumResourceScope(
                 name = context.viewName,
                 url = context.viewUrl.orEmpty()
             ),
-            usr = if (!hasUserInfo) {
+            usr = if (!user.hasUserData()) {
                 null
             } else {
                 ErrorEvent.Usr(

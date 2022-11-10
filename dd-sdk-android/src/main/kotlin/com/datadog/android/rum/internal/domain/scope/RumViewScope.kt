@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.internal.utils.hasUserData
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
@@ -342,8 +343,6 @@ internal open class RumViewScope(
 
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
-        val hasUserInfo = user.id != null || user.name != null ||
-            user.email != null || user.additionalProperties.isNotEmpty()
         val updatedAttributes = addExtraAttributes(event.attributes)
         val isFatal = updatedAttributes.remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean
         val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
@@ -370,7 +369,7 @@ internal open class RumViewScope(
                 name = context.viewName,
                 url = context.viewUrl.orEmpty()
             ),
-            usr = if (!hasUserInfo) {
+            usr = if (!user.hasUserData()) {
                 null
             } else {
                 ErrorEvent.Usr(
@@ -601,8 +600,6 @@ internal open class RumViewScope(
         val updatedDurationNs = resolveViewDuration(event)
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
-        val hasUserInfo = user.id != null || user.name != null ||
-            user.email != null || user.additionalProperties.isNotEmpty()
         val timings = resolveCustomTimings()
         val memoryInfo = lastMemoryInfo
         val refreshRateInfo = lastFrameRateInfo
@@ -640,7 +637,7 @@ internal open class RumViewScope(
                 jsRefreshRate = performanceMetrics[RumPerformanceMetric.JS_FRAME_TIME]
                     ?.let { it.toInversePerformanceMetric() }
             ),
-            usr = if (!hasUserInfo) {
+            usr = if (!user.hasUserData()) {
                 null
             } else {
                 ViewEvent.Usr(
@@ -731,8 +728,6 @@ internal open class RumViewScope(
         pendingActionCount++
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
-        val hasUserInfo = user.id != null || user.name != null ||
-            user.email != null || user.additionalProperties.isNotEmpty()
 
         val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
 
@@ -752,7 +747,7 @@ internal open class RumViewScope(
                 name = context.viewName,
                 url = context.viewUrl.orEmpty()
             ),
-            usr = if (!hasUserInfo) {
+            usr = if (!user.hasUserData()) {
                 null
             } else {
                 ActionEvent.Usr(
@@ -802,8 +797,6 @@ internal open class RumViewScope(
 
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
-        val hasUserInfo = user.id != null || user.name != null ||
-            user.email != null || user.additionalProperties.isNotEmpty()
         val updatedAttributes = addExtraAttributes(
             mapOf(RumAttributes.LONG_TASK_TARGET to event.target)
         )
@@ -822,7 +815,7 @@ internal open class RumViewScope(
                 name = context.viewName,
                 url = context.viewUrl.orEmpty()
             ),
-            usr = if (!hasUserInfo) {
+            usr = if (!user.hasUserData()) {
                 null
             } else {
                 LongTaskEvent.Usr(

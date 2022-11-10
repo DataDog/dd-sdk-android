@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.AndroidInfoProvider
+import com.datadog.android.core.internal.utils.hasUserData
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.domain.RumContext
@@ -189,9 +190,6 @@ internal class RumActionScope(
 
         val context = getRumContext()
         val user = CoreFeature.userInfoProvider.getUserInfo()
-        val hasUserInfo = user.id != null || user.name != null ||
-            user.email != null || user.additionalProperties.isNotEmpty()
-
         val frustrations = mutableListOf<ActionEvent.Type>()
         if (trackFrustrations && errorCount > 0 && actualType == RumActionType.TAP) {
             frustrations.add(ActionEvent.Type.ERROR_TAP)
@@ -226,7 +224,7 @@ internal class RumActionScope(
                 type = ActionEvent.ActionEventSessionType.USER
             ),
             source = rumEventSourceProvider.actionEventSource,
-            usr = if (!hasUserInfo) {
+            usr = if (!user.hasUserData()) {
                 null
             } else {
                 ActionEvent.Usr(
