@@ -17,6 +17,6 @@ enum class RumPerformanceMetric {
     /** The amount of time Flutter spent rasterizing the view. */
     FLUTTER_RASTER_TIME,
 
-    /** The JavaScript refresh rate of a React Native view. */
-    JS_REFRESH_RATE
+    /** The JavaScript frame time of a React Native view in nanoseconds. */
+    JS_FRAME_TIME
 }

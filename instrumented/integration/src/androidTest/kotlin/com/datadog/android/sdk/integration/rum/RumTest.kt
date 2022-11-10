@@ -32,7 +32,11 @@ internal abstract class RumTest<R : Activity, T : MockServerActivityTestRule<R>>
                     .isNotNull
                     .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.CONTENT_TYPE_TEXT)
                 if (request.textBody != null) {
-                    sentGestureEvents += rumPayloadToJsonList(request.textBody)
+                    val rumPayload = rumPayloadToJsonList(request.textBody).filterNot {
+                        it.has("type") &&
+                            it.getAsJsonPrimitive("type").asString == "telemetry"
+                    }
+                    sentGestureEvents += rumPayload
                 }
             }
         sentGestureEvents.verifyEventMatches(expectedEvents)

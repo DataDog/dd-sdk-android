@@ -6170,12 +6170,13 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // GIVEN
-        val value = forge.aDouble()
+        val value = forge.aPositiveDouble(true)
+        val frameRate = TimeUnit.SECONDS.toNanos(1) / value
 
         // WHEN
         testedScope.handleEvent(
             RumRawEvent.UpdatePerformanceMetric(
-                metric = RumPerformanceMetric.JS_REFRESH_RATE,
+                metric = RumPerformanceMetric.JS_FRAME_TIME,
                 value = value
             ),
             mockWriter
@@ -6192,7 +6193,7 @@ internal class RumViewScopeTest {
                 .apply {
                     hasFlutterBuildTime(null)
                     hasFlutterRasterTime(null)
-                    hasJsRefreshRate(ViewEvent.FlutterBuildTime(value, value, value, null))
+                    hasJsRefreshRate(ViewEvent.FlutterBuildTime(frameRate, frameRate, frameRate, null))
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6206,7 +6207,7 @@ internal class RumViewScopeTest {
         // GIVEN
         val flutterBuildTimes = DoubleArray(5) { forge.aDouble() }
         val flutterRasterTimes = DoubleArray(5) { forge.aDouble() }
-        val jsRefreshRates = DoubleArray(5) { forge.aDouble() }
+        val jsFrameTimes = DoubleArray(5) { forge.aPositiveDouble(true) }
 
         // WHEN
         for (i in 0..4) {
@@ -6226,8 +6227,8 @@ internal class RumViewScopeTest {
             )
             testedScope.handleEvent(
                 RumRawEvent.UpdatePerformanceMetric(
-                    metric = RumPerformanceMetric.JS_REFRESH_RATE,
-                    value = jsRefreshRates[i]
+                    metric = RumPerformanceMetric.JS_FRAME_TIME,
+                    value = jsFrameTimes[i]
                 ),
                 mockWriter
             )
@@ -6240,7 +6241,7 @@ internal class RumViewScopeTest {
         // THEN
         val flutterBuildTimeStats = Arrays.stream(flutterBuildTimes).summaryStatistics()
         val flutterRasterTimeStats = Arrays.stream(flutterRasterTimes).summaryStatistics()
-        val jsRefreshRateStats = Arrays.stream(jsRefreshRates).summaryStatistics()
+        val jsFrameTimeStats = Arrays.stream(jsFrameTimes).summaryStatistics()
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
@@ -6261,9 +6262,9 @@ internal class RumViewScopeTest {
                     )
                     hasJsRefreshRate(
                         ViewEvent.FlutterBuildTime(
-                            min = jsRefreshRateStats.min,
-                            max = jsRefreshRateStats.max,
-                            average = jsRefreshRateStats.average
+                            min = TimeUnit.SECONDS.toNanos(1) / jsFrameTimeStats.max,
+                            max = TimeUnit.SECONDS.toNanos(1) / jsFrameTimeStats.min,
+                            average = TimeUnit.SECONDS.toNanos(1) / jsFrameTimeStats.average
                         )
                     )
                 }

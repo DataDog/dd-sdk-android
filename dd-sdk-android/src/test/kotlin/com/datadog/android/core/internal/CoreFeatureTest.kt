@@ -292,7 +292,33 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes app info 𝕎 initialize()`() {
+    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
+    fun `𝕄 initializes app info 𝕎 initialize() { LOLLIPOP }`() {
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeCredentials,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
+        assertThat(testedFeature.packageVersionProvider.version).isEqualTo(appContext.fakeVersionName)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
+        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
+        assertThat(testedFeature.rumApplicationId).isEqualTo(fakeCredentials.rumApplicationId)
+        assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
+        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.TIRAMISU)
+    fun `𝕄 initializes app info 𝕎 initialize() { TIRAMISU }`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,
@@ -397,8 +423,10 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes app info 𝕎 initialize() {unknown package name}`() {
+    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
+    fun `𝕄 initializes app info 𝕎 initialize() {unknown package name, LOLLIPOP}`() {
         // Given
+        @Suppress("DEPRECATION")
         whenever(appContext.mockPackageManager.getPackageInfo(appContext.fakePackageName, 0))
             .doThrow(PackageManager.NameNotFoundException())
         whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
@@ -418,6 +446,44 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(CoreFeature.DEFAULT_APP_VERSION)
+        assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
+        assertThat(testedFeature.envName).isEqualTo(fakeCredentials.envName)
+        assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)
+        assertThat(testedFeature.rumApplicationId).isNull()
+        assertThat(testedFeature.contextRef.get()).isEqualTo(appContext.mockInstance)
+        assertThat(testedFeature.batchSize).isEqualTo(fakeConfig.batchSize)
+        assertThat(testedFeature.uploadFrequency).isEqualTo(fakeConfig.uploadFrequency)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.TIRAMISU)
+    fun `𝕄 initializes app info 𝕎 initialize() {unknown package name, TIRAMISU}`() {
+        // Given
+        whenever(
+            appContext.mockPackageManager.getPackageInfo(
+                appContext.fakePackageName,
+                PackageManager.PackageInfoFlags.of(0)
+            )
+        )
+            .doThrow(PackageManager.NameNotFoundException())
+        whenever(appContext.mockInstance.getSystemService(Context.CONNECTIVITY_SERVICE))
+            .doReturn(mockConnectivityMgr)
+
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeCredentials.copy(rumApplicationId = null),
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.clientToken).isEqualTo(fakeCredentials.clientToken)
+        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
+        assertThat(testedFeature.packageVersionProvider.version).isEqualTo(
+            CoreFeature.DEFAULT_APP_VERSION
+        )
         assertThat(testedFeature.serviceName).isEqualTo(fakeCredentials.serviceName)
         assertThat(testedFeature.envName).isEqualTo(fakeCredentials.envName)
         assertThat(testedFeature.variant).isEqualTo(fakeCredentials.variant)

@@ -114,7 +114,10 @@ internal class SdkFeature(
         }
     }
 
-    @Deprecated("Plugins won't work that way in SDK v2")
+    @Deprecated(
+        "Datadog Plugins will be removed in SDK v2.0.0. You will then need to" +
+            " write your own Feature (check our own code for guidance)."
+    )
     fun getPlugins(): List<DatadogPlugin> {
         return featurePlugins
     }

@@ -20,12 +20,15 @@ import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
 import com.datadog.android.sessionreplay.internal.net.SessionReplayOkHttpUploader
@@ -44,6 +47,7 @@ import com.datadog.android.v2.tracing.internal.net.TracesRequestFactory
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 /**
  * Internal implementation of the [SdkCore] interface.
@@ -253,25 +257,8 @@ internal class DatadogCore(
 
         setupLifecycleMonitorCallback(appContext)
 
-        // Issue #154 (“Thread starting during runtime shutdown”)
-        // Make sure we stop Datadog when the Runtime shuts down
-        try {
-            val hookRunnable = Runnable { stop() }
-
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            val hook = Thread(hookRunnable, SHUTDOWN_THREAD_NAME)
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            Runtime.getRuntime().addShutdownHook(hook)
-        } catch (e: IllegalStateException) {
-            // Most probably Runtime is already shutting down
-            sdkLogger.e("Unable to add shutdown hook, Runtime is already shutting down", e)
-            stop()
-        } catch (e: IllegalArgumentException) {
-            // can only happen if hook is already added, or already running
-            sdkLogger.e("Shutdown hook was rejected", e)
-        } catch (e: SecurityException) {
-            sdkLogger.e("Security Manager denied adding shutdown hook ", e)
-        }
+        setupShutdownHook()
+        sendConfigurationTelemetryEvent(configuration)
     }
 
     private fun initializeLogsFeature(
@@ -465,6 +452,42 @@ internal class DatadogCore(
         return (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
     }
 
+    private fun setupShutdownHook() {
+        // Issue #154 (“Thread starting during runtime shutdown”)
+        // Make sure we stop Datadog when the Runtime shuts down
+        try {
+            val hookRunnable = Runnable { stop() }
+
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            val hook = Thread(hookRunnable, SHUTDOWN_THREAD_NAME)
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            Runtime.getRuntime().addShutdownHook(hook)
+        } catch (e: IllegalStateException) {
+            // Most probably Runtime is already shutting down
+            sdkLogger.e("Unable to add shutdown hook, Runtime is already shutting down", e)
+            stop()
+        } catch (e: IllegalArgumentException) {
+            // can only happen if hook is already added, or already running
+            sdkLogger.e("Shutdown hook was rejected", e)
+        } catch (e: SecurityException) {
+            sdkLogger.e("Security Manager denied adding shutdown hook ", e)
+        }
+    }
+
+    @Suppress("FunctionMaxLength")
+    private fun sendConfigurationTelemetryEvent(configuration: Configuration) {
+        val runnable = Runnable {
+            val monitor = GlobalRum.get() as? AdvancedRumMonitor
+            monitor?.sendConfigurationTelemetryEvent(configuration)
+        }
+        coreFeature.uploadExecutorService.scheduleSafe(
+            "Configuration telemetry",
+            CONFIGURATION_TELEMETRY_DELAY_MS,
+            TimeUnit.MILLISECONDS,
+            runnable
+        )
+    }
+
     // endregion
 
     companion object {
@@ -488,5 +511,7 @@ internal class DatadogCore(
             "Cannot add event receiver for feature \"%s\", it is not registered."
         internal const val EVENT_RECEIVER_ALREADY_EXISTS =
             "Feature \"%s\" already has event receiver registered, overwriting it."
+
+        internal val CONFIGURATION_TELEMETRY_DELAY_MS = TimeUnit.SECONDS.toMillis(5)
     }
 }

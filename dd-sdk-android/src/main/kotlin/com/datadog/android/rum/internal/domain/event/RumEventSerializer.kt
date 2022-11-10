@@ -15,6 +15,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.google.gson.JsonObject
@@ -46,6 +47,9 @@ internal class RumEventSerializer(
                 model.toJson().toString()
             }
             is TelemetryErrorEvent -> {
+                model.toJson().toString()
+            }
+            is TelemetryConfigurationEvent -> {
                 model.toJson().toString()
             }
             is JsonObject -> {

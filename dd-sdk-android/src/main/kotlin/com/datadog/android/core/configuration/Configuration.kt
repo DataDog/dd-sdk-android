@@ -17,6 +17,7 @@ import com.datadog.android.DatadogInterceptor
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.warnDeprecated
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpSpanEventMapper
 import com.datadog.android.event.SpanEventMapper
@@ -331,14 +332,18 @@ internal constructor(
          * Any long running operation on the main thread will appear as Long Tasks in Datadog
          * RUM Explorer
          * @param longTaskThresholdMs the threshold in milliseconds above which a task running on
-         * the Main thread [Looper] is considered as a long task (default 100ms)
+         * the Main thread [Looper] is considered as a long task (default 100ms). Setting a
+         * value less than or equal to 0 disables the long task tracking
          */
         @JvmOverloads
         fun trackLongTasks(longTaskThresholdMs: Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder {
             applyIfFeatureEnabled(PluginFeature.RUM, "trackLongTasks") {
-                rumConfig = rumConfig.copy(
-                    longTaskTrackingStrategy = MainLooperLongTaskStrategy(longTaskThresholdMs)
-                )
+                val strategy = if (longTaskThresholdMs > 0) {
+                    MainLooperLongTaskStrategy(longTaskThresholdMs)
+                } else {
+                    null
+                }
+                rumConfig = rumConfig.copy(longTaskTrackingStrategy = strategy)
             }
             return this
         }
@@ -375,6 +380,11 @@ internal constructor(
          */
         @Deprecated(message = PLUGINS_DEPRECATED_WARN_MESSAGE)
         fun addPlugin(plugin: DatadogPlugin, feature: PluginFeature): Builder {
+            warnDeprecated(
+                target = "Configuration.Builder#addPlugin",
+                deprecatedSince = "1.15.0",
+                removedInVersion = "2.0.0"
+            )
             applyIfFeatureEnabled(feature, "addPlugin") {
                 when (feature) {
                     PluginFeature.RUM -> rumConfig = rumConfig.copy(
@@ -675,8 +685,9 @@ internal constructor(
         internal const val DEFAULT_SAMPLING_RATE: Float = 100f
         internal const val DEFAULT_TELEMETRY_SAMPLING_RATE: Float = 20f
         internal const val DEFAULT_LONG_TASK_THRESHOLD_MS = 100L
-        internal const val PLUGINS_DEPRECATED_WARN_MESSAGE = "Datadog Plugins won't work in SDK " +
-            "v2, you'll need to write your own Feature"
+        internal const val PLUGINS_DEPRECATED_WARN_MESSAGE =
+            "Datadog Plugins will be removed in SDK v2.0.0. You will then need to" +
+                " write your own Feature (check our own code for guidance)."
 
         internal val DEFAULT_CORE_CONFIG = Core(
             needsClearTextHttp = false,

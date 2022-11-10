@@ -76,6 +76,7 @@ internal open class NdkCrashService : CrashService() {
             sessionReplayEnabled = true
         ).sampleTelemetry(100f)
         if (ndkCrashReportsEnabled) {
+            @Suppress("DEPRECATION")
             configBuilder.addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
         }
         if (encryptionEnabled) {

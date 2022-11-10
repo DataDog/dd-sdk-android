@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
@@ -337,17 +338,30 @@ internal class DatadogRumMonitor(
     }
 
     override fun sendDebugTelemetryEvent(message: String) {
-        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.DEBUG, message, null, null))
+        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.DEBUG, message, null, null, null))
     }
 
     override fun sendErrorTelemetryEvent(message: String, throwable: Throwable?) {
         val stack: String? = throwable?.loggableStackTrace()
         val kind: String? = throwable?.javaClass?.canonicalName ?: throwable?.javaClass?.simpleName
-        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, stack, kind))
+        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, stack, kind, null))
     }
 
     override fun sendErrorTelemetryEvent(message: String, stack: String?, kind: String?) {
-        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, stack, kind))
+        handleEvent(RumRawEvent.SendTelemetry(TelemetryType.ERROR, message, stack, kind, null))
+    }
+
+    @Suppress("FunctionMaxLength")
+    override fun sendConfigurationTelemetryEvent(configuration: Configuration) {
+        handleEvent(
+            RumRawEvent.SendTelemetry(TelemetryType.CONFIGURATION, "", null, null, configuration)
+        )
+    }
+
+    override fun notifyInterceptorInstantiated() {
+        handleEvent(
+            RumRawEvent.SendTelemetry(TelemetryType.INTERCEPTOR_SETUP, "", null, null, null)
+        )
     }
 
     override fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double) {
