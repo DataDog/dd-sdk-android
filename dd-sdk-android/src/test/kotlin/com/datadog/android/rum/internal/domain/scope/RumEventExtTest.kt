@@ -12,6 +12,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.RumErrorSourceType
+import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
@@ -594,6 +595,158 @@ internal class RumEventExtTest {
             LongTaskEvent.Connectivity(
                 LongTaskEvent.Status.CONNECTED,
                 listOf(LongTaskEvent.Interface.OTHER),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {not connected}`() {
+        // Given
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
+        )
+
+        // When
+        val result = networkInfo.toActionConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ActionEvent.Connectivity(
+                ActionEvent.Status.NOT_CONNECTED,
+                emptyList(),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {Wifi}`() {
+        // Given
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_WIFI
+        )
+
+        // When
+        val result = networkInfo.toActionConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ActionEvent.Connectivity(
+                ActionEvent.Status.CONNECTED,
+                listOf(ActionEvent.Interface.WIFI),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {Wimax}`() {
+        // Given
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_WIMAX
+        )
+
+        // When
+        val result = networkInfo.toActionConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ActionEvent.Connectivity(
+                ActionEvent.Status.CONNECTED,
+                listOf(ActionEvent.Interface.WIMAX),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {Ethernet}`() {
+        // Given
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_ETHERNET
+        )
+
+        // When
+        val result = networkInfo.toActionConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ActionEvent.Connectivity(
+                ActionEvent.Status.CONNECTED,
+                listOf(ActionEvent.Interface.ETHERNET),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {Bluetooth}`() {
+        // Given
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_BLUETOOTH
+        )
+
+        // When
+        val result = networkInfo.toActionConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ActionEvent.Connectivity(
+                ActionEvent.Status.CONNECTED,
+                listOf(ActionEvent.Interface.BLUETOOTH),
+                null
+            )
+        )
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        NetworkInfo.Connectivity::class,
+        names = [
+            "NETWORK_2G", "NETWORK_3G", "NETWORK_4G",
+            "NETWORK_5G", "NETWORK_MOBILE_OTHER", "NETWORK_CELLULAR"
+        ]
+    )
+    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {Cellular}`(
+        connectivity: NetworkInfo.Connectivity,
+        forge: Forge
+    ) {
+        // Given
+        val technology = forge.anAlphabeticalString()
+        val networkInfo = NetworkInfo(
+            connectivity,
+            cellularTechnology = technology
+        )
+
+        // When
+        val result = networkInfo.toActionConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ActionEvent.Connectivity(
+                ActionEvent.Status.CONNECTED,
+                listOf(ActionEvent.Interface.CELLULAR),
+                ActionEvent.Cellular(technology)
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {Other}`() {
+        // Given
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_OTHER
+        )
+
+        // When
+        val result = networkInfo.toActionConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ActionEvent.Connectivity(
+                ActionEvent.Status.CONNECTED,
+                listOf(ActionEvent.Interface.OTHER),
                 null
             )
         )

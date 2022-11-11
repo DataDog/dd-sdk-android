@@ -536,6 +536,26 @@ internal class ViewEventAssert(actual: ViewEvent) :
         }
     }
 
+    fun hasServiceName(serviceName: String?): ViewEventAssert {
+        assertThat(actual.service)
+            .overridingErrorMessage(
+                "Expected RUM event to have serviceName: $serviceName" +
+                    " but instead was: ${actual.service}"
+            )
+            .isEqualTo(serviceName)
+        return this
+    }
+
+    fun hasVersion(version: String?): ViewEventAssert {
+        assertThat(actual.version)
+            .overridingErrorMessage(
+                "Expected RUM event to have version: $version" +
+                    " but instead was: ${actual.version}"
+            )
+            .isEqualTo(version)
+        return this
+    }
+
     companion object {
 
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)

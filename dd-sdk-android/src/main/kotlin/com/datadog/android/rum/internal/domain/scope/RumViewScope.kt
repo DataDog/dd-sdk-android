@@ -19,8 +19,8 @@ import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.core.internal.utils.hasUserData
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.hasUserData
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.core.internal.utils.sdkLogger

@@ -538,6 +538,26 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
+    fun hasServiceName(serviceName: String?): ResourceEventAssert {
+        assertThat(actual.service)
+            .overridingErrorMessage(
+                "Expected RUM event to have serviceName: $serviceName" +
+                    " but instead was: ${actual.service}"
+            )
+            .isEqualTo(serviceName)
+        return this
+    }
+
+    fun hasVersion(version: String?): ResourceEventAssert {
+        assertThat(actual.version)
+            .overridingErrorMessage(
+                "Expected RUM event to have version: $version" +
+                    " but instead was: ${actual.version}"
+            )
+            .isEqualTo(version)
+        return this
+    }
+
     companion object {
 
         internal const val TIMESTAMP_THRESHOLD_MS = 50L

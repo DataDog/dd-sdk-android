@@ -8,5 +8,7 @@ package com.datadog.android.core.internal.utils
 
 import com.datadog.android.core.model.UserInfo
 
-internal fun UserInfo.hasUserData() : Boolean { return this.id != null || this.name != null ||
-        this.email != null || this.additionalProperties.isNotEmpty() }
+internal fun UserInfo.hasUserData(): Boolean {
+    return this.id != null || this.name != null ||
+        this.email != null || this.additionalProperties.isNotEmpty()
+}
