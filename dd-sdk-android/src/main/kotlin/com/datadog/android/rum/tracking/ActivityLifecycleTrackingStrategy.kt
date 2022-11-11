@@ -94,6 +94,9 @@ abstract class ActivityLifecycleTrackingStrategy :
 
         intent.extras?.let { bundle ->
             bundle.keySet().forEach {
+                // TODO RUMM-2717 Bundle#get is deprecated, but there is no replacement for it.
+                // Issue is opened in the Google Issue Tracker.
+                @Suppress("DEPRECATION")
                 attributes["$ARGUMENT_TAG.$it"] = bundle.get(it)
             }
         }
@@ -111,6 +114,9 @@ abstract class ActivityLifecycleTrackingStrategy :
         val attributes = mutableMapOf<String, Any?>()
 
         bundle.keySet().forEach {
+            // TODO RUMM-2717 Bundle#get is deprecated, but there is no replacement for it.
+            // Issue is opened in the Google Issue Tracker.
+            @Suppress("DEPRECATION")
             attributes["$ARGUMENT_TAG.$it"] = bundle.get(it)
         }
 

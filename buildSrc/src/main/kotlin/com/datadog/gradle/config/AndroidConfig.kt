@@ -11,14 +11,14 @@ import com.datadog.gradle.utils.Version
 
 object AndroidConfig {
 
-    const val TARGET_SDK = 31
+    const val TARGET_SDK = 33
     const val MIN_SDK = 19
 
     // this is temporary, until we bump min sdk. Compose requires min sdk 21.
     const val MIN_SDK_FOR_COMPOSE = 21
-    const val BUILD_TOOLS_VERSION = "31.0.0"
+    const val BUILD_TOOLS_VERSION = "33.0.0"
 
-    val VERSION = Version(1, 15, 0, Version.Type.Snapshot)
+    val VERSION = Version(1, 16, 0, Version.Type.Snapshot)
 }
 
 @Suppress("UnstableApiUsage")

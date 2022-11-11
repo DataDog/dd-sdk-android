@@ -8,6 +8,10 @@ package com.datadog.android.utils.forge
 
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
+import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
+import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
+import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
+import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -21,7 +25,14 @@ internal class ConfigurationRumForgeryFactory :
             samplingRate = forge.aFloat(0f, 100f),
             telemetrySamplingRate = forge.aFloat(0f, 100f),
             userActionTrackingStrategy = mock(),
-            viewTrackingStrategy = mock(),
+            viewTrackingStrategy = forge.anElementFrom(
+                ActivityViewTrackingStrategy(forge.aBool(), mock()),
+                FragmentViewTrackingStrategy(forge.aBool(), mock(), mock()),
+                MixedViewTrackingStrategy(forge.aBool(), mock(), mock(), mock()),
+                NavigationViewTrackingStrategy(forge.anInt(), forge.aBool(), mock()),
+                mock(),
+                null
+            ),
             rumEventMapper = mock(),
             longTaskTrackingStrategy = mock(),
             backgroundEventTracking = forge.aBool(),

@@ -87,8 +87,14 @@ internal open class ApplicationContextTestConfiguration<T : Context>(klass: Clas
 
     private fun mockPackageManager() {
         mockPackageManager = mock()
+        whenever(
+            mockPackageManager.getPackageInfo(
+                fakePackageName,
+                PackageManager.PackageInfoFlags.of(0)
+            )
+        ) doReturn fakePackageInfo
+        @Suppress("DEPRECATION")
         whenever(mockPackageManager.getPackageInfo(fakePackageName, 0)) doReturn fakePackageInfo
-        whenever(mockPackageManager.getApplicationInfo(fakePackageName, 0)) doReturn fakeAppInfo
     }
 
     // endregion

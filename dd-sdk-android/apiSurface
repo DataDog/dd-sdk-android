@@ -1574,8 +1574,68 @@ class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.
   constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
   override fun onCorruption(android.database.sqlite.SQLiteDatabase)
   companion object 
+data class com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+  constructor(Dd, kotlin.Long, kotlin.String, Source, kotlin.String, Application? = null, Session? = null, View? = null, Action? = null, kotlin.collections.List<kotlin.String>? = null, Telemetry)
+  val type: kotlin.String
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): TelemetryConfigurationEvent
+  class Dd
+    constructor()
+    val formatVersion: kotlin.Long
+    fun toJson(): com.google.gson.JsonElement
+  data class Application
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Application
+  data class Session
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Session
+  data class View
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): View
+  data class Action
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Action
+  data class Telemetry
+    constructor(Configuration)
+    val type: kotlin.String
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Telemetry
+  data class Configuration
+    constructor(kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.Boolean? = null, ViewTrackingStrategy? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, kotlin.String? = null, kotlin.Boolean? = null, kotlin.Long? = null, kotlin.Long? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Configuration
+  enum Source
+    constructor(kotlin.String)
+    - ANDROID
+    - IOS
+    - BROWSER
+    - FLUTTER
+    - REACT_NATIVE
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Source
+  enum ViewTrackingStrategy
+    constructor(kotlin.String)
+    - ACTIVITYVIEWTRACKINGSTRATEGY
+    - FRAGMENTVIEWTRACKINGSTRATEGY
+    - MIXEDVIEWTRACKINGSTRATEGY
+    - NAVIGATIONVIEWTRACKINGSTRATEGY
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): ViewTrackingStrategy
 data class com.datadog.android.telemetry.model.TelemetryDebugEvent
-  constructor(Dd, kotlin.Long, kotlin.String, Source, kotlin.String, Application? = null, Session? = null, View? = null, Action? = null, Telemetry)
+  constructor(Dd, kotlin.Long, kotlin.String, Source, kotlin.String, Application? = null, Session? = null, View? = null, Action? = null, kotlin.collections.List<kotlin.String>? = null, Telemetry)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 
@@ -1606,6 +1666,7 @@ data class com.datadog.android.telemetry.model.TelemetryDebugEvent
       fun fromJson(kotlin.String): Action
   data class Telemetry
     constructor(kotlin.String)
+    val type: kotlin.String
     val status: kotlin.String
     fun toJson(): com.google.gson.JsonElement
     companion object 
@@ -1621,7 +1682,7 @@ data class com.datadog.android.telemetry.model.TelemetryDebugEvent
     companion object 
       fun fromJson(kotlin.String): Source
 data class com.datadog.android.telemetry.model.TelemetryErrorEvent
-  constructor(Dd, kotlin.Long, kotlin.String, Source, kotlin.String, Application? = null, Session? = null, View? = null, Action? = null, Telemetry)
+  constructor(Dd, kotlin.Long, kotlin.String, Source, kotlin.String, Application? = null, Session? = null, View? = null, Action? = null, kotlin.collections.List<kotlin.String>? = null, Telemetry)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 
@@ -1652,6 +1713,7 @@ data class com.datadog.android.telemetry.model.TelemetryErrorEvent
       fun fromJson(kotlin.String): Action
   data class Telemetry
     constructor(kotlin.String, Error? = null)
+    val type: kotlin.String
     val status: kotlin.String
     fun toJson(): com.google.gson.JsonElement
     companion object 

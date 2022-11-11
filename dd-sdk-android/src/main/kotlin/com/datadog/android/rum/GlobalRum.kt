@@ -147,6 +147,10 @@ object GlobalRum {
         (monitor as? AdvancedRumMonitor)?.sendWebViewEvent()
     }
 
+    internal fun notifyInterceptorInstantiated() {
+        (monitor as? AdvancedRumMonitor)?.notifyInterceptorInstantiated()
+    }
+
     internal fun getRumContext(): RumContext {
         return activeContext.get()
     }

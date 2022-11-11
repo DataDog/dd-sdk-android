@@ -18,6 +18,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.internal.utils.telemetry
 import com.datadog.android.core.model.UserInfo
@@ -26,11 +27,13 @@ import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import java.lang.IllegalArgumentException
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -106,25 +109,8 @@ object Datadog {
 
         initialized.set(true)
 
-        // Issue #154 (“Thread starting during runtime shutdown”)
-        // Make sure we stop Datadog when the Runtime shuts down
-        try {
-            val hookRunnable = Runnable { stop() }
-
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            val hook = Thread(hookRunnable, SHUTDOWN_THREAD)
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            Runtime.getRuntime().addShutdownHook(hook)
-        } catch (e: IllegalStateException) {
-            // Most probably Runtime is already shutting down
-            sdkLogger.e("Unable to add shutdown hook, Runtime is already shutting down", e)
-            stop()
-        } catch (e: IllegalArgumentException) {
-            // can only happen if hook is already added, or already running
-            sdkLogger.e("Shutdown hook was rejected", e)
-        } catch (e: SecurityException) {
-            sdkLogger.e("Security Manager denied adding shutdown hook ", e)
-        }
+        setupShutdownHook()
+        sendConfigurationTelemetryEvent(configuration)
     }
 
     /**
@@ -401,6 +387,42 @@ object Datadog {
         return (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
     }
 
+    private fun setupShutdownHook() {
+        // Issue #154 (“Thread starting during runtime shutdown”)
+        // Make sure we stop Datadog when the Runtime shuts down
+        try {
+            val hookRunnable = Runnable { stop() }
+
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            val hook = Thread(hookRunnable, SHUTDOWN_THREAD)
+            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+            Runtime.getRuntime().addShutdownHook(hook)
+        } catch (e: IllegalStateException) {
+            // Most probably Runtime is already shutting down
+            sdkLogger.e("Unable to add shutdown hook, Runtime is already shutting down", e)
+            stop()
+        } catch (e: IllegalArgumentException) {
+            // can only happen if hook is already added, or already running
+            sdkLogger.e("Shutdown hook was rejected", e)
+        } catch (e: SecurityException) {
+            sdkLogger.e("Security Manager denied adding shutdown hook ", e)
+        }
+    }
+
+    @Suppress("FunctionMaxLength")
+    private fun sendConfigurationTelemetryEvent(configuration: Configuration) {
+        val runnable = Runnable {
+            val monitor = GlobalRum.get() as? AdvancedRumMonitor
+            monitor?.sendConfigurationTelemetryEvent(configuration)
+        }
+        CoreFeature.uploadExecutorService.scheduleSafe(
+            "Configuration telemetry",
+            CONFIGURATION_TELEMETRY_DELAY_MS,
+            TimeUnit.MILLISECONDS,
+            runnable
+        )
+    }
+
     // endregion
 
     // region Constants
@@ -434,6 +456,8 @@ object Datadog {
     internal const val DD_SOURCE_TAG = "_dd.source"
     internal const val DD_SDK_VERSION_TAG = "_dd.sdk_version"
     internal const val DD_APP_VERSION_TAG = "_dd.version"
+
+    internal val CONFIGURATION_TELEMETRY_DELAY_MS = TimeUnit.SECONDS.toMillis(5)
 
     // endregion
 }

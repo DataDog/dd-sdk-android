@@ -141,12 +141,14 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
     @Test
     fun `𝕄 store and register viewTrackingStrategy 𝕎 initialize()`() {
         // When
+        val mockViewTrackingStrategy = mock<ViewTrackingStrategy>()
+        fakeConfigurationFeature =
+            fakeConfigurationFeature.copy(viewTrackingStrategy = mockViewTrackingStrategy)
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // Then
-        assertThat(testedFeature.viewTrackingStrategy)
-            .isEqualTo(fakeConfigurationFeature.viewTrackingStrategy)
-        verify(fakeConfigurationFeature.viewTrackingStrategy!!).register(appContext.mockInstance)
+        assertThat(testedFeature.viewTrackingStrategy).isEqualTo(mockViewTrackingStrategy)
+        verify(mockViewTrackingStrategy).register(appContext.mockInstance)
     }
 
     @Test
