@@ -67,6 +67,8 @@ class com.datadog.android._InternalProxy
     fun error(String, String?, String?)
   val _telemetry: _TelemetryProxy
   fun setCustomAppVersion(String)
+  companion object 
+    fun setTelemetryConfigurationEventMapper(com.datadog.android.core.configuration.Configuration.Builder, com.datadog.android.event.EventMapper<com.datadog.android.telemetry.model.TelemetryConfigurationEvent>): com.datadog.android.core.configuration.Configuration.Builder
 enum com.datadog.android.core.configuration.BatchSize
   constructor(Long)
   - SMALL

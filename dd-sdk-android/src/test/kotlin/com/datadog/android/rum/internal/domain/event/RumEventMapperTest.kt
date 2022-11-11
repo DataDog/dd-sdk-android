@@ -71,6 +71,9 @@ internal class RumEventMapperTest {
     @Mock
     lateinit var mockLongTaskEventMapper: EventMapper<LongTaskEvent>
 
+    @Mock
+    lateinit var mockTelemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent>
+
     @BeforeEach
     fun `set up`() {
         whenever(mockViewEventMapper.map(any())).thenAnswer { it.arguments[0] }
@@ -80,7 +83,8 @@ internal class RumEventMapperTest {
             viewEventMapper = mockViewEventMapper,
             resourceEventMapper = mockResourceEventMapper,
             errorEventMapper = mockErrorEventMapper,
-            longTaskEventMapper = mockLongTaskEventMapper
+            longTaskEventMapper = mockLongTaskEventMapper,
+            telemetryConfigurationMapper = mockTelemetryConfigurationMapper
         )
     }
 
@@ -211,14 +215,19 @@ internal class RumEventMapperTest {
     }
 
     @Test
-    fun `M return the original event W map { TelemetryConfigurationEvent }`(
+    fun `M return the bundled event W map { TelemetryConfigurationEvent }`(
         @Forgery telemetryConfigurationEvent: TelemetryConfigurationEvent
     ) {
+        // GIVEN
+        whenever(mockTelemetryConfigurationMapper.map(telemetryConfigurationEvent))
+            .thenReturn(telemetryConfigurationEvent)
+
         // WHEN
         val mappedRumEvent = testedRumEventMapper.map(telemetryConfigurationEvent)
 
         // THEN
         verifyZeroInteractions(logger.mockSdkLogHandler)
+        verify(mockTelemetryConfigurationMapper).map(telemetryConfigurationEvent)
         assertThat(mappedRumEvent).isSameAs(telemetryConfigurationEvent)
     }
 
