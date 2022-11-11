@@ -6,6 +6,7 @@
 
 package com.datadog.android.nightly.logs
 
+import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
@@ -271,6 +272,29 @@ class LoggerE2ETests {
             logger.wtf(
                 fakeMessage,
                 fakeThrowable,
+                attributes
+            )
+        }
+    }
+
+    /**
+     * apiMethodSignature: com.datadog.android.log.Logger#fun log(Int, String, String?, String?, String?, Map<String, Any?> = emptyMap())
+     */
+    @Test
+    fun logs_logger_log_with_error_strings() {
+        val testMethodName = "logs_logger_log_with_error_strings"
+        val fakeMessage = forge.anAlphaNumericalString()
+        val fakeErroKind = forge.anAlphabeticalString()
+        val fakeErrorMessage = forge.anAlphaNumericalString()
+        val fakeErrorStack = forge.anAlphaNumericalString()
+        val attributes = defaultTestAttributes(testMethodName)
+        measure(testMethodName) {
+            logger.log(
+                Log.INFO,
+                fakeMessage,
+                fakeErroKind,
+                fakeErrorMessage,
+                fakeErrorStack,
                 attributes
             )
         }

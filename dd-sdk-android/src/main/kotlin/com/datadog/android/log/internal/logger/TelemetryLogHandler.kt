@@ -24,4 +24,21 @@ internal class TelemetryLogHandler(private val telemetry: Telemetry) : LogHandle
             telemetry.debug(message)
         }
     }
+
+    override fun handleLog(
+        level: Int,
+        message: String,
+        errorKind: String?,
+        errorMessage: String?,
+        errorStack: String?,
+        attributes: Map<String, Any?>,
+        tags: Set<String>,
+        timestamp: Long?
+    ) {
+        if (level == AndroidLog.ERROR || level == AndroidLog.WARN) {
+            telemetry.error(message, stack = errorStack, kind = errorKind)
+        } else {
+            telemetry.debug(message)
+        }
+    }
 }

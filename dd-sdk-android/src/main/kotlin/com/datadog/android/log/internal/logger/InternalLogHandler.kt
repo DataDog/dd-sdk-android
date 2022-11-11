@@ -47,4 +47,42 @@ internal class InternalLogHandler(
             )
         }
     }
+
+    override fun handleLog(
+        level: Int,
+        message: String,
+        errorKind: String?,
+        errorMessage: String?,
+        errorStack: String?,
+        attributes: Map<String, Any?>,
+        tags: Set<String>,
+        timestamp: Long?
+    ) {
+        val reportLevel = level and TELEMETRY_LOG_FLAG.inv()
+        logcatLogHandler.handleLog(
+            reportLevel,
+            message,
+            errorKind,
+            errorMessage,
+            errorStack,
+            attributes,
+            tags,
+            timestamp
+        )
+
+        val forwardTelemetry = (level and TELEMETRY_LOG_FLAG) != 0
+
+        if (forwardTelemetry) {
+            telemetryLogHandler.handleLog(
+                reportLevel,
+                message,
+                errorKind,
+                errorMessage,
+                errorStack,
+                attributes,
+                tags,
+                timestamp
+            )
+        }
+    }
 }
