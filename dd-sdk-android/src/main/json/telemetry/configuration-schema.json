@@ -9,17 +9,12 @@
       "$ref": "_common-schema.json"
     },
     {
-      "required": [
-        "telemetry"
-      ],
+      "required": ["telemetry"],
       "properties": {
         "telemetry": {
           "type": "object",
           "description": "The telemetry configuration information",
-          "required": [
-            "type",
-            "configuration"
-          ],
+          "required": ["type", "configuration"],
           "properties": {
             "type": {
               "type": "string",
@@ -70,11 +65,13 @@
                   "type": "integer",
                   "description": "The percentage of sessions with Browser RUM & Session Replay pricing tracked",
                   "minimum": 0,
-                  "maximum": 100
+                  "maximum": 100,
+                  "readOnly": false
                 },
                 "use_proxy": {
                   "type": "boolean",
-                  "description": "Whether a proxy configured is used"
+                  "description": "Whether a proxy configured is used",
+                  "readOnly": false
                 },
                 "use_before_send": {
                   "type": "boolean",
@@ -87,6 +84,14 @@
                 "track_session_across_subdomains": {
                   "type": "boolean",
                   "description": "Whether sessions across subdomains for the same site are tracked"
+                },
+                "track_resources": {
+                  "type": "boolean",
+                  "description": "Whether resources are tracked"
+                },
+                "track_long_task": {
+                  "type": "boolean",
+                  "description": "Whether long tasks are tracked"
                 },
                 "use_cross_site_session_cookie": {
                   "type": "boolean",
@@ -106,7 +111,8 @@
                 },
                 "default_privacy_level": {
                   "type": "string",
-                  "description": "Session replay default privacy level"
+                  "description": "Session replay default privacy level",
+                  "readOnly": false
                 },
                 "use_excluded_activity_urls": {
                   "type": "boolean",
@@ -118,11 +124,13 @@
                 },
                 "track_views_manually": {
                   "type": "boolean",
-                  "description": "Whether the RUM views creation is handled manually"
+                  "description": "Whether the RUM views creation is handled manually",
+                  "readOnly": false
                 },
                 "track_interactions": {
                   "type": "boolean",
-                  "description": "Whether user actions are tracked"
+                  "description": "Whether user actions are tracked",
+                  "readOnly": false
                 },
                 "forward_errors_to_logs": {
                   "type": "boolean",
@@ -174,19 +182,23 @@
                 },
                 "track_background_events": {
                   "type": "boolean",
-                  "description": "Whether RUM events are tracked when the application is in Background"
+                  "description": "Whether RUM events are tracked when the application is in Background",
+                  "readOnly": false
                 },
                 "mobile_vitals_update_period": {
                   "type": "integer",
-                  "description": "The period between each Mobile Vital sample (in milliseconds)"
+                  "description": "The period between each Mobile Vital sample (in milliseconds)",
+                  "readOnly": false
                 },
                 "track_errors": {
                   "type": "boolean",
-                  "description": "Whether error monitoring & crash reporting is enabled for the source platform"
+                  "description": "Whether error monitoring & crash reporting is enabled for the source platform",
+                  "readOnly": false
                 },
                 "track_network_requests": {
                   "type": "boolean",
-                  "description": "Whether automatic collection of network requests is enabled"
+                  "description": "Whether automatic collection of network requests is enabled",
+                  "readOnly": false
                 },
                 "use_tracing": {
                   "type": "boolean",
@@ -194,27 +206,28 @@
                 },
                 "track_native_views": {
                   "type": "boolean",
-                  "description": "Whether native views are tracked (for cross platform SDKs)"
+                  "description": "Whether native views are tracked (for cross platform SDKs)",
+                  "readOnly": false
                 },
                 "track_native_errors": {
                   "type": "boolean",
-                  "description": "Whether native error monitoring & crash reporting is enabled (for cross platform SDKs)"
+                  "description": "Whether native error monitoring & crash reporting is enabled (for cross platform SDKs)",
+                  "readOnly": false
                 },
                 "track_native_long_tasks": {
                   "type": "boolean",
-                  "description": "Whether long task tracking is performed automatically"
+                  "description": "Whether long task tracking is performed automatically",
+                  "readOnly": false
                 },
                 "track_cross_platform_long_tasks": {
                   "type": "boolean",
-                  "description": "Whether long task tracking is performed automatically for cross platform SDKs"
-                },
-                "use_attach_to_existing": {
-                  "type": "boolean",
-                  "description": "Whether the cross-platform SDK was initialized on top of a pre-existing native SDK instance"
+                  "description": "Whether long task tracking is performed automatically for cross platform SDKs",
+                  "readOnly": false
                 },
                 "use_first_party_hosts": {
                   "type": "boolean",
-                  "description": "Whether the client has provided a list of first party hosts"
+                  "description": "Whether the client has provided a list of first party hosts",
+                  "readOnly": false
                 },
                 "initialization_type": {
                   "type": "string",
@@ -222,7 +235,8 @@
                 },
                 "track_flutter_performance": {
                   "type": "boolean",
-                  "description": "Whether Flutter build and raster time tracking is enabled"
+                  "description": "Whether Flutter build and raster time tracking is enabled",
+                  "readOnly": false
                 },
                 "batch_size": {
                   "type": "integer",
