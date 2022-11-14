@@ -99,6 +99,15 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
+    fun hasNoUserInfo(): ErrorEventAssert {
+        assertThat(actual.usr)
+            .overridingErrorMessage(
+                "Expected RUM event to have no user information but was ${actual.usr}"
+            )
+            .isNull()
+        return this
+    }
+
     fun hasUserInfo(expected: UserInfo?): ErrorEventAssert {
         assertThat(actual.usr?.id)
             .overridingErrorMessage(
@@ -169,7 +178,7 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
 
         assertThat(actual.connectivity?.cellular?.technology)
             .overridingErrorMessage(
-                "Expected RUM event to connectivity usr.cellular.technology " +
+                "Expected RUM event to have connectivity usr.cellular.technology " +
                     "${expected?.cellularTechnology} " +
                     "but was ${actual.connectivity?.cellular?.technology}"
             )
@@ -177,7 +186,7 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
 
         assertThat(actual.connectivity?.cellular?.carrierName)
             .overridingErrorMessage(
-                "Expected RUM event to connectivity usr.cellular.carrierName " +
+                "Expected RUM event to have connectivity usr.cellular.carrierName " +
                     "${expected?.carrierName} " +
                     "but was ${actual.connectivity?.cellular?.carrierName}"
             )
@@ -428,6 +437,26 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
                     " but was ${actual.os?.versionMajor}"
             )
             .isEqualTo(versionMajor)
+        return this
+    }
+
+    fun hasServiceName(serviceName: String?): ErrorEventAssert {
+        assertThat(actual.service)
+            .overridingErrorMessage(
+                "Expected RUM event to have serviceName: $serviceName" +
+                    " but instead was: ${actual.service}"
+            )
+            .isEqualTo(serviceName)
+        return this
+    }
+
+    fun hasVersion(version: String?): ErrorEventAssert {
+        assertThat(actual.version)
+            .overridingErrorMessage(
+                "Expected RUM event to have version: $version" +
+                    " but instead was: ${actual.version}"
+            )
+            .isEqualTo(version)
         return this
     }
 

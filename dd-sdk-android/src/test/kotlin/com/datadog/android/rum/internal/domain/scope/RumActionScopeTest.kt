@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import android.content.Context
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.AndroidInfoProvider
+import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
@@ -89,6 +90,9 @@ internal class RumActionScopeTest {
     @Forgery
     lateinit var fakeAndroidInfoProvider: AndroidInfoProvider
 
+    @Forgery
+    lateinit var fakeNetworkInfo: NetworkInfo
+
     lateinit var fakeEventTime: Time
 
     lateinit var fakeEvent: RumRawEvent
@@ -123,6 +127,7 @@ internal class RumActionScopeTest {
 
         whenever(coreFeature.mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
+        whenever(coreFeature.mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeNetworkInfo
 
         testedScope = RumActionScope(
             mockParentScope,
@@ -216,6 +221,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -316,6 +324,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -393,6 +404,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -525,6 +539,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -590,6 +607,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -642,6 +662,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -704,6 +727,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -760,6 +786,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -813,6 +842,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -865,6 +897,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -922,6 +957,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -981,6 +1019,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1032,6 +1073,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1083,6 +1127,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1139,6 +1186,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1197,6 +1247,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1270,6 +1323,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1328,6 +1384,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1377,6 +1436,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1429,6 +1491,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1485,6 +1550,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1542,6 +1610,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1590,6 +1661,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1645,6 +1719,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         assertThat(result).isNull()
@@ -1698,6 +1775,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1749,6 +1829,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         assertThat(result).isNull()
@@ -1800,6 +1883,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1853,6 +1939,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1936,6 +2025,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1984,6 +2076,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -2032,6 +2127,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -2080,6 +2178,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -2164,6 +2265,9 @@ internal class RumActionScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeNetworkInfo)
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())

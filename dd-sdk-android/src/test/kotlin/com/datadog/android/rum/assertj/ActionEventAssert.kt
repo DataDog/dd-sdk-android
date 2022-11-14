@@ -6,9 +6,11 @@
 
 package com.datadog.android.rum.assertj
 
+import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.internal.domain.scope.toSchemaType
 import com.datadog.android.rum.model.ActionEvent
 import org.assertj.core.api.AbstractObjectAssert
@@ -359,6 +361,80 @@ internal class ActionEventAssert(actual: ActionEvent) :
                     " but was ${actual.os?.versionMajor}"
             )
             .isEqualTo(versionMajor)
+        return this
+    }
+
+    fun hasConnectivityInfo(expected: NetworkInfo?): ActionEventAssert {
+        val expectedStatus = if (expected?.isConnected() == true) {
+            ActionEvent.Status.CONNECTED
+        } else {
+            ActionEvent.Status.NOT_CONNECTED
+        }
+        val expectedInterfaces = when (expected?.connectivity) {
+            NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(ActionEvent.Interface.ETHERNET)
+            NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(ActionEvent.Interface.WIFI)
+            NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(ActionEvent.Interface.WIMAX)
+            NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(ActionEvent.Interface.BLUETOOTH)
+            NetworkInfo.Connectivity.NETWORK_2G,
+            NetworkInfo.Connectivity.NETWORK_3G,
+            NetworkInfo.Connectivity.NETWORK_4G,
+            NetworkInfo.Connectivity.NETWORK_5G,
+            NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
+            NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(ActionEvent.Interface.CELLULAR)
+            NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(ActionEvent.Interface.OTHER)
+            NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
+            null -> null
+        }
+
+        assertThat(actual.connectivity?.status)
+            .overridingErrorMessage(
+                "Expected RUM event to have connectivity.status $expectedStatus " +
+                    "but was ${actual.connectivity?.status}"
+            )
+            .isEqualTo(expectedStatus)
+
+        assertThat(actual.connectivity?.cellular?.technology)
+            .overridingErrorMessage(
+                "Expected RUM event to have connectivity usr.cellular.technology " +
+                    "${expected?.cellularTechnology} " +
+                    "but was ${actual.connectivity?.cellular?.technology}"
+            )
+            .isEqualTo(expected?.cellularTechnology)
+
+        assertThat(actual.connectivity?.cellular?.carrierName)
+            .overridingErrorMessage(
+                "Expected RUM event to have connectivity usr.cellular.carrierName " +
+                    "${expected?.carrierName} " +
+                    "but was ${actual.connectivity?.cellular?.carrierName}"
+            )
+            .isEqualTo(expected?.carrierName)
+
+        assertThat(actual.connectivity?.interfaces)
+            .overridingErrorMessage(
+                "Expected RUM event to have connectivity.interfaces $expectedInterfaces " +
+                    "but was ${actual.connectivity?.interfaces}"
+            )
+            .isEqualTo(expectedInterfaces)
+        return this
+    }
+
+    fun hasServiceName(serviceName: String?): ActionEventAssert {
+        assertThat(actual.service)
+            .overridingErrorMessage(
+                "Expected RUM event to have serviceName: $serviceName" +
+                    " but instead was: ${actual.service}"
+            )
+            .isEqualTo(serviceName)
+        return this
+    }
+
+    fun hasVersion(version: String?): ActionEventAssert {
+        assertThat(actual.version)
+            .overridingErrorMessage(
+                "Expected RUM event to have version: $version" +
+                    " but instead was: ${actual.version}"
+            )
+            .isEqualTo(version)
         return this
     }
 

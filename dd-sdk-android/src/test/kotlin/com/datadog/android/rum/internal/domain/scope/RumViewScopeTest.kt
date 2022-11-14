@@ -679,7 +679,7 @@ internal class RumViewScopeTest {
                 hasMemoryMetric(null, null)
                 hasRefreshRateMetric(null, null)
                 isActive(false)
-                isSlowRendered(null)
+                isSlowRendered(false)
                 hasNoCustomTimings()
                 hasUserInfo(fakeUserInfo)
                 hasViewId(testedScope.viewId)
@@ -700,6 +700,8 @@ internal class RumViewScopeTest {
                     fakeAndroidInfoProvider.osVersion,
                     fakeAndroidInfoProvider.osMajorVersion
                 )
+                hasServiceName(coreFeature.fakeServiceName)
+                hasVersion(coreFeature.mockAppVersionProvider.version)
             }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -744,7 +746,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -765,6 +767,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -809,7 +813,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -830,6 +834,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -880,7 +886,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -901,6 +907,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -948,7 +956,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -969,6 +977,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1016,7 +1026,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -1037,6 +1047,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1072,7 +1084,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -1092,6 +1104,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1158,7 +1172,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -1179,6 +1193,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1225,7 +1241,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -1246,6 +1262,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1313,7 +1331,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -1334,6 +1352,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1403,7 +1423,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -1424,6 +1444,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1471,7 +1493,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -1492,6 +1514,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1538,7 +1562,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -1559,6 +1583,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1598,7 +1624,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -1619,6 +1645,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1701,7 +1729,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -1722,6 +1750,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1781,7 +1811,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -1802,6 +1832,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1862,7 +1894,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -1883,6 +1915,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1945,7 +1979,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -1966,6 +2000,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2008,7 +2044,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -2029,6 +2065,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2103,6 +2141,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2140,7 +2180,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -2161,6 +2201,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2220,7 +2262,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -2241,6 +2283,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2302,7 +2346,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -2323,6 +2367,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2383,7 +2429,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -2404,6 +2450,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2479,6 +2527,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2531,6 +2581,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2582,7 +2634,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -2603,6 +2655,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2863,6 +2917,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3310,6 +3366,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3371,6 +3429,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3433,6 +3493,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3497,6 +3559,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3606,6 +3670,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3669,6 +3735,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3731,6 +3799,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
             assertThat(lastValue as ViewEvent)
                 .apply {
@@ -3752,7 +3822,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -3773,6 +3843,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3839,6 +3911,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3903,6 +3977,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
             assertThat(lastValue as ViewEvent)
                 .apply {
@@ -3924,7 +4000,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -3945,6 +4021,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4010,6 +4088,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4076,6 +4156,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4143,6 +4225,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4208,6 +4292,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
             assertThat(lastValue as ViewEvent)
                 .apply {
@@ -4229,7 +4315,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -4250,6 +4336,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4439,6 +4527,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4486,6 +4576,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4543,6 +4635,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4600,6 +4694,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4809,7 +4905,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -4830,6 +4926,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4874,7 +4972,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -4895,6 +4993,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4958,7 +5058,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasCustomTimings(mapOf(fakeTimingKey to customTimingEstimatedDuration))
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -4978,6 +5078,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5025,7 +5127,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasCustomTimings(mapOf(fakeTimingKey1 to customTiming1EstimatedDuration))
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -5046,6 +5148,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
             assertThat(lastValue)
                 .apply {
@@ -5066,7 +5170,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasCustomTimings(
                         mapOf(
                             fakeTimingKey1 to customTiming1EstimatedDuration,
@@ -5092,6 +5196,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5149,7 +5255,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -5170,6 +5276,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5215,7 +5323,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(vitals.last().meanValue, vitals.last().maxValue)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeUserInfo)
                     hasViewId(testedScope.viewId)
@@ -5236,6 +5344,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5312,6 +5422,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5388,6 +5500,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5480,6 +5594,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5572,6 +5688,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5666,6 +5784,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5760,6 +5880,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5855,6 +5977,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5950,6 +6074,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6250,6 +6376,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6298,6 +6426,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
 
@@ -6361,6 +6491,8 @@ internal class RumViewScopeTest {
                         fakeAndroidInfoProvider.osVersion,
                         fakeAndroidInfoProvider.osMajorVersion
                     )
+                    hasServiceName(coreFeature.fakeServiceName)
+                    hasVersion(coreFeature.mockAppVersionProvider.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
