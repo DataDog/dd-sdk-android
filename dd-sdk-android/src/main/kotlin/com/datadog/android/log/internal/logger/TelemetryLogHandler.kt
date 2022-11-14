@@ -30,13 +30,13 @@ internal class TelemetryLogHandler(private val telemetry: Telemetry) : LogHandle
         message: String,
         errorKind: String?,
         errorMessage: String?,
-        errorStack: String?,
+        errorStacktrace: String?,
         attributes: Map<String, Any?>,
         tags: Set<String>,
         timestamp: Long?
     ) {
         if (level == AndroidLog.ERROR || level == AndroidLog.WARN) {
-            telemetry.error(message, stack = errorStack, kind = errorKind)
+            telemetry.error(message, stack = errorStacktrace, kind = errorKind)
         } else {
             telemetry.debug(message)
         }

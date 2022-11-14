@@ -44,7 +44,7 @@ internal class LogcatLogHandler(
         message: String,
         errorKind: String?,
         errorMessage: String?,
-        errorStack: String?,
+        errorStacktrace: String?,
         attributes: Map<String, Any?>,
         tags: Set<String>,
         timestamp: Long?
@@ -53,11 +53,11 @@ internal class LogcatLogHandler(
         val tag = resolveTag(stackElement)
         val suffix = resolveSuffix(stackElement)
         Log.println(level, tag, message + suffix)
-        if (errorStack != null) {
+        if (errorStacktrace != null) {
             Log.println(
                 level,
                 tag,
-                errorStack
+                errorStacktrace
             )
         }
     }

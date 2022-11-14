@@ -28,7 +28,7 @@ internal class CombinedLogHandler(
         message: String,
         errorKind: String?,
         errorMessage: String?,
-        errorStack: String?,
+        errorStacktrace: String?,
         attributes: Map<String, Any?>,
         tags: Set<String>,
         timestamp: Long?
@@ -39,7 +39,7 @@ internal class CombinedLogHandler(
                 message,
                 errorKind,
                 errorMessage,
-                errorStack,
+                errorStacktrace,
                 attributes,
                 tags,
                 timestamp

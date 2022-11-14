@@ -34,7 +34,7 @@ internal interface LogHandler {
      * @param message the message to be logged
      * @param errorKind the kind of error to be logged with the message
      * @param errorMessage the message from the error to be logged with this message
-     * @param errorStack the stack trace from the error to be logged with this message
+     * @param errorStacktrace the stack trace from the error to be logged with this message
      * @param attributes a map of attributes to include only for this message. If an attribute with
      * the same key already exists in this logger, it will be overridden (just for this message)
      * @param tags the tags for this message
@@ -45,7 +45,7 @@ internal interface LogHandler {
         message: String,
         errorKind: String?,
         errorMessage: String?,
-        errorStack: String?,
+        errorStacktrace: String?,
         attributes: Map<String, Any?> = emptyMap(),
         tags: Set<String> = emptySet(),
         timestamp: Long? = null

@@ -29,7 +29,7 @@ internal class ConditionalLogHandler(
         message: String,
         errorKind: String?,
         errorMessage: String?,
-        errorStack: String?,
+        errorStacktrace: String?,
         attributes: Map<String, Any?>,
         tags: Set<String>,
         timestamp: Long?
@@ -41,7 +41,7 @@ internal class ConditionalLogHandler(
                 message,
                 errorKind,
                 errorMessage,
-                errorStack,
+                errorStacktrace,
                 attributes,
                 tags,
                 timestamp

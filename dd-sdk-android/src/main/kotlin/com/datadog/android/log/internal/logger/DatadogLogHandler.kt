@@ -54,7 +54,7 @@ internal class DatadogLogHandler(
         message: String,
         errorKind: String?,
         errorMessage: String?,
-        errorStack: String?,
+        errorStacktrace: String?,
         attributes: Map<String, Any?>,
         tags: Set<String>,
         timestamp: Long?
@@ -70,7 +70,7 @@ internal class DatadogLogHandler(
                 message,
                 errorKind,
                 errorMessage,
-                errorStack,
+                errorStacktrace,
                 attributes,
                 tags,
                 resolvedTimeStamp
@@ -79,7 +79,7 @@ internal class DatadogLogHandler(
         }
 
         if (level >= AndroidLog.ERROR) {
-            GlobalRum.get().addErrorWithStacktrace(message, RumErrorSource.LOGGER, errorStack, attributes)
+            GlobalRum.get().addErrorWithStacktrace(message, RumErrorSource.LOGGER, errorStacktrace, attributes)
         }
     }
 

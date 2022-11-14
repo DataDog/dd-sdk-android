@@ -171,11 +171,15 @@ internal constructor(internal var handler: LogHandler) {
     /**
      * Sends a log message with strings for error information.
      *
+     * This method is meant for non-native or cross platform frameworks (such as React Native or
+     * Flutter) to send error information to Datadog. Although it can be used directly, it is
+     * recommended to use other methods declared on `Logger`.
+     *
      * @param priority the priority level (must be one of the Android Log.* constants)
      * @param message the message to be logged
      * @param errorKind the kind of error to be logged with the message
      * @param errorMessage the message from the error to be logged with this message
-     * @param errorStack the stack trace from the error to be logged with this message
+     * @param errorStacktrace the stack trace from the error to be logged with this message
      * @param attributes a map of attributes to include only for this message. If an attribute with
      * the same key already exist in this logger, it will be overridden (just for this message)
      */
@@ -186,10 +190,10 @@ internal constructor(internal var handler: LogHandler) {
         message: String,
         errorKind: String?,
         errorMessage: String?,
-        errorStack: String?,
+        errorStacktrace: String?,
         attributes: Map<String, Any?> = emptyMap()
     ) {
-        internalLog(priority, message, errorKind, errorMessage, errorStack, attributes)
+        internalLog(priority, message, errorKind, errorMessage, errorStacktrace, attributes)
     }
 
     // endregion
@@ -607,7 +611,7 @@ internal constructor(internal var handler: LogHandler) {
         message: String,
         errorKind: String?,
         errorMessage: String?,
-        errorStack: String?,
+        errorStacktrace: String?,
         localAttributes: Map<String, Any?>,
         timestamp: Long? = null
     ) {
@@ -619,7 +623,7 @@ internal constructor(internal var handler: LogHandler) {
             message,
             errorKind,
             errorMessage,
-            errorStack,
+            errorStacktrace,
             combinedAttributes,
             tags,
             timestamp
