@@ -18,7 +18,8 @@ internal class RumEventMapperFactory : ForgeryFactory<RumEventMapper> {
             viewEventMapper = mock(),
             actionEventMapper = mock(),
             resourceEventMapper = mock(),
-            errorEventMapper = mock()
+            errorEventMapper = mock(),
+            telemetryConfigurationMapper = mock()
         )
     }
 }

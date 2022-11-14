@@ -6,8 +6,11 @@
 
 package com.datadog.android
 
+import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.event.EventMapper
 import com.datadog.android.telemetry.internal.Telemetry
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 
 /**
  * This class exposes internal methods that are used by other Datadog modules and cross platform
@@ -47,5 +50,15 @@ class _InternalProxy internal constructor(telemetry: Telemetry) {
 
     fun setCustomAppVersion(version: String) {
         CoreFeature.packageVersionProvider.version = version
+    }
+
+    companion object {
+        @Suppress("FunctionMaxLength")
+        fun setTelemetryConfigurationEventMapper(
+            builder: Configuration.Builder,
+            eventMapper: EventMapper<TelemetryConfigurationEvent>
+        ): Configuration.Builder {
+            return builder.setTelemetryConfigurationEventMapper(eventMapper)
+        }
     }
 }
