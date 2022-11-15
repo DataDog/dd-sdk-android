@@ -97,8 +97,10 @@ internal class LogGenerator(
             date = formattedDate,
             error = error,
             logger = loggerInfo,
-            device = LogEvent.Device(
-                architecture = architecture
+            dd = LogEvent.Dd(
+                device = LogEvent.Device(
+                    architecture = architecture
+                )
             ),
             usr = usr,
             network = network,
