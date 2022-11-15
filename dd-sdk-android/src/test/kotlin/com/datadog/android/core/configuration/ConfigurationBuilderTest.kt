@@ -776,7 +776,7 @@ internal class ConfigurationBuilderTest {
         val builder = testedBuilder
         _InternalProxy.setTelemetryConfigurationEventMapper(builder, eventMapper)
         val config = builder.build()
-        
+
         // Then
         assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)

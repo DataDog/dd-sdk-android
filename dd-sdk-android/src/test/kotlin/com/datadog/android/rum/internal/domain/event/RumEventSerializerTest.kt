@@ -685,9 +685,6 @@ internal class RumEventSerializerTest {
                             configuration.trackCrossPlatformLongTasks!!
                         )
                     }
-                    if (configuration.useAttachToExisting != null) {
-                        hasField("use_attach_to_existing", configuration.useAttachToExisting!!)
-                    }
                     if (configuration.useFirstPartyHosts != null) {
                         hasField("use_first_party_hosts", configuration.useFirstPartyHosts!!)
                     }
