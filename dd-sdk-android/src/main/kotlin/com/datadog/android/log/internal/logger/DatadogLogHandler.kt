@@ -49,6 +49,40 @@ internal class DatadogLogHandler(
         }
     }
 
+    override fun handleLog(
+        level: Int,
+        message: String,
+        errorKind: String?,
+        errorMessage: String?,
+        errorStacktrace: String?,
+        attributes: Map<String, Any?>,
+        tags: Set<String>,
+        timestamp: Long?
+    ) {
+        if (level < minLogPriority) {
+            return
+        }
+
+        val resolvedTimeStamp = timestamp ?: System.currentTimeMillis()
+        if (sampler.sample()) {
+            val log = createLog(
+                level,
+                message,
+                errorKind,
+                errorMessage,
+                errorStacktrace,
+                attributes,
+                tags,
+                resolvedTimeStamp
+            )
+            writer.write(log)
+        }
+
+        if (level >= AndroidLog.ERROR) {
+            GlobalRum.get().addErrorWithStacktrace(message, RumErrorSource.LOGGER, errorStacktrace, attributes)
+        }
+    }
+
     // endregion
 
     // region Internal
@@ -66,6 +100,31 @@ internal class DatadogLogHandler(
             level,
             message,
             throwable,
+            attributes,
+            tags,
+            timestamp,
+            bundleWithRum = bundleWithRum,
+            bundleWithTraces = bundleWithTraces
+        )
+    }
+
+    @Suppress("LongParameterList")
+    private fun createLog(
+        level: Int,
+        message: String,
+        errorKind: String?,
+        errorMessage: String?,
+        errorStack: String?,
+        attributes: Map<String, Any?>,
+        tags: Set<String>,
+        timestamp: Long
+    ): LogEvent {
+        return logGenerator.generateLog(
+            level,
+            message,
+            errorKind,
+            errorMessage,
+            errorStack,
             attributes,
             tags,
             timestamp,

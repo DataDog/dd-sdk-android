@@ -46,6 +46,7 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.noop.NoopTracerFactory
@@ -295,6 +296,61 @@ internal class DatadogLogHandlerTest {
     }
 
     @Test
+    fun `forward log to LogWriter with error strings`(
+        @StringForgery errorKind: String,
+        @StringForgery errorMessage: String,
+        @StringForgery errorStack: String
+    ) {
+        val now = System.currentTimeMillis()
+
+        testedHandler.handleLog(
+            fakeLevel,
+            fakeMessage,
+            errorKind,
+            errorMessage,
+            errorStack,
+            fakeAttributes,
+            fakeTags
+        )
+
+        argumentCaptor<LogEvent>().apply {
+            verify(mockWriter).write(capture())
+
+            assertThat(lastValue)
+                .hasServiceName(fakeServiceName)
+                .hasLoggerName(fakeLoggerName)
+                .hasThreadName(Thread.currentThread().name)
+                .hasStatus(fakeLevel.asLogStatus())
+                .hasMessage(fakeMessage)
+                .hasDateAround(now)
+                .hasNetworkInfo(fakeNetworkInfo)
+                .hasUserInfo(fakeUserInfo)
+                .hasExactlyAttributes(
+                    fakeAttributes + mapOf(
+                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
+                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
+                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
+                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
+                    )
+                )
+                .hasExactlyTags(
+                    fakeTags + setOf(
+                        "${LogAttributes.ENV}:$fakeEnvName",
+                        "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion",
+                        "${LogAttributes.VARIANT}:$fakeVariant"
+                    )
+                )
+                .hasError(
+                    LogEvent.Error(
+                        kind = errorKind,
+                        message = errorMessage,
+                        stack = errorStack
+                    )
+                )
+        }
+    }
+
+    @Test
     fun `doesn't forward low level log to RumMonitor`(forge: Forge) {
         fakeLevel = forge.anInt(AndroidLog.VERBOSE, AndroidLog.ERROR)
 
@@ -343,6 +399,54 @@ internal class DatadogLogHandlerTest {
             fakeMessage,
             RumErrorSource.LOGGER,
             fakeThrowable,
+            fakeAttributes
+        )
+    }
+
+    @Test
+    fun `doesn't forward low level log with string errors to RumMonitor`(
+        forge: Forge,
+        @StringForgery errorKind: String,
+        @StringForgery errorMessage: String,
+        @StringForgery errorStack: String
+    ) {
+        fakeLevel = forge.anInt(AndroidLog.VERBOSE, AndroidLog.ERROR)
+
+        testedHandler.handleLog(
+            fakeLevel,
+            fakeMessage,
+            errorKind,
+            errorMessage,
+            errorStack,
+            fakeAttributes,
+            fakeTags
+        )
+
+        verifyZeroInteractions(rumMonitor.mockInstance)
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = [AndroidLog.ERROR, AndroidLog.ASSERT])
+    fun `forward error log with error strings to RumMonitor`(
+        logLevel: Int,
+        @StringForgery errorKind: String,
+        @StringForgery errorMessage: String,
+        @StringForgery errorStack: String
+    ) {
+        testedHandler.handleLog(
+            logLevel,
+            fakeMessage,
+            errorKind,
+            errorMessage,
+            errorStack,
+            fakeAttributes,
+            fakeTags
+        )
+
+        verify(rumMonitor.mockInstance).addErrorWithStacktrace(
+            fakeMessage,
+            RumErrorSource.LOGGER,
+            errorStack,
             fakeAttributes
         )
     }

@@ -69,6 +69,74 @@ internal class LogGenerator(
         userInfo: UserInfo? = null,
         networkInfo: NetworkInfo? = null
     ): LogEvent {
+        val error = throwable?.let {
+            val kind = it.javaClass.canonicalName ?: it.javaClass.simpleName
+            LogEvent.Error(kind = kind, stack = it.stackTraceToString(), message = it.message)
+        }
+        return internalGenerateLog(
+            level,
+            message,
+            error,
+            attributes,
+            tags,
+            timestamp,
+            threadName,
+            bundleWithTraces,
+            bundleWithRum,
+            userInfo,
+            networkInfo
+        )
+    }
+
+    @Suppress("LongParameterList")
+    fun generateLog(
+        level: Int,
+        message: String,
+        errorKind: String?,
+        errorMessage: String?,
+        errorStack: String?,
+        attributes: Map<String, Any?>,
+        tags: Set<String>,
+        timestamp: Long,
+        threadName: String? = null,
+        bundleWithTraces: Boolean = true,
+        bundleWithRum: Boolean = true,
+        userInfo: UserInfo? = null,
+        networkInfo: NetworkInfo? = null
+    ): LogEvent {
+        var error: LogEvent.Error? = null
+        if (errorKind != null || errorMessage != null || errorStack != null) {
+            error = LogEvent.Error(kind = errorKind, message = errorMessage, stack = errorStack)
+        }
+        return internalGenerateLog(
+            level,
+            message,
+            error,
+            attributes,
+            tags,
+            timestamp,
+            threadName,
+            bundleWithTraces,
+            bundleWithRum,
+            userInfo,
+            networkInfo
+        )
+    }
+
+    @Suppress("LongParameterList")
+    private fun internalGenerateLog(
+        level: Int,
+        message: String,
+        error: LogEvent.Error?,
+        attributes: Map<String, Any?>,
+        tags: Set<String>,
+        timestamp: Long,
+        threadName: String? = null,
+        bundleWithTraces: Boolean = true,
+        bundleWithRum: Boolean = true,
+        userInfo: UserInfo? = null,
+        networkInfo: NetworkInfo? = null
+    ): LogEvent {
         val resolvedTimestamp = timestamp + timeProvider.getServerOffsetMillis()
         val combinedAttributes = resolveAttributes(attributes, bundleWithTraces, bundleWithRum)
         val formattedDate = synchronized(simpleDateFormat) {
@@ -76,10 +144,6 @@ internal class LogGenerator(
             simpleDateFormat.format(Date(resolvedTimestamp))
         }
         val combinedTags = resolveTags(tags)
-        val error = throwable?.let {
-            val kind = it.javaClass.canonicalName ?: it.javaClass.simpleName
-            LogEvent.Error(kind = kind, stack = it.stackTraceToString(), message = it.message)
-        }
         val usr = resolveUserInfo(userInfo)
         val network = resolveNetworkInfo(networkInfo)
         val loggerInfo = LogEvent.Logger(

@@ -559,7 +559,7 @@ internal class WebViewRumEventConsumerTest {
         verify(logger.mockSdkLogHandler).handleLog(
             eq(ERROR_WITH_TELEMETRY_LEVEL),
             eq(WebViewRumEventConsumer.JSON_PARSING_ERROR_MESSAGE),
-            any(),
+            any<Throwable>(),
             anyOrNull(),
             anyOrNull(),
             anyOrNull()

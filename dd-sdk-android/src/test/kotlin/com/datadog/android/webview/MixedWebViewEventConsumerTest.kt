@@ -252,7 +252,7 @@ internal class MixedWebViewEventConsumerTest {
                     fakeBadJsonFormatEvent
                 )
             ),
-            argThat { this is JsonParseException },
+            argThat<Throwable> { this is JsonParseException },
             any(),
             any(),
             anyOrNull()

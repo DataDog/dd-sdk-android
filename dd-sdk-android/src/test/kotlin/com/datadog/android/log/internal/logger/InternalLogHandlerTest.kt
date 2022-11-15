@@ -101,4 +101,81 @@ internal class InternalLogHandlerTest {
         verify(mockLogcatLogHandler).handleLog(expectedLevels.getValue(level), message)
         verify(mockTelemetryLogHandler).handleLog(expectedLevels.getValue(level), message)
     }
+
+    @Test
+    fun `𝕄 report logcat only 𝕎 handleLog( { error strings } ) { no telemetry flag }`(
+        @StringForgery message: String,
+        @StringForgery errorKind: String,
+        @StringForgery errorStack: String,
+        forge: Forge
+    ) {
+        // Given
+        val level = forge.anElementFrom(
+            AndroidLog.ASSERT,
+            AndroidLog.VERBOSE,
+            AndroidLog.DEBUG,
+            AndroidLog.INFO,
+            AndroidLog.WARN,
+            AndroidLog.ERROR
+        )
+
+        // When
+        testedHandler.handleLog(
+            level,
+            message,
+            errorKind,
+            null,
+            errorStack
+        )
+
+        // Then
+        verify(mockLogcatLogHandler).handleLog(level, message, errorKind, null, errorStack)
+        verifyZeroInteractions(mockTelemetryLogHandler)
+    }
+
+    @Test
+    fun `𝕄 report logcat and telemetry 𝕎 handleLog( { error strings } ) { with telemetry flag }`(
+        @StringForgery message: String,
+        @StringForgery errorKind: String,
+        @StringForgery errorStack: String,
+        forge: Forge
+    ) {
+        // Given
+        val level = forge.anElementFrom(
+            ERROR_WITH_TELEMETRY_LEVEL,
+            WARN_WITH_TELEMETRY_LEVEL,
+            DEBUG_WITH_TELEMETRY_LEVEL
+        )
+
+        val expectedLevels = mapOf(
+            ERROR_WITH_TELEMETRY_LEVEL to AndroidLog.ERROR,
+            WARN_WITH_TELEMETRY_LEVEL to AndroidLog.WARN,
+            DEBUG_WITH_TELEMETRY_LEVEL to AndroidLog.DEBUG
+        )
+
+        // When
+        testedHandler.handleLog(
+            level,
+            message,
+            errorKind,
+            null,
+            errorStack
+        )
+
+        // Then
+        verify(mockLogcatLogHandler).handleLog(
+            expectedLevels.getValue(level),
+            message,
+            errorKind,
+            null,
+            errorStack
+        )
+        verify(mockTelemetryLogHandler).handleLog(
+            expectedLevels.getValue(level),
+            message,
+            errorKind,
+            null,
+            errorStack
+        )
+    }
 }

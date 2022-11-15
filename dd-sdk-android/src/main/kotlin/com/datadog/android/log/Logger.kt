@@ -157,7 +157,6 @@ internal constructor(internal var handler: LogHandler) {
      * @param throwable a (nullable) throwable to be logged with the message
      * @param attributes a map of attributes to include only for this message. If an attribute with
      * the same key already exist in this logger, it will be overridden (just for this message)
-     *
      */
     @JvmOverloads
     fun log(
@@ -167,6 +166,34 @@ internal constructor(internal var handler: LogHandler) {
         attributes: Map<String, Any?> = emptyMap()
     ) {
         internalLog(priority, message, throwable, attributes)
+    }
+
+    /**
+     * Sends a log message with strings for error information.
+     *
+     * This method is meant for non-native or cross platform frameworks (such as React Native or
+     * Flutter) to send error information to Datadog. Although it can be used directly, it is
+     * recommended to use other methods declared on `Logger`.
+     *
+     * @param priority the priority level (must be one of the Android Log.* constants)
+     * @param message the message to be logged
+     * @param errorKind the kind of error to be logged with the message
+     * @param errorMessage the message from the error to be logged with this message
+     * @param errorStacktrace the stack trace from the error to be logged with this message
+     * @param attributes a map of attributes to include only for this message. If an attribute with
+     * the same key already exist in this logger, it will be overridden (just for this message)
+     */
+    @JvmOverloads
+    @Suppress("LongParameterList")
+    fun log(
+        priority: Int,
+        message: String,
+        errorKind: String?,
+        errorMessage: String?,
+        errorStacktrace: String?,
+        attributes: Map<String, Any?> = emptyMap()
+    ) {
+        internalLog(priority, message, errorKind, errorMessage, errorStacktrace, attributes)
     }
 
     // endregion
@@ -576,6 +603,31 @@ internal constructor(internal var handler: LogHandler) {
         combinedAttributes.putAll(attributes)
         combinedAttributes.putAll(localAttributes)
         handler.handleLog(level, message, throwable, combinedAttributes, tags, timestamp)
+    }
+
+    @Suppress("LongParameterList")
+    internal fun internalLog(
+        level: Int,
+        message: String,
+        errorKind: String?,
+        errorMessage: String?,
+        errorStacktrace: String?,
+        localAttributes: Map<String, Any?>,
+        timestamp: Long? = null
+    ) {
+        val combinedAttributes = mutableMapOf<String, Any?>()
+        combinedAttributes.putAll(attributes)
+        combinedAttributes.putAll(localAttributes)
+        handler.handleLog(
+            level,
+            message,
+            errorKind,
+            errorMessage,
+            errorStacktrace,
+            combinedAttributes,
+            tags,
+            timestamp
+        )
     }
 
     private fun addTagInternal(tag: String) {
