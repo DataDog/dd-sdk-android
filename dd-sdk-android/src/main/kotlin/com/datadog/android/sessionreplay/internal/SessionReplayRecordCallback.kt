@@ -9,7 +9,7 @@ package com.datadog.android.sessionreplay.internal
 import com.datadog.android.sessionreplay.RecordCallback
 import com.datadog.android.v2.api.SdkCore
 
-internal class SessionReplayRecordCallback(private val datadogCore: SdkCore) : RecordCallback {
+internal class SessionReplayRecordCallback(private val sdkCore: SdkCore) : RecordCallback {
     override fun onStartRecording() {
         updateRecording(true)
     }
@@ -19,10 +19,10 @@ internal class SessionReplayRecordCallback(private val datadogCore: SdkCore) : R
     }
 
     private fun updateRecording(isRecording: Boolean) {
-        val featureContext = mapOf(SessionReplayFeature.IS_RECORDING_CONTEXT_KEY to isRecording)
-        datadogCore.updateFeatureContext(
-            SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME,
-            featureContext
-        )
+        sdkCore.updateFeatureContext(
+            SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME
+        ) {
+            it[SessionReplayFeature.IS_RECORDING_CONTEXT_KEY] = isRecording
+        }
     }
 }

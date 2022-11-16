@@ -21,7 +21,55 @@ internal data class RumContext(
     val viewType: RumViewScope.RumViewType = RumViewScope.RumViewType.NONE
 ) {
 
+    fun toMap(): Map<String, Any?> {
+        return mapOf(
+            APPLICATION_ID to applicationId,
+            SESSION_ID to sessionId,
+            SESSION_STATE to sessionState,
+            VIEW_ID to viewId,
+            VIEW_NAME to viewName,
+            VIEW_URL to viewUrl,
+            VIEW_TYPE to viewType,
+            ACTION_ID to actionId
+        )
+    }
+
     companion object {
         val NULL_UUID = UUID(0, 0).toString()
+
+        // be careful when changing values below, they may be indirectly referenced (as string
+        // literal) from other modules
+        const val APPLICATION_ID = "application_id"
+        const val SESSION_ID = "session_id"
+        const val SESSION_STATE = "session_state"
+        const val VIEW_ID = "view_id"
+        const val VIEW_NAME = "view_name"
+        const val VIEW_URL = "view_url"
+        const val VIEW_TYPE = "view_type"
+        const val ACTION_ID = "action_id"
+
+        fun fromFeatureContext(featureContext: Map<String, Any?>): RumContext {
+            val applicationId = featureContext[APPLICATION_ID] as? String
+            val sessionId = featureContext[SESSION_ID] as? String
+            val sessionState = featureContext[SESSION_STATE] as? RumSessionScope.State
+                ?: RumSessionScope.State.NOT_TRACKED
+            val viewId = featureContext[VIEW_ID] as? String
+            val viewName = featureContext[VIEW_NAME] as? String
+            val viewUrl = featureContext[VIEW_URL] as? String
+            val viewType = featureContext[VIEW_TYPE] as? RumViewScope.RumViewType
+                ?: RumViewScope.RumViewType.NONE
+            val actionId = featureContext[ACTION_ID] as? String
+
+            return RumContext(
+                applicationId = applicationId ?: NULL_UUID,
+                sessionId = sessionId ?: NULL_UUID,
+                sessionState = sessionState,
+                viewId = viewId,
+                viewName = viewName,
+                viewUrl = viewUrl,
+                viewType = viewType,
+                actionId = actionId
+            )
+        }
     }
 }

@@ -54,7 +54,5 @@ internal class NoOpContextProvider : ContextProvider {
         // no-op
     }
 
-    override fun updateFeatureContext(feature: String, entries: Map<String, Any?>) {
-        // no-op
-    }
+    override fun getFeatureContext(feature: String): Map<String, Any?> = emptyMap()
 }

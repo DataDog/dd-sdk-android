@@ -143,8 +143,10 @@ internal open class RumViewScope(
     // endregion
 
     init {
-        updateOffsetInFeatureContext()
-        GlobalRum.updateRumContext(getRumContext())
+        sdkCore.updateFeatureContext(RumFeature.RUM_FEATURE_NAME) {
+            it.putAll(getRumContext().toMap())
+            it[RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY] = serverTimeOffsetInMs
+        }
         attributes.putAll(GlobalRum.globalAttributes)
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
@@ -244,33 +246,32 @@ internal open class RumViewScope(
         val startedKey = keyRef.get()
         val shouldStop = (event.key == startedKey) || (startedKey == null)
         if (shouldStop && !stopped) {
-            GlobalRum.updateRumContext(
-                getRumContext().copy(
-                    viewType = RumViewType.NONE,
-                    viewId = null,
-                    viewName = null,
-                    viewUrl = null,
-                    actionId = null
-                ),
-                applyOnlyIf = { currentContext ->
-                    when {
-                        currentContext.sessionId != this.sessionId -> {
-                            // we have a new session, so whatever is in the Global context is
-                            // not valid anyway
-                            true
-                        }
-                        currentContext.viewId == this.viewId -> {
-                            true
-                        }
-                        else -> {
-                            sdkLogger.debugWithTelemetry(
-                                RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE
-                            )
-                            false
-                        }
-                    }
-                }
+            val newRumContext = getRumContext().copy(
+                viewType = RumViewType.NONE,
+                viewId = null,
+                viewName = null,
+                viewUrl = null,
+                actionId = null
             )
+            sdkCore.updateFeatureContext(RumFeature.RUM_FEATURE_NAME) { currentRumContext ->
+                val canUpdate = when {
+                    currentRumContext["session_id"] != this.sessionId -> {
+                        // we have a new session, so whatever is in the Global context is
+                        // not valid anyway
+                        true
+                    }
+                    currentRumContext["view_id"] == this.viewId -> true
+                    else -> false
+                }
+                if (canUpdate) {
+                    currentRumContext.clear()
+                    currentRumContext.putAll(newRumContext.toMap())
+                } else {
+                    sdkLogger.debugWithTelemetry(
+                        RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE
+                    )
+                }
+            }
             attributes.putAll(event.attributes)
             stopped = true
             sendViewUpdate(event, writer)
@@ -499,22 +500,23 @@ internal open class RumViewScope(
     private fun updateActiveActionScope(scope: RumScope?) {
         activeActionScope = scope
         // update the Rum Context to make it available for Logs/Trace bundling
-        GlobalRum.updateRumContext(getRumContext(), applyOnlyIf = { currentContext ->
-            when {
-                currentContext.sessionId != this.sessionId -> {
-                    true
-                }
-                currentContext.viewId == this.viewId -> {
-                    true
-                }
-                else -> {
-                    sdkLogger.debugWithTelemetry(
-                        RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE
-                    )
-                    false
-                }
+        val newRumContext = getRumContext()
+
+        sdkCore.updateFeatureContext(RumFeature.RUM_FEATURE_NAME) { currentRumContext ->
+            val canUpdate = when {
+                currentRumContext["session_id"] != sessionId -> true
+                currentRumContext["view_id"] == viewId -> true
+                else -> false
             }
-        })
+            if (canUpdate) {
+                currentRumContext.clear()
+                currentRumContext.putAll(newRumContext.toMap())
+            } else {
+                sdkLogger.debugWithTelemetry(
+                    RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE
+                )
+            }
+        }
     }
 
     @WorkerThread
@@ -945,13 +947,6 @@ internal open class RumViewScope(
         FOREGROUND,
         BACKGROUND,
         APPLICATION_LAUNCH
-    }
-
-    private fun updateOffsetInFeatureContext() {
-        sdkCore.updateFeatureContext(
-            RumFeature.RUM_FEATURE_NAME,
-            mapOf(RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY to serverTimeOffsetInMs)
-        )
     }
 
     // endregion

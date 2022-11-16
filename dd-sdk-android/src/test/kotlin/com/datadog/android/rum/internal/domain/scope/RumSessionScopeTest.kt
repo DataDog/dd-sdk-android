@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.utils.config.LoggerTestConfiguration
@@ -24,6 +25,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.same
@@ -128,6 +130,28 @@ internal class RumSessionScopeTest {
         // whatever happens
         assertThat(testedScope.isActive()).isTrue()
     }
+
+    // region RUM Feature Context
+
+    @Test
+    fun `𝕄 update RUM feature context 𝕎 init()`() {
+        // Given
+        val expectedContext = testedScope.getRumContext()
+
+        // Then
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(mockSdkCore).updateFeatureContext(eq(RumFeature.RUM_FEATURE_NAME), capture())
+
+            val rumContext = mutableMapOf<String, Any?>()
+            lastValue.invoke(rumContext)
+
+            assertThat(rumContext["application_id"]).isEqualTo(expectedContext.applicationId)
+            assertThat(rumContext["session_id"]).isEqualTo(expectedContext.sessionId)
+            assertThat(rumContext["session_state"]).isEqualTo(expectedContext.sessionState)
+        }
+    }
+
+    // endregion
 
     // region childScope
 

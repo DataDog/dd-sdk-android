@@ -11,7 +11,6 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
@@ -48,19 +47,16 @@ internal class TelemetryEventHandler(
 
         val timestamp = event.eventTime.timestamp + timeProvider.getServerOffsetMillis()
 
-        val rumContext = GlobalRum.getRumContext()
-
         sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val telemetryEvent: Any? = when (event.type) {
                     TelemetryType.DEBUG -> {
-                        createDebugEvent(datadogContext, timestamp, rumContext, event.message)
+                        createDebugEvent(datadogContext, timestamp, event.message)
                     }
                     TelemetryType.ERROR -> {
                         createErrorEvent(
                             datadogContext,
                             timestamp,
-                            rumContext,
                             event.message,
                             event.stack,
                             event.kind
@@ -71,7 +67,6 @@ internal class TelemetryEventHandler(
                             createErrorEvent(
                                 datadogContext,
                                 timestamp,
-                                rumContext,
                                 "Trying to send configuration event with null config",
                                 null,
                                 null
@@ -80,7 +75,6 @@ internal class TelemetryEventHandler(
                             createConfigurationEvent(
                                 datadogContext,
                                 timestamp,
-                                rumContext,
                                 event.configuration
                             )
                         }
@@ -124,9 +118,10 @@ internal class TelemetryEventHandler(
     private fun createDebugEvent(
         datadogContext: DatadogContext,
         timestamp: Long,
-        rumContext: RumContext,
         message: String
     ): TelemetryDebugEvent {
+        val rumContext = datadogContext.rumContext()
+
         return TelemetryDebugEvent(
             dd = TelemetryDebugEvent.Dd(),
             date = timestamp,
@@ -148,11 +143,12 @@ internal class TelemetryEventHandler(
     private fun createErrorEvent(
         datadogContext: DatadogContext,
         timestamp: Long,
-        rumContext: RumContext,
         message: String,
         stack: String?,
         kind: String?
     ): TelemetryErrorEvent {
+        val rumContext = datadogContext.rumContext()
+
         return TelemetryErrorEvent(
             dd = TelemetryErrorEvent.Dd(),
             date = timestamp,
@@ -181,7 +177,6 @@ internal class TelemetryEventHandler(
     private fun createConfigurationEvent(
         datadogContext: DatadogContext,
         timestamp: Long,
-        rumContext: RumContext,
         configuration: Configuration?
     ): TelemetryConfigurationEvent {
         val coreConfig = configuration?.coreConfig
@@ -195,6 +190,9 @@ internal class TelemetryEventHandler(
             is NavigationViewTrackingStrategy -> TelemetryConfigurationEvent.ViewTrackingStrategy.NAVIGATIONVIEWTRACKINGSTRATEGY
             else -> null
         }
+
+        val rumContext = datadogContext.rumContext()
+
         return TelemetryConfigurationEvent(
             dd = TelemetryConfigurationEvent.Dd(),
             date = timestamp,
@@ -227,6 +225,11 @@ internal class TelemetryEventHandler(
                 )
             )
         )
+    }
+
+    private fun DatadogContext.rumContext(): RumContext {
+        val rumContext = featuresContext[RumFeature.RUM_FEATURE_NAME].orEmpty()
+        return RumContext.fromFeatureContext(rumContext)
     }
 
     // endregion

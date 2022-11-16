@@ -7,7 +7,10 @@
 package com.datadog.android.sessionreplay.internal
 
 import com.datadog.android.v2.api.SdkCore
+import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.verify
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -38,10 +41,19 @@ internal class SessionReplayRecordCallbackTest {
         testedRecordCallback.onStartRecording()
 
         // Then
-        verify(mockDatadogCore).updateFeatureContext(
-            SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME,
-            mapOf(SessionReplayFeature.IS_RECORDING_CONTEXT_KEY to true)
-        )
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(mockDatadogCore).updateFeatureContext(
+                eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+                capture()
+            )
+
+            val featureContext = mutableMapOf<String, Any?>()
+            lastValue.invoke(featureContext)
+
+            assertThat(
+                featureContext[SessionReplayFeature.IS_RECORDING_CONTEXT_KEY] as? Boolean
+            ).isTrue
+        }
     }
 
     @Test
@@ -50,9 +62,18 @@ internal class SessionReplayRecordCallbackTest {
         testedRecordCallback.onStopRecording()
 
         // Then
-        verify(mockDatadogCore).updateFeatureContext(
-            SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME,
-            mapOf(SessionReplayFeature.IS_RECORDING_CONTEXT_KEY to false)
-        )
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(mockDatadogCore).updateFeatureContext(
+                eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+                capture()
+            )
+
+            val featureContext = mutableMapOf<String, Any?>()
+            lastValue.invoke(featureContext)
+
+            assertThat(
+                featureContext[SessionReplayFeature.IS_RECORDING_CONTEXT_KEY] as? Boolean
+            ).isFalse
+        }
     }
 }

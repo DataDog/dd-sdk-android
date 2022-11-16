@@ -10,13 +10,11 @@ import android.content.Context
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.NoOpSdkCore
@@ -88,21 +86,31 @@ internal class AndroidTracerTest {
     @Mock
     lateinit var mockRumFeature: RumFeature
 
+    @Mock
+    lateinit var mockSdkCore: DatadogCore
+
+    @Forgery
+    lateinit var fakeRumContext: RumContext
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeServiceName = forge.anAlphabeticalString()
         fakeEnvName = forge.anAlphabeticalString()
         fakeToken = forge.anHexadecimalString()
 
-        val mockCore = mock<DatadogCore>()
-
-        whenever(mockCore.tracingFeature) doReturn mockTracingFeature
-        whenever(mockCore.rumFeature) doReturn mockRumFeature
-        whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
+        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn mapOf(
+            "application_id" to fakeRumContext.applicationId,
+            "session_id" to fakeRumContext.sessionId,
+            "view_id" to fakeRumContext.viewId,
+            "action_id" to fakeRumContext.actionId
+        )
+        whenever(mockSdkCore.tracingFeature) doReturn mockTracingFeature
+        whenever(mockSdkCore.rumFeature) doReturn mockRumFeature
+        whenever(mockSdkCore.coreFeature) doReturn coreFeature.mockInstance
 
         whenever(mockTracingFeature.dataWriter) doReturn mockTraceWriter
 
-        Datadog.globalSdkCore = mockCore
+        Datadog.globalSdkCore = mockSdkCore
 
         testedTracerBuilder = AndroidTracer.Builder(mockLogsHandler)
     }
@@ -211,16 +219,16 @@ internal class AndroidTracerTest {
         val span = tracer.buildSpan(operationName).start() as DDSpan
         val meta = span.meta
         assertThat(meta[LogAttributes.RUM_APPLICATION_ID])
-            .isEqualTo(rumMonitor.context.applicationId)
+            .isEqualTo(fakeRumContext.applicationId)
         assertThat(meta[LogAttributes.RUM_SESSION_ID])
-            .isEqualTo(rumMonitor.context.sessionId)
-        val viewId = rumMonitor.context.viewId
+            .isEqualTo(fakeRumContext.sessionId)
+        val viewId = fakeRumContext.viewId
         if (viewId == null) {
             assertThat(meta.containsKey(LogAttributes.RUM_VIEW_ID)).isFalse()
         } else {
             assertThat(meta[LogAttributes.RUM_VIEW_ID]).isEqualTo(viewId)
         }
-        val actionId = rumMonitor.context.actionId
+        val actionId = fakeRumContext.actionId
         if (actionId == null) {
             assertThat(meta.containsKey(LogAttributes.RUM_ACTION_ID)).isFalse()
         } else {
@@ -234,8 +242,12 @@ internal class AndroidTracerTest {
     ) {
         // Given
         val fakeViewId = forge.getForgery<UUID>().toString()
-        val fakeRumContext = forge.getForgery(RumContext::class.java).copy(viewId = fakeViewId)
-        GlobalRum.updateRumContext(fakeRumContext)
+        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn mapOf(
+            "application_id" to fakeRumContext.applicationId,
+            "session_id" to fakeRumContext.sessionId,
+            "view_id" to fakeViewId,
+            "action_id" to fakeRumContext.actionId
+        )
         val fakeOperationName = forge.anAlphaNumericalString()
         val tracer = AndroidTracer.Builder()
             .build()
@@ -249,12 +261,38 @@ internal class AndroidTracerTest {
     }
 
     @Test
+    fun `M not inject Rum ViewId W buildSpan { bundleWithRum enabled and ViewId is missing }`(
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn mapOf(
+            "application_id" to fakeRumContext.applicationId,
+            "session_id" to fakeRumContext.sessionId,
+            "action_id" to fakeRumContext.actionId
+        )
+        val fakeOperationName = forge.anAlphaNumericalString()
+        val tracer = AndroidTracer.Builder()
+            .build()
+
+        // When
+        val span = tracer.buildSpan(fakeOperationName).start() as DDSpan
+        val meta = span.meta
+
+        // Then
+        assertThat(meta.containsKey(LogAttributes.RUM_VIEW_ID)).isFalse()
+    }
+
+    @Test
     fun `M not inject Rum ViewId W buildSpan { bundleWithRum enabled and ViewId is null }`(
         forge: Forge
     ) {
         // Given
-        val fakeRumContext = forge.getForgery(RumContext::class.java).copy(viewId = null)
-        GlobalRum.updateRumContext(fakeRumContext)
+        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn mapOf(
+            "application_id" to fakeRumContext.applicationId,
+            "session_id" to fakeRumContext.sessionId,
+            "view_id" to null,
+            "action_id" to fakeRumContext.actionId
+        )
         val fakeOperationName = forge.anAlphaNumericalString()
         val tracer = AndroidTracer.Builder()
             .build()
@@ -273,8 +311,12 @@ internal class AndroidTracerTest {
     ) {
         // Given
         val fakeActionId = forge.getForgery<UUID>().toString()
-        val fakeRumContext = forge.getForgery(RumContext::class.java).copy(actionId = fakeActionId)
-        GlobalRum.updateRumContext(fakeRumContext)
+        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn mapOf(
+            "application_id" to fakeRumContext.applicationId,
+            "session_id" to fakeRumContext.sessionId,
+            "view_id" to fakeRumContext.actionId,
+            "action_id" to fakeActionId
+        )
         val fakeOperationName = forge.anAlphaNumericalString()
         val tracer = AndroidTracer.Builder()
             .build()
@@ -288,12 +330,40 @@ internal class AndroidTracerTest {
     }
 
     @Test
+    fun `M not inject Rum ActionId W buildSpan { bundleWithRum enabled and ActionId is missing }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeRumContext = forge.getForgery(RumContext::class.java).copy(actionId = null)
+        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn mapOf(
+            "application_id" to fakeRumContext.applicationId,
+            "session_id" to fakeRumContext.sessionId,
+            "view_id" to fakeRumContext.actionId
+        )
+        val fakeOperationName = forge.anAlphaNumericalString()
+        val tracer = AndroidTracer.Builder()
+            .build()
+
+        // When
+        val span = tracer.buildSpan(fakeOperationName).start() as DDSpan
+        val meta = span.meta
+
+        // Then
+        assertThat(meta.containsKey(LogAttributes.RUM_ACTION_ID)).isFalse()
+    }
+
+    @Test
     fun `M not inject Rum ActionId W buildSpan { bundleWithRum enabled and ActionId is null }`(
         forge: Forge
     ) {
         // Given
         val fakeRumContext = forge.getForgery(RumContext::class.java).copy(actionId = null)
-        GlobalRum.updateRumContext(fakeRumContext)
+        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn mapOf(
+            "application_id" to fakeRumContext.applicationId,
+            "session_id" to fakeRumContext.sessionId,
+            "view_id" to fakeRumContext.actionId,
+            "action_id" to null
+        )
         val fakeOperationName = forge.anAlphaNumericalString()
         val tracer = AndroidTracer.Builder()
             .build()
@@ -499,13 +569,12 @@ internal class AndroidTracerTest {
     companion object {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
         val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, coreFeature, rumMonitor)
+            return listOf(logger, appContext, coreFeature)
         }
     }
 }

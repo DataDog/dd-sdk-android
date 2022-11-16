@@ -269,8 +269,6 @@ internal class RumViewScopeTest {
             mockFeaturesContextResolver,
             trackFrustrations = true
         )
-
-        assertThat(GlobalRum.getRumContext()).isEqualTo(testedScope.getRumContext())
     }
 
     // region Context
@@ -304,6 +302,20 @@ internal class RumViewScopeTest {
         assertThat(context.viewUrl).isEqualTo(fakeUrl)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
         assertThat(context.sessionId).isEqualTo(fakeParentContext.sessionId)
+    }
+
+    @Test
+    fun `𝕄 update RUM feature context 𝕎 init()`() {
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(mockSdkCore)
+                .updateFeatureContext(eq(RumFeature.RUM_FEATURE_NAME), capture())
+
+            val rumContext = mutableMapOf<String, Any?>()
+            firstValue.invoke(rumContext)
+
+            assertThat(RumContext.fromFeatureContext(rumContext))
+                .isEqualTo(testedScope.getRumContext())
+        }
     }
 
     @Test
@@ -361,18 +373,34 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        assertThat(GlobalRum.getRumContext().viewType).isEqualTo(fakeViewEventType)
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(mockSdkCore, times(2)).updateFeatureContext(
+                eq(RumFeature.RUM_FEATURE_NAME),
+                capture()
+            )
+
+            val rumContext = mutableMapOf<String, Any?>()
+            allValues.fold(rumContext) { acc, function ->
+                function.invoke(acc)
+                acc
+            }
+            assertThat(rumContext["view_type"]).isEqualTo(fakeViewEventType)
+        }
     }
 
     @Test
-    fun `M update the feature context with the view timestamp offset W initializing`() {
-        verify(mockSdkCore).updateFeatureContext(
-            RumFeature.RUM_FEATURE_NAME,
-            mapOf(
-                RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY to
-                    fakeDatadogContext.time.serverTimeOffsetMs
+    fun `𝕄 update the feature context with the view timestamp offset W initializing`() {
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(mockSdkCore).updateFeatureContext(
+                eq(RumFeature.RUM_FEATURE_NAME),
+                capture()
             )
-        )
+
+            val rumContext = mutableMapOf<String, Any?>()
+            lastValue.invoke(rumContext)
+            assertThat(rumContext[RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY])
+                .isEqualTo(fakeDatadogContext.time.serverTimeOffsetMs)
+        }
     }
 
     @Test
@@ -381,9 +409,6 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(attributes)
 
         // When
         testedScope.handleEvent(
@@ -392,7 +417,20 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        assertThat(GlobalRum.getRumContext().viewType).isEqualTo(RumViewScope.RumViewType.NONE)
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(mockSdkCore, times(2)).updateFeatureContext(
+                eq(RumFeature.RUM_FEATURE_NAME),
+                capture()
+            )
+
+            val rumContext = mutableMapOf<String, Any?>()
+            allValues.fold(rumContext) { acc, function ->
+                function.invoke(acc)
+                acc
+            }
+            assertThat(rumContext["view_type"])
+                .isEqualTo(RumViewScope.RumViewType.NONE)
+        }
     }
 
     @Test
@@ -401,9 +439,6 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(attributes)
 
         // When
         testedScope.handleEvent(
@@ -412,8 +447,13 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        assertThat(GlobalRum.getRumContext().viewType)
-            .isEqualTo(RumViewScope.RumViewType.FOREGROUND)
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(mockSdkCore).updateFeatureContext(eq(RumFeature.RUM_FEATURE_NAME), capture())
+            val rumContext = mutableMapOf<String, Any?>()
+            lastValue.invoke(rumContext)
+            assertThat(rumContext["view_type"])
+                .isEqualTo(RumViewScope.RumViewType.FOREGROUND)
+        }
     }
 
     @Test
@@ -423,6 +463,7 @@ internal class RumViewScopeTest {
         // Given
         val expectedViewType = forge.aValueFrom(RumViewScope.RumViewType::class.java)
 
+        // need to create this one, because RUM context is updated in the constructor
         val anotherScope = RumViewScope(
             mockParentScope,
             mockSdkCore,
@@ -449,18 +490,31 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        val currentRumContext = GlobalRum.getRumContext()
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            // A scope init + B scope init + A scope stop
+            verify(mockSdkCore, times(3)).updateFeatureContext(
+                eq(RumFeature.RUM_FEATURE_NAME),
+                capture()
+            )
 
-        assertThat(currentRumContext.viewType)
-            .isEqualTo(expectedViewType)
-        assertThat(currentRumContext.viewName)
-            .isEqualTo(anotherScope.getRumContext().viewName)
-        assertThat(currentRumContext.viewId)
-            .isEqualTo(anotherScope.getRumContext().viewId)
-        assertThat(currentRumContext.viewUrl)
-            .isEqualTo(anotherScope.getRumContext().viewUrl)
-        assertThat(currentRumContext.actionId)
-            .isEqualTo(anotherScope.getRumContext().actionId)
+            val rumContext = mutableMapOf<String, Any?>()
+
+            allValues.fold(rumContext) { acc, function ->
+                function.invoke(acc)
+                acc
+            }
+
+            assertThat(rumContext["view_type"])
+                .isEqualTo(expectedViewType)
+            assertThat(rumContext["view_name"])
+                .isEqualTo(anotherScope.getRumContext().viewName)
+            assertThat(rumContext["view_id"])
+                .isEqualTo(anotherScope.getRumContext().viewId)
+            assertThat(rumContext["view_url"])
+                .isEqualTo(anotherScope.getRumContext().viewUrl)
+            assertThat(rumContext["action_id"])
+                .isEqualTo(anotherScope.getRumContext().actionId)
+        }
 
         verify(logger.mockSdkLogHandler)
             .handleLog(
@@ -488,14 +542,25 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        val currentRumContext = GlobalRum.getRumContext()
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(mockSdkCore, times(2)).updateFeatureContext(
+                eq(RumFeature.RUM_FEATURE_NAME),
+                capture()
+            )
+            val rumContext = mutableMapOf<String, Any?>()
 
-        assertThat(currentRumContext.viewType)
-            .isEqualTo(RumViewScope.RumViewType.NONE)
-        assertThat(currentRumContext.viewName).isNull()
-        assertThat(currentRumContext.viewId).isNull()
-        assertThat(currentRumContext.viewUrl).isNull()
-        assertThat(currentRumContext.actionId).isNull()
+            allValues.fold(rumContext) { acc, function ->
+                function.invoke(acc)
+                acc
+            }
+
+            assertThat(rumContext["view_type"])
+                .isEqualTo(RumViewScope.RumViewType.NONE)
+            assertThat(rumContext["view_name"]).isNull()
+            assertThat(rumContext["view_id"]).isNull()
+            assertThat(rumContext["view_url"]).isNull()
+            assertThat(rumContext["action_id"]).isNull()
+        }
 
         verifyZeroInteractions(logger.mockSdkLogHandler)
     }
@@ -509,7 +574,7 @@ internal class RumViewScopeTest {
         testedScope.activeActionScope = mockChildScope
 
         val stopActionEvent = RumRawEvent.StopAction(rumActionType, actionName, emptyMap())
-        whenever(testedScope.handleEvent(stopActionEvent, mockWriter)) doReturn null
+        whenever(mockChildScope.handleEvent(stopActionEvent, mockWriter)) doReturn null
 
         // When
         testedScope.handleEvent(
@@ -522,18 +587,30 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        val currentRumContext = GlobalRum.getRumContext()
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            // scope init + stop view + stop action
+            verify(mockSdkCore, times(3)).updateFeatureContext(
+                eq(RumFeature.RUM_FEATURE_NAME),
+                capture()
+            )
 
-        assertThat(currentRumContext.viewType)
-            .isEqualTo(RumViewScope.RumViewType.NONE)
-        assertThat(currentRumContext.viewName)
-            .isNull()
-        assertThat(currentRumContext.viewId)
-            .isNull()
-        assertThat(currentRumContext.viewUrl)
-            .isNull()
-        assertThat(currentRumContext.actionId)
-            .isNull()
+            val rumContext = mutableMapOf<String, Any?>()
+            allValues.fold(rumContext) { acc, function ->
+                function.invoke(acc)
+                acc
+            }
+
+            assertThat(rumContext["view_type"])
+                .isEqualTo(RumViewScope.RumViewType.NONE)
+            assertThat(rumContext["view_name"])
+                .isNull()
+            assertThat(rumContext["view_id"])
+                .isNull()
+            assertThat(rumContext["view_url"])
+                .isNull()
+            assertThat(rumContext["action_id"])
+                .isNull()
+        }
 
         verify(logger.mockSdkLogHandler)
             .handleLog(
@@ -616,8 +693,19 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        assertThat(GlobalRum.getRumContext().viewType)
-            .isEqualTo(viewType)
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            // A scope init + onStopView + B scope init
+            verify(mockSdkCore, times(3)).updateFeatureContext(
+                eq(RumFeature.RUM_FEATURE_NAME),
+                capture()
+            )
+            val rumContext = mutableMapOf<String, Any?>()
+            allValues.fold(rumContext) { acc, function ->
+                function.invoke(acc)
+                acc
+            }
+            assertThat(rumContext["view_type"]).isEqualTo(viewType)
+        }
     }
 
     @ParameterizedTest
@@ -662,8 +750,19 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        assertThat(GlobalRum.getRumContext().viewType)
-            .isEqualTo(viewType)
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            // A scope init + A scope stop + B scope init
+            verify(mockSdkCore, times(3)).updateFeatureContext(
+                eq(RumFeature.RUM_FEATURE_NAME),
+                capture()
+            )
+            val rumContext = mutableMapOf<String, Any?>()
+            allValues.fold(rumContext) { acc, function ->
+                function.invoke(acc)
+                acc
+            }
+            assertThat(rumContext["view_type"]).isEqualTo(viewType)
+        }
     }
 
     @Test
@@ -2799,8 +2898,19 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        assertThat(GlobalRum.getRumContext().actionId)
-            .isEqualTo((testedScope.activeActionScope as RumActionScope).actionId)
+        argumentCaptor<(Map<String, Any?>) -> Unit> {
+            verify(mockSdkCore, times(2)).updateFeatureContext(
+                eq(RumFeature.RUM_FEATURE_NAME),
+                capture()
+            )
+            val rumContext = mutableMapOf<String, Any?>()
+            allValues.fold(rumContext) { acc, function ->
+                function.invoke(acc)
+                acc
+            }
+            assertThat(rumContext["action_id"])
+                .isEqualTo((testedScope.activeActionScope as RumActionScope).actionId)
+        }
     }
 
     @ParameterizedTest
@@ -3005,7 +3115,18 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        assertThat(GlobalRum.getRumContext().actionId).isNull()
+        argumentCaptor<(Map<String, Any?>) -> Unit> {
+            verify(mockSdkCore, times(2)).updateFeatureContext(
+                eq(RumFeature.RUM_FEATURE_NAME),
+                capture()
+            )
+            val rumContext = mutableMapOf<String, Any?>()
+            allValues.fold(rumContext) { acc, function ->
+                function.invoke(acc)
+                acc
+            }
+            assertThat(rumContext["action_id"]).isNull()
+        }
     }
 
     @Test
@@ -6193,7 +6314,14 @@ internal class RumViewScopeTest {
                 .apply {
                     hasFlutterBuildTime(null)
                     hasFlutterRasterTime(null)
-                    hasJsRefreshRate(ViewEvent.FlutterBuildTime(frameRate, frameRate, frameRate, null))
+                    hasJsRefreshRate(
+                        ViewEvent.FlutterBuildTime(
+                            frameRate,
+                            frameRate,
+                            frameRate,
+                            null
+                        )
+                    )
                 }
         }
         verifyNoMoreInteractions(mockWriter)

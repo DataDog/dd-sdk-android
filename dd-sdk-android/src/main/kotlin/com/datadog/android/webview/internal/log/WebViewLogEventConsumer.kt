@@ -27,10 +27,10 @@ internal class WebViewLogEventConsumer(
     @WorkerThread
     override fun consume(event: Pair<JsonObject, String>) {
         if (event.second == USER_LOG_EVENT_TYPE) {
-            val rumContext = rumContextProvider.getRumContext()
             sdkCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
                 ?.withWriteContext { datadogContext, eventBatchWriter ->
-                    val mappedEvent = map(event.first, rumContext, datadogContext)
+                    val rumContext = rumContextProvider.getRumContext(datadogContext)
+                    val mappedEvent = map(event.first, datadogContext, rumContext)
                     userLogsWriter.write(eventBatchWriter, mappedEvent)
                 }
         }
@@ -38,8 +38,8 @@ internal class WebViewLogEventConsumer(
 
     private fun map(
         event: JsonObject,
-        rumContext: RumContext?,
-        datadogContext: DatadogContext
+        datadogContext: DatadogContext,
+        rumContext: RumContext?
     ): JsonObject {
         addDdTags(event, datadogContext)
         correctDate(event, datadogContext)

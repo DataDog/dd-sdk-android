@@ -11,16 +11,14 @@ import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.utils.extension.asLogStatus
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.opentracing.DDSpanContext
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.setStaticValue
 import com.datadog.trace.api.interceptor.MutableSpan
@@ -82,6 +80,9 @@ internal class DatadogLogGeneratorTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
+    @Forgery
+    lateinit var fakeRumContext: RumContext
+
     var fakeTimestamp = 0L
     var fakeLevel: Int = 0
     lateinit var fakeThreadName: String
@@ -106,7 +107,18 @@ internal class DatadogLogGeneratorTest {
         fakeDatadogContext = fakeDatadogContext.copy(
             time = fakeDatadogContext.time.copy(
                 serverTimeOffsetMs = fakeTimeOffset
-            )
+            ),
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    RumFeature.RUM_FEATURE_NAME,
+                    mapOf(
+                        "application_id" to fakeRumContext.applicationId,
+                        "session_id" to fakeRumContext.sessionId,
+                        "view_id" to fakeRumContext.viewId,
+                        "action_id" to fakeRumContext.actionId
+                    )
+                )
+            }
         )
 
         whenever(mockTracer.activeSpan()).thenReturn(mockSpan)
@@ -650,10 +662,10 @@ internal class DatadogLogGeneratorTest {
 
         // THEN
         val expectedAttributes = fakeAttributes + mapOf(
-            LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-            LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-            LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-            LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
+            LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+            LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+            LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+            LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
         )
         assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
@@ -679,10 +691,10 @@ internal class DatadogLogGeneratorTest {
 
         // THEN
         val expectedAttributes = fakeAttributes + mapOf(
-            LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-            LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-            LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-            LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
+            LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+            LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+            LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+            LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
         )
         assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
@@ -709,10 +721,10 @@ internal class DatadogLogGeneratorTest {
 
         // THEN
         val expectedAttributes = fakeAttributes + mapOf(
-            LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-            LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-            LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-            LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
+            LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+            LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+            LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+            LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
         )
         assertThat(log).hasExactlyAttributes(expectedAttributes)
     }
@@ -736,18 +748,22 @@ internal class DatadogLogGeneratorTest {
         // THEN
         Assertions.assertThat(log.additionalProperties).containsAllEntriesOf(
             mapOf(
-                LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
+                LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
             )
         )
     }
 
     @Test
-    fun `M do nothing W required to bundle the rum information {RumMonitor not registered}`() {
+    fun `M do nothing W required to bundle the rum information {no RUM context}`() {
         // GIVEN
-        GlobalRum.isRegistered.set(false)
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                remove(RumFeature.RUM_FEATURE_NAME)
+            }
+        )
 
         // WHEN
         val log = testedLogGenerator.generateLog(
@@ -773,9 +789,6 @@ internal class DatadogLogGeneratorTest {
 
     @Test
     fun `M do nothing W not required to bundle the rum information`() {
-        // GIVEN
-        GlobalRum.isRegistered.set(false)
-
         // WHEN
         val log = testedLogGenerator.generateLog(
             fakeLevel,
@@ -957,15 +970,5 @@ internal class DatadogLogGeneratorTest {
 
         // THEN
         assertThat(log).hasStatus(LogEvent.Status.DEBUG)
-    }
-
-    companion object {
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
-        }
     }
 }

@@ -1103,7 +1103,9 @@ datadog:
       - "kotlin.collections.Map.mapKeys(kotlin.Function1)"
       - "kotlin.collections.Map.mapNotNull(kotlin.Function1)"
       - "kotlin.collections.Map.mapValues(kotlin.Function1)"
+      - "kotlin.collections.Map.orEmpty()"
       - "kotlin.collections.Map.toMutableMap()"
+      - "kotlin.collections.MutableCollection.flatMap(kotlin.Function1)"
       - "kotlin.collections.MutableCollection.forEach(kotlin.Function1)"
       - "kotlin.collections.MutableCollection.toList()"
       - "kotlin.collections.MutableIterator.hasNext()"
@@ -1174,6 +1176,7 @@ datadog:
       - "kotlin.collections.MutableSet.map(kotlin.Function1)"
       - "kotlin.collections.MutableSet.remove(java.io.File)"
       - "kotlin.collections.MutableSet.remove(com.datadog.android.v2.core.internal.storage.ConsentAwareStorage.Batch)"
+      - "kotlin.collections.Set.forEach(kotlin.Function1)"
       - "kotlin.sequences.Sequence.filter(kotlin.Function1)"
       - "kotlin.sequences.Sequence.forEach(kotlin.Function1)"
       # endregion
