@@ -80,7 +80,8 @@ internal object CrashReportsFeature : SdkFeature<LogEvent, Configuration.Feature
                 CoreFeature.sdkVersion,
                 CoreFeature.envName,
                 CoreFeature.variant,
-                CoreFeature.packageVersionProvider
+                CoreFeature.packageVersionProvider,
+                CoreFeature.androidInfoProvider
             ),
             writer = persistenceStrategy.getWriter(),
             appContext = appContext

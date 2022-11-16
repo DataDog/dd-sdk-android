@@ -7,6 +7,7 @@
 package com.datadog.android.log.internal.domain
 
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
+import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.NetworkInfo
@@ -81,6 +82,9 @@ internal class LogGeneratorTest {
     @Mock
     lateinit var mockAppVersionProvider: AppVersionProvider
 
+    @Mock
+    lateinit var mockAndroidInfoProvider: AndroidInfoProvider
+
     lateinit var fakeServiceName: String
     lateinit var fakeLoggerName: String
     lateinit var fakeAttributes: Map<String, Any?>
@@ -102,6 +106,9 @@ internal class LogGeneratorTest {
 
     @Forgery
     lateinit var fakeNetworkInfo: NetworkInfo
+
+    @StringForgery(StringForgeryType.ALPHA_NUMERICAL)
+    lateinit var fakeArchitecture: String
 
     @Forgery
     lateinit var fakeUserInfo: UserInfo
@@ -137,6 +144,7 @@ internal class LogGeneratorTest {
         whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId
         whenever(mockTimeProvider.getServerOffsetMillis()) doReturn fakeTimeOffset
         whenever(mockAppVersionProvider.version) doReturn fakeAppVersion
+        whenever(mockAndroidInfoProvider.architecture) doReturn fakeArchitecture
         GlobalTracer.registerIfAbsent(mockTracer)
         testedLogGenerator = LogGenerator(
             fakeServiceName,
@@ -147,7 +155,8 @@ internal class LogGeneratorTest {
             fakeSdkVersion,
             fakeEnvName,
             fakeVariant,
-            mockAppVersionProvider
+            mockAppVersionProvider,
+            mockAndroidInfoProvider
         )
     }
 
@@ -394,7 +403,8 @@ internal class LogGeneratorTest {
             fakeSdkVersion,
             fakeEnvName,
             fakeVariant,
-            mockAppVersionProvider
+            mockAppVersionProvider,
+            mockAndroidInfoProvider
         )
         // WHEN
         val log = testedLogGenerator.generateLog(
@@ -424,7 +434,8 @@ internal class LogGeneratorTest {
             fakeSdkVersion,
             fakeEnvName,
             fakeVariant,
-            mockAppVersionProvider
+            mockAppVersionProvider,
+            mockAndroidInfoProvider
         )
         // WHEN
         val log = testedLogGenerator.generateLog(
@@ -470,7 +481,8 @@ internal class LogGeneratorTest {
             fakeSdkVersion,
             "",
             fakeVariant,
-            mockAppVersionProvider
+            mockAppVersionProvider,
+            mockAndroidInfoProvider
         )
 
         // WHEN
@@ -522,7 +534,8 @@ internal class LogGeneratorTest {
             fakeSdkVersion,
             fakeEnvName,
             fakeVariant,
-            mockAppVersionProvider
+            mockAppVersionProvider,
+            mockAndroidInfoProvider
         )
 
         // WHEN
@@ -572,7 +585,8 @@ internal class LogGeneratorTest {
             fakeSdkVersion,
             fakeEnvName,
             "",
-            mockAppVersionProvider
+            mockAppVersionProvider,
+            mockAndroidInfoProvider
         )
 
         // WHEN
@@ -590,6 +604,22 @@ internal class LogGeneratorTest {
             "${LogAttributes.ENV}:$fakeEnvName" +
             "${LogAttributes.APPLICATION_VERSION}:$fakeAppVersion"
         assertThat(log).hasExactlyTags(expectedTags)
+    }
+
+    @Test
+    fun `M add architecture W created a log`() {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp
+        )
+
+        // THEN
+        assertThat(log).hasDeviceArchitecture(fakeArchitecture)
     }
 
     @Test
