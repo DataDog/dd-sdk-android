@@ -1864,7 +1864,7 @@ interface com.datadog.android.v2.api.SdkCore
   fun stop()
   fun clearAllData()
   fun flushStoredData()
-  fun updateFeatureContext(String, () -> Unit)
+  fun updateFeatureContext(String, (MutableMap<String, Any?>) -> Unit)
   fun getFeatureContext(String): Map<String, Any?>
   fun setEventReceiver(String, FeatureEventReceiver)
   fun removeEventReceiver(String)
