@@ -9,7 +9,6 @@ package com.datadog.android.rum.internal.domain.scope
 
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
@@ -22,8 +21,8 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.v2.api.context.DeviceType
+import com.datadog.android.v2.api.context.NetworkInfo
 import java.util.Locale
-import com.datadog.android.v2.api.context.NetworkInfo as NetworkInfoV2
 
 internal fun String.toMethod(): ResourceEvent.Method {
     return try {
@@ -241,120 +240,80 @@ internal fun NetworkInfo.toLongTaskConnectivity(): LongTaskEvent.Connectivity {
     )
 }
 
+internal fun NetworkInfo.toViewConnectivity(): ViewEvent.Connectivity {
+    val status = if (isConnected()) {
+        ViewEvent.Status.CONNECTED
+    } else {
+        ViewEvent.Status.NOT_CONNECTED
+    }
+    val interfaces = when (connectivity) {
+        NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(ViewEvent.Interface.ETHERNET)
+        NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(ViewEvent.Interface.WIFI)
+        NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(ViewEvent.Interface.WIMAX)
+        NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(ViewEvent.Interface.BLUETOOTH)
+        NetworkInfo.Connectivity.NETWORK_2G,
+        NetworkInfo.Connectivity.NETWORK_3G,
+        NetworkInfo.Connectivity.NETWORK_4G,
+        NetworkInfo.Connectivity.NETWORK_5G,
+        NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
+        NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(ViewEvent.Interface.CELLULAR)
+        NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(ViewEvent.Interface.OTHER)
+        NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
+    }
+
+    val cellular = if (cellularTechnology != null || carrierName != null) {
+        ViewEvent.Cellular(
+            technology = cellularTechnology,
+            carrierName = carrierName
+        )
+    } else {
+        null
+    }
+    return ViewEvent.Connectivity(
+        status,
+        interfaces,
+        cellular
+    )
+}
+
+internal fun NetworkInfo.toActionConnectivity(): ActionEvent.Connectivity {
+    val status = if (isConnected()) {
+        ActionEvent.Status.CONNECTED
+    } else {
+        ActionEvent.Status.NOT_CONNECTED
+    }
+    val interfaces = when (connectivity) {
+        NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(ActionEvent.Interface.ETHERNET)
+        NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(ActionEvent.Interface.WIFI)
+        NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(ActionEvent.Interface.WIMAX)
+        NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(ActionEvent.Interface.BLUETOOTH)
+        NetworkInfo.Connectivity.NETWORK_2G,
+        NetworkInfo.Connectivity.NETWORK_3G,
+        NetworkInfo.Connectivity.NETWORK_4G,
+        NetworkInfo.Connectivity.NETWORK_5G,
+        NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
+        NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(ActionEvent.Interface.CELLULAR)
+        NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(ActionEvent.Interface.OTHER)
+        NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
+    }
+
+    val cellular = if (cellularTechnology != null || carrierName != null) {
+        ActionEvent.Cellular(
+            technology = cellularTechnology,
+            carrierName = carrierName
+        )
+    } else {
+        null
+    }
+    return ActionEvent.Connectivity(
+        status,
+        interfaces,
+        cellular
+    )
+}
+
 internal fun NetworkInfo.isConnected(): Boolean {
     return connectivity != NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
-}
-
-internal fun NetworkInfoV2.toResourceConnectivity(): ResourceEvent.Connectivity {
-    val status = if (isConnected()) {
-        ResourceEvent.Status.CONNECTED
-    } else {
-        ResourceEvent.Status.NOT_CONNECTED
-    }
-    val interfaces = when (connectivity) {
-        NetworkInfoV2.Connectivity.NETWORK_ETHERNET -> listOf(ResourceEvent.Interface.ETHERNET)
-        NetworkInfoV2.Connectivity.NETWORK_WIFI -> listOf(ResourceEvent.Interface.WIFI)
-        NetworkInfoV2.Connectivity.NETWORK_WIMAX -> listOf(ResourceEvent.Interface.WIMAX)
-        NetworkInfoV2.Connectivity.NETWORK_BLUETOOTH -> listOf(ResourceEvent.Interface.BLUETOOTH)
-        NetworkInfoV2.Connectivity.NETWORK_2G,
-        NetworkInfoV2.Connectivity.NETWORK_3G,
-        NetworkInfoV2.Connectivity.NETWORK_4G,
-        NetworkInfoV2.Connectivity.NETWORK_5G,
-        NetworkInfoV2.Connectivity.NETWORK_MOBILE_OTHER,
-        NetworkInfoV2.Connectivity.NETWORK_CELLULAR -> listOf(ResourceEvent.Interface.CELLULAR)
-        NetworkInfoV2.Connectivity.NETWORK_OTHER -> listOf(ResourceEvent.Interface.OTHER)
-        NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
-    }
-
-    val cellular = if (cellularTechnology != null || carrierName != null) {
-        ResourceEvent.Cellular(
-            technology = cellularTechnology,
-            carrierName = carrierName
-        )
-    } else {
-        null
-    }
-    return ResourceEvent.Connectivity(
-        status,
-        interfaces,
-        cellular
-    )
-}
-
-internal fun NetworkInfoV2.toErrorConnectivity(): ErrorEvent.Connectivity {
-    val status = if (isConnected()) {
-        ErrorEvent.Status.CONNECTED
-    } else {
-        ErrorEvent.Status.NOT_CONNECTED
-    }
-    val interfaces = when (connectivity) {
-        NetworkInfoV2.Connectivity.NETWORK_ETHERNET -> listOf(ErrorEvent.Interface.ETHERNET)
-        NetworkInfoV2.Connectivity.NETWORK_WIFI -> listOf(ErrorEvent.Interface.WIFI)
-        NetworkInfoV2.Connectivity.NETWORK_WIMAX -> listOf(ErrorEvent.Interface.WIMAX)
-        NetworkInfoV2.Connectivity.NETWORK_BLUETOOTH -> listOf(ErrorEvent.Interface.BLUETOOTH)
-        NetworkInfoV2.Connectivity.NETWORK_2G,
-        NetworkInfoV2.Connectivity.NETWORK_3G,
-        NetworkInfoV2.Connectivity.NETWORK_4G,
-        NetworkInfoV2.Connectivity.NETWORK_5G,
-        NetworkInfoV2.Connectivity.NETWORK_MOBILE_OTHER,
-        NetworkInfoV2.Connectivity.NETWORK_CELLULAR -> listOf(ErrorEvent.Interface.CELLULAR)
-        NetworkInfoV2.Connectivity.NETWORK_OTHER -> listOf(ErrorEvent.Interface.OTHER)
-        NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
-    }
-
-    val cellular = if (cellularTechnology != null || carrierName != null) {
-        ErrorEvent.Cellular(
-            technology = cellularTechnology,
-            carrierName = carrierName
-        )
-    } else {
-        null
-    }
-    return ErrorEvent.Connectivity(
-        status,
-        interfaces,
-        cellular
-    )
-}
-
-internal fun NetworkInfoV2.toLongTaskConnectivity(): LongTaskEvent.Connectivity {
-    val status = if (isConnected()) {
-        LongTaskEvent.Status.CONNECTED
-    } else {
-        LongTaskEvent.Status.NOT_CONNECTED
-    }
-    val interfaces = when (connectivity) {
-        NetworkInfoV2.Connectivity.NETWORK_ETHERNET -> listOf(LongTaskEvent.Interface.ETHERNET)
-        NetworkInfoV2.Connectivity.NETWORK_WIFI -> listOf(LongTaskEvent.Interface.WIFI)
-        NetworkInfoV2.Connectivity.NETWORK_WIMAX -> listOf(LongTaskEvent.Interface.WIMAX)
-        NetworkInfoV2.Connectivity.NETWORK_BLUETOOTH -> listOf(LongTaskEvent.Interface.BLUETOOTH)
-        NetworkInfoV2.Connectivity.NETWORK_2G,
-        NetworkInfoV2.Connectivity.NETWORK_3G,
-        NetworkInfoV2.Connectivity.NETWORK_4G,
-        NetworkInfoV2.Connectivity.NETWORK_5G,
-        NetworkInfoV2.Connectivity.NETWORK_MOBILE_OTHER,
-        NetworkInfoV2.Connectivity.NETWORK_CELLULAR -> listOf(LongTaskEvent.Interface.CELLULAR)
-        NetworkInfoV2.Connectivity.NETWORK_OTHER -> listOf(LongTaskEvent.Interface.OTHER)
-        NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
-    }
-
-    val cellular = if (cellularTechnology != null || carrierName != null) {
-        LongTaskEvent.Cellular(
-            technology = cellularTechnology,
-            carrierName = carrierName
-        )
-    } else {
-        null
-    }
-    return LongTaskEvent.Connectivity(
-        status,
-        interfaces,
-        cellular
-    )
-}
-
-internal fun NetworkInfoV2.isConnected(): Boolean {
-    return connectivity != NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED
 }
 
 // endregion

@@ -19,25 +19,21 @@ in Datadog. **Make sure you create a key of type `Client Token`.**
 
 ```kotlin
 class SampleApplication : Application() {
-
     override fun onCreate() {
         super.onCreate()
-        Datadog.initialize(this, BuildConfig.DD_CLIENT_TOKEN)
-    }
-}
-```
-
-### Setup for Europe
-
-If you're targeting our [Europe servers](https://datadoghq.eu), you can
-initialize the library like this: 
-
-```kotlin
-class SampleApplication : Application() {
-
-    override fun onCreate() {
-        super.onCreate()
-        Datadog.initialize(this, BuildConfig.DD_CLIENT_TOKEN, Datadog.DATADOG_EU)
+        val configuration = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true
+        )
+            .useSite(DatadogSite.US1) // replace with the site you're targeting (e.g.: US3, EU1, …)
+            .trackInteractions()
+            .trackLongTasks(durationThreshold)
+            .useViewTrackingStrategy(strategy)
+            .build()
+        val credentials = Credentials(CLIENT_TOKEN, ENV_NAME, APP_VARIANT_NAME, APPLICATION_ID)
+        Datadog.initialize(this, credentials, configuration, trackingConsent)
     }
 }
 ```

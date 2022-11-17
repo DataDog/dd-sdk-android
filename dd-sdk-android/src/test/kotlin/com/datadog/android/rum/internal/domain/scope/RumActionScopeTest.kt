@@ -99,6 +99,9 @@ internal class RumActionScopeTest {
     lateinit var fakeParentContext: RumContext
 
     @Forgery
+    lateinit var fakeDatadogContextAtScopeStart: DatadogContext
+
+    @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
     lateinit var fakeEventTime: Time
@@ -141,7 +144,7 @@ internal class RumActionScopeTest {
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString().toByteArray()
 
-        whenever(mockContextProvider.context) doReturn fakeDatadogContext
+        whenever(mockContextProvider.context) doReturn fakeDatadogContextAtScopeStart
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockRumFeatureScope.withWriteContext(any())) doAnswer {
@@ -162,6 +165,7 @@ internal class RumActionScopeTest {
             fakeServerOffset,
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
+            mockContextProvider,
             mockFeaturesContextResolver,
             true
         )
@@ -244,6 +248,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -345,6 +352,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -423,6 +433,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -556,6 +569,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -622,6 +638,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -675,6 +694,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -738,6 +760,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -795,6 +820,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -849,6 +877,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -902,6 +933,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -960,6 +994,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1020,6 +1057,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1072,6 +1112,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1124,6 +1167,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1181,6 +1227,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1240,6 +1289,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1270,6 +1322,7 @@ internal class RumActionScopeTest {
             fakeServerOffset,
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
+            mockContextProvider,
             mockFeaturesContextResolver,
             fakeTrackFrustrations
         )
@@ -1314,6 +1367,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1373,6 +1429,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1423,6 +1482,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1476,6 +1538,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1533,6 +1598,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1591,6 +1659,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1640,6 +1711,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1696,6 +1770,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         assertThat(result).isNull()
@@ -1750,6 +1827,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1802,6 +1882,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         assertThat(result).isNull()
@@ -1854,6 +1937,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1908,6 +1994,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1992,6 +2081,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -2041,6 +2133,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -2090,6 +2185,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -2139,6 +2237,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -2165,6 +2266,7 @@ internal class RumActionScopeTest {
             fakeServerOffset,
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
+            mockContextProvider,
             trackFrustrations = false
         )
 
@@ -2222,6 +2324,9 @@ internal class RumActionScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())

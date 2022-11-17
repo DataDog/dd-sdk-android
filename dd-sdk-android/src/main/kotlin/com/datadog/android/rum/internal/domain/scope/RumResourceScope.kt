@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.hasUserData
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
@@ -162,7 +163,6 @@ internal class RumResourceScope(
     }
 
     @Suppress("LongMethod")
-    @WorkerThread
     private fun sendResource(
         kind: RumResourceKind,
         statusCode: Long?,
@@ -210,12 +210,16 @@ internal class RumResourceScope(
                         name = rumContext.viewName,
                         url = rumContext.viewUrl.orEmpty()
                     ),
-                    usr = ResourceEvent.Usr(
-                        id = user.id,
-                        name = user.name,
-                        email = user.email,
-                        additionalProperties = user.additionalProperties.toMutableMap()
-                    ),
+                    usr = if (user.hasUserData()) {
+                        ResourceEvent.Usr(
+                            id = user.id,
+                            name = user.name,
+                            email = user.email,
+                            additionalProperties = user.additionalProperties.toMutableMap()
+                        )
+                    } else {
+                        null
+                    },
                     connectivity = networkInfo.toResourceConnectivity(),
                     application = ResourceEvent.Application(rumContext.applicationId),
                     session = ResourceEvent.ResourceEventSession(
@@ -242,8 +246,12 @@ internal class RumResourceScope(
                         spanId = spanId,
                         rulePsr = rulePsr,
                         session = ResourceEvent.DdSession(plan = ResourceEvent.Plan.PLAN_1)
-                    )
+                    ),
+                    service = datadogContext.service,
+                    version = datadogContext.version
                 )
+
+                @Suppress("ThreadSafety") // called in a worker thread context
                 writer.write(eventBatchWriter, resourceEvent)
             }
 
@@ -272,7 +280,6 @@ internal class RumResourceScope(
     }
 
     @SuppressWarnings("LongMethod")
-    @WorkerThread
     private fun sendError(
         message: String,
         source: RumErrorSource,
@@ -311,12 +318,16 @@ internal class RumResourceScope(
                         name = rumContext.viewName,
                         url = rumContext.viewUrl.orEmpty()
                     ),
-                    usr = ErrorEvent.Usr(
-                        id = user.id,
-                        name = user.name,
-                        email = user.email,
-                        additionalProperties = user.additionalProperties.toMutableMap()
-                    ),
+                    usr = if (user.hasUserData()) {
+                        ErrorEvent.Usr(
+                            id = user.id,
+                            name = user.name,
+                            email = user.email,
+                            additionalProperties = user.additionalProperties.toMutableMap()
+                        )
+                    } else {
+                        null
+                    },
                     connectivity = networkInfo.toErrorConnectivity(),
                     application = ErrorEvent.Application(rumContext.applicationId),
                     session = ErrorEvent.ErrorEventSession(
@@ -338,8 +349,12 @@ internal class RumResourceScope(
                         architecture = datadogContext.deviceInfo.architecture
                     ),
                     context = ErrorEvent.Context(additionalProperties = attributes),
-                    dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1))
+                    dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1)),
+                    service = datadogContext.service,
+                    version = datadogContext.version
                 )
+
+                @Suppress("ThreadSafety") // called in a worker thread context
                 writer.write(eventBatchWriter, errorEvent)
             }
 

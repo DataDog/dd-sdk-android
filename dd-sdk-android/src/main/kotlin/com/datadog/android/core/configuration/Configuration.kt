@@ -45,6 +45,7 @@ import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import okhttp3.Authenticator
 import java.net.Proxy
 import java.util.Locale
@@ -605,6 +606,22 @@ internal constructor(
                 proxy = proxy,
                 proxyAuth = authenticator ?: Authenticator.NONE
             )
+            return this
+        }
+
+        @Suppress("FunctionMaxLength")
+        internal fun setTelemetryConfigurationEventMapper(
+            eventMapper: EventMapper<TelemetryConfigurationEvent>
+        ): Builder {
+            applyIfFeatureEnabled(
+                PluginFeature.RUM,
+                "setTelemetryConfigurationEventMapper"
+            ) {
+                rumConfig = rumConfig.copy(
+                    rumEventMapper = getRumEventMapper()
+                        .copy(telemetryConfigurationMapper = eventMapper)
+                )
+            }
             return this
         }
 

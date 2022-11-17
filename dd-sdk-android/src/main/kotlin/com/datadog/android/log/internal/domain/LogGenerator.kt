@@ -32,4 +32,24 @@ internal interface LogGenerator {
         userInfo: UserInfo? = null,
         networkInfo: NetworkInfo? = null
     ): LogEvent?
+
+    @Suppress("LongParameterList")
+    fun generateLog(
+        level: Int,
+        message: String,
+        errorKind: String?,
+        errorMessage: String?,
+        errorStack: String?,
+        attributes: Map<String, Any?>,
+        tags: Set<String>,
+        timestamp: Long,
+        threadName: String,
+        datadogContext: DatadogContext,
+        attachNetworkInfo: Boolean,
+        loggerName: String,
+        bundleWithTraces: Boolean = true,
+        bundleWithRum: Boolean = true,
+        userInfo: UserInfo? = null,
+        networkInfo: NetworkInfo? = null
+    ): LogEvent?
 }

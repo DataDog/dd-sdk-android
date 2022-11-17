@@ -20,6 +20,7 @@ import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.json.JSONArray
@@ -246,6 +247,32 @@ internal class LoggerTest {
             )
     }
 
+    @Test
+    fun `log with expanded error info`(
+        @StringForgery errorKind: String,
+        @StringForgery errorMessage: String,
+        @StringForgery errorStack: String
+    ) {
+        testedLogger.log(
+            Log.DEBUG,
+            fakeMessage,
+            errorKind,
+            errorMessage,
+            errorStack
+        )
+
+        verify(mockLogHandler)
+            .handleLog(
+                Log.DEBUG,
+                fakeMessage,
+                errorKind,
+                errorMessage,
+                errorStack,
+                emptyMap(),
+                emptySet()
+            )
+    }
+
     // endregion
 
     // region addAttribute
@@ -458,6 +485,45 @@ internal class LoggerTest {
                 null,
                 mapOf(key to value),
                 emptySet()
+            )
+    }
+
+    @Test
+    fun `attributes are passed through to expanded error log`(
+        forge: Forge,
+        @StringForgery errorKind: String,
+        @StringForgery errorStack: String
+    ) {
+        // GIVEN
+        val boolKey = forge.anAlphabeticalString()
+        val fakeBoolean = forge.aBool()
+        testedLogger.addAttribute(boolKey, fakeBoolean)
+
+        val stringKey = forge.anAlphabeticalString()
+        val fakeString = forge.anAlphabeticalString()
+        testedLogger.addAttribute(stringKey, fakeString)
+
+        // WHEN
+        testedLogger.log(
+            Log.INFO,
+            fakeMessage,
+            errorKind,
+            null,
+            errorStack
+        )
+
+        // THEN
+        verify(mockLogHandler)
+            .handleLog(
+                Log.INFO,
+                fakeMessage,
+                errorKind,
+                null,
+                errorStack,
+                mapOf(
+                    boolKey to fakeBoolean,
+                    stringKey to fakeString
+                )
             )
     }
 
@@ -918,7 +984,7 @@ internal class LoggerTest {
         verify(mockLogHandler, times(logDebugExecutionCalls)).handleLog(
             eq(Log.DEBUG),
             anyOrNull(),
-            anyOrNull(),
+            anyOrNull<Throwable>(),
             anyOrNull(),
             anyOrNull(),
             anyOrNull()
@@ -982,7 +1048,7 @@ internal class LoggerTest {
         verify(mockLogHandler, times(logDebugExecutionCalls)).handleLog(
             eq(Log.DEBUG),
             anyOrNull(),
-            anyOrNull(),
+            anyOrNull<Throwable>(),
             anyOrNull(),
             anyOrNull(),
             anyOrNull()

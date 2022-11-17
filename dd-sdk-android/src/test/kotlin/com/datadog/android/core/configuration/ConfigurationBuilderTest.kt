@@ -12,6 +12,7 @@ import android.os.Build
 import android.util.Log
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
+import com.datadog.android._InternalProxy
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpSpanEventMapper
@@ -36,6 +37,7 @@ import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -843,6 +845,30 @@ internal class ConfigurationBuilderTest {
         assertThat(config.sessionReplayConfig)
             .isEqualTo(Configuration.DEFAULT_SESSION_REPLAY_CONFIG)
         val expectedRumEventMapper = RumEventMapper(longTaskEventMapper = eventMapper)
+        assertThat(config.rumConfig).isEqualTo(
+            Configuration.DEFAULT_RUM_CONFIG.copy(
+                rumEventMapper = expectedRumEventMapper
+            )
+        )
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 build config with RUM Telemetry eventMapper 𝕎 _InternalProxy setTelemetryConfigurationEventMapper() & build()`() {
+        // Given
+        val eventMapper: EventMapper<TelemetryConfigurationEvent> = mock()
+
+        // When
+        val builder = testedBuilder
+        _InternalProxy.setTelemetryConfigurationEventMapper(builder, eventMapper)
+        val config = builder.build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        val expectedRumEventMapper = RumEventMapper(telemetryConfigurationMapper = eventMapper)
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 rumEventMapper = expectedRumEventMapper

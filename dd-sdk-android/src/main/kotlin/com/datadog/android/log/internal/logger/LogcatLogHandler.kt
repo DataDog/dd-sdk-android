@@ -39,6 +39,29 @@ internal class LogcatLogHandler(
         }
     }
 
+    override fun handleLog(
+        level: Int,
+        message: String,
+        errorKind: String?,
+        errorMessage: String?,
+        errorStacktrace: String?,
+        attributes: Map<String, Any?>,
+        tags: Set<String>,
+        timestamp: Long?
+    ) {
+        val stackElement = getCallerStackElement()
+        val tag = resolveTag(stackElement)
+        val suffix = resolveSuffix(stackElement)
+        Log.println(level, tag, message + suffix)
+        if (errorStacktrace != null) {
+            Log.println(
+                level,
+                tag,
+                errorStacktrace
+            )
+        }
+    }
+
     // endregion
 
     // region Internal

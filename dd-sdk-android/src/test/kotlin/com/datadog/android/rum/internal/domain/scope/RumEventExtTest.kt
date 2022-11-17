@@ -6,17 +6,18 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.internal.RumErrorSourceType
+import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.context.DeviceType
-import fr.xgouchet.elmyr.Forge
+import com.datadog.android.v2.api.context.NetworkInfo
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -28,7 +29,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
-import com.datadog.android.v2.api.context.NetworkInfo as NetworkInfoV2
 
 @Extensions(
     ExtendWith(ForgeExtension::class)
@@ -146,7 +146,13 @@ internal class RumEventExtTest {
     fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {not connected}`() {
         // Given
         val networkInfo = NetworkInfo(
-            NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
+            NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED,
+            carrierName = null,
+            carrierId = null,
+            upKbps = null,
+            downKbps = null,
+            strength = null,
+            cellularTechnology = null
         )
 
         // When
@@ -163,10 +169,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Wifi}`() {
+    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Wifi}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
         // Given
-        val networkInfo = NetworkInfo(
-            NetworkInfo.Connectivity.NETWORK_WIFI
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_WIFI,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -183,10 +194,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Wimax}`() {
+    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Wimax}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
         // Given
-        val networkInfo = NetworkInfo(
-            NetworkInfo.Connectivity.NETWORK_WIMAX
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_WIMAX,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -203,10 +219,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Ethernet}`() {
+    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Ethernet}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
         // Given
-        val networkInfo = NetworkInfo(
-            NetworkInfo.Connectivity.NETWORK_ETHERNET
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_ETHERNET,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -223,10 +244,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Bluetooth}`() {
+    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Bluetooth}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
         // Given
-        val networkInfo = NetworkInfo(
-            NetworkInfo.Connectivity.NETWORK_BLUETOOTH
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_BLUETOOTH,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -252,13 +278,15 @@ internal class RumEventExtTest {
     )
     fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Cellular}`(
         connectivity: NetworkInfo.Connectivity,
-        forge: Forge
+        @Forgery fakeNetworkInfo: NetworkInfo,
+        @StringForgery fakeCarrierName: String,
+        @StringForgery fakeCellularTechnology: String
     ) {
         // Given
-        val technology = forge.anAlphabeticalString()
-        val networkInfo = NetworkInfo(
-            connectivity,
-            cellularTechnology = technology
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = connectivity,
+            carrierName = fakeCarrierName,
+            cellularTechnology = fakeCellularTechnology
         )
 
         // When
@@ -269,16 +297,21 @@ internal class RumEventExtTest {
             ResourceEvent.Connectivity(
                 ResourceEvent.Status.CONNECTED,
                 listOf(ResourceEvent.Interface.CELLULAR),
-                ResourceEvent.Cellular(technology)
+                ResourceEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
             )
         )
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Other}`() {
+    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Other}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
         // Given
-        val networkInfo = NetworkInfo(
-            NetworkInfo.Connectivity.NETWORK_OTHER
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_OTHER,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -298,7 +331,13 @@ internal class RumEventExtTest {
     fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {not connected}`() {
         // Given
         val networkInfo = NetworkInfo(
-            NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
+            NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED,
+            carrierName = null,
+            carrierId = null,
+            upKbps = null,
+            downKbps = null,
+            strength = null,
+            cellularTechnology = null
         )
 
         // When
@@ -315,10 +354,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Wifi}`() {
+    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Wifi}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
         // Given
-        val networkInfo = NetworkInfo(
-            NetworkInfo.Connectivity.NETWORK_WIFI
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_WIFI,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -335,10 +379,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Wimax}`() {
+    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Wimax}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
         // Given
-        val networkInfo = NetworkInfo(
-            NetworkInfo.Connectivity.NETWORK_WIMAX
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_WIMAX,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -355,10 +404,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Ethernet}`() {
+    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Ethernet}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
         // Given
-        val networkInfo = NetworkInfo(
-            NetworkInfo.Connectivity.NETWORK_ETHERNET
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_ETHERNET,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -375,10 +429,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Bluetooth}`() {
+    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Bluetooth}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
         // Given
-        val networkInfo = NetworkInfo(
-            NetworkInfo.Connectivity.NETWORK_BLUETOOTH
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_BLUETOOTH,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -404,13 +463,15 @@ internal class RumEventExtTest {
     )
     fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Cellular}`(
         connectivity: NetworkInfo.Connectivity,
-        forge: Forge
+        @Forgery fakeNetworkInfo: NetworkInfo,
+        @StringForgery fakeCarrierName: String,
+        @StringForgery fakeCellularTechnology: String
     ) {
         // Given
-        val technology = forge.anAlphabeticalString()
-        val networkInfo = NetworkInfo(
-            connectivity,
-            cellularTechnology = technology
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = connectivity,
+            carrierName = fakeCarrierName,
+            cellularTechnology = fakeCellularTechnology
         )
 
         // When
@@ -421,16 +482,21 @@ internal class RumEventExtTest {
             ErrorEvent.Connectivity(
                 ErrorEvent.Status.CONNECTED,
                 listOf(ErrorEvent.Interface.CELLULAR),
-                ErrorEvent.Cellular(technology)
+                ErrorEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
             )
         )
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Other}`() {
+    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Other}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
         // Given
-        val networkInfo = NetworkInfo(
-            NetworkInfo.Connectivity.NETWORK_OTHER
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_OTHER,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -450,7 +516,13 @@ internal class RumEventExtTest {
     fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {not connected}`() {
         // Given
         val networkInfo = NetworkInfo(
-            NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
+            NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED,
+            carrierName = null,
+            carrierId = null,
+            upKbps = null,
+            downKbps = null,
+            strength = null,
+            cellularTechnology = null
         )
 
         // When
@@ -467,10 +539,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Wifi}`() {
+    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Wifi}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
         // Given
-        val networkInfo = NetworkInfo(
-            NetworkInfo.Connectivity.NETWORK_WIFI
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_WIFI,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -487,10 +564,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Wimax}`() {
+    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Wimax}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
         // Given
-        val networkInfo = NetworkInfo(
-            NetworkInfo.Connectivity.NETWORK_WIMAX
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_WIMAX,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -507,10 +589,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Ethernet}`() {
+    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Ethernet}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
         // Given
-        val networkInfo = NetworkInfo(
-            NetworkInfo.Connectivity.NETWORK_ETHERNET
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_ETHERNET,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -527,10 +614,15 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Bluetooth}`() {
+    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Bluetooth}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
         // Given
-        val networkInfo = NetworkInfo(
-            NetworkInfo.Connectivity.NETWORK_BLUETOOTH
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_BLUETOOTH,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
         )
 
         // When
@@ -556,555 +648,7 @@ internal class RumEventExtTest {
     )
     fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Cellular}`(
         connectivity: NetworkInfo.Connectivity,
-        forge: Forge
-    ) {
-        // Given
-        val technology = forge.anAlphabeticalString()
-        val networkInfo = NetworkInfo(
-            connectivity,
-            cellularTechnology = technology
-        )
-
-        // When
-        val result = networkInfo.toLongTaskConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            LongTaskEvent.Connectivity(
-                LongTaskEvent.Status.CONNECTED,
-                listOf(LongTaskEvent.Interface.CELLULAR),
-                LongTaskEvent.Cellular(technology)
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Other}`() {
-        // Given
-        val networkInfo = NetworkInfo(
-            NetworkInfo.Connectivity.NETWORK_OTHER
-        )
-
-        // When
-        val result = networkInfo.toLongTaskConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            LongTaskEvent.Connectivity(
-                LongTaskEvent.Status.CONNECTED,
-                listOf(LongTaskEvent.Interface.OTHER),
-                null
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {not connected, v2}`() {
-        // Given
-        val networkInfo = NetworkInfoV2(
-            connectivity = NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED,
-            carrierName = null,
-            carrierId = null,
-            upKbps = null,
-            downKbps = null,
-            strength = null,
-            cellularTechnology = null
-        )
-
-        // When
-        val result = networkInfo.toResourceConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            ResourceEvent.Connectivity(
-                ResourceEvent.Status.NOT_CONNECTED,
-                emptyList(),
-                null
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Wifi, v2}`(
-        @Forgery fakeNetworkInfo: NetworkInfoV2
-    ) {
-        // Given
-        val networkInfo = fakeNetworkInfo.copy(
-            connectivity = NetworkInfoV2.Connectivity.NETWORK_WIFI,
-            carrierName = null,
-            carrierId = null,
-            cellularTechnology = null
-        )
-
-        // When
-        val result = networkInfo.toResourceConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            ResourceEvent.Connectivity(
-                ResourceEvent.Status.CONNECTED,
-                listOf(ResourceEvent.Interface.WIFI),
-                null
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Wimax, v2}`(
-        @Forgery fakeNetworkInfo: NetworkInfoV2
-    ) {
-        // Given
-        val networkInfo = fakeNetworkInfo.copy(
-            connectivity = NetworkInfoV2.Connectivity.NETWORK_WIMAX,
-            carrierName = null,
-            carrierId = null,
-            cellularTechnology = null
-        )
-
-        // When
-        val result = networkInfo.toResourceConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            ResourceEvent.Connectivity(
-                ResourceEvent.Status.CONNECTED,
-                listOf(ResourceEvent.Interface.WIMAX),
-                null
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Ethernet, v2}`(
-        @Forgery fakeNetworkInfo: NetworkInfoV2
-    ) {
-        // Given
-        val networkInfo = fakeNetworkInfo.copy(
-            connectivity = NetworkInfoV2.Connectivity.NETWORK_ETHERNET,
-            carrierName = null,
-            carrierId = null,
-            cellularTechnology = null
-        )
-
-        // When
-        val result = networkInfo.toResourceConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            ResourceEvent.Connectivity(
-                ResourceEvent.Status.CONNECTED,
-                listOf(ResourceEvent.Interface.ETHERNET),
-                null
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Bluetooth, v2}`(
-        @Forgery fakeNetworkInfo: NetworkInfoV2
-    ) {
-        // Given
-        val networkInfo = fakeNetworkInfo.copy(
-            connectivity = NetworkInfoV2.Connectivity.NETWORK_BLUETOOTH,
-            carrierName = null,
-            carrierId = null,
-            cellularTechnology = null
-        )
-
-        // When
-        val result = networkInfo.toResourceConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            ResourceEvent.Connectivity(
-                ResourceEvent.Status.CONNECTED,
-                listOf(ResourceEvent.Interface.BLUETOOTH),
-                null
-            )
-        )
-    }
-
-    @ParameterizedTest
-    @EnumSource(
-        NetworkInfoV2.Connectivity::class,
-        names = [
-            "NETWORK_2G", "NETWORK_3G", "NETWORK_4G",
-            "NETWORK_5G", "NETWORK_MOBILE_OTHER", "NETWORK_CELLULAR"
-        ]
-    )
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Cellular, v2}`(
-        connectivity: NetworkInfoV2.Connectivity,
-        @Forgery fakeNetworkInfo: NetworkInfoV2,
-        @StringForgery fakeCarrierName: String,
-        @StringForgery fakeCellularTechnology: String
-    ) {
-        // Given
-        val networkInfo = fakeNetworkInfo.copy(
-            connectivity = connectivity,
-            carrierName = fakeCarrierName,
-            cellularTechnology = fakeCellularTechnology
-        )
-
-        // When
-        val result = networkInfo.toResourceConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            ResourceEvent.Connectivity(
-                ResourceEvent.Status.CONNECTED,
-                listOf(ResourceEvent.Interface.CELLULAR),
-                ResourceEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return connectivity 𝕎 toResourceConnectivity() {Other, v2}`(
-        @Forgery fakeNetworkInfo: NetworkInfoV2
-    ) {
-        // Given
-        val networkInfo = fakeNetworkInfo.copy(
-            connectivity = NetworkInfoV2.Connectivity.NETWORK_OTHER,
-            carrierName = null,
-            carrierId = null,
-            cellularTechnology = null
-        )
-
-        // When
-        val result = networkInfo.toResourceConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            ResourceEvent.Connectivity(
-                ResourceEvent.Status.CONNECTED,
-                listOf(ResourceEvent.Interface.OTHER),
-                null
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {not connected, v2}`() {
-        // Given
-        val networkInfo = NetworkInfoV2(
-            connectivity = NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED,
-            carrierName = null,
-            carrierId = null,
-            upKbps = null,
-            downKbps = null,
-            strength = null,
-            cellularTechnology = null
-        )
-
-        // When
-        val result = networkInfo.toErrorConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            ErrorEvent.Connectivity(
-                ErrorEvent.Status.NOT_CONNECTED,
-                emptyList(),
-                null
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Wifi, v2}`(
-        @Forgery fakeNetworkInfo: NetworkInfoV2
-    ) {
-        // Given
-        val networkInfo = fakeNetworkInfo.copy(
-            connectivity = NetworkInfoV2.Connectivity.NETWORK_WIFI,
-            carrierName = null,
-            carrierId = null,
-            cellularTechnology = null
-        )
-
-        // When
-        val result = networkInfo.toErrorConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            ErrorEvent.Connectivity(
-                ErrorEvent.Status.CONNECTED,
-                listOf(ErrorEvent.Interface.WIFI),
-                null
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Wimax, v2}`(
-        @Forgery fakeNetworkInfo: NetworkInfoV2
-    ) {
-        // Given
-        val networkInfo = fakeNetworkInfo.copy(
-            connectivity = NetworkInfoV2.Connectivity.NETWORK_WIMAX,
-            carrierName = null,
-            carrierId = null,
-            cellularTechnology = null
-        )
-
-        // When
-        val result = networkInfo.toErrorConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            ErrorEvent.Connectivity(
-                ErrorEvent.Status.CONNECTED,
-                listOf(ErrorEvent.Interface.WIMAX),
-                null
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Ethernet, v2}`(
-        @Forgery fakeNetworkInfo: NetworkInfoV2
-    ) {
-        // Given
-        val networkInfo = fakeNetworkInfo.copy(
-            connectivity = NetworkInfoV2.Connectivity.NETWORK_ETHERNET,
-            carrierName = null,
-            carrierId = null,
-            cellularTechnology = null
-        )
-
-        // When
-        val result = networkInfo.toErrorConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            ErrorEvent.Connectivity(
-                ErrorEvent.Status.CONNECTED,
-                listOf(ErrorEvent.Interface.ETHERNET),
-                null
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Bluetooth, v2}`(
-        @Forgery fakeNetworkInfo: NetworkInfoV2
-    ) {
-        // Given
-        val networkInfo = fakeNetworkInfo.copy(
-            connectivity = NetworkInfoV2.Connectivity.NETWORK_BLUETOOTH,
-            carrierName = null,
-            carrierId = null,
-            cellularTechnology = null
-        )
-
-        // When
-        val result = networkInfo.toErrorConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            ErrorEvent.Connectivity(
-                ErrorEvent.Status.CONNECTED,
-                listOf(ErrorEvent.Interface.BLUETOOTH),
-                null
-            )
-        )
-    }
-
-    @ParameterizedTest
-    @EnumSource(
-        NetworkInfoV2.Connectivity::class,
-        names = [
-            "NETWORK_2G", "NETWORK_3G", "NETWORK_4G",
-            "NETWORK_5G", "NETWORK_MOBILE_OTHER", "NETWORK_CELLULAR"
-        ]
-    )
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Cellular, v2}`(
-        connectivity: NetworkInfoV2.Connectivity,
-        @Forgery fakeNetworkInfo: NetworkInfoV2,
-        @StringForgery fakeCarrierName: String,
-        @StringForgery fakeCellularTechnology: String
-    ) {
-        // Given
-        val networkInfo = fakeNetworkInfo.copy(
-            connectivity = connectivity,
-            carrierName = fakeCarrierName,
-            cellularTechnology = fakeCellularTechnology
-        )
-
-        // When
-        val result = networkInfo.toErrorConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            ErrorEvent.Connectivity(
-                ErrorEvent.Status.CONNECTED,
-                listOf(ErrorEvent.Interface.CELLULAR),
-                ErrorEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return connectivity 𝕎 toErrorConnectivity() {Other, v2}`(
-        @Forgery fakeNetworkInfo: NetworkInfoV2
-    ) {
-        // Given
-        val networkInfo = fakeNetworkInfo.copy(
-            connectivity = NetworkInfoV2.Connectivity.NETWORK_OTHER,
-            carrierName = null,
-            carrierId = null,
-            cellularTechnology = null
-        )
-
-        // When
-        val result = networkInfo.toErrorConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            ErrorEvent.Connectivity(
-                ErrorEvent.Status.CONNECTED,
-                listOf(ErrorEvent.Interface.OTHER),
-                null
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {not connected, v2}`() {
-        // Given
-        val networkInfo = NetworkInfoV2(
-            connectivity = NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED,
-            carrierName = null,
-            carrierId = null,
-            upKbps = null,
-            downKbps = null,
-            strength = null,
-            cellularTechnology = null
-        )
-
-        // When
-        val result = networkInfo.toLongTaskConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            LongTaskEvent.Connectivity(
-                LongTaskEvent.Status.NOT_CONNECTED,
-                emptyList(),
-                null
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Wifi, v2}`(
-        @Forgery fakeNetworkInfo: NetworkInfoV2
-    ) {
-        // Given
-        val networkInfo = fakeNetworkInfo.copy(
-            connectivity = NetworkInfoV2.Connectivity.NETWORK_WIFI,
-            carrierName = null,
-            carrierId = null,
-            cellularTechnology = null
-        )
-
-        // When
-        val result = networkInfo.toLongTaskConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            LongTaskEvent.Connectivity(
-                LongTaskEvent.Status.CONNECTED,
-                listOf(LongTaskEvent.Interface.WIFI),
-                null
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Wimax, v2}`(
-        @Forgery fakeNetworkInfo: NetworkInfoV2
-    ) {
-        // Given
-        val networkInfo = fakeNetworkInfo.copy(
-            connectivity = NetworkInfoV2.Connectivity.NETWORK_WIMAX,
-            carrierName = null,
-            carrierId = null,
-            cellularTechnology = null
-        )
-
-        // When
-        val result = networkInfo.toLongTaskConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            LongTaskEvent.Connectivity(
-                LongTaskEvent.Status.CONNECTED,
-                listOf(LongTaskEvent.Interface.WIMAX),
-                null
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Ethernet, v2}`(
-        @Forgery fakeNetworkInfo: NetworkInfoV2
-    ) {
-        // Given
-        val networkInfo = fakeNetworkInfo.copy(
-            connectivity = NetworkInfoV2.Connectivity.NETWORK_ETHERNET,
-            carrierName = null,
-            carrierId = null,
-            cellularTechnology = null
-        )
-
-        // When
-        val result = networkInfo.toLongTaskConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            LongTaskEvent.Connectivity(
-                LongTaskEvent.Status.CONNECTED,
-                listOf(LongTaskEvent.Interface.ETHERNET),
-                null
-            )
-        )
-    }
-
-    @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Bluetooth, v2}`(
-        @Forgery fakeNetworkInfo: NetworkInfoV2
-    ) {
-        // Given
-        val networkInfo = fakeNetworkInfo.copy(
-            connectivity = NetworkInfoV2.Connectivity.NETWORK_BLUETOOTH,
-            carrierName = null,
-            carrierId = null,
-            cellularTechnology = null
-        )
-
-        // When
-        val result = networkInfo.toLongTaskConnectivity()
-
-        // Then
-        assertThat(result).isEqualTo(
-            LongTaskEvent.Connectivity(
-                LongTaskEvent.Status.CONNECTED,
-                listOf(LongTaskEvent.Interface.BLUETOOTH),
-                null
-            )
-        )
-    }
-
-    @ParameterizedTest
-    @EnumSource(
-        NetworkInfoV2.Connectivity::class,
-        names = [
-            "NETWORK_2G", "NETWORK_3G", "NETWORK_4G",
-            "NETWORK_5G", "NETWORK_MOBILE_OTHER", "NETWORK_CELLULAR"
-        ]
-    )
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Cellular, v2}`(
-        connectivity: NetworkInfoV2.Connectivity,
-        @Forgery fakeNetworkInfo: NetworkInfoV2,
+        @Forgery fakeNetworkInfo: NetworkInfo,
         @StringForgery fakeCarrierName: String,
         @StringForgery fakeCellularTechnology: String
     ) {
@@ -1129,12 +673,12 @@ internal class RumEventExtTest {
     }
 
     @Test
-    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Other, v2}`(
-        @Forgery fakeNetworkInfo: NetworkInfoV2
+    fun `𝕄 return connectivity 𝕎 toLongTaskConnectivity() {Other}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
     ) {
         // Given
         val networkInfo = fakeNetworkInfo.copy(
-            connectivity = NetworkInfoV2.Connectivity.NETWORK_OTHER,
+            connectivity = NetworkInfo.Connectivity.NETWORK_OTHER,
             carrierName = null,
             carrierId = null,
             cellularTechnology = null
@@ -1148,6 +692,376 @@ internal class RumEventExtTest {
             LongTaskEvent.Connectivity(
                 LongTaskEvent.Status.CONNECTED,
                 listOf(LongTaskEvent.Interface.OTHER),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {not connected}`() {
+        // Given
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED,
+            carrierName = null,
+            carrierId = null,
+            upKbps = null,
+            downKbps = null,
+            strength = null,
+            cellularTechnology = null
+        )
+
+        // When
+        val result = networkInfo.toActionConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ActionEvent.Connectivity(
+                ActionEvent.Status.NOT_CONNECTED,
+                emptyList(),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {Wifi}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
+        // Given
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_WIFI,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
+        )
+
+        // When
+        val result = networkInfo.toActionConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ActionEvent.Connectivity(
+                ActionEvent.Status.CONNECTED,
+                listOf(ActionEvent.Interface.WIFI),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {Wimax}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
+        // Given
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_WIMAX,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
+        )
+
+        // When
+        val result = networkInfo.toActionConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ActionEvent.Connectivity(
+                ActionEvent.Status.CONNECTED,
+                listOf(ActionEvent.Interface.WIMAX),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {Ethernet}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
+        // Given
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_ETHERNET,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
+        )
+
+        // When
+        val result = networkInfo.toActionConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ActionEvent.Connectivity(
+                ActionEvent.Status.CONNECTED,
+                listOf(ActionEvent.Interface.ETHERNET),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {Bluetooth}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
+        // Given
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_BLUETOOTH,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
+        )
+
+        // When
+        val result = networkInfo.toActionConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ActionEvent.Connectivity(
+                ActionEvent.Status.CONNECTED,
+                listOf(ActionEvent.Interface.BLUETOOTH),
+                null
+            )
+        )
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        NetworkInfo.Connectivity::class,
+        names = [
+            "NETWORK_2G", "NETWORK_3G", "NETWORK_4G",
+            "NETWORK_5G", "NETWORK_MOBILE_OTHER", "NETWORK_CELLULAR"
+        ]
+    )
+    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {Cellular}`(
+        connectivity: NetworkInfo.Connectivity,
+        @Forgery fakeNetworkInfo: NetworkInfo,
+        @StringForgery fakeCarrierName: String,
+        @StringForgery fakeCellularTechnology: String
+    ) {
+        // Given
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = connectivity,
+            carrierName = fakeCarrierName,
+            cellularTechnology = fakeCellularTechnology
+        )
+
+        // When
+        val result = networkInfo.toActionConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ActionEvent.Connectivity(
+                ActionEvent.Status.CONNECTED,
+                listOf(ActionEvent.Interface.CELLULAR),
+                ActionEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toActionConnectivity() {Other}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
+        // Given
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_OTHER,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
+        )
+
+        // When
+        val result = networkInfo.toActionConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ActionEvent.Connectivity(
+                ActionEvent.Status.CONNECTED,
+                listOf(ActionEvent.Interface.OTHER),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toViewConnectivity() {not connected}`() {
+        // Given
+        val networkInfo = NetworkInfo(
+            NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED,
+            carrierName = null,
+            carrierId = null,
+            upKbps = null,
+            downKbps = null,
+            strength = null,
+            cellularTechnology = null
+        )
+
+        // When
+        val result = networkInfo.toViewConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ViewEvent.Connectivity(
+                ViewEvent.Status.NOT_CONNECTED,
+                emptyList(),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toViewConnectivity() {Wifi}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
+        // Given
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_WIFI,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
+        )
+
+        // When
+        val result = networkInfo.toViewConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ViewEvent.Connectivity(
+                ViewEvent.Status.CONNECTED,
+                listOf(ViewEvent.Interface.WIFI),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toViewConnectivity() {Wimax}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
+        // Given
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_WIMAX,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
+        )
+
+        // When
+        val result = networkInfo.toViewConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ViewEvent.Connectivity(
+                ViewEvent.Status.CONNECTED,
+                listOf(ViewEvent.Interface.WIMAX),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toViewConnectivity() {Ethernet}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
+        // Given
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_ETHERNET,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
+        )
+
+        // When
+        val result = networkInfo.toViewConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ViewEvent.Connectivity(
+                ViewEvent.Status.CONNECTED,
+                listOf(ViewEvent.Interface.ETHERNET),
+                null
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toViewConnectivity() {Bluetooth}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
+        // Given
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_BLUETOOTH,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
+        )
+
+        // When
+        val result = networkInfo.toViewConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ViewEvent.Connectivity(
+                ViewEvent.Status.CONNECTED,
+                listOf(ViewEvent.Interface.BLUETOOTH),
+                null
+            )
+        )
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        NetworkInfo.Connectivity::class,
+        names = [
+            "NETWORK_2G", "NETWORK_3G", "NETWORK_4G",
+            "NETWORK_5G", "NETWORK_MOBILE_OTHER", "NETWORK_CELLULAR"
+        ]
+    )
+    fun `𝕄 return connectivity 𝕎 toViewConnectivity() {Cellular}`(
+        connectivity: NetworkInfo.Connectivity,
+        @Forgery fakeNetworkInfo: NetworkInfo,
+        @StringForgery fakeCarrierName: String,
+        @StringForgery fakeCellularTechnology: String
+    ) {
+        // Given
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = connectivity,
+            carrierName = fakeCarrierName,
+            cellularTechnology = fakeCellularTechnology
+        )
+
+        // When
+        val result = networkInfo.toViewConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ViewEvent.Connectivity(
+                ViewEvent.Status.CONNECTED,
+                listOf(ViewEvent.Interface.CELLULAR),
+                ViewEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 return connectivity 𝕎 toViewConnectivity() {Other}`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
+        // Given
+        val networkInfo = fakeNetworkInfo.copy(
+            connectivity = NetworkInfo.Connectivity.NETWORK_OTHER,
+            carrierName = null,
+            carrierId = null,
+            cellularTechnology = null
+        )
+
+        // When
+        val result = networkInfo.toViewConnectivity()
+
+        // Then
+        assertThat(result).isEqualTo(
+            ViewEvent.Connectivity(
+                ViewEvent.Status.CONNECTED,
+                listOf(ViewEvent.Interface.OTHER),
                 null
             )
         )
