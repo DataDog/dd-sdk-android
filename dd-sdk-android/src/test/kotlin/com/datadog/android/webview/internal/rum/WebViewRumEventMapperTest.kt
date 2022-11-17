@@ -6,21 +6,19 @@
 
 package com.datadog.android.webview.internal.rum
 
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.extension.getString
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aRumEventAsJson
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -34,8 +32,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -45,6 +42,10 @@ internal class WebViewRumEventMapperTest {
 
     @LongForgery
     var fakeServerTimeOffset: Long = 0L
+
+    @Forgery
+    lateinit var fakeRumContext: RumContext
+
     lateinit var fakeTags: Map<String, String>
 
     @BeforeEach
@@ -68,7 +69,7 @@ internal class WebViewRumEventMapperTest {
         // When
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
-            rumMonitor.context,
+            fakeRumContext,
             fakeServerTimeOffset
         )
 
@@ -89,7 +90,7 @@ internal class WebViewRumEventMapperTest {
         // When
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
-            rumMonitor.context,
+            fakeRumContext,
             fakeServerTimeOffset
         )
 
@@ -110,7 +111,7 @@ internal class WebViewRumEventMapperTest {
         // When
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
-            rumMonitor.context,
+            fakeRumContext,
             fakeServerTimeOffset
         )
 
@@ -131,7 +132,7 @@ internal class WebViewRumEventMapperTest {
         // When
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
-            rumMonitor.context,
+            fakeRumContext,
             fakeServerTimeOffset
         )
 
@@ -152,7 +153,7 @@ internal class WebViewRumEventMapperTest {
         // When
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
-            rumMonitor.context,
+            fakeRumContext,
             fakeServerTimeOffset
         )
 
@@ -176,7 +177,7 @@ internal class WebViewRumEventMapperTest {
         // When
         val mappedEvent = testedWebViewRumEventMapper.mapEvent(
             fakeRumJsonObject,
-            rumMonitor.context,
+            fakeRumContext,
             fakeServerTimeOffset
         )
 
@@ -251,9 +252,9 @@ internal class WebViewRumEventMapperTest {
             .isEqualTo(expectedEvent)
 
         assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.APPLICATION_KEY_NAME))
-            .hasField(WebViewRumEventMapper.ID_KEY_NAME, rumMonitor.context.applicationId)
+            .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeRumContext.applicationId)
         assertThat(mappedEvent.getAsJsonObject(WebViewRumEventMapper.SESSION_KEY_NAME))
-            .hasField(WebViewRumEventMapper.ID_KEY_NAME, rumMonitor.context.sessionId)
+            .hasField(WebViewRumEventMapper.ID_KEY_NAME, fakeRumContext.sessionId)
         assertThat(mappedEvent).hasField(
             WebViewRumEventMapper.DATE_KEY_NAME,
             expectedDate
@@ -265,15 +266,5 @@ internal class WebViewRumEventMapperTest {
             WebViewRumEventMapper.SESSION_PLAN_KEY_NAME,
             ViewEvent.Plan.PLAN_1.toJson().asLong
         )
-    }
-
-    companion object {
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
-        }
     }
 }

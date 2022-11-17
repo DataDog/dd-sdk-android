@@ -29,7 +29,7 @@ internal class SessionReplayFeature(
         (RecordWriter, Configuration.Feature.SessionReplay) ->
         LifecycleCallback = { recordWriter, configuration ->
             SessionReplayLifecycleCallback(
-                SessionReplayRumContextProvider(),
+                SessionReplayRumContextProvider(sdkCore),
                 configuration.privacy,
                 recordWriter,
                 SessionReplayTimeProvider(coreFeature.contextProvider),

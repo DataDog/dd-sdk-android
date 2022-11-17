@@ -6,20 +6,21 @@
 
 package com.datadog.android.sessionreplay.internal
 
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.internal.domain.RumContext.Companion.NULL_UUID
+import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.sessionreplay.utils.RumContextProvider
 import com.datadog.android.sessionreplay.utils.SessionReplayRumContext
+import com.datadog.android.v2.api.SdkCore
 
-internal class SessionReplayRumContextProvider : RumContextProvider {
+internal class SessionReplayRumContextProvider(
+    private val sdkCore: SdkCore
+) : RumContextProvider {
     override fun getRumContext(): SessionReplayRumContext {
-        return GlobalRum.getRumContext().let {
-            SessionReplayRumContext(
-                applicationId = it.applicationId,
-                sessionId = it.sessionId,
-                viewId = it.viewId
-                    ?: NULL_UUID
-            )
-        }
+        val rumContext = sdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)
+        return SessionReplayRumContext(
+            applicationId = rumContext["application_id"] as? String ?: RumContext.NULL_UUID,
+            sessionId = rumContext["session_id"] as? String ?: RumContext.NULL_UUID,
+            viewId = rumContext["view_id"] as? String ?: RumContext.NULL_UUID
+        )
     }
 }

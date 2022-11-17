@@ -33,18 +33,18 @@ internal class WebViewRumEventConsumer(
     override fun consume(event: JsonObject) {
         // make sure we send a noop event to the RumSessionScope to refresh the session if needed
         GlobalRum.notifyIngestedWebViewEvent()
-        val rumContext = contextProvider.getRumContext()
         sdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
-                val mappedEvent = map(event, rumContext, datadogContext)
+                val rumContext = contextProvider.getRumContext(datadogContext)
+                val mappedEvent = map(event, datadogContext, rumContext)
                 dataWriter.write(eventBatchWriter, mappedEvent)
             }
     }
 
     private fun map(
         event: JsonObject,
-        rumContext: RumContext?,
-        datadogContext: DatadogContext
+        datadogContext: DatadogContext,
+        rumContext: RumContext?
     ): JsonObject {
         try {
             val timeOffset = event.get(VIEW_KEY_NAME)?.asJsonObject?.get(VIEW_ID_KEY_NAME)

@@ -157,7 +157,7 @@ internal class WebViewLogEventConsumerTest {
         @Forgery fakeRumContext: RumContext
     ) {
         // Given
-        whenever(mockRumContextProvider.getRumContext()).thenReturn(fakeRumContext)
+        whenever(mockRumContextProvider.getRumContext(fakeDatadogContext)) doReturn fakeRumContext
         val expectedDate = fakeTimeOffset +
             fakeWebLogEvent.get(WebViewLogEventConsumer.DATE_KEY_NAME).asLong
         var expectedTags = mobileSdkDdtags()

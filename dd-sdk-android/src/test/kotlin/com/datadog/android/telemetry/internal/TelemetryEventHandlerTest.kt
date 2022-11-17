@@ -15,7 +15,6 @@ import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
@@ -30,7 +29,6 @@ import com.datadog.android.telemetry.assertj.TelemetryErrorEventAssert.Companion
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
@@ -109,6 +107,9 @@ internal class TelemetryEventHandlerTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
+    @Forgery
+    lateinit var fakeRumContext: RumContext
+
     private var fakeServerOffset: Long = 0L
 
     @BeforeEach
@@ -118,7 +119,18 @@ internal class TelemetryEventHandlerTest {
         whenever(mockTimeProvider.getServerOffsetMillis()) doReturn fakeServerOffset
 
         fakeDatadogContext = fakeDatadogContext.copy(
-            source = "android"
+            source = "android",
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    RumFeature.RUM_FEATURE_NAME,
+                    mapOf(
+                        "application_id" to fakeRumContext.applicationId,
+                        "session_id" to fakeRumContext.sessionId,
+                        "view_id" to fakeRumContext.viewId,
+                        "action_id" to fakeRumContext.actionId
+                    )
+                )
+            }
         )
 
         whenever(mockSampler.sample()) doReturn true
@@ -152,7 +164,31 @@ internal class TelemetryEventHandlerTest {
         // Given
         val debugRawEvent = forge.createRumRawTelemetryDebugEvent()
 
-        val rumContext = GlobalRum.getRumContext()
+        // When
+        testedTelemetryHandler.handleEvent(debugRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryDebugEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertDebugEventMatchesRawEvent(lastValue, debugRawEvent, fakeRumContext)
+        }
+    }
+
+    @Test
+    fun `𝕄 create debug event 𝕎 handleEvent(SendTelemetry) { debug event status, no RUM }`(forge: Forge) {
+        // Given
+        val debugRawEvent = forge.createRumRawTelemetryDebugEvent()
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                remove(RumFeature.RUM_FEATURE_NAME)
+            }
+        )
+        val noRumContext = RumContext(
+            applicationId = RumContext.NULL_UUID,
+            sessionId = RumContext.NULL_UUID,
+            viewId = null,
+            actionId = null
+        )
 
         // When
         testedTelemetryHandler.handleEvent(debugRawEvent, mockWriter)
@@ -160,7 +196,7 @@ internal class TelemetryEventHandlerTest {
         // Then
         argumentCaptor<TelemetryDebugEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertDebugEventMatchesRawEvent(lastValue, debugRawEvent, rumContext)
+            assertDebugEventMatchesRawEvent(lastValue, debugRawEvent, noRumContext)
         }
     }
 
@@ -173,7 +209,31 @@ internal class TelemetryEventHandlerTest {
         // Given
         val errorRawEvent = forge.createRumRawTelemetryErrorEvent()
 
-        val rumContext = GlobalRum.getRumContext()
+        // When
+        testedTelemetryHandler.handleEvent(errorRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryErrorEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertErrorEventMatchesRawEvent(lastValue, errorRawEvent, fakeRumContext)
+        }
+    }
+
+    @Test
+    fun `𝕄 create error event 𝕎 handleEvent(SendTelemetry) { error event status, no RUM }`(forge: Forge) {
+        // Given
+        val errorRawEvent = forge.createRumRawTelemetryErrorEvent()
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                remove(RumFeature.RUM_FEATURE_NAME)
+            }
+        )
+        val noRumContext = RumContext(
+            applicationId = RumContext.NULL_UUID,
+            sessionId = RumContext.NULL_UUID,
+            viewId = null,
+            actionId = null
+        )
 
         // When
         testedTelemetryHandler.handleEvent(errorRawEvent, mockWriter)
@@ -181,7 +241,7 @@ internal class TelemetryEventHandlerTest {
         // Then
         argumentCaptor<TelemetryErrorEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertErrorEventMatchesRawEvent(lastValue, errorRawEvent, rumContext)
+            assertErrorEventMatchesRawEvent(lastValue, errorRawEvent, noRumContext)
         }
     }
 
@@ -193,7 +253,6 @@ internal class TelemetryEventHandlerTest {
     fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration }`(forge: Forge) {
         // Given
         val configRawEvent = forge.createRumRawTelemetryConfigurationEvent()
-        val rumContext = GlobalRum.getRumContext()
 
         // When
         testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
@@ -201,7 +260,33 @@ internal class TelemetryEventHandlerTest {
         // Then
         argumentCaptor<TelemetryConfigurationEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, rumContext)
+            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
+        }
+    }
+
+    @Test
+    fun `𝕄 create config event 𝕎 handleEvent(SendTelemetry) { configuration, no RUM }`(forge: Forge) {
+        // Given
+        val configRawEvent = forge.createRumRawTelemetryConfigurationEvent()
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                remove(RumFeature.RUM_FEATURE_NAME)
+            }
+        )
+        val noRumContext = RumContext(
+            applicationId = RumContext.NULL_UUID,
+            sessionId = RumContext.NULL_UUID,
+            viewId = null,
+            actionId = null
+        )
+
+        // When
+        testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<TelemetryConfigurationEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, noRumContext)
         }
     }
 
@@ -224,15 +309,13 @@ internal class TelemetryEventHandlerTest {
             .build()
         val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)
 
-        val rumContext = GlobalRum.getRumContext()
-
         // When
         testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
 
         // Then
         argumentCaptor<TelemetryConfigurationEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, rumContext)
+            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
             assertThat(firstValue)
                 .hasSessionSampleRate(sessionSampleRate)
                 .hasTelemetrySampleRate(telemetrySamplingRate)
@@ -258,15 +341,13 @@ internal class TelemetryEventHandlerTest {
         }.build()
         val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)
 
-        val rumContext = GlobalRum.getRumContext()
-
         // When
         testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
 
         // Then
         argumentCaptor<TelemetryConfigurationEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, rumContext)
+            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
             assertThat(firstValue)
                 .hasUseProxy(useProxy)
         }
@@ -291,15 +372,13 @@ internal class TelemetryEventHandlerTest {
         }.build()
         val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)
 
-        val rumContext = GlobalRum.getRumContext()
-
         // When
         testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
 
         // Then
         argumentCaptor<TelemetryConfigurationEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, rumContext)
+            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
             assertThat(firstValue)
                 .hasUseLocalEncryption(useLocalEncryption)
         }
@@ -328,7 +407,6 @@ internal class TelemetryEventHandlerTest {
             .trackLongTasks(if (trackLongTasks) forge.aPositiveLong() else forge.aNegativeLong())
             .build()
         val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)
-        val rumContext = GlobalRum.getRumContext()
 
         // When
         testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
@@ -336,7 +414,7 @@ internal class TelemetryEventHandlerTest {
         // Then
         argumentCaptor<TelemetryConfigurationEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, rumContext)
+            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
             assertThat(firstValue)
                 .hasTrackErrors(trackErrors)
                 .hasTrackLongTasks(trackLongTasks)
@@ -366,7 +444,6 @@ internal class TelemetryEventHandlerTest {
             .setVitalsUpdateFrequency(vitalsUpdateFrequency)
             .build()
         val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)
-        val rumContext = GlobalRum.getRumContext()
 
         // When
         testedTelemetryHandler.handleEvent(configRawEvent, mockWriter)
@@ -374,7 +451,7 @@ internal class TelemetryEventHandlerTest {
         // Then
         argumentCaptor<TelemetryConfigurationEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, rumContext)
+            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
             assertThat(firstValue)
                 .hasBatchSize(batchSize.windowDurationMs)
                 .hasBatchUploadFrequency(uploadFrequency.baseStepMs)
@@ -396,7 +473,6 @@ internal class TelemetryEventHandlerTest {
             sessionReplayEnabled = true
         ).build()
         val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)
-        val rumContext = GlobalRum.getRumContext()
         if (useTracing) {
             GlobalTracer.registerIfAbsent(mock<Tracer>())
         }
@@ -407,7 +483,7 @@ internal class TelemetryEventHandlerTest {
         // Then
         argumentCaptor<TelemetryConfigurationEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, rumContext)
+            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
             assertThat(firstValue)
                 .hasUseTracing(useTracing)
         }
@@ -427,7 +503,6 @@ internal class TelemetryEventHandlerTest {
             sessionReplayEnabled = true
         ).build()
         val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)
-        val rumContext = GlobalRum.getRumContext()
 
         // When
         if (trackNetworkRequests) {
@@ -441,7 +516,7 @@ internal class TelemetryEventHandlerTest {
         // Then
         argumentCaptor<TelemetryConfigurationEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
-            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, rumContext)
+            assertConfigEventMatchesRawEvent(firstValue, configRawEvent, fakeRumContext)
             assertThat(firstValue)
                 .hasTrackNetworkRequests(trackNetworkRequests)
         }
@@ -469,7 +544,6 @@ internal class TelemetryEventHandlerTest {
         // Given
         val rawEvent = forge.createRumRawTelemetryEvent()
         val anotherEvent = rawEvent.copy()
-        val rumContext = GlobalRum.getRumContext()
 
         // When
         testedTelemetryHandler.handleEvent(rawEvent, mockWriter)
@@ -493,13 +567,13 @@ internal class TelemetryEventHandlerTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             when (val capturedValue = lastValue) {
                 is TelemetryDebugEvent -> {
-                    assertDebugEventMatchesRawEvent(capturedValue, rawEvent, rumContext)
+                    assertDebugEventMatchesRawEvent(capturedValue, rawEvent, fakeRumContext)
                 }
                 is TelemetryErrorEvent -> {
-                    assertErrorEventMatchesRawEvent(capturedValue, rawEvent, rumContext)
+                    assertErrorEventMatchesRawEvent(capturedValue, rawEvent, fakeRumContext)
                 }
                 is TelemetryConfigurationEvent -> {
-                    assertConfigEventMatchesRawEvent(capturedValue, rawEvent, rumContext)
+                    assertConfigEventMatchesRawEvent(capturedValue, rawEvent, fakeRumContext)
                 }
                 else -> throw IllegalArgumentException(
                     "Unexpected type=${lastValue::class.jvmName} of the captured value."
@@ -520,8 +594,6 @@ internal class TelemetryEventHandlerTest {
         val extraNumber = events.size - MAX_EVENTS_PER_SESSION_TEST
 
         val expectedInvocations = MAX_EVENTS_PER_SESSION_TEST
-
-        val rumContext = GlobalRum.getRumContext()
 
         // When
         events.forEach {
@@ -544,21 +616,21 @@ internal class TelemetryEventHandlerTest {
                         assertDebugEventMatchesRawEvent(
                             capturedValue,
                             events[it.index],
-                            rumContext
+                            fakeRumContext
                         )
                     }
                     is TelemetryErrorEvent -> {
                         assertErrorEventMatchesRawEvent(
                             capturedValue,
                             events[it.index],
-                            rumContext
+                            fakeRumContext
                         )
                     }
                     is TelemetryConfigurationEvent -> {
                         assertConfigEventMatchesRawEvent(
                             capturedValue,
                             events[it.index],
-                            rumContext
+                            fakeRumContext
                         )
                     }
                     else -> throw IllegalArgumentException(
@@ -589,8 +661,6 @@ internal class TelemetryEventHandlerTest {
             .take(MAX_EVENTS_PER_SESSION_TEST) + eventsInNewSession
         val expectedInvocations = expectedEvents.size
 
-        val rumContext = GlobalRum.getRumContext()
-
         // When
         eventsInOldSession.forEach {
             testedTelemetryHandler.handleEvent(it, mockWriter)
@@ -616,21 +686,21 @@ internal class TelemetryEventHandlerTest {
                         assertDebugEventMatchesRawEvent(
                             capturedValue,
                             expectedEvents[it.index],
-                            rumContext
+                            fakeRumContext
                         )
                     }
                     is TelemetryErrorEvent -> {
                         assertErrorEventMatchesRawEvent(
                             capturedValue,
                             expectedEvents[it.index],
-                            rumContext
+                            fakeRumContext
                         )
                     }
                     is TelemetryConfigurationEvent -> {
                         assertConfigEventMatchesRawEvent(
                             capturedValue,
                             expectedEvents[it.index],
-                            rumContext
+                            fakeRumContext
                         )
                     }
                     else -> throw IllegalArgumentException(
@@ -803,13 +873,12 @@ internal class TelemetryEventHandlerTest {
 
         private const val MAX_EVENTS_PER_SESSION_TEST = 10
 
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
         val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor, logger)
+            return listOf(logger)
         }
     }
 }

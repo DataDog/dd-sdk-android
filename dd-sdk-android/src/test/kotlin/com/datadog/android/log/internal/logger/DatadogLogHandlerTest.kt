@@ -6,24 +6,17 @@
 
 package com.datadog.android.log.internal.logger
 
-import android.content.Context
-import android.view.Choreographer
-import com.datadog.android.Datadog
-import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.tracing.AndroidTracer
-import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.asLogStatus
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
@@ -42,7 +35,6 @@ import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -94,6 +86,9 @@ internal class DatadogLogHandlerTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
+    @Forgery
+    lateinit var fakeRumContext: RumContext
+
     @Mock
     lateinit var mockSdkCore: SdkCore
 
@@ -111,16 +106,6 @@ internal class DatadogLogHandlerTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        // To avoid java.lang.NoClassDefFoundError: android/hardware/display/DisplayManagerGlobal.
-        // This class is only available in a real android JVM at runtime and not in a JUnit env.
-        Choreographer::class.java.setStaticValue(
-            "sThreadInstance",
-            object : ThreadLocal<Choreographer>() {
-                override fun initialValue(): Choreographer {
-                    return mock()
-                }
-            }
-        )
         fakeServiceName = forge.anAlphabeticalString()
         fakeLoggerName = forge.anAlphabeticalString()
         fakeMessage = forge.anAlphabeticalString()
@@ -130,7 +115,10 @@ internal class DatadogLogHandlerTest {
         fakeDatadogContext = fakeDatadogContext.copy(
             time = fakeDatadogContext.time.copy(
                 serverTimeOffsetMs = 0L
-            )
+            ),
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(RumFeature.RUM_FEATURE_NAME, fakeRumContext.toMap())
+            }
         )
 
         whenever(
@@ -170,7 +158,7 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-        argumentCaptor<LogEvent>().apply {
+        argumentCaptor<LogEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(lastValue)
@@ -184,10 +172,10 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
                     )
                 )
                 .hasExactlyTags(
@@ -242,7 +230,7 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-        argumentCaptor<LogEvent>().apply {
+        argumentCaptor<LogEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(lastValue)
@@ -256,10 +244,10 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
                     )
                 )
                 .hasExactlyTags(
@@ -351,7 +339,7 @@ internal class DatadogLogHandlerTest {
             customTimestamp
         )
 
-        argumentCaptor<LogEvent>().apply {
+        argumentCaptor<LogEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(lastValue)
@@ -365,10 +353,10 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
                     )
                 )
                 .hasExactlyTags(
@@ -403,7 +391,7 @@ internal class DatadogLogHandlerTest {
         thread.start()
         countDownLatch.await(1, TimeUnit.SECONDS)
 
-        argumentCaptor<LogEvent>().apply {
+        argumentCaptor<LogEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(lastValue)
@@ -417,10 +405,10 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
                     )
                 )
                 .hasExactlyTags(
@@ -453,7 +441,7 @@ internal class DatadogLogHandlerTest {
             fakeTags
         )
 
-        argumentCaptor<LogEvent>().apply {
+        argumentCaptor<LogEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(lastValue)
@@ -467,10 +455,10 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
                     )
                 )
                 .hasExactlyTags(
@@ -485,8 +473,13 @@ internal class DatadogLogHandlerTest {
 
     @Test
     fun `forward minimal log to LogWriter`() {
+        // Given
         val now = System.currentTimeMillis()
-        GlobalRum.isRegistered.set(false)
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                remove(RumFeature.RUM_FEATURE_NAME)
+            }
+        )
         testedHandler = DatadogLogHandler(
             loggerName = fakeLoggerName,
             logGenerator = DatadogLogGenerator(
@@ -496,6 +489,8 @@ internal class DatadogLogHandlerTest {
             writer = mockWriter,
             attachNetworkInfo = false
         )
+
+        // When
         testedHandler.handleLog(
             fakeLevel,
             fakeMessage,
@@ -504,7 +499,8 @@ internal class DatadogLogHandlerTest {
             emptySet()
         )
 
-        argumentCaptor<LogEvent>().apply {
+        // Then
+        argumentCaptor<LogEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(lastValue)
@@ -534,23 +530,6 @@ internal class DatadogLogHandlerTest {
         forge: Forge
     ) {
         // Given
-        Datadog.initialize(
-            appContext.mockInstance,
-            Credentials(
-                forge.anAlphabeticalString(),
-                forge.anAlphabeticalString(),
-                Credentials.NO_VARIANT,
-                null
-            ),
-            Configuration.Builder(
-                logsEnabled = true,
-                tracesEnabled = true,
-                crashReportsEnabled = true,
-                rumEnabled = true,
-                sessionReplayEnabled = true
-            ).build(),
-            TrackingConsent.GRANTED
-        )
         val tracer = AndroidTracer.Builder().setServiceName(fakeServiceName).build()
         val span = tracer.buildSpan(forge.anAlphabeticalString()).start()
         tracer.activateSpan(span)
@@ -566,14 +545,13 @@ internal class DatadogLogHandlerTest {
         )
 
         // Then
-        argumentCaptor<LogEvent>().apply {
+        argumentCaptor<LogEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(lastValue.additionalProperties)
                 .containsEntry(LogAttributes.DD_TRACE_ID, tracer.traceId)
                 .containsEntry(LogAttributes.DD_SPAN_ID, tracer.spanId)
         }
-        Datadog.stop()
     }
 
     @Test
@@ -588,7 +566,7 @@ internal class DatadogLogHandlerTest {
         )
 
         // Then
-        argumentCaptor<LogEvent>().apply {
+        argumentCaptor<LogEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(lastValue.additionalProperties)
@@ -598,26 +576,7 @@ internal class DatadogLogHandlerTest {
     }
 
     @Test
-    fun `it will add the Rum context`(forge: Forge) {
-        // Given
-        Datadog.initialize(
-            appContext.mockInstance,
-            Credentials(
-                forge.anAlphabeticalString(),
-                forge.anAlphabeticalString(),
-                Credentials.NO_VARIANT,
-                null
-            ),
-            Configuration.Builder(
-                logsEnabled = true,
-                tracesEnabled = true,
-                crashReportsEnabled = true,
-                rumEnabled = true,
-                sessionReplayEnabled = true
-            ).build(),
-            TrackingConsent.GRANTED
-        )
-
+    fun `it will add the Rum context`() {
         // When
         testedHandler.handleLog(
             fakeLevel,
@@ -628,19 +587,18 @@ internal class DatadogLogHandlerTest {
         )
 
         // Then
-        argumentCaptor<LogEvent>().apply {
+        argumentCaptor<LogEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(lastValue.additionalProperties)
                 .containsEntry(
                     LogAttributes.RUM_APPLICATION_ID,
-                    rumMonitor.context.applicationId
+                    fakeRumContext.applicationId
                 )
-                .containsEntry(LogAttributes.RUM_SESSION_ID, rumMonitor.context.sessionId)
-                .containsEntry(LogAttributes.RUM_VIEW_ID, rumMonitor.context.viewId)
-                .containsEntry(LogAttributes.RUM_ACTION_ID, rumMonitor.context.actionId)
+                .containsEntry(LogAttributes.RUM_SESSION_ID, fakeRumContext.sessionId)
+                .containsEntry(LogAttributes.RUM_VIEW_ID, fakeRumContext.viewId)
+                .containsEntry(LogAttributes.RUM_ACTION_ID, fakeRumContext.actionId)
         }
-        Datadog.stop()
     }
 
     @Test
@@ -666,7 +624,7 @@ internal class DatadogLogHandlerTest {
         )
 
         // Then
-        argumentCaptor<LogEvent>().apply {
+        argumentCaptor<LogEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(lastValue.additionalProperties)
@@ -731,7 +689,7 @@ internal class DatadogLogHandlerTest {
         )
 
         // Then
-        argumentCaptor<LogEvent>().apply {
+        argumentCaptor<LogEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(lastValue)
@@ -744,10 +702,10 @@ internal class DatadogLogHandlerTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
                     )
                 )
                 .hasExactlyTags(
@@ -761,14 +719,12 @@ internal class DatadogLogHandlerTest {
     }
 
     companion object {
-        val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val mainLooper = MainLooperTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, rumMonitor, mainLooper)
+            return listOf(rumMonitor)
         }
     }
 }

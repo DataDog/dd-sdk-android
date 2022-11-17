@@ -6,13 +6,14 @@
 
 package com.datadog.android.sessionreplay.internal
 
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.android.v2.api.SdkCore
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -27,8 +29,7 @@ import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -36,29 +37,36 @@ internal class SessionReplayRumContextProviderTest {
 
     lateinit var testedSessionReplayContextProvider: SessionReplayRumContextProvider
 
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
     @BeforeEach
     fun `set up`() {
-        testedSessionReplayContextProvider = SessionReplayRumContextProvider()
+        testedSessionReplayContextProvider = SessionReplayRumContextProvider(mockSdkCore)
     }
 
     @Test
-    fun `M provide a valid Rum context W getRumContext()`() {
+    fun `M provide a valid Rum context W getRumContext()`(
+        @Forgery fakeRumContext: RumContext,
+        forgery: Forge
+    ) {
         // When
-        rumMonitor.context = rumMonitor.context.copy(viewId = UUID.randomUUID().toString())
-        GlobalRum.updateRumContext(rumMonitor.context)
+        val fakeViewId = forgery.getForgery<UUID>().toString()
+        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn mapOf(
+            "application_id" to fakeRumContext.applicationId,
+            "session_id" to fakeRumContext.sessionId,
+            "view_id" to fakeViewId
+        )
         val context = testedSessionReplayContextProvider.getRumContext()
 
         // Then
-        assertThat(context.applicationId).isEqualTo(rumMonitor.context.applicationId)
-        assertThat(context.sessionId).isEqualTo(rumMonitor.context.sessionId)
-        assertThat(context.viewId).isEqualTo(rumMonitor.context.viewId)
+        assertThat(context.applicationId).isEqualTo(fakeRumContext.applicationId)
+        assertThat(context.sessionId).isEqualTo(fakeRumContext.sessionId)
+        assertThat(context.viewId).isEqualTo(fakeViewId)
     }
 
     @Test
     fun `M provide an invalid Rum context W getRumContext() { RUM not initialized }`() {
-        // Given
-        GlobalRum.updateRumContext(RumContext())
-
         // When
         val context = testedSessionReplayContextProvider.getRumContext()
 
@@ -66,16 +74,5 @@ internal class SessionReplayRumContextProviderTest {
         assertThat(context.applicationId).isEqualTo(RumContext.NULL_UUID)
         assertThat(context.sessionId).isEqualTo(RumContext.NULL_UUID)
         assertThat(context.viewId).isEqualTo(RumContext.NULL_UUID)
-    }
-
-    companion object {
-
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
-        }
     }
 }

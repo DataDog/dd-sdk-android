@@ -26,6 +26,7 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -72,12 +73,15 @@ internal class RumFeatureTest {
     @Mock
     lateinit var mockChoreographer: Choreographer
 
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
     @BeforeEach
     fun `set up RUM`() {
         doNothing().whenever(mockChoreographer).postFrameCallback(any())
         mockChoreographerInstance(mockChoreographer)
 
-        testedFeature = RumFeature(coreFeature.mockInstance)
+        testedFeature = RumFeature(mockSdkCore, coreFeature.mockInstance)
     }
 
     @Test

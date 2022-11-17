@@ -8,7 +8,6 @@ package com.datadog.android.utils.config
 
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import fr.xgouchet.elmyr.Forge
@@ -16,20 +15,15 @@ import fr.xgouchet.elmyr.Forge
 internal class GlobalRumMonitorTestConfiguration :
     MockTestConfiguration<AdvancedRumMonitor>(AdvancedRumMonitor::class.java) {
 
-    lateinit var context: RumContext
-
     override fun setUp(forge: Forge) {
         super.setUp(forge)
         GlobalRum.monitor = mockInstance
         GlobalRum.isRegistered.set(true)
-        context = forge.getForgery()
-        GlobalRum.updateRumContext(context)
     }
 
     override fun tearDown(forge: Forge) {
         GlobalRum.monitor = NoOpRumMonitor()
         GlobalRum.isRegistered.set(false)
-        GlobalRum.updateRumContext(RumContext())
         GlobalRum.globalAttributes.clear()
         super.tearDown(forge)
     }

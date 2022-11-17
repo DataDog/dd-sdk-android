@@ -17,8 +17,11 @@ import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
+import com.datadog.android.plugin.DatadogContext
+import com.datadog.android.plugin.DatadogRumContext
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -36,6 +39,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
@@ -179,7 +183,7 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `𝕄 set feature context 𝕎 setFeatureContext() is called`(
+    fun `𝕄 update feature context 𝕎 updateFeatureContext()`(
         @StringForgery feature: String,
         @MapForgery(
             key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
@@ -188,17 +192,20 @@ internal class DatadogCoreTest {
     ) {
         // Given
         val mockContextProvider = mock<ContextProvider>()
+        testedCore.features[feature] = mock()
         testedCore.coreFeature.contextProvider = mockContextProvider
 
         // When
-        testedCore.setFeatureContext(feature, context)
+        testedCore.updateFeatureContext(feature) {
+            it.putAll(context)
+        }
 
         // Then
         verify(mockContextProvider).setFeatureContext(feature, context)
     }
 
     @Test
-    fun `𝕄 update feature context 𝕎 updateFeatureContext() is called`(
+    fun `𝕄 do nothing 𝕎 updateFeatureContext() { feature is not registered}`(
         @StringForgery feature: String,
         @MapForgery(
             key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
@@ -210,10 +217,56 @@ internal class DatadogCoreTest {
         testedCore.coreFeature.contextProvider = mockContextProvider
 
         // When
-        testedCore.updateFeatureContext(feature, context)
+        testedCore.updateFeatureContext(feature) {
+            it.putAll(context)
+        }
 
         // Then
-        verify(mockContextProvider).updateFeatureContext(feature, context)
+        verifyZeroInteractions(mockContextProvider)
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `𝕄 update plugin RUM context 𝕎 updateFeatureContext()`(
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
+        ) context: Map<String, String>,
+        @Forgery fakeRumContext: RumContext,
+        forge: Forge
+    ) {
+        // Given
+        val mockContextProvider = mock<ContextProvider>()
+
+        forge.aList {
+            forge.anAlphabeticalString() to mock<SdkFeature>().apply {
+                whenever(getPlugins()) doReturn forge.aList { mock() }
+            }
+        }.forEach {
+            testedCore.features[it.first] = it.second
+        }
+
+        testedCore.coreFeature.contextProvider = mockContextProvider
+
+        // When
+        testedCore.updateFeatureContext(RumFeature.RUM_FEATURE_NAME) {
+            it.putAll(context)
+            it.putAll(fakeRumContext.toMap())
+        }
+
+        // Then
+        val plugins = testedCore.features.values.flatMap { it.getPlugins() }.toSet()
+        plugins.forEach {
+            verify(it).onContextChanged(
+                DatadogContext(
+                    DatadogRumContext(
+                        applicationId = fakeRumContext.applicationId,
+                        sessionId = fakeRumContext.sessionId,
+                        viewId = fakeRumContext.viewId
+                    )
+                )
+            )
+        }
     }
 
     @Test

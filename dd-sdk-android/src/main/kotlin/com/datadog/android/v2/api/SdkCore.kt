@@ -102,21 +102,27 @@ interface SdkCore {
      */
     fun flushStoredData()
 
-    /**
-     * Sets the context for the particular feature.
-     *
-     * @param featureName Feature name.
-     * @param context Context to set.
-     */
-    fun setFeatureContext(featureName: String, context: Map<String, Any?>)
-
+    // TODO RUMM-0000 Should feature context methods be moved into the FeatureScope maybe?
     /**
      * Updates the context if exists with the new entries. If there is no context yet for the
      * provided [featureName], a new one will be created.
      *
-     * @param entries Entries to add to the existing or new context.
+     * @param featureName Feature name.
+     * @param updateCallback Provides current feature context for the update. If there is no feature
+     * with the given name registered, callback won't be called.
      */
-    fun updateFeatureContext(featureName: String, entries: Map<String, Any?>)
+    fun updateFeatureContext(
+        featureName: String,
+        updateCallback: (context: MutableMap<String, Any?>) -> Unit
+    )
+
+    /**
+     * Retrieves the context for the particular feature.
+     *
+     * @param featureName Feature name.
+     * @return Context for the given feature or empty map if feature is not registered.
+     */
+    fun getFeatureContext(featureName: String): Map<String, Any?>
 
     /**
      * Sets event receiver for the given feature.

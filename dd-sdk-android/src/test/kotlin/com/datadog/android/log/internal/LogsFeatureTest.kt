@@ -6,7 +6,6 @@
 
 package com.datadog.android.log.internal
 
-import android.app.Application
 import android.util.Log
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.model.NetworkInfo
@@ -15,8 +14,8 @@ import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
@@ -103,6 +102,9 @@ internal class LogsFeatureTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
+    @Forgery
+    lateinit var fakeRumContext: RumContext
+
     @StringForgery(StringForgeryType.HEXADECIMAL)
     lateinit var fakeSpanId: String
 
@@ -135,7 +137,10 @@ internal class LogsFeatureTest {
         fakeDatadogContext = fakeDatadogContext.copy(
             time = fakeDatadogContext.time.copy(
                 serverTimeOffsetMs = fakeServerTimeOffset
-            )
+            ),
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(RumFeature.RUM_FEATURE_NAME, fakeRumContext.toMap())
+            }
         )
 
         GlobalTracer.registerIfAbsent(mockTracer)
@@ -337,10 +342,10 @@ internal class LogsFeatureTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasExactlyAttributes(
                     mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId,
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId,
                         LogAttributes.DD_TRACE_ID to fakeTraceId,
                         LogAttributes.DD_SPAN_ID to fakeSpanId
                     )
@@ -395,10 +400,10 @@ internal class LogsFeatureTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId,
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId,
                         LogAttributes.DD_TRACE_ID to fakeTraceId,
                         LogAttributes.DD_SPAN_ID to fakeSpanId
                     )
@@ -462,10 +467,10 @@ internal class LogsFeatureTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId,
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId,
                         LogAttributes.DD_TRACE_ID to fakeTraceId,
                         LogAttributes.DD_SPAN_ID to fakeSpanId
                     )
@@ -522,10 +527,10 @@ internal class LogsFeatureTest {
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
                     )
                 )
                 .hasExactlyTags(
@@ -635,10 +640,10 @@ internal class LogsFeatureTest {
                 .hasNetworkInfo(fakeNetworkInfo)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId,
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId,
                         LogAttributes.DD_TRACE_ID to fakeTraceId,
                         LogAttributes.DD_SPAN_ID to fakeSpanId
                     )
@@ -695,10 +700,10 @@ internal class LogsFeatureTest {
                 .hasNetworkInfo(fakeDatadogContext.networkInfo)
                 .hasExactlyAttributes(
                     fakeAttributes + mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId,
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId,
                         LogAttributes.DD_TRACE_ID to fakeTraceId,
                         LogAttributes.DD_SPAN_ID to fakeSpanId
                     )
@@ -759,10 +764,10 @@ internal class LogsFeatureTest {
                 .hasUserInfo(fakeDatadogContext.userInfo)
                 .hasExactlyAttributes(
                     mapOf(
-                        LogAttributes.RUM_APPLICATION_ID to rumMonitor.context.applicationId,
-                        LogAttributes.RUM_SESSION_ID to rumMonitor.context.sessionId,
-                        LogAttributes.RUM_VIEW_ID to rumMonitor.context.viewId,
-                        LogAttributes.RUM_ACTION_ID to rumMonitor.context.actionId,
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId,
                         LogAttributes.DD_TRACE_ID to fakeTraceId,
                         LogAttributes.DD_SPAN_ID to fakeSpanId
                     )
@@ -812,14 +817,12 @@ internal class LogsFeatureTest {
     }
 
     companion object {
-        val appContext = ApplicationContextTestConfiguration(Application::class.java)
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
         val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, logger, rumMonitor)
+            return listOf(logger)
         }
     }
 }

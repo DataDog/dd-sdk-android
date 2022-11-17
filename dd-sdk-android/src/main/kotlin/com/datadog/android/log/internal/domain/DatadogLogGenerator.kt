@@ -11,7 +11,7 @@ import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.utils.buildLogDateFormat
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.v2.api.context.DatadogContext
 import io.opentracing.util.GlobalTracer
 import java.util.Date
@@ -43,7 +43,8 @@ internal class DatadogLogGenerator(
         networkInfo: NetworkInfo?
     ): LogEvent {
         val resolvedTimestamp = timestamp + datadogContext.time.serverTimeOffsetMs
-        val combinedAttributes = resolveAttributes(attributes, bundleWithTraces, bundleWithRum)
+        val combinedAttributes =
+            resolveAttributes(datadogContext, attributes, bundleWithTraces, bundleWithRum)
         val formattedDate = synchronized(simpleDateFormat) {
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             simpleDateFormat.format(Date(resolvedTimestamp))
@@ -175,6 +176,7 @@ internal class DatadogLogGenerator(
     }
 
     private fun resolveAttributes(
+        datadogContext: DatadogContext,
         attributes: Map<String, Any?>,
         bundleWithTraces: Boolean,
         bundleWithRum: Boolean
@@ -188,12 +190,13 @@ internal class DatadogLogGenerator(
                 combinedAttributes[LogAttributes.DD_SPAN_ID] = activeContext.toSpanId()
             }
         }
-        if (bundleWithRum && GlobalRum.isRegistered()) {
-            val activeContext = GlobalRum.getRumContext()
-            combinedAttributes[LogAttributes.RUM_APPLICATION_ID] = activeContext.applicationId
-            combinedAttributes[LogAttributes.RUM_SESSION_ID] = activeContext.sessionId
-            combinedAttributes[LogAttributes.RUM_VIEW_ID] = activeContext.viewId
-            combinedAttributes[LogAttributes.RUM_ACTION_ID] = activeContext.actionId
+        if (bundleWithRum) {
+            datadogContext.featuresContext[RumFeature.RUM_FEATURE_NAME]?.let {
+                combinedAttributes[LogAttributes.RUM_APPLICATION_ID] = it["application_id"]
+                combinedAttributes[LogAttributes.RUM_SESSION_ID] = it["session_id"]
+                combinedAttributes[LogAttributes.RUM_VIEW_ID] = it["view_id"]
+                combinedAttributes[LogAttributes.RUM_ACTION_ID] = it["action_id"]
+            }
         }
         return combinedAttributes
     }

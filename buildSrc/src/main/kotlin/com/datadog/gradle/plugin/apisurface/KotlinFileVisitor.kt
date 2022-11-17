@@ -469,9 +469,11 @@ class KotlinFileVisitor {
         val functionType = firstChildNode("functionType")
 
         val receiver = functionType.firstChildNodeOrNull("receiverType")?.typeName()
-        val params = functionType.firstChildNode("functionTypeParameters")
-            .childrenNodes("type")
-            .joinToString(", ") { it.typeName() }
+        val functionTypeParamsNode = functionType.firstChildNode("functionTypeParameters")
+        val params =
+            (functionTypeParamsNode.firstChildNodeOrNull("parameter") ?: functionTypeParamsNode)
+                .childrenNodes("type")
+                .joinToString(", ") { it.typeName() }
         val returns = functionType.firstChildNode("type").typeName()
 
         return if (receiver == null) {

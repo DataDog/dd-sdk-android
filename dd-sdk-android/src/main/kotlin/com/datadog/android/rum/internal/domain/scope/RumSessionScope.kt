@@ -10,8 +10,8 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.v2.api.SdkCore
@@ -65,7 +65,9 @@ internal class RumSessionScope(
     )
 
     init {
-        GlobalRum.updateRumContext(getRumContext())
+        sdkCore.updateFeatureContext(RumFeature.RUM_FEATURE_NAME) {
+            it.putAll(getRumContext().toMap())
+        }
     }
 
     enum class State {

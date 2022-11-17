@@ -10,9 +10,8 @@
 -keepnames class com.datadog.android.Datadog {
     *;
 }
-# Required because we need access to GlobalRum.activeContext and GlobalRum.isRegistered by reflection
+# Required because we need access to GlobalRum.isRegistered by reflection
 -keepnames class com.datadog.android.rum.GlobalRum {
-    private java.util.concurrent.atomic.AtomicReference activeContext;
     private java.util.concurrent.atomic.AtomicBoolean isRegistered;
 }
 

@@ -44,6 +44,7 @@ import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
 import java.util.concurrent.ExecutorService
@@ -53,6 +54,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class RumFeature(
+    private val sdkCore: SdkCore,
     private val coreFeature: CoreFeature
 ) {
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
@@ -210,6 +212,7 @@ internal class RumFeature(
         periodInMs: Long
     ) {
         val readerRunnable = VitalReaderRunnable(
+            sdkCore,
             vitalReader,
             vitalObserver,
             vitalExecutorService,

@@ -18,5 +18,5 @@ internal interface ContextProvider {
 
     fun setFeatureContext(feature: String, context: Map<String, Any?>)
 
-    fun updateFeatureContext(feature: String, entries: Map<String, Any?>)
+    fun getFeatureContext(feature: String): Map<String, Any?>
 }

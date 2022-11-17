@@ -172,46 +172,6 @@ internal class DatadogContextProviderTest {
         assertThat(coreFeature.mockInstance.featuresContext[feature]).isEqualTo(context)
     }
 
-    @Test
-    fun `𝕄 update feature context 𝕎 updateFeatureContext() { no previous context }`(
-        @StringForgery feature: String,
-        @MapForgery(
-            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
-            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
-        ) entries: Map<String, String>
-    ) {
-        // Given
-
-        // When
-        testedProvider.updateFeatureContext(feature, entries)
-
-        // Then
-        assertThat(coreFeature.mockInstance.featuresContext[feature]).isEqualTo(entries)
-    }
-
-    @Test
-    fun `𝕄 update feature context 𝕎 updateFeatureContext() { with previous context }`(
-        @StringForgery feature: String,
-        @MapForgery(
-            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
-            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
-        ) previousContext: Map<String, String>,
-        @MapForgery(
-            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
-            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
-        ) entries: Map<String, String>
-    ) {
-        // Given
-        testedProvider.setFeatureContext(feature, previousContext)
-        val expectedContext = previousContext.toMutableMap().apply { putAll(entries) }
-
-        // When
-        testedProvider.updateFeatureContext(feature, entries)
-
-        // Then
-        assertThat(coreFeature.mockInstance.featuresContext[feature]).isEqualTo(expectedContext)
-    }
-
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)

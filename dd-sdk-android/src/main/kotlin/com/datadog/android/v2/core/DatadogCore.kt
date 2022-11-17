@@ -25,6 +25,8 @@ import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.plugin.DatadogContext
+import com.datadog.android.plugin.DatadogRumContext
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
@@ -183,14 +185,33 @@ internal class DatadogCore(
     }
 
     /** @inheritDoc */
-    override fun setFeatureContext(featureName: String, context: Map<String, Any?>) {
-        contextProvider?.setFeatureContext(featureName, context)
+    override fun updateFeatureContext(
+        featureName: String,
+        updateCallback: (context: MutableMap<String, Any?>) -> Unit
+    ) {
+        val feature = features[featureName] ?: return
+        contextProvider?.let {
+            // workaround for the backward compatibility with DatadogPlugin, we don't want to have
+            // context update in plugins in the synchronized block
+            val updatedContext = synchronized(feature) {
+                val featureContext = it.getFeatureContext(featureName)
+                val mutableContext = featureContext.toMutableMap()
+                updateCallback(mutableContext)
+                it.setFeatureContext(featureName, mutableContext)
+                mutableContext
+            }
+            if (featureName == RumFeature.RUM_FEATURE_NAME) {
+                updateContextInPlugins(updatedContext)
+            }
+        }
     }
 
-    override fun updateFeatureContext(featureName: String, entries: Map<String, Any?>) {
-        contextProvider?.updateFeatureContext(featureName, entries)
+    /** @inheritDoc */
+    override fun getFeatureContext(featureName: String): Map<String, Any?> {
+        return contextProvider?.getFeatureContext(featureName) ?: emptyMap()
     }
 
+    /** @inheritDoc */
     override fun setEventReceiver(featureName: String, receiver: FeatureEventReceiver) {
         val feature = features[featureName]
         if (feature == null) {
@@ -203,6 +224,7 @@ internal class DatadogCore(
         }
     }
 
+    /** @inheritDoc */
     override fun removeEventReceiver(featureName: String) {
         features[featureName]?.eventReceiver?.set(null)
     }
@@ -343,7 +365,7 @@ internal class DatadogCore(
             )
             features[RumFeature.RUM_FEATURE_NAME]?.let {
                 it.initialize(appContext, configuration.plugins)
-                rumFeature = RumFeature(coreFeature).also {
+                rumFeature = RumFeature(this, coreFeature).also {
                     it.initialize(appContext, configuration)
                 }
             }
@@ -486,6 +508,26 @@ internal class DatadogCore(
             TimeUnit.MILLISECONDS,
             runnable
         )
+    }
+
+    private fun updateContextInPlugins(rumContext: Map<String, Any?>) {
+        val applicationId = rumContext["application_id"] as? String
+        val sessionId = rumContext["session_id"] as? String
+        val viewId = rumContext["view_id"] as? String
+        val pluginContext = DatadogContext(
+            DatadogRumContext(
+                applicationId,
+                sessionId,
+                viewId
+            )
+        )
+        // toSet is needed because some features share the same plugins
+        features.values.flatMap {
+            @Suppress("DEPRECATION")
+            it.getPlugins()
+        }.toSet().forEach {
+            it.onContextChanged(pluginContext)
+        }
     }
 
     // endregion

@@ -8,28 +8,33 @@ package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.v2.api.context.DatadogContext
 
 internal class WebViewRumEventContextProvider {
 
     private var rumFeatureDisabled = false
 
-    fun getRumContext(): RumContext? {
+    @Suppress("ComplexCondition")
+    fun getRumContext(datadogContext: DatadogContext): RumContext? {
         if (rumFeatureDisabled) {
             return null
         }
-        val rumContext = GlobalRum.getRumContext()
-        return if (
-            rumContext.applicationId == RumContext.NULL_UUID ||
-            rumContext.sessionId == RumContext.NULL_UUID
+        val rumContext = datadogContext.featuresContext[RumFeature.RUM_FEATURE_NAME]
+        val rumApplicationId = rumContext?.get("application_id") as? String
+        val rumSessionId = rumContext?.get("session_id") as? String
+        return if (rumApplicationId == null ||
+            rumApplicationId == RumContext.NULL_UUID ||
+            rumSessionId == null ||
+            rumSessionId == RumContext.NULL_UUID
         ) {
             rumFeatureDisabled = true
             devLogger.w(RUM_NOT_INITIALIZED_WARNING_MESSAGE)
             sdkLogger.e(RUM_NOT_INITIALIZED_ERROR_MESSAGE)
             null
         } else {
-            rumContext
+            RumContext(applicationId = rumApplicationId, sessionId = rumSessionId)
         }
     }
 
