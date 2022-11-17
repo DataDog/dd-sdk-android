@@ -54,8 +54,14 @@ public data class Message(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Message {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): Message {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val destination = jsonObject.get("destination").asJsonArray.let { jsonArray ->
                     val collection = ArrayList<String>(jsonArray.size())
                     jsonArray.forEach {

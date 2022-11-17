@@ -26,8 +26,14 @@ public data class Jacket(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Jacket {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): Jacket {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val size = Size.fromJson(jsonObject.get("size").asString)
                 return Jacket(size)
             } catch (e: IllegalStateException) {

@@ -15,7 +15,7 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STRING
 import com.squareup.kotlinpoet.jvm.throws
 
-class ClassDeserializerGenerator(
+class ClassJsonElementDeserializerGenerator(
     packageName: String,
     knownTypes: MutableSet<KotlinTypeWrapper>
 ) : KotlinSpecGenerator<TypeDefinition.Class, FunSpec>(
@@ -27,17 +27,17 @@ class ClassDeserializerGenerator(
         val isConstantClass = definition.isConstantClass()
         val returnType = ClassName.bestGuess(definition.name)
 
-        val funBuilder = FunSpec.builder(Identifier.FUN_FROM_JSON)
+        val funBuilder = FunSpec.builder(Identifier.FUN_FROM_JSON_ELT)
             .addAnnotation(AnnotationSpec.builder(JvmStatic::class).build())
             .returns(returnType)
 
         if (!isConstantClass) {
             funBuilder.throws(ClassNameRef.JsonParseException)
-            funBuilder.addParameter(Identifier.PARAM_JSON_STR, STRING)
+            funBuilder.addParameter(Identifier.PARAM_JSON_OBJ, ClassNameRef.JsonObject)
             funBuilder.beginControlFlow("try")
         }
 
-        funBuilder.appendDeserializerFunctionBlock(definition, isConstantClass, rootTypeName)
+        funBuilder.appendDeserializerFunctionBlock(definition, rootTypeName)
 
         if (!isConstantClass) {
             caughtExceptions.forEach {
@@ -60,20 +60,12 @@ class ClassDeserializerGenerator(
 
     private fun FunSpec.Builder.appendDeserializerFunctionBlock(
         definition: TypeDefinition.Class,
-        isConstantClass: Boolean,
         rootTypeName: String
     ) {
         val nonConstantProperties = definition.properties.filter {
             it.type !is TypeDefinition.Constant
         }
-        if (!isConstantClass) {
-            addStatement(
-                "val %L = %T.parseString(%L).asJsonObject",
-                Identifier.PARAM_JSON_OBJ,
-                ClassNameRef.JsonParser,
-                Identifier.PARAM_JSON_STR
-            )
-        }
+
         nonConstantProperties.forEach { p ->
             appendDeserializedProperty(
                 propertyType = p.type,
@@ -202,10 +194,10 @@ class ClassDeserializerGenerator(
             )
             is TypeDefinition.OneOfClass,
             is TypeDefinition.Class -> addStatement(
-                "%L.add(%T.%L(it.toString()))",
+                "%L.add(%T.%L(it as JsonObject))",
                 Identifier.PARAM_COLLECTION,
                 arrayType.items.asKotlinTypeName(rootTypeName),
-                Identifier.FUN_FROM_JSON
+                Identifier.FUN_FROM_JSON_ELT
             )
             is TypeDefinition.Enum -> addStatement(
                 "%L.add(%T.%L(it.asString))",
@@ -251,7 +243,7 @@ class ClassDeserializerGenerator(
         rootTypeName: String
     ) {
         val opt = if (nullable) "?" else ""
-        beginControlFlow("$assignee = $getter$opt.toString()$opt.let")
+        beginControlFlow("$assignee = ($getter as$opt JsonObject)$opt.let")
         val codeBlockFormat = if (propertyType.isConstantClass()) {
             "%T.%L()"
         } else {
@@ -260,7 +252,7 @@ class ClassDeserializerGenerator(
         addStatement(
             codeBlockFormat,
             propertyType.asKotlinTypeName(rootTypeName),
-            Identifier.FUN_FROM_JSON
+            if (propertyType.isConstantClass()) Identifier.FUN_FROM_JSON else Identifier.FUN_FROM_JSON_ELT
         )
         endControlFlow()
     }
@@ -273,12 +265,12 @@ class ClassDeserializerGenerator(
         rootTypeName: String
     ) {
         val opt = if (nullable) "?" else ""
-        beginControlFlow("$assignee = $getter$opt.toString()$opt.let")
+        beginControlFlow("$assignee = ($getter as$opt JsonObject)$opt.let")
 
         addStatement(
             "%T.%L(it)",
             propertyType.asKotlinTypeName(rootTypeName),
-            Identifier.FUN_FROM_JSON
+            Identifier.FUN_FROM_JSON_ELT
         )
         endControlFlow()
     }

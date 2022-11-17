@@ -31,13 +31,19 @@ public data class Conflict(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Conflict {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): Conflict {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-                val type = jsonObject.get("type")?.toString()?.let {
-                    ConflictType.fromJson(it)
+                val type = (jsonObject.get("type") as? JsonObject)?.let {
+                    ConflictType.fromJsonElement(it)
                 }
-                val user = jsonObject.get("user")?.toString()?.let {
-                    User.fromJson(it)
+                val user = (jsonObject.get("user") as? JsonObject)?.let {
+                    User.fromJsonElement(it)
                 }
                 return Conflict(type, user)
             } catch (e: IllegalStateException) {
@@ -74,8 +80,14 @@ public data class Conflict(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): ConflictType {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonElement(jsonObject)
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonElement(jsonObject: JsonObject): ConflictType {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val id = jsonObject.get("id")?.asString
                     return ConflictType(id)
                 } catch (e: IllegalStateException) {
@@ -117,8 +129,14 @@ public data class Conflict(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): User {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonElement(jsonObject)
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonElement(jsonObject: JsonObject): User {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val name = jsonObject.get("name")?.asString
                     val type = jsonObject.get("type")?.asString?.let {
                         UserType.fromJson(it)

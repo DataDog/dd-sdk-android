@@ -26,8 +26,14 @@ public data class Style(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Style {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): Style {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val jsonColor = jsonObject.get("color")
                 val color = if (jsonColor is JsonNull || jsonColor == null) {
                     Color.fromJson(null)

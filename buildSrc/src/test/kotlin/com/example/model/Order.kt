@@ -30,8 +30,14 @@ public data class Order(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Order {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): Order {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val sizes = jsonObject.get("sizes").asJsonArray.let { jsonArray ->
                     val collection = HashSet<Size>(jsonArray.size())
                     jsonArray.forEach {

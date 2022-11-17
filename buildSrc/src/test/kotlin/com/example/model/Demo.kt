@@ -55,8 +55,14 @@ public data class Demo(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Demo {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): Demo {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val s = jsonObject.get("s").asString
                 val i = jsonObject.get("i").asLong
                 val n = jsonObject.get("n").asNumber

@@ -30,8 +30,14 @@ public data class Product(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Product {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): Product {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val productId = jsonObject.get("productId").asLong
                 val productName = jsonObject.get("productName").asString
                 val price = jsonObject.get("price").asNumber

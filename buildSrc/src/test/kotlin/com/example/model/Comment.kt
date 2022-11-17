@@ -42,17 +42,23 @@ public data class Comment(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Comment {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): Comment {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val message = jsonObject.get("message")?.asString
-                val ratings = jsonObject.get("ratings")?.toString()?.let {
-                    Ratings.fromJson(it)
+                val ratings = (jsonObject.get("ratings") as? JsonObject)?.let {
+                    Ratings.fromJsonElement(it)
                 }
-                val flags = jsonObject.get("flags")?.toString()?.let {
-                    Flags.fromJson(it)
+                val flags = (jsonObject.get("flags") as? JsonObject)?.let {
+                    Flags.fromJsonElement(it)
                 }
-                val tags = jsonObject.get("tags")?.toString()?.let {
-                    Tags.fromJson(it)
+                val tags = (jsonObject.get("tags") as? JsonObject)?.let {
+                    Tags.fromJsonElement(it)
                 }
                 return Comment(message, ratings, flags, tags)
             } catch (e: IllegalStateException) {
@@ -95,8 +101,14 @@ public data class Comment(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Ratings {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonElement(jsonObject)
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonElement(jsonObject: JsonObject): Ratings {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val global = jsonObject.get("global").asLong
                     val additionalProperties = mutableMapOf<String, Long>()
                     for (entry in jsonObject.entrySet()) {
@@ -140,8 +152,14 @@ public data class Comment(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Flags {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonElement(jsonObject)
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonElement(jsonObject: JsonObject): Flags {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val additionalProperties = mutableMapOf<String, Boolean>()
                     for (entry in jsonObject.entrySet()) {
                         additionalProperties[entry.key] = entry.value.asBoolean
@@ -182,8 +200,14 @@ public data class Comment(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Tags {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonElement(jsonObject)
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonElement(jsonObject: JsonObject): Tags {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val additionalProperties = mutableMapOf<String, String>()
                     for (entry in jsonObject.entrySet()) {
                         additionalProperties[entry.key] = entry.value.asString

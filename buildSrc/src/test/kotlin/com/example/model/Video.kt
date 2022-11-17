@@ -39,8 +39,14 @@ public data class Video(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Video {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): Video {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val title = jsonObject.get("title").asString
                 val tags = jsonObject.get("tags")?.asJsonArray?.let { jsonArray ->
                     val collection = HashSet<String>(jsonArray.size())

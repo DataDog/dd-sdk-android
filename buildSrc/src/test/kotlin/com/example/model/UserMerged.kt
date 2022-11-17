@@ -40,12 +40,18 @@ public data class UserMerged(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): UserMerged {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): UserMerged {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val email = jsonObject.get("email")?.asString
                 val phone = jsonObject.get("phone")?.asString
-                val info = jsonObject.get("info")?.toString()?.let {
-                    Info.fromJson(it)
+                val info = (jsonObject.get("info") as? JsonObject)?.let {
+                    Info.fromJsonElement(it)
                 }
                 val firstname = jsonObject.get("firstname")?.asString
                 val lastname = jsonObject.get("lastname").asString
@@ -88,8 +94,14 @@ public data class UserMerged(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Info {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonElement(jsonObject)
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonElement(jsonObject: JsonObject): Info {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val notes = jsonObject.get("notes")?.asString
                     val source = jsonObject.get("source")?.asString
                     return Info(notes, source)

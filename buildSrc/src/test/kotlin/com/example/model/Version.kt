@@ -36,8 +36,14 @@ public data class Version(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Version {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): Version {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val id = Id()
                 val date = jsonObject.get("date")?.toString()?.let {
                     Date()

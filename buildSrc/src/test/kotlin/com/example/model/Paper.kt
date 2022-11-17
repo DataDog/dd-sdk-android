@@ -31,8 +31,14 @@ public data class Paper(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Paper {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): Paper {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val title = jsonObject.get("title").asString
                 val author = jsonObject.get("author").asJsonArray.let { jsonArray ->
                     val collection = ArrayList<String>(jsonArray.size())

@@ -26,11 +26,17 @@ public data class Shipping(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Shipping {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): Shipping {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val item = jsonObject.get("item").asString
-                val destination = jsonObject.get("destination").toString().let {
-                    Address.fromJson(it)
+                val destination = (jsonObject.get("destination") as JsonObject).let {
+                    Address.fromJsonElement(it)
                 }
                 return Shipping(item, destination)
             } catch (e: IllegalStateException) {
@@ -69,8 +75,14 @@ public data class Shipping(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Address {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonElement(jsonObject)
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonElement(jsonObject: JsonObject): Address {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val streetAddress = jsonObject.get("street_address").asString
                     val city = jsonObject.get("city").asString
                     val state = jsonObject.get("state").asString

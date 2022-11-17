@@ -37,8 +37,14 @@ public sealed class Animal {
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Fish {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonElement(jsonObject)
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonElement(jsonObject: JsonObject): Fish {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val water = Water.fromJson(jsonObject.get("water").asString)
                     val size = jsonObject.get("size")?.asLong
                     return Fish(water, size)
@@ -77,8 +83,14 @@ public sealed class Animal {
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Bird {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonElement(jsonObject)
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonElement(jsonObject: JsonObject): Bird {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val food = Food.fromJson(jsonObject.get("food").asString)
                     val canFly = jsonObject.get("can_fly").asBoolean
                     return Bird(food, canFly)
@@ -106,15 +118,22 @@ public sealed class Animal {
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Animal {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): Animal {
             val errors = mutableListOf<Throwable>()
             val asFish = try {
-                Fish.fromJson(jsonString)
+                Fish.fromJsonElement(jsonObject)
             } catch (e: JsonParseException) {
                 errors.add(e)
                 null
             }
             val asBird = try {
-                Bird.fromJson(jsonString)
+                Bird.fromJsonElement(jsonObject)
             } catch (e: JsonParseException) {
                 errors.add(e)
                 null

@@ -34,14 +34,20 @@ public data class Customer(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Customer {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): Customer {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val name = jsonObject.get("name")?.asString
-                val billingAddress = jsonObject.get("billing_address")?.toString()?.let {
-                    Address.fromJson(it)
+                val billingAddress = (jsonObject.get("billing_address") as? JsonObject)?.let {
+                    Address.fromJsonElement(it)
                 }
-                val shippingAddress = jsonObject.get("shipping_address")?.toString()?.let {
-                    Address.fromJson(it)
+                val shippingAddress = (jsonObject.get("shipping_address") as? JsonObject)?.let {
+                    Address.fromJsonElement(it)
                 }
                 return Customer(name, billingAddress, shippingAddress)
             } catch (e: IllegalStateException) {
@@ -80,8 +86,14 @@ public data class Customer(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Address {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonElement(jsonObject)
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonElement(jsonObject: JsonObject): Address {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val streetAddress = jsonObject.get("street_address").asString
                     val city = jsonObject.get("city").asString
                     val state = jsonObject.get("state").asString

@@ -32,13 +32,19 @@ public data class Book(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Book {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): Book {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val bookId = jsonObject.get("bookId").asLong
                 val title = jsonObject.get("title").asString
                 val price = jsonObject.get("price").asNumber
-                val author = jsonObject.get("author").toString().let {
-                    Author.fromJson(it)
+                val author = (jsonObject.get("author") as JsonObject).let {
+                    Author.fromJsonElement(it)
                 }
                 return Book(bookId, title, price, author)
             } catch (e: IllegalStateException) {
@@ -77,12 +83,18 @@ public data class Book(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Author {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonElement(jsonObject)
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonElement(jsonObject: JsonObject): Author {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val firstName = jsonObject.get("firstName").asString
                     val lastName = jsonObject.get("lastName").asString
-                    val contact = jsonObject.get("contact").toString().let {
-                        Contact.fromJson(it)
+                    val contact = (jsonObject.get("contact") as JsonObject).let {
+                        Contact.fromJsonElement(it)
                     }
                     return Author(firstName, lastName, contact)
                 } catch (e: IllegalStateException) {
@@ -124,8 +136,14 @@ public data class Book(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Contact {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonElement(jsonObject)
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonElement(jsonObject: JsonObject): Contact {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val phone = jsonObject.get("phone")?.asString
                     val email = jsonObject.get("email")?.asString
                     return Contact(phone, email)

@@ -47,14 +47,20 @@ public data class Company(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Company {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): Company {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val name = jsonObject.get("name")?.asString
-                val ratings = jsonObject.get("ratings")?.toString()?.let {
-                    Ratings.fromJson(it)
+                val ratings = (jsonObject.get("ratings") as? JsonObject)?.let {
+                    Ratings.fromJsonElement(it)
                 }
-                val information = jsonObject.get("information")?.toString()?.let {
-                    Information.fromJson(it)
+                val information = (jsonObject.get("information") as? JsonObject)?.let {
+                    Information.fromJsonElement(it)
                 }
                 val additionalProperties = mutableMapOf<String, Any?>()
                 for (entry in jsonObject.entrySet()) {
@@ -103,8 +109,14 @@ public data class Company(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Ratings {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonElement(jsonObject)
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonElement(jsonObject: JsonObject): Ratings {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val global = jsonObject.get("global").asLong
                     val additionalProperties = mutableMapOf<String, Long>()
                     for (entry in jsonObject.entrySet()) {
@@ -160,8 +172,14 @@ public data class Company(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Information {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonElement(jsonObject)
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonElement(jsonObject: JsonObject): Information {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val date = jsonObject.get("date")?.asLong
                     val priority = jsonObject.get("priority")?.asLong
                     val additionalProperties = mutableMapOf<String, Any?>()

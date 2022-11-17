@@ -52,14 +52,20 @@ public data class Opus(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Opus {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): Opus {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val title = jsonObject.get("title")?.asString
                 val composer = jsonObject.get("composer")?.asString
                 val artists = jsonObject.get("artists")?.asJsonArray?.let { jsonArray ->
                     val collection = ArrayList<Artist>(jsonArray.size())
                     jsonArray.forEach {
-                        collection.add(Artist.fromJson(it.toString()))
+                        collection.add(Artist.fromJsonElement(it as JsonObject))
                     }
                     collection
                 }
@@ -108,8 +114,14 @@ public data class Opus(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Artist {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonElement(jsonObject)
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonElement(jsonObject: JsonObject): Artist {
                 try {
-                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                     val name = jsonObject.get("name")?.asString
                     val role = jsonObject.get("role")?.asString?.let {
                         Role.fromJson(it)

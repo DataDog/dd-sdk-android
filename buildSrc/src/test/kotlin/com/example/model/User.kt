@@ -35,8 +35,14 @@ public data class User(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): User {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): User {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val username = jsonObject.get("username").asString
                 val host = jsonObject.get("host").asString
                 val firstname = jsonObject.get("firstname")?.asString

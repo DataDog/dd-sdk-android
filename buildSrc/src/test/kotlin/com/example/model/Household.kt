@@ -38,17 +38,23 @@ public data class Household(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Household {
+            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+            return fromJsonElement(jsonObject)
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonElement(jsonObject: JsonObject): Household {
             try {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                 val pets = jsonObject.get("pets")?.asJsonArray?.let { jsonArray ->
                     val collection = ArrayList<Animal>(jsonArray.size())
                     jsonArray.forEach {
-                        collection.add(Animal.fromJson(it.toString()))
+                        collection.add(Animal.fromJsonElement(it as JsonObject))
                     }
                     collection
                 }
-                val situation = jsonObject.get("situation")?.toString()?.let {
-                    Situation.fromJson(it)
+                val situation = (jsonObject.get("situation") as? JsonObject)?.let {
+                    Situation.fromJsonElement(it)
                 }
                 return Household(pets, situation)
             } catch (e: IllegalStateException) {
@@ -93,8 +99,14 @@ public data class Household(
                 @JvmStatic
                 @Throws(JsonParseException::class)
                 public fun fromJson(jsonString: String): Fish {
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonElement(jsonObject)
+                }
+
+                @JvmStatic
+                @Throws(JsonParseException::class)
+                public fun fromJsonElement(jsonObject: JsonObject): Fish {
                     try {
-                        val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                         val water = Water.fromJson(jsonObject.get("water").asString)
                         val size = jsonObject.get("size")?.asLong
                         return Fish(water, size)
@@ -133,8 +145,14 @@ public data class Household(
                 @JvmStatic
                 @Throws(JsonParseException::class)
                 public fun fromJson(jsonString: String): Bird {
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonElement(jsonObject)
+                }
+
+                @JvmStatic
+                @Throws(JsonParseException::class)
+                public fun fromJsonElement(jsonObject: JsonObject): Bird {
                     try {
-                        val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                         val food = Food.fromJson(jsonObject.get("food").asString)
                         val canFly = jsonObject.get("can_fly").asBoolean
                         return Bird(food, canFly)
@@ -162,15 +180,22 @@ public data class Household(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Animal {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonElement(jsonObject)
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonElement(jsonObject: JsonObject): Animal {
                 val errors = mutableListOf<Throwable>()
                 val asFish = try {
-                    Fish.fromJson(jsonString)
+                    Fish.fromJsonElement(jsonObject)
                 } catch (e: JsonParseException) {
                     errors.add(e)
                     null
                 }
                 val asBird = try {
-                    Bird.fromJson(jsonString)
+                    Bird.fromJsonElement(jsonObject)
                 } catch (e: JsonParseException) {
                     errors.add(e)
                     null
@@ -207,8 +232,14 @@ public data class Household(
                 @JvmStatic
                 @Throws(JsonParseException::class)
                 public fun fromJson(jsonString: String): Marriage {
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonElement(jsonObject)
+                }
+
+                @JvmStatic
+                @Throws(JsonParseException::class)
+                public fun fromJsonElement(jsonObject: JsonObject): Marriage {
                     try {
-                        val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                         val spouses = jsonObject.get("spouses").asJsonArray.let { jsonArray ->
                             val collection = ArrayList<String>(jsonArray.size())
                             jsonArray.forEach {
@@ -252,8 +283,14 @@ public data class Household(
                 @JvmStatic
                 @Throws(JsonParseException::class)
                 public fun fromJson(jsonString: String): Cotenancy {
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonElement(jsonObject)
+                }
+
+                @JvmStatic
+                @Throws(JsonParseException::class)
+                public fun fromJsonElement(jsonObject: JsonObject): Cotenancy {
                     try {
-                        val jsonObject = JsonParser.parseString(jsonString).asJsonObject
                         val roommates = jsonObject.get("roommates").asJsonArray.let { jsonArray ->
                             val collection = ArrayList<String>(jsonArray.size())
                             jsonArray.forEach {
@@ -286,15 +323,22 @@ public data class Household(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Situation {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonElement(jsonObject)
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonElement(jsonObject: JsonObject): Situation {
                 val errors = mutableListOf<Throwable>()
                 val asMarriage = try {
-                    Marriage.fromJson(jsonString)
+                    Marriage.fromJsonElement(jsonObject)
                 } catch (e: JsonParseException) {
                     errors.add(e)
                     null
                 }
                 val asCotenancy = try {
-                    Cotenancy.fromJson(jsonString)
+                    Cotenancy.fromJsonElement(jsonObject)
                 } catch (e: JsonParseException) {
                     errors.add(e)
                     null
