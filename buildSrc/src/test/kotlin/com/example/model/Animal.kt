@@ -37,13 +37,20 @@ public sealed class Animal {
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Fish {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-                return fromJsonElement(jsonObject)
+                try {
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonObject(jsonObject)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Fish",
+                        e
+                    )
+                }
             }
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJsonElement(jsonObject: JsonObject): Fish {
+            public fun fromJsonObject(jsonObject: JsonObject): Fish {
                 try {
                     val water = Water.fromJson(jsonObject.get("water").asString)
                     val size = jsonObject.get("size")?.asLong
@@ -83,13 +90,20 @@ public sealed class Animal {
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Bird {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-                return fromJsonElement(jsonObject)
+                try {
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonObject(jsonObject)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Bird",
+                        e
+                    )
+                }
             }
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJsonElement(jsonObject: JsonObject): Bird {
+            public fun fromJsonObject(jsonObject: JsonObject): Bird {
                 try {
                     val food = Food.fromJson(jsonObject.get("food").asString)
                     val canFly = jsonObject.get("can_fly").asBoolean
@@ -118,22 +132,29 @@ public sealed class Animal {
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Animal {
-            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-            return fromJsonElement(jsonObject)
+            try {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into one of type Animal",
+                    e
+                )
+            }
         }
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJsonElement(jsonObject: JsonObject): Animal {
+        public fun fromJsonObject(jsonObject: JsonObject): Animal {
             val errors = mutableListOf<Throwable>()
             val asFish = try {
-                Fish.fromJsonElement(jsonObject)
+                Fish.fromJsonObject(jsonObject)
             } catch (e: JsonParseException) {
                 errors.add(e)
                 null
             }
             val asBird = try {
-                Bird.fromJsonElement(jsonObject)
+                Bird.fromJsonObject(jsonObject)
             } catch (e: JsonParseException) {
                 errors.add(e)
                 null

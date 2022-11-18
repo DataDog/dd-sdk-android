@@ -32,19 +32,26 @@ public data class DateTime(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): DateTime {
-            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-            return fromJsonElement(jsonObject)
+            try {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type DateTime",
+                    e
+                )
+            }
         }
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJsonElement(jsonObject: JsonObject): DateTime {
+        public fun fromJsonObject(jsonObject: JsonObject): DateTime {
             try {
-                val date = (jsonObject.get("date") as? JsonObject)?.let {
-                    Date.fromJsonElement(it)
+                val date = jsonObject.get("date")?.asJsonObject?.let {
+                    Date.fromJsonObject(it)
                 }
-                val time = (jsonObject.get("time") as? JsonObject)?.let {
-                    Time.fromJsonElement(it)
+                val time = jsonObject.get("time")?.asJsonObject?.let {
+                    Time.fromJsonObject(it)
                 }
                 return DateTime(date, time)
             } catch (e: IllegalStateException) {
@@ -89,13 +96,20 @@ public data class DateTime(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Date {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-                return fromJsonElement(jsonObject)
+                try {
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonObject(jsonObject)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Date",
+                        e
+                    )
+                }
             }
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJsonElement(jsonObject: JsonObject): Date {
+            public fun fromJsonObject(jsonObject: JsonObject): Date {
                 try {
                     val year = jsonObject.get("year")?.asLong
                     val month = jsonObject.get("month")?.asString?.let {
@@ -146,13 +160,20 @@ public data class DateTime(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Time {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-                return fromJsonElement(jsonObject)
+                try {
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonObject(jsonObject)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Time",
+                        e
+                    )
+                }
             }
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJsonElement(jsonObject: JsonObject): Time {
+            public fun fromJsonObject(jsonObject: JsonObject): Time {
                 try {
                     val hour = jsonObject.get("hour")?.asLong
                     val minute = jsonObject.get("minute")?.asLong

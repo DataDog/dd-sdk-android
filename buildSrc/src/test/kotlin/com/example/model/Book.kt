@@ -32,19 +32,26 @@ public data class Book(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Book {
-            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-            return fromJsonElement(jsonObject)
+            try {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Book",
+                    e
+                )
+            }
         }
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJsonElement(jsonObject: JsonObject): Book {
+        public fun fromJsonObject(jsonObject: JsonObject): Book {
             try {
                 val bookId = jsonObject.get("bookId").asLong
                 val title = jsonObject.get("title").asString
                 val price = jsonObject.get("price").asNumber
-                val author = (jsonObject.get("author") as JsonObject).let {
-                    Author.fromJsonElement(it)
+                val author = jsonObject.get("author").asJsonObject.let {
+                    Author.fromJsonObject(it)
                 }
                 return Book(bookId, title, price, author)
             } catch (e: IllegalStateException) {
@@ -83,18 +90,25 @@ public data class Book(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Author {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-                return fromJsonElement(jsonObject)
+                try {
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonObject(jsonObject)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Author",
+                        e
+                    )
+                }
             }
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJsonElement(jsonObject: JsonObject): Author {
+            public fun fromJsonObject(jsonObject: JsonObject): Author {
                 try {
                     val firstName = jsonObject.get("firstName").asString
                     val lastName = jsonObject.get("lastName").asString
-                    val contact = (jsonObject.get("contact") as JsonObject).let {
-                        Contact.fromJsonElement(it)
+                    val contact = jsonObject.get("contact").asJsonObject.let {
+                        Contact.fromJsonObject(it)
                     }
                     return Author(firstName, lastName, contact)
                 } catch (e: IllegalStateException) {
@@ -136,13 +150,20 @@ public data class Book(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Contact {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-                return fromJsonElement(jsonObject)
+                try {
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonObject(jsonObject)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Contact",
+                        e
+                    )
+                }
             }
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJsonElement(jsonObject: JsonObject): Contact {
+            public fun fromJsonObject(jsonObject: JsonObject): Contact {
                 try {
                     val phone = jsonObject.get("phone")?.asString
                     val email = jsonObject.get("email")?.asString

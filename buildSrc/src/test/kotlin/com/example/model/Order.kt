@@ -30,13 +30,20 @@ public data class Order(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Order {
-            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-            return fromJsonElement(jsonObject)
+            try {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Order",
+                    e
+                )
+            }
         }
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJsonElement(jsonObject: JsonObject): Order {
+        public fun fromJsonObject(jsonObject: JsonObject): Order {
             try {
                 val sizes = jsonObject.get("sizes").asJsonArray.let { jsonArray ->
                     val collection = HashSet<Size>(jsonArray.size())

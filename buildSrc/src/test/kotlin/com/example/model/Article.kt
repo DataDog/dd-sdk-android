@@ -37,13 +37,20 @@ public data class Article(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Article {
-            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-            return fromJsonElement(jsonObject)
+            try {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Article",
+                    e
+                )
+            }
         }
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJsonElement(jsonObject: JsonObject): Article {
+        public fun fromJsonObject(jsonObject: JsonObject): Article {
             try {
                 val title = jsonObject.get("title").asString
                 val tags = jsonObject.get("tags")?.asJsonArray?.let { jsonArray ->

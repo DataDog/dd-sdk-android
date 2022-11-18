@@ -30,13 +30,20 @@ public data class Product(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Product {
-            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-            return fromJsonElement(jsonObject)
+            try {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Product",
+                    e
+                )
+            }
         }
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJsonElement(jsonObject: JsonObject): Product {
+        public fun fromJsonObject(jsonObject: JsonObject): Product {
             try {
                 val productId = jsonObject.get("productId").asLong
                 val productName = jsonObject.get("productName").asString

@@ -31,13 +31,20 @@ public data class Foo(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Foo {
-            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-            return fromJsonElement(jsonObject)
+            try {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Foo",
+                    e
+                )
+            }
         }
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJsonElement(jsonObject: JsonObject): Foo {
+        public fun fromJsonObject(jsonObject: JsonObject): Foo {
             try {
                 val bar = jsonObject.get("bar")?.asString
                 val baz = jsonObject.get("baz")?.asLong

@@ -39,13 +39,20 @@ public data class Video(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Video {
-            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-            return fromJsonElement(jsonObject)
+            try {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Video",
+                    e
+                )
+            }
         }
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJsonElement(jsonObject: JsonObject): Video {
+        public fun fromJsonObject(jsonObject: JsonObject): Video {
             try {
                 val title = jsonObject.get("title").asString
                 val tags = jsonObject.get("tags")?.asJsonArray?.let { jsonArray ->

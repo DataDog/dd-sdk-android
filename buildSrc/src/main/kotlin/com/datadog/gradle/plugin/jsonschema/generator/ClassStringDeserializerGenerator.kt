@@ -31,6 +31,7 @@ class ClassStringDeserializerGenerator(
         if (!isConstantClass) {
             funBuilder.throws(ClassNameRef.JsonParseException)
             funBuilder.addParameter(Identifier.PARAM_JSON_STR, STRING)
+            funBuilder.beginControlFlow("try")
         }
 
         funBuilder.addStatement(
@@ -39,8 +40,31 @@ class ClassStringDeserializerGenerator(
             ClassNameRef.JsonParser,
             Identifier.PARAM_JSON_STR
         )
-        funBuilder.addStatement("return %L(%L)", Identifier.FUN_FROM_JSON_ELT, Identifier.PARAM_JSON_OBJ)
+        funBuilder.addStatement("return %L(%L)", Identifier.FUN_FROM_JSON_OBJ, Identifier.PARAM_JSON_OBJ)
+
+        if (!isConstantClass) {
+            caughtExceptions.forEach {
+                funBuilder.nextControlFlow(
+                    "catch (%L: %T)",
+                    Identifier.CAUGHT_EXCEPTION,
+                    it
+                )
+                funBuilder.addStatement("throw %T(", ClassNameRef.JsonParseException)
+                funBuilder.addStatement("    \"$PARSE_ERROR_MSG %T\",", returnType)
+                funBuilder.addStatement("    %L", Identifier.CAUGHT_EXCEPTION)
+                funBuilder.addStatement(")")
+            }
+            funBuilder.endControlFlow()
+        }
 
         return funBuilder.build()
+    }
+
+    companion object {
+        private const val PARSE_ERROR_MSG = "Unable to parse json into type"
+
+        private val caughtExceptions = arrayOf(
+            ClassNameRef.IllegalStateException
+        )
     }
 }

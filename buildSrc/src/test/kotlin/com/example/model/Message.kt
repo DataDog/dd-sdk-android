@@ -54,13 +54,20 @@ public data class Message(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Message {
-            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-            return fromJsonElement(jsonObject)
+            try {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Message",
+                    e
+                )
+            }
         }
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJsonElement(jsonObject: JsonObject): Message {
+        public fun fromJsonObject(jsonObject: JsonObject): Message {
             try {
                 val destination = jsonObject.get("destination").asJsonArray.let { jsonArray ->
                     val collection = ArrayList<String>(jsonArray.size())

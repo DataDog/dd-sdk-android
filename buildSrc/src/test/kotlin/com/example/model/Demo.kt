@@ -55,13 +55,20 @@ public data class Demo(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Demo {
-            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-            return fromJsonElement(jsonObject)
+            try {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Demo",
+                    e
+                )
+            }
         }
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJsonElement(jsonObject: JsonObject): Demo {
+        public fun fromJsonObject(jsonObject: JsonObject): Demo {
             try {
                 val s = jsonObject.get("s").asString
                 val i = jsonObject.get("i").asLong

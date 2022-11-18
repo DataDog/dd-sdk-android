@@ -27,7 +27,7 @@ class ClassJsonElementDeserializerGenerator(
         val isConstantClass = definition.isConstantClass()
         val returnType = ClassName.bestGuess(definition.name)
 
-        val funBuilder = FunSpec.builder(Identifier.FUN_FROM_JSON_ELT)
+        val funBuilder = FunSpec.builder(Identifier.FUN_FROM_JSON_OBJ)
             .addAnnotation(AnnotationSpec.builder(JvmStatic::class).build())
             .returns(returnType)
 
@@ -194,10 +194,10 @@ class ClassJsonElementDeserializerGenerator(
             )
             is TypeDefinition.OneOfClass,
             is TypeDefinition.Class -> addStatement(
-                "%L.add(%T.%L(it as JsonObject))",
+                "%L.add(%T.%L(it.asJsonObject))",
                 Identifier.PARAM_COLLECTION,
                 arrayType.items.asKotlinTypeName(rootTypeName),
-                Identifier.FUN_FROM_JSON_ELT
+                Identifier.FUN_FROM_JSON_OBJ
             )
             is TypeDefinition.Enum -> addStatement(
                 "%L.add(%T.%L(it.asString))",
@@ -243,7 +243,7 @@ class ClassJsonElementDeserializerGenerator(
         rootTypeName: String
     ) {
         val opt = if (nullable) "?" else ""
-        beginControlFlow("$assignee = ($getter as$opt JsonObject)$opt.let")
+        beginControlFlow("$assignee = $getter$opt.asJsonObject$opt.let")
         val codeBlockFormat = if (propertyType.isConstantClass()) {
             "%T.%L()"
         } else {
@@ -252,7 +252,7 @@ class ClassJsonElementDeserializerGenerator(
         addStatement(
             codeBlockFormat,
             propertyType.asKotlinTypeName(rootTypeName),
-            if (propertyType.isConstantClass()) Identifier.FUN_FROM_JSON else Identifier.FUN_FROM_JSON_ELT
+            if (propertyType.isConstantClass()) Identifier.FUN_FROM_JSON else Identifier.FUN_FROM_JSON_OBJ
         )
         endControlFlow()
     }
@@ -265,12 +265,12 @@ class ClassJsonElementDeserializerGenerator(
         rootTypeName: String
     ) {
         val opt = if (nullable) "?" else ""
-        beginControlFlow("$assignee = ($getter as$opt JsonObject)$opt.let")
+        beginControlFlow("$assignee = $getter$opt.asJsonObject$opt.let")
 
         addStatement(
             "%T.%L(it)",
             propertyType.asKotlinTypeName(rootTypeName),
-            Identifier.FUN_FROM_JSON_ELT
+            Identifier.FUN_FROM_JSON_OBJ
         )
         endControlFlow()
     }

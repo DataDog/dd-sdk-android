@@ -36,13 +36,20 @@ public data class Version(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Version {
-            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-            return fromJsonElement(jsonObject)
+            try {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Version",
+                    e
+                )
+            }
         }
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJsonElement(jsonObject: JsonObject): Version {
+        public fun fromJsonObject(jsonObject: JsonObject): Version {
             try {
                 val id = Id()
                 val date = jsonObject.get("date")?.toString()?.let {

@@ -44,13 +44,20 @@ public data class Bike(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Bike {
-            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-            return fromJsonElement(jsonObject)
+            try {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Bike",
+                    e
+                )
+            }
         }
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJsonElement(jsonObject: JsonObject): Bike {
+        public fun fromJsonObject(jsonObject: JsonObject): Bike {
             try {
                 val productId = jsonObject.get("productId").asLong
                 val productName = jsonObject.get("productName").asString

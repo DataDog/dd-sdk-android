@@ -52,20 +52,27 @@ public data class Opus(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Opus {
-            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-            return fromJsonElement(jsonObject)
+            try {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Opus",
+                    e
+                )
+            }
         }
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJsonElement(jsonObject: JsonObject): Opus {
+        public fun fromJsonObject(jsonObject: JsonObject): Opus {
             try {
                 val title = jsonObject.get("title")?.asString
                 val composer = jsonObject.get("composer")?.asString
                 val artists = jsonObject.get("artists")?.asJsonArray?.let { jsonArray ->
                     val collection = ArrayList<Artist>(jsonArray.size())
                     jsonArray.forEach {
-                        collection.add(Artist.fromJsonElement(it as JsonObject))
+                        collection.add(Artist.fromJsonObject(it.asJsonObject))
                     }
                     collection
                 }
@@ -114,13 +121,20 @@ public data class Opus(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Artist {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-                return fromJsonElement(jsonObject)
+                try {
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonObject(jsonObject)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Artist",
+                        e
+                    )
+                }
             }
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJsonElement(jsonObject: JsonObject): Artist {
+            public fun fromJsonObject(jsonObject: JsonObject): Artist {
                 try {
                     val name = jsonObject.get("name")?.asString
                     val role = jsonObject.get("role")?.asString?.let {

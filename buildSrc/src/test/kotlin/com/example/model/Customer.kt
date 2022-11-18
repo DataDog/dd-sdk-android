@@ -34,20 +34,27 @@ public data class Customer(
         @JvmStatic
         @Throws(JsonParseException::class)
         public fun fromJson(jsonString: String): Customer {
-            val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-            return fromJsonElement(jsonObject)
+            try {
+                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Customer",
+                    e
+                )
+            }
         }
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        public fun fromJsonElement(jsonObject: JsonObject): Customer {
+        public fun fromJsonObject(jsonObject: JsonObject): Customer {
             try {
                 val name = jsonObject.get("name")?.asString
-                val billingAddress = (jsonObject.get("billing_address") as? JsonObject)?.let {
-                    Address.fromJsonElement(it)
+                val billingAddress = jsonObject.get("billing_address")?.asJsonObject?.let {
+                    Address.fromJsonObject(it)
                 }
-                val shippingAddress = (jsonObject.get("shipping_address") as? JsonObject)?.let {
-                    Address.fromJsonElement(it)
+                val shippingAddress = jsonObject.get("shipping_address")?.asJsonObject?.let {
+                    Address.fromJsonObject(it)
                 }
                 return Customer(name, billingAddress, shippingAddress)
             } catch (e: IllegalStateException) {
@@ -86,13 +93,20 @@ public data class Customer(
             @JvmStatic
             @Throws(JsonParseException::class)
             public fun fromJson(jsonString: String): Address {
-                val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-                return fromJsonElement(jsonObject)
+                try {
+                    val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonObject(jsonObject)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Address",
+                        e
+                    )
+                }
             }
 
             @JvmStatic
             @Throws(JsonParseException::class)
-            public fun fromJsonElement(jsonObject: JsonObject): Address {
+            public fun fromJsonObject(jsonObject: JsonObject): Address {
                 try {
                     val streetAddress = jsonObject.get("street_address").asString
                     val city = jsonObject.get("city").asString
