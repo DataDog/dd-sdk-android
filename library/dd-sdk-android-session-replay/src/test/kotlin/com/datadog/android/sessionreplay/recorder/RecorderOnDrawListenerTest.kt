@@ -9,7 +9,6 @@ package com.datadog.android.sessionreplay.recorder
 import android.app.Activity
 import android.content.res.Configuration
 import android.content.res.Resources
-import android.os.Handler
 import android.view.View
 import android.view.Window
 import com.datadog.android.sessionreplay.processor.Processor
@@ -58,13 +57,13 @@ internal class RecorderOnDrawListenerTest {
     lateinit var configuration: Configuration
 
     @Mock
-    lateinit var mockHandler: Handler
-
-    @Mock
     lateinit var mockSnapshotProducer: SnapshotProducer
 
     @Mock
     lateinit var mockProcessor: Processor
+
+    @Mock
+    lateinit var mockDebouncer: Debouncer
 
     @FloatForgery(min = 1.0f, max = 100.0f)
     var fakeDensity: Float = 0f
@@ -104,14 +103,14 @@ internal class RecorderOnDrawListenerTest {
             fakeDensity,
             mockProcessor,
             mockSnapshotProducer,
-            mockHandler
+            mockDebouncer
         )
     }
 
     @Test
     fun `M take and process snapshot W onDraw()`() {
         // Given
-        stubHandler()
+        stubDebouncer()
 
         // When
         testedListener.onDraw()
@@ -135,7 +134,7 @@ internal class RecorderOnDrawListenerTest {
     fun `M do nothing W onDraw() { activity window is null }`() {
         // Given
         whenever(mockActivity.window).thenReturn(null)
-        stubHandler()
+        stubDebouncer()
 
         // When
         testedListener.onDraw()
@@ -147,7 +146,7 @@ internal class RecorderOnDrawListenerTest {
     @Test
     fun `M send OrientationChanged W onDraw() { first time }`() {
         // Given
-        stubHandler()
+        stubDebouncer()
 
         // When
         testedListener.onDraw()
@@ -167,7 +166,7 @@ internal class RecorderOnDrawListenerTest {
     @Test
     fun `M send OrientationChanged only once W onDraw() { second time }`() {
         // Given
-        stubHandler()
+        stubDebouncer()
 
         // When
         testedListener.onDraw()
@@ -192,7 +191,7 @@ internal class RecorderOnDrawListenerTest {
     @Test
     fun `M send OrientationChanged twice W onDraw(){called 2 times with different orientation}`() {
         // Given
-        stubHandler()
+        stubDebouncer()
 
         // When
         val configuration1 =
@@ -226,16 +225,7 @@ internal class RecorderOnDrawListenerTest {
             )
     }
 
-    private fun stubHandler() {
-        whenever(
-            mockHandler.postDelayed(
-                any(),
-                eq(RecorderOnDrawListener.DEBOUNCE_DURATION_IN_MILLIS)
-            )
-        )
-            .then {
-                (it.arguments[0] as Runnable).run()
-                true
-            }
+    private fun stubDebouncer() {
+        whenever(mockDebouncer.debounce(any())).then { (it.arguments[0] as Runnable).run() }
     }
 }

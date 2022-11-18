@@ -8,8 +8,6 @@ package com.datadog.android.sessionreplay.recorder
 
 import android.app.Activity
 import android.content.res.Configuration
-import android.os.Handler
-import android.os.Looper
 import android.view.View
 import android.view.ViewTreeObserver
 import com.datadog.android.sessionreplay.processor.Processor
@@ -20,14 +18,13 @@ internal class RecorderOnDrawListener(
     private val pixelsDensity: Float,
     private val processor: Processor,
     private val snapshotProducer: SnapshotProducer,
-    private val handler: Handler = Handler(Looper.getMainLooper())
+    private val debouncer: Debouncer = Debouncer()
 ) : ViewTreeObserver.OnDrawListener {
     private var currentOrientation = Configuration.ORIENTATION_UNDEFINED
     private val trackedActivity: WeakReference<Activity> = WeakReference(activity)
 
     override fun onDraw() {
-        handler.removeCallbacksAndMessages(null)
-        handler.postDelayed(takeSnapshotRunnable, DEBOUNCE_DURATION_IN_MILLIS)
+        debouncer.debounce(takeSnapshotRunnable)
     }
 
     private val takeSnapshotRunnable: Runnable = Runnable {
@@ -53,9 +50,5 @@ internal class RecorderOnDrawListener(
             }
         currentOrientation = orientation
         return orientationChanged
-    }
-
-    companion object {
-        const val DEBOUNCE_DURATION_IN_MILLIS: Long = 4
     }
 }
