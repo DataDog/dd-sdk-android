@@ -9,7 +9,6 @@ package com.datadog.android.rum.internal.domain.scope
 import android.content.Context
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.persistence.NoOpDataWriter
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.TimeProvider
@@ -26,10 +25,9 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.same
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -158,7 +156,7 @@ internal class RumSessionScopeTest {
     }
 
     @Test
-    fun `𝕄 delegate events to child scope 𝕎 handleViewEvent() {NOT TRACKED}`() {
+    fun `𝕄 not delegate events to child scope 𝕎 handleViewEvent() {NOT TRACKED}`() {
         // Given
         (testedScope as RumSessionScope).sessionState = RumSessionScope.State.NOT_TRACKED
         val mockEvent: RumRawEvent = mock()
@@ -168,11 +166,11 @@ internal class RumSessionScopeTest {
 
         // Then
         assertThat(result).isSameAs(testedScope)
-        verify(mockChildScope).handleEvent(same(mockEvent), isA<NoOpDataWriter<Any>>())
+        verifyZeroInteractions(mockChildScope)
     }
 
     @Test
-    fun `𝕄 delegate events to child scope 𝕎 handleViewEvent() {EXPIRED}`() {
+    fun `𝕄 not delegate events to child scope 𝕎 handleViewEvent() {EXPIRED}`() {
         // Given
         (testedScope as RumSessionScope).sessionState = RumSessionScope.State.EXPIRED
         val mockEvent: RumRawEvent = mock()
@@ -182,7 +180,7 @@ internal class RumSessionScopeTest {
 
         // Then
         assertThat(result).isSameAs(testedScope)
-        verify(mockChildScope).handleEvent(same(mockEvent), isA<NoOpDataWriter<Any>>())
+        verifyZeroInteractions(mockChildScope)
     }
 
     // endregion

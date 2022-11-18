@@ -88,9 +88,9 @@ internal class RumSessionScope(
 
         updateSession(event)
 
-        val actualWriter = if (sessionState == State.TRACKED) writer else noOpWriter
-
-        childScope.handleEvent(event, actualWriter)
+        if (sessionState == State.TRACKED) {
+            childScope.handleEvent(event, writer)
+        }
 
         return this
     }
