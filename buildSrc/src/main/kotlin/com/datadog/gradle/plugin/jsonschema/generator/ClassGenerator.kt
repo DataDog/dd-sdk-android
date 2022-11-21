@@ -33,7 +33,8 @@ class ClassGenerator(
     knownTypes
 ) {
 
-    private val deserializer = ClassDeserializerGenerator(packageName, knownTypes)
+    private val deserializer = ClassJsonElementDeserializerGenerator(packageName, knownTypes)
+    private val stringDeserializer = ClassStringDeserializerGenerator(packageName, knownTypes)
 
     // region TypeSpecGenerator
 
@@ -380,6 +381,7 @@ class ClassGenerator(
         rootTypeName: String
     ): TypeSpec {
         val typeBuilder = TypeSpec.companionObjectBuilder()
+            .addFunction(stringDeserializer.generate(definition, rootTypeName))
             .addFunction(deserializer.generate(definition, rootTypeName))
 
         if (definition.additionalProperties != null && definition.properties.isNotEmpty()) {

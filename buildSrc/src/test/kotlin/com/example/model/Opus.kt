@@ -54,12 +54,25 @@ public data class Opus(
         public fun fromJson(jsonString: String): Opus {
             try {
                 val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Opus",
+                    e
+                )
+            }
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonObject(jsonObject: JsonObject): Opus {
+            try {
                 val title = jsonObject.get("title")?.asString
                 val composer = jsonObject.get("composer")?.asString
                 val artists = jsonObject.get("artists")?.asJsonArray?.let { jsonArray ->
                     val collection = ArrayList<Artist>(jsonArray.size())
                     jsonArray.forEach {
-                        collection.add(Artist.fromJson(it.toString()))
+                        collection.add(Artist.fromJsonObject(it.asJsonObject))
                     }
                     collection
                 }
@@ -110,6 +123,19 @@ public data class Opus(
             public fun fromJson(jsonString: String): Artist {
                 try {
                     val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonObject(jsonObject)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Artist",
+                        e
+                    )
+                }
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonObject(jsonObject: JsonObject): Artist {
+                try {
                     val name = jsonObject.get("name")?.asString
                     val role = jsonObject.get("role")?.asString?.let {
                         Role.fromJson(it)

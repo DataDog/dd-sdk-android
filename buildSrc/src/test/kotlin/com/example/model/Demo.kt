@@ -57,6 +57,19 @@ public data class Demo(
         public fun fromJson(jsonString: String): Demo {
             try {
                 val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Demo",
+                    e
+                )
+            }
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonObject(jsonObject: JsonObject): Demo {
+            try {
                 val s = jsonObject.get("s").asString
                 val i = jsonObject.get("i").asLong
                 val n = jsonObject.get("n").asNumber
