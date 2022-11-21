@@ -26,7 +26,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.util.concurrent.TimeUnit
-import kotlin.math.ceil
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -89,11 +88,12 @@ internal class DebouncerTest {
         forge: Forge
     ) {
         // Given
-        val fakeDelayedRunnables = forge.aList(size = forge.anInt(min = 1, max = 10)) { TestRunnable() }
-        val delayInterval = ceil(
-            TEST_MAX_DELAY_THRESHOLD_IN_NS.toDouble() /
-                fakeDelayedRunnables.size.toDouble()
-        ).toLong()
+        val fakeDelayedRunnables = forge.aList(size = forge.anInt(min = 1, max = 10)) {
+            TestRunnable()
+        }
+        // we remove 1ms just to make sure the threshold is not reached before the next debounce is
+        // called
+        val delayInterval = (TEST_MAX_DELAY_THRESHOLD_IN_NS / fakeDelayedRunnables.size) - 1
         val fakeExecutedRunnable = TestRunnable()
         fakeDelayedRunnables.forEach {
             testedDebouncer.debounce(it)
@@ -101,6 +101,8 @@ internal class DebouncerTest {
         }
 
         // When
+        // wait for the removed 1ms
+        Thread.sleep(1L * fakeDelayedRunnables.size)
         testedDebouncer.debounce(fakeExecutedRunnable)
 
         // Then
@@ -123,15 +125,16 @@ internal class DebouncerTest {
         val fakeDelayedRunnablesPack2 = forge.aList(size = forge.anInt(min = 1, max = 10)) {
             TestRunnable()
         }
-        val delayInterval = ceil(
-            TEST_MAX_DELAY_THRESHOLD_IN_NS.toDouble() /
-                fakeDelayedRunnablesPack1.size.toDouble()
-        ).toLong()
+        // we remove 1ms just to make sure the threshold is not reached before the next debounce is
+        // called
+        val delayInterval = (TEST_MAX_DELAY_THRESHOLD_IN_NS / fakeDelayedRunnablesPack1.size) - 1
         val fakeExecutedRunnable = TestRunnable()
         fakeDelayedRunnablesPack1.forEach {
             testedDebouncer.debounce(it)
             Thread.sleep(TimeUnit.NANOSECONDS.toMillis(delayInterval))
         }
+        // wait for the removed 1ms
+        Thread.sleep(1L * fakeDelayedRunnablesPack1.size)
         testedDebouncer.debounce(fakeExecutedRunnable)
 
         // When
