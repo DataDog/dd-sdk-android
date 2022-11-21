@@ -42,6 +42,88 @@ internal class DatadogLogGenerator(
         userInfo: UserInfo?,
         networkInfo: NetworkInfo?
     ): LogEvent {
+        val error = throwable?.let {
+            val kind = it.javaClass.canonicalName ?: it.javaClass.simpleName
+            LogEvent.Error(kind = kind, stack = it.stackTraceToString(), message = it.message)
+        }
+        return internalGenerateLog(
+            level,
+            message,
+            error,
+            attributes,
+            tags,
+            timestamp,
+            threadName,
+            datadogContext,
+            attachNetworkInfo,
+            loggerName,
+            bundleWithTraces,
+            bundleWithRum,
+            userInfo,
+            networkInfo
+        )
+    }
+
+    override fun generateLog(
+        level: Int,
+        message: String,
+        errorKind: String?,
+        errorMessage: String?,
+        errorStack: String?,
+        attributes: Map<String, Any?>,
+        tags: Set<String>,
+        timestamp: Long,
+        threadName: String,
+        datadogContext: DatadogContext,
+        attachNetworkInfo: Boolean,
+        loggerName: String,
+        bundleWithTraces: Boolean,
+        bundleWithRum: Boolean,
+        userInfo: UserInfo?,
+        networkInfo: NetworkInfo?
+    ): LogEvent {
+        val error = if (errorKind != null || errorMessage != null || errorStack != null) {
+            LogEvent.Error(kind = errorKind, message = errorMessage, stack = errorStack)
+        } else {
+            null
+        }
+        return internalGenerateLog(
+            level,
+            message,
+            error,
+            attributes,
+            tags,
+            timestamp,
+            threadName,
+            datadogContext,
+            attachNetworkInfo,
+            loggerName,
+            bundleWithTraces,
+            bundleWithRum,
+            userInfo,
+            networkInfo
+        )
+    }
+
+    // region Internal
+
+    @Suppress("LongParameterList")
+    private fun internalGenerateLog(
+        level: Int,
+        message: String,
+        error: LogEvent.Error?,
+        attributes: Map<String, Any?>,
+        tags: Set<String>,
+        timestamp: Long,
+        threadName: String,
+        datadogContext: DatadogContext,
+        attachNetworkInfo: Boolean,
+        loggerName: String,
+        bundleWithTraces: Boolean,
+        bundleWithRum: Boolean,
+        userInfo: UserInfo?,
+        networkInfo: NetworkInfo?
+    ): LogEvent {
         val resolvedTimestamp = timestamp + datadogContext.time.serverTimeOffsetMs
         val combinedAttributes =
             resolveAttributes(datadogContext, attributes, bundleWithTraces, bundleWithRum)
@@ -50,10 +132,6 @@ internal class DatadogLogGenerator(
             simpleDateFormat.format(Date(resolvedTimestamp))
         }
         val combinedTags = resolveTags(datadogContext, tags)
-        val error = throwable?.let {
-            val kind = it.javaClass.canonicalName ?: it.javaClass.simpleName
-            LogEvent.Error(kind = kind, stack = it.stackTraceToString(), message = it.message)
-        }
         val usr = resolveUserInfo(datadogContext, userInfo)
         val network = if (networkInfo != null || attachNetworkInfo) {
             resolveNetworkInfo(datadogContext, networkInfo)
@@ -72,14 +150,17 @@ internal class DatadogLogGenerator(
             date = formattedDate,
             error = error,
             logger = loggerInfo,
+            dd = LogEvent.Dd(
+                device = LogEvent.Device(
+                    architecture = datadogContext.deviceInfo.architecture
+                )
+            ),
             usr = usr,
             network = network,
             ddtags = combinedTags.joinToString(separator = ","),
             additionalProperties = combinedAttributes
         )
     }
-
-    // region Internal
 
     private fun envTag(datadogContext: DatadogContext): String? {
         val envName = datadogContext.env

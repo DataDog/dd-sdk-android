@@ -815,7 +815,7 @@ internal class RumViewScopeTest {
                 hasMemoryMetric(null, null)
                 hasRefreshRateMetric(null, null)
                 isActive(false)
-                isSlowRendered(null)
+                isSlowRendered(false)
                 hasNoCustomTimings()
                 hasUserInfo(fakeDatadogContext.userInfo)
                 hasViewId(testedScope.viewId)
@@ -837,6 +837,9 @@ internal class RumViewScopeTest {
                     fakeDatadogContext.deviceInfo.osVersion,
                     fakeDatadogContext.deviceInfo.osMajorVersion
                 )
+                hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                hasServiceName(fakeDatadogContext.service)
+                hasVersion(fakeDatadogContext.version)
             }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -881,7 +884,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -903,6 +906,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -947,7 +953,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -969,6 +975,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1019,7 +1028,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -1041,6 +1050,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1088,7 +1100,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -1110,6 +1122,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1157,7 +1172,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -1179,6 +1194,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1214,7 +1232,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -1235,6 +1253,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1299,7 +1320,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -1321,6 +1342,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1367,7 +1391,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -1389,6 +1413,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1453,7 +1480,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -1475,6 +1502,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1541,7 +1571,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -1563,6 +1593,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1610,7 +1643,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -1632,6 +1665,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1678,7 +1714,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -1700,6 +1736,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1739,7 +1778,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -1761,6 +1800,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1843,7 +1885,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -1865,6 +1907,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -1924,7 +1969,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -1946,6 +1991,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2006,7 +2054,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -2028,6 +2076,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2090,7 +2141,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -2112,6 +2163,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2154,7 +2208,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -2176,6 +2230,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2232,6 +2289,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -2251,6 +2309,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2288,7 +2349,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -2310,6 +2371,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2369,7 +2433,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -2391,6 +2455,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2452,7 +2519,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -2474,6 +2541,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2534,7 +2604,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -2556,6 +2626,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2613,6 +2686,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -2632,6 +2706,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2666,6 +2743,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -2685,6 +2763,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -2736,7 +2817,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -2758,6 +2839,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3030,6 +3114,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3488,6 +3575,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3550,6 +3640,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3613,6 +3706,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3678,6 +3774,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3789,6 +3888,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3853,6 +3955,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -3916,6 +4021,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
             assertThat(lastValue as ViewEvent)
                 .apply {
@@ -3937,7 +4045,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -3959,6 +4067,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4026,6 +4137,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4091,6 +4205,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
             assertThat(lastValue as ViewEvent)
                 .apply {
@@ -4112,7 +4229,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -4134,6 +4251,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4200,6 +4320,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4267,6 +4390,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4335,6 +4461,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4401,6 +4530,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
             assertThat(lastValue as ViewEvent)
                 .apply {
@@ -4422,7 +4554,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -4444,6 +4576,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4634,6 +4769,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4682,6 +4820,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4740,6 +4881,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -4798,6 +4942,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5007,7 +5154,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -5029,6 +5176,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5073,7 +5223,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(false)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -5095,6 +5245,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5158,7 +5311,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasCustomTimings(mapOf(fakeTimingKey to customTimingEstimatedDuration))
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -5179,6 +5332,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5226,7 +5382,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasCustomTimings(mapOf(fakeTimingKey1 to customTiming1EstimatedDuration))
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -5248,6 +5404,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
             assertThat(lastValue)
                 .apply {
@@ -5268,7 +5427,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasCustomTimings(
                         mapOf(
                             fakeTimingKey1 to customTiming1EstimatedDuration,
@@ -5295,6 +5454,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5352,7 +5514,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(null, null)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -5374,6 +5536,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5419,7 +5584,7 @@ internal class RumViewScopeTest {
                     hasMemoryMetric(vitals.last().meanValue, vitals.last().maxValue)
                     hasRefreshRateMetric(null, null)
                     isActive(true)
-                    isSlowRendered(null)
+                    isSlowRendered(false)
                     hasNoCustomTimings()
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasViewId(testedScope.viewId)
@@ -5441,6 +5606,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5518,6 +5686,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5595,6 +5766,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5685,6 +5859,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5775,6 +5952,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5867,6 +6047,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -5959,6 +6142,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6052,6 +6238,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6145,6 +6334,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6434,6 +6626,7 @@ internal class RumViewScopeTest {
                     hasResourceCount(0)
                     hasErrorCount(0)
                     hasCrashCount(0)
+                    hasLongTaskCount(0)
                     hasUserInfo(fakeDatadogContext.userInfo)
                     hasView(testedScope.viewId, testedScope.name, testedScope.url)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -6453,6 +6646,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)
@@ -6502,6 +6698,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
 
@@ -6566,6 +6765,9 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verifyNoMoreInteractions(mockWriter)

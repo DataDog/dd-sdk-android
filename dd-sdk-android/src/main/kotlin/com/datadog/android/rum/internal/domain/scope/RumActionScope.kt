@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.core.internal.utils.hasUserData
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
@@ -15,6 +16,7 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.DataWriter
 import java.lang.ref.WeakReference
 import java.util.UUID
@@ -32,6 +34,7 @@ internal class RumActionScope(
     serverTimeOffsetInMs: Long,
     inactivityThresholdMs: Long = ACTION_INACTIVITY_MS,
     maxDurationMs: Long = ACTION_MAX_DURATION_MS,
+    contextProvider: ContextProvider,
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
     private val trackFrustrations: Boolean
 ) : RumScope {
@@ -45,6 +48,7 @@ internal class RumActionScope(
     internal var name: String = initialName
     private val startedNanos: Long = eventTime.nanoTime
     private var lastInteractionNanos: Long = startedNanos
+    private val networkInfo = contextProvider.context.networkInfo
 
     internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap().apply {
         putAll(GlobalRum.globalAttributes)
@@ -181,8 +185,7 @@ internal class RumActionScope(
         longTaskCount++
     }
 
-    @Suppress("LongMethod")
-    @WorkerThread
+    @Suppress("LongMethod", "ComplexMethod")
     private fun sendAction(
         endNanos: Long,
         writer: DataWriter<Any>
@@ -223,7 +226,11 @@ internal class RumActionScope(
                         longTask = ActionEvent.LongTask(eventLongTaskCount),
                         resource = ActionEvent.Resource(eventResourceCount),
                         loadingTime = max(endNanos - startedNanos, 1L),
-                        frustration = ActionEvent.Frustration(frustrations)
+                        frustration = if (frustrations.isNotEmpty()) {
+                            ActionEvent.Frustration(frustrations)
+                        } else {
+                            null
+                        }
                     ),
                     view = ActionEvent.View(
                         id = rumContext.viewId.orEmpty(),
@@ -237,12 +244,16 @@ internal class RumActionScope(
                         hasReplay = hasReplay
                     ),
                     source = ActionEvent.Source.tryFromSource(datadogContext.source),
-                    usr = ActionEvent.Usr(
-                        id = user.id,
-                        name = user.name,
-                        email = user.email,
-                        additionalProperties = user.additionalProperties.toMutableMap()
-                    ),
+                    usr = if (user.hasUserData()) {
+                        ActionEvent.Usr(
+                            id = user.id,
+                            name = user.name,
+                            email = user.email,
+                            additionalProperties = user.additionalProperties.toMutableMap()
+                        )
+                    } else {
+                        null
+                    },
                     os = ActionEvent.Os(
                         name = datadogContext.deviceInfo.osName,
                         version = datadogContext.deviceInfo.osVersion,
@@ -258,8 +269,13 @@ internal class RumActionScope(
                     context = ActionEvent.Context(additionalProperties = attributes),
                     dd = ActionEvent.Dd(
                         session = ActionEvent.DdSession(plan = ActionEvent.Plan.PLAN_1)
-                    )
+                    ),
+                    connectivity = networkInfo.toActionConnectivity(),
+                    service = datadogContext.service,
+                    version = datadogContext.version
                 )
+
+                @Suppress("ThreadSafety") // called in a worker thread context
                 writer.write(eventBatchWriter, actionEvent)
             }
 
@@ -278,6 +294,7 @@ internal class RumActionScope(
             sdkCore: SdkCore,
             event: RumRawEvent.StartAction,
             timestampOffset: Long,
+            contextProvider: ContextProvider,
             featuresContextResolver: FeaturesContextResolver,
             trackFrustrations: Boolean
         ): RumScope {
@@ -290,6 +307,7 @@ internal class RumActionScope(
                 event.name,
                 event.attributes,
                 timestampOffset,
+                contextProvider = contextProvider,
                 featuresContextResolver = featuresContextResolver,
                 trackFrustrations = trackFrustrations
             )

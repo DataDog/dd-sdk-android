@@ -29,7 +29,8 @@ internal data class RumEventMapper(
     val errorEventMapper: EventMapper<ErrorEvent> = NoOpEventMapper(),
     val resourceEventMapper: EventMapper<ResourceEvent> = NoOpEventMapper(),
     val actionEventMapper: EventMapper<ActionEvent> = NoOpEventMapper(),
-    val longTaskEventMapper: EventMapper<LongTaskEvent> = NoOpEventMapper()
+    val longTaskEventMapper: EventMapper<LongTaskEvent> = NoOpEventMapper(),
+    val telemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent> = NoOpEventMapper()
 ) : EventMapper<Any> {
 
     override fun map(event: Any): Any? {
@@ -55,9 +56,9 @@ internal data class RumEventMapper(
             }
             is ResourceEvent -> resourceEventMapper.map(event)
             is LongTaskEvent -> longTaskEventMapper.map(event)
+            is TelemetryConfigurationEvent -> telemetryConfigurationMapper.map(event)
             is TelemetryDebugEvent,
-            is TelemetryErrorEvent,
-            is TelemetryConfigurationEvent -> event
+            is TelemetryErrorEvent -> event
             else -> {
                 sdkLogger.warningWithTelemetry(
                     NO_EVENT_MAPPER_ASSIGNED_WARNING_MESSAGE

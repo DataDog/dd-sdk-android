@@ -214,6 +214,11 @@ interface RumMonitor {
 
     /**
      * Notifies that an error occurred in the active View.
+     *
+     * This method is meant for non-native or cross platform frameworks (such as React Native or
+     * Flutter) to send error information to Datadog. Although it can be used directly, it is
+     * recommended to pass a Throwable instead.
+     *
      * @param message a message explaining the error
      * @param source the source of the error
      * @param stacktrace the error stacktrace information

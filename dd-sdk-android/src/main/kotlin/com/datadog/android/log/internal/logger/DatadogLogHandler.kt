@@ -76,6 +76,54 @@ internal class DatadogLogHandler(
         }
     }
 
+    override fun handleLog(
+        level: Int,
+        message: String,
+        errorKind: String?,
+        errorMessage: String?,
+        errorStacktrace: String?,
+        attributes: Map<String, Any?>,
+        tags: Set<String>,
+        timestamp: Long?
+    ) {
+        if (level < minLogPriority) {
+            return
+        }
+
+        val resolvedTimeStamp = timestamp ?: System.currentTimeMillis()
+        if (sampler.sample()) {
+            val logsFeature = sdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)
+            if (logsFeature != null) {
+                val threadName = Thread.currentThread().name
+                logsFeature.withWriteContext { datadogContext, eventBatchWriter ->
+                    val log = createLog(
+                        level,
+                        datadogContext,
+                        message,
+                        errorKind,
+                        errorMessage,
+                        errorStacktrace,
+                        attributes,
+                        tags,
+                        threadName,
+                        resolvedTimeStamp
+                    )
+                    if (log != null) {
+                        @Suppress("ThreadSafety") // called in a worker thread context
+                        writer.write(eventBatchWriter, log)
+                    }
+                }
+            } else {
+                devLogger.i("Requested to write log, but Logs feature is not registered.")
+            }
+        }
+
+        if (level >= AndroidLog.ERROR) {
+            GlobalRum.get()
+                .addErrorWithStacktrace(message, RumErrorSource.LOGGER, errorStacktrace, attributes)
+        }
+    }
+
     // endregion
 
     // region Internal
@@ -95,6 +143,37 @@ internal class DatadogLogHandler(
             level,
             message,
             throwable,
+            attributes,
+            tags,
+            timestamp,
+            datadogContext = datadogContext,
+            attachNetworkInfo = attachNetworkInfo,
+            loggerName = loggerName,
+            threadName = threadName,
+            bundleWithRum = bundleWithRum,
+            bundleWithTraces = bundleWithTraces
+        )
+    }
+
+    @Suppress("LongParameterList")
+    private fun createLog(
+        level: Int,
+        datadogContext: DatadogContext,
+        message: String,
+        errorKind: String?,
+        errorMessage: String?,
+        errorStack: String?,
+        attributes: Map<String, Any?>,
+        tags: Set<String>,
+        threadName: String,
+        timestamp: Long
+    ): LogEvent? {
+        return logGenerator.generateLog(
+            level,
+            message,
+            errorKind,
+            errorMessage,
+            errorStack,
             attributes,
             tags,
             timestamp,

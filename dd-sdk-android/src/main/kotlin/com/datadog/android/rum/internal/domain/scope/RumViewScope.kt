@@ -17,6 +17,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.hasUserData
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
 import com.datadog.android.core.internal.utils.sdkLogger
@@ -295,6 +296,7 @@ internal open class RumViewScope(
                     sdkCore,
                     event,
                     serverTimeOffsetInMs,
+                    contextProvider,
                     featuresContextResolver,
                     trackFrustrations
                 )
@@ -313,6 +315,7 @@ internal open class RumViewScope(
                 sdkCore,
                 event,
                 serverTimeOffsetInMs,
+                contextProvider,
                 featuresContextResolver,
                 trackFrustrations
             )
@@ -368,7 +371,6 @@ internal open class RumViewScope(
             ?.withWriteContext { datadogContext, eventBatchWriter ->
 
                 val user = datadogContext.userInfo
-                val networkInfo = datadogContext.networkInfo
                 val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext)
 
                 val errorEvent = ErrorEvent(
@@ -387,13 +389,17 @@ internal open class RumViewScope(
                         name = rumContext.viewName,
                         url = rumContext.viewUrl.orEmpty()
                     ),
-                    usr = ErrorEvent.Usr(
-                        id = user.id,
-                        name = user.name,
-                        email = user.email,
-                        additionalProperties = user.additionalProperties.toMutableMap()
-                    ),
-                    connectivity = networkInfo.toErrorConnectivity(),
+                    usr = if (user.hasUserData()) {
+                        ErrorEvent.Usr(
+                            id = user.id,
+                            name = user.name,
+                            email = user.email,
+                            additionalProperties = user.additionalProperties.toMutableMap()
+                        )
+                    } else {
+                        null
+                    },
+                    connectivity = datadogContext.networkInfo.toErrorConnectivity(),
                     application = ErrorEvent.Application(rumContext.applicationId),
                     session = ErrorEvent.ErrorEventSession(
                         id = rumContext.sessionId,
@@ -416,8 +422,12 @@ internal open class RumViewScope(
                     context = ErrorEvent.Context(additionalProperties = updatedAttributes),
                     dd = ErrorEvent.Dd(
                         session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1)
-                    )
+                    ),
+                    service = datadogContext.service,
+                    version = datadogContext.version
                 )
+
+                @Suppress("ThreadSafety") // called in a worker thread context
                 writer.write(eventBatchWriter, errorEvent)
             }
 
@@ -615,8 +625,7 @@ internal open class RumViewScope(
         }
     }
 
-    @Suppress("LongMethod")
-    @WorkerThread
+    @Suppress("LongMethod", "ComplexMethod")
     private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<Any>) {
         val viewComplete = isViewComplete()
         if (!viewUpdatePredicate.canUpdateView(viewComplete, event)) {
@@ -656,7 +665,7 @@ internal open class RumViewScope(
         val timings = resolveCustomTimings()
         val memoryInfo = lastMemoryInfo
         val refreshRateInfo = lastFrameRateInfo
-        val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo)
+        val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo) ?: false
 
         sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
@@ -668,7 +677,7 @@ internal open class RumViewScope(
                     date = eventTimestamp,
                     view = ViewEvent.View(
                         id = rumContext.viewId.orEmpty(),
-                        name = rumContext.viewName.orEmpty(),
+                        name = rumContext.viewName,
                         url = rumContext.viewUrl.orEmpty(),
                         loadingTime = eventLoadingTime,
                         loadingType = eventLoadingType,
@@ -693,12 +702,16 @@ internal open class RumViewScope(
                         flutterRasterTime = eventFlutterRasterTime,
                         jsRefreshRate = eventJsRefreshRate
                     ),
-                    usr = ViewEvent.Usr(
-                        id = user.id,
-                        name = user.name,
-                        email = user.email,
-                        additionalProperties = user.additionalProperties.toMutableMap()
-                    ),
+                    usr = if (user.hasUserData()) {
+                        ViewEvent.Usr(
+                            id = user.id,
+                            name = user.name,
+                            email = user.email,
+                            additionalProperties = user.additionalProperties.toMutableMap()
+                        )
+                    } else {
+                        null
+                    },
                     application = ViewEvent.Application(rumContext.applicationId),
                     session = ViewEvent.ViewEventSession(
                         id = rumContext.sessionId,
@@ -722,9 +735,13 @@ internal open class RumViewScope(
                     dd = ViewEvent.Dd(
                         documentVersion = eventVersion,
                         session = ViewEvent.DdSession(plan = ViewEvent.Plan.PLAN_1)
-                    )
+                    ),
+                    connectivity = datadogContext.networkInfo.toViewConnectivity(),
+                    service = datadogContext.service,
+                    version = datadogContext.version
                 )
 
+                @Suppress("ThreadSafety") // called in a worker thread context
                 writer.write(eventBatchWriter, viewEvent)
             }
     }
@@ -773,6 +790,7 @@ internal open class RumViewScope(
         sendViewUpdate(event, writer)
     }
 
+    @Suppress("LongMethod")
     @WorkerThread
     private fun onApplicationStarted(
         event: RumRawEvent.ApplicationStarted,
@@ -792,6 +810,10 @@ internal open class RumViewScope(
                     action = ActionEvent.ActionEventAction(
                         type = ActionEvent.ActionEventActionType.APPLICATION_START,
                         id = UUID.randomUUID().toString(),
+                        error = ActionEvent.Error(0),
+                        crash = ActionEvent.Crash(0),
+                        longTask = ActionEvent.LongTask(0),
+                        resource = ActionEvent.Resource(0),
                         loadingTime = getStartupTime(event)
                     ),
                     view = ActionEvent.View(
@@ -799,12 +821,16 @@ internal open class RumViewScope(
                         name = rumContext.viewName,
                         url = rumContext.viewUrl.orEmpty()
                     ),
-                    usr = ActionEvent.Usr(
-                        id = user.id,
-                        name = user.name,
-                        email = user.email,
-                        additionalProperties = user.additionalProperties.toMutableMap()
-                    ),
+                    usr = if (user.hasUserData()) {
+                        ActionEvent.Usr(
+                            id = user.id,
+                            name = user.name,
+                            email = user.email,
+                            additionalProperties = user.additionalProperties.toMutableMap()
+                        )
+                    } else {
+                        null
+                    },
                     application = ActionEvent.Application(rumContext.applicationId),
                     session = ActionEvent.ActionEventSession(
                         id = rumContext.sessionId,
@@ -827,8 +853,13 @@ internal open class RumViewScope(
                     context = ActionEvent.Context(
                         additionalProperties = attributes
                     ),
-                    dd = ActionEvent.Dd(session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1))
+                    dd = ActionEvent.Dd(session = ActionEvent.DdSession(ActionEvent.Plan.PLAN_1)),
+                    connectivity = datadogContext.networkInfo.toActionConnectivity(),
+                    service = datadogContext.service,
+                    version = datadogContext.version
                 )
+
+                @Suppress("ThreadSafety") // called in a worker thread context
                 writer.write(eventBatchWriter, actionEvent)
             }
     }
@@ -856,7 +887,6 @@ internal open class RumViewScope(
             ?.withWriteContext { datadogContext, eventBatchWriter ->
 
                 val user = datadogContext.userInfo
-                val networkInfo = datadogContext.networkInfo
                 val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext)
 
                 val longTaskEvent = LongTaskEvent(
@@ -871,13 +901,17 @@ internal open class RumViewScope(
                         name = rumContext.viewName,
                         url = rumContext.viewUrl.orEmpty()
                     ),
-                    usr = LongTaskEvent.Usr(
-                        id = user.id,
-                        name = user.name,
-                        email = user.email,
-                        additionalProperties = user.additionalProperties.toMutableMap()
-                    ),
-                    connectivity = networkInfo.toLongTaskConnectivity(),
+                    usr = if (user.hasUserData()) {
+                        LongTaskEvent.Usr(
+                            id = user.id,
+                            name = user.name,
+                            email = user.email,
+                            additionalProperties = user.additionalProperties.toMutableMap()
+                        )
+                    } else {
+                        null
+                    },
+                    connectivity = datadogContext.networkInfo.toLongTaskConnectivity(),
                     application = LongTaskEvent.Application(rumContext.applicationId),
                     session = LongTaskEvent.LongTaskEventSession(
                         id = rumContext.sessionId,
@@ -900,8 +934,12 @@ internal open class RumViewScope(
                     context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
                     dd = LongTaskEvent.Dd(
                         session = LongTaskEvent.DdSession(LongTaskEvent.Plan.PLAN_1)
-                    )
+                    ),
+                    service = datadogContext.service,
+                    version = datadogContext.version
                 )
+
+                @Suppress("ThreadSafety") // called in a worker thread context
                 writer.write(eventBatchWriter, longTaskEvent)
             }
 

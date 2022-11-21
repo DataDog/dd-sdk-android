@@ -23,5 +23,29 @@ internal class CombinedLogHandler(
         handlers.forEach { it.handleLog(level, message, throwable, attributes, tags, timestamp) }
     }
 
+    override fun handleLog(
+        level: Int,
+        message: String,
+        errorKind: String?,
+        errorMessage: String?,
+        errorStacktrace: String?,
+        attributes: Map<String, Any?>,
+        tags: Set<String>,
+        timestamp: Long?
+    ) {
+        handlers.forEach {
+            it.handleLog(
+                level,
+                message,
+                errorKind,
+                errorMessage,
+                errorStacktrace,
+                attributes,
+                tags,
+                timestamp
+            )
+        }
+    }
+
     // endregion
 }

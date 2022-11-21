@@ -314,6 +314,9 @@ internal class DatadogNdkCrashHandler(
         }
         val additionalProperties = viewEvent.context?.additionalProperties ?: mutableMapOf()
         val additionalUserProperties = viewEvent.usr?.additionalProperties ?: mutableMapOf()
+        val user = viewEvent.usr
+        val hasUserInfo = user?.id != null || user?.name != null ||
+            user?.email != null || additionalUserProperties.isNotEmpty()
         return ErrorEvent(
             date = ndkCrashLog.timestamp + timeProvider.getServerOffsetMillis(),
             application = ErrorEvent.Application(viewEvent.application.id),
@@ -333,12 +336,16 @@ internal class DatadogNdkCrashHandler(
                 referrer = viewEvent.view.referrer,
                 url = viewEvent.view.url
             ),
-            usr = ErrorEvent.Usr(
-                viewEvent.usr?.id,
-                viewEvent.usr?.name,
-                viewEvent.usr?.email,
-                additionalUserProperties
-            ),
+            usr = if (!hasUserInfo) {
+                null
+            } else {
+                ErrorEvent.Usr(
+                    user?.id,
+                    user?.name,
+                    user?.email,
+                    additionalUserProperties
+                )
+            },
             connectivity = connectivity,
             os = ErrorEvent.Os(
                 name = androidInfoProvider.osName,
@@ -361,7 +368,8 @@ internal class DatadogNdkCrashHandler(
                 isCrash = true,
                 type = ndkCrashLog.signalName,
                 sourceType = ErrorEvent.SourceType.ANDROID
-            )
+            ),
+            version = viewEvent.version
         )
     }
 

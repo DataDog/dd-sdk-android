@@ -11,6 +11,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
@@ -112,6 +113,76 @@ internal class CombinedLogHandlerTest {
 
         mockDevLogHandlers.forEach {
             verify(it).handleLog(fakeLevel, fakeMessage, null, emptyMap(), emptySet())
+        }
+    }
+
+    @Test
+    fun `forwards log with error strings`(
+        @StringForgery errorKind: String,
+        @StringForgery errorMessage: String,
+        @StringForgery errorStack: String
+    ) {
+        testedHandler.handleLog(
+            fakeLevel,
+            fakeMessage,
+            errorKind,
+            errorMessage,
+            errorStack,
+            fakeAttributes,
+            fakeTags
+        )
+
+        mockDevLogHandlers.forEach {
+            verify(it).handleLog(
+                fakeLevel,
+                fakeMessage,
+                errorKind,
+                errorMessage,
+                errorStack,
+                fakeAttributes,
+                fakeTags
+            )
+        }
+    }
+
+    @Test
+    fun `forwards log with error strings on background thread`(
+        @StringForgery errorKind: String,
+        @StringForgery errorMessage: String,
+        @StringForgery errorStack: String,
+        forge: Forge
+    ) {
+        val threadName = forge.anAlphabeticalString()
+        val countDownLatch = CountDownLatch(1)
+        val thread = Thread(
+            {
+                testedHandler.handleLog(
+                    fakeLevel,
+                    fakeMessage,
+                    errorKind,
+                    errorMessage,
+                    errorStack,
+                    fakeAttributes,
+                    fakeTags
+                )
+                countDownLatch.countDown()
+            },
+            threadName
+        )
+
+        thread.start()
+        countDownLatch.await(1, TimeUnit.SECONDS)
+
+        mockDevLogHandlers.forEach {
+            verify(it).handleLog(
+                fakeLevel,
+                fakeMessage,
+                errorKind,
+                errorMessage,
+                errorStack,
+                fakeAttributes,
+                fakeTags
+            )
         }
     }
 }

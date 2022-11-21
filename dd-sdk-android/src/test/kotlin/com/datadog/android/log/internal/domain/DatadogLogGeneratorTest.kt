@@ -617,6 +617,26 @@ internal class DatadogLogGeneratorTest {
     }
 
     @Test
+    fun `M add architecture W created a log`() {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
+        )
+
+        // THEN
+        assertThat(log).hasDeviceArchitecture(fakeDatadogContext.deviceInfo.architecture)
+    }
+
+    @Test
     fun `M bundle the trace information W required`() {
         // WHEN
         val log = testedLogGenerator.generateLog(

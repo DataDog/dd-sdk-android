@@ -79,4 +79,45 @@ internal class TelemetryLogHandlerTest {
         verify(mockTelemetry).debug(message)
         verifyNoMoreInteractions(mockTelemetry)
     }
+
+    @Test
+    fun `𝕄 report ERROR and WARN as error 𝕎 handleLog( { error strings } )`(
+        @StringForgery message: String,
+        forge: Forge
+    ) {
+        // Given
+        val level = forge.anElementFrom(AndroidLog.ERROR, AndroidLog.WARN)
+        val errorKind = forge.anAlphabeticalString()
+        val errorMessage = forge.anAlphabeticalString()
+        val errorStack = forge.anAlphabeticalString()
+
+        // When
+        testedHandler.handleLog(level, message, errorKind, errorMessage, errorStack)
+
+        // Then
+        verify(mockTelemetry).error(message, errorStack, errorKind)
+        verifyNoMoreInteractions(mockTelemetry)
+    }
+
+    @Test
+    fun `𝕄 report any non-ERROR or WARN as debug 𝕎 handleLog( { error strings } )`(
+        @StringForgery message: String,
+        forge: Forge
+    ) {
+        // Given
+        var level = forge.anInt()
+        while (level in setOf(AndroidLog.ERROR, AndroidLog.WARN)) {
+            level = forge.anInt()
+        }
+        val errorKind = forge.anAlphabeticalString()
+        val errorMessage = forge.anAlphabeticalString()
+        val errorStack = forge.anAlphabeticalString()
+
+        // When
+        testedHandler.handleLog(level, message, errorKind, errorMessage, errorStack)
+
+        // Then
+        verify(mockTelemetry).debug(message)
+        verifyNoMoreInteractions(mockTelemetry)
+    }
 }

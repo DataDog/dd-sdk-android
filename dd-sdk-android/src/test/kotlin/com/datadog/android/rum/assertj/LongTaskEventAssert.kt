@@ -6,15 +6,13 @@
 
 package com.datadog.android.rum.assertj
 
-import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.model.LongTaskEvent
+import com.datadog.android.v2.api.context.NetworkInfo
+import com.datadog.android.v2.api.context.UserInfo
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
-import com.datadog.android.v2.api.context.NetworkInfo as NetworkInfoV2
-import com.datadog.android.v2.api.context.UserInfo as UserInfoV2
 
 internal class LongTaskEventAssert(actual: LongTaskEvent) :
     AbstractObjectAssert<LongTaskEventAssert, LongTaskEvent>(
@@ -83,35 +81,6 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
-    fun hasUserInfo(expected: UserInfoV2?): LongTaskEventAssert {
-        assertThat(actual.usr?.id)
-            .overridingErrorMessage(
-                "Expected RUM event to have usr.id ${expected?.id} " +
-                    "but was ${actual.usr?.id}"
-            )
-            .isEqualTo(expected?.id)
-        assertThat(actual.usr?.name)
-            .overridingErrorMessage(
-                "Expected RUM event to have usr.name ${expected?.name} " +
-                    "but was ${actual.usr?.name}"
-            )
-            .isEqualTo(expected?.name)
-        assertThat(actual.usr?.email)
-            .overridingErrorMessage(
-                "Expected RUM event to have usr.email ${expected?.email} " +
-                    "but was ${actual.usr?.email}"
-            )
-            .isEqualTo(expected?.email)
-        assertThat(actual.usr?.additionalProperties)
-            .overridingErrorMessage(
-                "Expected event to have user additional " +
-                    "properties ${expected?.additionalProperties} " +
-                    "but was ${actual.usr?.additionalProperties}"
-            )
-            .containsExactlyInAnyOrderEntriesOf(expected?.additionalProperties)
-        return this
-    }
-
     fun containsExactlyContextAttributes(expected: Map<String, Any?>) {
         assertThat(actual.context?.additionalProperties)
             .overridingErrorMessage(
@@ -132,7 +101,9 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
             NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(LongTaskEvent.Interface.ETHERNET)
             NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(LongTaskEvent.Interface.WIFI)
             NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(LongTaskEvent.Interface.WIMAX)
-            NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(LongTaskEvent.Interface.BLUETOOTH)
+            NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(
+                LongTaskEvent.Interface.BLUETOOTH
+            )
             NetworkInfo.Connectivity.NETWORK_2G,
             NetworkInfo.Connectivity.NETWORK_3G,
             NetworkInfo.Connectivity.NETWORK_4G,
@@ -141,62 +112,6 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
             NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(LongTaskEvent.Interface.CELLULAR)
             NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(LongTaskEvent.Interface.OTHER)
             NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
-            null -> null
-        }
-
-        assertThat(actual.connectivity?.status)
-            .overridingErrorMessage(
-                "Expected RUM event to have connectivity.status $expectedStatus " +
-                    "but was ${actual.connectivity?.status}"
-            )
-            .isEqualTo(expectedStatus)
-
-        assertThat(actual.connectivity?.cellular?.technology)
-            .overridingErrorMessage(
-                "Expected RUM event to connectivity usr.cellular.technology " +
-                    "${expected?.cellularTechnology} " +
-                    "but was ${actual.connectivity?.cellular?.technology}"
-            )
-            .isEqualTo(expected?.cellularTechnology)
-
-        assertThat(actual.connectivity?.cellular?.carrierName)
-            .overridingErrorMessage(
-                "Expected RUM event to connectivity usr.cellular.carrierName " +
-                    "${expected?.carrierName} " +
-                    "but was ${actual.connectivity?.cellular?.carrierName}"
-            )
-            .isEqualTo(expected?.carrierName)
-
-        assertThat(actual.connectivity?.interfaces)
-            .overridingErrorMessage(
-                "Expected RUM event to have connectivity.interfaces $expectedInterfaces " +
-                    "but was ${actual.connectivity?.interfaces}"
-            )
-            .isEqualTo(expectedInterfaces)
-        return this
-    }
-
-    fun hasConnectivityInfo(expected: NetworkInfoV2?): LongTaskEventAssert {
-        val expectedStatus = if (expected?.isConnected() == true) {
-            LongTaskEvent.Status.CONNECTED
-        } else {
-            LongTaskEvent.Status.NOT_CONNECTED
-        }
-        val expectedInterfaces = when (expected?.connectivity) {
-            NetworkInfoV2.Connectivity.NETWORK_ETHERNET -> listOf(LongTaskEvent.Interface.ETHERNET)
-            NetworkInfoV2.Connectivity.NETWORK_WIFI -> listOf(LongTaskEvent.Interface.WIFI)
-            NetworkInfoV2.Connectivity.NETWORK_WIMAX -> listOf(LongTaskEvent.Interface.WIMAX)
-            NetworkInfoV2.Connectivity.NETWORK_BLUETOOTH -> listOf(
-                LongTaskEvent.Interface.BLUETOOTH
-            )
-            NetworkInfoV2.Connectivity.NETWORK_2G,
-            NetworkInfoV2.Connectivity.NETWORK_3G,
-            NetworkInfoV2.Connectivity.NETWORK_4G,
-            NetworkInfoV2.Connectivity.NETWORK_5G,
-            NetworkInfoV2.Connectivity.NETWORK_MOBILE_OTHER,
-            NetworkInfoV2.Connectivity.NETWORK_CELLULAR -> listOf(LongTaskEvent.Interface.CELLULAR)
-            NetworkInfoV2.Connectivity.NETWORK_OTHER -> listOf(LongTaskEvent.Interface.OTHER)
-            NetworkInfoV2.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
             null -> null
         }
 
@@ -370,6 +285,26 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
                     "but was ${actual.session.hasReplay}"
             )
             .isEqualTo(hasReplay)
+    }
+
+    fun hasServiceName(serviceName: String?): LongTaskEventAssert {
+        assertThat(actual.service)
+            .overridingErrorMessage(
+                "Expected RUM event to have serviceName: $serviceName" +
+                    " but instead was: ${actual.service}"
+            )
+            .isEqualTo(serviceName)
+        return this
+    }
+
+    fun hasVersion(version: String?): LongTaskEventAssert {
+        assertThat(actual.version)
+            .overridingErrorMessage(
+                "Expected RUM event to have version: $version" +
+                    " but instead was: ${actual.version}"
+            )
+            .isEqualTo(version)
+        return this
     }
 
     companion object {
