@@ -9,7 +9,6 @@ package com.datadog.android.sessionreplay.internal
 import android.app.Application
 import android.content.Context
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.sessionreplay.LifecycleCallback
 import com.datadog.android.sessionreplay.RecordWriter
@@ -23,7 +22,6 @@ import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class SessionReplayFeature(
-    private val coreFeature: CoreFeature,
     private val sdkCore: SdkCore,
     private val sessionReplayCallbackProvider:
         (RecordWriter, Configuration.Feature.SessionReplay) ->
@@ -32,7 +30,7 @@ internal class SessionReplayFeature(
                 SessionReplayRumContextProvider(sdkCore),
                 configuration.privacy,
                 recordWriter,
-                SessionReplayTimeProvider(coreFeature.contextProvider),
+                SessionReplayTimeProvider(sdkCore),
                 SessionReplayRecordCallback(sdkCore)
             )
         }

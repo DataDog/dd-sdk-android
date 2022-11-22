@@ -8,10 +8,9 @@ package com.datadog.android.sessionreplay.internal.time
 
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.api.SdkCore
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -33,8 +32,9 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class SessionReplayTimeProviderTest {
+
     @Mock
-    lateinit var mockContextProvider: ContextProvider
+    lateinit var mockSdkCore: SdkCore
 
     lateinit var testedTimeProvider: SessionReplayTimeProvider
 
@@ -43,24 +43,21 @@ internal class SessionReplayTimeProviderTest {
 
     @BeforeEach
     fun `set up`() {
-        testedTimeProvider = SessionReplayTimeProvider(mockContextProvider) {
+        testedTimeProvider = SessionReplayTimeProvider(mockSdkCore) {
             fakeCurrentTimeInMillis
         }
     }
 
     @Test
     fun `M add the rum view timestamp offset W getDeviceTimestamp() {offset provided}`(
-        forge: Forge
+        @LongForgery(min = 100000L) fakeTimestampOffset: Long
     ) {
         // Given
-        val fakeTimestampOffset = forge.aLong(min = 100000)
-        val fakeFeaturesContext = mapOf<String, Map<String, Any?>>(
-            RumFeature.RUM_FEATURE_NAME to
-                mapOf(RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY to fakeTimestampOffset)
-        )
-        val fakeDatadogContext = forge.getForgery<DatadogContext>()
-            .copy(featuresContext = fakeFeaturesContext)
-        whenever(mockContextProvider.context).thenReturn(fakeDatadogContext)
+        val fakeFeaturesContext =
+            mapOf(RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY to fakeTimestampOffset)
+        whenever(
+            mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)
+        ) doReturn fakeFeaturesContext
 
         // When
         val deviceTimestamp = testedTimeProvider.getDeviceTimestamp()
@@ -70,32 +67,9 @@ internal class SessionReplayTimeProviderTest {
     }
 
     @Test
-    fun `M return the current timestamp W getDeviceTimestamp() {no rum feature context}`(
-        forge: Forge
-    ) {
+    fun `M return the current timestamp W getDeviceTimestamp() {no entry for offset value}`() {
         // Given
-        val fakeDatadogContext = forge.getForgery<DatadogContext>()
-        whenever(mockContextProvider.context).thenReturn(fakeDatadogContext)
-
-        // When
-        val deviceTimestamp = testedTimeProvider.getDeviceTimestamp()
-
-        // Then
-        assertThat(deviceTimestamp).isEqualTo(fakeCurrentTimeInMillis)
-    }
-
-    @Test
-    fun `M return the current timestamp W getDeviceTimestamp() {no entry for offset value}`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeFeaturesContext = mapOf<String, Map<String, Any?>>(
-            RumFeature.RUM_FEATURE_NAME
-                to emptyMap()
-        )
-        val fakeDatadogContext = forge.getForgery<DatadogContext>()
-            .copy(featuresContext = fakeFeaturesContext)
-        whenever(mockContextProvider.context).thenReturn(fakeDatadogContext)
+        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn emptyMap()
 
         // When
         val deviceTimestamp = testedTimeProvider.getDeviceTimestamp()

@@ -47,6 +47,7 @@ import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -161,6 +162,9 @@ internal class RumViewScopeTest {
     lateinit var fakeEvent: RumRawEvent
 
     @Forgery
+    lateinit var fakeTimeInfoAtScopeStart: TimeInfo
+
+    @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
     @Mock
@@ -227,7 +231,7 @@ internal class RumViewScopeTest {
         val minLimit = min(-fakeTimestamp, maxLimit)
 
         fakeDatadogContext = fakeDatadogContext.copy(
-            time = fakeDatadogContext.time.copy(
+            time = fakeTimeInfoAtScopeStart.copy(
                 serverTimeOffsetMs = forge.aLong(min = minLimit, max = maxLimit)
             )
         )
@@ -247,6 +251,7 @@ internal class RumViewScopeTest {
         whenever(mockFeaturesContextResolver.resolveHasReplay(fakeDatadogContext))
             .thenReturn(fakeHasReplay)
         whenever(mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        whenever(mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
         whenever(mockRumFeatureScope.withWriteContext(any())) doAnswer {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
@@ -399,7 +404,7 @@ internal class RumViewScopeTest {
             val rumContext = mutableMapOf<String, Any?>()
             lastValue.invoke(rumContext)
             assertThat(rumContext[RumFeature.VIEW_TIMESTAMP_OFFSET_IN_MS_KEY])
-                .isEqualTo(fakeDatadogContext.time.serverTimeOffsetMs)
+                .isEqualTo(fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
         }
     }
 
@@ -6840,7 +6845,7 @@ internal class RumViewScopeTest {
     }
 
     private fun resolveExpectedTimestamp(timestamp: Long): Long {
-        return timestamp + fakeDatadogContext.time.serverTimeOffsetMs
+        return timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs
     }
 
     // endregion

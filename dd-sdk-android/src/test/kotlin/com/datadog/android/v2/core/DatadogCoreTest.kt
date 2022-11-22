@@ -13,6 +13,8 @@ import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.privacy.ConsentProvider
+import com.datadog.android.core.internal.time.NoOpTimeProvider
+import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
@@ -30,6 +32,7 @@ import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.FeatureEventReceiver
+import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
@@ -45,6 +48,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -62,6 +66,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -346,6 +351,55 @@ internal class DatadogCoreTest {
 
         // Then
         verify(mockEventReceiverRef).set(null)
+    }
+
+    @Test
+    fun `𝕄 provide time info 𝕎 time()`(
+        @LongForgery(min = 10001L) fakeDeviceTimestamp: Long,
+        @LongForgery(min = -10000L, max = 10000L) fakeServerTimeOffsetMs: Long
+    ) {
+        // Given
+        testedCore.coreFeature = mock()
+        val mockTimeProvider = mock<TimeProvider>()
+        whenever(testedCore.coreFeature.timeProvider) doReturn mockTimeProvider
+        whenever(mockTimeProvider.getServerOffsetNanos()) doReturn TimeUnit.MILLISECONDS.toNanos(
+            fakeServerTimeOffsetMs
+        )
+        whenever(mockTimeProvider.getServerOffsetMillis()) doReturn fakeServerTimeOffsetMs
+        whenever(mockTimeProvider.getDeviceTimestamp()) doReturn fakeDeviceTimestamp
+        whenever(
+            mockTimeProvider.getServerTimestamp()
+        ) doReturn fakeDeviceTimestamp + fakeServerTimeOffsetMs
+
+        // When
+        val time = testedCore.time
+
+        // Then
+        assertThat(time).isEqualTo(
+            TimeInfo(
+                deviceTimeNs = TimeUnit.MILLISECONDS.toNanos(fakeDeviceTimestamp),
+                serverTimeNs = TimeUnit.MILLISECONDS.toNanos(
+                    fakeDeviceTimestamp + fakeServerTimeOffsetMs
+                ),
+                serverTimeOffsetMs = fakeServerTimeOffsetMs,
+                serverTimeOffsetNs = TimeUnit.MILLISECONDS.toNanos(fakeServerTimeOffsetMs)
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 provide time info without correction 𝕎 time() {NoOpTimeProvider}`() {
+        // Given
+        testedCore.coreFeature = mock()
+        whenever(testedCore.coreFeature.timeProvider) doReturn NoOpTimeProvider()
+
+        // When
+        val time = testedCore.time
+
+        // Then
+        assertThat(time.deviceTimeNs).isEqualTo(time.serverTimeNs)
+        assertThat(time.serverTimeOffsetMs).isEqualTo(0)
+        assertThat(time.serverTimeOffsetNs).isEqualTo(0)
     }
 
     @Test

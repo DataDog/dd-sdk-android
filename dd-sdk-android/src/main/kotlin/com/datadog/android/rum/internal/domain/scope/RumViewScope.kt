@@ -80,7 +80,7 @@ internal open class RumViewScope(
         private set
     private val startedNanos: Long = eventTime.nanoTime
 
-    internal val serverTimeOffsetInMs = contextProvider.context.time.serverTimeOffsetMs
+    internal val serverTimeOffsetInMs = sdkCore.time.serverTimeOffsetMs
     internal val eventTimestamp = eventTime.timestamp + serverTimeOffsetInMs
 
     internal var activeActionScope: RumScope? = null

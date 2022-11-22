@@ -13,9 +13,9 @@ import com.datadog.android.log.Logger
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.data.NoOpWriter
 import com.datadog.android.tracing.internal.handlers.AndroidSpanLogsHandler
-import com.datadog.android.v2.api.NoOpSdkCore
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.opentracing.DDTracer
 import com.datadog.opentracing.LogHandler
 import com.datadog.trace.api.Config
