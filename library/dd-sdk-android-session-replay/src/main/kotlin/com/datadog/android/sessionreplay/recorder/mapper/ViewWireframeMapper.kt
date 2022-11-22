@@ -27,7 +27,7 @@ internal class ViewWireframeMapper :
         view.getLocationOnScreen(coordinates)
         val x = coordinates[0].densityNormalized(pixelsDensity).toLong()
         val y = coordinates[1].densityNormalized(pixelsDensity).toLong()
-        val styleBorderPair = view.background?.resolveShapeStyleAndBorder()
+        val styleBorderPair = view.background?.resolveShapeStyleAndBorder(view.alpha)
         return MobileSegment.Wireframe.ShapeWireframe(
             resolveViewId(view),
             x,
@@ -39,18 +39,18 @@ internal class ViewWireframeMapper :
         )
     }
 
-    private fun Drawable.resolveShapeStyleAndBorder():
+    private fun Drawable.resolveShapeStyleAndBorder(viewAlpha: Float):
         Pair<MobileSegment.ShapeStyle?, MobileSegment.ShapeBorder?>? {
         return if (this is ColorDrawable) {
             val color = colorAndAlphaAsStringHexa(color, alpha.toLong())
-            MobileSegment.ShapeStyle(color, alpha) to null
+            MobileSegment.ShapeStyle(color, viewAlpha) to null
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
             this is RippleDrawable &&
             numberOfLayers >= 1
         ) {
-            getDrawable(0).resolveShapeStyleAndBorder()
+            getDrawable(0).resolveShapeStyleAndBorder(viewAlpha)
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && this is InsetDrawable) {
-            drawable?.resolveShapeStyleAndBorder()
+            drawable?.resolveShapeStyleAndBorder(viewAlpha)
         } else {
             // We cannot handle this drawable so we will use a border to delimit its container
             // bounds.

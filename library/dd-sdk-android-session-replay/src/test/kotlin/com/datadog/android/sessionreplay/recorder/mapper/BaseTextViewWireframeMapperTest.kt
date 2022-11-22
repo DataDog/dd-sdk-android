@@ -177,6 +177,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
     ) {
         // Given
         val fakeStyleColor = forge.aStringMatching("#[0-9a-f]{8}")
+        val fakeViewAlpha = forge.aFloat(min = 0f, max = 1f)
         val fakeDrawableColor = fakeStyleColor
             .substring(1)
             .toLong(16)
@@ -195,6 +196,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             whenever(this.background).thenReturn(mockDrawable)
             whenever(this.text).thenReturn(fakeText)
             whenever(this.typeface).thenReturn(mock())
+            whenever(this.alpha).thenReturn(fakeViewAlpha)
         }
 
         // When
@@ -205,7 +207,7 @@ internal abstract class BaseTextViewWireframeMapperTest : BaseWireframeMapperTes
             shapeStyle = MobileSegment
                 .ShapeStyle(
                     backgroundColor = fakeStyleColor,
-                    opacity = fakeDrawableAlpha,
+                    opacity = fakeViewAlpha,
                     cornerRadius = null
                 )
         )
