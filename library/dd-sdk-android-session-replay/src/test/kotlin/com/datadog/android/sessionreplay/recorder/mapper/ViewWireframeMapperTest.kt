@@ -89,6 +89,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         forge: Forge
     ) {
         // Given
+        val fakeViewAlpha = forge.aFloat(min = 0f, max = 1f)
         val fakeStyleColor = forge.aStringMatching("#[0-9a-f]{8}")
         val fakeDrawableColor = fakeStyleColor
             .substring(1)
@@ -106,6 +107,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         }
         val mockView = forge.aMockView<View>().apply {
             whenever(this.background).thenReturn(mockDrawable)
+            whenever(this.alpha).thenReturn(fakeViewAlpha)
         }
 
         // When
@@ -116,7 +118,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
             shapeStyle = MobileSegment
                 .ShapeStyle(
                     backgroundColor = fakeStyleColor,
-                    opacity = fakeDrawableAlpha,
+                    opacity = fakeViewAlpha,
                     cornerRadius = null
                 )
         )
@@ -130,6 +132,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         forge: Forge
     ) {
         // Given
+        val fakeViewAlpha = forge.aFloat(min = 0f, max = 1f)
         val fakeStyleColor = forge.aStringMatching("#[0-9a-f]{8}")
         val fakeDrawableColor = fakeStyleColor
             .substring(1)
@@ -150,6 +153,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         }
         val mockView = forge.aMockView<View>().apply {
             whenever(this.background).thenReturn(mockInsetDrawable)
+            whenever(this.alpha).thenReturn(fakeViewAlpha)
         }
 
         // When
@@ -160,7 +164,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
             shapeStyle = MobileSegment
                 .ShapeStyle(
                     backgroundColor = fakeStyleColor,
-                    opacity = fakeDrawableAlpha,
+                    opacity = fakeViewAlpha,
                     cornerRadius = null
                 )
         )
@@ -210,6 +214,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         forge: Forge
     ) {
         // Given
+        val fakeViewAlpha = forge.aFloat(min = 0f, max = 1f)
         val fakeStyleColor = forge.aStringMatching("#[0-9a-f]{8}")
         val fakeDrawableColor = fakeStyleColor
             .substring(1)
@@ -231,6 +236,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
         }
         val mockView = forge.aMockView<View>().apply {
             whenever(this.background).thenReturn(mockRipple)
+            whenever(this.alpha).thenReturn(fakeViewAlpha)
         }
 
         // When
@@ -241,7 +247,7 @@ internal class ViewWireframeMapperTest : BaseWireframeMapperTest() {
             shapeStyle = MobileSegment
                 .ShapeStyle(
                     backgroundColor = fakeStyleColor,
-                    opacity = fakeDrawableAlpha,
+                    opacity = fakeViewAlpha,
                     cornerRadius = null
                 )
         )
