@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
+import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.internal.utils.sdkLogger
@@ -41,6 +42,7 @@ import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.FeatureUploadConfiguration
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
 import com.datadog.android.v2.log.internal.net.LogsRequestFactory
@@ -97,6 +99,30 @@ internal class DatadogCore(
     }
 
     // region SdkCore
+
+    /** @inheritDoc */
+    override val time: TimeInfo
+        get() {
+            return with(coreFeature.timeProvider) {
+                val deviceTimeMs = if (this is NoOpTimeProvider) {
+                    System.currentTimeMillis()
+                } else {
+                    getDeviceTimestamp()
+                }
+                val serverTimeMs = if (this is NoOpTimeProvider) {
+                    deviceTimeMs
+                } else {
+                    getServerTimestamp()
+                }
+                TimeInfo(
+                    deviceTimeNs = TimeUnit.MILLISECONDS.toNanos(deviceTimeMs),
+                    serverTimeNs = TimeUnit.MILLISECONDS.toNanos(serverTimeMs),
+                    serverTimeOffsetNs = TimeUnit.MILLISECONDS
+                        .toNanos(serverTimeMs - deviceTimeMs),
+                    serverTimeOffsetMs = serverTimeMs - deviceTimeMs
+                )
+            }
+        }
 
     /** @inheritDoc */
     override fun registerFeature(
@@ -394,7 +420,7 @@ internal class DatadogCore(
             )
             features[SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME]?.let {
                 it.initialize(appContext, configuration.plugins)
-                sessionReplayFeature = SessionReplayFeature(coreFeature, this).also {
+                sessionReplayFeature = SessionReplayFeature(this).also {
                     it.initialize(appContext, configuration)
                 }
             }

@@ -9,14 +9,18 @@ package com.datadog.android.v2.api
 import com.datadog.android.Datadog
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.tools.annotation.NoOpImplementation
+import com.datadog.android.v2.api.context.TimeInfo
 
 /**
  * SdkCore is the entry point to register Datadog features to the core registry.
  */
 @Suppress("ComplexInterface", "TooManyFunctions")
-@NoOpImplementation
 interface SdkCore {
+
+    /**
+     * The current time (both device and server).
+     */
+    val time: TimeInfo
 
     /**
      * Registers a feature to this instance of the Datadog SDK.

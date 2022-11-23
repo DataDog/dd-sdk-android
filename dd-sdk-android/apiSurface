@@ -1867,6 +1867,7 @@ interface com.datadog.android.v2.api.RequestFactory
     const val QUERY_PARAM_SOURCE: String
     const val QUERY_PARAM_TAGS: String
 interface com.datadog.android.v2.api.SdkCore
+  val time: com.datadog.android.v2.api.context.TimeInfo
   fun registerFeature(String, FeatureStorageConfiguration, FeatureUploadConfiguration)
   fun getFeature(String): FeatureScope?
   fun setVerbosity(Int)

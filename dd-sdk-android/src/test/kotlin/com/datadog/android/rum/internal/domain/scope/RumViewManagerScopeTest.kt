@@ -20,6 +20,7 @@ import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -99,12 +100,16 @@ internal class RumViewManagerScopeTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
+    @Forgery
+    lateinit var fakeTime: TimeInfo
+
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
     @BeforeEach
     fun `set up`() {
         whenever(mockContextProvider.context) doReturn fakeDatadogContext
+        whenever(mockSdkCore.time) doReturn fakeTime
 
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
@@ -698,7 +703,7 @@ internal class RumViewManagerScopeTest {
     // endregion
 
     private fun resolveExpectedTimestamp(timestamp: Long): Long {
-        return timestamp + fakeDatadogContext.time.serverTimeOffsetMs
+        return timestamp + fakeTime.serverTimeOffsetMs
     }
 
     companion object {

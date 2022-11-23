@@ -12,7 +12,6 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.SdkCore
@@ -65,7 +64,6 @@ internal class SessionReplayFeatureTest {
     @BeforeEach
     fun `set up`() {
         testedFeature = SessionReplayFeature(
-            coreFeature.mockInstance,
             mockSDKCore
         ) { _, _ -> mockSessionReplayLifecycleCallback }
     }
@@ -84,7 +82,6 @@ internal class SessionReplayFeatureTest {
     fun `𝕄 initialize session replay callback 𝕎 initialize()`() {
         // Given
         testedFeature = SessionReplayFeature(
-            coreFeature.mockInstance,
             mockSDKCore
         )
 
@@ -100,7 +97,6 @@ internal class SessionReplayFeatureTest {
     fun `𝕄 set the feature event receiver 𝕎 initialize()`() {
         // Given
         testedFeature = SessionReplayFeature(
-            coreFeature.mockInstance,
             mockSDKCore
         )
 
@@ -413,13 +409,12 @@ internal class SessionReplayFeatureTest {
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
         val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, coreFeature, logger)
+            return listOf(appContext, logger)
         }
     }
 }
