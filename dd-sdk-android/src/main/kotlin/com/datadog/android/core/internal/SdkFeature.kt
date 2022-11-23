@@ -27,8 +27,8 @@ import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.FeatureUploadConfiguration
-import com.datadog.android.v2.api.NoOpInternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.SdkInternalLogger
 import com.datadog.android.v2.core.internal.NoOpContextProvider
 import com.datadog.android.v2.core.internal.data.upload.DataFlusher
 import com.datadog.android.v2.core.internal.data.upload.DataUploadScheduler
@@ -234,8 +234,7 @@ internal class SdkFeature(
                 encryption = coreFeature.localDataEncryption
             ),
             fileMover = FileMover(sdkLogger),
-            // TODO RUMM-0000 create internal logger
-            internalLogger = NoOpInternalLogger(),
+            internalLogger = SdkInternalLogger,
             filePersistenceConfig = coreFeature.buildFilePersistenceConfig().copy(
                 maxBatchSize = storageConfiguration.maxBatchSize,
                 maxItemSize = storageConfiguration.maxItemSize,

@@ -46,6 +46,22 @@ interface InternalLogger {
         target: Target,
         message: String,
         error: Throwable?,
-        attributes: Map<String, Any>
+        attributes: Map<String, Any?>
+    )
+
+    /**
+     * Logs a message from the internal implementation.
+     * @param level the severity level of the log
+     * @param targets list of the target handlers for the log
+     * @param message the log message
+     * @param error an optional throwable error
+     * @param attributes an optional map of custom attributes
+     */
+    fun log(
+        level: Level,
+        targets: List<Target>,
+        message: String,
+        error: Throwable?,
+        attributes: Map<String, Any?>
     )
 }
