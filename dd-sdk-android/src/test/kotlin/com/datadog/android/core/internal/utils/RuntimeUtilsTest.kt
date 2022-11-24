@@ -11,6 +11,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.log.internal.logger.ConditionalLogHandler
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -45,6 +46,7 @@ internal class RuntimeUtilsTest {
     @AfterEach
     fun `tear down`() {
         Datadog.initialized.set(false)
+        Datadog.globalSdkCore = NoOpSdkCore()
     }
 
     // region devLogger
@@ -56,9 +58,10 @@ internal class RuntimeUtilsTest {
         // Given
         val mockSdkCore: SdkCore = mock()
         whenever(mockSdkCore.getVerbosity()) doReturn level
+        Datadog.globalSdkCore = mockSdkCore
 
         // When
-        val handler = buildDevLogHandler(mockSdkCore)
+        val handler = buildDevLogHandler()
 
         // Then
         assertThat(handler).isInstanceOf(ConditionalLogHandler::class.java)

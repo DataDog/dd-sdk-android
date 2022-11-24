@@ -15,7 +15,6 @@ import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.log.internal.logger.TelemetryLogHandler
 import com.datadog.android.telemetry.internal.Telemetry
-import com.datadog.android.v2.api.SdkCore
 import java.util.Locale
 
 internal const val SDK_LOG_PREFIX = "DD_LOG"
@@ -48,15 +47,15 @@ internal fun buildSdkLogger(): Logger {
  */
 internal val devLogger: Logger = buildDevLogger()
 
-private fun buildDevLogger(sdkCore: SdkCore? = null): Logger {
-    return Logger(buildDevLogHandler(sdkCore))
+private fun buildDevLogger(): Logger {
+    return Logger(buildDevLogHandler())
 }
 
-internal fun buildDevLogHandler(sdkCore: SdkCore?): ConditionalLogHandler {
+internal fun buildDevLogHandler(): ConditionalLogHandler {
     return ConditionalLogHandler(
         LogcatLogHandler(DEV_LOG_PREFIX, false)
     ) { i, _ ->
-        i >= (sdkCore?.getVerbosity() ?: Int.MAX_VALUE)
+        i >= Datadog.globalSdkCore.getVerbosity()
     }
 }
 
