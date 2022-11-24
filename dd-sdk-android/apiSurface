@@ -1848,7 +1848,8 @@ interface com.datadog.android.v2.api.InternalLogger
     - USER
     - MAINTAINER
     - TELEMETRY
-  fun log(Level, Target, String, Throwable?, Map<String, Any>)
+  fun log(Level, Target, String, Throwable?, Map<String, Any?>)
+  fun log(Level, List<Target>, String, Throwable?, Map<String, Any?>)
 interface com.datadog.android.v2.api.PayloadFormat
   fun prefixBytes(): ByteArray
   fun suffixBytes(): ByteArray
