@@ -24,7 +24,6 @@ import com.datadog.android.plugin.DatadogRumContext
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
@@ -465,8 +464,6 @@ internal class DatadogCoreTest {
         testedCore.webViewRumFeature = mockWebViewRumFeature
         val mockCrashReportsFeature = mock<CrashReportsFeature>()
         testedCore.crashReportsFeature = mockCrashReportsFeature
-        val mockSessionReplayFeature = mock<SessionReplayFeature>()
-        testedCore.sessionReplayFeature = mockSessionReplayFeature
 
         // When
         testedCore.stop()
@@ -479,7 +476,6 @@ internal class DatadogCoreTest {
         verify(mockWebViewRumFeature).stop()
         verify(mockWebViewLogsFeature).stop()
         verify(mockCrashReportsFeature).stop()
-        verify(mockSessionReplayFeature).stop()
 
         assertThat(testedCore.rumFeature).isNull()
         assertThat(testedCore.tracingFeature).isNull()
@@ -487,7 +483,6 @@ internal class DatadogCoreTest {
         assertThat(testedCore.webViewLogsFeature).isNull()
         assertThat(testedCore.webViewRumFeature).isNull()
         assertThat(testedCore.crashReportsFeature).isNull()
-        assertThat(testedCore.sessionReplayFeature).isNull()
         assertThat(testedCore.contextProvider).isNull()
 
         assertThat(testedCore.features).isEmpty()

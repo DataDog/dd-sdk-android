@@ -310,7 +310,7 @@ internal class CoreFeature {
     private fun readConfigurationSettings(configuration: Configuration.Core) {
         batchSize = configuration.batchSize
         uploadFrequency = configuration.uploadFrequency
-        localDataEncryption = configuration.securityConfig.localDataEncryption
+        localDataEncryption = configuration.encryption
         site = configuration.site
     }
 

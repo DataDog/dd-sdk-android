@@ -9,7 +9,6 @@ package com.datadog.android.telemetry.internal
 import android.util.Log
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.SecurityConfig
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.core.internal.sampling.Sampler
@@ -301,8 +300,7 @@ internal class TelemetryEventHandlerTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .sampleRumSessions(sessionSampleRate.toFloat())
             .sampleTelemetry(telemetrySamplingRate.toFloat())
@@ -332,8 +330,7 @@ internal class TelemetryEventHandlerTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         ).apply {
             if (useProxy) {
                 setProxy(mock(), forge.aNullable { mock() })
@@ -363,11 +360,10 @@ internal class TelemetryEventHandlerTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         ).apply {
             if (useLocalEncryption) {
-                setSecurityConfig(SecurityConfig(mock()))
+                setEncryption(mock())
             }
         }.build()
         val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)
@@ -398,8 +394,7 @@ internal class TelemetryEventHandlerTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = trackErrors,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .trackFrustrations(trackFrustrations)
             .useViewTrackingStrategy(forge.aViewTrackingStrategy(vts))
@@ -436,8 +431,7 @@ internal class TelemetryEventHandlerTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .setBatchSize(batchSize)
             .setUploadFrequency(uploadFrequency)
@@ -469,8 +463,7 @@ internal class TelemetryEventHandlerTest {
             logsEnabled = true,
             tracesEnabled = useTracing || forge.aBool(),
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         ).build()
         val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)
         if (useTracing) {
@@ -499,8 +492,7 @@ internal class TelemetryEventHandlerTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         ).build()
         val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)
 

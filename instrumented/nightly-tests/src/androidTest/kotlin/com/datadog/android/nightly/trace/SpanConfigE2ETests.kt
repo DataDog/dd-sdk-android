@@ -12,7 +12,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.SecurityConfig
 import com.datadog.android.event.SpanEventMapper
 import com.datadog.android.nightly.SPECIAL_STRING_TAG_NAME
 import com.datadog.android.nightly.rules.NightlyTestRule
@@ -349,8 +348,7 @@ class SpanConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.SecurityConfig#constructor(com.datadog.android.security.Encryption?)
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setSecurityConfig(SecurityConfig): Builder
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setEncryption(Encryption): Builder
      * apiMethodSignature: com.datadog.android.security.Encryption#fun encrypt(ByteArray): ByteArray
      * apiMethodSignature: com.datadog.android.security.Encryption#fun decrypt(ByteArray): ByteArray
      */
@@ -365,10 +363,9 @@ class SpanConfigE2ETests {
                         logsEnabled = true,
                         tracesEnabled = true,
                         rumEnabled = true,
-                        crashReportsEnabled = true,
-                        sessionReplayEnabled = true
+                        crashReportsEnabled = true
                     )
-                    .setSecurityConfig(SecurityConfig(localDataEncryption = TestEncryption()))
+                    .setEncryption(TestEncryption())
                     .build()
             )
         }

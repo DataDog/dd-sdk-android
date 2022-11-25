@@ -11,7 +11,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
-import com.datadog.android.core.configuration.SecurityConfig
 import com.datadog.android.log.Logger
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
@@ -142,10 +141,9 @@ internal class EncryptionTest {
                 logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
-                rumEnabled = true,
-                sessionReplayEnabled = true
+                rumEnabled = true
             )
-            .setSecurityConfig(SecurityConfig(localDataEncryption = encryption))
+            .setEncryption(encryption)
             .build()
     }
 
