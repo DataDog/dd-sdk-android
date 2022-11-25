@@ -7,7 +7,7 @@
 package com.datadog.android.core.internal.persistence.file.advanced
 
 import android.util.Log
-import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
@@ -18,7 +18,7 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -45,7 +45,7 @@ internal class WipeDataMigrationOperationTest {
     lateinit var fakeTargetDirectory: File
 
     @Mock
-    lateinit var mockFileHandler: FileHandler
+    lateinit var mockFileMover: FileMover
 
     @Mock
     lateinit var mockLogHander: LogHandler
@@ -54,7 +54,7 @@ internal class WipeDataMigrationOperationTest {
     fun `set up`() {
         testedOperation = WipeDataMigrationOperation(
             fakeTargetDirectory,
-            mockFileHandler,
+            mockFileMover,
             Logger(mockLogHander)
         )
     }
@@ -64,7 +64,7 @@ internal class WipeDataMigrationOperationTest {
         // Given
         testedOperation = WipeDataMigrationOperation(
             null,
-            mockFileHandler,
+            mockFileMover,
             Logger(mockLogHander)
         )
 
@@ -72,7 +72,7 @@ internal class WipeDataMigrationOperationTest {
         testedOperation.run()
 
         // Then
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockFileMover)
         verify(mockLogHander).handleLog(
             Log.WARN,
             WipeDataMigrationOperation.WARN_NULL_DIR
@@ -82,44 +82,44 @@ internal class WipeDataMigrationOperationTest {
     @Test
     fun `𝕄 delete dir recursively 𝕎 run()`() {
         // Given
-        whenever(mockFileHandler.delete(fakeTargetDirectory)) doReturn true
+        whenever(mockFileMover.delete(fakeTargetDirectory)) doReturn true
 
         // When
         testedOperation.run()
 
         // Then
-        verify(mockFileHandler).delete(fakeTargetDirectory)
+        verify(mockFileMover).delete(fakeTargetDirectory)
     }
 
     @Test
     fun `𝕄 retry 𝕎 run() {delete fails once}`() {
         // Given
-        whenever(mockFileHandler.delete(fakeTargetDirectory)).doReturn(false, true)
+        whenever(mockFileMover.delete(fakeTargetDirectory)).doReturn(false, true)
 
         // When
         testedOperation.run()
 
         // Then
-        verify(mockFileHandler, times(2)).delete(fakeTargetDirectory)
+        verify(mockFileMover, times(2)).delete(fakeTargetDirectory)
     }
 
     @Test
     fun `𝕄 try 3 times maximum 𝕎 run() {move always fails}`() {
         // Given
-        whenever(mockFileHandler.delete(fakeTargetDirectory))
+        whenever(mockFileMover.delete(fakeTargetDirectory))
             .doReturn(false)
 
         // When
         testedOperation.run()
 
         // Then
-        verify(mockFileHandler, times(3)).delete(fakeTargetDirectory)
+        verify(mockFileMover, times(3)).delete(fakeTargetDirectory)
     }
 
     @Test
     fun `𝕄 retry with 500ms delay 𝕎 run() {move always fails}`() {
         // Given
-        whenever(mockFileHandler.delete(fakeTargetDirectory))
+        whenever(mockFileMover.delete(fakeTargetDirectory))
             .doReturn(false)
 
         // When
@@ -128,7 +128,7 @@ internal class WipeDataMigrationOperationTest {
         }
 
         // Then
-        verify(mockFileHandler, times(3)).delete(fakeTargetDirectory)
-        Assertions.assertThat(duration).isBetween(1000L, 1100L)
+        verify(mockFileMover, times(3)).delete(fakeTargetDirectory)
+        assertThat(duration).isBetween(1000L, 1100L)
     }
 }

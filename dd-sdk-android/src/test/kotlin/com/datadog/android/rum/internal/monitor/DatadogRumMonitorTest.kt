@@ -9,9 +9,6 @@ package com.datadog.android.rum.internal.monitor
 import android.os.Handler
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -37,6 +34,9 @@ import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.telemetry.internal.TelemetryType
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.tools.unit.forge.aThrowable
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
@@ -110,16 +110,16 @@ internal class DatadogRumMonitorTest {
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
 
     @Mock
-    lateinit var mockTimeProvider: TimeProvider
-
-    @Mock
     lateinit var mockSessionListener: RumSessionListener
 
     @Mock
     lateinit var mockTelemetryEventHandler: TelemetryEventHandler
 
     @Mock
-    lateinit var mockAndroidInfoProvider: AndroidInfoProvider
+    lateinit var mockContextProvider: ContextProvider
+
+    @Mock
+    lateinit var mockSdkCore: SdkCore
 
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
@@ -143,6 +143,7 @@ internal class DatadogRumMonitorTest {
         fakeAttributes = forge.exhaustiveAttributes()
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
+            mockSdkCore,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
@@ -153,9 +154,8 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockSessionListener,
-            androidInfoProvider = mockAndroidInfoProvider
+            mockContextProvider
         )
         testedMonitor.rootScope = mockScope
     }
@@ -164,6 +164,7 @@ internal class DatadogRumMonitorTest {
     fun `creates root scope`() {
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
+            mockSdkCore,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
@@ -174,9 +175,8 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockSessionListener,
-            androidInfoProvider = mockAndroidInfoProvider
+            mockContextProvider
         )
 
         val rootScope = testedMonitor.rootScope
@@ -1164,6 +1164,7 @@ internal class DatadogRumMonitorTest {
         whenever(mockExecutor.queue).thenReturn(blockingQueue)
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
+            mockSdkCore,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
@@ -1174,10 +1175,9 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockSessionListener,
-            mockExecutor,
-            mockAndroidInfoProvider
+            mockContextProvider,
+            mockExecutor
         )
 
         // When
@@ -1209,6 +1209,7 @@ internal class DatadogRumMonitorTest {
         val mockExecutorService: ExecutorService = mock()
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
+            mockSdkCore,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
@@ -1219,10 +1220,9 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockSessionListener,
-            mockExecutorService,
-            mockAndroidInfoProvider
+            mockContextProvider,
+            mockExecutorService
         )
 
         // When
@@ -1241,6 +1241,7 @@ internal class DatadogRumMonitorTest {
         val mockExecutorService: ExecutorService = mock()
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
+            mockSdkCore,
             fakeSamplingRate,
             fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
@@ -1251,10 +1252,9 @@ internal class DatadogRumMonitorTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockSessionListener,
-            mockExecutorService,
-            mockAndroidInfoProvider
+            mockContextProvider,
+            mockExecutorService
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 

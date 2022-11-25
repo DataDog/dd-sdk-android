@@ -8,24 +8,23 @@ package com.datadog.android
 
 import android.content.Context
 import android.util.Log
-import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorTest
-import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
+import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
@@ -38,6 +37,7 @@ import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.inOrder
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -123,12 +123,6 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     lateinit var fakeUrl: String
 
-    @Forgery
-    lateinit var fakeConfig: Configuration.Feature.Tracing
-
-    @Forgery
-    lateinit var fakeRumConfig: Configuration.Feature.RUM
-
     lateinit var fakeRequest: Request
     lateinit var fakeResponse: Response
 
@@ -166,14 +160,9 @@ internal class DatadogInterceptorWithoutTracesTest {
             rumResourceAttributesProvider = mockRumAttributesProvider,
             traceSampler = mockTraceSampler
         ) { mockLocalTracer }
-        TracingFeature.initialize(
-            appContext.mockInstance,
-            fakeConfig
-        )
-        RumFeature.initialize(
-            appContext.mockInstance,
-            fakeRumConfig
-        )
+        Datadog.globalSdkCore = mock<DatadogCore>()
+        whenever((Datadog.globalSdkCore as DatadogCore).tracingFeature) doReturn mock()
+        whenever((Datadog.globalSdkCore as DatadogCore).rumFeature) doReturn mock()
 
         fakeResourceAttributes = forge.exhaustiveAttributes()
 
@@ -188,8 +177,7 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     @AfterEach
     fun `tear down`() {
-        TracingFeature.stop()
-        RumFeature.stop()
+        Datadog.globalSdkCore = NoOpSdkCore()
     }
 
     @Test

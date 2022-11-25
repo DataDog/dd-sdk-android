@@ -30,7 +30,11 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
     "ClassNaming",
     "VariableNaming"
 )
-class _InternalProxy internal constructor(telemetry: Telemetry) {
+class _InternalProxy internal constructor(
+    telemetry: Telemetry,
+    // TODO RUMM-0000 Shouldn't be nullable
+    private val coreFeature: CoreFeature?
+) {
     class _TelemetryProxy internal constructor(private val telemetry: Telemetry) {
 
         fun debug(message: String) {
@@ -49,7 +53,7 @@ class _InternalProxy internal constructor(telemetry: Telemetry) {
     val _telemetry: _TelemetryProxy = _TelemetryProxy(telemetry)
 
     fun setCustomAppVersion(version: String) {
-        CoreFeature.packageVersionProvider.version = version
+        coreFeature?.packageVersionProvider?.version = version
     }
 
     companion object {

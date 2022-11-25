@@ -93,7 +93,8 @@ internal class OreoFragmentLifecycleCallbacksTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        RumFeature.actionTrackingStrategy = mockUserActionTrackingStrategy
+        val mockRumFeature = mock<RumFeature>()
+        whenever(mockRumFeature.actionTrackingStrategy) doReturn mockUserActionTrackingStrategy
         whenever(mockUserActionTrackingStrategy.getGesturesTracker()) doReturn mockGesturesTracker
 
         whenever(mockActivity.fragmentManager).thenReturn(mockFragmentManager)
@@ -107,7 +108,8 @@ internal class OreoFragmentLifecycleCallbacksTest {
             viewLoadingTimer = mockViewLoadingTimer,
             rumMonitor = mockRumMonitor,
             advancedRumMonitor = mockAdvancedRumMonitor,
-            buildSdkVersionProvider = mockBuildSdkVersionProvider
+            buildSdkVersionProvider = mockBuildSdkVersionProvider,
+            rumFeature = mockRumFeature
         )
     }
 

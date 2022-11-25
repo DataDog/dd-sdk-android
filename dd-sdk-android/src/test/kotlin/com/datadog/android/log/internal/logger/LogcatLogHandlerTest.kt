@@ -6,14 +6,11 @@
 
 package com.datadog.android.log.internal.logger
 
-import com.datadog.android.BuildConfig
-import com.datadog.android.Datadog
 import fr.xgouchet.elmyr.Case
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.RepeatedTest
@@ -34,14 +31,9 @@ internal class LogcatLogHandlerTest {
         testedHandler = LogcatLogHandler(fakeServiceName, true)
     }
 
-    @AfterEach
-    fun `tear down`() {
-        Datadog.isDebug = BuildConfig.DEBUG
-    }
-
     @Test
     fun `resolves stack trace element null if in release mode`() {
-        Datadog.isDebug = false
+        testedHandler = LogcatLogHandler(fakeServiceName, true, isDebug = false)
 
         val element = testedHandler.getCallerStackElement()
 
@@ -51,8 +43,7 @@ internal class LogcatLogHandlerTest {
 
     @Test
     fun `resolves stack trace element null if useClassnameAsTag=false`() {
-        testedHandler = LogcatLogHandler(fakeServiceName, false)
-        Datadog.isDebug = true
+        testedHandler = LogcatLogHandler(fakeServiceName, false, isDebug = true)
 
         val element = testedHandler.getCallerStackElement()
 
@@ -62,7 +53,7 @@ internal class LogcatLogHandlerTest {
 
     @Test
     fun `resolves stack trace element from caller`() {
-        Datadog.isDebug = true
+        testedHandler = LogcatLogHandler(fakeServiceName, true, isDebug = true)
 
         val element = testedHandler.getCallerStackElement()
 
@@ -80,7 +71,7 @@ internal class LogcatLogHandlerTest {
     )
     @Test
     fun `resolves nested stack trace element from caller`() {
-        Datadog.isDebug = true
+        testedHandler = LogcatLogHandler(fakeServiceName, true, isDebug = true)
 
         var element: StackTraceElement? = null
 
@@ -116,15 +107,11 @@ internal class LogcatLogHandlerTest {
             } else {
                 // generate from ignored packages prefixes pattern
                 val packagePrefix = LogcatLogHandler.IGNORED_PACKAGE_PREFIXES.random()
-                packagePrefix + ".${anAlphabeticalString(Case.ANY).replaceFirstChar {
-                    if (it.isLowerCase()) {
-                        it.titlecase(
-                            Locale.US
-                        )
-                    } else {
-                        it.toString()
+                val packageSuffix = anAlphabeticalString(Case.ANY)
+                    .replaceFirstChar {
+                        if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString()
                     }
-                }}"
+                "$packagePrefix.$packageSuffix"
             }
 
             StackTraceElement(

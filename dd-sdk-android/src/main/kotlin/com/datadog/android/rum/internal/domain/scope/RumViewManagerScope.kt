@@ -12,33 +12,32 @@ import android.os.Build
 import android.os.Process
 import android.os.SystemClock
 import androidx.annotation.VisibleForTesting
-import com.datadog.android.Datadog
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import java.util.concurrent.TimeUnit
 
 internal class RumViewManagerScope(
     private val parentScope: RumScope,
+    private val sdkCore: SdkCore,
     private val backgroundTrackingEnabled: Boolean,
     private val trackFrustrations: Boolean,
     internal val firstPartyHostDetector: FirstPartyHostDetector,
     private val cpuVitalMonitor: VitalMonitor,
     private val memoryVitalMonitor: VitalMonitor,
     private val frameRateVitalMonitor: VitalMonitor,
-    private val timeProvider: TimeProvider,
-    private val rumEventSourceProvider: RumEventSourceProvider,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
-    private val androidInfoProvider: AndroidInfoProvider
+    private val contextProvider: ContextProvider
 ) : RumScope {
 
     internal val childrenScopes = mutableListOf<RumScope>()
@@ -46,6 +45,7 @@ internal class RumViewManagerScope(
 
     // region RumScope
 
+    @WorkerThread
     override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope {
         delegateToChildren(event, writer)
 
@@ -70,6 +70,7 @@ internal class RumViewManagerScope(
 
     // region Internal
 
+    @WorkerThread
     private fun delegateToChildren(
         event: RumRawEvent,
         writer: DataWriter<Any>
@@ -84,6 +85,7 @@ internal class RumViewManagerScope(
         }
     }
 
+    @WorkerThread
     private fun handleOrphanEvent(event: RumRawEvent, writer: DataWriter<Any>) {
         val processFlag = CoreFeature.processImportance
         val importanceForeground = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
@@ -96,23 +98,24 @@ internal class RumViewManagerScope(
         }
     }
 
+    @WorkerThread
     private fun startForegroundView(event: RumRawEvent.StartView, writer: DataWriter<Any>) {
         val viewScope = RumViewScope.fromEvent(
             this,
+            sdkCore,
             event,
             firstPartyHostDetector,
             cpuVitalMonitor,
             memoryVitalMonitor,
             frameRateVitalMonitor,
-            timeProvider,
-            rumEventSourceProvider,
-            androidInfoProvider,
+            contextProvider,
             trackFrustrations
         )
         onViewDisplayed(event, viewScope, writer)
         childrenScopes.add(viewScope)
     }
 
+    @WorkerThread
     private fun handleBackgroundEvent(
         event: RumRawEvent,
         writer: DataWriter<Any>
@@ -132,6 +135,7 @@ internal class RumViewManagerScope(
         }
     }
 
+    @WorkerThread
     private fun handleAppLaunchEvent(
         event: RumRawEvent,
         actualWriter: DataWriter<Any>
@@ -151,6 +155,7 @@ internal class RumViewManagerScope(
     private fun createBackgroundViewScope(event: RumRawEvent): RumViewScope {
         return RumViewScope(
             this,
+            sdkCore,
             RUM_BACKGROUND_VIEW_URL,
             RUM_BACKGROUND_VIEW_NAME,
             event.eventTime,
@@ -159,10 +164,8 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
-            timeProvider,
-            rumEventSourceProvider,
             type = RumViewScope.RumViewType.BACKGROUND,
-            androidInfoProvider = androidInfoProvider,
+            contextProvider = contextProvider,
             trackFrustrations = trackFrustrations
         )
     }
@@ -170,6 +173,7 @@ internal class RumViewManagerScope(
     private fun createAppLaunchViewScope(event: RumRawEvent): RumViewScope {
         return RumViewScope(
             this,
+            sdkCore,
             RUM_APP_LAUNCH_VIEW_URL,
             RUM_APP_LAUNCH_VIEW_NAME,
             event.eventTime,
@@ -178,14 +182,13 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
-            timeProvider,
-            rumEventSourceProvider,
             type = RumViewScope.RumViewType.APPLICATION_LAUNCH,
-            androidInfoProvider = androidInfoProvider,
+            contextProvider = contextProvider,
             trackFrustrations = trackFrustrations
         )
     }
 
+    @WorkerThread
     @VisibleForTesting
     internal fun onViewDisplayed(
         event: RumRawEvent.StartView,
@@ -213,7 +216,7 @@ internal class RumViewManagerScope(
                 val diffMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
                 System.nanoTime() - TimeUnit.MILLISECONDS.toNanos(diffMs)
             }
-            else -> Datadog.startupTimeNs
+            else -> RumFeature.startupTimeNs
         }
     }
 

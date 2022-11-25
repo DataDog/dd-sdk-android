@@ -10,12 +10,9 @@ import android.app.Application
 import android.view.Choreographer
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.SdkFeatureTest
 import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
-import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
-import com.datadog.android.rum.internal.net.RumOkHttpUploaderV2
+import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
@@ -25,9 +22,15 @@ import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doNothing
@@ -36,7 +39,7 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
-import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -51,7 +54,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.lang.ref.WeakReference
 import java.util.concurrent.ScheduledThreadPoolExecutor
 
 @Extensions(
@@ -61,29 +63,25 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, RumFeature>() {
+internal class RumFeatureTest {
+
+    private lateinit var testedFeature: RumFeature
+
+    @Forgery
+    lateinit var fakeConfigurationFeature: Configuration.Feature.RUM
 
     @Mock
     lateinit var mockChoreographer: Choreographer
 
-    override fun createTestedFeature(): RumFeature {
-        return RumFeature
-    }
-
-    override fun forgeConfiguration(forge: Forge): Configuration.Feature.RUM {
-        return forge.getForgery()
-    }
-
-    override fun featureDirName(): String {
-        return "rum"
-    }
-
-    override fun doesFeatureNeedMigration(): Boolean = true
+    @Mock
+    lateinit var mockSdkCore: SdkCore
 
     @BeforeEach
     fun `set up RUM`() {
         doNothing().whenever(mockChoreographer).postFrameCallback(any())
         mockChoreographerInstance(mockChoreographer)
+
+        testedFeature = RumFeature(mockSdkCore, coreFeature.mockInstance)
     }
 
     @Test
@@ -92,21 +90,8 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
 
         // Then
-        assertThat(testedFeature.persistenceStrategy)
-            .isInstanceOf(RumFilePersistenceStrategy::class.java)
-    }
-
-    @Test
-    fun `𝕄 create a logs uploader 𝕎 createUploader()`() {
-        // When
-        val uploader = testedFeature.createUploader(fakeConfigurationFeature)
-
-        // Then
-        assertThat(uploader).isInstanceOf(RumOkHttpUploaderV2::class.java)
-        val rumUploader = uploader as RumOkHttpUploaderV2
-        assertThat(rumUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
-        assertThat(rumUploader.intakeUrl).endsWith("/api/v2/rum")
-        assertThat(rumUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
+        assertThat(testedFeature.dataWriter)
+            .isInstanceOf(RumDataWriter::class.java)
     }
 
     @Test
@@ -264,7 +249,7 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
             .isInstanceOf(NoOpVitalMonitor::class.java)
         assertThat(testedFeature.frameRateVitalMonitor)
             .isInstanceOf(NoOpVitalMonitor::class.java)
-        assertThat(RumFeature.vitalExecutorService)
+        assertThat(testedFeature.vitalExecutorService)
             .isInstanceOf(NoOpScheduledExecutorService::class.java)
     }
 
@@ -339,7 +324,6 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
     fun `𝕄 unregister strategies 𝕎 stop()`() {
         // Given
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
-        CoreFeature.contextRef = WeakReference(appContext.mockInstance)
         val mockActionTrackingStrategy: UserActionTrackingStrategy = mock()
         val mockViewTrackingStrategy: ViewTrackingStrategy = mock()
         val mockLongTaskTrackingStrategy: TrackingStrategy = mock()
@@ -366,6 +350,18 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
 
         // Then
         assertThat(testedFeature.rumEventMapper).isInstanceOf(NoOpEventMapper::class.java)
+    }
+
+    @Test
+    fun `𝕄 reset data writer 𝕎 stop()`() {
+        // Given
+        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        assertThat(testedFeature.dataWriter).isInstanceOf(NoOpDataWriter::class.java)
     }
 
     @ParameterizedTest
@@ -397,7 +393,7 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
         )
 
         // Then
-        assertThat(RumFeature.vitalExecutorService)
+        assertThat(testedFeature.vitalExecutorService)
             .isInstanceOf(NoOpScheduledExecutorService::class.java)
     }
 
@@ -406,7 +402,7 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
         // Given
         testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
         val mockVitalExecutorService: ScheduledThreadPoolExecutor = mock()
-        RumFeature.vitalExecutorService = mockVitalExecutorService
+        testedFeature.vitalExecutorService = mockVitalExecutorService
 
         // When
         testedFeature.stop()
@@ -424,7 +420,7 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
         testedFeature.stop()
 
         // Then
-        assertThat(RumFeature.vitalExecutorService)
+        assertThat(testedFeature.vitalExecutorService)
             .isInstanceOf(NoOpScheduledExecutorService::class.java)
     }
 
@@ -470,5 +466,16 @@ internal class RumFeatureTest : SdkFeatureTest<Any, Configuration.Feature.RUM, R
         assertThat(testedFeature.debugActivityLifecycleListener).isNull()
         verify(testedFeature.appContext as Application)
             .unregisterActivityLifecycleCallbacks(listener)
+    }
+
+    companion object {
+        val appContext = ApplicationContextTestConfiguration(Application::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(appContext, coreFeature)
+        }
     }
 }

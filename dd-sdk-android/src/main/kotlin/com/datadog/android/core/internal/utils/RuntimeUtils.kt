@@ -55,7 +55,7 @@ internal fun buildDevLogHandler(): ConditionalLogHandler {
     return ConditionalLogHandler(
         LogcatLogHandler(DEV_LOG_PREFIX, false)
     ) { i, _ ->
-        i >= Datadog.libraryVerbosity
+        i >= Datadog.globalSdkCore.getVerbosity()
     }
 }
 

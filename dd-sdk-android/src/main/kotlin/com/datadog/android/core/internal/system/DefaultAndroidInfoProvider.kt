@@ -12,6 +12,7 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
 import android.telephony.TelephonyManager
+import com.datadog.android.v2.api.context.DeviceType
 import java.util.Locale
 
 internal class DefaultAndroidInfoProvider(
@@ -22,59 +23,52 @@ internal class DefaultAndroidInfoProvider(
     // lazy is just to avoid breaking the tests (because without lazy type is resolved at the
     // construction time and Build.MODEL is null in unit-tests) and also to have value resolved
     // once to avoid different values for foldables during the application lifecycle
-    override val deviceType: DeviceType by lazy {
+    override val deviceType: DeviceType by lazy(LazyThreadSafetyMode.PUBLICATION) {
         resolveDeviceType(
             appContext,
             sdkVersionProvider
         )
     }
 
-    override val deviceName: String
-        get() {
-            return if (deviceBrand.isEmpty()) {
-                deviceModel
-            } else if (deviceModel.contains(deviceBrand)) {
-                deviceModel
-            } else {
-                "$deviceBrand $deviceModel"
-            }
+    override val deviceName: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        if (deviceBrand.isEmpty()) {
+            deviceModel
+        } else if (deviceModel.contains(deviceBrand)) {
+            deviceModel
+        } else {
+            "$deviceBrand $deviceModel"
         }
+    }
 
-    override val deviceBrand: String
-        get() {
-            return Build.BRAND.replaceFirstChar {
-                if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString()
-            }
+    override val deviceBrand: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        Build.BRAND.replaceFirstChar {
+            if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString()
         }
+    }
 
-    override val deviceModel: String
-        get() {
-            return Build.MODEL
-        }
+    override val deviceModel: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        Build.MODEL
+    }
 
-    override val deviceBuildId: String
-        get() {
-            return Build.ID
-        }
+    override val deviceBuildId: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        Build.ID
+    }
 
     override val osName: String = "Android"
 
-    override val osVersion: String
-        get() {
-            return Build.VERSION.RELEASE
-        }
+    override val osVersion: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        Build.VERSION.RELEASE
+    }
 
-    override val osMajorVersion: String
-        get() {
-            // result of split always have at least 1 element
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            return osVersion.split('.').first()
-        }
+    override val osMajorVersion: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        // result of split always have at least 1 element
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        osVersion.split('.').first()
+    }
 
-    override val architecture: String
-        get() {
-            return System.getProperty("os.arch") ?: "unknown"
-        }
+    override val architecture: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        System.getProperty("os.arch") ?: "unknown"
+    }
 
     companion object {
 

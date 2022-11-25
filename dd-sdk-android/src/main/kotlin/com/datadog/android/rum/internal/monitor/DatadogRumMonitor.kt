@@ -9,9 +9,6 @@ package com.datadog.android.rum.internal.monitor
 import android.os.Handler
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -38,6 +35,9 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.android.telemetry.internal.TelemetryType
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -48,6 +48,7 @@ import java.util.concurrent.TimeUnit
 @Suppress("LongParameterList")
 internal class DatadogRumMonitor(
     applicationId: String,
+    sdkCore: SdkCore,
     internal val samplingRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
@@ -58,14 +59,14 @@ internal class DatadogRumMonitor(
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
-    timeProvider: TimeProvider,
     sessionListener: RumSessionListener?,
-    private val executorService: ExecutorService = Executors.newSingleThreadExecutor(),
-    androidInfoProvider: AndroidInfoProvider
+    contextProvider: ContextProvider,
+    private val executorService: ExecutorService = Executors.newSingleThreadExecutor()
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
         applicationId,
+        sdkCore,
         samplingRate,
         backgroundTrackingEnabled,
         trackFrustrations,
@@ -73,13 +74,12 @@ internal class DatadogRumMonitor(
         cpuVitalMonitor,
         memoryVitalMonitor,
         frameRateVitalMonitor,
-        timeProvider,
         if (sessionListener != null) {
             CombinedRumSessionListener(sessionListener, telemetryEventHandler)
         } else {
             telemetryEventHandler
         },
-        androidInfoProvider
+        contextProvider
     )
 
     internal val keepAliveRunnable = Runnable {
@@ -368,7 +368,7 @@ internal class DatadogRumMonitor(
         handleEvent(RumRawEvent.UpdatePerformanceMetric(metric, value))
     }
 
-    override fun _getInternal(): _RumInternalProxy? {
+    override fun _getInternal(): _RumInternalProxy {
         return internalProxy
     }
 
@@ -392,8 +392,10 @@ internal class DatadogRumMonitor(
 
     internal fun handleEvent(event: RumRawEvent) {
         if (event is RumRawEvent.AddError && event.isFatal) {
+            @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
             rootScope.handleEvent(event, writer)
         } else if (event is RumRawEvent.SendTelemetry) {
+            @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
             telemetryEventHandler.handleEvent(event, writer)
         } else {
             handler.removeCallbacks(keepAliveRunnable)
@@ -402,6 +404,7 @@ internal class DatadogRumMonitor(
                 try {
                     @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
                     executorService.submit {
+                        @Suppress("ThreadSafety")
                         synchronized(rootScope) {
                             rootScope.handleEvent(event, writer)
                             notifyDebugListenerWithState()

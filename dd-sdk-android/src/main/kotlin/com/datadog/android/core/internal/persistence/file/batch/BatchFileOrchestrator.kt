@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.canWriteSafe
@@ -16,6 +17,7 @@ import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.mkdirsSafe
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.utils.debugWithTelemetry
 import com.datadog.android.log.internal.utils.errorWithTelemetry
 import java.io.File
 import java.io.FileFilter
@@ -40,30 +42,21 @@ internal class BatchFileOrchestrator(
 
     // region FileOrchestrator
 
-    override fun getWritableFile(dataSize: Int): File? {
+    @WorkerThread
+    override fun getWritableFile(): File? {
         if (!isRootDirValid()) {
-            return null
-        }
-
-        if (dataSize > config.maxItemSize) {
-            internalLogger.errorWithTelemetry(
-                ERROR_LARGE_DATA.format(
-                    Locale.US,
-                    dataSize,
-                    config.maxItemSize
-                )
-            )
             return null
         }
 
         deleteObsoleteFiles()
         freeSpaceIfNeeded()
 
-        val reusableFile = getReusableWritableFile(dataSize)
+        val reusableFile = getReusableWritableFile()
 
         return reusableFile ?: createNewFile()
     }
 
+    @WorkerThread
     override fun getReadableFile(excludeFiles: Set<File>): File? {
         if (!isRootDirValid()) {
             return null
@@ -78,6 +71,7 @@ internal class BatchFileOrchestrator(
         }
     }
 
+    @WorkerThread
     override fun getAllFiles(): List<File> {
         if (!isRootDirValid()) {
             return emptyList()
@@ -86,16 +80,40 @@ internal class BatchFileOrchestrator(
         return listSortedBatchFiles()
     }
 
+    @WorkerThread
     override fun getFlushableFiles(): List<File> {
         return getAllFiles()
     }
 
+    @WorkerThread
     override fun getRootDir(): File? {
         if (!isRootDirValid()) {
             return null
         }
 
         return rootDir
+    }
+
+    @WorkerThread
+    override fun getMetadataFile(file: File): File? {
+        if (file.parent != rootDir.path) {
+            // may happen if batch file was requested with pending orchestrator, but meta file
+            // is requested with granted orchestrator (due to consent change). Not an issue, because
+            // batch file should be migrated to the same folder, but leaving this debug point
+            // just in case.
+            internalLogger.debugWithTelemetry(
+                DEBUG_DIFFERENT_ROOT.format(Locale.US, file.path, rootDir.path)
+            )
+        }
+
+        return if (file.name.matches(batchFileNameRegex)) {
+            file.metadata
+        } else {
+            internalLogger.errorWithTelemetry(
+                ERROR_NOT_BATCH_FILE.format(Locale.US, file.path)
+            )
+            null
+        }
     }
 
     // endregion
@@ -148,7 +166,7 @@ internal class BatchFileOrchestrator(
         return newFile
     }
 
-    private fun getReusableWritableFile(dataSize: Int): File? {
+    private fun getReusableWritableFile(): File? {
         val files = listSortedBatchFiles()
         val lastFile = files.lastOrNull() ?: return null
 
@@ -164,7 +182,7 @@ internal class BatchFileOrchestrator(
         }
 
         val isRecentEnough = isFileRecent(lastFile, recentWriteDelayMs)
-        val hasRoomForMore = (lastFile.lengthSafe() + dataSize) < config.maxBatchSize
+        val hasRoomForMore = lastFile.lengthSafe() < config.maxBatchSize
         val hasSlotForMore = (lastKnownFileItemCount < config.maxItemsPerBatch)
 
         return if (isRecentEnough && hasRoomForMore && hasSlotForMore) {
@@ -187,7 +205,12 @@ internal class BatchFileOrchestrator(
         files
             .asSequence()
             .filter { (it.name.toLongOrNull() ?: 0) < threshold }
-            .forEach { it.deleteSafe() }
+            .forEach {
+                it.deleteSafe()
+                if (it.metadata.existsSafe()) {
+                    it.metadata.deleteSafe()
+                }
+            }
     }
 
     private fun freeSpaceIfNeeded() {
@@ -201,12 +224,9 @@ internal class BatchFileOrchestrator(
             )
             files.fold(sizeToFree) { remainingSizeToFree, file ->
                 if (remainingSizeToFree > 0) {
-                    val fileSize = file.lengthSafe()
-                    if (file.deleteSafe()) {
-                        remainingSizeToFree - fileSize
-                    } else {
-                        remainingSizeToFree
-                    }
+                    val deletedFileSize = deleteFile(file)
+                    val deletedMetaFileSize = deleteFile(file.metadata)
+                    remainingSizeToFree - deletedFileSize - deletedMetaFileSize
                 } else {
                     remainingSizeToFree
                 }
@@ -214,9 +234,23 @@ internal class BatchFileOrchestrator(
         }
     }
 
+    private fun deleteFile(file: File): Long {
+        if (!file.existsSafe()) return 0
+
+        val size = file.lengthSafe()
+        return if (file.deleteSafe()) {
+            size
+        } else {
+            0
+        }
+    }
+
     private fun listSortedBatchFiles(): List<File> {
         return rootDir.listFilesSafe(fileFilter).orEmpty().sorted()
     }
+
+    private val File.metadata: File
+        get() = File("${this.path}_metadata")
 
     // endregion
 
@@ -237,8 +271,10 @@ internal class BatchFileOrchestrator(
         internal const val ERROR_ROOT_NOT_WRITABLE = "The provided root dir is not writable: %s"
         internal const val ERROR_ROOT_NOT_DIR = "The provided root file is not a directory: %s"
         internal const val ERROR_CANT_CREATE_ROOT = "The provided root file can't be created: %s"
-        internal const val ERROR_LARGE_DATA = "Can't write data with size %d (max item size is %d)"
         internal const val ERROR_DISK_FULL = "Too much disk space used (%d/%d): " +
             "cleaning up to free %d bytes…"
+        internal const val ERROR_NOT_BATCH_FILE = "The file provided is not a batch file: %s"
+        internal const val DEBUG_DIFFERENT_ROOT = "The file provided (%s) doesn't belong" +
+            " to the current folder (%s)"
     }
 }

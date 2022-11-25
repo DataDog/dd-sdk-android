@@ -6,46 +6,41 @@
 
 package com.datadog.android.webview.internal.log
 
-import android.content.Context
-import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.SdkFeature
-import com.datadog.android.core.internal.net.DataUploader
-import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
+import com.datadog.android.log.internal.domain.event.WebViewLogEventSerializer
+import com.datadog.android.v2.core.internal.storage.DataWriter
+import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
+import com.datadog.android.v2.webview.internal.storage.WebViewLogsDataWriter
 import com.google.gson.JsonObject
+import java.util.concurrent.atomic.AtomicBoolean
 
-internal object WebViewLogsFeature : SdkFeature<JsonObject, Configuration.Feature.Logs>() {
+internal class WebViewLogsFeature {
 
-    internal const val WEB_LOGS_FEATURE_NAME = "web-logs"
+    internal var dataWriter: DataWriter<JsonObject> = NoOpDataWriter()
+    internal val initialized = AtomicBoolean(false)
 
     // region SdkFeature
 
-    override fun createPersistenceStrategy(
-        context: Context,
-        configuration: Configuration.Feature.Logs
-    ): PersistenceStrategy<JsonObject> {
-        return WebViewLogFilePersistenceStrategy(
-            CoreFeature.trackingConsentProvider,
-            context,
-            CoreFeature.persistenceExecutorService,
-            sdkLogger,
-            CoreFeature.localDataEncryption
-        )
+    fun initialize() {
+        dataWriter = createDataWriter()
+        initialized.set(true)
     }
 
-    override fun createUploader(configuration: Configuration.Feature.Logs): DataUploader {
-        return LogsOkHttpUploaderV2(
-            configuration.endpointUrl,
-            CoreFeature.clientToken,
-            CoreFeature.sourceName,
-            CoreFeature.sdkVersion,
-            CoreFeature.okHttpClient,
-            CoreFeature.androidInfoProvider,
-            sdkLogger
+    fun stop() {
+        dataWriter = NoOpDataWriter()
+        initialized.set(false)
+    }
+
+    private fun createDataWriter(): DataWriter<JsonObject> {
+        return WebViewLogsDataWriter(
+            serializer = WebViewLogEventSerializer(),
+            internalLogger = sdkLogger
         )
     }
 
     // endregion
+
+    companion object {
+        internal const val WEB_LOGS_FEATURE_NAME = "web-logs"
+    }
 }

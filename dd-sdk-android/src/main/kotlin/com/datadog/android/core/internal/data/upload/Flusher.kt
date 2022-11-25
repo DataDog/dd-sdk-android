@@ -6,11 +6,13 @@
 
 package com.datadog.android.core.internal.data.upload
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface Flusher {
 
+    @WorkerThread
     fun flush(uploader: DataUploader)
 }

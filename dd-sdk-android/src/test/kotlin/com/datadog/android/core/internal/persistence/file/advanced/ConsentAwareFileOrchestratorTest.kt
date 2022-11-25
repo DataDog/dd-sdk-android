@@ -18,7 +18,6 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
-import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -122,14 +121,13 @@ internal class ConsentAwareFileOrchestratorTest {
 
     @Test
     fun `𝕄 return pending writable file 𝕎 getWritableFile() {consent=PENDING}`(
-        @Forgery file: File,
-        @IntForgery(min = 1) dataSize: Int
+        @Forgery file: File
     ) {
         // Given
-        whenever(mockPendingOrchestrator.getWritableFile(dataSize)) doReturn file
+        whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
 
         // When
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
 
         // Then
         assertThat(result).isSameAs(file)
@@ -138,16 +136,15 @@ internal class ConsentAwareFileOrchestratorTest {
 
     @Test
     fun `𝕄 return pending writable file 𝕎 getWritableFile() {consent=GRANTED then PENDING}`(
-        @Forgery file: File,
-        @IntForgery(min = 1) dataSize: Int
+        @Forgery file: File
     ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.GRANTED)
-        whenever(mockPendingOrchestrator.getWritableFile(dataSize)) doReturn file
+        whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
 
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.GRANTED, TrackingConsent.PENDING)
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
 
         // Then
         assertThat(result).isSameAs(file)
@@ -156,16 +153,15 @@ internal class ConsentAwareFileOrchestratorTest {
 
     @Test
     fun `𝕄 return pending writable file 𝕎 getWritableFile() {consent=NOT_GRANTED then PENDING}`(
-        @Forgery file: File,
-        @IntForgery(min = 1) dataSize: Int
+        @Forgery file: File
     ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.NOT_GRANTED)
-        whenever(mockPendingOrchestrator.getWritableFile(dataSize)) doReturn file
+        whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
 
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.NOT_GRANTED, TrackingConsent.PENDING)
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
 
         // Then
         assertThat(result).isSameAs(file)
@@ -174,15 +170,14 @@ internal class ConsentAwareFileOrchestratorTest {
 
     @Test
     fun `𝕄 return granted writable file 𝕎 getWritableFile() {consent=GRANTED}`(
-        @Forgery file: File,
-        @IntForgery(min = 1) dataSize: Int
+        @Forgery file: File
     ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.GRANTED)
-        whenever(mockGrantedOrchestrator.getWritableFile(dataSize)) doReturn file
+        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
 
         // When
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
 
         // Then
         assertThat(result).isSameAs(file)
@@ -191,16 +186,15 @@ internal class ConsentAwareFileOrchestratorTest {
 
     @Test
     fun `𝕄 return granted writable file 𝕎 getWritableFile() {consent=NOT_GRANTED then GRANTED}`(
-        @Forgery file: File,
-        @IntForgery(min = 1) dataSize: Int
+        @Forgery file: File
     ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.NOT_GRANTED)
-        whenever(mockGrantedOrchestrator.getWritableFile(dataSize)) doReturn file
+        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
 
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.NOT_GRANTED, TrackingConsent.GRANTED)
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
 
         // Then
         assertThat(result).isSameAs(file)
@@ -209,16 +203,15 @@ internal class ConsentAwareFileOrchestratorTest {
 
     @Test
     fun `𝕄 return granted writable file 𝕎 getWritableFile() {consent=PENDING then GRANTED}`(
-        @Forgery file: File,
-        @IntForgery(min = 1) dataSize: Int
+        @Forgery file: File
     ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.PENDING)
-        whenever(mockGrantedOrchestrator.getWritableFile(dataSize)) doReturn file
+        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
 
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.PENDING, TrackingConsent.GRANTED)
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
 
         // Then
         assertThat(result).isSameAs(file)
@@ -226,14 +219,12 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return null file 𝕎 getWritableFile() {consent=NOT_GRANTED}`(
-        @IntForgery(min = 1) dataSize: Int
-    ) {
+    fun `𝕄 return null file 𝕎 getWritableFile() {consent=NOT_GRANTED}`() {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.NOT_GRANTED)
 
         // When
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
 
         // Then
         assertThat(result).isNull()
@@ -241,15 +232,13 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return null file 𝕎 getWritableFile() {consent=GRANTED then NOT_GRANTED}`(
-        @IntForgery(min = 1) dataSize: Int
-    ) {
+    fun `𝕄 return null file 𝕎 getWritableFile() {consent=GRANTED then NOT_GRANTED}`() {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.GRANTED)
 
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.GRANTED, TrackingConsent.NOT_GRANTED)
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
 
         // Then
         assertThat(result).isNull()
@@ -257,15 +246,13 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return null file 𝕎 getWritableFile() {consent=PENDING then NOT_GRANTED}`(
-        @IntForgery(min = 1) dataSize: Int
-    ) {
+    fun `𝕄 return null file 𝕎 getWritableFile() {consent=PENDING then NOT_GRANTED}`() {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.PENDING)
 
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.PENDING, TrackingConsent.NOT_GRANTED)
-        val result = testedOrchestrator.getWritableFile(dataSize)
+        val result = testedOrchestrator.getWritableFile()
 
         // Then
         assertThat(result).isNull()
@@ -414,6 +401,162 @@ internal class ConsentAwareFileOrchestratorTest {
         // When
         testedOrchestrator.onConsentUpdated(initialConsent, updatedConsent)
         val result = testedOrchestrator.getRootDir()
+
+        // Then
+        assertThat(result).isNull()
+        verifyZeroInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
+    }
+
+    // endregion
+
+    // region getMetadataFile
+
+    @Test
+    fun `𝕄 return pending meta file 𝕎 getMetadataFile() {consent=PENDING}`(
+        @Forgery fakeFile: File,
+        @Forgery metaFile: File
+    ) {
+        // Given
+        whenever(mockPendingOrchestrator.getMetadataFile(fakeFile)) doReturn metaFile
+
+        // When
+        val result = testedOrchestrator.getMetadataFile(fakeFile)
+
+        // Then
+        assertThat(result).isSameAs(metaFile)
+        verifyZeroInteractions(mockGrantedOrchestrator)
+    }
+
+    @Test
+    fun `𝕄 return pending meta file 𝕎 getMetadataFile() {consent=GRANTED then PENDING}`(
+        @Forgery fakeFile: File,
+        @Forgery metaFile: File
+    ) {
+        // Given
+        instantiateTestedOrchestrator(TrackingConsent.GRANTED)
+        whenever(mockPendingOrchestrator.getMetadataFile(fakeFile)) doReturn metaFile
+
+        // When
+        testedOrchestrator.onConsentUpdated(TrackingConsent.GRANTED, TrackingConsent.PENDING)
+        val result = testedOrchestrator.getMetadataFile(fakeFile)
+
+        // Then
+        assertThat(result).isSameAs(metaFile)
+        verifyZeroInteractions(mockGrantedOrchestrator)
+    }
+
+    @Test
+    fun `𝕄 return pending meta file 𝕎 getMetadataFile() {consent=NOT_GRANTED then PENDING}`(
+        @Forgery fakeFile: File,
+        @Forgery metaFile: File
+    ) {
+        // Given
+        instantiateTestedOrchestrator(TrackingConsent.NOT_GRANTED)
+        whenever(mockPendingOrchestrator.getMetadataFile(fakeFile)) doReturn metaFile
+
+        // When
+        testedOrchestrator.onConsentUpdated(TrackingConsent.NOT_GRANTED, TrackingConsent.PENDING)
+        val result = testedOrchestrator.getMetadataFile(fakeFile)
+
+        // Then
+        assertThat(result).isSameAs(metaFile)
+        verifyZeroInteractions(mockGrantedOrchestrator)
+    }
+
+    @Test
+    fun `𝕄 return granted meta file 𝕎 getMetadataFile() {consent=GRANTED}`(
+        @Forgery fakeFile: File,
+        @Forgery metaFile: File
+    ) {
+        // Given
+        instantiateTestedOrchestrator(TrackingConsent.GRANTED)
+        whenever(mockGrantedOrchestrator.getMetadataFile(fakeFile)) doReturn metaFile
+
+        // When
+        val result = testedOrchestrator.getMetadataFile(fakeFile)
+
+        // Then
+        assertThat(result).isSameAs(metaFile)
+        verifyZeroInteractions(mockPendingOrchestrator)
+    }
+
+    @Test
+    fun `𝕄 return granted meta file 𝕎 getMetadataFile() {consent=NOT_GRANTED then GRANTED}`(
+        @Forgery fakeFile: File,
+        @Forgery metaFile: File
+    ) {
+        // Given
+        instantiateTestedOrchestrator(TrackingConsent.NOT_GRANTED)
+        whenever(mockGrantedOrchestrator.getMetadataFile(fakeFile)) doReturn metaFile
+
+        // When
+        testedOrchestrator.onConsentUpdated(TrackingConsent.NOT_GRANTED, TrackingConsent.GRANTED)
+        val result = testedOrchestrator.getMetadataFile(fakeFile)
+
+        // Then
+        assertThat(result).isSameAs(metaFile)
+        verifyZeroInteractions(mockPendingOrchestrator)
+    }
+
+    @Test
+    fun `𝕄 return granted meta file 𝕎 getMetadataFile() {consent=PENDING then GRANTED}`(
+        @Forgery fakeFile: File,
+        @Forgery metaFile: File
+    ) {
+        // Given
+        instantiateTestedOrchestrator(TrackingConsent.PENDING)
+        whenever(mockGrantedOrchestrator.getMetadataFile(fakeFile)) doReturn metaFile
+
+        // When
+        testedOrchestrator.onConsentUpdated(TrackingConsent.PENDING, TrackingConsent.GRANTED)
+        val result = testedOrchestrator.getMetadataFile(fakeFile)
+
+        // Then
+        assertThat(result).isSameAs(metaFile)
+        verifyZeroInteractions(mockPendingOrchestrator)
+    }
+
+    @Test
+    fun `𝕄 return null file 𝕎 getMetadataFile() {consent=NOT_GRANTED}`(
+        @Forgery fakeFile: File
+    ) {
+        // Given
+        instantiateTestedOrchestrator(TrackingConsent.NOT_GRANTED)
+
+        // When
+        val result = testedOrchestrator.getMetadataFile(fakeFile)
+
+        // Then
+        assertThat(result).isNull()
+        verifyZeroInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
+    }
+
+    @Test
+    fun `𝕄 return null file 𝕎 getMetadataFile() {consent=GRANTED then NOT_GRANTED}`(
+        @Forgery fakeFile: File
+    ) {
+        // Given
+        instantiateTestedOrchestrator(TrackingConsent.GRANTED)
+
+        // When
+        testedOrchestrator.onConsentUpdated(TrackingConsent.GRANTED, TrackingConsent.NOT_GRANTED)
+        val result = testedOrchestrator.getMetadataFile(fakeFile)
+
+        // Then
+        assertThat(result).isNull()
+        verifyZeroInteractions(mockPendingOrchestrator, mockGrantedOrchestrator)
+    }
+
+    @Test
+    fun `𝕄 return null file 𝕎 getMetadataFile() {consent=PENDING then NOT_GRANTED}`(
+        @Forgery fakeFile: File
+    ) {
+        // Given
+        instantiateTestedOrchestrator(TrackingConsent.PENDING)
+
+        // When
+        testedOrchestrator.onConsentUpdated(TrackingConsent.PENDING, TrackingConsent.NOT_GRANTED)
+        val result = testedOrchestrator.getMetadataFile(fakeFile)
 
         // Then
         assertThat(result).isNull()

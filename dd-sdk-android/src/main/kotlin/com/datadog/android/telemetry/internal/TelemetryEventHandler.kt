@@ -6,15 +6,14 @@
 
 package com.datadog.android.telemetry.internal
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
@@ -23,12 +22,14 @@ import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import io.opentracing.util.GlobalTracer
 import java.util.Locale
 
 internal class TelemetryEventHandler(
-    internal val sdkVersion: String,
-    private val sourceProvider: RumEventSourceProvider,
+    internal val sdkCore: SdkCore,
     private val timeProvider: TimeProvider,
     internal val eventSampler: Sampler,
     internal val maxEventCountPerSession: Int = MAX_EVENTS_PER_SESSION
@@ -38,6 +39,7 @@ internal class TelemetryEventHandler(
 
     private val seenInCurrentSession = mutableSetOf<TelemetryEventId>()
 
+    @WorkerThread
     fun handleEvent(event: RumRawEvent.SendTelemetry, writer: DataWriter<Any>) {
         if (!canWrite(event)) return
 
@@ -45,42 +47,48 @@ internal class TelemetryEventHandler(
 
         val timestamp = event.eventTime.timestamp + timeProvider.getServerOffsetMillis()
 
-        val rumContext = GlobalRum.getRumContext()
-
-        val telemetryEvent: Any? = when (event.type) {
-            TelemetryType.DEBUG -> {
-                createDebugEvent(timestamp, rumContext, event.message)
-            }
-            TelemetryType.ERROR -> {
-                createErrorEvent(
-                    timestamp,
-                    rumContext,
-                    event.message,
-                    event.stack,
-                    event.kind
-                )
-            }
-            TelemetryType.CONFIGURATION -> {
-                if (event.configuration == null) {
-                    createErrorEvent(
-                        timestamp,
-                        rumContext,
-                        "Trying to send configuration event with null config",
-                        null,
+        sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+            ?.withWriteContext { datadogContext, eventBatchWriter ->
+                val telemetryEvent: Any? = when (event.type) {
+                    TelemetryType.DEBUG -> {
+                        createDebugEvent(datadogContext, timestamp, event.message)
+                    }
+                    TelemetryType.ERROR -> {
+                        createErrorEvent(
+                            datadogContext,
+                            timestamp,
+                            event.message,
+                            event.stack,
+                            event.kind
+                        )
+                    }
+                    TelemetryType.CONFIGURATION -> {
+                        if (event.configuration == null) {
+                            createErrorEvent(
+                                datadogContext,
+                                timestamp,
+                                "Trying to send configuration event with null config",
+                                null,
+                                null
+                            )
+                        } else {
+                            createConfigurationEvent(
+                                datadogContext,
+                                timestamp,
+                                event.configuration
+                            )
+                        }
+                    }
+                    TelemetryType.INTERCEPTOR_SETUP -> {
+                        trackNetworkRequests = true
                         null
-                    )
-                } else {
-                    createConfigurationEvent(timestamp, rumContext, event.configuration)
+                    }
+                }
+
+                if (telemetryEvent != null) {
+                    writer.write(eventBatchWriter, telemetryEvent)
                 }
             }
-            TelemetryType.INTERCEPTOR_SETUP -> {
-                trackNetworkRequests = true
-                null
-            }
-        }
-        if (telemetryEvent != null) {
-            writer.write(telemetryEvent)
-        }
     }
 
     override fun onSessionStarted(sessionId: String, isDiscarded: Boolean) {
@@ -108,17 +116,19 @@ internal class TelemetryEventHandler(
     }
 
     private fun createDebugEvent(
+        datadogContext: DatadogContext,
         timestamp: Long,
-        rumContext: RumContext,
         message: String
     ): TelemetryDebugEvent {
+        val rumContext = datadogContext.rumContext()
+
         return TelemetryDebugEvent(
             dd = TelemetryDebugEvent.Dd(),
             date = timestamp,
-            source = sourceProvider.telemetryDebugEventSource
+            source = TelemetryDebugEvent.Source.tryFromSource(datadogContext.source)
                 ?: TelemetryDebugEvent.Source.ANDROID,
             service = TELEMETRY_SERVICE_NAME,
-            version = sdkVersion,
+            version = datadogContext.sdkVersion,
             application = TelemetryDebugEvent.Application(rumContext.applicationId),
             session = TelemetryDebugEvent.Session(rumContext.sessionId),
             view = rumContext.viewId?.let { TelemetryDebugEvent.View(it) },
@@ -129,20 +139,23 @@ internal class TelemetryEventHandler(
         )
     }
 
+    @Suppress("LongParameterList")
     private fun createErrorEvent(
+        datadogContext: DatadogContext,
         timestamp: Long,
-        rumContext: RumContext,
         message: String,
         stack: String?,
         kind: String?
     ): TelemetryErrorEvent {
+        val rumContext = datadogContext.rumContext()
+
         return TelemetryErrorEvent(
             dd = TelemetryErrorEvent.Dd(),
             date = timestamp,
-            source = sourceProvider.telemetryErrorEventSource
+            source = TelemetryErrorEvent.Source.tryFromSource(datadogContext.source)
                 ?: TelemetryErrorEvent.Source.ANDROID,
             service = TELEMETRY_SERVICE_NAME,
-            version = sdkVersion,
+            version = datadogContext.sdkVersion,
             application = TelemetryErrorEvent.Application(rumContext.applicationId),
             session = TelemetryErrorEvent.Session(rumContext.sessionId),
             view = rumContext.viewId?.let { TelemetryErrorEvent.View(it) },
@@ -162,8 +175,8 @@ internal class TelemetryEventHandler(
     }
 
     private fun createConfigurationEvent(
+        datadogContext: DatadogContext,
         timestamp: Long,
-        rumContext: RumContext,
         configuration: Configuration?
     ): TelemetryConfigurationEvent {
         val coreConfig = configuration?.coreConfig
@@ -177,13 +190,16 @@ internal class TelemetryEventHandler(
             is NavigationViewTrackingStrategy -> TelemetryConfigurationEvent.ViewTrackingStrategy.NAVIGATIONVIEWTRACKINGSTRATEGY
             else -> null
         }
+
+        val rumContext = datadogContext.rumContext()
+
         return TelemetryConfigurationEvent(
             dd = TelemetryConfigurationEvent.Dd(),
             date = timestamp,
             service = TELEMETRY_SERVICE_NAME,
-            source = sourceProvider.telemetryConfigurationEventSource
+            source = TelemetryConfigurationEvent.Source.tryFromSource(datadogContext.source)
                 ?: TelemetryConfigurationEvent.Source.ANDROID,
-            version = sdkVersion,
+            version = datadogContext.sdkVersion,
             application = TelemetryConfigurationEvent.Application(rumContext.applicationId),
             session = TelemetryConfigurationEvent.Session(rumContext.sessionId),
             view = rumContext.viewId?.let { TelemetryConfigurationEvent.View(it) },
@@ -195,7 +211,7 @@ internal class TelemetryEventHandler(
                     telemetrySampleRate = rumConfig?.telemetrySamplingRate?.toLong(),
                     useProxy = coreConfig?.proxy != null,
                     trackFrustrations = rumConfig?.trackFrustrations,
-                    useLocalEncryption = coreConfig?.securityConfig?.localDataEncryption != null,
+                    useLocalEncryption = coreConfig?.encryption != null,
                     viewTrackingStrategy = viewTrackingStrategy,
                     trackBackgroundEvents = rumConfig?.backgroundEventTracking,
                     trackInteractions = rumConfig?.userActionTrackingStrategy != null,
@@ -209,6 +225,11 @@ internal class TelemetryEventHandler(
                 )
             )
         )
+    }
+
+    private fun DatadogContext.rumContext(): RumContext {
+        val rumContext = featuresContext[RumFeature.RUM_FEATURE_NAME].orEmpty()
+        return RumContext.fromFeatureContext(rumContext)
     }
 
     // endregion

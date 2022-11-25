@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
-import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
@@ -50,7 +50,7 @@ internal class CacheFileMigratorTest {
     lateinit var mockNewOrchestrator: FileOrchestrator
 
     @Mock
-    lateinit var mockFileHandler: FileHandler
+    lateinit var mockFileMover: FileMover
 
     @Mock
     lateinit var mockExecutorService: ExecutorService
@@ -61,7 +61,7 @@ internal class CacheFileMigratorTest {
     @BeforeEach
     fun `set up`() {
         testedMigrator = CacheFileMigrator(
-            mockFileHandler,
+            mockFileMover,
             mockExecutorService,
             Logger(mockLogHander)
         )
@@ -94,13 +94,13 @@ internal class CacheFileMigratorTest {
             val moveOperation = firstValue as MoveDataMigrationOperation
             assertThat(moveOperation.fromDir).isSameAs(previousDir)
             assertThat(moveOperation.toDir).isSameAs(newDir)
-            assertThat(moveOperation.fileHandler).isSameAs(mockFileHandler)
+            assertThat(moveOperation.fileMover).isSameAs(mockFileMover)
             assertThat(moveOperation.internalLogger.handler).isSameAs(mockLogHander)
 
             assertThat(secondValue).isInstanceOf(WipeDataMigrationOperation::class.java)
             val wipeOperation = secondValue as WipeDataMigrationOperation
             assertThat(wipeOperation.targetDir).isSameAs(previousDir)
-            assertThat(wipeOperation.fileHandler).isSameAs(mockFileHandler)
+            assertThat(wipeOperation.fileMover).isSameAs(mockFileMover)
             assertThat(wipeOperation.internalLogger.handler).isSameAs(mockLogHander)
         }
     }

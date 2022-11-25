@@ -14,21 +14,21 @@ import android.view.Choreographer
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.event.NoOpEventMapper
-import com.datadog.android.core.internal.net.DataUploader
-import com.datadog.android.core.internal.persistence.PersistenceStrategy
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
+import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.event.EventMapper
+import com.datadog.android.event.MapperSerializer
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
-import com.datadog.android.rum.internal.domain.RumFilePersistenceStrategy
+import com.datadog.android.rum.internal.domain.RumDataWriter
+import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
-import com.datadog.android.rum.internal.net.RumOkHttpUploaderV2
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
@@ -44,15 +44,21 @@ import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.internal.storage.DataWriter
+import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
-internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
-
-    internal const val RUM_FEATURE_NAME = "rum"
+internal class RumFeature(
+    private val sdkCore: SdkCore,
+    private val coreFeature: CoreFeature
+) {
+    internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
+    internal val initialized = AtomicBoolean(false)
 
     internal var samplingRate: Float = 0f
     internal var telemetrySamplingRate: Float = 0f
@@ -79,7 +85,9 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
 
     // region SdkFeature
 
-    override fun onInitialize(context: Context, configuration: Configuration.Feature.RUM) {
+    fun initialize(context: Context, configuration: Configuration.Feature.RUM) {
+        dataWriter = createDataWriter(configuration)
+
         samplingRate = configuration.samplingRate
         telemetrySamplingRate = configuration.telemetrySamplingRate
         backgroundEventTracking = configuration.backgroundEventTracking
@@ -97,10 +105,14 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
         registerTrackingStrategies(context)
 
         appContext = context.applicationContext
+
+        initialized.set(true)
     }
 
-    override fun onStop() {
-        unregisterTrackingStrategies(CoreFeature.contextRef.get())
+    fun stop() {
+        unregisterTrackingStrategies(appContext)
+
+        dataWriter = NoOpDataWriter()
 
         viewTrackingStrategy = NoOpViewTrackingStrategy()
         actionTrackingStrategy = NoOpUserActionTrackingStrategy()
@@ -117,35 +129,19 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
         vitalExecutorService = NoOpScheduledExecutorService()
     }
 
-    override fun createPersistenceStrategy(
-        context: Context,
+    private fun createDataWriter(
         configuration: Configuration.Feature.RUM
-    ): PersistenceStrategy<Any> {
-        return RumFilePersistenceStrategy(
-            CoreFeature.trackingConsentProvider,
-            context,
-            configuration.rumEventMapper,
-            CoreFeature.persistenceExecutorService,
-            sdkLogger,
-            CoreFeature.localDataEncryption,
-            DatadogNdkCrashHandler.getLastViewEventFile(context)
-        )
-    }
+    ): DataWriter<Any> {
+        return RumDataWriter(
+            serializer = MapperSerializer(
+                configuration.rumEventMapper,
+                RumEventSerializer()
+            ),
+            fileWriter = BatchFileReaderWriter.create(sdkLogger, coreFeature.localDataEncryption),
+            internalLogger = sdkLogger,
+            lastViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir)
 
-    override fun createUploader(configuration: Configuration.Feature.RUM): DataUploader {
-        return RumOkHttpUploaderV2(
-            configuration.endpointUrl,
-            CoreFeature.clientToken,
-            CoreFeature.sourceName,
-            CoreFeature.sdkVersion,
-            CoreFeature.okHttpClient,
-            CoreFeature.androidInfoProvider,
-            CoreFeature.packageVersionProvider
         )
-    }
-
-    override fun onPostInitialized(context: Context) {
-        migrateToCacheDir(context, RUM_FEATURE_NAME, sdkLogger)
     }
 
     // endregion
@@ -192,12 +188,12 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
 
     private fun initializeVitalReaders(periodInMs: Long) {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
-        vitalExecutorService = ScheduledThreadPoolExecutor(1)
+        vitalExecutorService = LoggingScheduledThreadPoolExecutor(1, devLogger)
 
         initializeVitalMonitor(CPUVitalReader(), cpuVitalMonitor, periodInMs)
         initializeVitalMonitor(MemoryVitalReader(), memoryVitalMonitor, periodInMs)
 
-        val vitalFrameCallback = VitalFrameCallback(frameRateVitalMonitor) { isInitialized() }
+        val vitalFrameCallback = VitalFrameCallback(frameRateVitalMonitor) { initialized.get() }
         try {
             Choreographer.getInstance().postFrameCallback(vitalFrameCallback)
         } catch (e: IllegalStateException) {
@@ -216,6 +212,7 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
         periodInMs: Long
     ) {
         val readerRunnable = VitalReaderRunnable(
+            sdkCore,
             vitalReader,
             vitalObserver,
             vitalExecutorService,
@@ -237,4 +234,11 @@ internal object RumFeature : SdkFeature<Any, Configuration.Feature.RUM>() {
     }
 
     // endregion
+
+    companion object {
+        internal val startupTimeNs: Long = System.nanoTime()
+
+        internal const val RUM_FEATURE_NAME = "rum"
+        internal const val VIEW_TIMESTAMP_OFFSET_IN_MS_KEY = "view_timestamp_offset"
+    }
 }

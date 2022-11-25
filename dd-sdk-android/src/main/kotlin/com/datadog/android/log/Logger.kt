@@ -9,18 +9,18 @@ package com.datadog.android.log
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.log.internal.domain.LogGenerator
+import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.logger.LogcatLogHandler
 import com.datadog.android.log.internal.logger.NoOpLogHandler
-import com.datadog.android.log.model.LogEvent
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.DatadogCore
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.json.JSONArray
@@ -205,13 +205,13 @@ internal constructor(internal var handler: LogHandler) {
      */
     class Builder {
 
-        private var serviceName: String = CoreFeature.serviceName
+        private var serviceName: String? = null
+        private var loggerName: String? = null
         private var datadogLogsEnabled: Boolean = true
         private var logcatLogsEnabled: Boolean = false
         private var networkInfoEnabled: Boolean = false
         private var bundleWithTraceEnabled: Boolean = true
         private var bundleWithRumEnabled: Boolean = true
-        private var loggerName: String = CoreFeature.packageName
         private var sampleRate: Float = 1.0f
         private var minDatadogLogsPriority: Int = -1
 
@@ -219,15 +219,18 @@ internal constructor(internal var handler: LogHandler) {
          * Builds a [Logger] based on the current state of this Builder.
          */
         fun build(): Logger {
+            val datadogCore = Datadog.globalSdkCore as? DatadogCore
+            val coreFeature = datadogCore?.coreFeature
+            val logsFeature = datadogCore?.logsFeature
             val handler = when {
                 datadogLogsEnabled && logcatLogsEnabled -> {
                     CombinedLogHandler(
-                        buildDatadogHandler(),
-                        buildLogcatHandler()
+                        buildDatadogHandler(datadogCore, coreFeature, logsFeature),
+                        buildLogcatHandler(coreFeature)
                     )
                 }
-                datadogLogsEnabled -> buildDatadogHandler()
-                logcatLogsEnabled -> buildLogcatHandler()
+                datadogLogsEnabled -> buildDatadogHandler(datadogCore, coreFeature, logsFeature)
+                logcatLogsEnabled -> buildLogcatHandler(coreFeature)
                 else -> NoOpLogHandler()
             }
 
@@ -326,54 +329,38 @@ internal constructor(internal var handler: LogHandler) {
 
         // region Internal
 
-        private fun buildLogcatHandler(): LogHandler {
-            return LogcatLogHandler(serviceName, true)
-        }
-
-        private fun buildDatadogHandler(): LogHandler {
-            val writer = buildLogWriter() ?: return NoOpLogHandler()
-
-            val logGenerator = buildLogGenerator()
-
-            return DatadogLogHandler(
-                logGenerator = logGenerator,
-                writer = writer,
-                minLogPriority = minDatadogLogsPriority,
-                bundleWithTraces = bundleWithTraceEnabled,
-                bundleWithRum = bundleWithRumEnabled,
-                sampler = RateBasedSampler(sampleRate)
+        private fun buildLogcatHandler(coreFeature: CoreFeature?): LogHandler {
+            return LogcatLogHandler(
+                serviceName = serviceName ?: coreFeature?.serviceName ?: "unknown",
+                useClassnameAsTag = true
             )
         }
 
-        private fun buildLogWriter(): DataWriter<LogEvent>? {
-            return if (LogsFeature.isInitialized()) {
-                LogsFeature.persistenceStrategy.getWriter()
-            } else {
+        private fun buildDatadogHandler(
+            sdkCore: SdkCore?,
+            coreFeature: CoreFeature?,
+            logsFeature: LogsFeature?
+        ): LogHandler {
+            if (sdkCore == null || coreFeature == null || logsFeature == null) {
                 devLogger.e(
                     SDK_NOT_INITIALIZED_WARNING_MESSAGE + "\n" +
                         Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
                 )
-                null
+                return NoOpLogHandler()
             }
-        }
 
-        private fun buildLogGenerator(): LogGenerator {
-            val netInfoProvider = if (networkInfoEnabled) {
-                CoreFeature.networkInfoProvider
-            } else {
-                null
-            }
-            return LogGenerator(
-                serviceName,
-                loggerName,
-                netInfoProvider,
-                CoreFeature.userInfoProvider,
-                CoreFeature.timeProvider,
-                CoreFeature.sdkVersion,
-                CoreFeature.envName,
-                CoreFeature.variant,
-                CoreFeature.packageVersionProvider,
-                CoreFeature.androidInfoProvider
+            return DatadogLogHandler(
+                sdkCore = sdkCore,
+                loggerName = loggerName ?: coreFeature.packageName,
+                logGenerator = DatadogLogGenerator(
+                    serviceName ?: coreFeature.serviceName
+                ),
+                writer = logsFeature.dataWriter,
+                minLogPriority = minDatadogLogsPriority,
+                bundleWithTraces = bundleWithTraceEnabled,
+                bundleWithRum = bundleWithRumEnabled,
+                sampler = RateBasedSampler(sampleRate),
+                attachNetworkInfo = networkInfoEnabled
             )
         }
 

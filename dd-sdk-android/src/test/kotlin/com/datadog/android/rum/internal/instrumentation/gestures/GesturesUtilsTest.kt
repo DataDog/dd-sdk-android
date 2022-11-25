@@ -9,7 +9,6 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 import android.app.Application
 import android.content.res.Resources
 import android.view.View
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.mock
@@ -19,8 +18,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -28,7 +25,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.lang.ref.WeakReference
 
 @Extensions(
     ExtendWith(
@@ -51,16 +47,6 @@ class GesturesUtilsTest {
 
     @Mock
     lateinit var mockTarget: Any
-
-    @BeforeEach
-    fun `set up`() {
-        CoreFeature.contextRef = WeakReference(mockAppContext)
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        CoreFeature.contextRef = WeakReference(null)
-    }
 
     @Test
     fun `M return the custom name W resolveTargetName { custom name provided }`(
@@ -97,7 +83,7 @@ class GesturesUtilsTest {
         whenever(mockResources.getResourceEntryName(resourceId)).thenReturn(resourceName)
 
         // When
-        assertThat(resourceIdName(resourceId)).isEqualTo(resourceName)
+        assertThat(mockAppContext.resourceIdName(resourceId)).isEqualTo(resourceName)
     }
 
     @Test
@@ -109,7 +95,7 @@ class GesturesUtilsTest {
         whenever(mockAppContext.resources).thenReturn(null)
 
         // When
-        assertThat(resourceIdName(resourceId))
+        assertThat(mockAppContext.resourceIdName(resourceId))
             .isEqualTo("0x${resourceId.toString(16)}")
     }
 
@@ -127,7 +113,7 @@ class GesturesUtilsTest {
         )
 
         // When
-        assertThat(resourceIdName(resourceId))
+        assertThat(mockAppContext.resourceIdName(resourceId))
             .isEqualTo("0x${resourceId.toString(16)}")
     }
 
@@ -141,7 +127,7 @@ class GesturesUtilsTest {
         whenever(mockResources.getResourceEntryName(resourceId)).thenReturn(null)
 
         // When
-        assertThat(resourceIdName(resourceId))
+        assertThat(mockAppContext.resourceIdName(resourceId))
             .isEqualTo("0x${resourceId.toString(16)}")
     }
 

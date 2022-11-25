@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "$id": "root-schema-reference",
+  "title": "Country",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "continent": {
+      "type": "string"
+    },
+    "population": {
+      "type": "integer"
+    }
+  }
+}

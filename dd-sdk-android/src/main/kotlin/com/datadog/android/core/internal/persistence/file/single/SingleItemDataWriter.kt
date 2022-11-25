@@ -6,26 +6,33 @@
 
 package com.datadog.android.core.internal.persistence.file.single
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.FileHandler
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
+import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.internal.persistence.serializeToByteArray
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.utils.errorWithTelemetry
+import java.util.Locale
 
 internal open class SingleItemDataWriter<T : Any>(
     internal val fileOrchestrator: FileOrchestrator,
     internal val serializer: Serializer<T>,
-    internal val handler: FileHandler,
-    internal val internalLogger: Logger
+    internal val fileWriter: FileWriter,
+    internal val internalLogger: Logger,
+    internal val filePersistenceConfig: FilePersistenceConfig
 ) : DataWriter<T> {
 
     // region DataWriter
 
+    @WorkerThread
     override fun write(element: T) {
         consume(element)
     }
 
+    @WorkerThread
     override fun write(data: List<T>) {
         val element = data.lastOrNull() ?: return
         consume(element)
@@ -35,6 +42,7 @@ internal open class SingleItemDataWriter<T : Any>(
 
     // region Internal
 
+    @WorkerThread
     private fun consume(data: T) {
         val byteArray = serializer.serializeToByteArray(data, internalLogger) ?: return
 
@@ -43,10 +51,31 @@ internal open class SingleItemDataWriter<T : Any>(
         }
     }
 
+    @WorkerThread
     private fun writeData(byteArray: ByteArray): Boolean {
-        val file = fileOrchestrator.getWritableFile(byteArray.size) ?: return false
-        return handler.writeData(file, byteArray, false)
+        if (!checkEventSize(byteArray.size)) return false
+
+        val file = fileOrchestrator.getWritableFile() ?: return false
+        return fileWriter.writeData(file, byteArray, false)
+    }
+
+    private fun checkEventSize(eventSize: Int): Boolean {
+        if (eventSize > filePersistenceConfig.maxItemSize) {
+            internalLogger.errorWithTelemetry(
+                ERROR_LARGE_DATA.format(
+                    Locale.US,
+                    eventSize,
+                    filePersistenceConfig.maxItemSize
+                )
+            )
+            return false
+        }
+        return true
     }
 
     // endregion
+
+    companion object {
+        internal const val ERROR_LARGE_DATA = "Can't write data with size %d (max item size is %d)"
+    }
 }

@@ -9,7 +9,6 @@ package com.datadog.android.rum.internal.net
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DataOkHttpUploaderV2
 import com.datadog.android.core.internal.system.AndroidInfoProvider
-import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.RumAttributes
 import okhttp3.Call
@@ -21,7 +20,7 @@ internal open class RumOkHttpUploaderV2(
     sdkVersion: String,
     callFactory: Call.Factory,
     androidInfoProvider: AndroidInfoProvider,
-    private val appVersionProvider: AppVersionProvider
+    private val coreFeature: CoreFeature
 ) : DataOkHttpUploaderV2(
     buildUrl(endpoint, TrackType.RUM),
     clientToken,
@@ -36,14 +35,15 @@ internal open class RumOkHttpUploaderV2(
     private val tags: String
         get() {
             val elements = mutableListOf(
-                "${RumAttributes.SERVICE_NAME}:${CoreFeature.serviceName}",
-                "${RumAttributes.APPLICATION_VERSION}:${appVersionProvider.version}",
+                "${RumAttributes.SERVICE_NAME}:${coreFeature.serviceName}",
+                "${RumAttributes.APPLICATION_VERSION}:" +
+                    coreFeature.packageVersionProvider.version,
                 "${RumAttributes.SDK_VERSION}:$sdkVersion",
-                "${RumAttributes.ENV}:${CoreFeature.envName}"
+                "${RumAttributes.ENV}:${coreFeature.envName}"
             )
 
-            if (CoreFeature.variant.isNotEmpty()) {
-                elements.add("${RumAttributes.VARIANT}:${CoreFeature.variant}")
+            if (coreFeature.variant.isNotEmpty()) {
+                elements.add("${RumAttributes.VARIANT}:${coreFeature.variant}")
             }
 
             return elements.joinToString(",")

@@ -6,17 +6,20 @@
 
 package com.datadog.android.webview.internal.rum
 
-import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.SdkFeatureTest
-import com.datadog.android.rum.internal.net.RumOkHttpUploaderV2
+import android.app.Application
+import com.datadog.android.rum.internal.domain.RumDataWriter
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import fr.xgouchet.elmyr.Forge
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -32,43 +35,45 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class WebViewRumFeatureTest : SdkFeatureTest<Any,
-    Configuration.Feature.RUM, WebViewRumFeature>() {
+internal class WebViewRumFeatureTest {
 
-    override fun createTestedFeature(): WebViewRumFeature {
-        return WebViewRumFeature
-    }
+    private lateinit var testedFeature: WebViewRumFeature
 
-    override fun forgeConfiguration(forge: Forge): Configuration.Feature.RUM {
-        return forge.getForgery()
-    }
-
-    override fun featureDirName(): String {
-        return "web-rum"
-    }
-
-    override fun doesFeatureNeedMigration(): Boolean = false
-
-    @Test
-    fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
-        // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
-
-        // Then
-        assertThat(testedFeature.persistenceStrategy)
-            .isInstanceOf(WebViewRumFilePersistenceStrategy::class.java)
+    @BeforeEach
+    fun `set up`() {
+        testedFeature = WebViewRumFeature(coreFeature.mockInstance)
     }
 
     @Test
-    fun `𝕄 create a logs uploader 𝕎 createUploader()`() {
+    fun `𝕄 initialize data writer 𝕎 initialize()`() {
         // When
-        val uploader = testedFeature.createUploader(fakeConfigurationFeature)
+        testedFeature.initialize()
 
         // Then
-        assertThat(uploader).isInstanceOf(RumOkHttpUploaderV2::class.java)
-        val rumUploader = uploader as RumOkHttpUploaderV2
-        assertThat(rumUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
-        assertThat(rumUploader.intakeUrl).endsWith("/api/v2/rum")
-        assertThat(rumUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
+        assertThat(testedFeature.dataWriter)
+            .isInstanceOf(RumDataWriter::class.java)
+    }
+
+    @Test
+    fun `𝕄 reset data writer 𝕎 stop()`() {
+        // Given
+        testedFeature.initialize()
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        assertThat(testedFeature.dataWriter).isInstanceOf(NoOpDataWriter::class.java)
+    }
+
+    companion object {
+        val appContext = ApplicationContextTestConfiguration(Application::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(appContext, coreFeature)
+        }
     }
 }

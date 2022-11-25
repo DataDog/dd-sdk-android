@@ -6,13 +6,13 @@
 
 package com.datadog.android.rum.assertj
 
-import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.internal.domain.scope.toSchemaSource
 import com.datadog.android.rum.model.ErrorEvent
+import com.datadog.android.v2.api.context.NetworkInfo
+import com.datadog.android.v2.api.context.UserInfo
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
@@ -178,7 +178,7 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
 
         assertThat(actual.connectivity?.cellular?.technology)
             .overridingErrorMessage(
-                "Expected RUM event to have connectivity usr.cellular.technology " +
+                "Expected RUM event to connectivity usr.cellular.technology " +
                     "${expected?.cellularTechnology} " +
                     "but was ${actual.connectivity?.cellular?.technology}"
             )
@@ -186,7 +186,7 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
 
         assertThat(actual.connectivity?.cellular?.carrierName)
             .overridingErrorMessage(
-                "Expected RUM event to have connectivity usr.cellular.carrierName " +
+                "Expected RUM event to connectivity usr.cellular.carrierName " +
                     "${expected?.carrierName} " +
                     "but was ${actual.connectivity?.cellular?.carrierName}"
             )
@@ -438,6 +438,15 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
             )
             .isEqualTo(versionMajor)
         return this
+    }
+
+    fun hasReplay(hasReplay: Boolean) {
+        assertThat(actual.session.hasReplay)
+            .overridingErrorMessage(
+                "Expected event data to have hasReplay $hasReplay " +
+                    "but was ${actual.session.hasReplay}"
+            )
+            .isEqualTo(hasReplay)
     }
 
     fun hasServiceName(serviceName: String?): ErrorEventAssert {

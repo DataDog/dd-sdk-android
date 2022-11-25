@@ -6,15 +6,14 @@
 
 package com.datadog.android.error.internal
 
-import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.SdkFeatureTest
-import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
-import com.datadog.android.log.model.LogEvent
+import android.app.Application
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.mock
-import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -23,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -34,63 +34,31 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class CrashReportsFeatureTest :
-    SdkFeatureTest<LogEvent, Configuration.Feature.CrashReport, CrashReportsFeature>() {
+internal class CrashReportsFeatureTest {
+
+    private lateinit var testedFeature: CrashReportsFeature
+
+    @Mock
+    lateinit var mockSdkCore: SdkCore
 
     var jvmExceptionHandler: Thread.UncaughtExceptionHandler? = null
 
     @BeforeEach
     fun `set up crash reports`() {
+        testedFeature = CrashReportsFeature(mockSdkCore)
         jvmExceptionHandler = Thread.getDefaultUncaughtExceptionHandler()
     }
 
     @AfterEach
     fun `tear down crash reports`() {
         Thread.setDefaultUncaughtExceptionHandler(jvmExceptionHandler)
-        CrashReportsFeature.originalUncaughtExceptionHandler = jvmExceptionHandler
-    }
-
-    override fun createTestedFeature(): CrashReportsFeature {
-        return CrashReportsFeature
-    }
-
-    override fun forgeConfiguration(forge: Forge): Configuration.Feature.CrashReport {
-        return forge.getForgery()
-    }
-
-    override fun featureDirName(): String {
-        return "crash"
-    }
-
-    override fun doesFeatureNeedMigration(): Boolean = true
-
-    @Test
-    fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
-        // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
-
-        // Then
-        assertThat(testedFeature.persistenceStrategy)
-            .isInstanceOf(CrashReportFilePersistenceStrategy::class.java)
-    }
-
-    @Test
-    fun `𝕄 create a crash reports uploader 𝕎 createUploader()`() {
-        // When
-        val uploader = testedFeature.createUploader(fakeConfigurationFeature)
-
-        // Then
-        assertThat(uploader).isInstanceOf(LogsOkHttpUploaderV2::class.java)
-        val crashReportsUploader = uploader as LogsOkHttpUploaderV2
-        assertThat(crashReportsUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
-        assertThat(crashReportsUploader.intakeUrl).endsWith("/api/v2/logs")
-        assertThat(crashReportsUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
+        testedFeature.originalUncaughtExceptionHandler = jvmExceptionHandler
     }
 
     @Test
     fun `𝕄 register crash handler 𝕎 initialize`() {
         // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance)
 
         // Then
         val handler = Thread.getDefaultUncaughtExceptionHandler()
@@ -105,11 +73,21 @@ internal class CrashReportsFeatureTest :
         Thread.setDefaultUncaughtExceptionHandler(mockOriginalHandler)
 
         // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
+        testedFeature.initialize(appContext.mockInstance)
         testedFeature.stop()
 
         // Then
         val finalHandler = Thread.getDefaultUncaughtExceptionHandler()
         assertThat(finalHandler).isSameAs(mockOriginalHandler)
+    }
+
+    companion object {
+        val appContext = ApplicationContextTestConfiguration(Application::class.java)
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(appContext)
+        }
     }
 }

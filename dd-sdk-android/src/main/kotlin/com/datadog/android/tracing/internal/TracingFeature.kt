@@ -6,56 +6,51 @@
 
 package com.datadog.android.tracing.internal
 
-import android.content.Context
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.SdkFeature
-import com.datadog.android.core.internal.net.DataUploader
-import com.datadog.android.core.internal.persistence.PersistenceStrategy
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.tracing.internal.domain.TracesFilePersistenceStrategy
-import com.datadog.android.tracing.internal.net.TracesOkHttpUploaderV2
-import com.datadog.opentracing.DDSpan
+import com.datadog.android.tracing.internal.data.NoOpWriter
+import com.datadog.android.tracing.internal.data.TraceWriter
+import com.datadog.android.tracing.internal.domain.event.DdSpanToSpanEventMapper
+import com.datadog.android.tracing.internal.domain.event.SpanEventMapperWrapper
+import com.datadog.android.tracing.internal.domain.event.SpanEventSerializer
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.trace.common.writer.Writer
+import java.util.concurrent.atomic.AtomicBoolean
 
-internal object TracingFeature : SdkFeature<DDSpan, Configuration.Feature.Tracing>() {
+internal class TracingFeature(
+    private val sdkCore: SdkCore
+) {
 
-    internal const val TRACING_FEATURE_NAME = "tracing"
+    internal var dataWriter: Writer = NoOpWriter()
+    internal val initialized = AtomicBoolean(false)
 
     // region SdkFeature
 
-    override fun createPersistenceStrategy(
-        context: Context,
+    fun initialize(configuration: Configuration.Feature.Tracing) {
+        dataWriter = createDataWriter(configuration)
+        initialized.set(true)
+    }
+
+    fun stop() {
+        dataWriter = NoOpWriter()
+        initialized.set(false)
+    }
+
+    private fun createDataWriter(
         configuration: Configuration.Feature.Tracing
-    ): PersistenceStrategy<DDSpan> {
-        return TracesFilePersistenceStrategy(
-            CoreFeature.trackingConsentProvider,
-            context,
-            CoreFeature.persistenceExecutorService,
-            CoreFeature.timeProvider,
-            CoreFeature.networkInfoProvider,
-            CoreFeature.userInfoProvider,
-            CoreFeature.packageVersionProvider,
-            CoreFeature.envName,
-            sdkLogger,
-            configuration.spanEventMapper,
-            CoreFeature.localDataEncryption
+    ): Writer {
+        return TraceWriter(
+            sdkCore,
+            legacyMapper = DdSpanToSpanEventMapper(),
+            eventMapper = SpanEventMapperWrapper(configuration.spanEventMapper),
+            serializer = SpanEventSerializer(),
+            internalLogger = sdkLogger
         )
-    }
-
-    override fun createUploader(configuration: Configuration.Feature.Tracing): DataUploader {
-        return TracesOkHttpUploaderV2(
-            configuration.endpointUrl,
-            CoreFeature.clientToken,
-            CoreFeature.sourceName,
-            CoreFeature.sdkVersion,
-            CoreFeature.okHttpClient,
-            CoreFeature.androidInfoProvider
-        )
-    }
-
-    override fun onPostInitialized(context: Context) {
-        migrateToCacheDir(context, TRACING_FEATURE_NAME, sdkLogger)
     }
 
     // endregion
+
+    companion object {
+        internal const val TRACING_FEATURE_NAME = "tracing"
+    }
 }

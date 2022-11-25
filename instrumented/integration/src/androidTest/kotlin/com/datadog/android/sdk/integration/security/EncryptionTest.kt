@@ -11,7 +11,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
-import com.datadog.android.core.configuration.SecurityConfig
 import com.datadog.android.log.Logger
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
@@ -73,7 +72,7 @@ internal class EncryptionTest {
 
         // this part is flaky, because we make an assumption on the internal folder/file structure
         val isPendingDirectory = { file: File ->
-            file.name.startsWith("dd") && file.name.contains("pending")
+            file.name.contains("pending")
         }
         val isNdkPendingDirectory = { file: File ->
             file.name == "ndk_crash_reports_intermediary_v2"
@@ -81,12 +80,15 @@ internal class EncryptionTest {
 
         val dataDirectories =
             targetContext.cacheDir.listFiles()
+                ?.filter { it.isDirectory && it.name.startsWith("datadog") }
+                ?.flatMap { it.listFiles()?.asIterable() ?: emptyList() }
                 ?.filter {
-                    it.isDirectory &&
-                        (
-                            (isPendingDirectory(it) && !it.name.contains("crash")) ||
-                                isNdkPendingDirectory(it)
-                            )
+                    if (it.isDirectory) {
+                        (isPendingDirectory(it) && !it.name.contains("crash")) ||
+                            isNdkPendingDirectory(it)
+                    } else {
+                        false
+                    }
                 }!!
 
         assertThat(dataDirectories).isNotEmpty()
@@ -141,7 +143,7 @@ internal class EncryptionTest {
                 crashReportsEnabled = true,
                 rumEnabled = true
             )
-            .setSecurityConfig(SecurityConfig(localDataEncryption = encryption))
+            .setEncryption(encryption)
             .build()
     }
 
@@ -205,14 +207,6 @@ internal class EncryptionTest {
         val callMethod = Datadog.javaClass.declaredMethods.first { it.name.startsWith(method) }
         callMethod.isAccessible = true
         callMethod.invoke(instance.get(null))
-    }
-
-    private fun Configuration.Builder.setSecurityConfig(
-        securityConfig: SecurityConfig
-    ): Configuration.Builder {
-        val method = this.javaClass.declaredMethods.find { it.name == "setSecurityConfig" }
-        method!!.isAccessible = true
-        return method.invoke(this, securityConfig) as Configuration.Builder
     }
 
     // endregion

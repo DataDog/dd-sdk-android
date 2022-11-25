@@ -15,7 +15,6 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.SecurityConfig
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.ViewEventMapper
@@ -36,7 +35,6 @@ import com.datadog.android.nightly.utils.initializeSdk
 import com.datadog.android.nightly.utils.invokeMethod
 import com.datadog.android.nightly.utils.measureSdkInitialize
 import com.datadog.android.nightly.utils.sendRandomActionOutcomeEvent
-import com.datadog.android.nightly.utils.setSecurityConfig
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
@@ -647,8 +645,7 @@ class RumConfigE2ETests {
     }
 
     /**
-     * apiMethodSignature: com.datadog.android.core.configuration.SecurityConfig#constructor(com.datadog.android.security.Encryption?)
-     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setSecurityConfig(SecurityConfig): Builder
+     * apiMethodSignature: com.datadog.android.core.configuration.Configuration$Builder#fun setEncryption(Encryption): Builder
      * apiMethodSignature: com.datadog.android.security.Encryption#fun encrypt(ByteArray): ByteArray
      * apiMethodSignature: com.datadog.android.security.Encryption#fun decrypt(ByteArray): ByteArray
      */
@@ -666,7 +663,7 @@ class RumConfigE2ETests {
                         rumEnabled = true,
                         crashReportsEnabled = true
                     )
-                    .setSecurityConfig(SecurityConfig(localDataEncryption = TestEncryption()))
+                    .setEncryption(TestEncryption())
                     .build()
 
             )

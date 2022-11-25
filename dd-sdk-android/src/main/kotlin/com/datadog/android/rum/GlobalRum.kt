@@ -4,30 +4,19 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-@file:Suppress("DEPRECATION")
-
 package com.datadog.android.rum
 
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.error.internal.CrashReportsFeature
-import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.plugin.DatadogContext
-import com.datadog.android.plugin.DatadogPlugin
-import com.datadog.android.plugin.DatadogRumContext
 import com.datadog.android.rum.GlobalRum.get
 import com.datadog.android.rum.GlobalRum.registerIfAbsent
-import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.tracing.internal.TracingFeature
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * A global [RumMonitor] holder, ensuring that all RUM events are registered
- * on the same instance .
+ * on the same instance.
  *
  * The [registerIfAbsent] method should only be called once during the application
  * initialization phase. Any following calls will be no-op. If the [registerIfAbsent]
@@ -41,8 +30,6 @@ object GlobalRum {
 
     internal val isRegistered = AtomicBoolean(false)
     internal var monitor: RumMonitor = NoOpRumMonitor()
-
-    private var activeContext: AtomicReference<RumContext> = AtomicReference(RumContext())
 
     /**
      * Identify whether a [RumMonitor] has previously been registered.
@@ -72,7 +59,7 @@ object GlobalRum {
      */
     @JvmStatic
     fun registerIfAbsent(monitor: RumMonitor): Boolean {
-        return registerIfAbsent(Callable { monitor })
+        return registerIfAbsent { monitor }
     }
 
     /**
@@ -149,47 +136,6 @@ object GlobalRum {
 
     internal fun notifyInterceptorInstantiated() {
         (monitor as? AdvancedRumMonitor)?.notifyInterceptorInstantiated()
-    }
-
-    internal fun getRumContext(): RumContext {
-        return activeContext.get()
-    }
-
-    internal fun updateRumContext(
-        newContext: RumContext,
-        applyOnlyIf: (currentContext: RumContext) -> Boolean = { true }
-    ) {
-        if (!applyOnlyIf(activeContext.get())) return
-
-        activeContext.set(newContext)
-        val pluginContext = DatadogContext(
-            DatadogRumContext(
-                newContext.applicationId,
-                newContext.sessionId,
-                newContext.viewId
-            )
-        )
-        updateContextInPlugins(pluginContext, RumFeature.getPlugins())
-        updateContextInPlugins(pluginContext, CrashReportsFeature.getPlugins())
-        updateContextInPlugins(pluginContext, LogsFeature.getPlugins())
-        updateContextInPlugins(pluginContext, TracingFeature.getPlugins())
-    }
-
-    private fun updateContextInPlugins(
-        pluginContext: DatadogContext,
-        plugins: List<DatadogPlugin>
-    ) {
-        plugins.forEach {
-            it.onContextChanged(pluginContext)
-        }
-    }
-
-    // For Tests only
-
-    @Suppress("unused")
-    @JvmStatic
-    private fun resetSession() {
-        (monitor as? AdvancedRumMonitor)?.resetSession()
     }
 
     // endregion

@@ -7,18 +7,19 @@
 package com.datadog.android.tracing
 
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.tracing.internal.TracingFeature
-import com.datadog.android.tracing.internal.data.TraceWriter
+import com.datadog.android.tracing.internal.data.NoOpWriter
 import com.datadog.android.tracing.internal.handlers.AndroidSpanLogsHandler
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.opentracing.DDTracer
 import com.datadog.opentracing.LogHandler
 import com.datadog.trace.api.Config
+import com.datadog.trace.common.writer.Writer
 import io.opentracing.Span
 import io.opentracing.log.Fields
 import java.security.SecureRandom
@@ -34,8 +35,9 @@ import java.util.Random
  *
  */
 class AndroidTracer internal constructor(
+    private val sdkCore: SdkCore,
     config: Config,
-    writer: TraceWriter,
+    writer: Writer,
     random: Random,
     private val logsHandler: LogHandler,
     private val bundleWithRum: Boolean
@@ -59,7 +61,11 @@ class AndroidTracer internal constructor(
     internal constructor(private val logsHandler: LogHandler) {
 
         private var bundleWithRumEnabled: Boolean = true
-        private var serviceName: String = CoreFeature.serviceName
+
+        // TODO RUMM-0000 should have a nicer call chain
+        private var serviceName: String? = (Datadog.globalSdkCore as? DatadogCore)
+            ?.coreFeature
+            ?.serviceName
         private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
         private var random: Random = SecureRandom()
 
@@ -77,19 +83,25 @@ class AndroidTracer internal constructor(
          * Builds a [AndroidTracer] based on the current state of this Builder.
          */
         fun build(): AndroidTracer {
-            if (!TracingFeature.isInitialized()) {
+            val datadogCore = Datadog.globalSdkCore as? DatadogCore
+            val tracingFeature = datadogCore?.tracingFeature
+            val rumFeature = datadogCore?.rumFeature
+
+            if (tracingFeature == null) {
                 devLogger.e(
                     TRACING_NOT_ENABLED_ERROR_MESSAGE + "\n" +
                         Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
                 )
             }
-            if (bundleWithRumEnabled && !RumFeature.isInitialized()) {
+
+            if (bundleWithRumEnabled && rumFeature == null) {
                 devLogger.e(RUM_NOT_ENABLED_ERROR_MESSAGE)
                 bundleWithRumEnabled = false
             }
             return AndroidTracer(
+                datadogCore ?: NoOpSdkCore(),
                 config(),
-                TraceWriter(TracingFeature.persistenceStrategy.getWriter()),
+                tracingFeature?.dataWriter ?: NoOpWriter(),
                 random,
                 logsHandler,
                 bundleWithRumEnabled
@@ -148,7 +160,10 @@ class AndroidTracer internal constructor(
 
         internal fun properties(): Properties {
             val properties = Properties()
-            properties.setProperty(Config.SERVICE_NAME, serviceName)
+            // TODO RUMM-0000 remove null assertion once we read serviceName in non-null way
+            if (serviceName != null) {
+                properties.setProperty(Config.SERVICE_NAME, serviceName)
+            }
             properties.setProperty(
                 Config.PARTIAL_FLUSH_MIN_SPANS,
                 partialFlushThreshold.toString()
@@ -171,11 +186,11 @@ class AndroidTracer internal constructor(
 
     private fun DDSpanBuilder.withRumContext(): DDSpanBuilder {
         return if (bundleWithRum) {
-            val rumContext = GlobalRum.getRumContext()
-            withTag(LogAttributes.RUM_APPLICATION_ID, rumContext.applicationId)
-                .withTag(LogAttributes.RUM_SESSION_ID, rumContext.sessionId)
-                .withTag(LogAttributes.RUM_VIEW_ID, rumContext.viewId)
-                .withTag(LogAttributes.RUM_ACTION_ID, rumContext.actionId)
+            val rumContext = sdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)
+            withTag(LogAttributes.RUM_APPLICATION_ID, rumContext["application_id"] as? String)
+                .withTag(LogAttributes.RUM_SESSION_ID, rumContext["session_id"] as? String)
+                .withTag(LogAttributes.RUM_VIEW_ID, rumContext["view_id"] as? String)
+                .withTag(LogAttributes.RUM_ACTION_ID, rumContext["action_id"] as? String)
         } else {
             this
         }

@@ -6,51 +6,52 @@
 
 package com.datadog.android.rum.internal.ndk
 
-import android.content.Context
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.persistence.DataWriter
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.persistence.file.FileReader
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.readTextSafe
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.domain.LogGenerator
+import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.utils.errorWithTelemetry
-import com.datadog.android.log.model.LogEvent
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
+import com.datadog.android.rum.internal.domain.scope.tryFromSource
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.TimeUnit
 
+@Suppress("LongParameterList")
 internal class DatadogNdkCrashHandler(
-    appContext: Context,
+    storageDir: File,
     private val dataPersistenceExecutorService: ExecutorService,
-    internal val logGenerator: LogGenerator,
     private val ndkCrashLogDeserializer: Deserializer<NdkCrashLog>,
     private val rumEventDeserializer: Deserializer<Any>,
     private val networkInfoDeserializer: Deserializer<NetworkInfo>,
     private val userInfoDeserializer: Deserializer<UserInfo>,
     private val internalLogger: Logger,
-    private val timeProvider: TimeProvider,
-    private val fileHandler: FileHandler,
-    private val rumEventSourceProvider: RumEventSourceProvider =
-        RumEventSourceProvider(CoreFeature.sourceName),
+    internal val timeProvider: TimeProvider,
+    private val rumFileReader: BatchFileReader,
+    private val envFileReader: FileReader,
     private val androidInfoProvider: AndroidInfoProvider
 ) : NdkCrashHandler {
 
-    private val ndkCrashDataDirectory: File = getNdkGrantedDir(appContext)
+    internal val ndkCrashDataDirectory: File = getNdkGrantedDir(storageDir)
 
     internal var lastSerializedRumViewEvent: String? = null
     internal var lastSerializedUserInformation: String? = null
@@ -63,6 +64,7 @@ internal class DatadogNdkCrashHandler(
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             dataPersistenceExecutorService.submit {
+                @Suppress("ThreadSafety")
                 readCrashData()
             }
         } catch (e: RejectedExecutionException) {
@@ -71,13 +73,14 @@ internal class DatadogNdkCrashHandler(
     }
 
     override fun handleNdkCrash(
-        logWriter: DataWriter<LogEvent>,
+        sdkCore: SdkCore,
         rumWriter: DataWriter<Any>
     ) {
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             dataPersistenceExecutorService.submit {
-                checkAndHandleNdkCrashReport(logWriter, rumWriter)
+                @Suppress("ThreadSafety")
+                checkAndHandleNdkCrashReport(sdkCore, rumWriter)
             }
         } catch (e: RejectedExecutionException) {
             internalLogger.errorWithTelemetry(ERROR_TASK_REJECTED, e)
@@ -88,6 +91,7 @@ internal class DatadogNdkCrashHandler(
 
     // region Internal
 
+    @WorkerThread
     private fun readCrashData() {
         if (!ndkCrashDataDirectory.existsSafe()) {
             return
@@ -96,16 +100,18 @@ internal class DatadogNdkCrashHandler(
             ndkCrashDataDirectory.listFilesSafe()?.forEach {
                 when (it.name) {
                     // TODO RUMM-1944 Data from NDK should be also encrypted
+                    // TODO RUMM-2697 Use message bus to communicate with RUM, RUM classes
+                    //  won't be explicitly available
                     CRASH_DATA_FILE_NAME -> lastSerializedNdkCrashLog = it.readTextSafe()
                     RUM_VIEW_EVENT_FILE_NAME ->
                         lastSerializedRumViewEvent =
-                            readFileContent(it, fileHandler)
+                            readRumFileContent(it, rumFileReader)
                     USER_INFO_FILE_NAME ->
                         lastSerializedUserInformation =
-                            readFileContent(it, fileHandler)
+                            readFileContent(it, envFileReader)
                     NETWORK_INFO_FILE_NAME ->
                         lastSerializedNetworkInformation =
-                            readFileContent(it, fileHandler)
+                            readFileContent(it, envFileReader)
                 }
             }
         } catch (e: SecurityException) {
@@ -115,8 +121,19 @@ internal class DatadogNdkCrashHandler(
         }
     }
 
-    private fun readFileContent(file: File, fileHandler: FileHandler): String? {
-        val content = fileHandler.readData(file)
+    @WorkerThread
+    private fun readFileContent(file: File, fileReader: FileReader): String? {
+        val content = fileReader.readData(file)
+        return if (content.isEmpty()) {
+            null
+        } else {
+            String(content)
+        }
+    }
+
+    @WorkerThread
+    private fun readRumFileContent(file: File, fileReader: BatchFileReader): String? {
+        val content = fileReader.readData(file)
         return if (content.isEmpty()) {
             null
         } else {
@@ -124,8 +141,9 @@ internal class DatadogNdkCrashHandler(
         }
     }
 
+    @WorkerThread
     private fun checkAndHandleNdkCrashReport(
-        logWriter: DataWriter<LogEvent>,
+        sdkCore: SdkCore,
         rumWriter: DataWriter<Any>
     ) {
         val lastSerializedRumViewEvent = lastSerializedRumViewEvent
@@ -144,7 +162,7 @@ internal class DatadogNdkCrashHandler(
                 networkInfoDeserializer.deserialize(it)
             }
             handleNdkCrashLog(
-                logWriter,
+                sdkCore,
                 rumWriter,
                 lastNdkCrashLog,
                 lastRumViewEvent,
@@ -162,9 +180,9 @@ internal class DatadogNdkCrashHandler(
         lastSerializedUserInformation = null
     }
 
-    @SuppressWarnings("LongParameterList")
+    @WorkerThread
     private fun handleNdkCrashLog(
-        logWriter: DataWriter<LogEvent>,
+        sdkCore: SdkCore,
         rumWriter: DataWriter<Any>,
         ndkCrashLog: NdkCrashLog?,
         lastViewEvent: ViewEvent?,
@@ -184,6 +202,7 @@ internal class DatadogNdkCrashHandler(
                 LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace
             )
             updateViewEventAndSendError(
+                sdkCore,
                 rumWriter,
                 errorLogMessage,
                 ndkCrashLog,
@@ -196,7 +215,7 @@ internal class DatadogNdkCrashHandler(
         }
 
         sendCrashLogEvent(
-            logWriter,
+            sdkCore,
             errorLogMessage,
             logAttributes,
             ndkCrashLog,
@@ -205,7 +224,9 @@ internal class DatadogNdkCrashHandler(
         )
     }
 
+    @WorkerThread
     private fun updateViewEventAndSendError(
+        sdkCore: SdkCore,
         rumWriter: DataWriter<Any>,
         errorLogMessage: String,
         ndkCrashLog: NdkCrashLog,
@@ -216,38 +237,49 @@ internal class DatadogNdkCrashHandler(
             ndkCrashLog,
             lastViewEvent
         )
-        rumWriter.write(toSendErrorEvent)
-        val sessionsTimeDifference = System.currentTimeMillis() - lastViewEvent.date
-        if (sessionsTimeDifference < VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD
-        ) {
-            val updatedViewEvent = updateViewEvent(lastViewEvent)
-            rumWriter.write(updatedViewEvent)
+        val now = System.currentTimeMillis()
+        val rumFeature = sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+        if (rumFeature != null) {
+            rumFeature.withWriteContext { _, eventBatchWriter ->
+                rumWriter.write(eventBatchWriter, toSendErrorEvent)
+                val sessionsTimeDifference = now - lastViewEvent.date
+                if (sessionsTimeDifference < VIEW_EVENT_AVAILABILITY_TIME_THRESHOLD) {
+                    val updatedViewEvent = updateViewEvent(lastViewEvent)
+                    rumWriter.write(eventBatchWriter, updatedViewEvent)
+                }
+            }
+        } else {
+            devLogger.i(INFO_RUM_FEATURE_NOT_REGISTERED)
         }
     }
 
-    @SuppressWarnings("LongParameterList")
+    @WorkerThread
     private fun sendCrashLogEvent(
-        logWriter: DataWriter<LogEvent>,
+        sdkCore: SdkCore,
         errorLogMessage: String,
         logAttributes: Map<String, String>,
         ndkCrashLog: NdkCrashLog,
         lastNetworkInfo: NetworkInfo?,
         lastUserInfo: UserInfo?
     ) {
-        val log = logGenerator.generateLog(
-            level = LogGenerator.CRASH,
-            errorLogMessage,
-            null,
-            logAttributes,
-            emptySet(),
-            ndkCrashLog.timestamp,
-            bundleWithTraces = false,
-            bundleWithRum = false,
-            networkInfo = lastNetworkInfo,
-            userInfo = lastUserInfo
-        )
-
-        logWriter.write(log)
+        val logsFeature = sdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)
+        if (logsFeature != null) {
+            logsFeature.sendEvent(
+                mapOf(
+                    "loggerName" to LOGGER_NAME,
+                    "type" to "crash",
+                    "message" to errorLogMessage,
+                    "attributes" to logAttributes,
+                    "timestamp" to ndkCrashLog.timestamp,
+                    "bundleWithTraces" to false,
+                    "bundleWithRum" to false,
+                    "networkInfo" to lastNetworkInfo,
+                    "userInfo" to lastUserInfo
+                )
+            )
+        } else {
+            devLogger.i(INFO_LOGS_FEATURE_NOT_REGISTERED)
+        }
     }
 
     private fun updateViewEvent(lastViewEvent: ViewEvent): ViewEvent {
@@ -293,7 +325,11 @@ internal class DatadogNdkCrashHandler(
                 viewEvent.session.id,
                 ErrorEvent.ErrorEventSessionType.USER
             ),
-            source = rumEventSourceProvider.errorEventSource,
+            source = viewEvent.source?.toJson()?.asString?.let {
+                ErrorEvent.ErrorEventSource.tryFromSource(
+                    it
+                )
+            },
             view = ErrorEvent.View(
                 id = viewEvent.view.id,
                 name = viewEvent.view.name,
@@ -369,38 +405,43 @@ internal class DatadogNdkCrashHandler(
 
         internal const val ERROR_TASK_REJECTED = "Unable to schedule operation on the executor"
 
+        internal const val INFO_LOGS_FEATURE_NOT_REGISTERED =
+            "Logs feature is not registered, won't report NDK crash info as log."
+        internal const val INFO_RUM_FEATURE_NOT_REGISTERED =
+            "RUM feature is not registered, won't report NDK crash info as RUM error."
+
         private const val STORAGE_VERSION = 2
 
         internal const val NDK_CRASH_REPORTS_FOLDER_NAME = "ndk_crash_reports_v$STORAGE_VERSION"
         private const val NDK_CRASH_REPORTS_PENDING_FOLDER_NAME =
             "ndk_crash_reports_intermediary_v$STORAGE_VERSION"
 
-        internal fun getNdkGrantedDir(context: Context): File {
-            return File(context.cacheDir, NDK_CRASH_REPORTS_FOLDER_NAME)
+        private fun getNdkGrantedDir(storageDir: File): File {
+            return File(storageDir, NDK_CRASH_REPORTS_FOLDER_NAME)
         }
 
-        internal fun getNdkPendingDir(context: Context): File {
-            return File(context.cacheDir, NDK_CRASH_REPORTS_PENDING_FOLDER_NAME)
+        private fun getNdkPendingDir(storageDir: File): File {
+            return File(storageDir, NDK_CRASH_REPORTS_PENDING_FOLDER_NAME)
         }
 
-        internal fun getLastViewEventFile(context: Context): File {
-            return File(getNdkGrantedDir(context), RUM_VIEW_EVENT_FILE_NAME)
+        internal fun getLastViewEventFile(storageDir: File): File {
+            return File(getNdkGrantedDir(storageDir), RUM_VIEW_EVENT_FILE_NAME)
         }
 
-        internal fun getPendingNetworkInfoFile(context: Context): File {
-            return File(getNdkPendingDir(context), NETWORK_INFO_FILE_NAME)
+        internal fun getPendingNetworkInfoFile(storageDir: File): File {
+            return File(getNdkPendingDir(storageDir), NETWORK_INFO_FILE_NAME)
         }
 
-        internal fun getGrantedNetworkInfoFile(context: Context): File {
-            return File(getNdkGrantedDir(context), NETWORK_INFO_FILE_NAME)
+        internal fun getGrantedNetworkInfoFile(storageDir: File): File {
+            return File(getNdkGrantedDir(storageDir), NETWORK_INFO_FILE_NAME)
         }
 
-        internal fun getPendingUserInfoFile(context: Context): File {
-            return File(getNdkPendingDir(context), USER_INFO_FILE_NAME)
+        internal fun getPendingUserInfoFile(storageDir: File): File {
+            return File(getNdkPendingDir(storageDir), USER_INFO_FILE_NAME)
         }
 
-        internal fun getGrantedUserInfoFile(context: Context): File {
-            return File(getNdkGrantedDir(context), USER_INFO_FILE_NAME)
+        internal fun getGrantedUserInfoFile(storageDir: File): File {
+            return File(getNdkGrantedDir(storageDir), USER_INFO_FILE_NAME)
         }
     }
 }

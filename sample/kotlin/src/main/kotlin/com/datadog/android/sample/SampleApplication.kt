@@ -114,7 +114,11 @@ class SampleApplication : Application() {
             )
         )
 
-        GlobalTracer.registerIfAbsent(AndroidTracer.Builder().build())
+        GlobalTracer.registerIfAbsent(
+            AndroidTracer.Builder()
+                .setServiceName(BuildConfig.APPLICATION_ID)
+                .build()
+        )
         GlobalRum.registerIfAbsent(RumMonitor.Builder().build())
         TracingRxJava3Utils.enableTracing(GlobalTracer.get())
     }

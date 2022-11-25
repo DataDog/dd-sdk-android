@@ -6,10 +6,10 @@
 
 package com.datadog.android.rum.assertj
 
-import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.model.LongTaskEvent
+import com.datadog.android.v2.api.context.NetworkInfo
+import com.datadog.android.v2.api.context.UserInfo
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
@@ -101,7 +101,9 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
             NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(LongTaskEvent.Interface.ETHERNET)
             NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(LongTaskEvent.Interface.WIFI)
             NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(LongTaskEvent.Interface.WIMAX)
-            NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(LongTaskEvent.Interface.BLUETOOTH)
+            NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(
+                LongTaskEvent.Interface.BLUETOOTH
+            )
             NetworkInfo.Connectivity.NETWORK_2G,
             NetworkInfo.Connectivity.NETWORK_3G,
             NetworkInfo.Connectivity.NETWORK_4G,
@@ -122,7 +124,7 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
 
         assertThat(actual.connectivity?.cellular?.technology)
             .overridingErrorMessage(
-                "Expected RUM event to have connectivity usr.cellular.technology " +
+                "Expected RUM event to connectivity usr.cellular.technology " +
                     "${expected?.cellularTechnology} " +
                     "but was ${actual.connectivity?.cellular?.technology}"
             )
@@ -130,7 +132,7 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
 
         assertThat(actual.connectivity?.cellular?.carrierName)
             .overridingErrorMessage(
-                "Expected RUM event to have connectivity usr.cellular.carrierName " +
+                "Expected RUM event to connectivity usr.cellular.carrierName " +
                     "${expected?.carrierName} " +
                     "but was ${actual.connectivity?.cellular?.carrierName}"
             )
@@ -274,6 +276,15 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
             )
             .isEqualTo(versionMajor)
         return this
+    }
+
+    fun hasReplay(hasReplay: Boolean) {
+        assertThat(actual.session.hasReplay)
+            .overridingErrorMessage(
+                "Expected event data to have hasReplay $hasReplay " +
+                    "but was ${actual.session.hasReplay}"
+            )
+            .isEqualTo(hasReplay)
     }
 
     fun hasServiceName(serviceName: String?): LongTaskEventAssert {

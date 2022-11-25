@@ -10,6 +10,7 @@ data class SampleAppConfig(
     val logsEndpoint: String = "",
     val tracesEndpoint: String = "",
     val rumEndpoint: String = "",
+    val sessionReplayEndpoint: String = "",
     val token: String = "",
     val rumApplicationId: String = "",
     val apiKey: String = "",

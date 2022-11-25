@@ -594,6 +594,7 @@ internal class KotlinFileVisitorTest {
                 fun unit(block : (String) -> Unit) {}
                 fun nullable(block : (String) -> Any?) {}
                 fun withReceiver(block : String.() -> Int) {}
+                fun withNamedArgumentOfLambda(block : (name: String) -> Unit) {}
             }
             """.trimIndent()
         )
@@ -605,7 +606,8 @@ internal class KotlinFileVisitorTest {
                 "  fun withInputs((String, Char) -> Int)\n" +
                 "  fun unit((String) -> Unit)\n" +
                 "  fun nullable((String) -> Any?)\n" +
-                "  fun withReceiver(String.() -> Int)\n",
+                "  fun withReceiver(String.() -> Int)\n" +
+                "  fun withNamedArgumentOfLambda((String) -> Unit)\n",
             testedVisitor.description.toString()
         )
     }

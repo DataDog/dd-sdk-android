@@ -30,6 +30,7 @@ internal class CallbackNetworkInfoProvider(
     private var lastNetworkInfo: NetworkInfo = NetworkInfo()
         set(value) {
             field = value
+            @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
             dataWriter.write(field)
         }
 

@@ -11,6 +11,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.log.internal.LogsFeature
+import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.logger.CombinedLogHandler
 import com.datadog.android.log.internal.logger.DatadogLogHandler
 import com.datadog.android.log.internal.logger.LogHandler
@@ -20,10 +21,15 @@ import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -54,20 +60,49 @@ internal class LoggerBuilderTest {
 
     @BeforeEach
     fun `set up`() {
-        LogsFeature.initialize(appContext.mockInstance, fakeConfig)
+        val mockCore = mock<DatadogCore>()
+        whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
+        val logsFeature = LogsFeature(mockCore)
+        logsFeature.initialize(fakeConfig)
+        whenever(mockCore.logsFeature) doReturn logsFeature
+
+        Datadog.globalSdkCore = mockCore
     }
 
     @AfterEach
     fun `tear down`() {
-        LogsFeature.stop()
+        Datadog.globalSdkCore = NoOpSdkCore()
     }
 
     @Test
-    fun `builder returns no op if SDK is not initialized`() {
-        LogsFeature.stop()
+    fun `builder returns no-op if SDK is not initialized`() {
+        Datadog.globalSdkCore = NoOpSdkCore()
+
         val testedLogger = Logger.Builder().build()
 
-        val handler: LogHandler = testedLogger.handler
+        val handler = testedLogger.handler
+
+        assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
+        verify(logger.mockDevLogHandler).handleLog(
+            AndroidLog.ERROR,
+            Logger.SDK_NOT_INITIALIZED_WARNING_MESSAGE + "\n" +
+                Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
+        )
+    }
+
+    @Test
+    fun `builder returns no-op if logs feature is missing`() {
+        // Given
+        val mockCore = mock<DatadogCore>()
+        Datadog.globalSdkCore = mockCore
+        whenever(mockCore.coreFeature) doReturn mock()
+        whenever(mockCore.logsFeature) doReturn null
+
+        // When
+        val testedLogger = Logger.Builder().build()
+
+        // Then
+        val handler = testedLogger.handler
 
         assertThat(handler).isInstanceOf(NoOpLogHandler::class.java)
         verify(logger.mockDevLogHandler).handleLog(
@@ -83,14 +118,18 @@ internal class LoggerBuilderTest {
             .build()
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
-        assertThat(handler.logGenerator.serviceName).isEqualTo(coreFeature.fakeServiceName)
-        assertThat(handler.logGenerator.loggerName).isEqualTo(appContext.fakePackageName)
-        assertThat(handler.logGenerator.networkInfoProvider).isNull()
-        assertThat(handler.writer).isSameAs(LogsFeature.persistenceStrategy.getWriter())
-        assertThat(handler.bundleWithTraces).isTrue()
+        assertThat(handler.writer).isSameAs(
+            (Datadog.globalSdkCore as DatadogCore).logsFeature!!.dataWriter
+        )
+        assertThat(handler.bundleWithTraces).isTrue
         assertThat(handler.sampler).isInstanceOf(RateBasedSampler::class.java)
         assertThat((handler.sampler as RateBasedSampler).sampleRate).isEqualTo(1.0f)
         assertThat(handler.minLogPriority).isEqualTo(-1)
+        assertThat(handler.loggerName).isEqualTo(appContext.fakePackageName)
+        assertThat(handler.attachNetworkInfo).isFalse
+
+        val logGenerator: DatadogLogGenerator = handler.logGenerator as DatadogLogGenerator
+        assertThat(logGenerator.serviceName).isEqualTo(coreFeature.fakeServiceName)
     }
 
     @Test
@@ -102,7 +141,8 @@ internal class LoggerBuilderTest {
             .build()
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
-        assertThat(handler.logGenerator.serviceName).isEqualTo(serviceName)
+        val logGenerator: DatadogLogGenerator = handler.logGenerator as DatadogLogGenerator
+        assertThat(logGenerator.serviceName).isEqualTo(serviceName)
     }
 
     @Test
@@ -164,7 +204,7 @@ internal class LoggerBuilderTest {
         assertThat(logcatLogHandler.serviceName)
             .isEqualTo(fakeServiceName)
         assertThat(logcatLogHandler.useClassnameAsTag)
-            .isTrue()
+            .isTrue
     }
 
     @Test
@@ -176,7 +216,7 @@ internal class LoggerBuilderTest {
             .build()
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
-        assertThat(handler.logGenerator.networkInfoProvider).isNotNull()
+        assertThat(handler.attachNetworkInfo).isTrue
     }
 
     @Test
@@ -188,17 +228,17 @@ internal class LoggerBuilderTest {
             .build()
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
-        assertThat(handler.logGenerator.loggerName).isEqualTo(loggerName)
+        assertThat(handler.loggerName).isEqualTo(loggerName)
     }
 
     @Test
-    fun `buider can disable the bundle with trace feature`() {
+    fun `builder can disable the bundle with trace feature`() {
         val logger = Logger.Builder()
             .setBundleWithTraceEnabled(false)
             .build()
 
         val handler: DatadogLogHandler = logger.handler as DatadogLogHandler
-        assertThat(handler.bundleWithTraces).isFalse()
+        assertThat(handler.bundleWithTraces).isFalse
     }
 
     @Test

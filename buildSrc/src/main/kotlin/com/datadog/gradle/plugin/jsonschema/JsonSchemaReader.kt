@@ -27,9 +27,6 @@ class JsonSchemaReader(
     fun readSchema(schemaFile: File): TypeDefinition {
         logger.info("Reading schema ${schemaFile.name}")
         val schema = loadSchema(schemaFile)
-        require(schema.type == JsonType.OBJECT) {
-            "Top level schema with type ${schema.type} is not supported."
-        }
         currentFile = schemaFile
         val customName = nameMapping[schemaFile.name]
         val fileName = schemaFile.nameWithoutExtension

@@ -6,8 +6,10 @@
 
 package com.datadog.android.rum.assertj
 
-import com.datadog.android.core.model.UserInfo
+import com.datadog.android.rum.internal.domain.scope.isConnected
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.v2.api.context.NetworkInfo
+import com.datadog.android.v2.api.context.UserInfo
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
@@ -396,6 +398,60 @@ internal class ViewEventAssert(actual: ViewEvent) :
             .containsExactlyInAnyOrderEntriesOf(expected)
     }
 
+    fun hasConnectivityInfo(expected: NetworkInfo?): ViewEventAssert {
+        val expectedStatus = if (expected?.isConnected() == true) {
+            ViewEvent.Status.CONNECTED
+        } else {
+            ViewEvent.Status.NOT_CONNECTED
+        }
+        val expectedInterfaces = when (expected?.connectivity) {
+            NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(ViewEvent.Interface.ETHERNET)
+            NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(ViewEvent.Interface.WIFI)
+            NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(ViewEvent.Interface.WIMAX)
+            NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(ViewEvent.Interface.BLUETOOTH)
+            NetworkInfo.Connectivity.NETWORK_2G,
+            NetworkInfo.Connectivity.NETWORK_3G,
+            NetworkInfo.Connectivity.NETWORK_4G,
+            NetworkInfo.Connectivity.NETWORK_5G,
+            NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
+            NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(ViewEvent.Interface.CELLULAR)
+            NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(ViewEvent.Interface.OTHER)
+            NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
+            null -> null
+        }
+
+        assertThat(actual.connectivity?.status)
+            .overridingErrorMessage(
+                "Expected RUM event to have connectivity.status $expectedStatus " +
+                    "but was ${actual.connectivity?.status}"
+            )
+            .isEqualTo(expectedStatus)
+
+        assertThat(actual.connectivity?.cellular?.technology)
+            .overridingErrorMessage(
+                "Expected RUM event to connectivity usr.cellular.technology " +
+                    "${expected?.cellularTechnology} " +
+                    "but was ${actual.connectivity?.cellular?.technology}"
+            )
+            .isEqualTo(expected?.cellularTechnology)
+
+        assertThat(actual.connectivity?.cellular?.carrierName)
+            .overridingErrorMessage(
+                "Expected RUM event to connectivity usr.cellular.carrierName " +
+                    "${expected?.carrierName} " +
+                    "but was ${actual.connectivity?.cellular?.carrierName}"
+            )
+            .isEqualTo(expected?.carrierName)
+
+        assertThat(actual.connectivity?.interfaces)
+            .overridingErrorMessage(
+                "Expected RUM event to have connectivity.interfaces $expectedInterfaces " +
+                    "but was ${actual.connectivity?.interfaces}"
+            )
+            .isEqualTo(expectedInterfaces)
+        return this
+    }
+
     fun hasLiteSessionPlan(): ViewEventAssert {
         assertThat(actual.dd.session?.plan)
             .overridingErrorMessage(
@@ -476,6 +532,15 @@ internal class ViewEventAssert(actual: ViewEvent) :
             )
             .isEqualTo(versionMajor)
         return this
+    }
+
+    fun hasReplay(hasReplay: Boolean) {
+        assertThat(actual.session.hasReplay)
+            .overridingErrorMessage(
+                "Expected event data to have hasReplay $hasReplay " +
+                    "but was ${actual.session.hasReplay}"
+            )
+            .isEqualTo(hasReplay)
     }
 
     fun hasFlutterBuildTime(value: ViewEvent.FlutterBuildTime?): ViewEventAssert {

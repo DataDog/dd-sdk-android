@@ -21,6 +21,8 @@ include(":dd-sdk-android-tv")
 include(":instrumented:integration")
 include(":instrumented:nightly-tests")
 
+include(":library:dd-sdk-android-session-replay")
+
 include(":sample:kotlin")
 
 include(":tools:detekt")

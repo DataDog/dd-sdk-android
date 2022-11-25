@@ -6,18 +6,18 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.persistence.NoOpDataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
-import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.DataWriter
+import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
 import java.security.SecureRandom
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong
 @Suppress("LongParameterList")
 internal class RumSessionScope(
     private val parentScope: RumScope,
+    private val sdkCore: SdkCore,
     internal val samplingRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
@@ -33,13 +34,11 @@ internal class RumSessionScope(
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
-    timeProvider: TimeProvider,
     internal val sessionListener: RumSessionListener?,
-    rumEventSourceProvider: RumEventSourceProvider,
+    contextProvider: ContextProvider,
     buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider(),
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
-    private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
-    private val androidInfoProvider: AndroidInfoProvider
+    private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID
@@ -54,20 +53,21 @@ internal class RumSessionScope(
     @Suppress("LongParameterList")
     internal var childScope: RumScope = RumViewManagerScope(
         this,
+        sdkCore,
         backgroundTrackingEnabled,
         trackFrustrations,
         firstPartyHostDetector,
         cpuVitalMonitor,
         memoryVitalMonitor,
         frameRateVitalMonitor,
-        timeProvider,
-        rumEventSourceProvider,
         buildSdkVersionProvider,
-        androidInfoProvider
+        contextProvider
     )
 
     init {
-        GlobalRum.updateRumContext(getRumContext())
+        sdkCore.updateFeatureContext(RumFeature.RUM_FEATURE_NAME) {
+            it.putAll(getRumContext().toMap())
+        }
     }
 
     enum class State {
@@ -78,6 +78,7 @@ internal class RumSessionScope(
 
     // region RumScope
 
+    @WorkerThread
     override fun handleEvent(
         event: RumRawEvent,
         writer: DataWriter<Any>
@@ -147,12 +148,22 @@ internal class RumSessionScope(
         sessionId = UUID.randomUUID().toString()
         sessionStartNs.set(nanoTime)
         sessionListener?.onSessionStarted(sessionId, !keepSession)
+        sdkCore.getFeature(SESSION_REPLAY_FEATURE_NAME)?.sendEvent(
+            mapOf(
+                SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RUM_KEEP_SESSION_BUS_MESSAGE_KEY to keepSession
+            )
+        )
     }
 
     // endregion
 
     companion object {
 
+        internal const val SESSION_REPLAY_FEATURE_NAME = "session-replay"
+        internal const val SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY = "type"
+        internal const val RUM_SESSION_RENEWED_BUS_MESSAGE = "rum_session_renewed"
+        internal const val RUM_KEEP_SESSION_BUS_MESSAGE_KEY = "keepSession"
         internal val DEFAULT_SESSION_INACTIVITY_NS = TimeUnit.MINUTES.toNanos(15)
         internal val DEFAULT_SESSION_MAX_DURATION_NS = TimeUnit.HOURS.toNanos(4)
     }

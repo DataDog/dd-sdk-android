@@ -7,9 +7,8 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.system.DeviceType
+import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
@@ -21,6 +20,8 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.v2.api.context.DeviceType
+import com.datadog.android.v2.api.context.NetworkInfo
 import java.util.Locale
 
 internal fun String.toMethod(): ResourceEvent.Method {
@@ -239,6 +240,42 @@ internal fun NetworkInfo.toLongTaskConnectivity(): LongTaskEvent.Connectivity {
     )
 }
 
+internal fun NetworkInfo.toViewConnectivity(): ViewEvent.Connectivity {
+    val status = if (isConnected()) {
+        ViewEvent.Status.CONNECTED
+    } else {
+        ViewEvent.Status.NOT_CONNECTED
+    }
+    val interfaces = when (connectivity) {
+        NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(ViewEvent.Interface.ETHERNET)
+        NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(ViewEvent.Interface.WIFI)
+        NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(ViewEvent.Interface.WIMAX)
+        NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(ViewEvent.Interface.BLUETOOTH)
+        NetworkInfo.Connectivity.NETWORK_2G,
+        NetworkInfo.Connectivity.NETWORK_3G,
+        NetworkInfo.Connectivity.NETWORK_4G,
+        NetworkInfo.Connectivity.NETWORK_5G,
+        NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
+        NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(ViewEvent.Interface.CELLULAR)
+        NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(ViewEvent.Interface.OTHER)
+        NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
+    }
+
+    val cellular = if (cellularTechnology != null || carrierName != null) {
+        ViewEvent.Cellular(
+            technology = cellularTechnology,
+            carrierName = carrierName
+        )
+    } else {
+        null
+    }
+    return ViewEvent.Connectivity(
+        status,
+        interfaces,
+        cellular
+    )
+}
+
 internal fun NetworkInfo.toActionConnectivity(): ActionEvent.Connectivity {
     val status = if (isConnected()) {
         ActionEvent.Status.CONNECTED
@@ -332,5 +369,62 @@ internal fun DeviceType.toErrorSchemaType(): ErrorEvent.DeviceType {
         else -> ErrorEvent.DeviceType.OTHER
     }
 }
+
+// endregion
+
+// region Source
+
+internal fun ViewEvent.Source.Companion.tryFromSource(source: String):
+    ViewEvent.Source? {
+    return try {
+        fromJson(source)
+    } catch (e: NoSuchElementException) {
+        devLogger.e(UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source), e)
+        null
+    }
+}
+
+internal fun LongTaskEvent.Source.Companion.tryFromSource(source: String):
+    LongTaskEvent.Source? {
+    return try {
+        fromJson(source)
+    } catch (e: NoSuchElementException) {
+        devLogger.e(UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source), e)
+        null
+    }
+}
+
+internal fun ErrorEvent.ErrorEventSource.Companion.tryFromSource(source: String):
+    ErrorEvent.ErrorEventSource? {
+    return try {
+        fromJson(source)
+    } catch (e: NoSuchElementException) {
+        devLogger.e(UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source), e)
+        null
+    }
+}
+
+internal fun ActionEvent.Source.Companion.tryFromSource(source: String):
+    ActionEvent.Source? {
+    return try {
+        fromJson(source)
+    } catch (e: NoSuchElementException) {
+        devLogger.e(UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source), e)
+        null
+    }
+}
+
+internal fun ResourceEvent.Source.Companion.tryFromSource(source: String):
+    ResourceEvent.Source? {
+    return try {
+        fromJson(source)
+    } catch (e: NoSuchElementException) {
+        devLogger.e(UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source), e)
+        null
+    }
+}
+
+internal const val UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT = "You are using an unknown " +
+    "source %s for your events"
 
 // endregion

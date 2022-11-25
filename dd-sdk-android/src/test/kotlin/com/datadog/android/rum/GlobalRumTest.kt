@@ -6,14 +6,11 @@
 
 package com.datadog.android.rum
 
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.tools.unit.annotations.ProhibitLeavingStaticMocksIn
 import com.datadog.tools.unit.extensions.ProhibitLeavingStaticMocksExtension
-import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -88,29 +85,5 @@ internal class GlobalRumTest {
 
         // Then
         verifyZeroInteractions(mockNoOpRumMonitor)
-    }
-
-    @Test
-    fun `M update RUM context W updateRumContext()`() {
-        // Given
-        val newContext = mock<RumContext>()
-
-        // When
-        GlobalRum.updateRumContext(newContext)
-
-        // Then
-        assertThat(GlobalRum.getRumContext()).isEqualTo(newContext)
-    }
-
-    @Test
-    fun `M not update RUM context W updateRumContext() { applyOnlyIf predicate returns false }`() {
-        // Given
-        val newContext = mock<RumContext>()
-
-        // When
-        GlobalRum.updateRumContext(newContext, applyOnlyIf = { false })
-
-        // Then
-        assertThat(GlobalRum.getRumContext()).isNotEqualTo(newContext)
     }
 }
