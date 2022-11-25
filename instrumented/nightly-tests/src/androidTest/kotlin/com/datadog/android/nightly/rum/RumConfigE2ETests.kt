@@ -302,7 +302,8 @@ class RumConfigE2ETests {
                     logsEnabled = true,
                     tracesEnabled = true,
                     rumEnabled = true,
-                    crashReportsEnabled = true
+                    crashReportsEnabled = true,
+                    sessionReplayEnabled = true
                 ).setRumActionEventMapper(
                     eventMapper = object : EventMapper<ActionEvent> {
                         override fun map(event: ActionEvent): ActionEvent? {
@@ -661,7 +662,8 @@ class RumConfigE2ETests {
                         logsEnabled = true,
                         tracesEnabled = true,
                         rumEnabled = true,
-                        crashReportsEnabled = true
+                        crashReportsEnabled = true,
+                        sessionReplayEnabled = true
                     )
                     .setEncryption(TestEncryption())
                     .build()
@@ -698,7 +700,8 @@ class RumConfigE2ETests {
                         logsEnabled = true,
                         tracesEnabled = true,
                         rumEnabled = true,
-                        crashReportsEnabled = true
+                        crashReportsEnabled = true,
+                        sessionReplayEnabled = true
                     )
                     .useViewTrackingStrategy(strategy)
                     .setVitalsUpdateFrequency(VitalsUpdateFrequency.NEVER)
@@ -751,7 +754,8 @@ class RumConfigE2ETests {
                         logsEnabled = true,
                         tracesEnabled = true,
                         rumEnabled = true,
-                        crashReportsEnabled = true
+                        crashReportsEnabled = true,
+                        sessionReplayEnabled = true
                     )
                     .useViewTrackingStrategy(strategy)
                     .setVitalsUpdateFrequency(fakeFrequency)
