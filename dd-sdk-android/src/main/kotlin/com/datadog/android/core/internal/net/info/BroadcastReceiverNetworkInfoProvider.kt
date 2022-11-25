@@ -31,10 +31,10 @@ internal class BroadcastReceiverNetworkInfoProvider(
     ThreadSafeReceiver(),
     NetworkInfoProvider {
 
-    private var networkInfo: NetworkInfo =
-        NetworkInfo()
+    private var networkInfo: NetworkInfo = NetworkInfo()
         set(value) {
             field = value
+            @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
             dataWriter.write(field)
         }
 

@@ -13,10 +13,8 @@ import android.os.Looper
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.SecurityConfig
 import com.datadog.android.ndk.NdkCrashReportsPlugin
 import com.datadog.android.nightly.utils.NeverUseThatEncryption
-import com.datadog.android.nightly.utils.setSecurityConfig
 import com.datadog.android.plugin.Feature
 import com.datadog.android.privacy.TrackingConsent
 
@@ -80,9 +78,7 @@ internal open class NdkCrashService : CrashService() {
             configBuilder.addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)
         }
         if (encryptionEnabled) {
-            configBuilder.setSecurityConfig(
-                SecurityConfig(localDataEncryption = NeverUseThatEncryption())
-            )
+            configBuilder.setEncryption(NeverUseThatEncryption())
         }
         Datadog.initialize(
             this,

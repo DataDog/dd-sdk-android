@@ -1,8 +1,8 @@
 package com.datadog.android.rum.internal.instrumentation.gestures
 
+import android.content.Context
 import android.content.res.Resources
 import android.view.View
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.rum.tracking.InteractionPredicate
 
 internal fun resolveTargetName(
@@ -17,10 +17,10 @@ internal fun resolveTargetName(
     }
 }
 
-internal fun resourceIdName(id: Int): String {
+internal fun Context?.resourceIdName(id: Int): String {
     @Suppress("SwallowedException")
     return try {
-        CoreFeature.contextRef.get()?.resources?.getResourceEntryName(id)
+        this?.resources?.getResourceEntryName(id)
             ?: idAsStringHexa(id)
     } catch (e: Resources.NotFoundException) {
         idAsStringHexa(id)

@@ -13,7 +13,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.Window
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -36,7 +35,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.lang.ref.WeakReference
 import kotlin.math.abs
 
 @Extensions(
@@ -67,13 +65,11 @@ internal abstract class AbstractGesturesListenerTest {
     open fun `set up`() {
         Datadog.setVerbosity(Log.VERBOSE)
         whenever(mockAppContext.resources).thenReturn(mockResources)
-        CoreFeature.contextRef = WeakReference(mockAppContext)
     }
 
     @AfterEach
     fun `tear down`() {
         Datadog.setVerbosity(Integer.MAX_VALUE)
-        CoreFeature.contextRef = WeakReference(null)
     }
 
     // endregion

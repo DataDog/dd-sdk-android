@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.data.upload
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.net.DataUploader
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -34,6 +35,7 @@ internal class DataUploadRunnable(
 
     //  region Runnable
 
+    @WorkerThread
     override fun run() {
         val batch = if (isNetworkAvailable() && isSystemReady()) {
             reader.lockAndReadNext()
@@ -77,6 +79,7 @@ internal class DataUploadRunnable(
         )
     }
 
+    @WorkerThread
     private fun consumeBatch(batch: Batch) {
         val status = dataUploader.upload(batch.data)
 

@@ -15,14 +15,17 @@ import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
+import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.resolveViewName
 import com.datadog.android.core.internal.utils.runIfValid
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumMonitor
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallbacks
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.v2.core.DatadogCore
 import java.lang.IllegalStateException
 import java.util.WeakHashMap
 
@@ -111,12 +114,14 @@ class NavigationViewTrackingStrategy(
      */
     fun startTracking() {
         val activity = startedActivity ?: return
+        val rumFeature = (Datadog.globalSdkCore as? DatadogCore)?.rumFeature ?: return
         activity.findNavControllerOrNull(navigationViewId)?.let {
             if (FragmentActivity::class.java.isAssignableFrom(activity::class.java)) {
                 val navControllerFragmentCallbacks = NavControllerFragmentLifecycleCallbacks(
                     it,
                     argumentsProvider = { emptyMap() },
-                    componentPredicate = predicate
+                    componentPredicate = predicate,
+                    rumFeature = rumFeature
                 )
                 navControllerFragmentCallbacks.register(startedActivity as FragmentActivity)
                 lifecycleCallbackRefs[startedActivity] = navControllerFragmentCallbacks
@@ -171,14 +176,16 @@ class NavigationViewTrackingStrategy(
     internal class NavControllerFragmentLifecycleCallbacks(
         private val navController: NavController,
         argumentsProvider: (Fragment) -> Map<String, Any?>,
-        componentPredicate: ComponentPredicate<Fragment>
+        componentPredicate: ComponentPredicate<Fragment>,
+        rumFeature: RumFeature
     ) : AndroidXFragmentLifecycleCallbacks(
         argumentsProvider,
         componentPredicate,
         rumMonitor = NoOpRumMonitor(),
         advancedRumMonitor = AdvancedMonitorDecorator(
             GlobalRum.get() as? AdvancedRumMonitor ?: NoOpAdvancedRumMonitor()
-        )
+        ),
+        rumFeature = rumFeature
     ) {
         override fun resolveKey(fragment: Fragment): Any {
             return navController.currentDestination ?: NO_DESTINATION_FOUND

@@ -6,43 +6,49 @@
 
 package com.datadog.android.webview.internal.rum
 
-import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.time.TimeProvider
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.android.webview.internal.WebViewEventConsumer
 import com.google.gson.JsonObject
 import java.lang.IllegalStateException
 import java.lang.NumberFormatException
 import java.lang.UnsupportedOperationException
-import kotlin.collections.LinkedHashMap
 
 internal class WebViewRumEventConsumer(
+    private val sdkCore: SdkCore,
     private val dataWriter: DataWriter<Any>,
-    private val timeProvider: TimeProvider,
     private val webViewRumEventMapper: WebViewRumEventMapper = WebViewRumEventMapper(),
     private val contextProvider: WebViewRumEventContextProvider = WebViewRumEventContextProvider()
 ) : WebViewEventConsumer<JsonObject> {
 
     internal val offsets: LinkedHashMap<String, Long> = LinkedHashMap()
 
+    @WorkerThread
     override fun consume(event: JsonObject) {
         // make sure we send a noop event to the RumSessionScope to refresh the session if needed
         GlobalRum.notifyIngestedWebViewEvent()
-        val rumContext = contextProvider.getRumContext()
-        val mappedEvent = map(event, rumContext)
-        dataWriter.write(mappedEvent)
+        sdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
+            ?.withWriteContext { datadogContext, eventBatchWriter ->
+                val rumContext = contextProvider.getRumContext(datadogContext)
+                val mappedEvent = map(event, datadogContext, rumContext)
+                dataWriter.write(eventBatchWriter, mappedEvent)
+            }
     }
 
     private fun map(
         event: JsonObject,
+        datadogContext: DatadogContext,
         rumContext: RumContext?
     ): JsonObject {
         try {
             val timeOffset = event.get(VIEW_KEY_NAME)?.asJsonObject?.get(VIEW_ID_KEY_NAME)
-                ?.asString?.let { getOffset(it) } ?: 0L
+                ?.asString?.let { getOffset(it, datadogContext) } ?: 0L
             return webViewRumEventMapper.mapEvent(event, rumContext, timeOffset)
         } catch (e: ClassCastException) {
             sdkLogger.errorWithTelemetry(JSON_PARSING_ERROR_MESSAGE, e)
@@ -56,11 +62,11 @@ internal class WebViewRumEventConsumer(
         return event
     }
 
-    private fun getOffset(viewId: String): Long {
+    private fun getOffset(viewId: String, datadogContext: DatadogContext): Long {
         var offset = offsets[viewId]
         if (offset == null) {
-            offset = timeProvider.getServerOffsetMillis()
-            offsets[viewId] = offset
+            offset = datadogContext.time.serverTimeOffsetMs
+            synchronized(offsets) { offsets[viewId] = offset }
         }
         purgeOffsets()
         return offset
@@ -69,8 +75,10 @@ internal class WebViewRumEventConsumer(
     private fun purgeOffsets() {
         while (offsets.entries.size > MAX_VIEW_TIME_OFFSETS_RETAIN) {
             try {
-                val viewId = offsets.entries.first()
-                offsets.remove(viewId.key)
+                synchronized(offsets) {
+                    val viewId = offsets.entries.first()
+                    offsets.remove(viewId.key)
+                }
             } catch (e: NoSuchElementException) {
                 // it should not happen but just in case.
                 sdkLogger.errorWithTelemetry("Trying to remove from an empty map.", e)

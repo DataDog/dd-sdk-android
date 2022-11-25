@@ -6,48 +6,33 @@
 
 package com.datadog.android
 
-import android.app.Application
 import android.content.Context
-import android.content.pm.ApplicationInfo
-import android.util.Log
-import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
-import com.datadog.android.core.configuration.UploadFrequency
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
-import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.scheduleSafe
-import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.core.internal.utils.telemetry
 import com.datadog.android.core.model.UserInfo
-import com.datadog.android.error.internal.CrashReportsFeature
-import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
-import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
-import com.datadog.android.tracing.internal.TracingFeature
-import com.datadog.android.webview.internal.log.WebViewLogsFeature
-import com.datadog.android.webview.internal.rum.WebViewRumFeature
-import java.lang.IllegalArgumentException
-import java.util.concurrent.TimeUnit
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.NoOpSdkCore
+import com.datadog.android.v2.core.internal.HashGenerator
+import com.datadog.android.v2.core.internal.Sha256HashGenerator
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * This class initializes the Datadog SDK, and sets up communication with the server.
  */
-@Suppress("TooManyFunctions")
+@SuppressWarnings("TooManyFunctions")
 object Datadog {
 
-    internal val initialized = AtomicBoolean(false)
-    internal val startupTimeNs: Long = System.nanoTime()
+    internal var globalSdkCore: SdkCore = NoOpSdkCore()
 
-    internal var libraryVerbosity = Int.MAX_VALUE
-        private set
-    internal var isDebug = false
+    internal var hashGenerator: HashGenerator = Sha256HashGenerator()
+
+    internal val initialized = AtomicBoolean(false)
 
     // region Initialization
 
@@ -63,7 +48,6 @@ object Datadog {
      * @throws IllegalArgumentException if the env name is using illegal characters and your
      * application is in debug mode otherwise returns false and stops initializing the SDK
      */
-    @Suppress("LongMethod")
     @JvmStatic
     fun initialize(
         context: Context,
@@ -76,41 +60,19 @@ object Datadog {
             return
         }
 
-        val appContext = context.applicationContext
-        // the logic in this function depends on this value so always resolve isDebug first
-        isDebug = resolveIsDebug(context)
+        val sdkInstanceId = hashGenerator.generate(
+            "${credentials.clientToken}${configuration.coreConfig.site.siteName}"
+        )
 
-        if (!validateEnvironmentName(credentials.envName)) {
+        if (sdkInstanceId == null) {
+            devLogger.e(CANNOT_CREATE_SDK_INSTANCE_ID_ERROR)
             return
         }
 
-        var mutableConfig = configuration
-        if (isDebug and configuration.coreConfig.enableDeveloperModeWhenDebuggable) {
-            mutableConfig = modifyConfigurationForDeveloperDebug(configuration)
-            setVerbosity(Log.VERBOSE)
-        }
-
-        // always initialize Core Features first
-        CoreFeature.initialize(appContext, credentials, mutableConfig.coreConfig, trackingConsent)
-
-        applyAdditionalConfiguration(mutableConfig.additionalConfig)
-
-        initializeLogsFeature(mutableConfig.logsConfig, appContext)
-        initializeTracingFeature(mutableConfig.tracesConfig, appContext)
-        initializeRumFeature(mutableConfig.rumConfig, appContext)
-        initializeCrashReportFeature(mutableConfig.crashReportConfig, appContext)
-
-        CoreFeature.ndkCrashHandler.handleNdkCrash(
-            LogsFeature.persistenceStrategy.getWriter(),
-            RumFeature.persistenceStrategy.getWriter()
-        )
-
-        setupLifecycleMonitorCallback(appContext)
+        globalSdkCore = DatadogCore(context, credentials, configuration, sdkInstanceId)
+        globalSdkCore.setTrackingConsent(trackingConsent)
 
         initialized.set(true)
-
-        setupShutdownHook()
-        sendConfigurationTelemetryEvent(configuration)
     }
 
     /**
@@ -131,26 +93,15 @@ object Datadog {
      */
     @JvmStatic
     fun clearAllData() {
-        LogsFeature.clearAllData()
-        CrashReportsFeature.clearAllData()
-        RumFeature.clearAllData()
-        TracingFeature.clearAllData()
-        WebViewLogsFeature.clearAllData()
-        WebViewRumFeature.clearAllData()
+        globalSdkCore.clearAllData()
     }
 
     // Stop all Datadog work (for test purposes).
     internal fun stop() {
         if (initialized.get()) {
-            LogsFeature.stop()
-            TracingFeature.stop()
-            RumFeature.stop()
-            CrashReportsFeature.stop()
-            CoreFeature.stop()
-            WebViewLogsFeature.stop()
-            WebViewRumFeature.stop()
-            isDebug = false
+            globalSdkCore.stop()
             initialized.set(false)
+            globalSdkCore = NoOpSdkCore()
         }
     }
 
@@ -170,15 +121,7 @@ object Datadog {
                 it.stopKeepAliveCallback()
                 it.drainExecutorService()
             }
-            // We need to drain and shutdown the executors first to make sure we avoid duplicated
-            // data due to async operations.
-            CoreFeature.drainAndShutdownExecutors()
-            LogsFeature.flushStoredData()
-            TracingFeature.flushStoredData()
-            RumFeature.flushStoredData()
-            CrashReportsFeature.flushStoredData()
-            WebViewLogsFeature.flushStoredData()
-            WebViewRumFeature.flushStoredData()
+            globalSdkCore.flushStoredData()
         }
     }
 
@@ -194,7 +137,7 @@ object Datadog {
      */
     @JvmStatic
     fun setVerbosity(level: Int) {
-        libraryVerbosity = level
+        globalSdkCore.setVerbosity(level)
     }
 
     /**
@@ -205,7 +148,7 @@ object Datadog {
      */
     @JvmStatic
     fun setTrackingConsent(consent: TrackingConsent) {
-        CoreFeature.trackingConsentProvider.setConsent(consent)
+        globalSdkCore.setTrackingConsent(consent)
     }
 
     /**
@@ -225,7 +168,7 @@ object Datadog {
         email: String? = null,
         extraInfo: Map<String, Any?> = emptyMap()
     ) {
-        CoreFeature.userInfoProvider.setUserInfo(
+        globalSdkCore.setUserInfo(
             UserInfo(
                 id,
                 name,
@@ -249,9 +192,7 @@ object Datadog {
     fun addUserExtraInfo(
         extraInfo: Map<String, Any?> = emptyMap()
     ) {
-        CoreFeature.userInfoProvider.addUserProperties(
-            extraInfo
-        )
+        globalSdkCore.addUserProperties(extraInfo)
     }
 
     /**
@@ -263,10 +204,11 @@ object Datadog {
      */
     @JvmStatic
     fun enableRumDebugging(enable: Boolean) {
+        val rumFeature = (globalSdkCore as? DatadogCore)?.rumFeature
         if (enable) {
-            RumFeature.enableDebugging()
+            rumFeature?.enableDebugging()
         } else {
-            RumFeature.disableDebugging()
+            rumFeature?.disableDebugging()
         }
     }
 
@@ -276,150 +218,10 @@ object Datadog {
      * @see _InternalProxy
      */
     @Suppress("ObjectPropertyNaming")
-    var _internal: _InternalProxy = _InternalProxy(telemetry)
-        private set
-
-    // endregion
-
-    // region Internal Initialization
-
-    private fun initializeLogsFeature(
-        configuration: Configuration.Feature.Logs?,
-        appContext: Context
-    ) {
-        if (configuration != null) {
-            LogsFeature.initialize(appContext, configuration)
-            WebViewLogsFeature.initialize(appContext, configuration)
-        }
-    }
-
-    private fun initializeCrashReportFeature(
-        configuration: Configuration.Feature.CrashReport?,
-        appContext: Context
-    ) {
-        if (configuration != null) {
-            CrashReportsFeature.initialize(appContext, configuration)
-        }
-    }
-
-    private fun initializeTracingFeature(
-        configuration: Configuration.Feature.Tracing?,
-        appContext: Context
-    ) {
-        if (configuration != null) {
-            TracingFeature.initialize(appContext, configuration)
-        }
-    }
-
-    private fun initializeRumFeature(
-        configuration: Configuration.Feature.RUM?,
-        appContext: Context
-    ) {
-        if (configuration != null) {
-            if (CoreFeature.rumApplicationId.isNullOrBlank()) {
-                devLogger.w(WARNING_MESSAGE_APPLICATION_ID_IS_NULL)
-            }
-            RumFeature.initialize(appContext, configuration)
-            WebViewRumFeature.initialize(appContext, configuration)
-        }
-    }
-
-    @Suppress("FunctionMaxLength")
-    private fun modifyConfigurationForDeveloperDebug(configuration: Configuration): Configuration {
-        return configuration.copy(
-            coreConfig = configuration.coreConfig.copy(
-                batchSize = BatchSize.SMALL,
-                uploadFrequency = UploadFrequency.FREQUENT
-            ),
-            rumConfig = configuration.rumConfig?.copy(
-                samplingRate = 100.0f
-            )
-        )
-    }
-
-    @Suppress("ComplexMethod")
-    private fun applyAdditionalConfiguration(
-        additionalConfiguration: Map<String, Any>
-    ) {
-        // NOTE: be careful with the logic in this method - it is a part of initialization sequence,
-        // so some things may yet not be initialized -> not accessible, some things may already be
-        // initialized and be not mutable anymore
-        additionalConfiguration[DD_SOURCE_TAG]?.let {
-            if (it is String && it.isNotBlank()) {
-                CoreFeature.sourceName = it
-            }
-        }
-
-        additionalConfiguration[DD_SDK_VERSION_TAG]?.let {
-            if (it is String && it.isNotBlank()) {
-                CoreFeature.sdkVersion = it
-            }
-        }
-
-        additionalConfiguration[DD_APP_VERSION_TAG]?.let {
-            if (it is String && it.isNotBlank()) {
-                CoreFeature.packageVersionProvider.version = it
-            }
-        }
-    }
-
-    @Suppress("ThrowingInternalException")
-    private fun validateEnvironmentName(envName: String): Boolean {
-        if (!envName.matches(Regex(ENV_NAME_VALIDATION_REG_EX))) {
-            if (isDebug) {
-                throw IllegalArgumentException(MESSAGE_ENV_NAME_NOT_VALID)
-            } else {
-                devLogger.e(MESSAGE_ENV_NAME_NOT_VALID)
-                return false
-            }
-        }
-        return true
-    }
-
-    private fun setupLifecycleMonitorCallback(appContext: Context) {
-        if (appContext is Application) {
-            val callback = ProcessLifecycleCallback(CoreFeature.networkInfoProvider, appContext)
-            appContext.registerActivityLifecycleCallbacks(ProcessLifecycleMonitor(callback))
-        }
-    }
-
-    private fun resolveIsDebug(context: Context): Boolean {
-        return (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-    }
-
-    private fun setupShutdownHook() {
-        // Issue #154 (“Thread starting during runtime shutdown”)
-        // Make sure we stop Datadog when the Runtime shuts down
-        try {
-            val hookRunnable = Runnable { stop() }
-
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            val hook = Thread(hookRunnable, SHUTDOWN_THREAD)
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            Runtime.getRuntime().addShutdownHook(hook)
-        } catch (e: IllegalStateException) {
-            // Most probably Runtime is already shutting down
-            sdkLogger.e("Unable to add shutdown hook, Runtime is already shutting down", e)
-            stop()
-        } catch (e: IllegalArgumentException) {
-            // can only happen if hook is already added, or already running
-            sdkLogger.e("Shutdown hook was rejected", e)
-        } catch (e: SecurityException) {
-            sdkLogger.e("Security Manager denied adding shutdown hook ", e)
-        }
-    }
-
-    @Suppress("FunctionMaxLength")
-    private fun sendConfigurationTelemetryEvent(configuration: Configuration) {
-        val runnable = Runnable {
-            val monitor = GlobalRum.get() as? AdvancedRumMonitor
-            monitor?.sendConfigurationTelemetryEvent(configuration)
-        }
-        CoreFeature.uploadExecutorService.scheduleSafe(
-            "Configuration telemetry",
-            CONFIGURATION_TELEMETRY_DELAY_MS,
-            TimeUnit.MILLISECONDS,
-            runnable
+    val _internal: _InternalProxy by lazy {
+        _InternalProxy(
+            telemetry,
+            (globalSdkCore as? DatadogCore)?.coreFeature
         )
     }
 
@@ -429,13 +231,6 @@ object Datadog {
 
     internal const val MESSAGE_ALREADY_INITIALIZED =
         "The Datadog library has already been initialized."
-    internal const val WARNING_MESSAGE_APPLICATION_ID_IS_NULL =
-        "You're trying to enable RUM but no Application Id was provided. " +
-            "Please pass this value into the Datadog Credentials:\n" +
-            "val credentials = " +
-            "Credentials" +
-            "(\"<CLIENT_TOKEN>\", \"<ENVIRONMENT>\", \"<VARIANT>\", \"<APPLICATION_ID>\")\n" +
-            "Datadog.initialize(context, credentials, configuration, trackingConsent);"
 
     internal const val MESSAGE_SDK_INITIALIZATION_GUIDE =
         "Please add the following code in your application's onCreate() method:\n" +
@@ -446,18 +241,12 @@ object Datadog {
     internal const val MESSAGE_NOT_INITIALIZED = "Datadog has not been initialized.\n " +
         MESSAGE_SDK_INITIALIZATION_GUIDE
 
-    internal const val SHUTDOWN_THREAD = "datadog_shutdown"
-    internal const val ENV_NAME_VALIDATION_REG_EX = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]"
-    internal const val MESSAGE_ENV_NAME_NOT_VALID =
-        "The environment name should contain maximum 196 of the following allowed characters " +
-            "[a-zA-Z0-9_:./-] and should never finish with a semicolon." +
-            "In this case the Datadog SDK will not be initialised."
+    internal const val CANNOT_CREATE_SDK_INSTANCE_ID_ERROR =
+        "Cannot create SDK instance ID, stopping SDK initialization."
 
     internal const val DD_SOURCE_TAG = "_dd.source"
     internal const val DD_SDK_VERSION_TAG = "_dd.sdk_version"
     internal const val DD_APP_VERSION_TAG = "_dd.version"
-
-    internal val CONFIGURATION_TELEMETRY_DELAY_MS = TimeUnit.SECONDS.toMillis(5)
 
     // endregion
 }

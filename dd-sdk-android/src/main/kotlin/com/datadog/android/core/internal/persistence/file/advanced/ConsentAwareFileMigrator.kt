@@ -6,7 +6,8 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
-import com.datadog.android.core.internal.persistence.file.FileHandler
+import androidx.annotation.WorkerThread
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.Logger
@@ -16,11 +17,12 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
 
 internal class ConsentAwareFileMigrator(
-    private val fileHandler: FileHandler,
+    private val fileMover: FileMover,
     private val executorService: ExecutorService,
     private val internalLogger: Logger
 ) : DataMigrator<TrackingConsent> {
 
+    @WorkerThread
     override fun migrateData(
         previousState: TrackingConsent?,
         previousFileOrchestrator: FileOrchestrator,
@@ -34,7 +36,7 @@ internal class ConsentAwareFileMigrator(
             TrackingConsent.PENDING to TrackingConsent.NOT_GRANTED -> {
                 WipeDataMigrationOperation(
                     previousFileOrchestrator.getRootDir(),
-                    fileHandler,
+                    fileMover,
                     internalLogger
                 )
             }
@@ -43,7 +45,7 @@ internal class ConsentAwareFileMigrator(
             TrackingConsent.NOT_GRANTED to TrackingConsent.PENDING -> {
                 WipeDataMigrationOperation(
                     newFileOrchestrator.getRootDir(),
-                    fileHandler,
+                    fileMover,
                     internalLogger
                 )
             }
@@ -52,7 +54,7 @@ internal class ConsentAwareFileMigrator(
                 MoveDataMigrationOperation(
                     previousFileOrchestrator.getRootDir(),
                     newFileOrchestrator.getRootDir(),
-                    fileHandler,
+                    fileMover,
                     internalLogger
                 )
             }

@@ -22,7 +22,7 @@ internal class WebViewRumEventMapper {
     )
     fun mapEvent(
         event: JsonObject,
-        context: RumContext?,
+        rumContext: RumContext?,
         timeOffset: Long
     ): JsonObject {
         event.get(DATE_KEY_NAME)?.asLong?.let {
@@ -34,12 +34,12 @@ internal class WebViewRumEventMapper {
             ddSession.addProperty(SESSION_PLAN_KEY_NAME, ViewEvent.Plan.PLAN_1.toJson().asInt)
             dd.add(DD_SESSION_KEY_NAME, ddSession)
         }
-        if (context != null) {
+        if (rumContext != null) {
             val application = event.getAsJsonObject(APPLICATION_KEY_NAME)?.asJsonObject
                 ?: JsonObject()
             val session = event.getAsJsonObject(SESSION_KEY_NAME)?.asJsonObject ?: JsonObject()
-            application.addProperty(ID_KEY_NAME, context.applicationId)
-            session.addProperty(ID_KEY_NAME, context.sessionId)
+            application.addProperty(ID_KEY_NAME, rumContext.applicationId)
+            session.addProperty(ID_KEY_NAME, rumContext.sessionId)
             event.add(APPLICATION_KEY_NAME, application)
             event.add(SESSION_KEY_NAME, session)
         }

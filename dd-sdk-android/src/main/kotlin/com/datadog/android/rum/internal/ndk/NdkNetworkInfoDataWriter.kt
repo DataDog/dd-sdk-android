@@ -6,9 +6,10 @@
 
 package com.datadog.android.rum.internal.ndk
 
-import android.content.Context
 import com.datadog.android.core.internal.net.info.NetworkInfoSerializer
-import com.datadog.android.core.internal.persistence.file.FileHandler
+import com.datadog.android.core.internal.persistence.file.FileMover
+import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
+import com.datadog.android.core.internal.persistence.file.FileWriter
 import com.datadog.android.core.internal.persistence.file.advanced.ConsentAwareFileMigrator
 import com.datadog.android.core.internal.persistence.file.advanced.ConsentAwareFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.single.SingleFileOrchestrator
@@ -16,30 +17,34 @@ import com.datadog.android.core.internal.persistence.file.single.SingleItemDataW
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.Logger
+import java.io.File
 import java.util.concurrent.ExecutorService
 
 internal class NdkNetworkInfoDataWriter(
-    context: Context,
+    storageDir: File,
     consentProvider: ConsentProvider,
     executorService: ExecutorService,
-    fileHandler: FileHandler,
-    internalLogger: Logger
+    fileWriter: FileWriter,
+    fileMover: FileMover,
+    internalLogger: Logger,
+    filePersistenceConfig: FilePersistenceConfig
 ) : SingleItemDataWriter<NetworkInfo>(
     ConsentAwareFileOrchestrator(
         consentProvider = consentProvider,
         pendingOrchestrator = SingleFileOrchestrator(
-            DatadogNdkCrashHandler.getPendingNetworkInfoFile(context)
+            DatadogNdkCrashHandler.getPendingNetworkInfoFile(storageDir)
         ),
         grantedOrchestrator = SingleFileOrchestrator(
-            DatadogNdkCrashHandler.getGrantedNetworkInfoFile(context)
+            DatadogNdkCrashHandler.getGrantedNetworkInfoFile(storageDir)
         ),
         dataMigrator = ConsentAwareFileMigrator(
-            fileHandler,
+            fileMover,
             executorService,
             internalLogger
         )
     ),
     NetworkInfoSerializer(),
-    fileHandler,
-    internalLogger
+    fileWriter,
+    internalLogger,
+    filePersistenceConfig
 )

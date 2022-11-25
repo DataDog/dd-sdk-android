@@ -6,11 +6,10 @@
 
 package com.datadog.android.sdk.integration.rum
 
-import com.datadog.android.rum.GlobalRum
-import com.datadog.tools.unit.getFieldValue
+import com.datadog.android.Datadog
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.getStaticValue
 import com.google.gson.JsonElement
-import java.util.concurrent.atomic.AtomicReference
 
 internal data class ExpectedRumContext(
     val applicationId: String,
@@ -69,12 +68,11 @@ internal enum class ErrorSource(val sourceName: String) {
 }
 
 private fun rumContextValues(): Triple<String, String, String> {
-    val rumContextRef: AtomicReference<Any> =
-        GlobalRum::class.java.getStaticValue("activeContext")
-    val rumContext = rumContextRef.get()
-    val appId: String = rumContext.getFieldValue("applicationId")
-    val sessionId: String = rumContext.getFieldValue("sessionId")
-    val viewId: String? = rumContext.getFieldValue("viewId")
+    val sdkCore: SdkCore = Datadog::class.java.getStaticValue("globalSdkCore")
+    val rumContext: Map<String, Any?> = sdkCore.getFeatureContext("rum")
+    val appId: String = rumContext["application_id"] as String
+    val sessionId: String = rumContext["session_id"] as String
+    val viewId: String? = rumContext["view_id"] as String?
     return Triple(appId, sessionId, viewId ?: "null")
 }
 

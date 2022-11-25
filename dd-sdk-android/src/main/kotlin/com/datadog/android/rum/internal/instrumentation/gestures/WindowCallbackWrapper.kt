@@ -63,7 +63,7 @@ internal class WindowCallbackWrapper(
     }
 
     override fun onMenuItemSelected(featureId: Int, item: MenuItem): Boolean {
-        val resourceId = resourceIdName(item.itemId)
+        val resourceId = windowReference.get()?.context.resourceIdName(item.itemId)
         val attributes = mutableMapOf<String, Any?>(
             RumAttributes.ACTION_TARGET_CLASS_NAME to item.javaClass.canonicalName,
             RumAttributes.ACTION_TARGET_RESOURCE_ID to resourceId,
@@ -107,10 +107,12 @@ internal class WindowCallbackWrapper(
     // region Internal
 
     private fun handleRemoteControlActionEvent() {
-        windowReference.get()?.currentFocus?.let {
+        val window = windowReference.get()
+        window?.currentFocus?.let {
+            val resourceIdName = window.context.resourceIdName(it.id)
             val attributes = mutableMapOf<String, Any?>(
                 RumAttributes.ACTION_TARGET_CLASS_NAME to it.targetClassName(),
-                RumAttributes.ACTION_TARGET_RESOURCE_ID to resourceIdName(it.id)
+                RumAttributes.ACTION_TARGET_RESOURCE_ID to resourceIdName
             )
             targetAttributesProviders.forEach { provider ->
                 provider.extractAttributes(it, attributes)

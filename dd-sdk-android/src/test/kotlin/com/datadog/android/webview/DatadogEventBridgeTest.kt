@@ -6,19 +6,27 @@
 
 package com.datadog.android.webview
 
+import android.content.Context
 import android.util.Log
 import android.webkit.WebSettings
 import android.webkit.WebView
-import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.Datadog
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
+import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumEventConsumer
+import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.argThat
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -28,6 +36,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -54,7 +63,23 @@ internal class DatadogEventBridgeTest {
 
     @BeforeEach
     fun `set up`() {
+        val mockCore = mock<DatadogCore>()
+        val mockWebViewRumFeature = mock<WebViewRumFeature>()
+        val mockWebViewLogsFeature = mock<WebViewLogsFeature>()
+
+        whenever(mockCore.coreFeature) doReturn coreFeature.mockInstance
+        whenever(mockWebViewRumFeature.dataWriter) doReturn mock()
+        whenever(mockWebViewLogsFeature.dataWriter) doReturn mock()
+        whenever(mockCore.webViewRumFeature) doReturn mockWebViewRumFeature
+        whenever(mockCore.webViewLogsFeature) doReturn mockWebViewLogsFeature
+        Datadog.globalSdkCore = mockCore
+
         testedDatadogEventBridge = DatadogEventBridge(mockWebViewEventConsumer, emptyList())
+    }
+
+    @AfterEach
+    fun `tear down`() {
+        Datadog.globalSdkCore = NoOpSdkCore()
     }
 
     @Test
@@ -88,7 +113,7 @@ internal class DatadogEventBridgeTest {
         // Given
         val fakeHosts = fakeUrls.map { it.host }
         val expectedHosts = fakeHosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
-        CoreFeature.webViewTrackingHosts = fakeHosts
+        whenever(coreFeature.mockInstance.webViewTrackingHosts) doReturn fakeHosts
 
         // When
         val allowedWebViewHosts = testedDatadogEventBridge.getAllowedWebViewHosts()
@@ -104,7 +129,7 @@ internal class DatadogEventBridgeTest {
         // Given
         val fakeHosts = fakeUrls.map { it.host }
         val expectedHosts = fakeHosts.joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
-        CoreFeature.webViewTrackingHosts = emptyList()
+        whenever(coreFeature.mockInstance.webViewTrackingHosts) doReturn emptyList()
         testedDatadogEventBridge = DatadogEventBridge(fakeHosts)
 
         // When
@@ -124,7 +149,7 @@ internal class DatadogEventBridgeTest {
         val fakeGlobalHosts = fakeGlobalUrls.map { it.host }
         val expectedHosts = (fakeLocalHosts + fakeGlobalHosts)
             .joinToString(",", prefix = "[", postfix = "]") { "\"$it\"" }
-        CoreFeature.webViewTrackingHosts = fakeGlobalHosts
+        whenever(coreFeature.mockInstance.webViewTrackingHosts) doReturn fakeGlobalHosts
         testedDatadogEventBridge = DatadogEventBridge(fakeLocalHosts)
 
         // When
@@ -182,11 +207,13 @@ internal class DatadogEventBridgeTest {
 
     companion object {
         val logger = LoggerTestConfiguration()
+        val appContext = ApplicationContextTestConfiguration(Context::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
+            return listOf(logger, appContext, coreFeature)
         }
     }
 }

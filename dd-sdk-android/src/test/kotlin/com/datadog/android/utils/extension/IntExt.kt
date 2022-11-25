@@ -7,7 +7,7 @@
 package com.datadog.android.utils.extension
 
 import android.util.Log
-import com.datadog.android.log.internal.domain.LogGenerator
+import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.model.LogEvent
 
 fun Int.asLogStatus(): LogEvent.Status {
@@ -18,7 +18,7 @@ fun Int.asLogStatus(): LogEvent.Status {
         Log.INFO -> LogEvent.Status.INFO
         Log.DEBUG -> LogEvent.Status.DEBUG
         Log.VERBOSE -> LogEvent.Status.TRACE
-        LogGenerator.CRASH -> LogEvent.Status.EMERGENCY
+        DatadogLogGenerator.CRASH -> LogEvent.Status.EMERGENCY
         else -> LogEvent.Status.DEBUG
     }
 }

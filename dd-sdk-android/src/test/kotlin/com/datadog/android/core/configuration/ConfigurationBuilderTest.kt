@@ -36,6 +36,7 @@ import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.security.Encryption
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -107,8 +108,9 @@ internal class ConfigurationBuilderTest {
                 uploadFrequency = UploadFrequency.AVERAGE,
                 proxy = null,
                 proxyAuth = Authenticator.NONE,
-                securityConfig = SecurityConfig.DEFAULT,
-                webViewTrackingHosts = emptyList()
+                encryption = null,
+                webViewTrackingHosts = emptyList(),
+                site = DatadogSite.US1
             )
         )
         assertThat(config.logsConfig).isEqualTo(
@@ -251,7 +253,9 @@ internal class ConfigurationBuilderTest {
         val config = testedBuilder.useSite(site).build()
 
         // Then
-        assertThat(config.coreConfig).isEqualTo(Configuration.DEFAULT_CORE_CONFIG)
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(site = site)
+        )
         assertThat(config.logsConfig).isEqualTo(
             Configuration.DEFAULT_LOGS_CONFIG.copy(endpointUrl = site.logsEndpoint())
         )
@@ -1655,19 +1659,19 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with security configuration 𝕎 setSecurityConfig() and build()`() {
+    fun `𝕄 build config with security configuration 𝕎 setEncryption() and build()`() {
         // Given
-        val mockSecurityConfig = mock<SecurityConfig>()
+        val mockEncryption = mock<Encryption>()
 
         // When
         val config = testedBuilder
-            .setSecurityConfig(mockSecurityConfig)
+            .setEncryption(mockEncryption)
             .build()
 
         // Then
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(
-                securityConfig = mockSecurityConfig
+                encryption = mockEncryption
             )
         )
         assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)

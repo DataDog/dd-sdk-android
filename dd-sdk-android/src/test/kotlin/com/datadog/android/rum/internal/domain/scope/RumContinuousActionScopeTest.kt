@@ -6,32 +6,33 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import android.content.Context
-import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
-import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ActionEvent
-import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aFilteredMap
 import com.datadog.android.utils.forge.exhaustiveAttributes
+import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
@@ -73,7 +74,19 @@ internal class RumContinuousActionScopeTest {
     lateinit var mockParentScope: RumScope
 
     @Mock
+    lateinit var mockContextProvider: ContextProvider
+
+    @Mock
     lateinit var mockWriter: DataWriter<Any>
+
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
+    @Mock
+    lateinit var mockRumFeatureScope: FeatureScope
+
+    @Mock
+    lateinit var mockEventBatchWriter: EventBatchWriter
 
     @Forgery
     lateinit var fakeType: RumActionType
@@ -88,13 +101,11 @@ internal class RumContinuousActionScopeTest {
     lateinit var fakeParentContext: RumContext
 
     @Forgery
-    lateinit var fakeUserInfo: UserInfo
+    lateinit var fakeDatadogContextAtScopeStart: DatadogContext
 
     @Forgery
-    lateinit var fakeAndroidInfoProvider: AndroidInfoProvider
+    lateinit var fakeDatadogContext: DatadogContext
 
-    @Forgery
-    lateinit var fakeAndroidNetworkInfo: NetworkInfo
     lateinit var fakeEventTime: Time
 
     lateinit var fakeEvent: RumRawEvent
@@ -106,14 +117,16 @@ internal class RumContinuousActionScopeTest {
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
-    @Mock
-    lateinit var mockRumEventSourceProvider: RumEventSourceProvider
-
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeSourceActionEvent = forge.aNullable { aValueFrom(ActionEvent.Source::class.java) }
-        whenever(mockRumEventSourceProvider.actionEventSource)
-            .thenReturn(fakeSourceActionEvent)
+
+        fakeDatadogContext = fakeDatadogContext.copy(
+            source = with(fakeSourceActionEvent) {
+                this?.toJson()?.asString ?: forge.anAlphabeticalString()
+            }
+        )
+
         fakeEventTime = Time()
         val maxLimit = Long.MAX_VALUE - fakeEventTime.timestamp
         val minLimit = -fakeEventTime.timestamp
@@ -122,12 +135,18 @@ internal class RumContinuousActionScopeTest {
         fakeAttributes = forge.exhaustiveAttributes()
         fakeKey = forge.anAsciiString().toByteArray()
 
-        whenever(coreFeature.mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
-        whenever(coreFeature.mockNetworkInfoProvider.getLatestNetworkInfo()) doReturn fakeAndroidNetworkInfo
+        whenever(mockContextProvider.context) doReturn fakeDatadogContextAtScopeStart
+
+        whenever(mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        whenever(mockRumFeatureScope.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+        }
 
         testedScope = RumActionScope(
             mockParentScope,
+            mockSdkCore,
             true,
             fakeEventTime,
             fakeType,
@@ -136,9 +155,8 @@ internal class RumContinuousActionScopeTest {
             fakeServerOffset,
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
-            mockRumEventSourceProvider,
-            fakeAndroidInfoProvider,
-            true
+            trackFrustrations = true,
+            contextProvider = mockContextProvider
         )
     }
 
@@ -202,7 +220,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -216,24 +234,28 @@ internal class RumContinuousActionScopeTest {
                     hasLongTaskCount(0)
                     hasNoFrustration()
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
+
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -262,7 +284,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -276,24 +298,27 @@ internal class RumContinuousActionScopeTest {
                     hasLongTaskCount(0)
                     hasNoFrustration()
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -321,7 +346,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -335,24 +360,27 @@ internal class RumContinuousActionScopeTest {
                     hasLongTaskCount(0)
                     hasNoFrustration()
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -383,7 +411,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -404,17 +432,20 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -455,7 +486,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -480,17 +511,20 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -536,7 +570,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -560,17 +594,20 @@ internal class RumContinuousActionScopeTest {
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -602,7 +639,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -622,17 +659,20 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -667,7 +707,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -692,17 +732,20 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -731,7 +774,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -755,17 +798,20 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -801,7 +847,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -825,17 +871,20 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -852,7 +901,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -872,17 +921,20 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -903,7 +955,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -923,17 +975,20 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -954,7 +1009,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -974,17 +1029,20 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1005,7 +1063,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1023,24 +1081,27 @@ internal class RumContinuousActionScopeTest {
                         hasNoFrustration()
                     }
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1063,7 +1124,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1081,24 +1142,27 @@ internal class RumContinuousActionScopeTest {
                         hasNoFrustration()
                     }
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1116,7 +1180,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1130,24 +1194,27 @@ internal class RumContinuousActionScopeTest {
                     hasLongTaskCount(0)
                     hasNoFrustration()
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1170,6 +1237,7 @@ internal class RumContinuousActionScopeTest {
         GlobalRum.globalAttributes.putAll(fakeGlobalAttributes)
         testedScope = RumActionScope(
             mockParentScope,
+            mockSdkCore,
             true,
             fakeEventTime,
             fakeType,
@@ -1178,9 +1246,8 @@ internal class RumContinuousActionScopeTest {
             fakeServerOffset,
             TEST_INACTIVITY_MS,
             TEST_MAX_DURATION_MS,
-            mockRumEventSourceProvider,
-            fakeAndroidInfoProvider,
-            fakeTrackFrustrations
+            trackFrustrations = fakeTrackFrustrations,
+            contextProvider = mockContextProvider
         )
         fakeGlobalAttributes.keys.forEach { GlobalRum.globalAttributes.remove(it) }
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
@@ -1192,7 +1259,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1206,24 +1273,27 @@ internal class RumContinuousActionScopeTest {
                     hasLongTaskCount(0)
                     hasNoFrustration()
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1253,7 +1323,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1267,24 +1337,27 @@ internal class RumContinuousActionScopeTest {
                     hasLongTaskCount(0)
                     hasNoFrustration()
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1308,7 +1381,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1322,24 +1395,27 @@ internal class RumContinuousActionScopeTest {
                     hasLongTaskCount(0)
                     hasNoFrustration()
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1363,7 +1439,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1381,24 +1457,27 @@ internal class RumContinuousActionScopeTest {
                         hasNoFrustration()
                     }
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1424,7 +1503,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1441,24 +1520,27 @@ internal class RumContinuousActionScopeTest {
                         hasNoFrustration()
                     }
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1480,7 +1562,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1494,24 +1576,27 @@ internal class RumContinuousActionScopeTest {
                     hasLongTaskCount(0)
                     hasNoFrustration()
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1538,7 +1623,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1558,17 +1643,20 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1591,7 +1679,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1611,17 +1699,20 @@ internal class RumContinuousActionScopeTest {
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1710,7 +1801,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1724,24 +1815,27 @@ internal class RumContinuousActionScopeTest {
                     hasLongTaskCount(0)
                     hasNoFrustration()
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1767,7 +1861,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1781,24 +1875,27 @@ internal class RumContinuousActionScopeTest {
                     hasLongTaskCount(0)
                     hasNoFrustration()
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1817,7 +1914,7 @@ internal class RumContinuousActionScopeTest {
 
         // Then
         argumentCaptor<ActionEvent> {
-            verify(mockWriter).write(capture())
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
             assertThat(lastValue)
                 .apply {
                     hasId(testedScope.actionId)
@@ -1832,24 +1929,27 @@ internal class RumContinuousActionScopeTest {
                     hasLongTaskCount(0)
                     hasNoFrustration()
                     hasView(fakeParentContext)
-                    hasUserInfo(fakeUserInfo)
+                    hasUserInfo(fakeDatadogContext.userInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasLiteSessionPlan()
                     containsExactlyContextAttributes(fakeAttributes)
                     hasSource(fakeSourceActionEvent)
                     hasDeviceInfo(
-                        fakeAndroidInfoProvider.deviceName,
-                        fakeAndroidInfoProvider.deviceModel,
-                        fakeAndroidInfoProvider.deviceBrand,
-                        fakeAndroidInfoProvider.deviceType.toActionSchemaType(),
-                        fakeAndroidInfoProvider.architecture
+                        fakeDatadogContext.deviceInfo.deviceName,
+                        fakeDatadogContext.deviceInfo.deviceModel,
+                        fakeDatadogContext.deviceInfo.deviceBrand,
+                        fakeDatadogContext.deviceInfo.deviceType.toActionSchemaType(),
+                        fakeDatadogContext.deviceInfo.architecture
                     )
                     hasOsInfo(
-                        fakeAndroidInfoProvider.osName,
-                        fakeAndroidInfoProvider.osVersion,
-                        fakeAndroidInfoProvider.osMajorVersion
+                        fakeDatadogContext.deviceInfo.osName,
+                        fakeDatadogContext.deviceInfo.osVersion,
+                        fakeDatadogContext.deviceInfo.osMajorVersion
                     )
+                    hasConnectivityInfo(fakeDatadogContextAtScopeStart.networkInfo)
+                    hasServiceName(fakeDatadogContext.service)
+                    hasVersion(fakeDatadogContext.version)
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
@@ -1876,14 +1976,12 @@ internal class RumContinuousActionScopeTest {
         internal const val TEST_MAX_DURATION_MS = 500L
         internal val TEST_MAX_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(TEST_MAX_DURATION_MS)
 
-        val appContext = ApplicationContextTestConfiguration(Context::class.java)
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, coreFeature, rumMonitor)
+            return listOf(rumMonitor)
         }
     }
 }

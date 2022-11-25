@@ -16,8 +16,9 @@ internal class Configurator :
         super.configure(forge)
 
         // Datadog Core
+        forge.addFactory(CustomAttributesForgeryFactory())
+        forge.addFactory(ConfigurationForgeryFactory())
         forge.addFactory(ConfigurationCoreForgeryFactory())
-        forge.addFactory(SecurityConfigForgeryFactory())
         forge.addFactory(ConfigurationForgeryFactory())
         forge.addFactory(ConfigurationFeatureForgeryFactory())
         forge.addFactory(ConfigurationLogForgeryFactory())
@@ -29,6 +30,8 @@ internal class Configurator :
         forge.addFactory(UserInfoForgeryFactory())
         forge.addFactory(FilePersistenceConfigForgeryFactory())
         forge.addFactory(AndroidInfoProviderForgeryFactory())
+        forge.addFactory(ConfigurationSessionReplayForgeryFactory())
+        forge.addFactory(FeatureStorageConfigurationForgeryFactory())
 
         // IO
         forge.addFactory(BatchForgeryFactory())
@@ -70,6 +73,14 @@ internal class Configurator :
         forge.addFactory(GsonJsonPrimitiveForgeryFactory())
         forge.addFactory(OrgJSONObjectForgeryFactory())
         forge.addFactory(OrgJSONArrayForgeryFactory())
+
+        // Datadog SDK v2
+        forge.addFactory(TimeInfoForgeryFactory())
+        forge.addFactory(ProcessInfoForgeryFactory())
+        forge.addFactory(NetworkInfoV2ForgeryFactory())
+        forge.addFactory(DeviceInfoForgeryFactory())
+        forge.addFactory(UserInfoV2ForgeryFactory())
+        forge.addFactory(DatadogContextForgeryFactory())
 
         forge.useJvmFactories()
     }

@@ -6,18 +6,31 @@
 
 package com.datadog.android.tracing.internal.data
 
-import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.rum.GlobalRum
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
+import com.datadog.android.event.EventMapper
+import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.tracing.internal.TracingFeature
+import com.datadog.android.tracing.model.SpanEvent
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.storage.ContextAwareMapper
+import com.datadog.android.v2.core.internal.storage.ContextAwareSerializer
 import com.datadog.opentracing.DDSpan
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.datadog.trace.api.DDTags
+import com.datadog.tools.unit.forge.aThrowable
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doAnswer
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
@@ -28,136 +41,250 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class TraceWriterTest {
 
-    lateinit var testedWriter: TraceWriter
+    private lateinit var testedWriter: TraceWriter
 
     @Mock
-    lateinit var mockFilesWriter: DataWriter<DDSpan>
+    lateinit var mockSdkCore: SdkCore
+
+    @Mock
+    lateinit var mockLegacyMapper: ContextAwareMapper<DDSpan, SpanEvent>
+
+    @Mock
+    lateinit var mockEventMapper: EventMapper<SpanEvent>
+
+    @Mock
+    lateinit var mockSerializer: ContextAwareSerializer<SpanEvent>
+
+    @Mock
+    lateinit var mockInternalLogger: Logger
+
+    @Mock
+    lateinit var mockTracingFeatureScope: FeatureScope
+
+    @Mock
+    lateinit var mockEventBatchWriter: EventBatchWriter
+
+    @Forgery
+    lateinit var fakeDatadogContext: DatadogContext
 
     // region Unit Tests
 
     @BeforeEach
     fun `set up`() {
-        GlobalRum.isRegistered.set(false)
-        testedWriter = TraceWriter(mockFilesWriter)
+        whenever(
+            mockSdkCore.getFeature(TracingFeature.TRACING_FEATURE_NAME)
+        ) doReturn mockTracingFeatureScope
+
+        whenever(mockTracingFeatureScope.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+        }
+
+        whenever(mockEventMapper.map(any())) doAnswer { it.getArgument(0) }
+
+        testedWriter = TraceWriter(
+            sdkCore = mockSdkCore,
+            legacyMapper = mockLegacyMapper,
+            eventMapper = mockEventMapper,
+            serializer = mockSerializer,
+            internalLogger = mockInternalLogger
+        )
     }
 
     @Test
-    fun `M use the wrapped writer W onWriting`(forge: Forge) {
+    fun `M write spans W write()`(forge: Forge) {
         // GIVEN
-        val spansList = ArrayList<DDSpan>(2).apply {
-            add(forge.getForgery())
-            add(forge.getForgery())
+        val ddSpans = forge.aList { getForgery<DDSpan>() }.toMutableList()
+        val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
+        val serializedSpans = ddSpans.map { forge.aString() }
+
+        ddSpans.forEachIndexed { index, ddSpan ->
+            whenever(mockLegacyMapper.map(fakeDatadogContext, ddSpan)) doReturn spanEvents[index]
+        }
+
+        spanEvents.forEachIndexed { index, spanEvent ->
+            whenever(
+                mockSerializer.serialize(fakeDatadogContext, spanEvent)
+            ) doReturn serializedSpans[index]
         }
 
         // WHEN
-        testedWriter.write(spansList)
+        testedWriter.write(ddSpans)
 
         // THEN
-        verify(mockFilesWriter).write(spansList)
-        spansList.forEach {
+        serializedSpans.forEach {
+            verify(mockEventBatchWriter).write(it.toByteArray(), null)
+        }
+        verifyNoMoreInteractions(mockEventBatchWriter)
+
+        ddSpans.forEach {
             it.finish()
         }
     }
 
     @Test
-    fun `M not send a RUM Error event W onWritingErrorSpan(`(forge: Forge) {
+    fun `M not write non-mapped spans W write()`(forge: Forge) {
         // GIVEN
-        val spansList = ArrayList<DDSpan>(2).apply {
-            add(forgeErrorSpan(forge))
-            forgeErrorSpan(forge).apply {
-                this.context().setTag(DDTags.ERROR_TYPE, null)
-            }
-            forgeErrorSpan(forge).apply {
-                this.context().setTag(DDTags.ERROR_MSG, null)
-            }
+        val ddSpans = forge.aList { getForgery<DDSpan>() }.toMutableList()
+        val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
+        val mappedEvents = spanEvents.map { forge.aNullable { it } }
+
+        val serializedSpans = mappedEvents.filterNotNull().map { forge.aString() }
+
+        ddSpans.forEachIndexed { index, ddSpan ->
+            whenever(mockLegacyMapper.map(fakeDatadogContext, ddSpan)) doReturn spanEvents[index]
+        }
+
+        spanEvents.forEachIndexed { index, event ->
+            whenever(mockEventMapper.map(event)) doReturn mappedEvents[index]
+        }
+
+        mappedEvents.filterNotNull().forEachIndexed { index, spanEvent ->
+            whenever(
+                mockSerializer.serialize(fakeDatadogContext, spanEvent)
+            ) doReturn serializedSpans[index]
         }
 
         // WHEN
-        testedWriter.write(spansList)
+        testedWriter.write(ddSpans)
 
         // THEN
-        verifyZeroInteractions(rumMonitor.mockInstance)
-        spansList.forEach {
+        serializedSpans.forEach {
+            verify(mockEventBatchWriter).write(it.toByteArray(), null)
+        }
+        verifyNoMoreInteractions(mockEventBatchWriter)
+
+        ddSpans.forEach {
             it.finish()
         }
     }
 
     @Test
-    fun `M do nothing W onWritingErrorSpan and no AdvancedRumMonitor registered`(forge: Forge) {
+    fun `M not write non-serialized spans W write()`(forge: Forge) {
         // GIVEN
-        val spansList = ArrayList<DDSpan>(2).apply {
-            add(forgeErrorFreeSpan(forge))
-            add(forgeErrorFreeSpan(forge))
+        val ddSpans = forge.aList { getForgery<DDSpan>() }.toMutableList()
+        val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
+
+        val serializedSpans = spanEvents.map { forge.aNullable { aString() } }
+
+        ddSpans.forEachIndexed { index, ddSpan ->
+            whenever(mockLegacyMapper.map(fakeDatadogContext, ddSpan)) doReturn spanEvents[index]
+        }
+
+        spanEvents.forEachIndexed { index, spanEvent ->
+            whenever(
+                mockSerializer.serialize(fakeDatadogContext, spanEvent)
+            ) doReturn serializedSpans[index]
         }
 
         // WHEN
-        testedWriter.write(spansList)
+        testedWriter.write(ddSpans)
 
         // THEN
-        verifyZeroInteractions(rumMonitor.mockInstance)
-    }
-
-    @Test
-    fun `M do nothing W onWritingErrorFreeSpan`(forge: Forge) {
-        // GIVEN
-        GlobalRum.isRegistered.set(false)
-        val spansList = ArrayList<DDSpan>(2).apply {
-            add(forgeErrorFreeSpan(forge))
-            add(forgeErrorFreeSpan(forge))
+        serializedSpans.filterNotNull().forEach {
+            verify(mockEventBatchWriter).write(it.toByteArray(), null)
         }
+        verifyNoMoreInteractions(mockEventBatchWriter)
 
-        // WHEN
-        testedWriter.write(spansList)
-
-        // THEN
-        verifyZeroInteractions(rumMonitor.mockInstance)
+        ddSpans.forEach {
+            it.finish()
+        }
     }
 
     @Test
-    fun `M do nothing W handling null data`() {
+    fun `M do nothing W write() { null trace }`() {
         // WHEN
         testedWriter.write(null)
 
         // THEN
-        verifyZeroInteractions(mockFilesWriter)
+        verifyZeroInteractions(
+            mockEventBatchWriter,
+            mockEventMapper,
+            mockSerializer,
+            mockSdkCore,
+            mockLegacyMapper,
+            mockInternalLogger
+        )
     }
 
-    // endregion
+    @Test
+    fun `M log error and proceed W write() { serialization failed }`(forge: Forge) {
+        // GIVEN
+        val ddSpans = forge.aList { getForgery<DDSpan>() }.toMutableList()
+        val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
+        val serializedSpans = ddSpans.map { forge.aString() }
 
-    // region Internal
+        ddSpans.forEachIndexed { index, ddSpan ->
+            whenever(mockLegacyMapper.map(fakeDatadogContext, ddSpan)) doReturn spanEvents[index]
+        }
 
-    fun forgeErrorSpan(forge: Forge): DDSpan {
-        val fakeErrorSpan: DDSpan = forge.getForgery()
-        val throwable: Throwable = forge.getForgery()
-        fakeErrorSpan.setErrorMeta(throwable)
-        return fakeErrorSpan
-    }
+        val faultySpanIndex = forge.anInt(min = 0, max = spanEvents.size)
+        val fakeThrowable = forge.aThrowable()
+        spanEvents.forEachIndexed { index, spanEvent ->
+            if (index == faultySpanIndex) {
+                whenever(
+                    mockSerializer.serialize(
+                        fakeDatadogContext,
+                        spanEvent
+                    )
+                ) doThrow fakeThrowable
+            } else {
+                whenever(
+                    mockSerializer.serialize(fakeDatadogContext, spanEvent)
+                ) doReturn serializedSpans[index]
+            }
+        }
 
-    fun forgeErrorFreeSpan(forge: Forge): DDSpan {
-        val fakeErrorFreeSpan: DDSpan = forge.getForgery()
-        fakeErrorFreeSpan.isError = false
-        return fakeErrorFreeSpan
-    }
+        // WHEN
+        testedWriter.write(ddSpans)
 
-    // endregion
+        // THEN
+        serializedSpans.forEachIndexed { index, serializedSpan ->
+            if (index != faultySpanIndex) {
+                verify(mockEventBatchWriter).write(serializedSpan.toByteArray(), null)
+            }
+        }
+        verifyNoMoreInteractions(mockEventBatchWriter)
 
-    companion object {
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
+        verify(mockInternalLogger)
+            .errorWithTelemetry(
+                TraceWriter.ERROR_SERIALIZING.format(Locale.US, SpanEvent::class.java.simpleName),
+                fakeThrowable
+            )
 
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor)
+        ddSpans.forEach {
+            it.finish()
         }
     }
+
+    @Test
+    fun `M request event write context once W write()`(forge: Forge) {
+        // GIVEN
+        val ddSpans = forge.aList { getForgery<DDSpan>() }.toMutableList()
+
+        // WHEN
+        testedWriter.write(ddSpans)
+
+        // THEN
+        verify(mockSdkCore, times(1)).getFeature(TracingFeature.TRACING_FEATURE_NAME)
+        verify(mockTracingFeatureScope, times(1)).withWriteContext(any())
+
+        verifyNoMoreInteractions(mockSdkCore, mockTracingFeatureScope)
+
+        ddSpans.forEach {
+            it.finish()
+        }
+    }
+
+    // endregion
 }

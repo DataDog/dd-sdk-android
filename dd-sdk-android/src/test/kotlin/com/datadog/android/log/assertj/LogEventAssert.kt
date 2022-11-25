@@ -8,7 +8,7 @@ package com.datadog.android.log.assertj
 
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
-import com.datadog.android.log.internal.domain.LogGenerator
+import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.model.LogEvent
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
@@ -175,6 +175,52 @@ internal class LogEventAssert(actual: LogEvent) :
         return this
     }
 
+    fun hasNetworkInfo(networkInfo: com.datadog.android.v2.api.context.NetworkInfo): LogEventAssert {
+        assertThat(actual.network?.client?.connectivity)
+            .overridingErrorMessage(
+                "Expected LogEvent to have connectivity: " +
+                    "${networkInfo.connectivity} but " +
+                    "instead was: ${actual.network?.client?.connectivity}"
+            )
+            .isEqualTo(networkInfo.connectivity.toString())
+        assertThat(actual.network?.client?.downlinkKbps)
+            .overridingErrorMessage(
+                "Expected LogEvent to have downlinkKbps: " +
+                    "${networkInfo.downKbps?.toString()} but " +
+                    "instead was: ${actual.network?.client?.downlinkKbps}"
+            )
+            .isEqualTo(networkInfo.downKbps?.toString())
+        assertThat(actual.network?.client?.uplinkKbps)
+            .overridingErrorMessage(
+                "Expected LogEvent to have uplinkKbps: " +
+                    "${networkInfo.upKbps?.toString()} but " +
+                    "instead was: ${actual.network?.client?.uplinkKbps}"
+            )
+            .isEqualTo(networkInfo.upKbps?.toString())
+        assertThat(actual.network?.client?.signalStrength)
+            .overridingErrorMessage(
+                "Expected LogEvent to have signal strength: " +
+                    "${networkInfo.strength?.toString()} but " +
+                    "instead was: ${actual.network?.client?.signalStrength}"
+            )
+            .isEqualTo(networkInfo.strength?.toString())
+        assertThat(actual.network?.client?.simCarrier?.id)
+            .overridingErrorMessage(
+                "Expected LogEvent to have carrier id: " +
+                    "${networkInfo.carrierId?.toString()} but " +
+                    "instead was: ${actual.network?.client?.simCarrier?.id}"
+            )
+            .isEqualTo(networkInfo.carrierId?.toString())
+        assertThat(actual.network?.client?.simCarrier?.name)
+            .overridingErrorMessage(
+                "Expected LogEvent to have carrier name: " +
+                    "${networkInfo.carrierName} but " +
+                    "instead was: ${actual.network?.client?.simCarrier?.name}"
+            )
+            .isEqualTo(networkInfo.carrierName)
+        return this
+    }
+
     fun doesNotHaveError(): LogEventAssert {
         assertThat(actual.error)
             .overridingErrorMessage(
@@ -223,6 +269,34 @@ internal class LogEventAssert(actual: LogEvent) :
         return this
     }
 
+    fun hasUserInfo(userInfo: com.datadog.android.v2.api.context.UserInfo): LogEventAssert {
+        assertThat(actual.usr?.name)
+            .overridingErrorMessage(
+                "Expected LogEvent to have user name: " +
+                    "${userInfo.name} but " +
+                    "instead was: ${actual.usr?.name}"
+            )
+            .isEqualTo(userInfo.name)
+        assertThat(actual.usr?.email)
+            .overridingErrorMessage(
+                "Expected LogEvent to have user email: " +
+                    "${userInfo.email} but " +
+                    "instead was: ${actual.usr?.email}"
+            )
+            .isEqualTo(userInfo.email)
+        assertThat(actual.usr?.id)
+            .overridingErrorMessage(
+                "Expected LogEvent to have user id: " +
+                    "${userInfo.id} but " +
+                    "instead was: ${actual.usr?.id}"
+            )
+            .isEqualTo(userInfo.id)
+        assertThat(actual.usr?.additionalProperties)
+            .hasSameSizeAs(userInfo.additionalProperties)
+            .containsAllEntriesOf(userInfo.additionalProperties)
+        return this
+    }
+
     fun doesNotHaveUserInfo(): LogEventAssert {
         assertThat(actual.usr)
             .overridingErrorMessage(
@@ -236,7 +310,7 @@ internal class LogEventAssert(actual: LogEvent) :
     companion object {
 
         private val dateFormatter =
-            SimpleDateFormat(LogGenerator.ISO_8601, Locale.US).apply {
+            SimpleDateFormat(DatadogLogGenerator.ISO_8601, Locale.US).apply {
                 timeZone = TimeZone.getTimeZone("UTC")
             }
 

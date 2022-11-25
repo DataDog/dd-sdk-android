@@ -104,7 +104,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(target, expectedResourceName)
         testedListener = GesturesListener(
-            WeakReference(mockWindow)
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -141,7 +142,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(target, expectedResourceName)
         testedListener = GesturesListener(
-            WeakReference(mockWindow)
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -183,7 +185,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(validTarget, expectedResourceName)
         testedListener = GesturesListener(
-            WeakReference(mockWindow)
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -224,7 +227,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(validTarget, expectedResourceName)
         testedListener = GesturesListener(
-            WeakReference(mockWindow)
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -249,7 +253,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             whenever(it.childCount).thenReturn(0)
         }
         testedListener = GesturesListener(
-            WeakReference(mockWindow)
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -286,7 +291,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             whenever(it.getChildAt(0)).thenReturn(composeView)
         }
         testedListener = GesturesListener(
-            WeakReference(mockWindow)
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -311,7 +317,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             whenever(it.childCount).thenReturn(0)
         }
         testedListener = GesturesListener(
-            WeakReference(mockWindow)
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext)
         )
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(mockDecorView, expectedResourceName)
@@ -350,7 +357,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             )
         )
         testedListener = GesturesListener(
-            WeakReference(mockWindow)
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -387,7 +395,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         }
         whenever(mockResources.getResourceEntryName(validTarget.id)).thenReturn(null)
         testedListener = GesturesListener(
-            WeakReference(mockWindow)
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -405,7 +414,10 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
     fun `will not send any span if decor view view reference is null`(forge: Forge) {
         // Given
         val mockEvent: MotionEvent = forge.getForgery()
-        testedListener = GesturesListener(WeakReference<Window>(null))
+        testedListener = GesturesListener(
+            WeakReference<Window>(null),
+            contextRef = WeakReference(mockAppContext)
+        )
 
         // When
         testedListener.onSingleTapUp(mockEvent)
@@ -454,7 +466,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
 
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            providers
+            providers,
+            contextRef = WeakReference(mockAppContext)
         )
         // When
         testedListener.onSingleTapUp(mockEvent)
@@ -468,7 +481,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
     }
 
     @Test
-    fun `M use class simple name as target class name W tapIntercepted { cannonicalName is null }`(
+    fun `M use class simple name as target class name W tapIntercepted { canonicalName is null }`(
         forge: Forge
     ) {
         val mockEvent: MotionEvent = forge.getForgery()
@@ -515,7 +528,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
 
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            providers
+            providers,
+            contextRef = WeakReference(mockAppContext)
         )
         // When
         testedListener.onSingleTapUp(mockEvent)
@@ -563,7 +577,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
 
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            interactionPredicate = mockInteractionPredicate
+            interactionPredicate = mockInteractionPredicate,
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -611,7 +626,8 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
 
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            interactionPredicate = mockInteractionPredicate
+            interactionPredicate = mockInteractionPredicate,
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When

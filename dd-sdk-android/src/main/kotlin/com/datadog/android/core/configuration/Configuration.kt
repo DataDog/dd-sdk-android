@@ -44,6 +44,8 @@ import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.security.Encryption
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import okhttp3.Authenticator
 import java.net.Proxy
@@ -57,7 +59,7 @@ import com.datadog.android.plugin.Feature as PluginFeature
  */
 data class Configuration
 internal constructor(
-    internal var coreConfig: Core,
+    internal val coreConfig: Core,
     internal val logsConfig: Feature.Logs?,
     internal val tracesConfig: Feature.Tracing?,
     internal val crashReportConfig: Feature.CrashReport?,
@@ -66,15 +68,16 @@ internal constructor(
 ) {
 
     internal data class Core(
-        var needsClearTextHttp: Boolean,
+        val needsClearTextHttp: Boolean,
         val enableDeveloperModeWhenDebuggable: Boolean,
         val firstPartyHosts: List<String>,
         val batchSize: BatchSize,
         val uploadFrequency: UploadFrequency,
         val proxy: Proxy?,
         val proxyAuth: Authenticator,
-        val securityConfig: SecurityConfig,
-        val webViewTrackingHosts: List<String>
+        val encryption: Encryption?,
+        val webViewTrackingHosts: List<String>,
+        val site: DatadogSite
     )
 
     internal sealed class Feature {
@@ -110,6 +113,12 @@ internal constructor(
             val backgroundEventTracking: Boolean,
             val trackFrustrations: Boolean,
             val vitalsMonitorUpdateFrequency: VitalsUpdateFrequency
+        ) : Feature()
+
+        internal data class SessionReplay(
+            override val endpointUrl: String,
+            override val plugins: List<DatadogPlugin> = emptyList(),
+            val privacy: SessionReplayPrivacy
         ) : Feature()
     }
 
@@ -213,7 +222,7 @@ internal constructor(
             tracesConfig = tracesConfig.copy(endpointUrl = site.tracesEndpoint())
             crashReportConfig = crashReportConfig.copy(endpointUrl = site.logsEndpoint())
             rumConfig = rumConfig.copy(endpointUrl = site.rumEndpoint())
-            coreConfig = coreConfig.copy(needsClearTextHttp = false)
+            coreConfig = coreConfig.copy(needsClearTextHttp = false, site = site)
             return this
         }
 
@@ -349,14 +358,8 @@ internal constructor(
          * @see [Feature.Tracing]
          * @see [Feature.RUM]
          */
-        @Deprecated(
-            "Datadog Plugins will be removed in SDK v2.0.0. You will then need to" +
-                " write your own Feature (check our own code for guidance)."
-        )
-        fun addPlugin(
-            @Suppress("DEPRECATION") plugin: DatadogPlugin,
-            feature: PluginFeature
-        ): Builder {
+        @Deprecated(message = PLUGINS_DEPRECATED_WARN_MESSAGE)
+        fun addPlugin(plugin: DatadogPlugin, feature: PluginFeature): Builder {
             warnDeprecated(
                 target = "Configuration.Builder#addPlugin",
                 deprecatedSince = "1.15.0",
@@ -583,25 +586,30 @@ internal constructor(
         }
 
         @Suppress("FunctionMaxLength")
-        internal fun setTelemetryConfigurationEventMapper(eventMapper: EventMapper<TelemetryConfigurationEvent>): Builder {
-            applyIfFeatureEnabled(PluginFeature.RUM, "setTelemetryConfigurationEventMapper") {
+        internal fun setTelemetryConfigurationEventMapper(
+            eventMapper: EventMapper<TelemetryConfigurationEvent>
+        ): Builder {
+            applyIfFeatureEnabled(
+                PluginFeature.RUM,
+                "setTelemetryConfigurationEventMapper"
+            ) {
                 rumConfig = rumConfig.copy(
-                    rumEventMapper = getRumEventMapper().copy(telemetryConfigurationMapper = eventMapper)
+                    rumEventMapper = getRumEventMapper()
+                        .copy(telemetryConfigurationMapper = eventMapper)
                 )
             }
             return this
         }
 
         /**
-         * Allows to set the necessary security configuration (used to control local
-         * data storage encryption, for example).
-         * @param config Security config to use. If not provided, default one will be used (no
-         * encryption for local data storage).
+         * Allows to set the encryption for the local data. By default no encryption is used for
+         * the local data.
+         *
+         * @param dataEncryption An encryption object complying [Encryption] interface.
          */
-        @Suppress("unused", "CommentOverPrivateFunction")
-        private fun setSecurityConfig(config: SecurityConfig): Builder {
+        fun setEncryption(dataEncryption: Encryption): Builder {
             coreConfig = coreConfig.copy(
-                securityConfig = config
+                encryption = dataEncryption
             )
             return this
         }
@@ -658,6 +666,9 @@ internal constructor(
         internal const val DEFAULT_SAMPLING_RATE: Float = 100f
         internal const val DEFAULT_TELEMETRY_SAMPLING_RATE: Float = 20f
         internal const val DEFAULT_LONG_TASK_THRESHOLD_MS = 100L
+        internal const val PLUGINS_DEPRECATED_WARN_MESSAGE =
+            "Datadog Plugins will be removed in SDK v2.0.0. You will then need to" +
+                " write your own Feature (check our own code for guidance)."
 
         internal val DEFAULT_CORE_CONFIG = Core(
             needsClearTextHttp = false,
@@ -667,8 +678,9 @@ internal constructor(
             uploadFrequency = UploadFrequency.AVERAGE,
             proxy = null,
             proxyAuth = Authenticator.NONE,
-            securityConfig = SecurityConfig.DEFAULT,
-            webViewTrackingHosts = emptyList()
+            encryption = null,
+            webViewTrackingHosts = emptyList(),
+            site = DatadogSite.US1
         )
         internal val DEFAULT_LOGS_CONFIG = Feature.Logs(
             endpointUrl = DatadogEndpoint.LOGS_US1,
@@ -694,7 +706,9 @@ internal constructor(
                 NoOpInteractionPredicate()
             ),
             viewTrackingStrategy = ActivityViewTrackingStrategy(false),
-            longTaskTrackingStrategy = MainLooperLongTaskStrategy(DEFAULT_LONG_TASK_THRESHOLD_MS),
+            longTaskTrackingStrategy = MainLooperLongTaskStrategy(
+                DEFAULT_LONG_TASK_THRESHOLD_MS
+            ),
             rumEventMapper = NoOpEventMapper(),
             backgroundEventTracking = false,
             trackFrustrations = true,

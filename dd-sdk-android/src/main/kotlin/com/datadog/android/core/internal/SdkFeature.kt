@@ -9,64 +9,84 @@
 package com.datadog.android.core.internal
 
 import android.content.Context
-import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.data.upload.DataUploadScheduler
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
-import com.datadog.android.core.internal.net.DataUploader
-import com.datadog.android.core.internal.net.NoOpDataUploader
-import com.datadog.android.core.internal.persistence.NoOpPersistenceStrategy
-import com.datadog.android.core.internal.persistence.PersistenceStrategy
-import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
-import com.datadog.android.core.internal.persistence.file.advanced.CacheFileMigrator
+import com.datadog.android.core.internal.persistence.file.FileMover
+import com.datadog.android.core.internal.persistence.file.FileOrchestrator
+import com.datadog.android.core.internal.persistence.file.FileReaderWriter
+import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
-import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
-import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.log.Logger
+import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
-import java.io.File
+import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.FeatureEventReceiver
+import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.FeatureStorageConfiguration
+import com.datadog.android.v2.api.FeatureUploadConfiguration
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.SdkInternalLogger
+import com.datadog.android.v2.core.internal.NoOpContextProvider
+import com.datadog.android.v2.core.internal.data.upload.DataFlusher
+import com.datadog.android.v2.core.internal.data.upload.DataUploadScheduler
+import com.datadog.android.v2.core.internal.net.DataOkHttpUploader
+import com.datadog.android.v2.core.internal.net.DataUploader
+import com.datadog.android.v2.core.internal.net.NoOpDataUploader
+import com.datadog.android.v2.core.internal.storage.ConsentAwareStorage
+import com.datadog.android.v2.core.internal.storage.NoOpStorage
+import com.datadog.android.v2.core.internal.storage.Storage
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 @Suppress("TooManyFunctions")
-internal abstract class SdkFeature<T : Any, C : Configuration.Feature> {
+internal class SdkFeature(
+    internal val coreFeature: CoreFeature,
+    private val featureName: String,
+    private val storageConfiguration: FeatureStorageConfiguration,
+    private val uploadConfiguration: FeatureUploadConfiguration
+) : FeatureScope {
 
     internal val initialized = AtomicBoolean(false)
+    internal val eventReceiver = AtomicReference<FeatureEventReceiver>(null)
 
-    internal var persistenceStrategy: PersistenceStrategy<T> = NoOpPersistenceStrategy()
+    internal var storage: Storage = NoOpStorage()
     internal var uploader: DataUploader = NoOpDataUploader()
     internal var uploadScheduler: UploadScheduler = NoOpUploadScheduler()
+    internal var fileOrchestrator: FileOrchestrator = NoOpFileOrchestrator()
     private val featurePlugins: MutableList<DatadogPlugin> = mutableListOf()
 
     // region SDK Feature
 
-    fun initialize(context: Context, configuration: C) {
+    fun initialize(context: Context, plugins: List<DatadogPlugin>) {
         if (initialized.get()) {
             return
         }
 
-        persistenceStrategy = createPersistenceStrategy(context, configuration)
+        storage = createStorage(featureName, storageConfiguration)
 
-        setupUploader(configuration)
+        setupUploader()
 
         registerPlugins(
-            configuration.plugins,
+            plugins,
             DatadogPluginConfig(
                 context = context,
-                envName = CoreFeature.envName,
-                serviceName = CoreFeature.serviceName,
-                trackingConsent = CoreFeature.trackingConsentProvider.getConsent()
+                storageDir = coreFeature.storageDir,
+                envName = coreFeature.envName,
+                serviceName = coreFeature.serviceName,
+                trackingConsent = coreFeature.trackingConsentProvider.getConsent()
             ),
-            CoreFeature.trackingConsentProvider
+            coreFeature.trackingConsentProvider
         )
 
-        onInitialize(context, configuration)
+        onInitialize()
 
         initialized.set(true)
 
-        onPostInitialized(context)
+        onPostInitialized()
     }
 
     fun isInitialized(): Boolean {
@@ -74,15 +94,18 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature> {
     }
 
     fun clearAllData() {
-        persistenceStrategy.getReader().dropAll()
+        @Suppress("ThreadSafety") // TODO RUMM-1503 delegate to another thread
+        storage.dropAll()
     }
 
     fun stop() {
         if (initialized.get()) {
             unregisterPlugins()
             uploadScheduler.stopScheduling()
-            persistenceStrategy = NoOpPersistenceStrategy()
             uploadScheduler = NoOpUploadScheduler()
+            storage = NoOpStorage()
+            uploader = NoOpDataUploader()
+            fileOrchestrator = NoOpFileOrchestrator()
 
             onStop()
 
@@ -101,22 +124,46 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature> {
 
     // endregion
 
-    // region Abstract
+    // region FeatureScope
 
-    open fun onInitialize(context: Context, configuration: C) {}
+    override fun withWriteContext(callback: (DatadogContext, EventBatchWriter) -> Unit) {
+        // TODO RUMM-0000 thread safety. Thread switch happens in Storage right now. Open questions:
+        // * what if caller wants to have a sync operation, without thread switch
+        // * should context read and write be on the dedicated thread? risk - time gap between
+        // caller and context
+        val contextProvider = coreFeature.contextProvider
+        if (contextProvider is NoOpContextProvider) return
+        val context = contextProvider.context
+        storage.writeCurrentBatch(context) {
+            callback(context, it)
+        }
+    }
 
-    open fun onPostInitialized(context: Context) {}
+    override fun sendEvent(event: Any) {
+        val receiver = eventReceiver.get()
+        if (receiver == null) {
+            devLogger.i(NO_EVENT_RECEIVER.format(Locale.US, featureName))
+        } else {
+            receiver.onReceive(event)
+        }
+    }
 
-    open fun onStop() {}
+    // endregion
 
-    open fun onPostStopped() {}
+    // region Lifecycle
 
-    abstract fun createPersistenceStrategy(
-        context: Context,
-        configuration: C
-    ): PersistenceStrategy<T>
+    // TODO RUMM-0000 Should be moved out, to the public API of feature registration
+    @Suppress("EmptyFunctionBlock")
+    fun onInitialize() {}
 
-    abstract fun createUploader(configuration: C): DataUploader
+    @Suppress("EmptyFunctionBlock")
+    fun onPostInitialized() {}
+
+    @Suppress("EmptyFunctionBlock")
+    fun onStop() {}
+
+    @Suppress("EmptyFunctionBlock")
+    fun onPostStopped() {}
 
     // endregion
 
@@ -141,16 +188,17 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature> {
         featurePlugins.clear()
     }
 
-    private fun setupUploader(configuration: C) {
-        uploadScheduler = if (CoreFeature.isMainProcess) {
-            uploader = createUploader(configuration)
+    private fun setupUploader() {
+        uploadScheduler = if (coreFeature.isMainProcess) {
+            uploader = createUploader(uploadConfiguration)
             DataUploadScheduler(
-                persistenceStrategy.getReader(),
+                storage,
                 uploader,
-                CoreFeature.networkInfoProvider,
-                CoreFeature.systemInfoProvider,
-                CoreFeature.uploadFrequency,
-                CoreFeature.uploadExecutorService
+                coreFeature.contextProvider,
+                coreFeature.networkInfoProvider,
+                coreFeature.systemInfoProvider,
+                coreFeature.uploadFrequency,
+                coreFeature.uploadExecutorService
             )
         } else {
             NoOpUploadScheduler()
@@ -158,41 +206,74 @@ internal abstract class SdkFeature<T : Any, C : Configuration.Feature> {
         uploadScheduler.startScheduling()
     }
 
-    /**
-     * Since SDK v1.12.0, the Android SDK stores batch files in the cache directory instead
-     * of the files directory. This migration ensures we don't lose any important data when
-     * customers update their SDK.
-     */
-    protected fun migrateToCacheDir(
-        context: Context,
-        featureName: String,
-        internalLogger: Logger
-    ) {
-        val fileHandler = BatchFileHandler(internalLogger)
-        val config = FilePersistenceConfig()
-        val migrator = CacheFileMigrator(
-            fileHandler,
-            CoreFeature.persistenceExecutorService,
-            internalLogger
-        )
-        val filesDir = File(
-            context.filesDir,
-            FeatureFileOrchestrator.GRANTED_DIR.format(Locale.US, featureName)
-        )
-        val previousOrchestrator = BatchFileOrchestrator(filesDir, config, internalLogger)
-        val cacheDir = File(
-            context.cacheDir,
-            FeatureFileOrchestrator.GRANTED_DIR.format(Locale.US, featureName)
-        )
-        val newOrchestrator = BatchFileOrchestrator(cacheDir, config, internalLogger)
+    // region Feature setup
 
-        migrator.migrateData(null, previousOrchestrator, true, newOrchestrator)
+    private fun createStorage(
+        featureName: String,
+        storageConfiguration: FeatureStorageConfiguration
+    ): Storage {
+        val fileOrchestrator = FeatureFileOrchestrator(
+            consentProvider = coreFeature.trackingConsentProvider,
+            storageDir = coreFeature.storageDir,
+            featureName = featureName,
+            executorService = coreFeature.persistenceExecutorService,
+            internalLogger = sdkLogger
+        )
+        this.fileOrchestrator = fileOrchestrator
+
+        return ConsentAwareStorage(
+            executorService = coreFeature.persistenceExecutorService,
+            grantedOrchestrator = fileOrchestrator.grantedOrchestrator,
+            pendingOrchestrator = fileOrchestrator.pendingOrchestrator,
+            batchEventsReaderWriter = BatchFileReaderWriter.create(
+                internalLogger = sdkLogger,
+                encryption = coreFeature.localDataEncryption
+            ),
+            batchMetadataReaderWriter = FileReaderWriter.create(
+                internalLogger = sdkLogger,
+                encryption = coreFeature.localDataEncryption
+            ),
+            fileMover = FileMover(sdkLogger),
+            internalLogger = SdkInternalLogger,
+            filePersistenceConfig = coreFeature.buildFilePersistenceConfig().copy(
+                maxBatchSize = storageConfiguration.maxBatchSize,
+                maxItemSize = storageConfiguration.maxItemSize,
+                maxItemsPerBatch = storageConfiguration.maxItemsPerBatch,
+                oldFileThreshold = storageConfiguration.oldBatchThreshold
+            )
+        )
     }
 
-    // Used for nightly tests only
-    internal fun flushStoredData() {
-        persistenceStrategy.getFlusher().flush(uploader)
+    private fun createUploader(uploadConfiguration: FeatureUploadConfiguration): DataUploader {
+        return DataOkHttpUploader(
+            requestFactory = uploadConfiguration.requestFactory,
+            internalLogger = sdkLogger,
+            callFactory = coreFeature.okHttpClient,
+            sdkVersion = coreFeature.sdkVersion,
+            androidInfoProvider = coreFeature.androidInfoProvider
+        )
     }
 
     // endregion
+
+    // Used for nightly tests only
+    internal fun flushStoredData() {
+        // TODO RUMM-0000 should it just accept storage?
+        val flusher = DataFlusher(
+            coreFeature.contextProvider,
+            fileOrchestrator,
+            BatchFileReaderWriter.create(sdkLogger, coreFeature.localDataEncryption),
+            FileReaderWriter.create(sdkLogger, coreFeature.localDataEncryption),
+            FileMover(sdkLogger)
+        )
+        @Suppress("ThreadSafety")
+        flusher.flush(uploader)
+    }
+
+    // endregion
+
+    companion object {
+        const val NO_EVENT_RECEIVER =
+            "Feature \"%s\" has no event receiver registered, ignoring event."
+    }
 }

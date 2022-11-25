@@ -94,7 +94,8 @@ internal class DatadogGesturesTracker(
             GesturesListener(
                 WeakReference(window),
                 targetAttributesProviders,
-                interactionPredicate
+                interactionPredicate,
+                WeakReference(context)
             )
         )
     }

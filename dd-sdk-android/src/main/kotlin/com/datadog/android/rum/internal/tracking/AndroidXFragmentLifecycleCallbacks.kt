@@ -24,6 +24,7 @@ internal open class AndroidXFragmentLifecycleCallbacks(
     internal val argumentsProvider: (Fragment) -> Map<String, Any?>,
     private val componentPredicate: ComponentPredicate<Fragment>,
     internal var viewLoadingTimer: ViewLoadingTimer = ViewLoadingTimer(),
+    private val rumFeature: RumFeature,
     private val rumMonitor: RumMonitor,
     private val advancedRumMonitor: AdvancedRumMonitor
 ) : FragmentLifecycleCallbacks<FragmentActivity>, FragmentManager.FragmentLifecycleCallbacks() {
@@ -56,6 +57,8 @@ internal open class AndroidXFragmentLifecycleCallbacks(
         }
     }
 
+    // TODO: RUMM-0000 Update Androidx packages and handle deprecated APIs
+    @Suppress("DEPRECATION")
     override fun onFragmentActivityCreated(
         fm: FragmentManager,
         f: Fragment,
@@ -67,7 +70,7 @@ internal open class AndroidXFragmentLifecycleCallbacks(
 
         if (f is DialogFragment && context != null) {
             val window = f.dialog?.window
-            val gesturesTracker = RumFeature.actionTrackingStrategy.getGesturesTracker()
+            val gesturesTracker = rumFeature.actionTrackingStrategy.getGesturesTracker()
             gesturesTracker.startTracking(window, context)
         }
     }

@@ -17,6 +17,7 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.companionObjectInstance
+import kotlin.reflect.full.instanceParameter
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.isAccessible
 import kotlin.reflect.jvm.javaField
@@ -209,10 +210,14 @@ class ProhibitLeavingStaticMocksExtension : AfterEachCallback {
                         if (isLateinit && property.javaField?.get(hostInstance) == null) {
                             null
                         } else {
-                            if (property.javaGetter == null) {
+                            if (property.getter.instanceParameter == null) {
                                 property.getter.call()
                             } else {
-                                property.getter.call(hostInstance)
+                                if (!hostClass.isCompanion && property.javaGetter == null) {
+                                    property.getter.call()
+                                } else {
+                                    property.getter.call(hostInstance)
+                                }
                             }
                         }
                     }

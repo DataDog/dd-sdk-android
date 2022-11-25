@@ -6,18 +6,19 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.CoreFeature
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.DataWriter
 
+@Suppress("LongParameterList")
 internal class RumApplicationScope(
     applicationId: String,
+    sdkCore: SdkCore,
     internal val samplingRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
     internal val trackFrustrations: Boolean,
@@ -25,15 +26,14 @@ internal class RumApplicationScope(
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
-    timeProvider: TimeProvider,
     sessionListener: RumSessionListener?,
-    androidInfoProvider: AndroidInfoProvider
+    contextProvider: ContextProvider
 ) : RumScope {
 
-    private val rumEventSourceProvider = RumEventSourceProvider(CoreFeature.sourceName)
     private val rumContext = RumContext(applicationId = applicationId)
     internal val childScope: RumScope = RumSessionScope(
         this,
+        sdkCore,
         samplingRate,
         backgroundTrackingEnabled,
         trackFrustrations,
@@ -41,14 +41,13 @@ internal class RumApplicationScope(
         cpuVitalMonitor,
         memoryVitalMonitor,
         frameRateVitalMonitor,
-        timeProvider,
         sessionListener,
-        rumEventSourceProvider,
-        androidInfoProvider = androidInfoProvider
+        contextProvider
     )
 
     // region RumScope
 
+    @WorkerThread
     override fun handleEvent(
         event: RumRawEvent,
         writer: DataWriter<Any>

@@ -6,6 +6,8 @@
 
 package com.datadog.android.core.internal.system
 
+import com.datadog.android.v2.api.context.DeviceType
+
 internal class NoOpAndroidInfoProvider : AndroidInfoProvider {
     override val deviceName: String = ""
     override val deviceBrand: String = ""

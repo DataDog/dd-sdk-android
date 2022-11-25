@@ -7,9 +7,9 @@
 package com.datadog.android.tracing
 
 import androidx.annotation.FloatRange
+import com.datadog.android.Datadog
 import com.datadog.android.DatadogInterceptor
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
@@ -17,7 +17,7 @@ import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.utils.warningWithTelemetry
-import com.datadog.android.tracing.internal.TracingFeature
+import com.datadog.android.v2.core.DatadogCore
 import com.datadog.opentracing.DDTracer
 import com.datadog.trace.api.DDTags
 import com.datadog.trace.api.interceptor.MutableSpan
@@ -108,7 +108,7 @@ internal constructor(
     ) : this(
         tracedHosts,
         tracedRequestListener,
-        CoreFeature.firstPartyHostDetector,
+        getGlobalFirstPartyHostDetector(),
         null,
         RateBasedSampler(traceSamplingRate / 100),
         { AndroidTracer.Builder().build() }
@@ -129,7 +129,7 @@ internal constructor(
     ) : this(
         emptyList(),
         tracedRequestListener,
-        CoreFeature.firstPartyHostDetector,
+        getGlobalFirstPartyHostDetector(),
         null,
         RateBasedSampler(traceSamplingRate / 100),
         { AndroidTracer.Builder().build() }
@@ -237,7 +237,8 @@ internal constructor(
 
     @Synchronized
     private fun resolveTracer(): Tracer? {
-        return if (!TracingFeature.initialized.get()) {
+        val tracingFeature = (Datadog.globalSdkCore as? DatadogCore)?.tracingFeature
+        return if (tracingFeature == null) {
             devLogger.w(WARNING_TRACING_DISABLED)
             null
         } else if (GlobalTracer.isRegistered()) {
@@ -403,6 +404,18 @@ internal constructor(
                 "but you didn't register any Tracer. " +
                 "We automatically created a local tracer for you."
 
+        /**
+         * Temporary helper method for now, it'll be removed eventually.
+         */
+        @Suppress("FunctionMaxLength")
+        internal fun getGlobalFirstPartyHostDetector(): FirstPartyHostDetector {
+            return (
+                (Datadog.globalSdkCore as? DatadogCore)
+                    ?.coreFeature
+                    ?.firstPartyHostDetector
+                    ?: FirstPartyHostDetector(emptyList())
+                )
+        }
         internal const val DEFAULT_TRACE_SAMPLING_RATE: Float = 20f
 
         // taken from DatadogHttpCodec

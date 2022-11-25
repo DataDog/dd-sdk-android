@@ -13,7 +13,6 @@ import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.view.Window
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -39,7 +38,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -48,7 +46,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.lang.ref.WeakReference
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -91,12 +88,7 @@ internal class WindowCallbackWrapperTest {
             copyEvent = { mockCopiedMotionEvent }
         )
         whenever(mockAppContext.resources).thenReturn(mockResources)
-        CoreFeature.contextRef = WeakReference(mockAppContext)
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        CoreFeature.contextRef = WeakReference(null)
+        whenever(mockWindow.context).thenReturn(mockAppContext)
     }
 
     // region dispatchTouchEvent
@@ -531,7 +523,7 @@ internal class WindowCallbackWrapperTest {
                 RumAttributes.ACTION_TARGET_CLASS_NAME to
                     fakeFocusedView.targetClassName(),
                 RumAttributes.ACTION_TARGET_RESOURCE_ID to
-                    resourceIdName(fakeFocusedView.id)
+                    mockWindow.context.resourceIdName(fakeFocusedView.id)
             )
         )
     }
@@ -565,7 +557,7 @@ internal class WindowCallbackWrapperTest {
                 RumAttributes.ACTION_TARGET_CLASS_NAME to
                     fakeFocusedView.targetClassName(),
                 RumAttributes.ACTION_TARGET_RESOURCE_ID to
-                    resourceIdName(fakeFocusedView.id)
+                    mockWindow.context.resourceIdName(fakeFocusedView.id)
             )
         )
     }

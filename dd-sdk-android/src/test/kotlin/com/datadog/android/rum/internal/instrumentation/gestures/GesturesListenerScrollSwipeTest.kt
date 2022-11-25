@@ -102,7 +102,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val expectedStopAttributes = expectedStartAttributes +
             (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection)
         testedListener = GesturesListener(
-            WeakReference(mockWindow)
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -170,7 +171,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val expectedStopAttributes = expectedStartAttributes +
             (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection)
         testedListener = GesturesListener(
-            WeakReference(mockWindow)
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -238,7 +240,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val expectedStopAttributes2 = expectedStartAttributes2 +
             (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection2)
         testedListener = GesturesListener(
-            WeakReference(mockWindow)
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -299,7 +302,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val expectedResourceName = forge.anAlphabeticalString()
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         testedListener = GesturesListener(
-            WeakReference(mockWindow)
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -344,7 +348,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             whenever(it.getChildAt(0)).thenReturn(composeView)
         }
         testedListener = GesturesListener(
-            WeakReference(mockWindow)
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -404,7 +409,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val expectedStopAttributes = expectedStartAttributes +
             (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection)
         testedListener = GesturesListener(
-            WeakReference(mockWindow)
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -479,7 +485,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val expectedStopAttributes = expectedStartAttributes +
             (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection)
         testedListener = GesturesListener(
-            WeakReference(mockWindow)
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -536,7 +543,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            interactionPredicate = mockInteractionPredicate
+            interactionPredicate = mockInteractionPredicate,
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -596,7 +604,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            interactionPredicate = mockInteractionPredicate
+            interactionPredicate = mockInteractionPredicate,
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -656,7 +665,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         mockResourcesForTarget(scrollingTarget, expectedResourceName)
         testedListener = GesturesListener(
             WeakReference(mockWindow),
-            interactionPredicate = mockInteractionPredicate
+            interactionPredicate = mockInteractionPredicate,
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -730,7 +740,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val expectedStopAttributes2 = expectedStartAttributes2 +
             (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection2)
         testedListener = GesturesListener(
-            WeakReference(mockWindow)
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext)
         )
 
         // When
@@ -787,7 +798,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         }
 
         testedListener = GesturesListener(
-            WeakReference(mockWindow)
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext)
         )
         testedListener.onUp(startDownEvent)
         testedListener.onDown(endUpEvent)

@@ -7,11 +7,11 @@
 package com.datadog.android.rum.internal.vitals
 
 import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
-import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
-import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -61,17 +61,20 @@ internal class VitalReaderRunnableTest {
     @Mock
     lateinit var mockObserver: VitalObserver
 
+    @Mock
+    lateinit var mockSdkCore: SdkCore
+
     @DoubleForgery
     var fakeValue: Double = 0.0
 
     @BeforeEach
     fun `set up`() {
-        GlobalRum.updateRumContext(
-            rumMonitor.context.copy(
-                viewType = RumViewScope.RumViewType.FOREGROUND
-            )
+        val rumContext = mapOf<String, Any?>(
+            "view_type" to RumViewScope.RumViewType.FOREGROUND
         )
+        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn rumContext
         testedRunnable = VitalReaderRunnable(
+            mockSdkCore,
             mockReader,
             mockObserver,
             mockExecutor,
@@ -104,7 +107,27 @@ internal class VitalReaderRunnableTest {
         viewType: RumViewScope.RumViewType
     ) {
         // Given
-        GlobalRum.updateRumContext(rumMonitor.context.copy(viewType = viewType))
+        val rumContext = mapOf<String, Any?>(
+            "view_type" to viewType
+        )
+        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn rumContext
+
+        // When
+        testedRunnable.run()
+
+        // Then
+        verifyZeroInteractions(mockReader)
+        verifyZeroInteractions(mockObserver)
+        verify(mockExecutor).schedule(testedRunnable, TEST_PERIOD_MS, TimeUnit.MILLISECONDS)
+    }
+
+    @Test
+    fun `𝕄 not read data, not notify observer but schedule 𝕎 run { wrong type of viewType }()`() {
+        // Given
+        val rumContext = mapOf<String, Any?>(
+            "view_type" to Any()
+        )
+        whenever(mockSdkCore.getFeatureContext(RumFeature.RUM_FEATURE_NAME)) doReturn rumContext
 
         // When
         testedRunnable.run()
@@ -152,12 +175,10 @@ internal class VitalReaderRunnableTest {
 
         val logger = LoggerTestConfiguration()
 
-        val rumMonitor = GlobalRumMonitorTestConfiguration()
-
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, rumMonitor)
+            return listOf(logger)
         }
     }
 }

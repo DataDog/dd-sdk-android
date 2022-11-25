@@ -6,6 +6,7 @@
 
 package com.datadog.android.webview.internal
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.webview.internal.log.WebViewLogEventConsumer
@@ -20,6 +21,7 @@ internal class MixedWebViewEventConsumer(
     internal val logsEventConsumer: WebViewEventConsumer<Pair<JsonObject, String>>
 ) : WebViewEventConsumer<String> {
 
+    @WorkerThread
     override fun consume(event: String) {
         try {
             val webEvent = JsonParser.parseString(event).asJsonObject

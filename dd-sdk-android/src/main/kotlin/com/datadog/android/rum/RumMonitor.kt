@@ -12,13 +12,11 @@ import android.os.Looper
 import androidx.annotation.FloatRange
 import androidx.fragment.app.Fragment
 import com.datadog.android.Datadog
-import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
+import com.datadog.android.v2.core.DatadogCore
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -248,7 +246,7 @@ interface RumMonitor {
      *
      * @see _RumInternalProxy
      */
-    @Suppress("FunctionNaming")
+    @Suppress("FunctionName")
     fun _getInternal(): _RumInternalProxy?
 
     // region Builder
@@ -258,7 +256,7 @@ interface RumMonitor {
      */
     class Builder {
 
-        private var samplingRate: Float = RumFeature.samplingRate
+        private var samplingRate: Float? = null
         private var sessionListener: RumSessionListener? = null
 
         /**
@@ -285,8 +283,12 @@ interface RumMonitor {
          * Builds a [RumMonitor] based on the current state of this Builder.
          */
         fun build(): RumMonitor {
-            val rumApplicationId = CoreFeature.rumApplicationId
-            return if (!RumFeature.isInitialized()) {
+            val datadogCore = Datadog.globalSdkCore as? DatadogCore
+            val coreFeature = datadogCore?.coreFeature
+            val contextProvider = datadogCore?.contextProvider
+            val rumFeature = datadogCore?.rumFeature
+            val rumApplicationId = coreFeature?.rumApplicationId
+            return if (rumFeature == null || coreFeature == null || contextProvider == null) {
                 devLogger.e(
                     RUM_NOT_ENABLED_ERROR_MESSAGE + "\n" +
                         Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
@@ -298,24 +300,23 @@ interface RumMonitor {
             } else {
                 DatadogRumMonitor(
                     applicationId = rumApplicationId,
-                    samplingRate = samplingRate,
-                    writer = RumFeature.persistenceStrategy.getWriter(),
+                    sdkCore = datadogCore,
+                    samplingRate = samplingRate ?: rumFeature.samplingRate,
+                    writer = rumFeature.dataWriter,
                     handler = Handler(Looper.getMainLooper()),
                     telemetryEventHandler = TelemetryEventHandler(
-                        CoreFeature.sdkVersion,
-                        RumEventSourceProvider(CoreFeature.sourceName),
-                        CoreFeature.timeProvider,
-                        RateBasedSampler(RumFeature.telemetrySamplingRate / 100)
+                        sdkCore = datadogCore,
+                        coreFeature.timeProvider,
+                        RateBasedSampler(rumFeature.telemetrySamplingRate / 100)
                     ),
-                    firstPartyHostDetector = CoreFeature.firstPartyHostDetector,
-                    cpuVitalMonitor = RumFeature.cpuVitalMonitor,
-                    memoryVitalMonitor = RumFeature.memoryVitalMonitor,
-                    frameRateVitalMonitor = RumFeature.frameRateVitalMonitor,
-                    backgroundTrackingEnabled = RumFeature.backgroundEventTracking,
-                    trackFrustrations = RumFeature.trackFrustrations,
-                    timeProvider = CoreFeature.timeProvider,
+                    firstPartyHostDetector = coreFeature.firstPartyHostDetector,
+                    cpuVitalMonitor = rumFeature.cpuVitalMonitor,
+                    memoryVitalMonitor = rumFeature.memoryVitalMonitor,
+                    frameRateVitalMonitor = rumFeature.frameRateVitalMonitor,
+                    backgroundTrackingEnabled = rumFeature.backgroundEventTracking,
+                    trackFrustrations = rumFeature.trackFrustrations,
                     sessionListener = sessionListener,
-                    androidInfoProvider = CoreFeature.androidInfoProvider
+                    contextProvider = contextProvider
                 )
             }
         }

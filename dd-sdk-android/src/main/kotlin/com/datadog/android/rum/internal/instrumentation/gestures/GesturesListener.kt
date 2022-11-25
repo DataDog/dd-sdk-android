@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.instrumentation.gestures
 
+import android.content.Context
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
@@ -20,6 +21,7 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
+import java.lang.ref.Reference
 import java.lang.ref.WeakReference
 import java.util.LinkedList
 import kotlin.math.abs
@@ -27,7 +29,8 @@ import kotlin.math.abs
 internal class GesturesListener(
     private val windowReference: WeakReference<Window>,
     private val attributesProviders: Array<ViewAttributesProvider> = emptyArray(),
-    private val interactionPredicate: InteractionPredicate = NoOpInteractionPredicate()
+    private val interactionPredicate: InteractionPredicate = NoOpInteractionPredicate(),
+    private val contextRef: Reference<Context>
 ) : GestureDetector.OnGestureListener {
 
     private val coordinatesContainer = IntArray(2)
@@ -87,7 +90,7 @@ internal class GesturesListener(
             val scrollTarget = findTargetForScroll(decorView, startDownEvent.x, startDownEvent.y)
             if (scrollTarget != null) {
                 scrollTargetReference = WeakReference(scrollTarget)
-                val targetId: String = resourceIdName(scrollTarget.id)
+                val targetId: String = contextRef.get().resourceIdName(scrollTarget.id)
                 val attributes = resolveAttributes(scrollTarget, targetId, null)
                 // although we report scroll here, while it can be swipe in the end, it is fine,
                 // because the final type is taken from stopUserAction call anyway
@@ -124,7 +127,7 @@ internal class GesturesListener(
             return
         }
 
-        val targetId: String = resourceIdName(scrollTarget.id)
+        val targetId: String = contextRef.get().resourceIdName(scrollTarget.id)
         val attributes = resolveAttributes(scrollTarget, targetId, onUpEvent)
         registeredRumMonitor.stopUserAction(
             type,
@@ -164,7 +167,7 @@ internal class GesturesListener(
     private fun handleTapUp(decorView: View?, e: MotionEvent) {
         if (decorView != null) {
             findTargetForTap(decorView, e.x, e.y)?.let { target ->
-                val targetId: String = resourceIdName(target.id)
+                val targetId: String = contextRef.get().resourceIdName(target.id)
                 val attributes = mutableMapOf<String, Any?>(
                     RumAttributes.ACTION_TARGET_CLASS_NAME to target.targetClassName(),
                     RumAttributes.ACTION_TARGET_RESOURCE_ID to targetId

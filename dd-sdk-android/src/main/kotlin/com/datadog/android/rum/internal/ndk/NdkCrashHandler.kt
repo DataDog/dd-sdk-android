@@ -6,8 +6,8 @@
 
 package com.datadog.android.rum.internal.ndk
 
-import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.log.model.LogEvent
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
@@ -15,7 +15,7 @@ internal interface NdkCrashHandler {
     fun prepareData()
 
     fun handleNdkCrash(
-        logWriter: DataWriter<LogEvent>,
+        sdkCore: SdkCore,
         rumWriter: DataWriter<Any>
     )
 }

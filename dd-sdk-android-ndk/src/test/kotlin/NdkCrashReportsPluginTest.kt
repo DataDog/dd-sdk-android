@@ -10,7 +10,6 @@ import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.tools.unit.setFieldValue
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -71,11 +70,10 @@ internal class NdkCrashReportsPluginTest {
         forge: Forge
     ) {
         // GIVEN
-        val mockedContext: Context = mock {
-            whenever(it.cacheDir).thenReturn(tempDir)
-        }
+        val mockedContext: Context = mock()
         val config = DatadogPluginConfig(
             mockedContext,
+            tempDir,
             forge.anAlphabeticalString(),
             forge.anAlphabeticalString(),
             trackingConsent
@@ -101,11 +99,10 @@ internal class NdkCrashReportsPluginTest {
         forge: Forge
     ) {
         // GIVEN
-        val mockedContext: Context = mock {
-            whenever(it.cacheDir).thenReturn(tempDir)
-        }
+        val mockedContext: Context = mock()
         val config = DatadogPluginConfig(
             mockedContext,
+            tempDir,
             forge.anAlphabeticalString(),
             forge.anAlphabeticalString(),
             trackingConsent

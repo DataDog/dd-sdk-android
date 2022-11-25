@@ -27,7 +27,7 @@ class SampleApplication : Application() {
             crashReportsEnabled = true,
             rumEnabled = true
         )
-            .useSite(DatadogSite.US1) // replace with the site you're targetting (e.g.: US3, EU1, …)
+            .useSite(DatadogSite.US1) // replace with the site you're targeting (e.g.: US3, EU1, …)
             .trackInteractions()
             .trackLongTasks(durationThreshold)
             .useViewTrackingStrategy(strategy)

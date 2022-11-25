@@ -6,10 +6,8 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.CoreFeature
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.hasUserData
 import com.datadog.android.core.internal.utils.loggableStackTrace
@@ -17,19 +15,25 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import com.datadog.android.rum.internal.FeaturesContextResolver
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.Locale
 import java.util.UUID
 
+@Suppress("LongParameterList")
 internal class RumResourceScope(
     internal val parentScope: RumScope,
+    internal val sdkCore: SdkCore,
     internal val url: String,
     internal val method: String,
     internal val key: String,
@@ -37,8 +41,8 @@ internal class RumResourceScope(
     initialAttributes: Map<String, Any?>,
     serverTimeOffsetInMs: Long,
     internal val firstPartyHostDetector: FirstPartyHostDetector,
-    private val rumEventSourceProvider: RumEventSourceProvider,
-    private val androidInfoProvider: AndroidInfoProvider
+    contextProvider: ContextProvider,
+    private val featuresContextResolver: FeaturesContextResolver
 ) : RumScope {
 
     internal val resourceId: String = UUID.randomUUID().toString()
@@ -50,7 +54,7 @@ internal class RumResourceScope(
 
     internal val eventTimestamp = eventTime.timestamp + serverTimeOffsetInMs
     private val startedNanos: Long = eventTime.nanoTime
-    private val networkInfo = CoreFeature.networkInfoProvider.getLatestNetworkInfo()
+    private val networkInfo = contextProvider.context.networkInfo
 
     private var sent = false
     private var waitForTiming = false
@@ -61,6 +65,7 @@ internal class RumResourceScope(
 
     // region RumScope
 
+    @WorkerThread
     override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope? {
         when (event) {
             is RumRawEvent.WaitForResourceTiming -> if (key == event.key) waitForTiming = true
@@ -88,6 +93,7 @@ internal class RumResourceScope(
 
     // region  Internal
 
+    @WorkerThread
     private fun onStopResource(
         event: RumRawEvent.StopResource,
         writer: DataWriter<Any>
@@ -105,6 +111,7 @@ internal class RumResourceScope(
         }
     }
 
+    @WorkerThread
     private fun onAddResourceTiming(
         event: RumRawEvent.AddResourceTiming,
         writer: DataWriter<Any>
@@ -117,6 +124,7 @@ internal class RumResourceScope(
         }
     }
 
+    @WorkerThread
     private fun onStopResourceWithError(
         event: RumRawEvent.StopResourceWithError,
         writer: DataWriter<Any>
@@ -135,6 +143,7 @@ internal class RumResourceScope(
         )
     }
 
+    @WorkerThread
     private fun onStopResourceWithStackTrace(
         event: RumRawEvent.StopResourceWithStackTrace,
         writer: DataWriter<Any>
@@ -166,77 +175,86 @@ internal class RumResourceScope(
         val spanId = attributes.remove(RumAttributes.SPAN_ID)?.toString()
         val rulePsr = attributes.remove(RumAttributes.RULE_PSR) as? Number
 
-        val context = getRumContext()
-        val user = CoreFeature.userInfoProvider.getUserInfo()
+        val rumContext = getRumContext()
 
         @Suppress("UNCHECKED_CAST")
         val finalTiming = timing ?: extractResourceTiming(
             attributes.remove(RumAttributes.RESOURCE_TIMINGS) as? Map<String, Any?>
         )
-        val duration = resolveResourceDuration(eventTime)
-        val resourceEvent = ResourceEvent(
-            date = eventTimestamp,
-            resource = ResourceEvent.Resource(
-                id = resourceId,
-                type = kind.toSchemaType(),
-                url = url,
-                duration = duration,
-                method = method.toMethod(),
-                statusCode = statusCode,
-                size = size,
-                dns = finalTiming?.dns(),
-                connect = finalTiming?.connect(),
-                ssl = finalTiming?.ssl(),
-                firstByte = finalTiming?.firstByte(),
-                download = finalTiming?.download(),
-                provider = resolveResourceProvider()
-            ),
-            action = context.actionId?.let { ResourceEvent.Action(listOf(it)) },
-            view = ResourceEvent.View(
-                id = context.viewId.orEmpty(),
-                name = context.viewName,
-                url = context.viewUrl.orEmpty()
-            ),
-            usr = if (!user.hasUserData()) {
-                null
-            } else {
-                ResourceEvent.Usr(
-                    id = user.id,
-                    name = user.name,
-                    email = user.email,
-                    additionalProperties = user.additionalProperties
+
+        sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+            ?.withWriteContext { datadogContext, eventBatchWriter ->
+                val user = datadogContext.userInfo
+                val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext)
+                val duration = resolveResourceDuration(eventTime)
+                val resourceEvent = ResourceEvent(
+                    date = eventTimestamp,
+                    resource = ResourceEvent.Resource(
+                        id = resourceId,
+                        type = kind.toSchemaType(),
+                        url = url,
+                        duration = duration,
+                        method = method.toMethod(),
+                        statusCode = statusCode,
+                        size = size,
+                        dns = finalTiming?.dns(),
+                        connect = finalTiming?.connect(),
+                        ssl = finalTiming?.ssl(),
+                        firstByte = finalTiming?.firstByte(),
+                        download = finalTiming?.download(),
+                        provider = resolveResourceProvider()
+                    ),
+                    action = rumContext.actionId?.let { ResourceEvent.Action(listOf(it)) },
+                    view = ResourceEvent.View(
+                        id = rumContext.viewId.orEmpty(),
+                        name = rumContext.viewName,
+                        url = rumContext.viewUrl.orEmpty()
+                    ),
+                    usr = if (user.hasUserData()) {
+                        ResourceEvent.Usr(
+                            id = user.id,
+                            name = user.name,
+                            email = user.email,
+                            additionalProperties = user.additionalProperties.toMutableMap()
+                        )
+                    } else {
+                        null
+                    },
+                    connectivity = networkInfo.toResourceConnectivity(),
+                    application = ResourceEvent.Application(rumContext.applicationId),
+                    session = ResourceEvent.ResourceEventSession(
+                        id = rumContext.sessionId,
+                        type = ResourceEvent.ResourceEventSessionType.USER,
+                        hasReplay = hasReplay
+                    ),
+                    source = ResourceEvent.Source.tryFromSource(datadogContext.source),
+                    os = ResourceEvent.Os(
+                        name = datadogContext.deviceInfo.osName,
+                        version = datadogContext.deviceInfo.osVersion,
+                        versionMajor = datadogContext.deviceInfo.osMajorVersion
+                    ),
+                    device = ResourceEvent.Device(
+                        type = datadogContext.deviceInfo.deviceType.toResourceSchemaType(),
+                        name = datadogContext.deviceInfo.deviceName,
+                        model = datadogContext.deviceInfo.deviceModel,
+                        brand = datadogContext.deviceInfo.deviceBrand,
+                        architecture = datadogContext.deviceInfo.architecture
+                    ),
+                    context = ResourceEvent.Context(additionalProperties = attributes),
+                    dd = ResourceEvent.Dd(
+                        traceId = traceId,
+                        spanId = spanId,
+                        rulePsr = rulePsr,
+                        session = ResourceEvent.DdSession(plan = ResourceEvent.Plan.PLAN_1)
+                    ),
+                    service = datadogContext.service,
+                    version = datadogContext.version
                 )
-            },
-            connectivity = networkInfo.toResourceConnectivity(),
-            application = ResourceEvent.Application(context.applicationId),
-            session = ResourceEvent.ResourceEventSession(
-                id = context.sessionId,
-                type = ResourceEvent.ResourceEventSessionType.USER
-            ),
-            source = rumEventSourceProvider.resourceEventSource,
-            os = ResourceEvent.Os(
-                name = androidInfoProvider.osName,
-                version = androidInfoProvider.osVersion,
-                versionMajor = androidInfoProvider.osMajorVersion
-            ),
-            device = ResourceEvent.Device(
-                type = androidInfoProvider.deviceType.toResourceSchemaType(),
-                name = androidInfoProvider.deviceName,
-                model = androidInfoProvider.deviceModel,
-                brand = androidInfoProvider.deviceBrand,
-                architecture = androidInfoProvider.architecture
-            ),
-            context = ResourceEvent.Context(additionalProperties = attributes),
-            dd = ResourceEvent.Dd(
-                traceId = traceId,
-                spanId = spanId,
-                rulePsr = rulePsr,
-                session = ResourceEvent.DdSession(plan = ResourceEvent.Plan.PLAN_1)
-            ),
-            service = CoreFeature.serviceName,
-            version = CoreFeature.packageVersionProvider.version
-        )
-        writer.write(resourceEvent)
+
+                @Suppress("ThreadSafety") // called in a worker thread context
+                writer.write(eventBatchWriter, resourceEvent)
+            }
+
         sent = true
     }
 
@@ -261,7 +279,7 @@ internal class RumResourceScope(
         }
     }
 
-    @SuppressWarnings("LongParameterList", "LongMethod")
+    @SuppressWarnings("LongMethod")
     private fun sendError(
         message: String,
         source: RumErrorSource,
@@ -272,66 +290,74 @@ internal class RumResourceScope(
     ) {
         attributes.putAll(GlobalRum.globalAttributes)
 
-        val context = getRumContext()
-        val user = CoreFeature.userInfoProvider.getUserInfo()
+        val rumContext = getRumContext()
 
-        val errorEvent = ErrorEvent(
-            date = eventTimestamp,
-            error = ErrorEvent.Error(
-                message = message,
-                source = source.toSchemaSource(),
-                stack = stackTrace,
-                isCrash = false,
-                resource = ErrorEvent.Resource(
-                    url = url,
-                    method = method.toErrorMethod(),
-                    statusCode = statusCode ?: 0,
-                    provider = resolveErrorProvider()
-                ),
-                type = errorType,
-                sourceType = ErrorEvent.SourceType.ANDROID
-            ),
-            action = context.actionId?.let { ErrorEvent.Action(listOf(it)) },
-            view = ErrorEvent.View(
-                id = context.viewId.orEmpty(),
-                name = context.viewName,
-                url = context.viewUrl.orEmpty()
-            ),
-            usr = if (!user.hasUserData()) {
-                null
-            } else {
-                ErrorEvent.Usr(
-                    id = user.id,
-                    name = user.name,
-                    email = user.email,
-                    additionalProperties = user.additionalProperties
+        sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
+            ?.withWriteContext { datadogContext, eventBatchWriter ->
+                val user = datadogContext.userInfo
+                val hasReplay = featuresContextResolver.resolveHasReplay(datadogContext)
+                val errorEvent = ErrorEvent(
+                    date = eventTimestamp,
+                    error = ErrorEvent.Error(
+                        message = message,
+                        source = source.toSchemaSource(),
+                        stack = stackTrace,
+                        isCrash = false,
+                        resource = ErrorEvent.Resource(
+                            url = url,
+                            method = method.toErrorMethod(),
+                            statusCode = statusCode ?: 0,
+                            provider = resolveErrorProvider()
+                        ),
+                        type = errorType,
+                        sourceType = ErrorEvent.SourceType.ANDROID
+                    ),
+                    action = rumContext.actionId?.let { ErrorEvent.Action(listOf(it)) },
+                    view = ErrorEvent.View(
+                        id = rumContext.viewId.orEmpty(),
+                        name = rumContext.viewName,
+                        url = rumContext.viewUrl.orEmpty()
+                    ),
+                    usr = if (user.hasUserData()) {
+                        ErrorEvent.Usr(
+                            id = user.id,
+                            name = user.name,
+                            email = user.email,
+                            additionalProperties = user.additionalProperties.toMutableMap()
+                        )
+                    } else {
+                        null
+                    },
+                    connectivity = networkInfo.toErrorConnectivity(),
+                    application = ErrorEvent.Application(rumContext.applicationId),
+                    session = ErrorEvent.ErrorEventSession(
+                        id = rumContext.sessionId,
+                        type = ErrorEvent.ErrorEventSessionType.USER,
+                        hasReplay = hasReplay
+                    ),
+                    source = ErrorEvent.ErrorEventSource.tryFromSource(datadogContext.source),
+                    os = ErrorEvent.Os(
+                        name = datadogContext.deviceInfo.osName,
+                        version = datadogContext.deviceInfo.osVersion,
+                        versionMajor = datadogContext.deviceInfo.osMajorVersion
+                    ),
+                    device = ErrorEvent.Device(
+                        type = datadogContext.deviceInfo.deviceType.toErrorSchemaType(),
+                        name = datadogContext.deviceInfo.deviceName,
+                        model = datadogContext.deviceInfo.deviceModel,
+                        brand = datadogContext.deviceInfo.deviceBrand,
+                        architecture = datadogContext.deviceInfo.architecture
+                    ),
+                    context = ErrorEvent.Context(additionalProperties = attributes),
+                    dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1)),
+                    service = datadogContext.service,
+                    version = datadogContext.version
                 )
-            },
-            connectivity = networkInfo.toErrorConnectivity(),
-            application = ErrorEvent.Application(context.applicationId),
-            session = ErrorEvent.ErrorEventSession(
-                id = context.sessionId,
-                type = ErrorEvent.ErrorEventSessionType.USER
-            ),
-            source = rumEventSourceProvider.errorEventSource,
-            os = ErrorEvent.Os(
-                name = androidInfoProvider.osName,
-                version = androidInfoProvider.osVersion,
-                versionMajor = androidInfoProvider.osMajorVersion
-            ),
-            device = ErrorEvent.Device(
-                type = androidInfoProvider.deviceType.toErrorSchemaType(),
-                name = androidInfoProvider.deviceName,
-                model = androidInfoProvider.deviceModel,
-                brand = androidInfoProvider.deviceBrand,
-                architecture = androidInfoProvider.architecture
-            ),
-            context = ErrorEvent.Context(additionalProperties = attributes),
-            dd = ErrorEvent.Dd(session = ErrorEvent.DdSession(plan = ErrorEvent.Plan.PLAN_1)),
-            service = CoreFeature.serviceName,
-            version = CoreFeature.packageVersionProvider.version
-        )
-        writer.write(errorEvent)
+
+                @Suppress("ThreadSafety") // called in a worker thread context
+                writer.write(eventBatchWriter, errorEvent)
+            }
+
         sent = true
     }
 
@@ -365,14 +391,16 @@ internal class RumResourceScope(
         @Suppress("LongParameterList")
         fun fromEvent(
             parentScope: RumScope,
+            sdkCore: SdkCore,
             event: RumRawEvent.StartResource,
             firstPartyHostDetector: FirstPartyHostDetector,
             timestampOffset: Long,
-            rumEventSourceProvider: RumEventSourceProvider,
-            androidInfoProvider: AndroidInfoProvider
+            contextProvider: ContextProvider,
+            featuresContextResolver: FeaturesContextResolver
         ): RumScope {
             return RumResourceScope(
                 parentScope,
+                sdkCore,
                 event.url,
                 event.method,
                 event.key,
@@ -380,8 +408,8 @@ internal class RumResourceScope(
                 event.attributes,
                 timestampOffset,
                 firstPartyHostDetector,
-                rumEventSourceProvider,
-                androidInfoProvider
+                contextProvider,
+                featuresContextResolver
             )
         }
     }

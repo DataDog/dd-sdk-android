@@ -34,8 +34,10 @@ class TracerExtensionsTest {
     lateinit var tracer: AndroidTracer
 
     @BeforeEach
-    fun `set up`() {
-        tracer = AndroidTracer.Builder().build()
+    fun `set up`(forge: Forge) {
+        tracer = AndroidTracer.Builder()
+            .setServiceName(forge.anAlphaNumericalString())
+            .build()
     }
 
     @AfterEach
@@ -63,9 +65,6 @@ class TracerExtensionsTest {
 
     @Test
     fun `it will return null for trace and span id if there is no active span`() {
-        // Given
-        val tracer = AndroidTracer.Builder().build()
-
         // Then
         assertThat(tracer.traceId()).isNull()
         assertThat(tracer.spanId()).isNull()

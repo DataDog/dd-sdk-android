@@ -14,11 +14,12 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.utils.loggableStackTrace
-import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.opentracing.DDTracer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -170,10 +171,9 @@ internal open class TracingInterceptorNonDdTracerTest {
         fakeMediaType = MediaType.parse(mediaType)
         fakeUrl = forgeUrlWithQueryParams(forge)
         fakeRequest = forgeRequest(forge)
-        TracingFeature.initialize(
-            appContext.mockInstance,
-            fakeConfig
-        )
+        val mockCore = mock<DatadogCore>()
+        whenever(mockCore.tracingFeature) doReturn mock()
+        Datadog.globalSdkCore = mockCore
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) {
             mockLocalTracer
         }
@@ -197,7 +197,7 @@ internal open class TracingInterceptorNonDdTracerTest {
 
     @AfterEach
     fun `tear down`() {
-        TracingFeature.stop()
+        Datadog.globalSdkCore = NoOpSdkCore()
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
     }
 
@@ -656,7 +656,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        TracingFeature.stop()
+        Datadog.globalSdkCore = NoOpSdkCore()
         whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 

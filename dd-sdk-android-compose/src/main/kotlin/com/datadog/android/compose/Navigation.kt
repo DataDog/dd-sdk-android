@@ -128,9 +128,11 @@ fun NavigationViewTrackingEffect(
             navController
         )
 
+        @Suppress("ThreadSafety") // TODO RUMM-2214 check composable threading rules
         lifecycleOwner.lifecycle.addObserver(observer)
 
         onDispose {
+            @Suppress("ThreadSafety") // TODO RUMM-2214 check composable threading rules
             lifecycleOwner.lifecycle.removeObserver(observer)
             observer.onDispose()
         }

@@ -6,10 +6,13 @@
 
 package com.datadog.android.rum.internal.debug
 
+import androidx.annotation.AnyThread
+
 internal interface RumDebugListener {
     /**
      * It receives collection on purpose - it will allow to debug a situation when previous view
      * is not yet collected when another view is started.
      */
+    @AnyThread
     fun onReceiveRumActiveViews(viewNames: List<String>)
 }

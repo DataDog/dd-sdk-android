@@ -6,18 +6,20 @@
 
 package com.datadog.android.webview.internal.log
 
-import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.SdkFeatureTest
-import com.datadog.android.log.internal.net.LogsOkHttpUploaderV2
+import android.app.Application
+import com.datadog.android.utils.config.ApplicationContextTestConfiguration
+import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
+import com.datadog.android.v2.webview.internal.storage.WebViewLogsDataWriter
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.google.gson.JsonObject
-import fr.xgouchet.elmyr.Forge
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -33,43 +35,46 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class WebViewLogsFeatureTest :
-    SdkFeatureTest<JsonObject, Configuration.Feature.Logs, WebViewLogsFeature>() {
+internal class WebViewLogsFeatureTest {
 
-    override fun createTestedFeature(): WebViewLogsFeature {
-        return WebViewLogsFeature
-    }
+    private lateinit var testedFeature: WebViewLogsFeature
 
-    override fun forgeConfiguration(forge: Forge): Configuration.Feature.Logs {
-        return forge.getForgery()
-    }
-
-    override fun featureDirName(): String {
-        return "web-logs"
-    }
-
-    override fun doesFeatureNeedMigration(): Boolean = false
-
-    @Test
-    fun `𝕄 initialize persistence strategy 𝕎 initialize()`() {
-        // When
-        testedFeature.initialize(appContext.mockInstance, fakeConfigurationFeature)
-
-        // Then
-        assertThat(testedFeature.persistenceStrategy)
-            .isInstanceOf(WebViewLogFilePersistenceStrategy::class.java)
+    @BeforeEach
+    fun `set up`() {
+        testedFeature = WebViewLogsFeature()
     }
 
     @Test
-    fun `𝕄 create a logs uploader 𝕎 createUploader()`() {
+    fun `𝕄 initialize data writer 𝕎 initialize()`() {
         // When
-        val uploader = testedFeature.createUploader(fakeConfigurationFeature)
+        testedFeature.initialize()
 
         // Then
-        assertThat(uploader).isInstanceOf(LogsOkHttpUploaderV2::class.java)
-        val logsUploader = uploader as LogsOkHttpUploaderV2
-        assertThat(logsUploader.intakeUrl).startsWith(fakeConfigurationFeature.endpointUrl)
-        assertThat(logsUploader.intakeUrl).endsWith("/api/v2/logs")
-        assertThat(logsUploader.callFactory).isSameAs(CoreFeature.okHttpClient)
+        assertThat(testedFeature.dataWriter)
+            .isInstanceOf(WebViewLogsDataWriter::class.java)
+    }
+
+    @Test
+    fun `𝕄 reset data writer 𝕎 stop()`() {
+        // Given
+        testedFeature.initialize()
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        assertThat(testedFeature.dataWriter)
+            .isInstanceOf(NoOpDataWriter::class.java)
+    }
+
+    companion object {
+        val appContext = ApplicationContextTestConfiguration(Application::class.java)
+        val coreFeature = CoreFeatureTestConfiguration(appContext)
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(appContext, coreFeature)
+        }
     }
 }

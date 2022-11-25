@@ -6,30 +6,32 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import android.content.Context
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.persistence.NoOpDataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.VitalMonitor
-import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.DataWriter
+import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.same
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -83,22 +85,19 @@ internal class RumSessionScopeTest {
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
 
     @Mock
-    lateinit var mockTimeProvider: TimeProvider
-
-    @Mock
     lateinit var mockSessionListener: RumSessionListener
-
-    @Mock
-    lateinit var mockRumEventSourceProvider: RumEventSourceProvider
 
     @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
-    @Forgery
-    lateinit var fakeParentContext: RumContext
+    @Mock
+    lateinit var mockContextProvider: ContextProvider
+
+    @Mock
+    lateinit var mockSdkCore: SdkCore
 
     @Forgery
-    lateinit var fakeAndroidInfoProvider: AndroidInfoProvider
+    lateinit var fakeParentContext: RumContext
 
     @FloatForgery(min = 0f, max = 100f)
     var fakeSamplingRate: Float = 0f
@@ -111,12 +110,17 @@ internal class RumSessionScopeTest {
 
     lateinit var fakeInitialViewEvent: RumRawEvent
 
+    @Mock
+    lateinit var mockSessionReplayFeatureScope: FeatureScope
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeInitialViewEvent = forge.startViewEvent()
 
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
+        whenever(mockSdkCore.getFeature(RumSessionScope.SESSION_REPLAY_FEATURE_NAME)) doReturn
+            mockSessionReplayFeatureScope
 
         initializeTestedScope()
     }
@@ -126,6 +130,28 @@ internal class RumSessionScopeTest {
         // whatever happens
         assertThat(testedScope.isActive()).isTrue()
     }
+
+    // region RUM Feature Context
+
+    @Test
+    fun `𝕄 update RUM feature context 𝕎 init()`() {
+        // Given
+        val expectedContext = testedScope.getRumContext()
+
+        // Then
+        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
+            verify(mockSdkCore).updateFeatureContext(eq(RumFeature.RUM_FEATURE_NAME), capture())
+
+            val rumContext = mutableMapOf<String, Any?>()
+            lastValue.invoke(rumContext)
+
+            assertThat(rumContext["application_id"]).isEqualTo(expectedContext.applicationId)
+            assertThat(rumContext["session_id"]).isEqualTo(expectedContext.sessionId)
+            assertThat(rumContext["session_state"]).isEqualTo(expectedContext.sessionState)
+        }
+    }
+
+    // endregion
 
     // region childScope
 
@@ -746,6 +772,214 @@ internal class RumSessionScopeTest {
 
     // endregion
 
+    // region Session Replay Event Bus
+
+    @Test
+    fun `𝕄 notify Session Replay feature 𝕎 session is updated {tracked, timed out}`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+
+        // When
+        Thread.sleep(TEST_MAX_DURATION_MS)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+
+        // Then
+        val argumentCaptor = argumentCaptor<Any>()
+        verify(mockSessionReplayFeatureScope, times(2))
+            .sendEvent(argumentCaptor.capture())
+        assertThat(argumentCaptor.firstValue).isEqualTo(
+            mapOf(
+                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true
+            )
+        )
+        assertThat(argumentCaptor.secondValue).isEqualTo(
+            mapOf(
+                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 notify Session Replay feature 𝕎 session is updated {tracked, expired}`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+
+        // When
+        Thread.sleep(TEST_INACTIVITY_MS)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+
+        // Then
+        val argumentCaptor = argumentCaptor<Any>()
+        verify(mockSessionReplayFeatureScope, times(2))
+            .sendEvent(argumentCaptor.capture())
+        assertThat(argumentCaptor.firstValue).isEqualTo(
+            mapOf(
+                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true
+            )
+        )
+        assertThat(argumentCaptor.secondValue).isEqualTo(
+            mapOf(
+                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 notify Session Replay feature 𝕎 session is updated {tracked, manual reset}`(
+        forge: Forge
+    ) {
+        // Given
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+
+        // When
+        testedScope.handleEvent(RumRawEvent.ResetSession(), mockWriter)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+
+        // Then
+        val argumentCaptor = argumentCaptor<Any>()
+        verify(mockSessionReplayFeatureScope, times(2))
+            .sendEvent(argumentCaptor.capture())
+        assertThat(argumentCaptor.firstValue).isEqualTo(
+            mapOf(
+                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true
+            )
+        )
+        assertThat(argumentCaptor.secondValue).isEqualTo(
+            mapOf(
+                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 notify Session Replay feature 𝕎 session is updated {not tracked, timed out}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(0f)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+
+        // When
+        Thread.sleep(TEST_MAX_DURATION_MS)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+
+        // Then
+        val argumentCaptor = argumentCaptor<Any>()
+        verify(mockSessionReplayFeatureScope, times(2))
+            .sendEvent(argumentCaptor.capture())
+        assertThat(argumentCaptor.firstValue).isEqualTo(
+            mapOf(
+                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false
+            )
+        )
+        assertThat(argumentCaptor.secondValue).isEqualTo(
+            mapOf(
+                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 notify Session Replay feature 𝕎 session is updated {not tracked, expired}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(0f)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+
+        // When
+        Thread.sleep(TEST_INACTIVITY_MS)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+
+        // Then
+        val argumentCaptor = argumentCaptor<Any>()
+        verify(mockSessionReplayFeatureScope, times(2))
+            .sendEvent(argumentCaptor.capture())
+        assertThat(argumentCaptor.firstValue).isEqualTo(
+            mapOf(
+                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false
+            )
+        )
+        assertThat(argumentCaptor.secondValue).isEqualTo(
+            mapOf(
+                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 notify Session Replay feature 𝕎 session is updated {not tracked, manual reset}`(
+        forge: Forge
+    ) {
+        // Given
+        initializeTestedScope(0f)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+
+        // When
+        testedScope.handleEvent(RumRawEvent.ResetSession(), mockWriter)
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+
+        // Then
+        val argumentCaptor = argumentCaptor<Any>()
+        verify(mockSessionReplayFeatureScope, times(2))
+            .sendEvent(argumentCaptor.capture())
+        assertThat(argumentCaptor.firstValue).isEqualTo(
+            mapOf(
+                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false
+            )
+        )
+        assertThat(argumentCaptor.secondValue).isEqualTo(
+            mapOf(
+                RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                    RumSessionScope.RUM_SESSION_RENEWED_BUS_MESSAGE,
+                RumSessionScope.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false
+            )
+        )
+    }
+
+    @Test
+    fun `𝕄 do nothing 𝕎 session is updated {no SessionReplay feature registered}`(
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockSdkCore.getFeature(RumSessionScope.SESSION_REPLAY_FEATURE_NAME))
+            .thenReturn(null)
+
+        // When
+        initializeTestedScope(forge.aFloat())
+
+        // Then
+        verifyZeroInteractions(mockSessionReplayFeatureScope)
+    }
+
+    // endregion
+
     // region Internal
 
     private fun initializeTestedScope(
@@ -755,6 +989,7 @@ internal class RumSessionScopeTest {
     ) {
         testedScope = RumSessionScope(
             mockParentScope,
+            mockSdkCore,
             samplingRate,
             backgroundTrackingEnabled ?: fakeBackgroundTrackingEnabled,
             fakeTrackFrustrations,
@@ -762,13 +997,11 @@ internal class RumSessionScopeTest {
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
             mockSessionListener,
-            mockRumEventSourceProvider,
+            mockContextProvider,
             mockBuildSdkVersionProvider,
             TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS,
-            fakeAndroidInfoProvider
+            TEST_MAX_DURATION_NS
         )
 
         if (withMockChildScope) {
@@ -787,14 +1020,12 @@ internal class RumSessionScopeTest {
         private val TEST_INACTIVITY_NS = TimeUnit.MILLISECONDS.toNanos(TEST_INACTIVITY_MS)
         private val TEST_MAX_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(TEST_MAX_DURATION_MS)
 
-        val appContext = ApplicationContextTestConfiguration(Context::class.java)
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
         val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, coreFeature)
+            return listOf(logger)
         }
     }
 }

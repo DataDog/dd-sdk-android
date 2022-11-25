@@ -14,6 +14,7 @@ import android.os.Build
 import android.os.Process
 import com.datadog.android.BuildConfig
 import com.datadog.android.DatadogEndpoint
+import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
@@ -27,9 +28,11 @@ import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NetworkInfoDeserializer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
+import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
+import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
-import com.datadog.android.core.internal.persistence.file.batch.BatchFileHandler
+import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
@@ -42,13 +45,14 @@ import com.datadog.android.core.internal.system.NoOpAndroidInfoProvider
 import com.datadog.android.core.internal.system.NoOpAppVersionProvider
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
+import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
+import com.datadog.android.core.internal.thread.LoggingThreadPoolExecutor
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.LoggingSyncListener
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.domain.LogGenerator
 import com.datadog.android.log.internal.user.DatadogUserInfoProvider
 import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
@@ -62,6 +66,9 @@ import com.datadog.android.rum.internal.ndk.NdkNetworkInfoDataWriter
 import com.datadog.android.rum.internal.ndk.NdkUserInfoDataWriter
 import com.datadog.android.rum.internal.ndk.NoOpNdkCrashHandler
 import com.datadog.android.security.Encryption
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.DatadogContextProvider
+import com.datadog.android.v2.core.internal.NoOpContextProvider
 import com.lyft.kronos.AndroidClockFactory
 import com.lyft.kronos.KronosClock
 import okhttp3.CipherSuite
@@ -69,7 +76,10 @@ import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.TlsVersion
+import java.io.File
 import java.lang.ref.WeakReference
+import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.ScheduledThreadPoolExecutor
@@ -77,51 +87,7 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-internal object CoreFeature {
-
-    // region Constants
-
-    internal val NETWORK_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(45)
-    private val THREAD_POOL_MAX_KEEP_ALIVE_MS = TimeUnit.SECONDS.toMillis(5)
-    private const val CORE_DEFAULT_POOL_SIZE = 1 // Only one thread will be kept alive
-
-    // this is a default source to be used when uploading RUM/Logs/Span data, however there is a
-    // possibility to override it which is useful when SDK is used via bridge, say
-    // from React Native integration
-    internal const val DEFAULT_SOURCE_NAME = "android"
-    internal const val DEFAULT_SDK_VERSION = BuildConfig.SDK_VERSION_NAME
-    internal const val DEFAULT_APP_VERSION = "?"
-
-    internal val RESTRICTED_CIPHER_SUITES = arrayOf(
-        // TLS 1.3
-
-        // these 3 are mandatory to implement by TLS 1.3 RFC
-        // https://datatracker.ietf.org/doc/html/rfc8446#section-9.1
-        CipherSuite.TLS_AES_128_GCM_SHA256,
-        CipherSuite.TLS_AES_256_GCM_SHA384,
-        CipherSuite.TLS_CHACHA20_POLY1305_SHA256,
-
-        // TLS 1.2
-
-        // these 4 are FIPS 140-2 compliant by OpenSSL
-
-        // GOV DC supports only that one and below
-        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-        CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-
-        CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-        CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-
-        // these 4 are not listed in OpenSSL (because of CBC), but
-        // claimed to be FIPS 140-2 compliant in other sources. Keep them for now, can be safely
-        // dropped once min API is 21 (TODO RUMM-1594).
-        CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
-        CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
-        CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA256,
-        CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA256
-    )
-
-    // endregion
+internal class CoreFeature {
 
     internal val initialized = AtomicBoolean(false)
     internal var contextRef: WeakReference<Context?> = WeakReference(null)
@@ -132,6 +98,7 @@ internal object CoreFeature {
     internal var timeProvider: TimeProvider = NoOpTimeProvider()
     internal var trackingConsentProvider: ConsentProvider = NoOpConsentProvider()
     internal var userInfoProvider: MutableUserInfoProvider = NoOpMutableUserInfoProvider()
+    internal var contextProvider: ContextProvider = NoOpContextProvider()
 
     internal lateinit var okHttpClient: OkHttpClient
     internal lateinit var kronosClock: KronosClock
@@ -144,25 +111,28 @@ internal object CoreFeature {
     internal var sdkVersion: String = DEFAULT_SDK_VERSION
     internal var rumApplicationId: String? = null
     internal var isMainProcess: Boolean = true
-    internal var processImportance: Int =
-        ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
     internal var envName: String = ""
     internal var variant: String = ""
     internal var batchSize: BatchSize = BatchSize.MEDIUM
     internal var uploadFrequency: UploadFrequency = UploadFrequency.AVERAGE
     internal var ndkCrashHandler: NdkCrashHandler = NoOpNdkCrashHandler()
+    internal var site: DatadogSite = DatadogSite.US1
 
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: ExecutorService
     internal var localDataEncryption: Encryption? = null
     internal lateinit var webViewTrackingHosts: List<String>
+    internal lateinit var storageDir: File
     internal lateinit var androidInfoProvider: AndroidInfoProvider
+
+    internal val featuresContext: MutableMap<String, Map<String, Any?>> = ConcurrentHashMap()
 
     // TESTS ONLY, to prevent Kronos spinning sync threads in unit-tests
     internal var disableKronosBackgroundSync = false
 
     fun initialize(
         appContext: Context,
+        sdkInstanceId: String,
         credentials: Credentials,
         configuration: Configuration.Core,
         consent: TrackingConsent
@@ -179,6 +149,10 @@ internal object CoreFeature {
         webViewTrackingHosts = configuration.webViewTrackingHosts
         androidInfoProvider = DefaultAndroidInfoProvider(appContext)
         setupExecutors()
+        storageDir = File(
+            appContext.cacheDir,
+            DATADOG_STORAGE_DIR_NAME.format(Locale.US, sdkInstanceId)
+        )
         // Time Provider
         timeProvider = KronosTimeProvider(kronosClock)
         // BIG NOTE !!
@@ -188,9 +162,10 @@ internal object CoreFeature {
         // Because all our persisting components are working asynchronously this will avoid
         // having corrupted data (data from previous process over - written in this process into the
         // ndk crash folder before the crash was actually handled)
-        prepareNdkCrashData(appContext)
+        prepareNdkCrashData()
         setupInfoProviders(appContext, consent)
         initialized.set(true)
+        contextProvider = DatadogContextProvider(this)
     }
 
     fun stop() {
@@ -215,9 +190,12 @@ internal object CoreFeature {
                 sdkLogger.e("Trying to shut down Kronos when it is already not running", ise)
             }
 
+            featuresContext.clear()
+
             initialized.set(false)
             ndkCrashHandler = NoOpNdkCrashHandler()
             trackingConsentProvider = NoOpConsentProvider()
+            contextProvider = NoOpContextProvider()
         }
     }
 
@@ -252,30 +230,19 @@ internal object CoreFeature {
 
     // region Internal
 
-    private fun prepareNdkCrashData(appContext: Context) {
+    private fun prepareNdkCrashData() {
         if (isMainProcess) {
             ndkCrashHandler = DatadogNdkCrashHandler(
-                appContext,
+                storageDir,
                 persistenceExecutorService,
-                LogGenerator(
-                    serviceName,
-                    DatadogNdkCrashHandler.LOGGER_NAME,
-                    networkInfoProvider,
-                    userInfoProvider,
-                    timeProvider,
-                    sdkVersion,
-                    envName,
-                    variant,
-                    packageVersionProvider,
-                    androidInfoProvider
-                ),
                 NdkCrashLogDeserializer(sdkLogger),
                 RumEventDeserializer(),
                 NetworkInfoDeserializer(sdkLogger),
                 UserInfoDeserializer(sdkLogger),
                 sdkLogger,
                 timeProvider,
-                BatchFileHandler.create(sdkLogger, localDataEncryption),
+                rumFileReader = BatchFileReaderWriter.create(sdkLogger, localDataEncryption),
+                envFileReader = FileReaderWriter.create(sdkLogger, localDataEncryption),
                 androidInfoProvider = androidInfoProvider
             )
             ndkCrashHandler.prepareData()
@@ -343,7 +310,8 @@ internal object CoreFeature {
     private fun readConfigurationSettings(configuration: Configuration.Core) {
         batchSize = configuration.batchSize
         uploadFrequency = configuration.uploadFrequency
-        localDataEncryption = configuration.securityConfig.localDataEncryption
+        localDataEncryption = configuration.encryption
+        site = configuration.site
     }
 
     private fun setupInfoProviders(
@@ -361,19 +329,19 @@ internal object CoreFeature {
         setupNetworkInfoProviders(appContext)
 
         // User Info Provider
-        setupUserInfoProvider(appContext)
+        setupUserInfoProvider()
     }
 
-    private fun setupUserInfoProvider(
-        appContext: Context
-    ) {
+    private fun setupUserInfoProvider() {
         val userInfoWriter = ScheduledWriter(
             NdkUserInfoDataWriter(
-                appContext,
+                storageDir,
                 trackingConsentProvider,
                 persistenceExecutorService,
-                BatchFileHandler.create(sdkLogger, localDataEncryption),
-                sdkLogger
+                FileReaderWriter.create(sdkLogger, localDataEncryption),
+                FileMover(sdkLogger),
+                sdkLogger,
+                buildFilePersistenceConfig()
             ),
             persistenceExecutorService,
             sdkLogger
@@ -381,16 +349,16 @@ internal object CoreFeature {
         userInfoProvider = DatadogUserInfoProvider(userInfoWriter)
     }
 
-    private fun setupNetworkInfoProviders(
-        appContext: Context
-    ) {
+    private fun setupNetworkInfoProviders(appContext: Context) {
         val networkInfoWriter = ScheduledWriter(
             NdkNetworkInfoDataWriter(
-                appContext,
+                storageDir,
                 trackingConsentProvider,
                 persistenceExecutorService,
-                BatchFileHandler.create(sdkLogger, localDataEncryption),
-                sdkLogger
+                FileReaderWriter.create(sdkLogger, localDataEncryption),
+                FileMover(sdkLogger),
+                sdkLogger,
+                buildFilePersistenceConfig()
             ),
             persistenceExecutorService,
             sdkLogger
@@ -441,14 +409,16 @@ internal object CoreFeature {
 
     private fun setupExecutors() {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
-        uploadExecutorService = ScheduledThreadPoolExecutor(CORE_DEFAULT_POOL_SIZE)
+        uploadExecutorService =
+            LoggingScheduledThreadPoolExecutor(CORE_DEFAULT_POOL_SIZE, devLogger)
         @Suppress("UnsafeThirdPartyFunctionCall") // workQueue can't be null
-        persistenceExecutorService = ThreadPoolExecutor(
+        persistenceExecutorService = LoggingThreadPoolExecutor(
             CORE_DEFAULT_POOL_SIZE,
             Runtime.getRuntime().availableProcessors(),
             THREAD_POOL_MAX_KEEP_ALIVE_MS,
             TimeUnit.MILLISECONDS,
-            LinkedBlockingDeque()
+            LinkedBlockingDeque(),
+            devLogger
         )
     }
 
@@ -491,6 +461,7 @@ internal object CoreFeature {
         packageVersionProvider = NoOpAppVersionProvider()
         serviceName = ""
         sourceName = DEFAULT_SOURCE_NAME
+        sdkVersion = DEFAULT_SDK_VERSION
         rumApplicationId = null
         isMainProcess = true
         envName = ""
@@ -508,4 +479,54 @@ internal object CoreFeature {
     }
 
     // endregion
+
+    companion object {
+        internal var processImportance: Int =
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+
+        // region Constants
+
+        internal val NETWORK_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(45)
+        private val THREAD_POOL_MAX_KEEP_ALIVE_MS = TimeUnit.SECONDS.toMillis(5)
+        private const val CORE_DEFAULT_POOL_SIZE = 1 // Only one thread will be kept alive
+        internal const val DATADOG_STORAGE_DIR_NAME = "datadog-%s"
+
+        // this is a default source to be used when uploading RUM/Logs/Span data, however there is a
+        // possibility to override it which is useful when SDK is used via bridge, say
+        // from React Native integration
+        internal const val DEFAULT_SOURCE_NAME = "android"
+        internal const val DEFAULT_SDK_VERSION = BuildConfig.SDK_VERSION_NAME
+        internal const val DEFAULT_APP_VERSION = "?"
+
+        internal val RESTRICTED_CIPHER_SUITES = arrayOf(
+            // TLS 1.3
+
+            // these 3 are mandatory to implement by TLS 1.3 RFC
+            // https://datatracker.ietf.org/doc/html/rfc8446#section-9.1
+            CipherSuite.TLS_AES_128_GCM_SHA256,
+            CipherSuite.TLS_AES_256_GCM_SHA384,
+            CipherSuite.TLS_CHACHA20_POLY1305_SHA256,
+
+            // TLS 1.2
+
+            // these 4 are FIPS 140-2 compliant by OpenSSL
+
+            // GOV DC supports only that one and below
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+
+            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+            CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+
+            // these 4 are not listed in OpenSSL (because of CBC), but
+            // claimed to be FIPS 140-2 compliant in other sources. Keep them for now, can be safely
+            // dropped once min API is 21 (TODO RUMM-1594).
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+            CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+            CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA256,
+            CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA256
+        )
+
+        // endregion
+    }
 }

@@ -7,26 +7,22 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import android.app.ActivityManager.RunningAppProcessInfo
-import android.content.Context
 import android.os.Build
 import android.util.Log
-import com.datadog.android.Datadog
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
-import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.core.model.UserInfo
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.event.RumEventSourceProvider
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
-import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.api.context.TimeInfo
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -90,34 +86,30 @@ internal class RumViewManagerScopeTest {
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
 
     @Mock
-    lateinit var mockTimeProvider: TimeProvider
-
-    @Mock
-    lateinit var mockRumEventSourceProvider: RumEventSourceProvider
+    lateinit var mockContextProvider: ContextProvider
 
     @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
+
+    @Mock
+    lateinit var mockSdkCore: SdkCore
 
     @Forgery
     lateinit var fakeParentContext: RumContext
 
     @Forgery
-    lateinit var fakeUserInfo: UserInfo
+    lateinit var fakeDatadogContext: DatadogContext
 
     @Forgery
-    lateinit var fakeNetworkInfo: NetworkInfo
-
-    @Forgery
-    lateinit var fakeAndroidInfoProvider: AndroidInfoProvider
+    lateinit var fakeTime: TimeInfo
 
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
     @BeforeEach
     fun `set up`() {
-        whenever(coreFeature.mockUserInfoProvider.getUserInfo()) doReturn fakeUserInfo
-        whenever(coreFeature.mockNetworkInfoProvider.getLatestNetworkInfo())
-            .thenReturn(fakeNetworkInfo)
+        whenever(mockContextProvider.context) doReturn fakeDatadogContext
+        whenever(mockSdkCore.time) doReturn fakeTime
 
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
@@ -126,16 +118,15 @@ internal class RumViewManagerScopeTest {
 
         testedScope = RumViewManagerScope(
             mockParentScope,
+            mockSdkCore,
             true,
             fakeTrackFrustrations,
             mockDetector,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
-            mockTimeProvider,
-            mockRumEventSourceProvider,
             mockBuildSdkVersionProvider,
-            fakeAndroidInfoProvider
+            mockContextProvider
         )
     }
 
@@ -214,7 +205,8 @@ internal class RumViewManagerScopeTest {
         assertThat(testedScope.childrenScopes).hasSize(1)
         assertThat(testedScope.childrenScopes[0])
             .isInstanceOfSatisfying(RumViewScope::class.java) {
-                assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
+                assertThat(it.eventTimestamp)
+                    .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                 assertThat(it.keyRef.get()).isEqualTo(fakeEvent.key)
                 assertThat(it.name).isEqualTo(fakeEvent.name)
                 assertThat(it.type).isEqualTo(RumViewScope.RumViewType.FOREGROUND)
@@ -239,7 +231,8 @@ internal class RumViewManagerScopeTest {
         assertThat(testedScope.childrenScopes).hasSize(1)
         assertThat(testedScope.childrenScopes[0])
             .isInstanceOfSatisfying(RumViewScope::class.java) {
-                assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
+                assertThat(it.eventTimestamp)
+                    .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                 assertThat(it.keyRef.get()).isEqualTo(fakeEvent.key)
                 assertThat(it.name).isEqualTo(fakeEvent.name)
                 assertThat(it.type).isEqualTo(RumViewScope.RumViewType.FOREGROUND)
@@ -268,7 +261,8 @@ internal class RumViewManagerScopeTest {
         assertThat(testedScope.childrenScopes).hasSize(1)
         assertThat(testedScope.childrenScopes[0])
             .isInstanceOfSatisfying(RumViewScope::class.java) {
-                assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
+                assertThat(it.eventTimestamp)
+                    .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                 assertThat(it.keyRef.get()).isEqualTo(RumViewManagerScope.RUM_BACKGROUND_VIEW_URL)
                 assertThat(it.name).isEqualTo(RumViewManagerScope.RUM_BACKGROUND_VIEW_NAME)
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
@@ -296,7 +290,8 @@ internal class RumViewManagerScopeTest {
         assertThat(testedScope.childrenScopes[0]).isSameAs(mockChildScope)
         assertThat(testedScope.childrenScopes[1])
             .isInstanceOfSatisfying(RumViewScope::class.java) {
-                assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
+                assertThat(it.eventTimestamp)
+                    .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                 assertThat(it.keyRef.get()).isEqualTo(RumViewManagerScope.RUM_BACKGROUND_VIEW_URL)
                 assertThat(it.name).isEqualTo(RumViewManagerScope.RUM_BACKGROUND_VIEW_NAME)
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
@@ -334,7 +329,8 @@ internal class RumViewManagerScopeTest {
         assertThat(testedScope.childrenScopes).hasSize(1)
         assertThat(testedScope.childrenScopes[0])
             .isInstanceOfSatisfying(RumViewScope::class.java) {
-                assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
+                assertThat(it.eventTimestamp)
+                    .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                 assertThat(it.keyRef.get()).isEqualTo(RumViewManagerScope.RUM_BACKGROUND_VIEW_URL)
                 assertThat(it.name).isEqualTo(RumViewManagerScope.RUM_BACKGROUND_VIEW_NAME)
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
@@ -366,15 +362,14 @@ internal class RumViewManagerScopeTest {
         // Given
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
+            sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             firstPartyHostDetector = mockDetector,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            timeProvider = mockTimeProvider,
-            rumEventSourceProvider = mockRumEventSourceProvider,
-            androidInfoProvider = fakeAndroidInfoProvider
+            contextProvider = mockContextProvider
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -393,16 +388,15 @@ internal class RumViewManagerScopeTest {
         // Given
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
+            sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             firstPartyHostDetector = mockDetector,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            timeProvider = mockTimeProvider,
-            rumEventSourceProvider = mockRumEventSourceProvider,
             buildSdkVersionProvider = mockBuildSdkVersionProvider,
-            androidInfoProvider = fakeAndroidInfoProvider
+            contextProvider = mockContextProvider
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -424,16 +418,15 @@ internal class RumViewManagerScopeTest {
         // Given
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
+            sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             firstPartyHostDetector = mockDetector,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            timeProvider = mockTimeProvider,
-            rumEventSourceProvider = mockRumEventSourceProvider,
             buildSdkVersionProvider = mockBuildSdkVersionProvider,
-            androidInfoProvider = fakeAndroidInfoProvider
+            contextProvider = mockContextProvider
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -481,7 +474,8 @@ internal class RumViewManagerScopeTest {
         assertThat(testedScope.childrenScopes).hasSize(1)
         assertThat(testedScope.childrenScopes[0])
             .isInstanceOfSatisfying(RumViewScope::class.java) {
-                assertThat(it.eventTimestamp).isEqualTo(fakeEvent.eventTime.timestamp)
+                assertThat(it.eventTimestamp)
+                    .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                 assertThat(it.keyRef.get()).isEqualTo(RumViewManagerScope.RUM_APP_LAUNCH_VIEW_URL)
                 assertThat(it.name).isEqualTo(RumViewManagerScope.RUM_APP_LAUNCH_VIEW_NAME)
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
@@ -511,15 +505,14 @@ internal class RumViewManagerScopeTest {
         )
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
+            sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             firstPartyHostDetector = mockDetector,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            timeProvider = mockTimeProvider,
-            rumEventSourceProvider = mockRumEventSourceProvider,
-            androidInfoProvider = fakeAndroidInfoProvider
+            contextProvider = mockContextProvider
         )
         testedScope.applicationDisplayed = false
         val fakeEvent = forge.validAppLaunchEvent()
@@ -553,16 +546,15 @@ internal class RumViewManagerScopeTest {
         // Given
         testedScope = RumViewManagerScope(
             parentScope = mockParentScope,
+            sdkCore = mockSdkCore,
             backgroundTrackingEnabled = false,
             trackFrustrations = fakeTrackFrustrations,
             firstPartyHostDetector = mockDetector,
             cpuVitalMonitor = mockCpuVitalMonitor,
             memoryVitalMonitor = mockMemoryVitalMonitor,
             frameRateVitalMonitor = mockFrameRateVitalMonitor,
-            timeProvider = mockTimeProvider,
-            rumEventSourceProvider = mockRumEventSourceProvider,
             buildSdkVersionProvider = mockBuildSdkVersionProvider,
-            androidInfoProvider = fakeAndroidInfoProvider
+            contextProvider = mockContextProvider
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -633,7 +625,7 @@ internal class RumViewManagerScopeTest {
             verify(childView).handleEvent(capture(), same(mockWriter))
 
             val event = firstValue as RumRawEvent.ApplicationStarted
-            assertThat(event.applicationStartupNanos).isEqualTo(Datadog.startupTimeNs)
+            assertThat(event.applicationStartupNanos).isEqualTo(RumFeature.startupTimeNs)
         }
         verifyZeroInteractions(mockWriter)
     }
@@ -710,16 +702,18 @@ internal class RumViewManagerScopeTest {
 
     // endregion
 
+    private fun resolveExpectedTimestamp(timestamp: Long): Long {
+        return timestamp + fakeTime.serverTimeOffsetMs
+    }
+
     companion object {
 
-        val appContext = ApplicationContextTestConfiguration(Context::class.java)
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
         val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger, appContext, coreFeature)
+            return listOf(logger)
         }
     }
 }

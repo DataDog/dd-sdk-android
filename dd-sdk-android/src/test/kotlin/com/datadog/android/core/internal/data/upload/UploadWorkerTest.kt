@@ -7,42 +7,40 @@
 package com.datadog.android.core.internal.data.upload
 
 import android.content.Context
+import android.util.Log
 import androidx.work.ListenableWorker
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.datadog.android.Datadog
-import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.Credentials
-import com.datadog.android.core.internal.net.DataUploader
+import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.net.UploadStatus
-import com.datadog.android.core.internal.persistence.Batch
-import com.datadog.android.core.internal.persistence.DataReader
-import com.datadog.android.core.internal.persistence.PersistenceStrategy
-import com.datadog.android.error.internal.CrashReportsFeature
-import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.log.model.LogEvent
-import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.CoreFeatureTestConfiguration
-import com.datadog.android.utils.config.MainLooperTestConfiguration
-import com.datadog.android.utils.extension.mockChoreographerInstance
+import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.webview.internal.log.WebViewLogsFeature
-import com.datadog.android.webview.internal.rum.WebViewRumFeature
-import com.datadog.opentracing.DDSpan
+import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.DatadogCore
+import com.datadog.android.v2.core.NoOpSdkCore
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.net.DataUploader
+import com.datadog.android.v2.core.internal.storage.BatchConfirmation
+import com.datadog.android.v2.core.internal.storage.BatchId
+import com.datadog.android.v2.core.internal.storage.BatchReader
+import com.datadog.android.v2.core.internal.storage.Storage
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.never
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -51,12 +49,17 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.api.fail
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.Mock
+import org.mockito.invocation.InvocationOnMock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import org.mockito.stubbing.Answer
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -67,101 +70,58 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class UploadWorkerTest {
 
-    lateinit var testedWorker: Worker
+    private lateinit var testedWorker: Worker
 
     @Mock
-    lateinit var mockLogsStrategy: PersistenceStrategy<LogEvent>
+    lateinit var mockGlobalSdkCore: DatadogCore
 
     @Mock
-    lateinit var mockTracesStrategy: PersistenceStrategy<DDSpan>
+    lateinit var mockContextProvider: ContextProvider
 
     @Mock
-    lateinit var mockCrashReportsStrategy: PersistenceStrategy<LogEvent>
+    lateinit var mockFeatureA: SdkFeature
 
     @Mock
-    lateinit var mockRumStrategy: PersistenceStrategy<Any>
+    lateinit var mockStorageA: Storage
 
     @Mock
-    lateinit var mockWebViewRumStrategy: PersistenceStrategy<Any>
+    lateinit var mockBatchReaderA: BatchReader
 
     @Mock
-    lateinit var mockWebViewLogsStrategy: PersistenceStrategy<JsonObject>
+    lateinit var mockUploaderA: DataUploader
 
     @Mock
-    lateinit var mockLogsReader: DataReader
+    lateinit var mockFeatureB: SdkFeature
 
     @Mock
-    lateinit var mockTracesReader: DataReader
+    lateinit var mockStorageB: Storage
 
     @Mock
-    lateinit var mockCrashReader: DataReader
+    lateinit var mockBatchReaderB: BatchReader
 
     @Mock
-    lateinit var mockRumReader: DataReader
-
-    @Mock
-    lateinit var mockWebViewRumReader: DataReader
-
-    @Mock
-    lateinit var mockWebViewLogsReader: DataReader
-
-    @Mock
-    lateinit var mockLogsUploader: DataUploader
-
-    @Mock
-    lateinit var mockTracesUploader: DataUploader
-
-    @Mock
-    lateinit var mockCrashUploader: DataUploader
-
-    @Mock
-    lateinit var mockRumUploader: DataUploader
-
-    @Mock
-    lateinit var mockWebViewRumUploader: DataUploader
-
-    @Mock
-    lateinit var mockWebViewLogsUploader: DataUploader
+    lateinit var mockUploaderB: DataUploader
 
     @Forgery
     lateinit var fakeWorkerParameters: WorkerParameters
 
+    @Forgery
+    lateinit var fakeContext: DatadogContext
+
     @BeforeEach
     fun `set up`() {
-        whenever(mockLogsStrategy.getReader()) doReturn mockLogsReader
-        whenever(mockTracesStrategy.getReader()) doReturn mockTracesReader
-        whenever(mockCrashReportsStrategy.getReader()) doReturn mockCrashReader
-        whenever(mockRumStrategy.getReader()) doReturn mockRumReader
-        whenever(mockWebViewRumStrategy.getReader()) doReturn mockWebViewRumReader
-        whenever(mockWebViewLogsStrategy.getReader()) doReturn mockWebViewLogsReader
+        Datadog.initialized.set(true)
+        Datadog.globalSdkCore = mockGlobalSdkCore
 
-        // Prevent crash when initializing RumFeature
-        mockChoreographerInstance()
+        whenever(mockGlobalSdkCore.contextProvider) doReturn mockContextProvider
+        whenever(mockContextProvider.context) doReturn fakeContext
 
-        Datadog.initialize(
-            appContext.mockInstance,
-            Credentials("CLIENT_TOKEN", "ENVIRONMENT", Credentials.NO_VARIANT, null),
-            Configuration.Builder(
-                logsEnabled = true,
-                tracesEnabled = true,
-                crashReportsEnabled = true,
-                rumEnabled = true
-            ).build(),
-            TrackingConsent.GRANTED
+        stubFeatures(
+            mockGlobalSdkCore,
+            listOf(mockFeatureA, mockFeatureB),
+            listOf(mockStorageA, mockStorageB),
+            listOf(mockUploaderA, mockUploaderB)
         )
-
-        LogsFeature.persistenceStrategy = mockLogsStrategy
-        LogsFeature.uploader = mockLogsUploader
-        TracingFeature.persistenceStrategy = mockTracesStrategy
-        TracingFeature.uploader = mockTracesUploader
-        CrashReportsFeature.persistenceStrategy = mockCrashReportsStrategy
-        CrashReportsFeature.uploader = mockCrashUploader
-        RumFeature.persistenceStrategy = mockRumStrategy
-        RumFeature.uploader = mockRumUploader
-        WebViewRumFeature.persistenceStrategy = mockWebViewRumStrategy
-        WebViewRumFeature.uploader = mockWebViewRumUploader
-        WebViewLogsFeature.persistenceStrategy = mockWebViewLogsStrategy
-        WebViewLogsFeature.uploader = mockWebViewLogsUploader
 
         testedWorker = UploadWorker(
             appContext.mockInstance,
@@ -171,49 +131,79 @@ internal class UploadWorkerTest {
 
     @AfterEach
     fun `tear down`() {
-        Datadog.stop()
+        Datadog.globalSdkCore = NoOpSdkCore()
+        Datadog.initialized.set(false)
     }
+
+    // region doWork
 
     @Test
     fun `𝕄 send batches 𝕎 doWork() {single batch per feature}`(
-        @Forgery logsBatch: Batch,
-        @Forgery tracesBatch: Batch,
-        @Forgery rumBatch: Batch,
-        @Forgery crashReportsBatch: Batch,
-        @Forgery webViewRumBatch: Batch,
-        @Forgery webViewLogsBatch: Batch
+        @StringForgery batchA: List<String>,
+        @StringForgery batchAMeta: String,
+        @StringForgery batchB: List<String>,
+        @StringForgery batchBMeta: String,
+        forge: Forge
     ) {
         // Given
-        whenever(mockLogsReader.lockAndReadNext()).doReturn(logsBatch, null)
-        whenever(mockLogsUploader.upload(logsBatch.data)) doReturn UploadStatus.SUCCESS
-        whenever(mockTracesReader.lockAndReadNext()).doReturn(tracesBatch, null)
-        whenever(mockTracesUploader.upload(tracesBatch.data)) doReturn UploadStatus.SUCCESS
-        whenever(mockRumReader.lockAndReadNext()).doReturn(rumBatch, null)
-        whenever(mockRumUploader.upload(rumBatch.data)) doReturn UploadStatus.SUCCESS
-        whenever(mockCrashReader.lockAndReadNext()).doReturn(crashReportsBatch, null)
-        whenever(mockCrashUploader.upload(crashReportsBatch.data)).doReturn(UploadStatus.SUCCESS)
-        whenever(mockWebViewRumReader.lockAndReadNext()).doReturn(webViewRumBatch, null)
-        whenever(mockWebViewRumUploader.upload(webViewRumBatch.data)) doReturn UploadStatus.SUCCESS
-        whenever(mockWebViewLogsReader.lockAndReadNext()).doReturn(webViewLogsBatch, null)
-        whenever(mockWebViewLogsUploader.upload(webViewLogsBatch.data)) doReturn
-            UploadStatus.SUCCESS
+        val batchAData = batchA.map { it.toByteArray() }
+        val batchBData = batchB.map { it.toByteArray() }
+        val batchAMetadata = forge.aNullable { batchAMeta.toByteArray() }
+        val batchBMetadata = forge.aNullable { batchBMeta.toByteArray() }
+
+        val batchAConfirmation = mock<BatchConfirmation>()
+        stubReadSequence(
+            mockStorageA,
+            mockBatchReaderA,
+            mock(),
+            batchAConfirmation,
+            batchAData,
+            batchAMetadata
+        )
+
+        val batchBConfirmation = mock<BatchConfirmation>()
+        stubReadSequence(
+            mockStorageB,
+            mockBatchReaderB,
+            mock(),
+            batchBConfirmation,
+            batchBData,
+            batchBMetadata
+        )
+
+        whenever(
+            mockUploaderA.upload(
+                fakeContext,
+                batchAData,
+                batchAMetadata
+            )
+        ) doReturn UploadStatus.SUCCESS
+        whenever(
+            mockUploaderB.upload(
+                fakeContext,
+                batchBData,
+                batchBMetadata
+            )
+        ) doReturn UploadStatus.SUCCESS
 
         // When
         val result = testedWorker.doWork()
 
         // Then
-        verify(mockLogsReader).drop(logsBatch)
-        verify(mockLogsReader, never()).release(logsBatch)
-        verify(mockTracesReader).drop(tracesBatch)
-        verify(mockTracesReader, never()).release(tracesBatch)
-        verify(mockRumReader).drop(rumBatch)
-        verify(mockRumReader, never()).release(rumBatch)
-        verify(mockCrashReader).drop(crashReportsBatch)
-        verify(mockCrashReader, never()).release(crashReportsBatch)
-        verify(mockWebViewRumReader).drop(webViewRumBatch)
-        verify(mockWebViewRumReader, never()).release(webViewRumBatch)
-        verify(mockWebViewLogsReader).drop(webViewLogsBatch)
-        verify(mockWebViewLogsReader, never()).release(webViewLogsBatch)
+        verify(mockUploaderA).upload(
+            fakeContext,
+            batchAData,
+            batchAMetadata
+        )
+        verify(mockUploaderB).upload(
+            fakeContext,
+            batchBData,
+            batchBMetadata
+        )
+
+        verify(batchAConfirmation).markAsRead(true)
+        verify(batchBConfirmation).markAsRead(true)
+
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
     }
@@ -222,504 +212,460 @@ internal class UploadWorkerTest {
     @EnumSource(UploadStatus::class, names = ["SUCCESS"], mode = EnumSource.Mode.EXCLUDE)
     fun `𝕄 send and keep batches 𝕎 doWork() {single batch per feature with error}`(
         status: UploadStatus,
-        @Forgery logsBatch: Batch,
-        @Forgery tracesBatch: Batch,
-        @Forgery rumBatch: Batch,
-        @Forgery crashReportsBatch: Batch,
-        @Forgery webViewRumBatch: Batch,
-        @Forgery webViewLogsBatch: Batch
+        @StringForgery batchA: List<String>,
+        @StringForgery batchAMeta: String,
+        @StringForgery batchB: List<String>,
+        @StringForgery batchBMeta: String,
+        forge: Forge
     ) {
-        whenever(mockLogsReader.lockAndReadNext()).doReturn(logsBatch, null)
-        whenever(mockLogsUploader.upload(logsBatch.data)) doReturn status
-        whenever(mockTracesReader.lockAndReadNext()).doReturn(tracesBatch, null)
-        whenever(mockTracesUploader.upload(tracesBatch.data)) doReturn status
-        whenever(mockRumReader.lockAndReadNext()).doReturn(rumBatch, null)
-        whenever(mockRumUploader.upload(rumBatch.data)) doReturn status
-        whenever(mockCrashReader.lockAndReadNext()).doReturn(crashReportsBatch, null)
-        whenever(mockCrashUploader.upload(crashReportsBatch.data)) doReturn status
-        whenever(mockWebViewRumReader.lockAndReadNext()).doReturn(webViewRumBatch, null)
-        whenever(mockWebViewRumUploader.upload(webViewRumBatch.data)) doReturn status
-        whenever(mockWebViewLogsReader.lockAndReadNext()).doReturn(webViewLogsBatch, null)
-        whenever(mockWebViewLogsUploader.upload(webViewLogsBatch.data)) doReturn status
+        // Given
+        val batchAData = batchA.map { it.toByteArray() }
+        val batchBData = batchB.map { it.toByteArray() }
+        val batchAMetadata = forge.aNullable { batchAMeta.toByteArray() }
+        val batchBMetadata = forge.aNullable { batchBMeta.toByteArray() }
 
+        val batchAConfirmation = mock<BatchConfirmation>()
+        stubReadSequence(
+            mockStorageA,
+            mockBatchReaderA,
+            mock(),
+            batchAConfirmation,
+            batchAData,
+            batchAMetadata
+        )
+
+        val batchBConfirmation = mock<BatchConfirmation>()
+        stubReadSequence(
+            mockStorageB,
+            mockBatchReaderB,
+            mock(),
+            batchBConfirmation,
+            batchBData,
+            batchBMetadata
+        )
+
+        whenever(
+            mockUploaderA.upload(
+                fakeContext,
+                batchAData,
+                batchAMetadata
+            )
+        ) doReturn status
+        whenever(
+            mockUploaderB.upload(
+                fakeContext,
+                batchBData,
+                batchBMetadata
+            )
+        ) doReturn status
+
+        // When
         val result = testedWorker.doWork()
 
-        verify(mockLogsReader, never()).drop(logsBatch)
-        verify(mockLogsReader).release(logsBatch)
-        verify(mockTracesReader, never()).drop(tracesBatch)
-        verify(mockTracesReader).release(tracesBatch)
-        verify(mockRumReader, never()).drop(rumBatch)
-        verify(mockRumReader).release(rumBatch)
-        verify(mockCrashReader, never()).drop(crashReportsBatch)
-        verify(mockCrashReader).release(crashReportsBatch)
-        verify(mockWebViewRumReader, never()).drop(webViewRumBatch)
-        verify(mockWebViewRumReader).release(webViewRumBatch)
-        verify(mockWebViewLogsReader, never()).drop(webViewLogsBatch)
-        verify(mockWebViewLogsReader).release(webViewLogsBatch)
+        // Then
+        verify(mockUploaderA).upload(
+            fakeContext,
+            batchAData,
+            batchAMetadata
+        )
+        verify(mockUploaderB).upload(
+            fakeContext,
+            batchBData,
+            batchBMetadata
+        )
+        verify(batchAConfirmation).markAsRead(false)
+        verify(batchBConfirmation).markAsRead(false)
+
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
     }
 
     @Test
-    fun `𝕄 send batches 𝕎 doWork() {multiple Logs batches, all Success}`(forge: Forge) {
-        val batches = forge.aBatchList()
-        val firstBatch = batches.first()
-        val otherBatchesThenNull = Array(batches.size) {
-            batches.getOrNull(it + 1)
+    fun `𝕄 send batches 𝕎 doWork() {multiple batches, all Success}`(forge: Forge) {
+        // Given
+        val batchesA = forge.aList {
+            forge.aList { forge.aString().toByteArray() }
         }
-        whenever(mockLogsReader.lockAndReadNext()).doReturn(firstBatch, *otherBatchesThenNull)
-        batches.forEach {
-            whenever(mockLogsUploader.upload(it.data)) doReturn UploadStatus.SUCCESS
+        val batchesAMeta = forge.aList(batchesA.size) {
+            forge.aNullable { forge.aString().toByteArray() }
+        }
+        val aIds = forge.aList(batchesA.size) { mock<BatchId>() }
+        val aConfirmations = forge.aList(batchesA.size) { mock<BatchConfirmation>() }
+        val aReaders = forge.aList(batchesA.size) { mock<BatchReader>() }
+
+        val batchB = forge.aList { forge.aString().toByteArray() }
+        val batchBMeta = forge.aString().toByteArray()
+
+        stubMultipleReadSequence(
+            mockStorageA,
+            aReaders,
+            aIds,
+            aConfirmations,
+            batchesA,
+            batchesAMeta
+        )
+
+        val batchBConfirmation = mock<BatchConfirmation>()
+        stubReadSequence(
+            mockStorageB,
+            mockBatchReaderB,
+            mock(),
+            batchBConfirmation,
+            batchB,
+            batchBMeta
+        )
+
+        batchesA.forEachIndexed { index, batch ->
+            whenever(
+                mockUploaderA.upload(
+                    fakeContext,
+                    batch,
+                    batchesAMeta[index]
+                )
+            ) doReturn UploadStatus.SUCCESS
         }
 
+        whenever(
+            mockUploaderB.upload(
+                fakeContext,
+                batchB,
+                batchBMeta
+            )
+        ) doReturn UploadStatus.SUCCESS
+
+        // When
         val result = testedWorker.doWork()
 
-        batches.forEach {
-            verify(mockLogsReader).drop(it)
-            verify(mockLogsReader, never()).release(it)
+        // Then
+        batchesA.forEachIndexed { index, batch ->
+            verify(mockUploaderA).upload(
+                fakeContext,
+                batch,
+                batchesAMeta[index]
+            )
+
+            verify(aConfirmations[index]).markAsRead(true)
         }
-        verify(mockTracesReader, never()).drop(any())
-        verify(mockTracesReader, never()).release(any())
-        verify(mockRumReader, never()).drop(any())
-        verify(mockRumReader, never()).release(any())
-        verify(mockCrashReader, never()).drop(any())
-        verify(mockCrashReader, never()).release(any())
-        verify(mockWebViewRumReader, never()).drop(any())
-        verify(mockWebViewRumReader, never()).release(any())
-        verify(mockWebViewLogsReader, never()).drop(any())
-        verify(mockWebViewLogsReader, never()).release(any())
+
+        verify(mockUploaderB).upload(
+            fakeContext,
+            batchB,
+            batchBMeta
+        )
+        verify(batchBConfirmation).markAsRead(true)
+
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
     }
 
     @Test
-    fun `𝕄 send batches 𝕎 doWork() {multiple Trace batches, all Success}`(forge: Forge) {
-        val batches = forge.aBatchList()
-        val firstBatch = batches.first()
-        val otherBatchesThenNull = Array(batches.size) {
-            batches.getOrNull(it + 1)
+    fun `𝕄 send batches 𝕎 doWork() {multiple batches, all Success, async storage}`(forge: Forge) {
+        // Given
+        val batchesA = forge.aList {
+            forge.aList { forge.aString().toByteArray() }
         }
-        whenever(mockTracesReader.lockAndReadNext()).doReturn(firstBatch, *otherBatchesThenNull)
-        batches.forEach {
-            whenever(mockTracesUploader.upload(it.data)) doReturn UploadStatus.SUCCESS
+        val batchesAMeta = forge.aList(batchesA.size) {
+            forge.aNullable { forge.aString().toByteArray() }
+        }
+        val aIds = forge.aList(batchesA.size) { mock<BatchId>() }
+        val aConfirmations = forge.aList(batchesA.size) { mock<BatchConfirmation>() }
+        val aReaders = forge.aList(batchesA.size) { mock<BatchReader>() }
+
+        val batchB = forge.aList { forge.aString().toByteArray() }
+        val batchBMeta = forge.aString().toByteArray()
+
+        stubMultipleReadSequence(
+            mockStorageA,
+            aReaders,
+            aIds,
+            aConfirmations,
+            batchesA,
+            batchesAMeta
+        )
+
+        val batchBConfirmation = mock<BatchConfirmation>()
+        stubReadSequence(
+            mockStorageB,
+            mockBatchReaderB,
+            mock(),
+            batchBConfirmation,
+            batchB,
+            batchBMeta
+        )
+
+        val executorService = Executors.newSingleThreadExecutor()
+        whenever(mockFeatureA.storage) doReturn AsyncStorageDelegate(mockStorageA, executorService)
+        whenever(mockFeatureB.storage) doReturn AsyncStorageDelegate(mockStorageB, executorService)
+
+        batchesA.forEachIndexed { index, batch ->
+            whenever(
+                mockUploaderA.upload(
+                    fakeContext,
+                    batch,
+                    batchesAMeta[index]
+                )
+            ) doReturn UploadStatus.SUCCESS
         }
 
+        whenever(
+            mockUploaderB.upload(
+                fakeContext,
+                batchB,
+                batchBMeta
+            )
+        ) doReturn UploadStatus.SUCCESS
+
+        // When
         val result = testedWorker.doWork()
 
-        batches.forEach {
-            verify(mockTracesReader).drop(it)
-            verify(mockTracesReader, never()).release(it)
+        // Then
+        batchesA.forEachIndexed { index, batch ->
+            verify(mockUploaderA).upload(
+                fakeContext,
+                batch,
+                batchesAMeta[index]
+            )
+
+            verify(aConfirmations[index]).markAsRead(true)
         }
-        verify(mockLogsReader, never()).drop(any())
-        verify(mockLogsReader, never()).release(any())
-        verify(mockRumReader, never()).drop(any())
-        verify(mockRumReader, never()).release(any())
-        verify(mockCrashReader, never()).drop(any())
-        verify(mockCrashReader, never()).release(any())
-        verify(mockWebViewRumReader, never()).drop(any())
-        verify(mockWebViewRumReader, never()).release(any())
-        verify(mockWebViewLogsReader, never()).drop(any())
-        verify(mockWebViewLogsReader, never()).release(any())
+
+        verify(mockUploaderB).upload(
+            fakeContext,
+            batchB,
+            batchBMeta
+        )
+        verify(batchBConfirmation).markAsRead(true)
+
+        assertThat(result)
+            .isEqualTo(ListenableWorker.Result.success())
+
+        executorService.shutdown()
+    }
+
+    @ParameterizedTest
+    @EnumSource(UploadStatus::class, names = ["SUCCESS"], mode = EnumSource.Mode.EXCLUDE)
+    fun `𝕄 send batches 𝕎 doWork() {multiple batches, some fails}`(
+        failingStatus: UploadStatus,
+        forge: Forge
+    ) {
+        // Given
+        val batchesA = forge.aList {
+            forge.aList { forge.aString().toByteArray() }
+        }
+        val batchesAMeta = forge.aList(batchesA.size) {
+            forge.aNullable { forge.aString().toByteArray() }
+        }
+        val aIds = forge.aList(batchesA.size) { mock<BatchId>() }
+        val aConfirmations = forge.aList(batchesA.size) { mock<BatchConfirmation>() }
+        val aReaders = forge.aList(batchesA.size) { mock<BatchReader>() }
+
+        val batchB = forge.aList { forge.aString().toByteArray() }
+        val batchBMeta = forge.aString().toByteArray()
+
+        val failingBatchIndex = forge.anInt(min = 0, max = batchesA.size)
+
+        stubMultipleReadSequence(
+            mockStorageA,
+            aReaders,
+            aIds,
+            aConfirmations,
+            batchesA,
+            batchesAMeta
+        )
+
+        val batchBConfirmation = mock<BatchConfirmation>()
+        stubReadSequence(
+            mockStorageB,
+            mockBatchReaderB,
+            mock(),
+            batchBConfirmation,
+            batchB,
+            batchBMeta
+        )
+
+        batchesA.forEachIndexed { index, batch ->
+            whenever(
+                mockUploaderA.upload(
+                    fakeContext,
+                    batch,
+                    batchesAMeta[index]
+                )
+            ) doReturn if (index == failingBatchIndex) failingStatus else UploadStatus.SUCCESS
+        }
+
+        whenever(
+            mockUploaderB.upload(
+                fakeContext,
+                batchB,
+                batchBMeta
+            )
+        ) doReturn UploadStatus.SUCCESS
+
+        // When
+        val result = testedWorker.doWork()
+
+        // Then
+        batchesA.forEachIndexed { index, batch ->
+            verify(mockUploaderA).upload(
+                fakeContext,
+                batch,
+                batchesAMeta[index]
+            )
+
+            if (index != failingBatchIndex) {
+                verify(aConfirmations[index]).markAsRead(true)
+            } else {
+                verify(aConfirmations[index]).markAsRead(false)
+            }
+        }
+
+        verify(mockUploaderB).upload(
+            fakeContext,
+            batchB,
+            batchBMeta
+        )
+        verify(batchBConfirmation).markAsRead(true)
+
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
     }
 
     @Test
-    fun `𝕄 send batches 𝕎 doWork() {multiple RUM batches, all Success}`(forge: Forge) {
-        val batches = forge.aBatchList()
-        val firstBatch = batches.first()
-        val otherBatchesThenNull = Array(batches.size) {
-            batches.getOrNull(it + 1)
-        }
-        whenever(mockRumReader.lockAndReadNext()).doReturn(firstBatch, *otherBatchesThenNull)
-        batches.forEach {
-            whenever(mockRumUploader.upload(it.data)) doReturn UploadStatus.SUCCESS
-        }
+    fun `𝕄 log error 𝕎 doWork() { SDK is not initialized }`() {
+        // Given
+        Datadog.initialized.set(false)
 
+        // When
         val result = testedWorker.doWork()
 
-        batches.forEach {
-            verify(mockRumReader).drop(it)
-            verify(mockRumReader, never()).release(it)
-        }
-        verify(mockLogsReader, never()).drop(any())
-        verify(mockLogsReader, never()).release(any())
-        verify(mockTracesReader, never()).drop(any())
-        verify(mockTracesReader, never()).release(any())
-        verify(mockCrashReader, never()).drop(any())
-        verify(mockCrashReader, never()).release(any())
-        verify(mockWebViewRumReader, never()).drop(any())
-        verify(mockWebViewRumReader, never()).release(any())
-        verify(mockWebViewLogsReader, never()).drop(any())
-        verify(mockWebViewLogsReader, never()).release(any())
+        // Then
+        verify(logger.mockDevLogHandler).handleLog(
+            Log.ERROR,
+            Datadog.MESSAGE_NOT_INITIALIZED
+        )
+        verifyZeroInteractions(mockFeatureA, mockBatchReaderA, mockUploaderA)
+        verifyZeroInteractions(mockFeatureB, mockBatchReaderB, mockUploaderB)
+
         assertThat(result)
             .isEqualTo(ListenableWorker.Result.success())
     }
 
-    @Test
-    fun `𝕄 send batches 𝕎 doWork() {multiple Crash batches, all Success}`(forge: Forge) {
-        val batches = forge.aBatchList()
-        val firstBatch = batches.first()
-        val otherBatchesThenNull = Array(batches.size) {
-            batches.getOrNull(it + 1)
-        }
-        whenever(mockCrashReader.lockAndReadNext())
-            .doReturn(firstBatch, *otherBatchesThenNull)
-        batches.forEach {
-            whenever(mockCrashUploader.upload(it.data)) doReturn UploadStatus.SUCCESS
-        }
+    // endregion
 
-        val result = testedWorker.doWork()
+    // region private
 
-        batches.forEach {
-            verify(mockCrashReader).drop(it)
-            verify(mockCrashReader, never()).release(it)
-        }
-        verify(mockLogsReader, never()).drop(any())
-        verify(mockLogsReader, never()).release(any())
-        verify(mockTracesReader, never()).drop(any())
-        verify(mockTracesReader, never()).release(any())
-        verify(mockRumReader, never()).drop(any())
-        verify(mockRumReader, never()).release(any())
-        verify(mockWebViewRumReader, never()).drop(any())
-        verify(mockWebViewRumReader, never()).release(any())
-        verify(mockWebViewLogsReader, never()).drop(any())
-        verify(mockWebViewLogsReader, never()).release(any())
-        assertThat(result)
-            .isEqualTo(ListenableWorker.Result.success())
-    }
-
-    @Test
-    fun `𝕄 send batches 𝕎 doWork() {multiple WebView RUM batches, all Success}`(forge: Forge) {
-        val batches = forge.aBatchList()
-        val firstBatch = batches.first()
-        val otherBatchesThenNull = Array(batches.size) {
-            batches.getOrNull(it + 1)
-        }
-        whenever(mockWebViewRumReader.lockAndReadNext())
-            .doReturn(firstBatch, *otherBatchesThenNull)
-        batches.forEach {
-            whenever(mockWebViewRumUploader.upload(it.data)) doReturn UploadStatus.SUCCESS
-        }
-
-        val result = testedWorker.doWork()
-
-        batches.forEach {
-            verify(mockWebViewRumReader).drop(it)
-            verify(mockWebViewRumReader, never()).release(it)
-        }
-        verify(mockLogsReader, never()).drop(any())
-        verify(mockLogsReader, never()).release(any())
-        verify(mockTracesReader, never()).drop(any())
-        verify(mockTracesReader, never()).release(any())
-        verify(mockRumReader, never()).drop(any())
-        verify(mockRumReader, never()).release(any())
-        verify(mockCrashReader, never()).drop(any())
-        verify(mockCrashReader, never()).release(any())
-        verify(mockWebViewLogsReader, never()).drop(any())
-        verify(mockWebViewLogsReader, never()).release(any())
-        assertThat(result)
-            .isEqualTo(ListenableWorker.Result.success())
-    }
-
-    @Test
-    fun `𝕄 send batches 𝕎 doWork() {multiple WebView Logs batches, all Success}`(forge: Forge) {
-        val batches = forge.aBatchList()
-        val firstBatch = batches.first()
-        val otherBatchesThenNull = Array(batches.size) {
-            batches.getOrNull(it + 1)
-        }
-        whenever(mockWebViewLogsReader.lockAndReadNext())
-            .doReturn(firstBatch, *otherBatchesThenNull)
-        batches.forEach {
-            whenever(mockWebViewLogsUploader.upload(it.data)) doReturn UploadStatus.SUCCESS
-        }
-
-        val result = testedWorker.doWork()
-
-        batches.forEach {
-            verify(mockWebViewLogsReader).drop(it)
-            verify(mockWebViewLogsReader, never()).release(it)
-        }
-        verify(mockLogsReader, never()).drop(any())
-        verify(mockLogsReader, never()).release(any())
-        verify(mockTracesReader, never()).drop(any())
-        verify(mockTracesReader, never()).release(any())
-        verify(mockRumReader, never()).drop(any())
-        verify(mockRumReader, never()).release(any())
-        verify(mockCrashReader, never()).drop(any())
-        verify(mockCrashReader, never()).release(any())
-        verify(mockWebViewRumReader, never()).drop(any())
-        verify(mockWebViewRumReader, never()).release(any())
-        assertThat(result)
-            .isEqualTo(ListenableWorker.Result.success())
-    }
-
-    @ParameterizedTest
-    @EnumSource(UploadStatus::class, names = ["SUCCESS"], mode = EnumSource.Mode.EXCLUDE)
-    fun `𝕄 send batches 𝕎 doWork() {multiple Log batches, first fails}`(
-        status: UploadStatus,
-        forge: Forge
+    private fun stubFeatures(
+        core: DatadogCore,
+        features: List<SdkFeature>,
+        storages: List<Storage>,
+        uploaders: List<DataUploader>
     ) {
-        val batches = forge.aBatchList()
-        val firstBatch = batches.first()
-        val otherBatchesThenNull = Array(batches.size) {
-            batches.getOrNull(it + 1)
+        whenever(core.getAllFeatures()) doReturn features
+        features.forEachIndexed { index, feature ->
+            whenever(feature.uploader) doReturn uploaders[index]
+            whenever(feature.storage) doReturn storages[index]
         }
-        whenever(mockLogsReader.lockAndReadNext()).doReturn(firstBatch, *otherBatchesThenNull)
-        whenever(mockLogsUploader.upload(any())) doReturn UploadStatus.SUCCESS
-        whenever(mockLogsUploader.upload(firstBatch.data)) doReturn status
-
-        val result = testedWorker.doWork()
-
-        batches.forEach {
-            if (it == firstBatch) {
-                verify(mockLogsReader, never()).drop(it)
-                verify(mockLogsReader).release(it)
-            } else {
-                verify(mockLogsReader).drop(it)
-                verify(mockLogsReader, never()).release(it)
-            }
-        }
-        verify(mockTracesReader, never()).drop(any())
-        verify(mockTracesReader, never()).release(any())
-        verify(mockRumReader, never()).drop(any())
-        verify(mockRumReader, never()).release(any())
-        verify(mockCrashReader, never()).drop(any())
-        verify(mockCrashReader, never()).release(any())
-        verify(mockWebViewRumReader, never()).drop(any())
-        verify(mockWebViewRumReader, never()).release(any())
-        verify(mockWebViewLogsReader, never()).drop(any())
-        verify(mockWebViewLogsReader, never()).release(any())
-        assertThat(result)
-            .isEqualTo(ListenableWorker.Result.success())
     }
 
-    @ParameterizedTest
-    @EnumSource(UploadStatus::class, names = ["SUCCESS"], mode = EnumSource.Mode.EXCLUDE)
-    fun `𝕄 send batches 𝕎 doWork() {multiple Trace batches, first fails}`(
-        status: UploadStatus,
-        forge: Forge
+    private fun stubReadSequence(
+        storage: Storage,
+        batchReader: BatchReader,
+        batchId: BatchId,
+        batchConfirmation: BatchConfirmation,
+        batch: List<ByteArray>,
+        batchMetadata: ByteArray?
     ) {
-        val batches = forge.aBatchList()
-        val firstBatch = batches.first()
-        val otherBatchesThenNull = Array(batches.size) {
-            batches.getOrNull(it + 1)
-        }
-        whenever(mockTracesReader.lockAndReadNext()).doReturn(firstBatch, *otherBatchesThenNull)
-        whenever(mockTracesUploader.upload(any())) doReturn UploadStatus.SUCCESS
-        whenever(mockTracesUploader.upload(firstBatch.data)) doReturn status
-
-        val result = testedWorker.doWork()
-
-        batches.forEach {
-            if (it == firstBatch) {
-                verify(mockTracesReader, never()).drop(it)
-                verify(mockTracesReader).release(it)
-            } else {
-                verify(mockTracesReader).drop(it)
-                verify(mockTracesReader, never()).release(it)
-            }
-        }
-        verify(mockLogsReader, never()).drop(any())
-        verify(mockLogsReader, never()).release(any())
-        verify(mockRumReader, never()).drop(any())
-        verify(mockRumReader, never()).release(any())
-        verify(mockCrashReader, never()).drop(any())
-        verify(mockCrashReader, never()).release(any())
-        verify(mockWebViewRumReader, never()).drop(any())
-        verify(mockWebViewRumReader, never()).release(any())
-        verify(mockWebViewLogsReader, never()).drop(any())
-        verify(mockWebViewLogsReader, never()).release(any())
-        assertThat(result)
-            .isEqualTo(ListenableWorker.Result.success())
+        stubMultipleReadSequence(
+            storage,
+            listOf(batchReader),
+            listOf(batchId),
+            listOf(batchConfirmation),
+            listOf(batch),
+            listOf(batchMetadata)
+        )
     }
 
-    @ParameterizedTest
-    @EnumSource(UploadStatus::class, names = ["SUCCESS"], mode = EnumSource.Mode.EXCLUDE)
-    fun `𝕄 send batches 𝕎 doWork() {multiple Rum batches, first fails}`(
-        status: UploadStatus,
-        forge: Forge
+    private fun stubMultipleReadSequence(
+        storage: Storage,
+        batchReaders: List<BatchReader>,
+        batchIds: List<BatchId>,
+        batchConfirmations: List<BatchConfirmation>,
+        batches: List<List<ByteArray>>,
+        batchMetadata: List<ByteArray?>
     ) {
-        val batches = forge.aBatchList()
-        val firstBatch = batches.first()
-        val otherBatchesThenNull = Array(batches.size) {
-            batches.getOrNull(it + 1)
-        }
-        whenever(mockRumReader.lockAndReadNext()).doReturn(firstBatch, *otherBatchesThenNull)
-        whenever(mockRumUploader.upload(any())) doReturn UploadStatus.SUCCESS
-        whenever(mockRumUploader.upload(firstBatch.data)) doReturn status
+        whenever(storage.readNextBatch(any(), any()))
+            .thenAnswer(object : Answer<Unit> {
+                var invocationCount: Int = 0
 
-        val result = testedWorker.doWork()
+                override fun answer(invocation: InvocationOnMock) {
+                    if (invocationCount >= batches.size) {
+                        (invocation.getArgument<() -> Unit>(0)).invoke()
+                        return
+                    }
 
-        batches.forEach {
-            if (it == firstBatch) {
-                verify(mockRumReader, never()).drop(it)
-                verify(mockRumReader).release(it)
-            } else {
-                verify(mockRumReader).drop(it)
-                verify(mockRumReader, never()).release(it)
-            }
-        }
-        verify(mockLogsReader, never()).drop(any())
-        verify(mockLogsReader, never()).release(any())
-        verify(mockTracesReader, never()).drop(any())
-        verify(mockTracesReader, never()).release(any())
-        verify(mockCrashReader, never()).drop(any())
-        verify(mockCrashReader, never()).release(any())
-        verify(mockWebViewRumReader, never()).drop(any())
-        verify(mockWebViewRumReader, never()).release(any())
-        verify(mockWebViewLogsReader, never()).drop(any())
-        verify(mockWebViewLogsReader, never()).release(any())
-        assertThat(result)
-            .isEqualTo(ListenableWorker.Result.success())
+                    val reader = batchReaders[invocationCount]
+                    val batchId = batchIds[invocationCount]
+                    val batchConfirmation = batchConfirmations[invocationCount]
+
+                    whenever(reader.read()) doReturn batches[invocationCount]
+                    whenever(reader.currentMetadata()) doReturn batchMetadata[invocationCount]
+
+                    invocationCount++
+
+                    whenever(storage.confirmBatchRead(eq(batchId), any())) doAnswer {
+                        (it.getArgument<(BatchConfirmation) -> Unit>(1)).invoke(batchConfirmation)
+                    }
+
+                    (invocation.getArgument<(BatchId, BatchReader) -> Unit>(1)).invoke(
+                        batchId,
+                        reader
+                    )
+                }
+            })
     }
 
-    @ParameterizedTest
-    @EnumSource(UploadStatus::class, names = ["SUCCESS"], mode = EnumSource.Mode.EXCLUDE)
-    fun `𝕄 send batches 𝕎 doWork() {multiple Crash batches, first fails}`(
-        status: UploadStatus,
-        forge: Forge
-    ) {
-        val batches = forge.aBatchList()
-        val firstBatch = batches.first()
-        val otherBatchesThenNull = Array(batches.size) {
-            batches.getOrNull(it + 1)
+    private class AsyncStorageDelegate(
+        private val delegate: Storage,
+        private val executor: Executor
+    ) : Storage {
+        override fun writeCurrentBatch(
+            datadogContext: DatadogContext,
+            callback: (EventBatchWriter) -> Unit
+        ) {
+            fail("we don't expect this one to be called")
         }
-        whenever(mockCrashReader.lockAndReadNext())
-            .doReturn(firstBatch, *otherBatchesThenNull)
-        whenever(mockCrashUploader.upload(any())) doReturn UploadStatus.SUCCESS
-        whenever(mockCrashUploader.upload(firstBatch.data)) doReturn status
 
-        val result = testedWorker.doWork()
-
-        batches.forEach {
-            if (it == firstBatch) {
-                verify(mockCrashReader, never()).drop(it)
-                verify(mockCrashReader).release(it)
-            } else {
-                verify(mockCrashReader).drop(it)
-                verify(mockCrashReader, never()).release(it)
+        override fun readNextBatch(
+            noBatchCallback: () -> Unit,
+            batchCallback: (BatchId, BatchReader) -> Unit
+        ) {
+            executor.execute {
+                delegate.readNextBatch(
+                    noBatchCallback,
+                    batchCallback
+                )
             }
         }
-        verify(mockLogsReader, never()).drop(any())
-        verify(mockLogsReader, never()).release(any())
-        verify(mockTracesReader, never()).drop(any())
-        verify(mockTracesReader, never()).release(any())
-        verify(mockRumReader, never()).drop(any())
-        verify(mockRumReader, never()).release(any())
-        verify(mockWebViewRumReader, never()).drop(any())
-        verify(mockWebViewRumReader, never()).release(any())
-        verify(mockWebViewLogsReader, never()).drop(any())
-        verify(mockWebViewLogsReader, never()).release(any())
-        assertThat(result)
-            .isEqualTo(ListenableWorker.Result.success())
+
+        override fun confirmBatchRead(batchId: BatchId, callback: (BatchConfirmation) -> Unit) {
+            executor.execute { delegate.confirmBatchRead(batchId, callback) }
+        }
+
+        override fun dropAll() {
+            fail("we don't expect this one to be called")
+        }
     }
 
-    @ParameterizedTest
-    @EnumSource(UploadStatus::class, names = ["SUCCESS"], mode = EnumSource.Mode.EXCLUDE)
-    fun `𝕄 send batches 𝕎 doWork() {multiple WebView RUM batches, first fails}`(
-        status: UploadStatus,
-        forge: Forge
-    ) {
-        val batches = forge.aBatchList()
-        val firstBatch = batches.first()
-        val otherBatchesThenNull = Array(batches.size) {
-            batches.getOrNull(it + 1)
-        }
-        whenever(mockWebViewRumReader.lockAndReadNext())
-            .doReturn(firstBatch, *otherBatchesThenNull)
-        whenever(mockWebViewRumUploader.upload(any())) doReturn UploadStatus.SUCCESS
-        whenever(mockWebViewRumUploader.upload(firstBatch.data)) doReturn status
-
-        val result = testedWorker.doWork()
-
-        batches.forEach {
-            if (it == firstBatch) {
-                verify(mockWebViewRumReader, never()).drop(it)
-                verify(mockWebViewRumReader).release(it)
-            } else {
-                verify(mockWebViewRumReader).drop(it)
-                verify(mockWebViewRumReader, never()).release(it)
-            }
-        }
-        verify(mockLogsReader, never()).drop(any())
-        verify(mockLogsReader, never()).release(any())
-        verify(mockTracesReader, never()).drop(any())
-        verify(mockTracesReader, never()).release(any())
-        verify(mockRumReader, never()).drop(any())
-        verify(mockRumReader, never()).release(any())
-        verify(mockCrashReader, never()).drop(any())
-        verify(mockCrashReader, never()).release(any())
-        verify(mockWebViewLogsReader, never()).drop(any())
-        verify(mockWebViewLogsReader, never()).release(any())
-        assertThat(result)
-            .isEqualTo(ListenableWorker.Result.success())
-    }
-
-    @ParameterizedTest
-    @EnumSource(UploadStatus::class, names = ["SUCCESS"], mode = EnumSource.Mode.EXCLUDE)
-    fun `𝕄 send batches 𝕎 doWork() {multiple WebView Logs batches, first fails}`(
-        status: UploadStatus,
-        forge: Forge
-    ) {
-        val batches = forge.aBatchList()
-        val firstBatch = batches.first()
-        val otherBatchesThenNull = Array(batches.size) {
-            batches.getOrNull(it + 1)
-        }
-        whenever(mockWebViewLogsReader.lockAndReadNext())
-            .doReturn(firstBatch, *otherBatchesThenNull)
-        whenever(mockWebViewLogsUploader.upload(any())) doReturn UploadStatus.SUCCESS
-        whenever(mockWebViewLogsUploader.upload(firstBatch.data)) doReturn status
-
-        val result = testedWorker.doWork()
-
-        batches.forEach {
-            if (it == firstBatch) {
-                verify(mockWebViewLogsReader, never()).drop(it)
-                verify(mockWebViewLogsReader).release(it)
-            } else {
-                verify(mockWebViewLogsReader).drop(it)
-                verify(mockWebViewLogsReader, never()).release(it)
-            }
-        }
-        verify(mockLogsReader, never()).drop(any())
-        verify(mockLogsReader, never()).release(any())
-        verify(mockTracesReader, never()).drop(any())
-        verify(mockTracesReader, never()).release(any())
-        verify(mockRumReader, never()).drop(any())
-        verify(mockRumReader, never()).release(any())
-        verify(mockCrashReader, never()).drop(any())
-        verify(mockCrashReader, never()).release(any())
-        verify(mockWebViewRumReader, never()).drop(any())
-        verify(mockWebViewRumReader, never()).release(any())
-        assertThat(result)
-            .isEqualTo(ListenableWorker.Result.success())
-    }
-
-    private fun Forge.aBatchList(): List<Batch> {
-        val list = mutableListOf<Batch>()
-        val ids = mutableListOf<String>()
-        for (i in 0..aTinyInt()) {
-            val batch: Batch = getForgery()
-            if (batch.id !in ids) {
-                list.add(batch)
-                ids.add(batch.id)
-            }
-        }
-        return list.distinctBy { it.data.asList() }
-    }
+    // endregion
 
     companion object {
+        val logger = LoggerTestConfiguration()
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
-        val mainLooper = MainLooperTestConfiguration()
-        val coreFeature = CoreFeatureTestConfiguration(appContext)
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, mainLooper, coreFeature)
+            return listOf(appContext, logger)
         }
     }
 }

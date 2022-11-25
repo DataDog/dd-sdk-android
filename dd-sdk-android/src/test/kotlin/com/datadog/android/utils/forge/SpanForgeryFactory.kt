@@ -70,7 +70,8 @@ internal class SpanForgeryFactory : ForgeryFactory<DDSpan> {
     }
 
     companion object {
-        val TEST_TRACER = AndroidTracer.Builder().build()
+        // TODO remove service call once Tracer gets default value
+        val TEST_TRACER = AndroidTracer.Builder().setServiceName("foobar").build()
 
         fun generateSpanBuilder(
             operationName: String,

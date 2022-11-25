@@ -6,16 +6,19 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
+import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.internal.persistence.PayloadDecoration
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.core.internal.persistence.file.FileHandler
-import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.core.internal.ContextProvider
+import com.datadog.android.v2.core.internal.storage.Storage
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
@@ -41,7 +44,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import org.mockito.stubbing.Answer
-import java.io.File
 import java.util.Locale
 
 @Extensions(
@@ -58,24 +60,27 @@ internal class BatchFileDataWriterTest {
     lateinit var mockSerializer: Serializer<String>
 
     @Mock
-    lateinit var mockOrchestrator: FileOrchestrator
-
-    @Mock
-    lateinit var mockFileHandler: FileHandler
-
-    @Mock
     lateinit var mockLogHandler: LogHandler
 
-    @Forgery
-    lateinit var fakeDecoration: PayloadDecoration
+    @Mock
+    lateinit var mockStorage: Storage
+
+    @Mock
+    lateinit var mockContextProvider: ContextProvider
+
+    @Mock
+    lateinit var mockBatchWriter: EventBatchWriter
 
     @Forgery
     lateinit var fakeThrowable: Throwable
 
+    @Forgery
+    lateinit var fakeDatadogContext: DatadogContext
+
     private val successfulData: MutableList<String> = mutableListOf()
     private val failedData: MutableList<String> = mutableListOf()
 
-    private val stubReverseSerializerAnswer = Answer<String?> { invocation ->
+    private val stubReverseSerializerAnswer = Answer { invocation ->
         (invocation.arguments[0] as String).reversed()
     }
 
@@ -85,21 +90,38 @@ internal class BatchFileDataWriterTest {
         throw fakeThrowable
     }
 
+    private val stubSuccessfulWriteAnswer = Answer {
+        whenever(mockBatchWriter.write(any(), anyOrNull())) doReturn true
+
+        val callback = it.getArgument<(EventBatchWriter) -> Unit>(1)
+        callback.invoke(mockBatchWriter)
+    }
+
+    private val stubFailingWriteAnswer = Answer {
+        whenever(mockBatchWriter.write(any(), anyOrNull())) doReturn false
+
+        val callback = it.getArgument<(EventBatchWriter) -> Unit>(1)
+        callback.invoke(mockBatchWriter)
+    }
+
     @BeforeEach
     fun `set up`() {
         whenever(mockSerializer.serialize(any())).doAnswer(stubReverseSerializerAnswer)
 
+        whenever(mockContextProvider.context) doReturn fakeDatadogContext
+
         testedWriter = object : BatchFileDataWriter<String>(
-            mockOrchestrator,
+            mockStorage,
+            mockContextProvider,
             mockSerializer,
-            fakeDecoration,
-            mockFileHandler,
             Logger(mockLogHandler)
         ) {
+            @WorkerThread
             override fun onDataWritten(data: String, rawData: ByteArray) {
                 successfulData.add(data)
             }
 
+            @WorkerThread
             override fun onDataWriteFailed(data: String) {
                 failedData.add(data)
             }
@@ -114,43 +136,41 @@ internal class BatchFileDataWriterTest {
 
     @Test
     fun `𝕄 write element to file 𝕎 write(element)`(
-        @StringForgery data: String,
-        @Forgery file: File
+        @StringForgery data: String
     ) {
         // Given
         val serialized = data.reversed().toByteArray(Charsets.UTF_8)
-        whenever(mockOrchestrator.getWritableFile(any())) doReturn file
+        whenever(mockStorage.writeCurrentBatch(eq(fakeDatadogContext), any()))
+            .doAnswer(stubSuccessfulWriteAnswer)
 
         // When
         testedWriter.write(data)
 
         // Then
-        verify(mockFileHandler)
-            .writeData(
-                file,
-                serialized,
-                append = true
+        verify(mockBatchWriter)
+            .write(
+                eq(serialized),
+                isNull()
             )
     }
 
     @Test
     fun `𝕄 write elements to file 𝕎 write(list)`(
-        @StringForgery data: List<String>,
-        @Forgery file: File
+        @StringForgery data: List<String>
     ) {
         // Given
-        whenever(mockOrchestrator.getWritableFile(any())) doReturn file
+        whenever(mockStorage.writeCurrentBatch(eq(fakeDatadogContext), any()))
+            .doAnswer(stubSuccessfulWriteAnswer)
 
         // When
         testedWriter.write(data)
 
         // Then
         argumentCaptor<ByteArray> {
-            verify(mockFileHandler, times(data.size))
-                .writeData(
-                    same(file),
+            verify(mockBatchWriter, times(data.size))
+                .write(
                     capture(),
-                    append = eq(true)
+                    isNull()
                 )
             assertThat(allValues)
                 .containsExactlyElementsOf(
@@ -163,12 +183,11 @@ internal class BatchFileDataWriterTest {
 
     @Test
     fun `𝕄 notify success 𝕎 write(element)`(
-        @StringForgery data: String,
-        @Forgery file: File
+        @StringForgery data: String
     ) {
         // Given
-        whenever(mockFileHandler.writeData(any(), any(), any())) doReturn true
-        whenever(mockOrchestrator.getWritableFile(any())) doReturn file
+        whenever(mockStorage.writeCurrentBatch(eq(fakeDatadogContext), any()))
+            .doAnswer(stubSuccessfulWriteAnswer)
 
         // When
         testedWriter.write(data)
@@ -180,12 +199,11 @@ internal class BatchFileDataWriterTest {
 
     @Test
     fun `𝕄 notify failure 𝕎 write(element) { writing failure }`(
-        @StringForgery data: String,
-        @Forgery file: File
+        @StringForgery data: String
     ) {
         // Given
-        whenever(mockFileHandler.writeData(any(), any(), any())) doReturn false
-        whenever(mockOrchestrator.getWritableFile(any())) doReturn file
+        whenever(mockStorage.writeCurrentBatch(eq(fakeDatadogContext), any()))
+            .doAnswer(stubFailingWriteAnswer)
 
         // When
         testedWriter.write(data)
@@ -208,7 +226,7 @@ internal class BatchFileDataWriterTest {
         // Then
         assertThat(successfulData).isEmpty()
         assertThat(failedData).isEmpty()
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockStorage)
     }
 
     @Test
@@ -224,7 +242,7 @@ internal class BatchFileDataWriterTest {
         // Then
         assertThat(successfulData).isEmpty()
         assertThat(failedData).isEmpty()
-        verifyZeroInteractions(mockFileHandler)
+        verifyZeroInteractions(mockStorage)
         verify(mockLogHandler).handleLog(
             eq(ERROR_WITH_TELEMETRY_LEVEL),
             eq(Serializer.ERROR_SERIALIZING.format(Locale.US, data.javaClass.simpleName)),
