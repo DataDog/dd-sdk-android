@@ -363,7 +363,8 @@ class SpanConfigE2ETests {
                         logsEnabled = true,
                         tracesEnabled = true,
                         rumEnabled = true,
-                        crashReportsEnabled = true
+                        crashReportsEnabled = true,
+                        sessionReplayEnabled = true
                     )
                     .setEncryption(TestEncryption())
                     .build()

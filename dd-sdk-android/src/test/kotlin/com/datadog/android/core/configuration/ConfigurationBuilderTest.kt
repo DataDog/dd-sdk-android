@@ -37,6 +37,7 @@ import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.security.Encryption
+import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -89,7 +90,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
     }
 
@@ -159,6 +161,13 @@ internal class ConfigurationBuilderTest {
             )
         )
         assertThat(config.additionalConfig).isEmpty()
+        assertThat(config.sessionReplayConfig).isEqualTo(
+            Configuration.Feature.SessionReplay(
+                endpointUrl = DatadogEndpoint.SESSION_REPLAY_US1,
+                plugins = emptyList(),
+                privacy = SessionReplayPrivacy.MASK_ALL
+            )
+        )
     }
 
     @Test
@@ -168,7 +177,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = false,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -189,7 +199,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = false,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -210,7 +221,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = false,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -231,7 +243,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -242,6 +255,29 @@ internal class ConfigurationBuilderTest {
         assertThat(config.tracesConfig).isNotNull
         assertThat(config.crashReportConfig).isNotNull
         assertThat(config.rumConfig).isNull()
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `𝕄 build config without sessionReplayConfig 𝕎 build() { SessionReplay disabled }`() {
+        // Given
+        testedBuilder = Configuration.Builder(
+            logsEnabled = true,
+            tracesEnabled = true,
+            crashReportsEnabled = true,
+            rumEnabled = true,
+            sessionReplayEnabled = false
+        )
+
+        // When
+        val config = testedBuilder.build()
+
+        // Then
+        assertThat(config.logsConfig).isNotNull
+        assertThat(config.tracesConfig).isNotNull
+        assertThat(config.crashReportConfig).isNotNull
+        assertThat(config.rumConfig).isNotNull
+        assertThat(config.sessionReplayConfig).isNull()
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -268,6 +304,11 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = site.rumEndpoint())
         )
+        assertThat(config.sessionReplayConfig).isEqualTo(
+            Configuration.DEFAULT_SESSION_REPLAY_CONFIG.copy(
+                endpointUrl = site.sessionReplayEndpoint()
+            )
+        )
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -276,7 +317,8 @@ internal class ConfigurationBuilderTest {
         @StringForgery(regex = "https://[a-z]+\\.com") logsUrl: String,
         @StringForgery(regex = "https://[a-z]+\\.com") tracesUrl: String,
         @StringForgery(regex = "https://[a-z]+\\.com") crashReportsUrl: String,
-        @StringForgery(regex = "https://[a-z]+\\.com") rumUrl: String
+        @StringForgery(regex = "https://[a-z]+\\.com") rumUrl: String,
+        @StringForgery(regex = "https://[a-z]+\\.com") sessionReplayUrl: String
     ) {
         // When
         val config = testedBuilder
@@ -284,6 +326,7 @@ internal class ConfigurationBuilderTest {
             .useCustomTracesEndpoint(tracesUrl)
             .useCustomCrashReportsEndpoint(crashReportsUrl)
             .useCustomRumEndpoint(rumUrl)
+            .useCustomSessionReplayEndpoint(sessionReplayUrl)
             .build()
 
         // Then
@@ -304,6 +347,10 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = rumUrl)
         )
+        assertThat(config.sessionReplayConfig).isEqualTo(
+            Configuration
+                .DEFAULT_SESSION_REPLAY_CONFIG.copy(endpointUrl = sessionReplayUrl)
+        )
         assertThat(config.additionalConfig).isEmpty()
     }
 
@@ -312,7 +359,8 @@ internal class ConfigurationBuilderTest {
         @StringForgery(regex = "http://[a-z]+\\.com") logsUrl: String,
         @StringForgery(regex = "http://[a-z]+\\.com") tracesUrl: String,
         @StringForgery(regex = "http://[a-z]+\\.com") crashReportsUrl: String,
-        @StringForgery(regex = "http://[a-z]+\\.com") rumUrl: String
+        @StringForgery(regex = "http://[a-z]+\\.com") rumUrl: String,
+        @StringForgery(regex = "http://[a-z]+\\.com") sessionReplayUrl: String
     ) {
         // When
         val config = testedBuilder
@@ -320,6 +368,7 @@ internal class ConfigurationBuilderTest {
             .useCustomTracesEndpoint(tracesUrl)
             .useCustomCrashReportsEndpoint(crashReportsUrl)
             .useCustomRumEndpoint(rumUrl)
+            .useCustomSessionReplayEndpoint(sessionReplayUrl)
             .build()
 
         // Then
@@ -339,6 +388,10 @@ internal class ConfigurationBuilderTest {
         )
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(endpointUrl = rumUrl)
+        )
+        assertThat(config.sessionReplayConfig).isEqualTo(
+            Configuration
+                .DEFAULT_SESSION_REPLAY_CONFIG.copy(endpointUrl = sessionReplayUrl)
         )
         assertThat(config.additionalConfig).isEmpty()
     }
@@ -384,6 +437,8 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.sessionReplayConfig)
+            .isEqualTo(Configuration.DEFAULT_SESSION_REPLAY_CONFIG)
         assertThat(config.rumConfig!!)
             .hasUserActionTrackingStrategyLegacy()
             .hasActionTargetAttributeProviders(mockProviders)
@@ -405,6 +460,8 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.sessionReplayConfig)
+            .isEqualTo(Configuration.DEFAULT_SESSION_REPLAY_CONFIG)
         assertThat(config.rumConfig!!)
             .hasUserActionTrackingStrategyLegacy()
             .hasDefaultActionTargetAttributeProviders()
@@ -429,6 +486,8 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.sessionReplayConfig)
+            .isEqualTo(Configuration.DEFAULT_SESSION_REPLAY_CONFIG)
         assertThat(config.rumConfig!!)
             .hasUserActionTrackingStrategyLegacy()
             .hasInteractionPredicate(mockInteractionPredicate)
@@ -450,6 +509,8 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.sessionReplayConfig)
+            .isEqualTo(Configuration.DEFAULT_SESSION_REPLAY_CONFIG)
         assertThat(config.rumConfig!!)
             .hasUserActionTrackingStrategyLegacy()
             .hasInteractionPredicateOfType(NoOpInteractionPredicate::class.java)
@@ -479,6 +540,8 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.sessionReplayConfig)
+            .isEqualTo(Configuration.DEFAULT_SESSION_REPLAY_CONFIG)
         assertThat(config.rumConfig!!)
             .hasUserActionTrackingStrategyApi29()
             .hasActionTargetAttributeProviders(mockProviders)
@@ -503,6 +566,8 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.sessionReplayConfig)
+            .isEqualTo(Configuration.DEFAULT_SESSION_REPLAY_CONFIG)
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 longTaskTrackingStrategy = MainLooperLongTaskStrategy(durationMs)
@@ -550,6 +615,8 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.sessionReplayConfig)
+            .isEqualTo(Configuration.DEFAULT_SESSION_REPLAY_CONFIG)
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 userActionTrackingStrategy = UserActionTrackingStrategyLegacy(
@@ -598,6 +665,8 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.sessionReplayConfig)
+            .isEqualTo(Configuration.DEFAULT_SESSION_REPLAY_CONFIG)
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 samplingRate = sampling
@@ -620,6 +689,8 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.sessionReplayConfig)
+            .isEqualTo(Configuration.DEFAULT_SESSION_REPLAY_CONFIG)
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 telemetrySamplingRate = sampling
@@ -643,6 +714,8 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.sessionReplayConfig)
+            .isEqualTo(Configuration.DEFAULT_SESSION_REPLAY_CONFIG)
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
                 backgroundEventTracking = backgroundEventEnabled
@@ -666,6 +739,8 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.sessionReplayConfig)
+            .isEqualTo(Configuration.DEFAULT_SESSION_REPLAY_CONFIG)
         val expectedRumEventMapper = RumEventMapper(viewEventMapper = eventMapper)
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
@@ -690,6 +765,8 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.sessionReplayConfig)
+            .isEqualTo(Configuration.DEFAULT_SESSION_REPLAY_CONFIG)
         val expectedRumEventMapper = RumEventMapper(resourceEventMapper = eventMapper)
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
@@ -714,6 +791,8 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.sessionReplayConfig)
+            .isEqualTo(Configuration.DEFAULT_SESSION_REPLAY_CONFIG)
         val expectedRumEventMapper = RumEventMapper(actionEventMapper = eventMapper)
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
@@ -738,6 +817,8 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.sessionReplayConfig)
+            .isEqualTo(Configuration.DEFAULT_SESSION_REPLAY_CONFIG)
         val expectedRumEventMapper = RumEventMapper(errorEventMapper = eventMapper)
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
@@ -762,6 +843,8 @@ internal class ConfigurationBuilderTest {
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.sessionReplayConfig)
+            .isEqualTo(Configuration.DEFAULT_SESSION_REPLAY_CONFIG)
         val expectedRumEventMapper = RumEventMapper(longTaskEventMapper = eventMapper)
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(
@@ -833,7 +916,39 @@ internal class ConfigurationBuilderTest {
                 plugins = listOf(rumPlugin)
             )
         )
+        assertThat(config.sessionReplayConfig?.plugins).isEmpty()
         assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
+    fun `M do nothing W addPlugin { SessionReplay feature }`() {
+        // Given
+        val sessionReplayPlugin: DatadogPlugin = mock()
+
+        // When
+        val config = testedBuilder
+            .addPlugin(sessionReplayPlugin, Feature.SESSION_REPLAY)
+            .build()
+
+        // then
+        assertThat(config.sessionReplayConfig?.plugins).isEmpty()
+    }
+
+    @Test
+    fun `M warn user that plugins are deprecated W addPlugin { SessionReplay feature }`() {
+        // Given
+        val sessionReplayPlugin: DatadogPlugin = mock()
+
+        // When
+        testedBuilder
+            .addPlugin(sessionReplayPlugin, Feature.SESSION_REPLAY)
+            .build()
+
+        // then
+        verify(logger.mockDevLogHandler).handleLog(
+            Log.WARN,
+            Configuration.PLUGINS_DEPRECATED_WARN_MESSAGE
+        )
     }
 
     @Test
@@ -843,7 +958,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -869,7 +985,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -893,7 +1010,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
         val viewStrategy: ViewTrackingStrategy = mock()
 
@@ -920,7 +1038,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -944,7 +1063,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
         val eventMapper: ViewEventMapper = mock()
 
@@ -969,7 +1089,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
         val eventMapper: EventMapper<ResourceEvent> = mock()
 
@@ -994,7 +1115,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
         val eventMapper: EventMapper<ActionEvent> = mock()
 
@@ -1019,7 +1141,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
         val eventMapper: EventMapper<ErrorEvent> = mock()
 
@@ -1044,7 +1167,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
         val eventMapper: EventMapper<LongTaskEvent> = mock()
 
@@ -1069,7 +1193,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = false,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
         val logsPlugin: DatadogPlugin = mock()
 
@@ -1094,7 +1219,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = false,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
         val tracesPlugin: DatadogPlugin = mock()
 
@@ -1119,7 +1245,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = false,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
         val crashPlugin: DatadogPlugin = mock()
 
@@ -1144,7 +1271,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
         val rumPlugin: DatadogPlugin = mock()
 
@@ -1171,7 +1299,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = forge.aBool(),
             tracesEnabled = forge.aBool(),
             crashReportsEnabled = forge.aBool(),
-            rumEnabled = forge.aBool()
+            rumEnabled = forge.aBool(),
+            sessionReplayEnabled = forge.aBool()
         )
         val mockPlugin: DatadogPlugin = mock()
 
@@ -1198,7 +1327,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = false,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -1224,7 +1354,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = false,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -1250,7 +1381,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = false,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -1276,7 +1408,8 @@ internal class ConfigurationBuilderTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = false
+            rumEnabled = false,
+            sessionReplayEnabled = true
         )
 
         // When
@@ -1692,6 +1825,18 @@ internal class ConfigurationBuilderTest {
         assertThat(config.rumConfig).isEqualTo(
             Configuration.DEFAULT_RUM_CONFIG.copy(vitalsMonitorUpdateFrequency = fakeFrequency)
         )
+    }
+
+    @Test
+    fun `M use the given privacy rule W setSessionReplayPrivacy`(
+        @Forgery fakePrivacy: SessionReplayPrivacy
+    ) {
+        // When
+        val config = testedBuilder.setSessionReplayPrivacy(fakePrivacy).build()
+
+        // Then
+        assertThat(config.sessionReplayConfig)
+            .isEqualTo(Configuration.DEFAULT_SESSION_REPLAY_CONFIG.copy(privacy = fakePrivacy))
     }
 
     companion object {

@@ -66,11 +66,13 @@ internal object RuntimeConfig {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true
+            rumEnabled = true,
+            sessionReplayEnabled = true
         )
             .useCustomLogsEndpoint(logsEndpointUrl)
             .useCustomRumEndpoint(rumEndpointUrl)
             .useCustomTracesEndpoint(tracesEndpointUrl)
+            .useCustomSessionReplayEndpoint(sessionReplayEndpointUrl)
             .setUploadFrequency(UploadFrequency.FREQUENT)
     }
 
