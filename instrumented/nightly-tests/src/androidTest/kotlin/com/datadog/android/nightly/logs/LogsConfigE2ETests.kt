@@ -194,8 +194,7 @@ class LogsConfigE2ETests {
                         logsEnabled = true,
                         tracesEnabled = true,
                         rumEnabled = true,
-                        crashReportsEnabled = true,
-                        sessionReplayEnabled = true
+                        crashReportsEnabled = true
                     )
                     .setEncryption(TestEncryption())
                     .build()

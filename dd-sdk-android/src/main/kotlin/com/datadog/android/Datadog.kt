@@ -213,26 +213,6 @@ object Datadog {
     }
 
     /**
-     * Stops the session recording.
-     *
-     * Session Replay feature will only work for recorded
-     * sessions.
-     */
-    fun stopSessionRecording() {
-        (globalSdkCore as? DatadogCore)?.sessionReplayFeature?.stopRecording()
-    }
-
-    /**
-     * Starts/resumes the session recording.
-     *
-     * Session Replay feature will only work for recorded
-     * sessions.
-     */
-    fun startSessionRecording() {
-        (globalSdkCore as? DatadogCore)?.sessionReplayFeature?.startRecording()
-    }
-
-    /**
      * For Datadog internal use only.
      *
      * @see _InternalProxy

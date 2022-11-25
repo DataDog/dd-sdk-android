@@ -32,9 +32,6 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
-import com.datadog.android.sessionreplay.internal.SessionReplayFeature
-import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
-import com.datadog.android.sessionreplay.internal.net.SessionReplayOkHttpUploader
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
@@ -76,7 +73,6 @@ internal class DatadogCore(
     internal var crashReportsFeature: CrashReportsFeature? = null
     internal var webViewLogsFeature: WebViewLogsFeature? = null
     internal var webViewRumFeature: WebViewRumFeature? = null
-    internal var sessionReplayFeature: SessionReplayFeature? = null
 
     // TODO RUMM-0000 handle context
     internal val contextProvider: ContextProvider?
@@ -191,8 +187,6 @@ internal class DatadogCore(
         webViewLogsFeature = null
         webViewRumFeature?.stop()
         webViewRumFeature = null
-        sessionReplayFeature?.stop()
-        sessionReplayFeature = null
 
         features.clear()
 
@@ -296,7 +290,6 @@ internal class DatadogCore(
         initializeTracingFeature(mutableConfig.tracesConfig, appContext)
         initializeRumFeature(mutableConfig.rumConfig, appContext)
         initializeCrashReportFeature(mutableConfig.crashReportConfig, appContext)
-        initializeSessionReplayFeature(mutableConfig.sessionReplayConfig, appContext)
 
         coreFeature.ndkCrashHandler.handleNdkCrash(
             this,
@@ -399,29 +392,6 @@ internal class DatadogCore(
                 it.initialize(appContext, configuration.plugins)
                 webViewRumFeature = WebViewRumFeature(coreFeature).also {
                     it.initialize()
-                }
-            }
-        }
-    }
-
-    private fun initializeSessionReplayFeature(
-        configuration: Configuration.Feature.SessionReplay?,
-        appContext: Context
-    ) {
-        if (configuration != null) {
-            registerFeature(
-                SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME,
-                SessionReplayRequestFactory(
-                    SessionReplayOkHttpUploader(
-                        configuration.endpointUrl,
-                        coreFeature.okHttpClient
-                    )
-                )
-            )
-            features[SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME]?.let {
-                it.initialize(appContext, configuration.plugins)
-                sessionReplayFeature = SessionReplayFeature(this).also {
-                    it.initialize(appContext, configuration)
                 }
             }
         }

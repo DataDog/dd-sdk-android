@@ -93,16 +93,14 @@ internal class DatadogCoreInitializationTest {
         @BoolForgery logsEnabled: Boolean,
         @BoolForgery tracingEnabled: Boolean,
         @BoolForgery crashReportEnabled: Boolean,
-        @BoolForgery rumEnabled: Boolean,
-        @BoolForgery sessionReplayEnabled: Boolean
+        @BoolForgery rumEnabled: Boolean
     ) {
         // Given
         val configuration = Configuration.Builder(
             logsEnabled = logsEnabled,
             tracesEnabled = tracingEnabled,
             crashReportsEnabled = crashReportEnabled,
-            rumEnabled = rumEnabled,
-            sessionReplayEnabled = sessionReplayEnabled
+            rumEnabled = rumEnabled
         ).build()
 
         // When
@@ -159,8 +157,7 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = false,
             tracesEnabled = false,
             crashReportsEnabled = false,
-            rumEnabled = true,
-            sessionReplayEnabled = false
+            rumEnabled = true
         ).build()
 
         // When
@@ -185,8 +182,7 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = false,
             crashReportsEnabled = false,
-            rumEnabled = false,
-            sessionReplayEnabled = false
+            rumEnabled = false
         ).build()
 
         // When
@@ -212,8 +208,7 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         ).build()
 
         // Then
@@ -241,8 +236,7 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         ).build()
 
         // When
@@ -272,8 +266,7 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         ).build()
 
         // When
@@ -295,8 +288,7 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .setUseDeveloperModeWhenDebuggable(true)
             .build()
@@ -320,8 +312,7 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .setUseDeveloperModeWhenDebuggable(true)
             .build()
@@ -346,8 +337,7 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .setAdditionalConfiguration(mapOf(Datadog.DD_SOURCE_TAG to source))
             .build()
@@ -369,8 +359,7 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .setAdditionalConfiguration(mapOf(Datadog.DD_SOURCE_TAG to source))
             .build()
@@ -392,8 +381,7 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .setAdditionalConfiguration(mapOf(Datadog.DD_SOURCE_TAG to source))
             .build()
@@ -415,8 +403,7 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .setAdditionalConfiguration(customAttributes.nonNullData)
             .build()
@@ -438,8 +425,7 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .setAdditionalConfiguration(mapOf(Datadog.DD_SDK_VERSION_TAG to sdkVersion))
             .build()
@@ -461,8 +447,7 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .setAdditionalConfiguration(
                 mapOf(Datadog.DD_SDK_VERSION_TAG to sdkVersion)
@@ -486,8 +471,7 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .setAdditionalConfiguration(mapOf(Datadog.DD_SDK_VERSION_TAG to sdkVersion))
             .build()
@@ -509,8 +493,7 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .setAdditionalConfiguration(customAttributes.nonNullData)
             .build()
@@ -532,8 +515,7 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .setAdditionalConfiguration(mapOf(Datadog.DD_APP_VERSION_TAG to appVersion))
             .build()
@@ -555,8 +537,7 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .setAdditionalConfiguration(
                 mapOf(Datadog.DD_APP_VERSION_TAG to forge.aWhitespaceString())
@@ -582,8 +563,7 @@ internal class DatadogCoreInitializationTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .setAdditionalConfiguration(mapOf(Datadog.DD_APP_VERSION_TAG to forge.anInt()))
             .build()
