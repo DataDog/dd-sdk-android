@@ -365,7 +365,7 @@ internal class MutationResolverTest {
             .take(fakeUpdateSize)
             .map {
                 it.copy(
-                    clip = forge.getForgery()
+                    clip = forge.forgeDifferent(it.clip)
                 )
             }
         val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
@@ -720,7 +720,7 @@ internal class MutationResolverTest {
             .take(fakeUpdateSize)
             .map {
                 it.copy(
-                    clip = forge.getForgery()
+                    clip = forge.forgeDifferent(it.clip)
                 )
             }
         val fakeCurrentSnapshot = fakeUpdatedWireframes + fakePrevSnapshot.drop(fakeUpdateSize)
@@ -853,6 +853,16 @@ internal class MutationResolverTest {
     // endregion
 
     // region Internal
+
+    private fun Forge.forgeDifferent(wireframeClip: MobileSegment.WireframeClip?):
+        MobileSegment.WireframeClip {
+        while (true) {
+            val differentClip: MobileSegment.WireframeClip = getForgery()
+            if (differentClip != wireframeClip) {
+                return differentClip
+            }
+        }
+    }
 
     private fun MobileSegment.Wireframe.id(): Long {
         return when (this) {
