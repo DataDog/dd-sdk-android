@@ -1837,10 +1837,6 @@ interface com.datadog.android.v2.api.InternalLogger
     - TELEMETRY
   fun log(Level, Target, String, Throwable?, Map<String, Any?>)
   fun log(Level, List<Target>, String, Throwable?, Map<String, Any?>)
-interface com.datadog.android.v2.api.PayloadFormat
-  fun prefixBytes(): ByteArray
-  fun suffixBytes(): ByteArray
-  fun separatorBytes(): ByteArray
 data class com.datadog.android.v2.api.Request
   constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
 interface com.datadog.android.v2.api.RequestFactory
@@ -1870,12 +1866,6 @@ interface com.datadog.android.v2.api.SdkCore
   fun getFeatureContext(String): Map<String, Any?>
   fun setEventReceiver(String, FeatureEventReceiver)
   fun removeEventReceiver(String)
-enum com.datadog.android.v2.api.SdkEndpoint
-  - US1
-  - US3
-  - US5
-  - US1_FED
-  - EU1
 data class com.datadog.android.v2.api.context.CarrierInfo
   constructor(String?, String?)
 data class com.datadog.android.v2.api.context.DatadogContext
