@@ -211,7 +211,7 @@ internal class TelemetryEventHandler(
                     telemetrySampleRate = rumConfig?.telemetrySamplingRate?.toLong(),
                     useProxy = coreConfig?.proxy != null,
                     trackFrustrations = rumConfig?.trackFrustrations,
-                    useLocalEncryption = coreConfig?.securityConfig?.localDataEncryption != null,
+                    useLocalEncryption = coreConfig?.encryption != null,
                     viewTrackingStrategy = viewTrackingStrategy,
                     trackBackgroundEvents = rumConfig?.backgroundEventTracking,
                     trackInteractions = rumConfig?.userActionTrackingStrategy != null,

@@ -116,7 +116,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun setLogEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
     fun setAdditionalConfiguration(Map<String, Any>): Builder
     fun setProxy(java.net.Proxy, okhttp3.Authenticator?): Builder
-    fun setSecurityConfig(SecurityConfig): Builder
+    fun setEncryption(com.datadog.android.security.Encryption): Builder
     fun setSessionReplayPrivacy(com.datadog.android.sessionreplay.SessionReplayPrivacy): Builder
     fun setVitalsUpdateFrequency(VitalsUpdateFrequency): Builder
   companion object 
@@ -124,8 +124,6 @@ data class com.datadog.android.core.configuration.Credentials
   constructor(String, String, String, String?, String? = null)
   companion object 
     const val NO_VARIANT: String
-data class com.datadog.android.core.configuration.SecurityConfig
-  constructor(com.datadog.android.security.Encryption?)
 enum com.datadog.android.core.configuration.UploadFrequency
   constructor(Long)
   - FREQUENT

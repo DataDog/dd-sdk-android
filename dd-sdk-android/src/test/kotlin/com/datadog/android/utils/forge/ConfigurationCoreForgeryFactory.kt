@@ -8,6 +8,7 @@ package com.datadog.android.utils.forge
 
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.security.NoOpEncryption
 import com.nhaarman.mockitokotlin2.mock
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -32,7 +33,7 @@ internal class ConfigurationCoreForgeryFactory :
             uploadFrequency = forge.getForgery(),
             proxy = proxy,
             proxyAuth = auth,
-            securityConfig = forge.getForgery(),
+            encryption = forge.aNullable { NoOpEncryption() },
             webViewTrackingHosts = forge.aList { getForgery<URL>().host },
             site = forge.aValueFrom(DatadogSite::class.java)
         )

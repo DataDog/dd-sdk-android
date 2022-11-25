@@ -9,7 +9,6 @@ package com.datadog.android.telemetry.internal
 import android.util.Log
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.configuration.SecurityConfig
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.core.internal.sampling.Sampler
@@ -367,7 +366,7 @@ internal class TelemetryEventHandlerTest {
             sessionReplayEnabled = true
         ).apply {
             if (useLocalEncryption) {
-                setSecurityConfig(SecurityConfig(mock()))
+                setEncryption(mock())
             }
         }.build()
         val configRawEvent = forge.createRumRawTelemetryConfigurationEvent(configuration)

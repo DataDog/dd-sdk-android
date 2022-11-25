@@ -44,6 +44,7 @@ import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.security.Encryption
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import okhttp3.Authenticator
@@ -75,7 +76,7 @@ internal constructor(
         val uploadFrequency: UploadFrequency,
         val proxy: Proxy?,
         val proxyAuth: Authenticator,
-        val securityConfig: SecurityConfig,
+        val encryption: Encryption?,
         val webViewTrackingHosts: List<String>,
         val site: DatadogSite
     )
@@ -626,14 +627,14 @@ internal constructor(
         }
 
         /**
-         * Allows to set the necessary security configuration (used to control local
-         * data storage encryption, for example).
-         * @param config Security config to use. If not provided, default one will be used (no
-         * encryption for local data storage).
+         * Allows to set the encryption for the local data. By default no encryption is used for
+         * the local data.
+         *
+         * @param dataEncryption An encryption object complying [Encryption] interface.
          */
-        fun setSecurityConfig(config: SecurityConfig): Builder {
+        fun setEncryption(dataEncryption: Encryption): Builder {
             coreConfig = coreConfig.copy(
-                securityConfig = config
+                encryption = dataEncryption
             )
             return this
         }
@@ -714,7 +715,7 @@ internal constructor(
             uploadFrequency = UploadFrequency.AVERAGE,
             proxy = null,
             proxyAuth = Authenticator.NONE,
-            securityConfig = SecurityConfig.DEFAULT,
+            encryption = null,
             webViewTrackingHosts = emptyList(),
             site = DatadogSite.US1
         )
