@@ -205,6 +205,7 @@ public class Config {
     public enum PropagationStyle {
         DATADOG,
         B3,
+        B3M,
         HAYSTACK
     }
 

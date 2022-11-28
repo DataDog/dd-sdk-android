@@ -43,6 +43,10 @@ public class HttpCodec {
         injectors.add(new B3HttpCodec.Injector());
         continue;
       }
+      if (style == Config.PropagationStyle.B3M) {
+        injectors.add(new B3MHttpCodec.Injector());
+        continue;
+      }
       if (style == Config.PropagationStyle.HAYSTACK) {
         injectors.add(new HaystackHttpCodec.Injector());
         continue;
@@ -61,6 +65,10 @@ public class HttpCodec {
       }
       if (style == Config.PropagationStyle.B3) {
         extractors.add(new B3HttpCodec.Extractor(taggedHeaders));
+        continue;
+      }
+      if (style == Config.PropagationStyle.B3M) {
+        extractors.add(new B3MHttpCodec.Extractor(taggedHeaders));
         continue;
       }
       if (style == Config.PropagationStyle.HAYSTACK) {
