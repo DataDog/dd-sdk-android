@@ -55,7 +55,7 @@ internal open class ResourceTrackingActivity : AppCompatActivity() {
     // endregion
 
     companion object {
-        internal const val HOST = "source.unsplash.com"
-        internal const val RANDOM_URL = "https://$HOST/random/800x450"
+        internal const val HOST = "picsum.photos"
+        internal const val RANDOM_URL = "https://$HOST/800/450"
     }
 }
