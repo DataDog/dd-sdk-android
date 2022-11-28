@@ -10,6 +10,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.FileWriter
+import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.InternalLogger
 import java.io.File
@@ -26,7 +27,7 @@ internal class FileEventBatchWriter(
 
     @WorkerThread
     override fun currentMetadata(): ByteArray? {
-        if (metadataFile == null) return null
+        if (metadataFile == null || !metadataFile.existsSafe()) return null
 
         return metadataReaderWriter.readData(metadataFile)
     }
