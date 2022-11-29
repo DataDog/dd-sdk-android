@@ -7,6 +7,7 @@
 package com.datadog.android.nightly.webview
 
 import androidx.test.core.app.ActivityScenario.launch
+import androidx.test.espresso.web.model.Atoms.script
 import androidx.test.espresso.web.sugar.Web.onWebView
 import androidx.test.espresso.web.webdriver.DriverAtoms.findElement
 import androidx.test.espresso.web.webdriver.DriverAtoms.webClick
@@ -102,7 +103,12 @@ internal class WebViewTrackingE2ETests {
         initSdk()
         launch(WebViewTrackingActivity::class.java)
 
-        onWebView().withElement(findElement(Locator.ID, "display-image")).perform(webClick())
+        // with https://github.com/DataDog/browser-sdk/pull/1731 pointerdown event is required
+        // before emitting click event for the RUM action to be registered
+        with(onWebView().withElement(findElement(Locator.ID, "display-image"))) {
+            perform(script("arguments[0].dispatchEvent(new PointerEvent('pointerdown'))"))
+            perform(webClick())
+        }
     }
 
     /**
