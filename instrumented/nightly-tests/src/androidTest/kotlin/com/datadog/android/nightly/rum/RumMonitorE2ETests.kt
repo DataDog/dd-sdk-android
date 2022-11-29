@@ -262,7 +262,10 @@ class RumMonitorE2ETests {
         val viewName = forge.aViewName()
         val actionName = forge.anActionName()
         val attributes = defaultTestAttributes(testMethodName)
-        val actionType = forge.aValueFrom(RumActionType::class.java)
+        // BACK has no action.name (only action.target.name), so we need to exclude it, because
+        // assertion is relying on action.name
+        val actionType =
+            forge.aValueFrom(RumActionType::class.java, exclude = listOf(RumActionType.BACK))
         executeInsideView(viewKey, viewName, testMethodName) {
             measure(testMethodName) {
                 GlobalRum.get().startUserAction(
@@ -342,7 +345,9 @@ class RumMonitorE2ETests {
         val viewKey = forge.aViewKey()
         val viewName = forge.aViewName()
         val actionName = forge.anActionName()
-        val type = forge.aValueFrom(RumActionType::class.java)
+        // BACK has no action.name (only action.target.name), so we need to exclude it, because
+        // assertion is relying on action.name
+        val type = forge.aValueFrom(RumActionType::class.java, exclude = listOf(RumActionType.BACK))
         val stopActionAttributes = forge.exhaustiveAttributes()
         executeInsideView(viewKey, viewName, testMethodName) {
             GlobalRum.get().startUserAction(
@@ -419,7 +424,12 @@ class RumMonitorE2ETests {
         val viewName = forge.aViewName()
         val actionName = forge.anActionName()
         val attributes = defaultTestAttributes(testMethodName)
-        val actionType = forge.aValueFrom(RumActionType::class.java)
+        // BACK has no action.name (only action.target.name), so we need to exclude it, because
+        // assertion is relying on action.name
+        val actionType = forge.aValueFrom(
+            RumActionType::class.java,
+            exclude = listOf(RumActionType.BACK)
+        )
         executeInsideView(viewKey, viewName, testMethodName) {
             measure(testMethodName) {
                 GlobalRum.get().addUserAction(
@@ -444,7 +454,12 @@ class RumMonitorE2ETests {
         val viewName = forge.aViewName()
         val activeActionName = forge.anActionName(prefix = "rumActiveAction")
         val customActionName = forge.anActionName()
-        val actionType = forge.aValueFrom(RumActionType::class.java)
+        // BACK has no action.name (only action.target.name), so we need to exclude it, because
+        // assertion is relying on action.name
+        val actionType = forge.aValueFrom(
+            RumActionType::class.java,
+            exclude = listOf(RumActionType.BACK)
+        )
         val attributes = defaultTestAttributes(testMethodName)
         executeInsideView(viewKey, viewName, testMethodName) {
             GlobalRum.get().startUserAction(
