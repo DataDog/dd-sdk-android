@@ -41,6 +41,6 @@ internal class ResourceTrackingCustomSpanAttributesActivity : ResourceTrackingAc
 
     companion object {
         internal const val TEST_METHOD_NAME = "rum_resource_tracking_with_custom_span_attributes"
-        internal const val RANDOM_RESOURCE_WITH_CUSTOM_SPAN = "https://$HOST/random/25x25"
+        internal const val RANDOM_RESOURCE_WITH_CUSTOM_SPAN = "https://$HOST/25/25"
     }
 }

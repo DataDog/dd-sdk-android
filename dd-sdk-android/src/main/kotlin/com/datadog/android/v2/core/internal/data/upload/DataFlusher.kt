@@ -33,7 +33,11 @@ internal class DataFlusher(
         toUploadFiles.forEach {
             val batch = fileReader.readData(it)
             val metaFile = fileOrchestrator.getMetadataFile(it)
-            val meta = if (metaFile != null) metadataFileReader.readData(metaFile) else null
+            val meta = if (metaFile != null && metaFile.existsSafe()) {
+                metadataFileReader.readData(metaFile)
+            } else {
+                null
+            }
             uploader.upload(context, batch, meta)
             fileMover.delete(it)
             if (metaFile?.existsSafe() == true) {
