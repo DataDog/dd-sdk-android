@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.recorder
 
 import android.app.Activity
 import android.view.ViewTreeObserver
+import android.view.Window
 import com.datadog.android.sessionreplay.processor.Processor
 import com.datadog.android.sessionreplay.utils.TimeProvider
 
@@ -31,11 +32,10 @@ internal class ScreenRecorder(
                 drawListeners[activity.hashCode()] = this
                 activity.window.decorView.viewTreeObserver?.addOnDrawListener(this)
             }
-            activity.window.callback = RecorderWindowCallback(
-                processor,
-                activity.resources.displayMetrics.density,
-                activity.window.callback,
-                timeProvider
+
+            wrapWindowCallback(
+                activity.window,
+                activity.resources.displayMetrics.density
             )
         }
     }
@@ -45,8 +45,32 @@ internal class ScreenRecorder(
             drawListeners.remove(windowHashCode)?.let {
                 activity.window.decorView.viewTreeObserver.removeOnDrawListener(it)
             }
-            activity.window.callback =
-                (activity.window.callback as? RecorderWindowCallback)?.wrappedCallback
+        }
+
+        if (activity.window != null) {
+            unwrapWindowCallback(activity.window)
+        }
+    }
+
+    private fun wrapWindowCallback(window: Window, screenDensity: Float) {
+        val toWrap = window.callback ?: NoOpWindowCallback()
+        window.callback = RecorderWindowCallback(
+            processor,
+            screenDensity,
+            toWrap,
+            timeProvider
+        )
+    }
+
+    private fun unwrapWindowCallback(window: Window) {
+        val callback = window.callback
+        if (callback is RecorderWindowCallback) {
+            val wrappedCallback = callback.wrappedCallback
+            if (wrappedCallback !is NoOpWindowCallback) {
+                window.callback = wrappedCallback
+            } else {
+                window.callback = null
+            }
         }
     }
 }
