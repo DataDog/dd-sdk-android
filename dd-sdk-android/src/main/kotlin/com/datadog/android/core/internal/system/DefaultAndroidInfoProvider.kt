@@ -41,17 +41,17 @@ internal class DefaultAndroidInfoProvider(
     }
 
     override val deviceBrand: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        Build.BRAND.replaceFirstChar {
+        Build.BRAND?.replaceFirstChar {
             if (it.isLowerCase()) it.titlecase(Locale.US) else it.toString()
-        }
+        } ?: ""
     }
 
     override val deviceModel: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        Build.MODEL
+        Build.MODEL ?: ""
     }
 
     override val deviceBuildId: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        Build.ID
+        Build.ID ?: ""
     }
 
     override val osName: String = "Android"
