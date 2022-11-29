@@ -14,8 +14,10 @@ import android.view.ViewTreeObserver
 import android.view.Window
 import com.datadog.android.sessionreplay.processor.Processor
 import com.datadog.android.sessionreplay.utils.TimeProvider
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
@@ -94,6 +96,29 @@ internal class ScreenRecorderTest {
     }
 
     @Test
+    fun `M register the RecorderWindowCallback W startRecording{default callback is null}`(
+        forge: Forge
+    ) {
+        // Given
+        val mockWindow: Window = mock()
+        val mockActivity = mockActivity(
+            forge,
+            window = mockWindow,
+            defaultWindowCallback = null
+        )
+
+        // When
+        testedRecorder.startRecording(mockActivity)
+
+        // Then
+        val captor = argumentCaptor<Window.Callback>()
+        verify(mockWindow).callback = captor.capture()
+        assertThat(captor.firstValue).isInstanceOf(RecorderWindowCallback::class.java)
+        assertThat((captor.firstValue as RecorderWindowCallback).wrappedCallback)
+            .isInstanceOf(NoOpWindowCallback::class.java)
+    }
+
+    @Test
     fun `M do nothing W startRecording() { activity window is null }`() {
         // Given
         val mockActivity: Activity = mock()
@@ -122,7 +147,9 @@ internal class ScreenRecorderTest {
     }
 
     @Test
-    fun `M remove the RecorderWindowCallback W stopRecording()`(forge: Forge) {
+    fun `M remove the RecorderWindowCallback W stopRecording(){default callback is not null}`(
+        forge: Forge
+    ) {
         // Given
         val mockWindow: Window = mock()
         val mockDefaultCallback: Window.Callback = mock()
@@ -148,6 +175,72 @@ internal class ScreenRecorderTest {
     }
 
     @Test
+    fun `M remove the RecorderWindowCallback W stopRecording(){default callback was null}`(
+        forge: Forge
+    ) {
+        // Given
+        val mockWindow: Window = mock()
+        val mockActivity = mockActivity(
+            forge,
+            window = mockWindow,
+            defaultWindowCallback = null
+        )
+        testedRecorder.startRecording(mockActivity)
+        val startRecordingCapture = argumentCaptor<Window.Callback>()
+        verify(mockWindow).callback = startRecordingCapture.capture()
+        assertThat(startRecordingCapture.firstValue)
+            .isInstanceOf(RecorderWindowCallback::class.java)
+        whenever(mockWindow.callback).thenReturn(startRecordingCapture.firstValue)
+
+        // When
+        testedRecorder.stopRecording(mockActivity)
+
+        // Then
+        val stopRecordingCaptureTarget = argumentCaptor<Window.Callback>()
+        verify(mockWindow, times(2)).callback = stopRecordingCaptureTarget.capture()
+        assertThat(stopRecordingCaptureTarget.secondValue).isNull()
+    }
+
+    @Test
+    fun `M do nothing W stopRecording(){window callback was not wrapped}`(
+        forge: Forge
+    ) {
+        // Given
+        val mockWindow: Window = mock()
+        val mockDefaultCallback: Window.Callback = mock()
+        val mockActivity = mockActivity(
+            forge,
+            window = mockWindow,
+            defaultWindowCallback = mockDefaultCallback
+        )
+
+        // When
+        testedRecorder.stopRecording(mockActivity)
+
+        // Then
+        verify(mockWindow, never()).callback = any()
+    }
+
+    @Test
+    fun `M do nothing W stopRecording(){window callback was not wrapped and was null}`(
+        forge: Forge
+    ) {
+        // Given
+        val mockWindow: Window = mock()
+        val mockActivity = mockActivity(
+            forge,
+            window = mockWindow,
+            defaultWindowCallback = null
+        )
+
+        // When
+        testedRecorder.stopRecording(mockActivity)
+
+        // Then
+        verify(mockWindow, never()).callback = any()
+    }
+
+    @Test
     fun `M clean the listeners the RecorderOnDrawListener W stopRecording()`(forge: Forge) {
         // Given
         val mockViewTreeObserver: ViewTreeObserver = mock()
@@ -169,7 +262,7 @@ internal class ScreenRecorderTest {
         forge: Forge,
         viewTreeObserver: ViewTreeObserver = mock(),
         window: Window = mock(),
-        defaultWindowCallback: Window.Callback = mock()
+        defaultWindowCallback: Window.Callback? = null
     ): Activity {
         val fakeDensity = forge.aFloat()
         val displayMetrics = DisplayMetrics().apply { density = fakeDensity }
