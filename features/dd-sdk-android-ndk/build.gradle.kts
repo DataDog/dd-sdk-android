@@ -35,6 +35,7 @@ plugins {
     id("apiSurface")
     id("transitiveDependencies")
     id("binary-compatibility-validator")
+    id("wiki")
 }
 
 android {

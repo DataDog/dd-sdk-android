@@ -34,6 +34,7 @@ plugins {
     id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
+    id("wiki")
 }
 
 android {
