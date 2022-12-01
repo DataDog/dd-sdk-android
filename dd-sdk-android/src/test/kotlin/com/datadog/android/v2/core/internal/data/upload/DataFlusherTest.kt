@@ -82,7 +82,10 @@ internal class DataFlusherTest {
     ) {
         // Given
         val fakeFiles = forge.aList { mock<File>() }
-        val fakeMetaFiles = forge.aList(fakeFiles.size) { forge.aNullable { mock<File>() } }
+        val fakeMetaFiles =
+            forge.aList(fakeFiles.size) {
+                forge.aNullable { mock<File>().apply { whenever(exists()) doReturn true } }
+            }
         val fakeBatches = forge
             .aList(fakeFiles.size) {
                 forge
@@ -152,6 +155,39 @@ internal class DataFlusherTest {
         fakeMetaFiles.forEach {
             verify(mockFileMover).delete(it)
         }
+    }
+
+    @Test
+    fun `M not attempt to read metadata W flush { meta doesn't exist }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeFiles = forge.aList { mock<File>() }
+        val fakeBatches = forge
+            .aList(fakeFiles.size) {
+                forge
+                    .aList {
+                        forge.aString()
+                    }
+                    .map { it.toByteArray() }
+            }
+        whenever(mockFileOrchestrator.getFlushableFiles()).thenReturn(fakeFiles)
+        fakeFiles.forEachIndexed { index, file ->
+            whenever(
+                mockFileReader.readData(file)
+            ).thenReturn(fakeBatches[index])
+            val fakeBatchFile =
+                forge.aNullable { mock<File>().apply { whenever(exists()) doReturn false } }
+            whenever(
+                mockFileOrchestrator.getMetadataFile(file)
+            ).thenReturn(fakeBatchFile)
+        }
+
+        // When
+        testedFlusher.flush(mockDataUploader)
+
+        // Then
+        verifyZeroInteractions(mockMetaFileReader)
     }
 
     @Test

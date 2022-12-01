@@ -37,6 +37,19 @@ public data class User(
         public fun fromJson(jsonString: String): User {
             try {
                 val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type User",
+                    e
+                )
+            }
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonObject(jsonObject: JsonObject): User {
+            try {
                 val username = jsonObject.get("username").asString
                 val host = jsonObject.get("host").asString
                 val firstname = jsonObject.get("firstname")?.asString

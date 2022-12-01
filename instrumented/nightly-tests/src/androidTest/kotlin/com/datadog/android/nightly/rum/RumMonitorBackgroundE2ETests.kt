@@ -170,9 +170,11 @@ class RumMonitorBackgroundE2ETests {
         val testMethodName = "rum_rummonitor_add_background_non_custom_action_with_outcome"
         val actionName = forge.anActionName()
         val attributes = defaultTestAttributes(testMethodName)
+        // BACK has no action.name (only action.target.name), so we need to exclude it, because
+        // assertion is relying on action.name
         val actionType = forge.aValueFrom(
             RumActionType::class.java,
-            exclude = listOf(RumActionType.CUSTOM)
+            exclude = listOf(RumActionType.CUSTOM, RumActionType.BACK)
         )
         measure(testMethodName) {
             GlobalRum.get().addUserAction(

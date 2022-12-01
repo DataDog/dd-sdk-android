@@ -33,6 +33,19 @@ public data class Paper(
         public fun fromJson(jsonString: String): Paper {
             try {
                 val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Paper",
+                    e
+                )
+            }
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonObject(jsonObject: JsonObject): Paper {
+            try {
                 val title = jsonObject.get("title").asString
                 val author = jsonObject.get("author").asJsonArray.let { jsonArray ->
                     val collection = ArrayList<String>(jsonArray.size())

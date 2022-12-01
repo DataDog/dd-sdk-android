@@ -15,6 +15,7 @@ import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.internal.storage.FileEventBatchWriter.Companion.ERROR_LARGE_DATA
 import com.datadog.android.v2.core.internal.storage.FileEventBatchWriter.Companion.WARNING_METADATA_WRITE_FAILED
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.api.io.TempDir
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -335,19 +337,48 @@ internal class FileEventBatchWriterTest {
     }
 
     @Test
-    fun `𝕄 read metadata 𝕎 currentMetadata()`(
-        @StringForgery fakeMetadata: String
-    ) {
+    fun `𝕄 not read metadata 𝕎 currentMetadata() { file doesn't exist }`() {
         // Given
+        val metaFile = mock<File>().apply {
+            whenever(exists()) doReturn false
+        }
+
         testedWriter = FileEventBatchWriter(
             batchFile = fakeBatchFile,
-            metadataFile = fakeBatchMetadataFile,
+            metadataFile = metaFile,
             eventsWriter = mockBatchWriter,
             metadataReaderWriter = mockMetaReaderWriter,
             filePersistenceConfig = mockFilePersistenceConfig,
             internalLogger = mockInternalLogger
         )
-        whenever(mockMetaReaderWriter.readData(fakeBatchMetadataFile)) doReturn
+
+        // When
+        val meta = testedWriter.currentMetadata()
+
+        // Then
+        assertThat(meta).isNull()
+        verifyZeroInteractions(mockMetaReaderWriter)
+    }
+
+    @Test
+    fun `𝕄 read metadata 𝕎 currentMetadata()`(
+        @StringForgery fakeMetadata: String,
+        @TempDir fakeMetadataDir: File,
+        forge: Forge
+    ) {
+        // Given
+        val fakeMetaFile = File(fakeMetadataDir, forge.anAlphabeticalString())
+        fakeMetaFile.createNewFile()
+
+        testedWriter = FileEventBatchWriter(
+            batchFile = fakeBatchFile,
+            metadataFile = fakeMetaFile,
+            eventsWriter = mockBatchWriter,
+            metadataReaderWriter = mockMetaReaderWriter,
+            filePersistenceConfig = mockFilePersistenceConfig,
+            internalLogger = mockInternalLogger
+        )
+        whenever(mockMetaReaderWriter.readData(fakeMetaFile)) doReturn
             fakeMetadata.toByteArray()
 
         // When

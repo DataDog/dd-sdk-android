@@ -46,6 +46,6 @@ internal class ResourceTrackingNetworkInterceptorActivity : ResourceTrackingActi
 
     companion object {
         internal const val RANDOM_RESOURCE_WITH_REDIRECT_URL =
-            "https://$HOST/random/20x20"
+            "https://$HOST/20/20"
     }
 }

@@ -33,11 +33,24 @@ public data class Conflict(
         public fun fromJson(jsonString: String): Conflict {
             try {
                 val jsonObject = JsonParser.parseString(jsonString).asJsonObject
-                val type = jsonObject.get("type")?.toString()?.let {
-                    ConflictType.fromJson(it)
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Conflict",
+                    e
+                )
+            }
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonObject(jsonObject: JsonObject): Conflict {
+            try {
+                val type = jsonObject.get("type")?.asJsonObject?.let {
+                    ConflictType.fromJsonObject(it)
                 }
-                val user = jsonObject.get("user")?.toString()?.let {
-                    User.fromJson(it)
+                val user = jsonObject.get("user")?.asJsonObject?.let {
+                    User.fromJsonObject(it)
                 }
                 return Conflict(type, user)
             } catch (e: IllegalStateException) {
@@ -76,6 +89,19 @@ public data class Conflict(
             public fun fromJson(jsonString: String): ConflictType {
                 try {
                     val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonObject(jsonObject)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type ConflictType",
+                        e
+                    )
+                }
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonObject(jsonObject: JsonObject): ConflictType {
+                try {
                     val id = jsonObject.get("id")?.asString
                     return ConflictType(id)
                 } catch (e: IllegalStateException) {
@@ -119,6 +145,19 @@ public data class Conflict(
             public fun fromJson(jsonString: String): User {
                 try {
                     val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonObject(jsonObject)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type User",
+                        e
+                    )
+                }
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonObject(jsonObject: JsonObject): User {
+                try {
                     val name = jsonObject.get("name")?.asString
                     val type = jsonObject.get("type")?.asString?.let {
                         UserType.fromJson(it)
