@@ -6,19 +6,13 @@
 
 package com.datadog.gradle.plugin.wiki
 
-import com.datadog.gradle.config.taskConfig
-import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesExtension
-import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesPlugin
-import com.datadog.gradle.plugin.transdeps.TransitiveDependenciesTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.File
 
 class WikiPlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
-
         val task = target.tasks.register(GEN_TASK_NAME, GenerateWikiTask::class.java) {
             this.srcDir = File(File(File(target.buildDir, "reports"), "javadoc"), target.name)
             this.apiSurface = File(File(target.projectDir, "api"), "apiSurface")

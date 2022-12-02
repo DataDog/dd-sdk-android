@@ -43,7 +43,6 @@ open class GenerateWikiTask : DefaultTask() {
     fun applyTask() {
         outputDir.mkdirs()
 
-
         apiSurface.forEachLine {
             val match = apiTypeSignatureRegex.matchEntire(it)
             if (match != null) {
@@ -54,13 +53,13 @@ open class GenerateWikiTask : DefaultTask() {
 
         val indexFile = File(outputDir, "$projectName.md")
         indexFile.printWriter(Charsets.UTF_8)
-                .use { writer ->
-                    writer.println("### [$projectName]($projectName)\n")
-                    pages.forEach {
-                        writer.println("- [$it]($it)")
-                    }
-                    writer.println("\n\n")
+            .use { writer ->
+                writer.println("### [$projectName]($projectName)\n")
+                pages.forEach {
+                    writer.println("- [$it]($it)")
                 }
+                writer.println("\n\n")
+            }
     }
 
     private fun generateWikiPage(typeCanonicalName: String) {
@@ -72,10 +71,10 @@ open class GenerateWikiTask : DefaultTask() {
         pages.add(typeName)
 
         if (typeDir.exists()) {
-            println("Combining doc from $typeCanonicalName")
+            logger.info("Combining doc from $typeCanonicalName")
             combine(typeDir, outputFile, typeName)
         } else {
-            System.err.println("Unable to find $typeDir")
+            logger.error("Unable to find $typeDir")
         }
     }
 
@@ -107,30 +106,29 @@ open class GenerateWikiTask : DefaultTask() {
             }
         }
 
-        println("$typeName: ${sections.keys.joinToString()}")
         outputFile.printWriter(Charsets.UTF_8)
-                .use { writer ->
-                    header.forEach {
-                        if (it.matches(codeLineRegex)) {
-                            writer.print("> ")
-                        }
-                        writer.println(it)
+            .use { writer ->
+                header.forEach {
+                    if (it.matches(codeLineRegex)) {
+                        writer.print("> ")
                     }
-
-                    sections.entries.forEach { e ->
-                        combineSectionFiles(writer, e.value, e.key, typeName)
-                    }
+                    writer.println(it)
                 }
+
+                sections.entries.forEach { e ->
+                    combineSectionFiles(writer, e.value, e.key, typeName)
+                }
+            }
     }
 
     private fun combineSectionFiles(
-            writer: PrintWriter,
-            files: List<File>?,
-            title: String,
-            typeName: String
+        writer: PrintWriter,
+        files: List<File>?,
+        title: String,
+        typeName: String
     ) {
         if (files.isNullOrEmpty()) {
-            println("    No files for $typeName / $title")
+            logger.info("    No files for $typeName / $title")
             return
         }
 
@@ -209,7 +207,7 @@ open class GenerateWikiTask : DefaultTask() {
                         "[$title]($type#$anchor)"
                     }
                 } else {
-                    println("••• LINK $title -> $href")
+                    logger.warn("Unable to parse link href for $title: $href")
                     "[$title](???)"
                 }
             }
@@ -226,16 +224,16 @@ open class GenerateWikiTask : DefaultTask() {
 
     // endregion
 
-
     companion object {
 
         private val noise = listOf("[androidJvm]\\", "androidJvm")
 
-        private val codeLineRegex = Regex("^(open )?(override )?(object|class|enum|data class|interface|annotation class|fun|var|val) (.+)$")
-        private val apiTypeSignatureRegex = Regex("^(open )?(object|class|enum|data class|interface|annotation class) ([\\w\\d.]+)( .+)?")
+        private val codeLineRegex =
+            Regex("^(open )?(override )?(object|class|enum|data class|interface|annotation class|fun|var|val) (.+)$")
+        private val apiTypeSignatureRegex =
+            Regex("^(open )?(object|class|enum|data class|interface|annotation class) ([\\w\\d.]+)( .+)?")
         private val markdownLinkRegex = Regex("\\[([^]]+)]\\(([^)]+)\\)")
         private val typeHrefRegex = Regex("(?:[\\w.]+/)*(?:([\\w\\-]+)/)?([\\w\\-]+).md")
         private val indexLinkRegex = Regex("\\| \\[[\\w_\\-&;]+]\\(([\\w/_-]+.md)\\) \\| .* \\|")
-
     }
 }
