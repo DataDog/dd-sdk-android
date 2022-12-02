@@ -5,14 +5,12 @@
  */
 
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.kotlinConfig
 import org.gradle.api.JavaVersion
 
 plugins {
     id("com.android.application")
     kotlin("android")
-    id("io.gitlab.arturbosch.detekt")
 }
 
 android {
@@ -110,10 +108,6 @@ dependencies {
         // this is needed to make AssertJ working on APIs <24
         androidTestImplementation(project(":tools:javabackport"))
     }
-
-    detekt(project(":tools:detekt"))
-    detekt(libs.detektCli)
 }
 
 kotlinConfig()
-detektConfig()

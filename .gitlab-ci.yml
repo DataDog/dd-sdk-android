@@ -63,19 +63,6 @@ analysis:android-lint:
   script:
     - GRADLE_OPTS="-Xmx2560m" ./gradlew :lintCheckAll --stacktrace --no-daemon
 
-analysis:detekt:
-  tags: [ "runner:main" ]
-  image: $CI_IMAGE_DOCKER
-  stage: analysis
-  timeout: 30m
-  cache:
-    key: $CI_COMMIT_REF_SLUG
-    paths:
-      - cache/caches/
-      - cache/notifications/
-  script:
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew :detektAll --stacktrace --no-daemon --build-cache --gradle-user-home cache/
-
 analysis:licenses:
   tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER

@@ -4,12 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.kotlinConfig
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
-    id("io.gitlab.arturbosch.detekt")
 }
 
 dependencies {
@@ -17,4 +15,3 @@ dependencies {
 }
 
 kotlinConfig()
-detektConfig()

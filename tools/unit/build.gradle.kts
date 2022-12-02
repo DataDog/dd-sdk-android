@@ -6,7 +6,6 @@
 
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 
@@ -14,7 +13,6 @@ plugins {
     id("com.android.library")
     kotlin("android")
     id("com.github.ben-manes.versions")
-    id("io.gitlab.arturbosch.detekt")
     id("thirdPartyLicences")
 }
 
@@ -57,6 +55,5 @@ dependencies {
 }
 
 kotlinConfig()
-detektConfig()
 junitConfig()
 dependencyUpdateConfig()
