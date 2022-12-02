@@ -28,9 +28,22 @@ public data class Delivery(
         public fun fromJson(jsonString: String): Delivery {
             try {
                 val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Delivery",
+                    e
+                )
+            }
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonObject(jsonObject: JsonObject): Delivery {
+            try {
                 val item = jsonObject.get("item").asString
-                val customer = jsonObject.get("customer").toString().let {
-                    Customer.fromJson(it)
+                val customer = jsonObject.get("customer").asJsonObject.let {
+                    Customer.fromJsonObject(it)
                 }
                 return Delivery(item, customer)
             } catch (e: IllegalStateException) {
@@ -77,12 +90,25 @@ public data class Delivery(
             public fun fromJson(jsonString: String): Customer {
                 try {
                     val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonObject(jsonObject)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Customer",
+                        e
+                    )
+                }
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonObject(jsonObject: JsonObject): Customer {
+                try {
                     val name = jsonObject.get("name")?.asString
-                    val billingAddress = jsonObject.get("billing_address")?.toString()?.let {
-                        Address.fromJson(it)
+                    val billingAddress = jsonObject.get("billing_address")?.asJsonObject?.let {
+                        Address.fromJsonObject(it)
                     }
-                    val shippingAddress = jsonObject.get("shipping_address")?.toString()?.let {
-                        Address.fromJson(it)
+                    val shippingAddress = jsonObject.get("shipping_address")?.asJsonObject?.let {
+                        Address.fromJsonObject(it)
                     }
                     return Customer(name, billingAddress, shippingAddress)
                 } catch (e: IllegalStateException) {
@@ -124,6 +150,19 @@ public data class Delivery(
             public fun fromJson(jsonString: String): Address {
                 try {
                     val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonObject(jsonObject)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Address",
+                        e
+                    )
+                }
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonObject(jsonObject: JsonObject): Address {
+                try {
                     val streetAddress = jsonObject.get("street_address").asString
                     val city = jsonObject.get("city").asString
                     val state = jsonObject.get("state").asString

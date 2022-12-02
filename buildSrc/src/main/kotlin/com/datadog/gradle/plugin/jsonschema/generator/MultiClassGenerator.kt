@@ -8,9 +8,11 @@ package com.datadog.gradle.plugin.jsonschema.generator
 
 import com.datadog.gradle.plugin.jsonschema.TypeDefinition
 import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.STRING
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.jvm.throws
 
@@ -22,6 +24,7 @@ class MultiClassGenerator(
     packageName,
     knownTypes
 ) {
+    private val stringDeserializer = ClassStringDeserializerGenerator(packageName, knownTypes)
 
     //region TypeSpecGenerator
 
@@ -77,8 +80,44 @@ class MultiClassGenerator(
         rootTypeName: String
     ): TypeSpec {
         return TypeSpec.companionObjectBuilder()
+            .addFunction(generateMultiClassStringDeserializer(definition))
             .addFunction(generateMultiClassDeserializer(definition, rootTypeName))
             .build()
+    }
+
+    private fun generateMultiClassStringDeserializer(
+        definition: TypeDefinition.OneOfClass
+    ): FunSpec {
+        val returnType = ClassName.bestGuess(definition.name)
+
+        val funBuilder = FunSpec.builder(Identifier.FUN_FROM_JSON)
+            .addAnnotation(AnnotationSpec.builder(JvmStatic::class).build())
+            .throws(ClassNameRef.JsonParseException)
+            .addParameter(Identifier.PARAM_JSON_STR, STRING)
+            .returns(returnType)
+
+        funBuilder.beginControlFlow("try")
+
+        funBuilder.addStatement(
+            "val %L = %T.parseString(%L).asJsonObject",
+            Identifier.PARAM_JSON_OBJ,
+            ClassNameRef.JsonParser,
+            Identifier.PARAM_JSON_STR
+        )
+        funBuilder.addStatement("return %L(%L)", Identifier.FUN_FROM_JSON_OBJ, Identifier.PARAM_JSON_OBJ)
+
+        funBuilder.nextControlFlow(
+            "catch (%L: %T)",
+            Identifier.CAUGHT_EXCEPTION,
+            ClassNameRef.IllegalStateException
+        )
+        funBuilder.addStatement("throw %T(", ClassNameRef.JsonParseException)
+        funBuilder.addStatement("    \"$PARSE_ERROR_MSG %T\",", returnType)
+        funBuilder.addStatement("    %L", Identifier.CAUGHT_EXCEPTION)
+        funBuilder.addStatement(")")
+        funBuilder.endControlFlow()
+
+        return funBuilder.build()
     }
 
     private fun generateMultiClassDeserializer(
@@ -86,10 +125,10 @@ class MultiClassGenerator(
         rootTypeName: String
     ): FunSpec {
         val returnType = definition.asKotlinTypeName(rootTypeName)
-        val funBuilder = FunSpec.builder(Identifier.FUN_FROM_JSON)
+        val funBuilder = FunSpec.builder(Identifier.FUN_FROM_JSON_OBJ)
             .addAnnotation(AnnotationSpec.builder(JvmStatic::class).build())
             .throws(ClassNameRef.JsonParseException)
-            .addParameter(Identifier.PARAM_JSON_STR, String::class)
+            .addParameter(Identifier.PARAM_JSON_OBJ, ClassNameRef.JsonObject)
             .returns(returnType)
 
         // create error variable
@@ -104,8 +143,8 @@ class MultiClassGenerator(
             funBuilder.addStatement(
                 "%T.%L(%L)",
                 typeName,
-                Identifier.FUN_FROM_JSON,
-                Identifier.PARAM_JSON_STR
+                Identifier.FUN_FROM_JSON_OBJ,
+                Identifier.PARAM_JSON_OBJ
             )
             funBuilder.nextControlFlow(
                 "catch (%L: %T)",

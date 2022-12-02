@@ -42,10 +42,23 @@ public data class UserMerged(
         public fun fromJson(jsonString: String): UserMerged {
             try {
                 val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type UserMerged",
+                    e
+                )
+            }
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonObject(jsonObject: JsonObject): UserMerged {
+            try {
                 val email = jsonObject.get("email")?.asString
                 val phone = jsonObject.get("phone")?.asString
-                val info = jsonObject.get("info")?.toString()?.let {
-                    Info.fromJson(it)
+                val info = jsonObject.get("info")?.asJsonObject?.let {
+                    Info.fromJsonObject(it)
                 }
                 val firstname = jsonObject.get("firstname")?.asString
                 val lastname = jsonObject.get("lastname").asString
@@ -90,6 +103,19 @@ public data class UserMerged(
             public fun fromJson(jsonString: String): Info {
                 try {
                     val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonObject(jsonObject)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Info",
+                        e
+                    )
+                }
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonObject(jsonObject: JsonObject): Info {
+                try {
                     val notes = jsonObject.get("notes")?.asString
                     val source = jsonObject.get("source")?.asString
                     return Info(notes, source)

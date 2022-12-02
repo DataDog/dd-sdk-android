@@ -11,7 +11,7 @@ object Identifier {
     const val FUN_TO_JSON = "toJson"
     const val FUN_TO_JSON_ELT = "toJsonElement"
     const val FUN_FROM_JSON = "fromJson"
-    const val FUN_FROM_JSON_ELT = "fromJsonElement"
+    const val FUN_FROM_JSON_OBJ = "fromJsonObject"
 
     const val PARAM_JSON_STR = "jsonString"
     const val PARAM_JSON_ARRAY = "jsonArray"

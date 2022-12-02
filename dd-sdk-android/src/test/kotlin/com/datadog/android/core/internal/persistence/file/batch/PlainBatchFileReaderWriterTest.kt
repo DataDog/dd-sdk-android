@@ -404,6 +404,8 @@ internal class PlainBatchFileReaderWriterTest {
                         metaBytes.apply {
                             set(
                                 1,
+                                // first 2 bytes of meta should be 1, so to generate
+                                // wrong block we need any value != 1
                                 forge.anElementFrom(
                                     0,
                                     forge.anInt(min = 2, max = Byte.MAX_VALUE + 1)
@@ -411,8 +413,10 @@ internal class PlainBatchFileReaderWriterTest {
                             )
                         } + eventBytes
                     } else {
+                        // first 2 bytes of event should be 0, so to generate
+                        // wrong block we need any value != 0
                         metaBytes + eventBytes.apply {
-                            set(1, forge.anInt(min = 0, max = Byte.MAX_VALUE + 1).toByte())
+                            set(1, forge.anInt(min = 1, max = Byte.MAX_VALUE + 1).toByte())
                         }
                     }
                 } else {

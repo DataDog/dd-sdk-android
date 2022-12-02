@@ -49,12 +49,25 @@ public data class Company(
         public fun fromJson(jsonString: String): Company {
             try {
                 val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                return fromJsonObject(jsonObject)
+            } catch (e: IllegalStateException) {
+                throw JsonParseException(
+                    "Unable to parse json into type Company",
+                    e
+                )
+            }
+        }
+
+        @JvmStatic
+        @Throws(JsonParseException::class)
+        public fun fromJsonObject(jsonObject: JsonObject): Company {
+            try {
                 val name = jsonObject.get("name")?.asString
-                val ratings = jsonObject.get("ratings")?.toString()?.let {
-                    Ratings.fromJson(it)
+                val ratings = jsonObject.get("ratings")?.asJsonObject?.let {
+                    Ratings.fromJsonObject(it)
                 }
-                val information = jsonObject.get("information")?.toString()?.let {
-                    Information.fromJson(it)
+                val information = jsonObject.get("information")?.asJsonObject?.let {
+                    Information.fromJsonObject(it)
                 }
                 val additionalProperties = mutableMapOf<String, Any?>()
                 for (entry in jsonObject.entrySet()) {
@@ -105,6 +118,19 @@ public data class Company(
             public fun fromJson(jsonString: String): Ratings {
                 try {
                     val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonObject(jsonObject)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Ratings",
+                        e
+                    )
+                }
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonObject(jsonObject: JsonObject): Ratings {
+                try {
                     val global = jsonObject.get("global").asLong
                     val additionalProperties = mutableMapOf<String, Long>()
                     for (entry in jsonObject.entrySet()) {
@@ -162,6 +188,19 @@ public data class Company(
             public fun fromJson(jsonString: String): Information {
                 try {
                     val jsonObject = JsonParser.parseString(jsonString).asJsonObject
+                    return fromJsonObject(jsonObject)
+                } catch (e: IllegalStateException) {
+                    throw JsonParseException(
+                        "Unable to parse json into type Information",
+                        e
+                    )
+                }
+            }
+
+            @JvmStatic
+            @Throws(JsonParseException::class)
+            public fun fromJsonObject(jsonObject: JsonObject): Information {
+                try {
                     val date = jsonObject.get("date")?.asLong
                     val priority = jsonObject.get("priority")?.asLong
                     val additionalProperties = mutableMapOf<String, Any?>()
