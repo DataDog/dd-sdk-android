@@ -6,6 +6,7 @@
 
 package com.datadog.gradle.plugin.wiki
 
+import com.datadog.gradle.plugin.apisurface.ApiSurfacePlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import java.io.File
@@ -13,22 +14,21 @@ import java.io.File
 class WikiPlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
-        val task = target.tasks.register(GEN_TASK_NAME, GenerateWikiTask::class.java) {
+        target.tasks.register(GEN_TASK_NAME, GenerateWikiTask::class.java) {
             this.srcDir = File(File(File(target.buildDir, "reports"), "javadoc"), target.name)
             this.apiSurface = File(File(target.projectDir, "api"), "apiSurface")
             this.outputDir = File(target.buildDir, "wiki")
             this.projectName = target.name
-        }
 
-        target.afterEvaluate {
-            val generateWikiTask = task.get()
-            tasks.findByName("dokkaGfm")?.let { generateWikiTask.dependsOn(it) }
-            tasks.findByName("generateApiSurface")?.let { generateWikiTask.dependsOn(it) }
+            dependsOn("dokkaGfm")
+            dependsOn(ApiSurfacePlugin.TASK_GEN_KOTLIN_API_SURFACE)
+            if (target.tasks.findByName(ApiSurfacePlugin.TASK_GEN_JAVA_API_SURFACE) != null) {
+                dependsOn(ApiSurfacePlugin.TASK_GEN_JAVA_API_SURFACE)
+            }
         }
     }
 
     companion object {
-        const val EXT_NAME = "wiki"
         const val GEN_TASK_NAME = "generateWiki"
     }
 }

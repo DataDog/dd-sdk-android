@@ -18,8 +18,8 @@ from xmlrpc.client import Boolean
 import requests
 from git import Repo
 
-OWNER = "xgouchet"  # "DataDog"
-REPOSITORY = "test_wiki"
+OWNER = "DataDog"
+REPOSITORY = "dd-sdk-android"
 
 
 def parse_arguments(args: list) -> Namespace:
@@ -64,7 +64,7 @@ def git_commit_changes(repo: Repo):
 def git_push_changes(repo: Repo):
     print("Pushing branch")
     origin = repo.remote(name="origin")
-    repo.git.push("--set-upstream", "--force", origin, repo.head.ref)
+    repo.git.push("--set-upstream", origin, repo.head.ref)
 
 
 def update_wiki(gh_token: str, dry_run: bool) -> int:
