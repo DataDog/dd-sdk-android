@@ -32,6 +32,8 @@ open class GenerateWikiTask : DefaultTask() {
 
     private val pages = mutableListOf<String>()
 
+    private val types = mutableListOf<Pair<String, File>>()
+
     init {
         group = "datadog"
         description = "Generate a Github Wiki from Dokka's output"
@@ -47,8 +49,17 @@ open class GenerateWikiTask : DefaultTask() {
             val match = apiTypeSignatureRegex.matchEntire(it)
             if (match != null) {
                 val typeCanonicalName = match.groupValues[3]
-                generateWikiPage(typeCanonicalName)
+                val packageName = typeCanonicalName.substringBeforeLast('.')
+                val typeName = typeCanonicalName.substringAfterLast('.')
+                val packageDir = File(srcDir, packageName)
+                val typeDir = File(packageDir, convertToDokkaTypeName(typeName))
+                types.add(typeName to typeDir)
             }
+        }
+
+        while (types.isNotEmpty()) {
+            val (typeName, typeDir) = types.removeFirst()
+            generateWiki(typeName, typeDir)
         }
 
         val indexFile = File(outputDir, "$projectName.md")
@@ -62,16 +73,14 @@ open class GenerateWikiTask : DefaultTask() {
             }
     }
 
-    private fun generateWikiPage(typeCanonicalName: String) {
-        val packageName = typeCanonicalName.substringBeforeLast('.')
-        val typeName = typeCanonicalName.substringAfterLast('.')
-        val packageDir = File(srcDir, packageName)
-        val typeDir = File(packageDir, convertToDokkaTypeName(typeName))
+    private fun generateWiki(typeName: String, typeDir: File) {
         val outputFile = File(outputDir, "$typeName.md")
-        pages.add(typeName)
+        if (!typeName.contains('.')) {
+            pages.add(typeName)
+        }
 
         if (typeDir.exists()) {
-            logger.info("Combining doc from $typeCanonicalName")
+            logger.info("Combining doc from $typeName")
             combine(typeDir, outputFile, typeName)
         } else {
             logger.error("Unable to find $typeDir")
@@ -80,39 +89,64 @@ open class GenerateWikiTask : DefaultTask() {
 
     private fun combine(typeDir: File, outputFile: File, typeName: String) {
         val indexFile = File(typeDir, "index.md")
-        val header = mutableListOf<String>()
+        val keptLines = mutableListOf<String>()
         val sections = mutableMapOf<String, MutableList<File>>()
+        val subtypesLinks = mutableListOf<String>()
 
-        var fileList: MutableList<File>? = null
+        var currentSection = ""
+        var currentFileList: MutableList<File>? = null
         indexFile.forEachLineIndexed { i: Int, line: String ->
             if (line.startsWith("## ")) {
-                val key = line.substring(3)
-                if (key != "Parameters") {
-                    // check(sections.containsKey(key)) { "Unknown section \"$key\" for type ${typeDir.name}" }
-                    if (!sections.containsKey(key)) {
-                        sections[key] = mutableListOf()
+                val sectionName = line.substring(3)
+                if (sectionName != "Parameters") {
+                    if (!sections.containsKey(sectionName)) {
+                        sections[sectionName] = mutableListOf()
                     }
-                    fileList = sections[key]
+                    currentFileList = sections[sectionName]
+                    currentSection = sectionName
                 }
             }
 
-            if (fileList == null) {
-                if (i > 2 && line !in noise) header.add(fixLinks(line, typeName))
+            if (currentFileList == null) {
+                if (i > 2 && line !in noise) keptLines.add(fixLinks(line, typeName))
             } else {
-                val match = indexLinkRegex.matchEntire(line)
-                if (match != null) {
-                    fileList?.add(File(typeDir, match.groupValues[1]))
+                val linkMatch = contentLinkRegex.matchEntire(line)
+                val subtypeMatch = subTypeLinkRegex.matchEntire(line)
+                if (linkMatch != null) {
+                    currentFileList?.add(File(typeDir, linkMatch.groupValues[1]))
+                } else if (subtypeMatch != null) {
+                    if (currentSection == "Entries") {
+                        // Enum entries are in a separate file that we want to include
+                        currentFileList?.add(File(typeDir, subtypeMatch.groupValues[2]))
+                    } else if (currentSection == "Types") {
+                        val subtypeName = subtypeMatch.groupValues[1]
+                        val link = subtypeMatch.groupValues[2]
+                        val subFolder = File(typeDir, link.substringBeforeLast('/'))
+                        types.add("$typeName.$subtypeName" to subFolder)
+                        subtypesLinks.add("$typeName.$subtypeName")
+                    } else {
+                        logger.warn("Found unknown subtype for $typeName: $currentSection ($line)")
+                    }
                 }
             }
         }
 
         outputFile.printWriter(Charsets.UTF_8)
             .use { writer ->
-                header.forEach {
+                keptLines.forEach {
                     if (it.matches(codeLineRegex)) {
                         writer.print("> ")
                     }
                     writer.println(it)
+                }
+
+                if (subtypesLinks.isNotEmpty()) {
+                    writer.println("## Types")
+                    writer.println()
+                    subtypesLinks.forEach {
+                        writer.println("[$it]($it)")
+                        writer.println()
+                    }
                 }
 
                 sections.entries.forEach { e ->
@@ -135,6 +169,7 @@ open class GenerateWikiTask : DefaultTask() {
         writer.println("## $title")
         files.forEach {
             appendFile(writer, it, typeName)
+            writer.println()
         }
     }
 
@@ -197,21 +232,57 @@ open class GenerateWikiTask : DefaultTask() {
             } else if (href == "index.md") {
                 "[$title]($typeName)"
             } else {
-                val typeHrefMatch = typeHrefRegex.matchEntire(href)
-                if (typeHrefMatch != null) {
-                    val type = convertFromDokkaTypeName(typeHrefMatch.groupValues[1])
-                    val anchor = convertFromDokkaTypeName(typeHrefMatch.groupValues[2])
-                    if (anchor == "index") {
-                        "[$title]($type)"
-                    } else {
-                        "[$title]($type#$anchor)"
-                    }
-                } else {
-                    logger.warn("Unable to parse link href for $title: $href")
-                    "[$title](???)"
-                }
+                convertHrefLink(href, typeName, title)
             }
         }
+    }
+
+    private fun convertHrefLink(
+        href: String,
+        typeName: String,
+        title: String
+    ): String {
+        val typeHrefMatch = typeHrefRegex.matchEntire(href)
+        return if (typeHrefMatch != null) {
+            val dokkaParent = typeHrefMatch.groupValues[1]
+            val dokkaFolder = typeHrefMatch.groupValues[2]
+            val dokkaFile = typeHrefMatch.groupValues[3]
+            val type = convertFromDokkaTypeName(dokkaFolder).replace('/', '.')
+            val parentNav = dokkaParent.split('/').filter { it.isNotBlank() }
+            if (dokkaFile == "index") {
+                if (parentNav.lastOrNull() != "..") {
+                    val typeLink = findExistingFile(type)
+                    "[$title]($typeLink)"
+                } else {
+                    val parentTypeTokens = typeName.split('.')
+                    val prefix = parentTypeTokens.take(parentNav.size).joinToString(".")
+                    val neighborType = "$prefix.$type"
+                    val typeLink = findExistingFile(neighborType)
+                    "[$title]($typeLink)"
+                }
+            } else {
+                title
+            }
+
+        } else {
+            logger.warn("Unable to parse link href for $title:\n -$href\n -from $typeName")
+            title
+        }
+    }
+
+    private fun findExistingFile(type: String): String {
+        var matchingType = type
+        val existingFiles = outputDir.list() ?: return ""
+
+        while ("$matchingType.md" !in existingFiles) {
+            if (matchingType.contains('.')) {
+                matchingType = matchingType.substringBeforeLast('.')
+            } else {
+                return ""
+            }
+        }
+
+        return matchingType
     }
 
     fun File.forEachLineIndexed(charset: Charset = Charsets.UTF_8, action: (Int, String) -> Unit) {
@@ -233,7 +304,10 @@ open class GenerateWikiTask : DefaultTask() {
         private val apiTypeSignatureRegex =
             Regex("^(open )?(object|class|enum|data class|interface|annotation class) ([\\w\\d.]+)( .+)?")
         private val markdownLinkRegex = Regex("\\[([^]]+)]\\(([^)]+)\\)")
-        private val typeHrefRegex = Regex("(?:[\\w.]+/)*(?:([\\w\\-]+)/)?([\\w\\-]+).md")
-        private val indexLinkRegex = Regex("\\| \\[[\\w_\\-&;]+]\\(([\\w/_-]+.md)\\) \\| .* \\|")
+        private val typeHrefRegex =
+            Regex("^(?:([\\w\\-/.]+)/)*(?:([\\w\\-/]+)/)?([\\w\\-]+).md(#[\\w%-]+)?$")
+        private val contentLinkRegex = Regex("\\| \\[[\\w_\\-&;]+]\\(([\\w_-]+.md)\\) \\| (.*) \\|")
+        private val subTypeLinkRegex =
+            Regex("\\| \\[([\\w_\\-&;]+)]\\(([\\w_-]+/index\\.md)\\) \\| .* \\|")
     }
 }
