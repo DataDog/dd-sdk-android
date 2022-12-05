@@ -23,7 +23,6 @@ import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.plugin.DatadogContext
@@ -43,6 +42,7 @@ import com.datadog.android.v2.api.FeatureUploadConfiguration
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.TimeInfo
+import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
 import com.datadog.android.v2.log.internal.net.LogsRequestFactory

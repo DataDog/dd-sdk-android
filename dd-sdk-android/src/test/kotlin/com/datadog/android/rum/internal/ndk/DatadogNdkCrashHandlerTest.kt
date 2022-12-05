@@ -12,8 +12,6 @@ import com.datadog.android.core.internal.persistence.file.FileReader
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.LogsFeature
@@ -31,6 +29,8 @@ import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.api.context.NetworkInfo
+import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -65,7 +65,6 @@ import org.mockito.quality.Strictness
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.ExecutorService
-import com.datadog.android.v2.api.context.UserInfo as UserInfoV2
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -438,7 +437,7 @@ internal class DatadogNdkCrashHandlerTest {
                 id = fakeUserInfo.id,
                 name = fakeUserInfo.name,
                 email = fakeUserInfo.email,
-                additionalProperties = fakeUserInfo.additionalProperties
+                additionalProperties = fakeUserInfo.additionalProperties.toMutableMap()
             )
         )
 
@@ -476,11 +475,11 @@ internal class DatadogNdkCrashHandlerTest {
                 .hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                 .hasTimestamp(ndkCrashLog.timestamp + fakeServerOffset)
                 .hasUserInfo(
-                    UserInfoV2(
+                    UserInfo(
                         fakeViewEvent.usr?.id,
                         fakeViewEvent.usr?.name,
                         fakeViewEvent.usr?.email,
-                        fakeViewEvent.usr?.additionalProperties ?: mutableMapOf()
+                        fakeViewEvent.usr?.additionalProperties.orEmpty()
                     )
                 )
                 .hasErrorType(ndkCrashLog.signalName)
@@ -610,7 +609,7 @@ internal class DatadogNdkCrashHandlerTest {
                 id = fakeUserInfo.id,
                 name = fakeUserInfo.name,
                 email = fakeUserInfo.email,
-                additionalProperties = fakeUserInfo.additionalProperties
+                additionalProperties = fakeUserInfo.additionalProperties.toMutableMap()
             )
         )
         whenever(mockRumEventDeserializer.deserialize(viewEventStr))
@@ -654,11 +653,11 @@ internal class DatadogNdkCrashHandlerTest {
                 .hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                 .hasTimestamp(ndkCrashLog.timestamp + fakeServerOffset)
                 .hasUserInfo(
-                    UserInfoV2(
+                    UserInfo(
                         fakeViewEvent.usr?.id,
                         fakeViewEvent.usr?.name,
                         fakeViewEvent.usr?.email,
-                        fakeViewEvent.usr?.additionalProperties ?: mutableMapOf()
+                        fakeViewEvent.usr?.additionalProperties.orEmpty()
                     )
                 )
                 .hasErrorType(ndkCrashLog.signalName)

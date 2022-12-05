@@ -51,12 +51,12 @@ import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.LoggingSyncListener
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.core.internal.user.DatadogUserInfoProvider
+import com.datadog.android.core.internal.user.MutableUserInfoProvider
+import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
+import com.datadog.android.core.internal.user.UserInfoDeserializer
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.user.DatadogUserInfoProvider
-import com.datadog.android.log.internal.user.MutableUserInfoProvider
-import com.datadog.android.log.internal.user.NoOpMutableUserInfoProvider
-import com.datadog.android.log.internal.user.UserInfoDeserializer
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.domain.event.RumEventDeserializer
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler

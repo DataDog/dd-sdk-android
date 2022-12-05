@@ -14,10 +14,10 @@ import android.os.Build
 import android.util.Log
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration

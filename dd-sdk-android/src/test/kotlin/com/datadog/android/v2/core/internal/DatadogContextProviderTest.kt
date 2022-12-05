@@ -9,12 +9,12 @@ package com.datadog.android.v2.core.internal
 import android.app.Application
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.system.AndroidInfoProvider
-import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.context.NetworkInfo
+import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration

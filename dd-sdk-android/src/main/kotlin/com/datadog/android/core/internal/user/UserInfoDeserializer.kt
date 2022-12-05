@@ -4,12 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.user
+package com.datadog.android.core.internal.user
 
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.v2.api.context.UserInfo
 import com.google.gson.JsonParseException
 import java.util.Locale
 

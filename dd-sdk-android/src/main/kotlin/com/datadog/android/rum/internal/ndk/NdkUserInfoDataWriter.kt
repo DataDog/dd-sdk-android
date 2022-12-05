@@ -14,9 +14,9 @@ import com.datadog.android.core.internal.persistence.file.advanced.ConsentAwareF
 import com.datadog.android.core.internal.persistence.file.single.SingleFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.single.SingleItemDataWriter
 import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.core.model.UserInfo
+import com.datadog.android.core.internal.user.UserInfoSerializer
 import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.user.UserInfoSerializer
+import com.datadog.android.v2.api.context.UserInfo
 import java.io.File
 import java.util.concurrent.ExecutorService
 

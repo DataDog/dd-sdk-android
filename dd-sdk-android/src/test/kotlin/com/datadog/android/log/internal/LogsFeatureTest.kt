@@ -8,8 +8,6 @@ package com.datadog.android.log.internal
 
 import android.util.Log
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.model.NetworkInfo
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
@@ -24,6 +22,8 @@ import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.android.v2.api.context.NetworkInfo
+import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.android.v2.log.internal.storage.LogsDataWriter
 import com.datadog.opentracing.DDSpanContext

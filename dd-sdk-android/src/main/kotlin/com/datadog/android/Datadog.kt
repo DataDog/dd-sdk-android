@@ -11,11 +11,11 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.telemetry
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.v2.api.SdkCore
+import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.android.v2.core.internal.HashGenerator
@@ -173,7 +173,7 @@ object Datadog {
                 id,
                 name,
                 email,
-                extraInfo.toMutableMap()
+                extraInfo
             )
         )
     }

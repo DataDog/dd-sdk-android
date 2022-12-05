@@ -9,7 +9,6 @@ package com.datadog.android.rum.internal.domain.scope
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.hasUserData
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes

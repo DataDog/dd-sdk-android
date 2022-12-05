@@ -4,10 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.user
+package com.datadog.android.core.internal.user
 
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.core.model.UserInfo
+import com.datadog.android.v2.api.context.UserInfo
 
 internal class DatadogUserInfoProvider(
     internal val dataWriter: DataWriter<UserInfo>
@@ -25,8 +25,9 @@ internal class DatadogUserInfoProvider(
     }
 
     override fun addUserProperties(properties: Map<String, Any?>) {
-        internalUserInfo.additionalProperties
-            .putAll(properties)
+        internalUserInfo = internalUserInfo.copy(
+            additionalProperties = internalUserInfo.additionalProperties + properties
+        )
     }
 
     override fun getUserInfo(): UserInfo {

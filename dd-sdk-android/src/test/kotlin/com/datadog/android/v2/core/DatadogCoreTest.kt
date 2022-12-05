@@ -15,10 +15,9 @@ import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
 import com.datadog.android.core.internal.time.TimeProvider
-import com.datadog.android.core.model.UserInfo
+import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.log.internal.user.MutableUserInfoProvider
 import com.datadog.android.plugin.DatadogContext
 import com.datadog.android.plugin.DatadogRumContext
 import com.datadog.android.privacy.TrackingConsent
@@ -33,6 +32,7 @@ import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.context.TimeInfo
+import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature

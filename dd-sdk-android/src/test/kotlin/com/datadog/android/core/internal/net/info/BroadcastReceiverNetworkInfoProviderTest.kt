@@ -15,9 +15,9 @@ import android.os.Build
 import android.telephony.TelephonyManager
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.context.NetworkInfo
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions

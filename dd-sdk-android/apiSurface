@@ -135,35 +135,6 @@ enum com.datadog.android.core.configuration.VitalsUpdateFrequency
   - AVERAGE
   - RARE
   - NEVER
-data class com.datadog.android.core.model.NetworkInfo
-  constructor(Connectivity = Connectivity.NETWORK_NOT_CONNECTED, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null)
-  fun toJson(): com.google.gson.JsonElement
-  companion object 
-    fun fromJson(kotlin.String): NetworkInfo
-    fun fromJsonObject(com.google.gson.JsonObject): NetworkInfo
-  enum Connectivity
-    constructor(kotlin.String)
-    - NETWORK_NOT_CONNECTED
-    - NETWORK_ETHERNET
-    - NETWORK_WIFI
-    - NETWORK_WIMAX
-    - NETWORK_BLUETOOTH
-    - NETWORK_2G
-    - NETWORK_3G
-    - NETWORK_4G
-    - NETWORK_5G
-    - NETWORK_MOBILE_OTHER
-    - NETWORK_CELLULAR
-    - NETWORK_OTHER
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Connectivity
-data class com.datadog.android.core.model.UserInfo
-  constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
-  fun toJson(): com.google.gson.JsonElement
-  companion object 
-    fun fromJson(kotlin.String): UserInfo
-    fun fromJsonObject(com.google.gson.JsonObject): UserInfo
 interface com.datadog.android.event.EventMapper<T: Any>
   fun map(T): T?
 interface com.datadog.android.event.SpanEventMapper : EventMapper<com.datadog.android.tracing.model.SpanEvent>
@@ -2027,7 +1998,7 @@ interface com.datadog.android.v2.api.SdkCore
   fun setVerbosity(Int)
   fun getVerbosity(): Int
   fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
-  fun setUserInfo(com.datadog.android.core.model.UserInfo)
+  fun setUserInfo(com.datadog.android.v2.api.context.UserInfo)
   fun addUserProperties(Map<String, Any?>)
   fun stop()
   fun clearAllData()
@@ -2049,8 +2020,9 @@ enum com.datadog.android.v2.api.context.DeviceType
   - DESKTOP
   - OTHER
 data class com.datadog.android.v2.api.context.NetworkInfo
-  constructor(Connectivity, String?, Long?, Long?, Long?, Long?, String?)
+  constructor(Connectivity = Connectivity.NETWORK_NOT_CONNECTED, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null)
   enum Connectivity
+    constructor(kotlin.String)
     - NETWORK_NOT_CONNECTED
     - NETWORK_ETHERNET
     - NETWORK_WIFI
@@ -2068,7 +2040,7 @@ data class com.datadog.android.v2.api.context.ProcessInfo
 data class com.datadog.android.v2.api.context.TimeInfo
   constructor(Long, Long, Long, Long)
 data class com.datadog.android.v2.api.context.UserInfo
-  constructor(String?, String?, String?, Map<String, Any?>)
+  constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, Map<kotlin.String, kotlin.Any?> = emptyMap())
 class com.datadog.android.webview.DatadogEventBridge
   constructor()
   constructor(List<String>)
