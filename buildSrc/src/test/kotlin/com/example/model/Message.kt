@@ -10,11 +10,13 @@ import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.Boolean
 import kotlin.String
+import kotlin.Suppress
 import kotlin.collections.ArrayList
 import kotlin.collections.List
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
+@Suppress("StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber")
 public data class Message(
     public val destination: List<String>,
     public val origin: String,
@@ -24,6 +26,7 @@ public data class Message(
     public var read: Boolean? = null,
     public var important: Boolean? = null,
 ) {
+    @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount", "TooGenericExceptionCaught")
     public fun toJson(): JsonElement {
         val json = JsonObject()
         val destinationArray = JsonArray(destination.size)
@@ -66,6 +69,8 @@ public data class Message(
         }
 
         @JvmStatic
+        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
+                "TooGenericExceptionCaught")
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): Message {
             try {

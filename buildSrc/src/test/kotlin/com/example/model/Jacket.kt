@@ -10,12 +10,15 @@ import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.Number
 import kotlin.String
+import kotlin.Suppress
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
+@Suppress("StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber")
 public data class Jacket(
     public val size: Size = Size.SIZE_1,
 ) {
+    @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount", "TooGenericExceptionCaught")
     public fun toJson(): JsonElement {
         val json = JsonObject()
         json.add("size", size.toJson())
@@ -38,6 +41,8 @@ public data class Jacket(
         }
 
         @JvmStatic
+        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
+                "TooGenericExceptionCaught")
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): Jacket {
             try {

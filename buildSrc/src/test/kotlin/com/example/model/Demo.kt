@@ -13,9 +13,11 @@ import kotlin.Long
 import kotlin.Nothing
 import kotlin.Number
 import kotlin.String
+import kotlin.Suppress
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
+@Suppress("StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber")
 public data class Demo(
     public val s: String,
     public val i: Long,
@@ -28,6 +30,7 @@ public data class Demo(
     public val nb: Boolean? = null,
     public val nl: Nothing? = null,
 ) {
+    @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount", "TooGenericExceptionCaught")
     public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("s", s)
@@ -67,6 +70,8 @@ public data class Demo(
         }
 
         @JvmStatic
+        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
+                "TooGenericExceptionCaught")
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): Demo {
             try {

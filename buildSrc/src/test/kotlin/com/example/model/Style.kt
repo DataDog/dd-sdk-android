@@ -10,12 +10,15 @@ import java.lang.IllegalStateException
 import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.String
+import kotlin.Suppress
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
+@Suppress("StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber")
 public data class Style(
     public val color: Color,
 ) {
+    @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount", "TooGenericExceptionCaught")
     public fun toJson(): JsonElement {
         val json = JsonObject()
         json.add("color", color.toJson())
@@ -38,6 +41,8 @@ public data class Style(
         }
 
         @JvmStatic
+        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
+                "TooGenericExceptionCaught")
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): Style {
             try {

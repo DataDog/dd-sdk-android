@@ -799,7 +799,7 @@ val UserMerged = TypeDefinition.Class(
 val Version = TypeDefinition.Class(
     name = "Version",
     properties = listOf(
-        TypeProperty("version", TypeDefinition.Constant(JsonType.INTEGER, 42.0), false),
+        TypeProperty("major", TypeDefinition.Constant(JsonType.INTEGER, 42.0), false),
         TypeProperty("delta", TypeDefinition.Constant(JsonType.NUMBER, 3.1415), true),
         TypeProperty(
             "id",

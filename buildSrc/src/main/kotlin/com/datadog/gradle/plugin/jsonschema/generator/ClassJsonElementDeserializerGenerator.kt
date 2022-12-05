@@ -29,6 +29,7 @@ class ClassJsonElementDeserializerGenerator(
 
         val funBuilder = FunSpec.builder(Identifier.FUN_FROM_JSON_OBJ)
             .addAnnotation(AnnotationSpec.builder(JvmStatic::class).build())
+            .addSuppressAnnotation(Identifier.SUPPRESSED_SERIALISATION_RULES)
             .returns(returnType)
 
         if (!isConstantClass) {
@@ -85,7 +86,7 @@ class ClassJsonElementDeserializerGenerator(
         }
 
         val arguments = nonConstantProperties.map { it.name.variableName() } +
-            definition.additionalProperties?.let { Identifier.PARAM_ADDITIONAL_PROPS }
+                definition.additionalProperties?.let { Identifier.PARAM_ADDITIONAL_PROPS }
         val constructorArguments = arguments.filterNotNull().joinToString(", ")
         addStatement("return %L($constructorArguments)", definition.name)
     }
@@ -285,7 +286,10 @@ class ClassJsonElementDeserializerGenerator(
         if (propertyType.allowsNull()) {
             val elementName = "json${propertyType.name.variableName()}"
             addStatement("val $elementName = $getter")
-            beginControlFlow("$assignee = if ($elementName is %T || $elementName == null)", ClassNameRef.JsonNull)
+            beginControlFlow(
+                "$assignee = if ($elementName is %T || $elementName == null)",
+                ClassNameRef.JsonNull
+            )
             addStatement(
                 "%T.%L(null)",
                 propertyType.asKotlinTypeName(rootTypeName),

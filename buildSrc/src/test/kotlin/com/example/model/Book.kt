@@ -10,15 +10,18 @@ import java.lang.NumberFormatException
 import kotlin.Long
 import kotlin.Number
 import kotlin.String
+import kotlin.Suppress
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
+@Suppress("StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber")
 public data class Book(
     public val bookId: Long,
     public val title: String,
     public val price: Number,
     public val author: Author,
 ) {
+    @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount", "TooGenericExceptionCaught")
     public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("bookId", bookId)
@@ -44,6 +47,8 @@ public data class Book(
         }
 
         @JvmStatic
+        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
+                "TooGenericExceptionCaught")
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): Book {
             try {
@@ -78,6 +83,8 @@ public data class Book(
         public val lastName: String,
         public val contact: Contact,
     ) {
+        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
+                "TooGenericExceptionCaught")
         public fun toJson(): JsonElement {
             val json = JsonObject()
             json.addProperty("firstName", firstName)
@@ -102,6 +109,8 @@ public data class Book(
             }
 
             @JvmStatic
+            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
+                    "TooGenericExceptionCaught")
             @Throws(JsonParseException::class)
             public fun fromJsonObject(jsonObject: JsonObject): Author {
                 try {
@@ -135,6 +144,8 @@ public data class Book(
         public val phone: String? = null,
         public val email: String? = null,
     ) {
+        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
+                "TooGenericExceptionCaught")
         public fun toJson(): JsonElement {
             val json = JsonObject()
             phone?.let { phoneNonNull ->
@@ -162,6 +173,8 @@ public data class Book(
             }
 
             @JvmStatic
+            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
+                    "TooGenericExceptionCaught")
             @Throws(JsonParseException::class)
             public fun fromJsonObject(jsonObject: JsonObject): Contact {
                 try {

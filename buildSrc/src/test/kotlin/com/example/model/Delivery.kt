@@ -8,13 +8,16 @@ import java.lang.IllegalStateException
 import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.String
+import kotlin.Suppress
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
+@Suppress("StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber")
 public data class Delivery(
     public val item: String,
     public val customer: Customer,
 ) {
+    @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount", "TooGenericExceptionCaught")
     public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("item", item)
@@ -38,6 +41,8 @@ public data class Delivery(
         }
 
         @JvmStatic
+        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
+                "TooGenericExceptionCaught")
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): Delivery {
             try {
@@ -70,6 +75,8 @@ public data class Delivery(
         public val billingAddress: Address? = null,
         public val shippingAddress: Address? = null,
     ) {
+        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
+                "TooGenericExceptionCaught")
         public fun toJson(): JsonElement {
             val json = JsonObject()
             name?.let { nameNonNull ->
@@ -100,6 +107,8 @@ public data class Delivery(
             }
 
             @JvmStatic
+            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
+                    "TooGenericExceptionCaught")
             @Throws(JsonParseException::class)
             public fun fromJsonObject(jsonObject: JsonObject): Customer {
                 try {
@@ -136,6 +145,8 @@ public data class Delivery(
         public val city: String,
         public val state: String,
     ) {
+        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
+                "TooGenericExceptionCaught")
         public fun toJson(): JsonElement {
             val json = JsonObject()
             json.addProperty("street_address", streetAddress)
@@ -160,6 +171,8 @@ public data class Delivery(
             }
 
             @JvmStatic
+            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
+                    "TooGenericExceptionCaught")
             @Throws(JsonParseException::class)
             public fun fromJsonObject(jsonObject: JsonObject): Address {
                 try {

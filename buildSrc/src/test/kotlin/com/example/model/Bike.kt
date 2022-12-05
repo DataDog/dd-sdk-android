@@ -12,9 +12,11 @@ import kotlin.Boolean
 import kotlin.Long
 import kotlin.Number
 import kotlin.String
+import kotlin.Suppress
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
+@Suppress("StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber")
 public data class Bike(
     public val productId: Long = 1L,
     public val productName: String,
@@ -24,6 +26,7 @@ public data class Bike(
     public val inStock: Boolean = true,
     public val color: Color = Color.LIME_GREEN,
 ) {
+    @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount", "TooGenericExceptionCaught")
     public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("productId", productId)
@@ -56,6 +59,8 @@ public data class Bike(
         }
 
         @JvmStatic
+        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
+                "TooGenericExceptionCaught")
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): Bike {
             try {

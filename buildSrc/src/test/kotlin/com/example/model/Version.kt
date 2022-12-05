@@ -10,20 +10,23 @@ import java.lang.NumberFormatException
 import kotlin.Long
 import kotlin.Number
 import kotlin.String
+import kotlin.Suppress
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
+@Suppress("StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber")
 public data class Version(
     public val id: Id,
     public val date: Date? = null,
 ) {
-    public val version: Long = 42L
+    public val major: Long = 42L
 
     public val delta: Number = 3.1415
 
+    @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount", "TooGenericExceptionCaught")
     public fun toJson(): JsonElement {
         val json = JsonObject()
-        json.addProperty("version", version)
+        json.addProperty("major", major)
         json.addProperty("delta", delta)
         json.add("id", id.toJson())
         date?.let { dateNonNull ->
@@ -48,6 +51,8 @@ public data class Version(
         }
 
         @JvmStatic
+        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
+                "TooGenericExceptionCaught")
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): Version {
             try {
@@ -78,6 +83,8 @@ public data class Version(
     public class Id() {
         public val serialNumber: Number = 12112.0
 
+        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
+                "TooGenericExceptionCaught")
         public fun toJson(): JsonElement {
             val json = JsonObject()
             json.addProperty("serialNumber", serialNumber)
@@ -90,6 +97,8 @@ public data class Version(
 
         public val month: Long = 3L
 
+        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
+                "TooGenericExceptionCaught")
         public fun toJson(): JsonElement {
             val json = JsonObject()
             json.addProperty("year", year)
