@@ -43,7 +43,7 @@ class Logger
 internal constructor(internal var handler: LogHandler) {
 
     private val attributes = ConcurrentHashMap<String, Any?>()
-    private val tags = CopyOnWriteArraySet<String>()
+    internal val tags = CopyOnWriteArraySet<String>()
 
     // region Log
 
@@ -590,7 +590,10 @@ internal constructor(internal var handler: LogHandler) {
         val combinedAttributes = mutableMapOf<String, Any?>()
         combinedAttributes.putAll(attributes)
         combinedAttributes.putAll(localAttributes)
-        handler.handleLog(level, message, throwable, combinedAttributes, tags, timestamp)
+        // need to make a copy, because the content will be access on another thread and it
+        // can change by then
+        val tagsSnapshot = HashSet(tags)
+        handler.handleLog(level, message, throwable, combinedAttributes, tagsSnapshot, timestamp)
     }
 
     @Suppress("LongParameterList")
@@ -606,6 +609,9 @@ internal constructor(internal var handler: LogHandler) {
         val combinedAttributes = mutableMapOf<String, Any?>()
         combinedAttributes.putAll(attributes)
         combinedAttributes.putAll(localAttributes)
+        // need to make a copy, because the content will be access on another thread and it
+        // can change by then
+        val tagsSnapshot = HashSet(tags)
         handler.handleLog(
             level,
             message,
@@ -613,7 +619,7 @@ internal constructor(internal var handler: LogHandler) {
             errorMessage,
             errorStacktrace,
             combinedAttributes,
-            tags,
+            tagsSnapshot,
             timestamp
         )
     }
