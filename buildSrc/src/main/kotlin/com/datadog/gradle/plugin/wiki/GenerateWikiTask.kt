@@ -48,7 +48,7 @@ open class GenerateWikiTask : DefaultTask() {
         apiSurface.forEachLine {
             val match = apiTypeSignatureRegex.matchEntire(it)
             if (match != null) {
-                val typeCanonicalName = match.groupValues[3]
+                val typeCanonicalName = match.groupValues[4]
                 val packageName = typeCanonicalName.substringBeforeLast('.')
                 val typeName = typeCanonicalName.substringAfterLast('.')
                 val packageDir = File(srcDir, packageName)
@@ -244,40 +244,65 @@ open class GenerateWikiTask : DefaultTask() {
     ): String {
         val typeHrefMatch = typeHrefRegex.matchEntire(href)
         return if (typeHrefMatch != null) {
-            val dokkaParent = typeHrefMatch.groupValues[1]
-            val dokkaFolder = typeHrefMatch.groupValues[2]
-            val dokkaFile = typeHrefMatch.groupValues[3]
-            val type = convertFromDokkaTypeName(dokkaFolder).replace('/', '.')
-            val parentNav = dokkaParent.split('/').filter { it.isNotBlank() }
-            if (dokkaFile == "index") {
-                if (parentNav.lastOrNull() != "..") {
-                    val typeLink = findExistingFile(type)
-                    "[$title]($typeLink)"
+            val dokkaParents = typeHrefMatch.groupValues[1].split('/').filter { it.isNotEmpty() }
+            val dokkaFile = typeHrefMatch.groupValues[2]
+            var levelsUp = 0
+            var hasPackage = false
+            val typeNameSections = mutableListOf<String>()
+            val sections = typeName.split('.').toMutableList()
+            dokkaParents.forEach {
+                if (it == "..") {
+                    levelsUp++
+                    if (sections.isNotEmpty()) sections.removeLast()
+                } else if (it.contains('.')) {
+                    hasPackage = true
+                    sections.clear()
                 } else {
-                    val parentTypeTokens = typeName.split('.')
-                    val prefix = parentTypeTokens.take(parentNav.size).joinToString(".")
-                    val neighborType = "$prefix.$type"
-                    val typeLink = findExistingFile(neighborType)
-                    "[$title]($typeLink)"
+                    typeNameSections.add(it)
+                    sections.add(it)
                 }
+            }
+            val targetType = sections.joinToString(".") { convertFromDokkaTypeName(it) }
+            val matchingType = findExistingFile(targetType)
+            val anchorName = convertFromDokkaTypeName(dokkaFile)
+            if (matchingType.isNotEmpty()) {
+                if (targetType == typeName && anchorName != "index") {
+                    "[$title]($matchingType#$anchorName)"
+                } else {
+                    "[$title]($matchingType)"
+                }
+            } else if (anchorName != "index") {
+                "[$title]($typeName#$anchorName)"
             } else {
+                logger.warn("Unmatched link href for $title in $typeName: $href")
                 title
             }
-
         } else {
-            logger.warn("Unable to parse link href for $title:\n -$href\n -from $typeName")
+            logger.error("Unable to parse link href for $title:\n -$href\n -from $typeName")
             title
         }
     }
 
     private fun findExistingFile(type: String): String {
+        if (type.isBlank()) {
+            logger.warn("Trying to link to a blank type?")
+            return ""
+        }
         var matchingType = type
-        val existingFiles = outputDir.list() ?: return ""
+        val existingFiles = outputDir.list()
+        if (existingFiles == null) {
+            logger.error("No file yet in output directory $outputDir")
+            return ""
+        }
 
         while ("$matchingType.md" !in existingFiles) {
             if (matchingType.contains('.')) {
                 matchingType = matchingType.substringBeforeLast('.')
             } else {
+                logger.error(
+                    "No matching file found for type '$type'. " +
+                            "Try running the task again."
+                )
                 return ""
             }
         }
@@ -300,12 +325,11 @@ open class GenerateWikiTask : DefaultTask() {
         private val noise = listOf("[androidJvm]\\", "androidJvm")
 
         private val codeLineRegex =
-            Regex("^(open )?(override )?(object|class|enum|data class|interface|annotation class|fun|var|val) (.+)$")
+            Regex("^(open )?(override )?(object|class|enum|data class|interface|annotation class|abstract class|fun|var|val) (.+)$")
         private val apiTypeSignatureRegex =
-            Regex("^(open )?(object|class|enum|data class|interface|annotation class) ([\\w\\d.]+)( .+)?")
+            Regex("^(DEPRECATED )?(open )?(object|class|enum|data class|interface|annotation class|abstract class) ([\\w\\d.]+)(<[\\w:\\s<>]+)?( .+)?")
         private val markdownLinkRegex = Regex("\\[([^]]+)]\\(([^)]+)\\)")
-        private val typeHrefRegex =
-            Regex("^(?:([\\w\\-/.]+)/)*(?:([\\w\\-/]+)/)?([\\w\\-]+).md(#[\\w%-]+)?$")
+        private val typeHrefRegex = Regex("^([\\w\\-/.]+/)?([\\w\\-]+).md(#[\\w%-]+)?$")
         private val contentLinkRegex = Regex("\\| \\[[\\w_\\-&;]+]\\(([\\w_-]+.md)\\) \\| (.*) \\|")
         private val subTypeLinkRegex =
             Regex("\\| \\[([\\w_\\-&;]+)]\\(([\\w_-]+/index\\.md)\\) \\| .* \\|")
