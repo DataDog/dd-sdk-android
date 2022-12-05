@@ -31,6 +31,7 @@ plugins {
     id("thirdPartyLicences")
     id("apiSurface")
     id("transitiveDependencies")
+    id("wiki")
 }
 
 android {

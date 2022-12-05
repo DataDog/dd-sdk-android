@@ -354,6 +354,21 @@ publish:release-android-tv:
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
     - ./gradlew :dd-sdk-android-tv:publishToSonatype --stacktrace --no-daemon
 
+publish:release-wiki:
+  tags: [ "runner:main" ]
+  only:
+    refs:
+      - master
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - pip3 install GitPython requests
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gradle-properties --with-decryption --query "Parameter.Value" --out text >> ./gradle.properties
+    - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_token --with-decryption --query "Parameter.Value" --out text >> ./gh_token
+    - ./gradlew generateWiki --stacktrace --no-daemon
+    - python3 githubwiki.py
+
 # SLACK NOTIFICATIONS
 
 notify:release:

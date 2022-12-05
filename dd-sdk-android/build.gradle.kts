@@ -37,6 +37,7 @@ plugins {
     id("thirdPartyLicences")
     id("apiSurface")
     id("transitiveDependencies")
+    id("wiki")
 }
 
 fun isLogEnabledInRelease(): String {

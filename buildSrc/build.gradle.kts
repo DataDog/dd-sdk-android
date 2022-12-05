@@ -76,6 +76,10 @@ gradlePlugin {
             id = "transitiveDependencies" // the alias
             implementationClass = "com.datadog.gradle.plugin.transdeps.TransitiveDependenciesPlugin"
         }
+        register("wiki") {
+            id = "wiki" // the alias
+            implementationClass = "com.datadog.gradle.plugin.wiki.WikiPlugin"
+        }
     }
 }
 
