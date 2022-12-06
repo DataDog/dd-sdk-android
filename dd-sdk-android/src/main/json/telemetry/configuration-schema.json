@@ -87,11 +87,13 @@
                 },
                 "track_resources": {
                   "type": "boolean",
-                  "description": "Whether resources are tracked"
+                  "description": "Whether resources are tracked",
+                  "readOnly": false
                 },
                 "track_long_task": {
                   "type": "boolean",
-                  "description": "Whether long tasks are tracked"
+                  "description": "Whether long tasks are tracked",
+                  "readOnly": false
                 },
                 "use_cross_site_session_cookie": {
                   "type": "boolean",
@@ -120,7 +122,8 @@
                 },
                 "track_frustrations": {
                   "type": "boolean",
-                  "description": "Whether user frustrations are tracked"
+                  "description": "Whether user frustrations are tracked",
+                  "readOnly": false
                 },
                 "track_views_manually": {
                   "type": "boolean",
@@ -231,7 +234,8 @@
                 },
                 "initialization_type": {
                   "type": "string",
-                  "description": "The type of initialization the SDK used, in case multiple are supported"
+                  "description": "The type of initialization the SDK used, in case multiple are supported",
+                  "readOnly": false
                 },
                 "track_flutter_performance": {
                   "type": "boolean",
