@@ -124,8 +124,8 @@ internal class DatadogLogHandlerTest {
         whenever(
             mockSdkCore.getFeature(LogsFeature.LOGS_FEATURE_NAME)
         ) doReturn mockLogsFeatureScope
-        whenever(mockLogsFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+        whenever(mockLogsFeatureScope.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
 

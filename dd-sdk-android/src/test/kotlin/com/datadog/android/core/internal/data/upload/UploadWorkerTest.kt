@@ -630,6 +630,7 @@ internal class UploadWorkerTest {
     ) : Storage {
         override fun writeCurrentBatch(
             datadogContext: DatadogContext,
+            forceNewBatch: Boolean,
             callback: (EventBatchWriter) -> Unit
         ) {
             fail("we don't expect this one to be called")

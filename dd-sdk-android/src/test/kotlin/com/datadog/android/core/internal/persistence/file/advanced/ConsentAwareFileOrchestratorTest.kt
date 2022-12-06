@@ -17,6 +17,7 @@ import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -121,13 +122,14 @@ internal class ConsentAwareFileOrchestratorTest {
 
     @Test
     fun `𝕄 return pending writable file 𝕎 getWritableFile() {consent=PENDING}`(
+        @BoolForgery forceNewFile: Boolean,
         @Forgery file: File
     ) {
         // Given
-        whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
+        whenever(mockPendingOrchestrator.getWritableFile(forceNewFile)) doReturn file
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
 
         // Then
         assertThat(result).isSameAs(file)
@@ -136,15 +138,16 @@ internal class ConsentAwareFileOrchestratorTest {
 
     @Test
     fun `𝕄 return pending writable file 𝕎 getWritableFile() {consent=GRANTED then PENDING}`(
+        @BoolForgery forceNewFile: Boolean,
         @Forgery file: File
     ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.GRANTED)
-        whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
+        whenever(mockPendingOrchestrator.getWritableFile(forceNewFile)) doReturn file
 
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.GRANTED, TrackingConsent.PENDING)
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
 
         // Then
         assertThat(result).isSameAs(file)
@@ -153,15 +156,16 @@ internal class ConsentAwareFileOrchestratorTest {
 
     @Test
     fun `𝕄 return pending writable file 𝕎 getWritableFile() {consent=NOT_GRANTED then PENDING}`(
+        @BoolForgery forceNewFile: Boolean,
         @Forgery file: File
     ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.NOT_GRANTED)
-        whenever(mockPendingOrchestrator.getWritableFile()) doReturn file
+        whenever(mockPendingOrchestrator.getWritableFile(forceNewFile)) doReturn file
 
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.NOT_GRANTED, TrackingConsent.PENDING)
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
 
         // Then
         assertThat(result).isSameAs(file)
@@ -170,14 +174,15 @@ internal class ConsentAwareFileOrchestratorTest {
 
     @Test
     fun `𝕄 return granted writable file 𝕎 getWritableFile() {consent=GRANTED}`(
+        @BoolForgery forceNewFile: Boolean,
         @Forgery file: File
     ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.GRANTED)
-        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
+        whenever(mockGrantedOrchestrator.getWritableFile(forceNewFile)) doReturn file
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
 
         // Then
         assertThat(result).isSameAs(file)
@@ -186,15 +191,16 @@ internal class ConsentAwareFileOrchestratorTest {
 
     @Test
     fun `𝕄 return granted writable file 𝕎 getWritableFile() {consent=NOT_GRANTED then GRANTED}`(
+        @BoolForgery forceNewFile: Boolean,
         @Forgery file: File
     ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.NOT_GRANTED)
-        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
+        whenever(mockGrantedOrchestrator.getWritableFile(forceNewFile)) doReturn file
 
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.NOT_GRANTED, TrackingConsent.GRANTED)
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
 
         // Then
         assertThat(result).isSameAs(file)
@@ -203,15 +209,16 @@ internal class ConsentAwareFileOrchestratorTest {
 
     @Test
     fun `𝕄 return granted writable file 𝕎 getWritableFile() {consent=PENDING then GRANTED}`(
+        @BoolForgery forceNewFile: Boolean,
         @Forgery file: File
     ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.PENDING)
-        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
+        whenever(mockGrantedOrchestrator.getWritableFile(forceNewFile)) doReturn file
 
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.PENDING, TrackingConsent.GRANTED)
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
 
         // Then
         assertThat(result).isSameAs(file)
@@ -219,12 +226,14 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return null file 𝕎 getWritableFile() {consent=NOT_GRANTED}`() {
+    fun `𝕄 return null file 𝕎 getWritableFile() {consent=NOT_GRANTED}`(
+        @BoolForgery forceNewFile: Boolean
+    ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.NOT_GRANTED)
 
         // When
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
 
         // Then
         assertThat(result).isNull()
@@ -232,13 +241,15 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return null file 𝕎 getWritableFile() {consent=GRANTED then NOT_GRANTED}`() {
+    fun `𝕄 return null file 𝕎 getWritableFile() {consent=GRANTED then NOT_GRANTED}`(
+        @BoolForgery forceNewFile: Boolean
+    ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.GRANTED)
 
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.GRANTED, TrackingConsent.NOT_GRANTED)
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
 
         // Then
         assertThat(result).isNull()
@@ -246,13 +257,15 @@ internal class ConsentAwareFileOrchestratorTest {
     }
 
     @Test
-    fun `𝕄 return null file 𝕎 getWritableFile() {consent=PENDING then NOT_GRANTED}`() {
+    fun `𝕄 return null file 𝕎 getWritableFile() {consent=PENDING then NOT_GRANTED}`(
+        @BoolForgery forceNewFile: Boolean
+    ) {
         // Given
         instantiateTestedOrchestrator(TrackingConsent.PENDING)
 
         // When
         testedOrchestrator.onConsentUpdated(TrackingConsent.PENDING, TrackingConsent.NOT_GRANTED)
-        val result = testedOrchestrator.getWritableFile()
+        val result = testedOrchestrator.getWritableFile(forceNewFile)
 
         // Then
         assertThat(result).isNull()

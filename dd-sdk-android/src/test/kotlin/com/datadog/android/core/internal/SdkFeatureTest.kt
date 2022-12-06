@@ -44,6 +44,7 @@ import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -268,6 +269,7 @@ internal class SdkFeatureTest {
 
     @Test
     fun `𝕄 provide write context 𝕎 withWriteContext(callback)`(
+        @BoolForgery forceNewBatch: Boolean,
         @Forgery fakeContext: DatadogContext,
         @Mock mockBatchWriter: EventBatchWriter
     ) {
@@ -276,13 +278,19 @@ internal class SdkFeatureTest {
         val callback = mock<(DatadogContext, EventBatchWriter) -> Unit>()
         whenever(coreFeature.mockInstance.contextProvider.context) doReturn fakeContext
 
-        whenever(mockStorage.writeCurrentBatch(eq(fakeContext), any())) doAnswer {
-            val storageCallback = it.getArgument<(EventBatchWriter) -> Unit>(1)
+        whenever(
+            mockStorage.writeCurrentBatch(
+                eq(fakeContext),
+                eq(forceNewBatch),
+                any()
+            )
+        ) doAnswer {
+            val storageCallback = it.getArgument<(EventBatchWriter) -> Unit>(2)
             storageCallback.invoke(mockBatchWriter)
         }
 
         // When
-        testedFeature.withWriteContext(callback)
+        testedFeature.withWriteContext(forceNewBatch, callback = callback)
 
         // Then
         verify(callback).invoke(
@@ -292,7 +300,9 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `𝕄 do nothing 𝕎 withWriteContext(callback) { no Datadog context }`() {
+    fun `𝕄 do nothing 𝕎 withWriteContext(callback) { no Datadog context }`(
+        @BoolForgery forceNewBatch: Boolean
+    ) {
         // Given
         testedFeature.storage = mockStorage
         val callback = mock<(DatadogContext, EventBatchWriter) -> Unit>()
@@ -300,7 +310,7 @@ internal class SdkFeatureTest {
         whenever(coreFeature.mockInstance.contextProvider) doReturn NoOpContextProvider()
 
         // When
-        testedFeature.withWriteContext(callback)
+        testedFeature.withWriteContext(forceNewBatch, callback = callback)
 
         // Then
         verifyZeroInteractions(mockStorage)

@@ -21,11 +21,13 @@ import java.io.File
 internal interface FileOrchestrator {
 
     /**
+     * @param forceNewFile if `true` will force the orchestrator to start a new file.
+     * By default this flag is `false`.
      * @return a File with enough space to write data, or null if no space is available
      * or the disk can't be written to.
      */
     @WorkerThread
-    fun getWritableFile(): File?
+    fun getWritableFile(forceNewFile: Boolean = false): File?
 
     /**
      * @param excludeFiles a set of files to exclude from the readable files

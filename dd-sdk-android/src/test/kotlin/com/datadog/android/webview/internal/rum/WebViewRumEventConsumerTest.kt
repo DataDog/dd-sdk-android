@@ -131,8 +131,8 @@ internal class WebViewRumEventConsumerTest {
             mockSdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
         ) doReturn mockWebViewRumFeatureScope
 
-        whenever(mockWebViewRumFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+        whenever(mockWebViewRumFeatureScope.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
 
@@ -612,8 +612,8 @@ internal class WebViewRumEventConsumerTest {
     fun `M use same offset correct W consume { consecutive event updates }`(forge: Forge) {
         // Given
         var invocationCount = 0
-        whenever(mockWebViewRumFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+        whenever(mockWebViewRumFeatureScope.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(
                 fakeDatadogContext.copy(
                     time = fakeDatadogContext.time.copy(
@@ -659,8 +659,8 @@ internal class WebViewRumEventConsumerTest {
         // Given
         val fakeSecondServerTimeOffset = forge.aLong()
         var invocationCount = 0
-        whenever(mockWebViewRumFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+        whenever(mockWebViewRumFeatureScope.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(
                 fakeDatadogContext.copy(
                     time = fakeDatadogContext.time.copy(
@@ -723,8 +723,8 @@ internal class WebViewRumEventConsumerTest {
         }
 
         var invocationCount = 0
-        whenever(mockWebViewRumFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+        whenever(mockWebViewRumFeatureScope.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(
                 fakeDatadogContext.copy(
                     time = fakeDatadogContext.time.copy(
@@ -781,8 +781,8 @@ internal class WebViewRumEventConsumerTest {
 
         var invocationCount = 0
         val latch = CountDownLatch(size)
-        whenever(mockWebViewRumFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+        whenever(mockWebViewRumFeatureScope.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             val invocation = invocationCount
             Thread {
                 callback.invoke(

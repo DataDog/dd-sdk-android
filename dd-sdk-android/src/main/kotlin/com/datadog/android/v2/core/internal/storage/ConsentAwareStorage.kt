@@ -42,6 +42,7 @@ internal class ConsentAwareStorage(
     @WorkerThread
     override fun writeCurrentBatch(
         datadogContext: DatadogContext,
+        forceNewBatch: Boolean,
         callback: (EventBatchWriter) -> Unit
     ) {
         val orchestrator = when (datadogContext.trackingConsent) {
@@ -53,7 +54,7 @@ internal class ConsentAwareStorage(
         try {
             @Suppress("UnsafeThirdPartyFunctionCall") // command is never null
             executorService.submit {
-                val batchFile = orchestrator?.getWritableFile()
+                val batchFile = orchestrator?.getWritableFile(forceNewBatch)
                 val metadataFile = if (batchFile != null) {
                     orchestrator.getMetadataFile(batchFile)
                 } else {

@@ -126,7 +126,10 @@ internal class SdkFeature(
 
     // region FeatureScope
 
-    override fun withWriteContext(callback: (DatadogContext, EventBatchWriter) -> Unit) {
+    override fun withWriteContext(
+        forceNewBatch: Boolean,
+        callback: (DatadogContext, EventBatchWriter) -> Unit
+    ) {
         // TODO RUMM-0000 thread safety. Thread switch happens in Storage right now. Open questions:
         // * what if caller wants to have a sync operation, without thread switch
         // * should context read and write be on the dedicated thread? risk - time gap between
@@ -134,9 +137,7 @@ internal class SdkFeature(
         val contextProvider = coreFeature.contextProvider
         if (contextProvider is NoOpContextProvider) return
         val context = contextProvider.context
-        storage.writeCurrentBatch(context) {
-            callback(context, it)
-        }
+        storage.writeCurrentBatch(context, forceNewBatch) { callback(context, it) }
     }
 
     override fun sendEvent(event: Any) {

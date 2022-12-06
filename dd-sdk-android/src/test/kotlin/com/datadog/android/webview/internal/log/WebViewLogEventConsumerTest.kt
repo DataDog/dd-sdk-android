@@ -99,8 +99,8 @@ internal class WebViewLogEventConsumerTest {
             mockSdkCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
         ) doReturn mockWebViewLogsFeatureScope
 
-        whenever(mockWebViewLogsFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+        whenever(mockWebViewLogsFeatureScope.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
 
