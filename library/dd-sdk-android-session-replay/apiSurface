@@ -266,7 +266,7 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     companion object 
       fun fromJson(kotlin.String): Vertical
 class com.datadog.android.sessionreplay.net.BatchesToSegmentsMapper
-  fun map(List<ByteArray>): List<Pair<com.datadog.android.sessionreplay.model.MobileSegment, com.google.gson.JsonObject>>
+  fun map(List<ByteArray>): Pair<com.datadog.android.sessionreplay.model.MobileSegment, com.google.gson.JsonObject>?
   companion object 
 class com.datadog.android.sessionreplay.net.BytesCompressor
   fun compressBytes(ByteArray): ByteArray

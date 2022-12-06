@@ -14,6 +14,11 @@ internal class ForgeConfigurator : BaseConfigurator() {
     override fun configure(forge: Forge) {
         super.configure(forge)
 
+        // Gson
+        forge.addFactory(GsonJsonArrayForgeryFactory())
+        forge.addFactory(GsonJsonObjectForgeryFactory())
+        forge.addFactory(GsonJsonPrimitiveForgeryFactory())
+
         // Session Replay
         forge.addFactory(NodeForgeryFactory())
         forge.addFactory(SessionReplayRumContextForgeryFactory())

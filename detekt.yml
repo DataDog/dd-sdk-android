@@ -727,6 +727,7 @@ datadog:
       - "okhttp3.OkHttpClient.Builder.eventListenerFactory(okhttp3.EventListener.Factory):java.lang.NullPointerException"
       - "okio.BufferedSink.close():java.io.IOException"
       - "okio.Okio.buffer(okio.Sink):java.lang.NullPointerException"
+      - "okio.Buffer.readByteArray():java.lang.AssertionError,java.lang.IllegalArgumentException,java.io.IOException"
       - "okio.Buffer.readString(java.nio.charset.Charset):java.lang.IllegalArgumentException,java.io.IOException"
       # endregion
       # region org.json
@@ -1082,6 +1083,7 @@ datadog:
       - "kotlin.collections.List.map(kotlin.Function1)"
       - "kotlin.collections.List.mapNotNull(kotlin.Function1)"
       - "kotlin.collections.List.orEmpty()"
+      - "kotlin.collections.List.reduceOrNull(kotlin.Function2)"
       - "kotlin.collections.List.reversed()"
       - "kotlin.collections.List.shuffled()"
       - "kotlin.collections.List.sortedBy(kotlin.Function1)"
@@ -1179,7 +1181,12 @@ datadog:
       - "kotlin.collections.MutableSet.remove(com.datadog.android.v2.core.internal.storage.ConsentAwareStorage.Batch)"
       - "kotlin.collections.Set.forEach(kotlin.Function1)"
       - "kotlin.sequences.Sequence.filter(kotlin.Function1)"
+      - "kotlin.sequences.Sequence.fold(com.google.gson.JsonArray, kotlin.Function2)"
       - "kotlin.sequences.Sequence.forEach(kotlin.Function1)"
+      - "kotlin.sequences.Sequence.map(kotlin.Function1)"
+      - "kotlin.sequences.Sequence.mapNotNull(kotlin.Function1)"
+      - "kotlin.sequences.Sequence.reduceOrNull(kotlin.Function2)"
+      - "kotlin.sequences.Sequence.sortedBy(kotlin.Function1)"
       # endregion
       # region Kotlin Primitives
       - "kotlin.Any.constructor()"
@@ -1215,6 +1222,7 @@ datadog:
       # region Kotlin Pair + Triple
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.model.MobileSegment, com.google.gson.JsonObject)"
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.utils.SessionReplayRumContext, com.google.gson.JsonArray)"
+      - "kotlin.Pair.constructor(com.google.gson.JsonObject, kotlin.Long)"
       - "kotlin.Triple.constructor(kotlin.Nothing?, kotlin.Nothing?, kotlin.Nothing?)"
       - "kotlin.Triple.constructor(kotlin.String, kotlin.String, kotlin.String)"
       # endregion
@@ -1276,7 +1284,13 @@ datadog:
       # region Gson
       - "com.google.gson.JsonArray.addAll(com.google.gson.JsonArray)"
       - "com.google.gson.JsonArray.add(kotlin.String)"
+      - "com.google.gson.JsonArray.asSequence()"
+      - "com.google.gson.JsonArray.firstOrNull()"
+      - "com.google.gson.JsonArray.firstOrNull(kotlin.Function1)"
+      - "com.google.gson.JsonArray.lastOrNull()"
       - "com.google.gson.JsonArray.map(kotlin.Function1)"
+      - "com.google.gson.JsonArray.mapNotNull(kotlin.Function1)"
+      - "com.google.gson.JsonArray.size()"
       - "com.google.gson.JsonParseException.constructor(kotlin.String, kotlin.Throwable)"
       - "com.google.gson.JsonParseException.constructor(kotlin.Throwable)"
       # endregion

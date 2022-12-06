@@ -80,6 +80,9 @@ internal class Configurator :
         forge.addFactory(DeviceInfoForgeryFactory())
         forge.addFactory(DatadogContextForgeryFactory())
 
+        // Session Replay
+        forge.addFactory(MobileSegmentForgeryFactory())
+
         forge.useJvmFactories()
     }
 }

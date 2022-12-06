@@ -9,7 +9,9 @@ package com.datadog.android.sessionreplay.net
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.processor.EnrichedRecord
 import com.datadog.android.sessionreplay.utils.ForgeConfigurator
+import com.datadog.android.sessionreplay.utils.SessionReplayRumContext
 import com.google.gson.JsonParser
+import com.google.gson.JsonPrimitive
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -21,7 +23,6 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.util.LinkedList
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -39,130 +40,116 @@ internal class BatchesToSegmentMapperTest {
     }
 
     @Test
-    fun `M generate segment to jsonSegment pairs W groupDataIntoSegments`(forge: Forge) {
+    fun `M generate segment to jsonSegment pair W map`(forge: Forge) {
         // Given
-        val numberOfDifferentContexts = forge.anInt(min = 2, max = 10)
-        val fakeEnrichedRecords: List<EnrichedRecord> = forge.aList(numberOfDifferentContexts) {
+        val rumContext: SessionReplayRumContext = forge.getForgery()
+        val fakeRecordsSize = forge.anInt(min = 10, max = 20)
+        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
             forge.getForgery()
         }
-        val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
-        val expectedEmptySegments = fakeEnrichedRecords.map {
-            it.toSegment().copy(records = emptyList())
-        }
-        val expectedSerializedSegments = fakeEnrichedRecords.map {
-            it.toSegment().toJson().asJsonObject.toString()
-        }
-
-        // When
-        val mappedSegments = testedMapper.map(fakeBatchData)
-
-        // Then
-        assertThat(mappedSegments.size).isEqualTo(fakeBatchData.size)
-        val segments = mappedSegments.map { it.first }
-        val serializedSegments = mappedSegments.map { it.second.toString() }
-        assertThat(segments).isEqualTo(expectedEmptySegments)
-        assertThat(serializedSegments).isEqualTo(expectedSerializedSegments)
-    }
-
-    @Test
-    fun `M group the segments by context W groupDataIntoSegments`(forge: Forge) {
-        // Given
-        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(
-            forge.anInt(min = 30, max = 100)
-        ) {
-            forge.getForgery()
-        }
-        val chunkSize = fakeRecords.size / 4
-        val expectedEnrichedRecords: LinkedList<EnrichedRecord> = LinkedList()
-        val fakeEnrichedRecords: List<EnrichedRecord> = fakeRecords
-            .chunked(chunkSize)
-            .map { it.sortedBy { record -> record.timestamp() } }
-            .flatMap {
-                val rootRecord = forge.getForgery<EnrichedRecord>().copy(records = it)
-                expectedEnrichedRecords.add(rootRecord)
-                val subChunkSize = it.size / 2
-                if (subChunkSize > 0) {
-                    it.chunked(subChunkSize).map { records ->
-                        rootRecord.copy(records = records)
-                    }
-                } else {
-                    listOf(rootRecord)
-                }
+        val fakeExpectedRecords = fakeRecords.sortedBy { it.timestamp() }
+        val fakeEnrichedRecords = fakeRecords
+            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
+            .map {
+                EnrichedRecord(
+                    rumContext.applicationId,
+                    rumContext.sessionId,
+                    rumContext.sessionId,
+                    it
+                )
             }
+        val fakeExpectedRecord = EnrichedRecord(
+            rumContext.applicationId,
+            rumContext.sessionId,
+            rumContext.sessionId,
+            fakeExpectedRecords
+        )
 
-        val fakeBatchData = fakeEnrichedRecords
-            .map { it.toJson().toByteArray() }
-        val expectedSegments = expectedEnrichedRecords.map {
-            it.toSegment()
-        }
-        val expectedEmptySegments = expectedSegments.map { it.copy(records = emptyList()) }
-        val expectedSerializedSegments = expectedSegments.map { it.toJson().toString() }
+        val expectedEmptySegment = fakeExpectedRecord.toSegment().copy(records = emptyList())
+        val expectedSerializedSegment = fakeExpectedRecord.toSegment()
+            .toJson().asJsonObject.toString()
+        val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
 
         // When
-        val mappedSegments = testedMapper.map(fakeBatchData)
+        val mappedSegment = testedMapper.map(fakeBatchData)
 
         // Then
-        assertThat(mappedSegments.size).isEqualTo(expectedEnrichedRecords.size)
-        val segments = mappedSegments.map { it.first }
-        val serializedSegments = mappedSegments.map { it.second.toString() }
-        assertThat(segments).isEqualTo(expectedEmptySegments)
-        assertThat(serializedSegments).isEqualTo(expectedSerializedSegments)
+        val segment = mappedSegment?.first
+        val serializedSegment = mappedSegment?.second.toString()
+        assertThat(segment).isEqualTo(expectedEmptySegment)
+        assertThat(serializedSegment).isEqualTo(expectedSerializedSegment)
     }
 
     @Test
-    fun `M use the first record in the list as start timestamp W groupDataIntoSegments`(
+    fun `M use the first record in the list as start timestamp W map`(
         forge: Forge
     ) {
         // Given
-        val fakeEnrichedRecords: List<EnrichedRecord> = forge
-            .aList<EnrichedRecord>(size = 1) {
-                forge.getForgery()
-            }
+        val rumContext: SessionReplayRumContext = forge.getForgery()
+        val fakeRecordsSize = forge.anInt(min = 10, max = 20)
+        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
+            forge.getForgery()
+        }
+        val fakeExpectedRecords = fakeRecords.sortedBy { it.timestamp() }
+        val fakeEnrichedRecords = fakeRecords
+            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
             .map {
-                it.copy(records = it.records.sortedBy { record -> record.timestamp() })
+                EnrichedRecord(
+                    rumContext.applicationId,
+                    rumContext.sessionId,
+                    rumContext.sessionId,
+                    it
+                )
             }
         val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
-        val expectedStartTimestamp = fakeEnrichedRecords[0].records.first().timestamp()
+        val expectedStartTimestamp = fakeExpectedRecords.first().timestamp()
 
         // When
-        val mappedSegments = testedMapper.map(fakeBatchData)
+        val mappedSegment = testedMapper.map(fakeBatchData)
 
         // Then
-        assertThat(mappedSegments.size).isEqualTo(1)
-        assertThat(mappedSegments[0].first.start).isEqualTo(expectedStartTimestamp)
-        val serializedRecordStartTimestamp = mappedSegments[0].second
-            .getAsJsonPrimitive("start").asLong
+        assertThat(mappedSegment?.first?.start).isEqualTo(expectedStartTimestamp)
+        val serializedRecordStartTimestamp = mappedSegment?.second
+            ?.getAsJsonPrimitive("start")?.asLong
         assertThat(serializedRecordStartTimestamp).isEqualTo(expectedStartTimestamp)
     }
 
     @Test
-    fun `M use the last record in the list as end timestamp W groupDataIntoSegments`(
+    fun `M use the last record in the list as end timestamp W map`(
         forge: Forge
     ) {
         // Given
-        val fakeEnrichedRecords: List<EnrichedRecord> = forge
-            .aList<EnrichedRecord>(size = 1) {
-                forge.getForgery()
-            }
+        val rumContext: SessionReplayRumContext = forge.getForgery()
+        val fakeRecordsSize = forge.anInt(min = 10, max = 20)
+        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
+            forge.getForgery()
+        }
+        val fakeExpectedRecords = fakeRecords.sortedBy { it.timestamp() }
+        val fakeEnrichedRecords = fakeRecords
+            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
             .map {
-                it.copy(records = it.records.sortedBy { record -> record.timestamp() })
+                EnrichedRecord(
+                    rumContext.applicationId,
+                    rumContext.sessionId,
+                    rumContext.sessionId,
+                    it
+                )
             }
         val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
-        val expectedEndTimestamp = fakeEnrichedRecords[0].records.last().timestamp()
+        val expectedEndTimestamp = fakeExpectedRecords.last().timestamp()
 
         // When
-        val mappedSegments = testedMapper.map(fakeBatchData)
+        val mappedSegment = testedMapper.map(fakeBatchData)
 
         // Then
-        assertThat(mappedSegments.size).isEqualTo(1)
-        assertThat(mappedSegments[0].first.end).isEqualTo(expectedEndTimestamp)
-        val serializedRecordStartTimestamp = mappedSegments[0].second
-            .getAsJsonPrimitive("end").asLong
+        assertThat(mappedSegment?.first?.end).isEqualTo(expectedEndTimestamp)
+        val serializedRecordStartTimestamp = mappedSegment?.second
+            ?.getAsJsonPrimitive("end")?.asLong
         assertThat(serializedRecordStartTimestamp).isEqualTo(expectedEndTimestamp)
     }
 
     @Test
-    fun `M return empty list W groupDataIntoSegments { empty records }`(
+    fun `M return null W map{ empty records }`(
         forge: Forge
     ) {
         // Given
@@ -173,35 +160,41 @@ internal class BatchesToSegmentMapperTest {
         val fakeBatchData = fakeEnrichedRecords.map { it.toJson().toByteArray() }
 
         // When
-        val mappedSegments = testedMapper.map(fakeBatchData)
-
-        // Then
-        assertThat(mappedSegments).isEmpty()
+        assertThat(testedMapper.map(fakeBatchData)).isNull()
     }
 
     @Test
-    fun `M return empty list W groupDataIntoSegments { broken serialized records }`(
+    fun `M return empty null W map { broken serialized records }`(
         forge: Forge
     ) {
         // Given
         val fakeBatchData = forge.aList { forge.anAlphabeticalString().toByteArray() }
 
         // When
-        val mappedSegments = testedMapper.map(fakeBatchData)
-
-        // Then
-        assertThat(mappedSegments).isEmpty()
+        assertThat(testedMapper.map(fakeBatchData)).isNull()
     }
 
     @Test
-    fun `M return empty list W groupDataIntoSegments { records with missing timestamp key }`(
+    fun `M return null W map { all records with missing timestamp key }`(
         forge: Forge
     ) {
         // Given
-        val fakeBatchData = forge
-            .aList<EnrichedRecord>(size = 1) {
-                forge.getForgery()
+        val rumContext: SessionReplayRumContext = forge.getForgery()
+        val fakeRecordsSize = forge.anInt(min = 10, max = 20)
+        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
+            forge.getForgery()
+        }
+        val fakeEnrichedRecords = fakeRecords
+            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
+            .map {
+                EnrichedRecord(
+                    rumContext.applicationId,
+                    rumContext.sessionId,
+                    rumContext.sessionId,
+                    it
+                )
             }
+        val fakeBatchData = fakeEnrichedRecords
             .map { JsonParser.parseString(it.toJson()).asJsonObject }
             .map {
                 val records = it.get(EnrichedRecord.RECORDS_KEY)
@@ -210,14 +203,386 @@ internal class BatchesToSegmentMapperTest {
                     record.asJsonObject.remove(BatchesToSegmentsMapper.TIMESTAMP_KEY)
                 }
                 it.add(EnrichedRecord.RECORDS_KEY, records)
+                it
             }
             .map { it.toString().toByteArray() }
 
         // When
-        val mappedSegments = testedMapper.map(fakeBatchData)
+        assertThat(testedMapper.map(fakeBatchData)).isNull()
+    }
 
-        // Then
-        assertThat(mappedSegments).isEmpty()
+    @Test
+    fun `M drop the broken records W map { some records with missing timestamp key }`(
+        forge: Forge
+    ) {
+        // Given
+        val rumContext: SessionReplayRumContext = forge.getForgery()
+        val fakeRecordsSize = forge.anInt(min = 20, max = 50)
+        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
+            forge.getForgery()
+        }
+        val fakeEnrichedRecords = fakeRecords
+            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
+            .map {
+                EnrichedRecord(
+                    rumContext.applicationId,
+                    rumContext.sessionId,
+                    rumContext.sessionId,
+                    it
+                )
+            }
+        var removedRecords = 0
+        val fakeBatchData = fakeEnrichedRecords
+            .map { JsonParser.parseString(it.toJson()).asJsonObject }
+            .mapIndexed { index, jsonObject ->
+                if (index == 0) {
+                    val records = jsonObject.get(EnrichedRecord.RECORDS_KEY)
+                        .asJsonArray
+                    removedRecords = records.size()
+                    records.forEach { record ->
+                        record.asJsonObject.remove(BatchesToSegmentsMapper.TIMESTAMP_KEY)
+                    }
+                    jsonObject.add(EnrichedRecord.RECORDS_KEY, records)
+                    jsonObject
+                } else {
+                    jsonObject
+                }
+            }
+            .map { it.toString().toByteArray() }
+
+        // When
+        val mappedSegment = testedMapper.map(fakeBatchData)
+        val expectedRecordsSize = fakeRecords.size - removedRecords
+        assertThat(mappedSegment?.first?.recordsCount?.toInt()).isEqualTo(expectedRecordsSize)
+        val recordsAsJsonArray = mappedSegment?.second
+            ?.getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
+        assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
+    }
+
+    @Test
+    fun `M return null W map { enriched record with missing application id key }`(
+        forge: Forge
+    ) {
+        // Given
+        val rumContext: SessionReplayRumContext = forge.getForgery()
+        val fakeRecordsSize = forge.anInt(min = 10, max = 20)
+        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
+            forge.getForgery()
+        }
+        val fakeEnrichedRecords = fakeRecords
+            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
+            .map {
+                EnrichedRecord(
+                    rumContext.applicationId,
+                    rumContext.sessionId,
+                    rumContext.sessionId,
+                    it
+                )
+            }
+        val fakeBatchData = fakeEnrichedRecords
+            .map { JsonParser.parseString(it.toJson()).asJsonObject }
+            .map {
+                it.remove(EnrichedRecord.APPLICATION_ID_KEY)
+                it
+            }
+            .map { it.toString().toByteArray() }
+        // When
+        assertThat(testedMapper.map(fakeBatchData)).isNull()
+    }
+
+    @Test
+    fun `M drop the broken records W map { some enriched records with missing application key }`(
+        forge: Forge
+    ) {
+        // Given
+        val rumContext: SessionReplayRumContext = forge.getForgery()
+        val fakeRecordsSize = forge.anInt(min = 20, max = 50)
+        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
+            forge.getForgery()
+        }
+        val fakeEnrichedRecords = fakeRecords
+            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
+            .map {
+                EnrichedRecord(
+                    rumContext.applicationId,
+                    rumContext.sessionId,
+                    rumContext.sessionId,
+                    it
+                )
+            }
+        var removedRecords = 0
+        val fakeBatchData = fakeEnrichedRecords
+            .map { JsonParser.parseString(it.toJson()).asJsonObject }
+            .mapIndexed { index, jsonObject ->
+                if (index == 0) {
+                    val records = jsonObject.get(EnrichedRecord.RECORDS_KEY)
+                        .asJsonArray
+                    removedRecords = records.size()
+                    jsonObject.remove(EnrichedRecord.APPLICATION_ID_KEY)
+                    jsonObject
+                } else {
+                    jsonObject
+                }
+            }
+            .map { it.toString().toByteArray() }
+
+        // When
+        val mappedSegment = testedMapper.map(fakeBatchData)
+        val expectedRecordsSize = fakeRecords.size - removedRecords
+        assertThat(mappedSegment?.first?.recordsCount?.toInt()).isEqualTo(expectedRecordsSize)
+        val recordsAsJsonArray = mappedSegment?.second
+            ?.getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
+        assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
+    }
+
+    @Test
+    fun `M return null W map { enriched records with missing session id key }`(
+        forge: Forge
+    ) {
+        // Given
+        val rumContext: SessionReplayRumContext = forge.getForgery()
+        val fakeRecordsSize = forge.anInt(min = 10, max = 20)
+        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
+            forge.getForgery()
+        }
+        val fakeEnrichedRecords = fakeRecords
+            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
+            .map {
+                EnrichedRecord(
+                    rumContext.applicationId,
+                    rumContext.sessionId,
+                    rumContext.sessionId,
+                    it
+                )
+            }
+        val fakeBatchData = fakeEnrichedRecords
+            .map { JsonParser.parseString(it.toJson()).asJsonObject }
+            .map {
+                it.remove(EnrichedRecord.SESSION_ID_KEY)
+                it
+            }
+            .map { it.toString().toByteArray() }
+
+        // When
+        assertThat(testedMapper.map(fakeBatchData)).isNull()
+    }
+
+    @Test
+    fun `M drop the broken records W map { some enriched records with missing session key }`(
+        forge: Forge
+    ) {
+        // Given
+        val rumContext: SessionReplayRumContext = forge.getForgery()
+        val fakeRecordsSize = forge.anInt(min = 20, max = 50)
+        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
+            forge.getForgery()
+        }
+        val fakeEnrichedRecords = fakeRecords
+            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
+            .map {
+                EnrichedRecord(
+                    rumContext.applicationId,
+                    rumContext.sessionId,
+                    rumContext.sessionId,
+                    it
+                )
+            }
+        var removedRecords = 0
+        val fakeBatchData = fakeEnrichedRecords
+            .map { JsonParser.parseString(it.toJson()).asJsonObject }
+            .mapIndexed { index, jsonObject ->
+                if (index == 0) {
+                    val records = jsonObject.get(EnrichedRecord.RECORDS_KEY)
+                        .asJsonArray
+                    removedRecords = records.size()
+                    jsonObject.remove(EnrichedRecord.SESSION_ID_KEY)
+                    jsonObject
+                } else {
+                    jsonObject
+                }
+            }
+            .map { it.toString().toByteArray() }
+
+        // When
+        val mappedSegment = testedMapper.map(fakeBatchData)
+        val expectedRecordsSize = fakeRecords.size - removedRecords
+        assertThat(mappedSegment?.first?.recordsCount?.toInt()).isEqualTo(expectedRecordsSize)
+        val recordsAsJsonArray = mappedSegment?.second
+            ?.getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
+        assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
+    }
+
+    @Test
+    fun `M return null W map {  enriched records with missing view id key }`(
+        forge: Forge
+    ) {
+        // Given
+        val rumContext: SessionReplayRumContext = forge.getForgery()
+        val fakeRecordsSize = forge.anInt(min = 10, max = 20)
+        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
+            forge.getForgery()
+        }
+        val fakeEnrichedRecords = fakeRecords
+            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
+            .map {
+                EnrichedRecord(
+                    rumContext.applicationId,
+                    rumContext.sessionId,
+                    rumContext.sessionId,
+                    it
+                )
+            }
+        val fakeBatchData = fakeEnrichedRecords
+            .map { JsonParser.parseString(it.toJson()).asJsonObject }
+            .map {
+                it.remove(EnrichedRecord.VIEW_ID_KEY)
+                it
+            }
+            .map { it.toString().toByteArray() }
+
+        // When
+        assertThat(testedMapper.map(fakeBatchData)).isNull()
+    }
+
+    @Test
+    fun `M drop the broken records W map { some enriched records with missing view id key }`(
+        forge: Forge
+    ) {
+        // Given
+        val rumContext: SessionReplayRumContext = forge.getForgery()
+        val fakeRecordsSize = forge.anInt(min = 20, max = 50)
+        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
+            forge.getForgery()
+        }
+        val fakeEnrichedRecords = fakeRecords
+            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
+            .map {
+                EnrichedRecord(
+                    rumContext.applicationId,
+                    rumContext.sessionId,
+                    rumContext.sessionId,
+                    it
+                )
+            }
+        var removedRecords = 0
+        val fakeBatchData = fakeEnrichedRecords
+            .map { JsonParser.parseString(it.toJson()).asJsonObject }
+            .mapIndexed { index, jsonObject ->
+                if (index == 0) {
+                    val records = jsonObject.get(EnrichedRecord.RECORDS_KEY)
+                        .asJsonArray
+                    removedRecords = records.size()
+                    jsonObject.remove(EnrichedRecord.VIEW_ID_KEY)
+                    jsonObject
+                } else {
+                    jsonObject
+                }
+            }
+            .map { it.toString().toByteArray() }
+
+        // When
+        val mappedSegment = testedMapper.map(fakeBatchData)
+        val expectedRecordsSize = fakeRecords.size - removedRecords
+        assertThat(mappedSegment?.first?.recordsCount?.toInt()).isEqualTo(expectedRecordsSize)
+        val recordsAsJsonArray = mappedSegment?.second
+            ?.getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
+        assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
+    }
+
+    @Test
+    fun `M drop the broken records W map { some records with wrong timestamp format key }`(
+        forge: Forge
+    ) {
+        // Given
+        val rumContext: SessionReplayRumContext = forge.getForgery()
+        val fakeRecordsSize = forge.anInt(min = 20, max = 50)
+        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
+            forge.getForgery()
+        }
+        val fakeEnrichedRecords = fakeRecords
+            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
+            .map {
+                EnrichedRecord(
+                    rumContext.applicationId,
+                    rumContext.sessionId,
+                    rumContext.sessionId,
+                    it
+                )
+            }
+        var removedRecords = 0
+        val fakeBatchData = fakeEnrichedRecords
+            .map { JsonParser.parseString(it.toJson()).asJsonObject }
+            .mapIndexed { index, jsonObject ->
+                if (index == 0) {
+                    val records = jsonObject.get(EnrichedRecord.RECORDS_KEY)
+                        .asJsonArray
+                    removedRecords = records.size()
+                    records.forEach { record ->
+                        record.asJsonObject.add(
+                            BatchesToSegmentsMapper.TIMESTAMP_KEY,
+                            JsonPrimitive(forge.anAlphabeticalString())
+                        )
+                    }
+                    jsonObject.add(EnrichedRecord.RECORDS_KEY, records)
+                    jsonObject
+                } else {
+                    jsonObject
+                }
+            }
+            .map { it.toString().toByteArray() }
+
+        // When
+        val mappedSegment = testedMapper.map(fakeBatchData)
+        val expectedRecordsSize = fakeRecords.size - removedRecords
+        assertThat(mappedSegment?.first?.recordsCount?.toInt()).isEqualTo(expectedRecordsSize)
+        val recordsAsJsonArray = mappedSegment?.second
+            ?.getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
+        assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
+    }
+
+    @Test
+    fun `M drop the broken records W map { some enriched records with wrong records format }`(
+        forge: Forge
+    ) {
+        // Given
+        val rumContext: SessionReplayRumContext = forge.getForgery()
+        val fakeRecordsSize = forge.anInt(min = 20, max = 50)
+        val fakeRecords: List<MobileSegment.MobileRecord> = forge.aList(fakeRecordsSize) {
+            forge.getForgery()
+        }
+        val fakeEnrichedRecords = fakeRecords
+            .chunked(forge.anInt(min = 1, max = fakeRecordsSize))
+            .map {
+                EnrichedRecord(
+                    rumContext.applicationId,
+                    rumContext.sessionId,
+                    rumContext.sessionId,
+                    it
+                )
+            }
+        var removedRecords = 0
+        val fakeBatchData = fakeEnrichedRecords
+            .map { JsonParser.parseString(it.toJson()).asJsonObject }
+            .mapIndexed { index, jsonObject ->
+                if (index == 0) {
+                    val records = jsonObject.get(EnrichedRecord.RECORDS_KEY)
+                        .asJsonArray
+                    removedRecords = records.size()
+                    jsonObject.add(EnrichedRecord.RECORDS_KEY, forge.getForgery<JsonPrimitive>())
+                    jsonObject
+                } else {
+                    jsonObject
+                }
+            }
+            .map { it.toString().toByteArray() }
+
+        // When
+        val mappedSegment = testedMapper.map(fakeBatchData)
+        val expectedRecordsSize = fakeRecords.size - removedRecords
+        assertThat(mappedSegment?.first?.recordsCount?.toInt()).isEqualTo(expectedRecordsSize)
+        val recordsAsJsonArray = mappedSegment?.second
+            ?.getAsJsonArray(BatchesToSegmentsMapper.RECORDS_KEY)
+        assertThat(recordsAsJsonArray?.size()).isEqualTo(expectedRecordsSize)
     }
 
     // region Internal
