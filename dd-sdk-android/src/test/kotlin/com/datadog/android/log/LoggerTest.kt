@@ -13,6 +13,7 @@ import com.datadog.android.utils.forge.Configurator
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.anyOrNull
+import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.isNull
@@ -20,9 +21,11 @@ import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
@@ -850,6 +853,67 @@ internal class LoggerTest {
                 emptyMap(),
                 setOf("$key:$value1", "$key:$value2", "$key:$value3")
             )
+    }
+
+    @Test
+    fun `M use copy of tags W log`(
+        @IntForgery(min = 0) priority: Int,
+        @StringForgery key: String,
+        @StringForgery value: String
+    ) {
+        // Given
+        testedLogger.addTag(key, value)
+
+        // When
+        testedLogger.log(priority, fakeMessage)
+
+        argumentCaptor<Set<String>> {
+            verify(mockLogHandler)
+                .handleLog(
+                    eq(priority),
+                    eq(fakeMessage),
+                    isNull(),
+                    eq(emptyMap()),
+                    capture(),
+                    timestamp = anyOrNull()
+                )
+
+            assertThat(lastValue).isNotSameAs(testedLogger.tags)
+            assertThat(lastValue).isEqualTo(testedLogger.tags)
+        }
+    }
+
+    @Test
+    fun `M use copy of tags W log { error as string }`(
+        @IntForgery(min = 0) priority: Int,
+        @StringForgery key: String,
+        @StringForgery value: String,
+        @StringForgery errorMessage: String,
+        @StringForgery errorStack: String,
+        @StringForgery errorKind: String
+    ) {
+        // Given
+        testedLogger.addTag(key, value)
+
+        // When
+        testedLogger.log(priority, fakeMessage, errorKind, errorMessage, errorStack)
+
+        argumentCaptor<Set<String>> {
+            verify(mockLogHandler)
+                .handleLog(
+                    eq(priority),
+                    eq(fakeMessage),
+                    eq(errorKind),
+                    eq(errorMessage),
+                    eq(errorStack),
+                    eq(emptyMap()),
+                    capture(),
+                    timestamp = anyOrNull()
+                )
+
+            assertThat(lastValue).isNotSameAs(testedLogger.tags)
+            assertThat(lastValue).isEqualTo(testedLogger.tags)
+        }
     }
 
     // endregion
