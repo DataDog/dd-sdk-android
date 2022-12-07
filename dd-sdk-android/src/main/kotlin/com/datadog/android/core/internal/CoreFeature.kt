@@ -28,6 +28,7 @@ import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NetworkInfoDeserializer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
+import com.datadog.android.core.internal.persistence.JsonObjectDeserializer
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
@@ -58,7 +59,6 @@ import com.datadog.android.core.internal.user.UserInfoDeserializer
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.privacy.TrackingConsent
-import com.datadog.android.rum.internal.domain.event.RumEventDeserializer
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.rum.internal.ndk.NdkCrashHandler
 import com.datadog.android.rum.internal.ndk.NdkCrashLogDeserializer
@@ -236,14 +236,12 @@ internal class CoreFeature {
                 storageDir,
                 persistenceExecutorService,
                 NdkCrashLogDeserializer(sdkLogger),
-                RumEventDeserializer(),
+                rumEventDeserializer = JsonObjectDeserializer(),
                 NetworkInfoDeserializer(sdkLogger),
                 UserInfoDeserializer(sdkLogger),
                 sdkLogger,
-                timeProvider,
                 rumFileReader = BatchFileReaderWriter.create(sdkLogger, localDataEncryption),
-                envFileReader = FileReaderWriter.create(sdkLogger, localDataEncryption),
-                androidInfoProvider = androidInfoProvider
+                envFileReader = FileReaderWriter.create(sdkLogger, localDataEncryption)
             )
             ndkCrashHandler.prepareData()
         }

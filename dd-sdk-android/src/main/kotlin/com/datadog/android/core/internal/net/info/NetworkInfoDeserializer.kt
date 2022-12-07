@@ -15,7 +15,7 @@ import java.util.Locale
 
 internal class NetworkInfoDeserializer(
     private val internalLogger: Logger
-) : Deserializer<NetworkInfo> {
+) : Deserializer<String, NetworkInfo> {
 
     override fun deserialize(model: String): NetworkInfo? {
         return try {

@@ -197,9 +197,8 @@ internal class DatadogExceptionHandlerTest {
                 mapOf(
                     "threadName" to currentThread.name,
                     "throwable" to fakeThrowable,
-                    "syncWrite" to true,
                     "message" to fakeThrowable.message,
-                    "type" to "crash",
+                    "type" to "jvm_crash",
                     "loggerName" to DatadogExceptionHandler.LOGGER_NAME
                 )
             )
@@ -232,9 +231,8 @@ internal class DatadogExceptionHandlerTest {
                 mapOf(
                     "threadName" to currentThread.name,
                     "throwable" to fakeThrowable,
-                    "syncWrite" to true,
                     "message" to fakeThrowable.message,
-                    "type" to "crash",
+                    "type" to "jvm_crash",
                     "loggerName" to DatadogExceptionHandler.LOGGER_NAME
                 )
             )
@@ -268,9 +266,8 @@ internal class DatadogExceptionHandlerTest {
                 mapOf(
                     "threadName" to currentThread.name,
                     "throwable" to throwable,
-                    "syncWrite" to true,
                     "message" to "Application crash detected: ${throwable.javaClass.canonicalName}",
-                    "type" to "crash",
+                    "type" to "jvm_crash",
                     "loggerName" to DatadogExceptionHandler.LOGGER_NAME
                 )
             )
@@ -304,9 +301,8 @@ internal class DatadogExceptionHandlerTest {
                 mapOf(
                     "threadName" to currentThread.name,
                     "throwable" to throwable,
-                    "syncWrite" to true,
                     "message" to "Application crash detected: ${throwable.javaClass.simpleName}",
-                    "type" to "crash",
+                    "type" to "jvm_crash",
                     "loggerName" to DatadogExceptionHandler.LOGGER_NAME
                 )
             )
@@ -349,9 +345,8 @@ internal class DatadogExceptionHandlerTest {
                 mapOf(
                     "threadName" to thread.name,
                     "throwable" to fakeThrowable,
-                    "syncWrite" to true,
                     "message" to fakeThrowable.message,
-                    "type" to "crash",
+                    "type" to "jvm_crash",
                     "loggerName" to DatadogExceptionHandler.LOGGER_NAME
                 )
             )
@@ -478,10 +473,9 @@ internal class DatadogExceptionHandlerTest {
 
             assertThat(crashEvent).isEqualTo(
                 mapOf(
-                    "type" to "crash",
+                    "type" to "jvm_crash",
                     "throwable" to fakeThrowable,
-                    "message" to fakeThrowable.message,
-                    "source" to "source"
+                    "message" to fakeThrowable.message
                 )
             )
         }
@@ -510,10 +504,9 @@ internal class DatadogExceptionHandlerTest {
 
             assertThat(crashEvent).isEqualTo(
                 mapOf(
-                    "type" to "crash",
+                    "type" to "jvm_crash",
                     "throwable" to throwable,
-                    "message" to "Application crash detected: ${throwable.javaClass.canonicalName}",
-                    "source" to "source"
+                    "message" to "Application crash detected: ${throwable.javaClass.canonicalName}"
                 )
             )
         }
@@ -540,10 +533,9 @@ internal class DatadogExceptionHandlerTest {
 
             assertThat(crashEvent).isEqualTo(
                 mapOf(
-                    "type" to "crash",
+                    "type" to "jvm_crash",
                     "throwable" to throwable,
-                    "message" to "Application crash detected: ${throwable.javaClass.simpleName}",
-                    "source" to "source"
+                    "message" to "Application crash detected: ${throwable.javaClass.simpleName}"
                 )
             )
         }

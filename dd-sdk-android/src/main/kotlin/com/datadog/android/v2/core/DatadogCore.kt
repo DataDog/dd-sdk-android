@@ -44,7 +44,6 @@ import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.ContextProvider
-import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
 import com.datadog.android.v2.log.internal.net.LogsRequestFactory
 import com.datadog.android.v2.rum.internal.net.RumRequestFactory
 import com.datadog.android.v2.tracing.internal.net.TracesRequestFactory
@@ -298,10 +297,7 @@ internal class DatadogCore(
         initializeCrashReportFeature(mutableConfig.crashReportConfig, appContext)
         initializeSessionReplayFeature(mutableConfig.sessionReplayConfig, appContext)
 
-        coreFeature.ndkCrashHandler.handleNdkCrash(
-            this,
-            rumFeature?.dataWriter ?: NoOpDataWriter()
-        )
+        coreFeature.ndkCrashHandler.handleNdkCrash(this)
 
         setupLifecycleMonitorCallback(appContext)
 

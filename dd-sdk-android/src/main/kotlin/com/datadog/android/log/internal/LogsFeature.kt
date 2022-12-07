@@ -56,8 +56,10 @@ internal class LogsFeature(
             return
         }
 
-        if (event["type"] == "crash") {
-            sendCrashLog(event)
+        if (event["type"] == "jvm_crash") {
+            sendJvmCrashLog(event)
+        } else if (event["type"] == "ndk_crash") {
+            sendNdkCrashLog(event)
         } else {
             devLogger.w(UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"]))
         }
@@ -80,31 +82,23 @@ internal class LogsFeature(
     }
 
     @Suppress("ComplexMethod")
-    private fun sendCrashLog(data: Map<*, *>) {
+    private fun sendJvmCrashLog(data: Map<*, *>) {
         val threadName = data["threadName"] as? String
         val throwable = data["throwable"] as? Throwable
-        val syncWrite = data["syncWrite"] as? Boolean ?: false
         val timestamp = data["timestamp"] as? Long
         val message = data["message"] as? String
         val loggerName = data["loggerName"] as? String
-        val attributes = (data["attributes"] as? Map<*, *>)
-            ?.filterKeys { it is String }
-            ?.mapKeys { it.key as String }
-        val bundleWithTraces = data["bundleWithTraces"] as? Boolean
-        val bundleWithRum = data["bundleWithRum"] as? Boolean
-        // TODO RUMM-0000 RUM should write v2 models, not network ones
-        val networkInfo = data["networkInfo"] as? NetworkInfo
-        val userInfo = data["userInfo"] as? UserInfo
 
         @Suppress("ComplexCondition")
-        if (loggerName == null || message == null || timestamp == null || threadName == null) {
-            devLogger.w(EVENT_MISSING_MANDATORY_FIELDS)
+        if (threadName == null || throwable == null ||
+            timestamp == null || message == null || loggerName == null
+        ) {
+            devLogger.w(JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING)
             return
         }
 
         @Suppress("UnsafeThirdPartyFunctionCall") // argument is good
-        val lock =
-            if (syncWrite) CountDownLatch(1) else null
+        val lock = CountDownLatch(1)
 
         sdkCore.getFeature(LOGS_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
@@ -115,26 +109,68 @@ internal class LogsFeature(
                     loggerName = loggerName,
                     message = message,
                     throwable = throwable,
-                    attributes = attributes ?: emptyMap(),
+                    attributes = emptyMap(),
                     timestamp = timestamp,
-                    bundleWithTraces = bundleWithTraces ?: true,
-                    bundleWithRum = bundleWithRum ?: true,
-                    networkInfo = networkInfo,
-                    userInfo = userInfo,
+                    bundleWithTraces = true,
+                    bundleWithRum = true,
+                    networkInfo = null,
+                    userInfo = null,
                     threadName = threadName,
                     tags = emptySet()
                 )
 
                 @Suppress("ThreadSafety") // called in a worker thread context
                 dataWriter.write(eventBatchWriter, log)
-                lock?.countDown()
+                lock.countDown()
             }
 
         try {
-            lock?.await(MAX_WRITE_WAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            lock.await(MAX_WRITE_WAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         } catch (e: InterruptedException) {
             sdkLogger.e("Log event write operation wait was interrupted.", e)
         }
+    }
+
+    @Suppress("ComplexMethod")
+    private fun sendNdkCrashLog(data: Map<*, *>) {
+        val timestamp = data["timestamp"] as? Long
+        val message = data["message"] as? String
+        val loggerName = data["loggerName"] as? String
+        val attributes = (data["attributes"] as? Map<*, *>)
+            ?.filterKeys { it is String }
+            ?.mapKeys { it.key as String }
+        val networkInfo = data["networkInfo"] as? NetworkInfo
+        val userInfo = data["userInfo"] as? UserInfo
+
+        @Suppress("ComplexCondition")
+        if (loggerName == null || message == null || timestamp == null || attributes == null
+        ) {
+            devLogger.w(NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING)
+            return
+        }
+
+        sdkCore.getFeature(LOGS_FEATURE_NAME)
+            ?.withWriteContext { datadogContext, eventBatchWriter ->
+                val log = logGenerator.generateLog(
+                    DatadogLogGenerator.CRASH,
+                    datadogContext = datadogContext,
+                    attachNetworkInfo = true,
+                    loggerName = loggerName,
+                    message = message,
+                    throwable = null,
+                    attributes = attributes,
+                    timestamp = timestamp,
+                    bundleWithTraces = false,
+                    bundleWithRum = false,
+                    networkInfo = networkInfo,
+                    userInfo = userInfo,
+                    threadName = Thread.currentThread().name,
+                    tags = emptySet()
+                )
+
+                @Suppress("ThreadSafety") // called in a worker thread context
+                dataWriter.write(eventBatchWriter, log)
+            }
     }
 
     // endregion
@@ -145,9 +181,14 @@ internal class LogsFeature(
             "Logs feature receive an event of unsupported type=%s."
         internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =
             "Logs feature received an event with unknown value of \"type\" property=%s."
-        internal const val EVENT_MISSING_MANDATORY_FIELDS = "Logs feature received an event where" +
-            " one or more mandatory (loggerName, message, timestamp, threadName) fields" +
-            " are either missing or have wrong type."
+        internal const val JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING =
+            "Logs feature received a JVM crash event where" +
+                " one or more mandatory (loggerName, throwable, message, timestamp," +
+                " threadName) fields are either missing or have wrong type."
+        internal const val NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING =
+            "Logs feature received a NDK crash event where" +
+                " one or more mandatory (loggerName, message, timestamp, attributes)" +
+                " fields are either missing or have wrong type."
         internal const val MAX_WRITE_WAIT_TIMEOUT_MS = 500L
     }
 }

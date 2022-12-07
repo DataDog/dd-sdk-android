@@ -81,7 +81,8 @@ internal class RumEventDeserializerTest {
     ) {
         // GIVEN
         val fakeViewEvent = forge.getForgery(ViewEvent::class.java)
-        val serializedEvent = serializer.serialize(fakeViewEvent)
+        val serializedEvent = JsonParser.parseString(serializer.serialize(fakeViewEvent))
+            .asJsonObject
 
         // WHEN
         val deserializedEvent = testedDeserializer.deserialize(serializedEvent) as ViewEvent
@@ -96,7 +97,8 @@ internal class RumEventDeserializerTest {
     ) {
         // GIVEN
         val fakeResourceEvent = forge.getForgery(ResourceEvent::class.java)
-        val serializedEvent = serializer.serialize(fakeResourceEvent)
+        val serializedEvent = JsonParser.parseString(serializer.serialize(fakeResourceEvent))
+            .asJsonObject
 
         // WHEN
         val deserializedEvent = testedDeserializer.deserialize(serializedEvent) as ResourceEvent
@@ -111,7 +113,8 @@ internal class RumEventDeserializerTest {
     ) {
         // GIVEN
         val fakeActionEvent = forge.getForgery(ActionEvent::class.java)
-        val serializedEvent = serializer.serialize(fakeActionEvent)
+        val serializedEvent = JsonParser.parseString(serializer.serialize(fakeActionEvent))
+            .asJsonObject
 
         // WHEN
         val deserializedEvent = testedDeserializer.deserialize(serializedEvent) as ActionEvent
@@ -126,7 +129,8 @@ internal class RumEventDeserializerTest {
     ) {
         // GIVEN
         val fakeErrorEvent = forge.getForgery(ErrorEvent::class.java)
-        val serializedEvent = serializer.serialize(fakeErrorEvent)
+        val serializedEvent = JsonParser.parseString(serializer.serialize(fakeErrorEvent))
+            .asJsonObject
 
         // WHEN
         val deserializedEvent = testedDeserializer.deserialize(serializedEvent) as ErrorEvent
@@ -141,7 +145,8 @@ internal class RumEventDeserializerTest {
     ) {
         // GIVEN
         val fakeLongTaskEvent = forge.getForgery(LongTaskEvent::class.java)
-        val serializedEvent = serializer.serialize(fakeLongTaskEvent)
+        val serializedEvent = JsonParser.parseString(serializer.serialize(fakeLongTaskEvent))
+            .asJsonObject
 
         // WHEN
         val deserializedEvent = testedDeserializer.deserialize(serializedEvent) as LongTaskEvent
@@ -156,7 +161,8 @@ internal class RumEventDeserializerTest {
     ) {
         // GIVEN
         val fakeTelemetryDebugEvent = forge.getForgery(TelemetryDebugEvent::class.java)
-        val serializedEvent = serializer.serialize(fakeTelemetryDebugEvent)
+        val serializedEvent = JsonParser.parseString(serializer.serialize(fakeTelemetryDebugEvent))
+            .asJsonObject
 
         // WHEN
         val deserializedEvent = testedDeserializer.deserialize(serializedEvent)
@@ -174,7 +180,8 @@ internal class RumEventDeserializerTest {
     ) {
         // GIVEN
         val fakeTelemetryErrorEvent = forge.getForgery(TelemetryErrorEvent::class.java)
-        val serializedEvent = serializer.serialize(fakeTelemetryErrorEvent)
+        val serializedEvent = JsonParser.parseString(serializer.serialize(fakeTelemetryErrorEvent))
+            .asJsonObject
 
         // WHEN
         val deserializedEvent = testedDeserializer.deserialize(serializedEvent)
@@ -187,19 +194,11 @@ internal class RumEventDeserializerTest {
     }
 
     @Test
-    fun `𝕄 return null W deserialize { wrong Json format }`() {
-        // WHEN
-        val deserializedEvent = testedDeserializer.deserialize("{]}")
-
-        // THEN
-        assertThat(deserializedEvent).isNull()
-    }
-
-    @Test
     fun `𝕄 return null W deserialize { wrong bundled RUM event type }`() {
         // GIVEN
         val fakeBadFormatEvent = Any()
-        val serializedEvent = serializer.serialize(fakeBadFormatEvent)
+        val serializedEvent = JsonParser.parseString(serializer.serialize(fakeBadFormatEvent))
+            .asJsonObject
 
         // WHEN
         val deserializedEvent = testedDeserializer.deserialize(serializedEvent)
@@ -225,7 +224,6 @@ internal class RumEventDeserializerTest {
                 val telemetry = getAsJsonObject("telemetry")
                 telemetry.addProperty("status", forge.anAlphabeticalString())
             }
-            .toString()
 
         // WHEN
         val deserializedEvent = testedDeserializer.deserialize(eventWithWrongStatus)

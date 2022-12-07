@@ -15,7 +15,7 @@ import java.util.Locale
 
 internal class UserInfoDeserializer(
     private val internalLogger: Logger
-) : Deserializer<UserInfo> {
+) : Deserializer<String, UserInfo> {
 
     override fun deserialize(model: String): UserInfo? {
         return try {

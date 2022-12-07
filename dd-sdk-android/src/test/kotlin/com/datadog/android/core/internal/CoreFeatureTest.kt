@@ -813,8 +813,6 @@ internal class CoreFeatureTest {
                         CoreFeature.DATADOG_STORAGE_DIR_NAME.format(Locale.US, fakeSdkInstanceId)
                     )
                 )
-                assertThat(it.timeProvider)
-                    .isInstanceOf(KronosTimeProvider::class.java)
             }
     }
 
