@@ -1224,6 +1224,7 @@ datadog:
       - "kotlin.String.count(kotlin.Function1)"
       - "kotlin.String.endsWith(kotlin.Char, kotlin.Boolean)"
       - "kotlin.String.endsWith(kotlin.String, kotlin.Boolean)"
+      - "kotlin.String.equals(kotlin.String?, kotlin.Boolean)"
       - "kotlin.String.filter(kotlin.Function1)"
       - "kotlin.String.format(java.util.Locale?, kotlin.Array)"
       - "kotlin.String.format(java.util.Locale?, kotlin.String, kotlin.Array)"

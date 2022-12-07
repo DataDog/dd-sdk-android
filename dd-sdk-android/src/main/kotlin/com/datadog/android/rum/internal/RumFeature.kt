@@ -24,10 +24,13 @@ import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
+import com.datadog.android.rum.GlobalRum
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
+import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
@@ -44,9 +47,11 @@ import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
+import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
+import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
@@ -56,7 +61,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal class RumFeature(
     private val sdkCore: SdkCore,
     private val coreFeature: CoreFeature
-) {
+) : FeatureEventReceiver {
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
     internal val initialized = AtomicBoolean(false)
 
@@ -106,10 +111,14 @@ internal class RumFeature(
 
         appContext = context.applicationContext
 
+        sdkCore.setEventReceiver(RUM_FEATURE_NAME, this)
+
         initialized.set(true)
     }
 
     fun stop() {
+        sdkCore.removeEventReceiver(RUM_FEATURE_NAME)
+
         unregisterTrackingStrategies(appContext)
 
         dataWriter = NoOpDataWriter()
@@ -142,6 +151,23 @@ internal class RumFeature(
             lastViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir)
 
         )
+    }
+
+    // endregion
+
+    // region FeatureEventReceiver
+
+    override fun onReceive(event: Any) {
+        if (event !is Map<*, *>) {
+            devLogger.w(UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName))
+            return
+        }
+
+        if (event["type"] == "crash") {
+            addCrash(event)
+        } else {
+            devLogger.w(UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"]))
+        }
     }
 
     // endregion
@@ -233,6 +259,32 @@ internal class RumFeature(
         anrDetectorExecutorService.executeSafe("ANR detection", anrDetectorRunnable)
     }
 
+    private fun addCrash(crashEvent: Map<*, *>) {
+        val throwable = crashEvent["throwable"] as? Throwable
+        val message = crashEvent["message"] as? String
+        val source = (crashEvent["source"] as? String)?.let { rawValue ->
+            val value = RumErrorSource.values().firstOrNull { enumValue ->
+                enumValue.name.equals(rawValue, ignoreCase = true)
+            }
+            if (value == null) {
+                @Suppress("InvalidStringFormat") // compileTimeInitializer is null here
+                devLogger.w(WRONG_VALUE_OF_SOURCE_PROPERTY_WARNING.format(Locale.US, rawValue))
+            }
+            value
+        }
+
+        if (throwable == null || message == null || source == null) {
+            devLogger.w(EVENT_MISSING_MANDATORY_FIELDS)
+            return
+        }
+
+        (GlobalRum.get() as? AdvancedRumMonitor)?.addCrash(
+            message,
+            source,
+            throwable
+        )
+    }
+
     // endregion
 
     companion object {
@@ -240,5 +292,15 @@ internal class RumFeature(
 
         internal const val RUM_FEATURE_NAME = "rum"
         internal const val VIEW_TIMESTAMP_OFFSET_IN_MS_KEY = "view_timestamp_offset"
+        internal const val UNSUPPORTED_EVENT_TYPE =
+            "RUM feature receive an event of unsupported type=%s."
+        internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =
+            "RUM feature received an event with unknown value of \"type\" property=%s."
+        internal const val EVENT_MISSING_MANDATORY_FIELDS = "RUM feature received a crash event" +
+            " where one or more mandatory (throwable, message, source) fields" +
+            " are either missing or have wrong type."
+        internal val WRONG_VALUE_OF_SOURCE_PROPERTY_WARNING =
+            "Value %s of \"source\" property cannot be matched" +
+                " to the ${RumErrorSource::class.java.simpleName} values."
     }
 }
