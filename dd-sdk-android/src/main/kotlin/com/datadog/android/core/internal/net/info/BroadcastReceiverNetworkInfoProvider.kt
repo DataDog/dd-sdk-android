@@ -19,7 +19,7 @@ import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
-import com.datadog.android.core.model.NetworkInfo
+import com.datadog.android.v2.api.context.NetworkInfo
 import android.net.NetworkInfo as AndroidNetworkInfo
 
 @Suppress("DEPRECATION")

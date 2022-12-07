@@ -4,13 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.log.internal.user
+package com.datadog.android.core.internal.user
 
-import com.datadog.android.core.model.UserInfo
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.assertj.DeserializedMapAssert
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.context.UserInfo
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension

@@ -9,12 +9,9 @@ package com.datadog.android.v2.core.internal
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.DeviceInfo
-import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.ProcessInfo
 import com.datadog.android.v2.api.context.TimeInfo
-import com.datadog.android.v2.api.context.UserInfo
 import java.util.concurrent.TimeUnit
-import com.datadog.android.core.model.NetworkInfo as NetworkInfoV1
 
 internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextProvider {
     override val context: DatadogContext
@@ -43,17 +40,7 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
                     isMainProcess = coreFeature.isMainProcess,
                     processImportance = CoreFeature.processImportance
                 ),
-                networkInfo = with(coreFeature.networkInfoProvider.getLatestNetworkInfo()) {
-                    NetworkInfo(
-                        connectivity = connectivity.asV2(),
-                        carrierName = carrierName,
-                        carrierId = carrierId,
-                        upKbps = upKbps,
-                        downKbps = downKbps,
-                        strength = strength,
-                        cellularTechnology = cellularTechnology
-                    )
-                },
+                networkInfo = coreFeature.networkInfoProvider.getLatestNetworkInfo(),
                 deviceInfo = with(coreFeature.androidInfoProvider) {
                     DeviceInfo(
                         deviceName = deviceName,
@@ -67,14 +54,7 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
                         architecture = architecture
                     )
                 },
-                userInfo = with(coreFeature.userInfoProvider.getUserInfo()) {
-                    UserInfo(
-                        id = id,
-                        name = name,
-                        email = email,
-                        additionalProperties = additionalProperties
-                    )
-                },
+                userInfo = coreFeature.userInfoProvider.getUserInfo(),
                 trackingConsent = coreFeature.trackingConsentProvider.getConsent(),
                 featuresContext = coreFeature.featuresContext
             )
@@ -86,27 +66,5 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
 
     override fun getFeatureContext(feature: String): Map<String, Any?> {
         return coreFeature.featuresContext[feature] ?: emptyMap()
-    }
-
-    private fun NetworkInfoV1.Connectivity.asV2(): NetworkInfo.Connectivity {
-        return when (this) {
-            NetworkInfoV1.Connectivity.NETWORK_NOT_CONNECTED ->
-                NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
-            NetworkInfoV1.Connectivity.NETWORK_ETHERNET ->
-                NetworkInfo.Connectivity.NETWORK_ETHERNET
-            NetworkInfoV1.Connectivity.NETWORK_WIFI -> NetworkInfo.Connectivity.NETWORK_WIFI
-            NetworkInfoV1.Connectivity.NETWORK_WIMAX -> NetworkInfo.Connectivity.NETWORK_WIMAX
-            NetworkInfoV1.Connectivity.NETWORK_BLUETOOTH ->
-                NetworkInfo.Connectivity.NETWORK_BLUETOOTH
-            NetworkInfoV1.Connectivity.NETWORK_2G -> NetworkInfo.Connectivity.NETWORK_2G
-            NetworkInfoV1.Connectivity.NETWORK_3G -> NetworkInfo.Connectivity.NETWORK_3G
-            NetworkInfoV1.Connectivity.NETWORK_4G -> NetworkInfo.Connectivity.NETWORK_4G
-            NetworkInfoV1.Connectivity.NETWORK_5G -> NetworkInfo.Connectivity.NETWORK_5G
-            NetworkInfoV1.Connectivity.NETWORK_MOBILE_OTHER ->
-                NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER
-            NetworkInfoV1.Connectivity.NETWORK_CELLULAR ->
-                NetworkInfo.Connectivity.NETWORK_CELLULAR
-            NetworkInfoV1.Connectivity.NETWORK_OTHER -> NetworkInfo.Connectivity.NETWORK_OTHER
-        }
     }
 }

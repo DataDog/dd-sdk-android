@@ -687,6 +687,7 @@ datadog:
       - "java.util.zip.Deflater.deflate(kotlin.ByteArray, kotlin.Int, kotlin.Int, kotlin.Int):java.lang.IllegalArgumentException"
       # endregion
       # region Kotlin primitives
+      - "kotlin.Array.first(kotlin.Function1):java.util.NoSuchElementException"
       - "kotlin.String.get(kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "kotlin.String.substring(kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "kotlin.String.substring(kotlin.Int):java.lang.IndexOutOfBoundsException"
@@ -1273,6 +1274,7 @@ datadog:
       - "com.google.gson.JsonArray.addAll(com.google.gson.JsonArray)"
       - "com.google.gson.JsonArray.add(kotlin.String)"
       - "com.google.gson.JsonArray.map(kotlin.Function1)"
+      - "com.google.gson.JsonParseException.constructor(kotlin.String, kotlin.Throwable)"
       - "com.google.gson.JsonParseException.constructor(kotlin.Throwable)"
       # endregion
       # region Kronos

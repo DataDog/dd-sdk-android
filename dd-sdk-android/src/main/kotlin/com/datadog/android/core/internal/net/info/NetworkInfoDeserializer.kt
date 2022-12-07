@@ -7,9 +7,9 @@
 package com.datadog.android.core.internal.net.info
 
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.v2.api.context.NetworkInfo
 import com.google.gson.JsonParseException
 import java.util.Locale
 
