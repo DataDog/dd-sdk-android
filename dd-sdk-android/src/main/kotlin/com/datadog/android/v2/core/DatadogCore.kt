@@ -54,6 +54,7 @@ import java.util.concurrent.TimeUnit
  * Internal implementation of the [SdkCore] interface.
  * @param credentials the Datadog credentials for this instance
  */
+@Suppress("TooManyFunctions")
 internal class DatadogCore(
     context: Context,
     internal val credentials: Credentials,

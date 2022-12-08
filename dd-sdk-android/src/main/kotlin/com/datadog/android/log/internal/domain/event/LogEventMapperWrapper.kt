@@ -14,17 +14,18 @@ import java.util.Locale
 internal class LogEventMapperWrapper(
     internal val wrappedEventMapper: EventMapper<LogEvent>
 ) : EventMapper<LogEvent> {
+
     override fun map(event: LogEvent): LogEvent? {
         val mappedEvent = wrappedEventMapper.map(event)
-        if (mappedEvent == null) {
+        return if (mappedEvent == null) {
             devLogger.w(EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event))
-            return null
-        }
-        if (mappedEvent !== event) {
+            null
+        } else         if (mappedEvent !== event) {
             devLogger.w(NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, event))
-            return null
+            null
+        } else {
+            mappedEvent
         }
-        return mappedEvent
     }
 
     companion object {

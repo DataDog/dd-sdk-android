@@ -31,6 +31,7 @@ internal class RuntimeUtilsDebugTest {
     // region sdkLogger
 
     @Test
+    @Suppress("FunctionMaxLength", "FunctionNaming")
     fun `M build LogCat+Telemetry sdkLogger W buildSdkLogger()`() {
         // When
         val logger = buildSdkLogger()

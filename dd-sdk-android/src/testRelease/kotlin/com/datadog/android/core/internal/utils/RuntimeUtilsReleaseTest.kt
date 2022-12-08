@@ -31,6 +31,7 @@ internal class RuntimeUtilsReleaseTest {
     // region sdkLogger
 
     @Test
+    @Suppress("FunctionMaxLength", "FunctionNaming")
     fun `M build NoOp + Telemetry sdkLogger W buildSdkLogger()`() {
         // When
         val logger = buildSdkLogger()

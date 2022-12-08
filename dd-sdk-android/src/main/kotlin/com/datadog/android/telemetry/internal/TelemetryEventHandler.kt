@@ -19,6 +19,7 @@ import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrackingStrategy as VTS
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.v2.api.SdkCore
@@ -94,6 +95,7 @@ internal class TelemetryEventHandler(
 
     // region private
 
+    @Suppress("ReturnCount")
     private fun canWrite(event: RumRawEvent.SendTelemetry): Boolean {
         if (!eventSampler.sample()) return false
 
@@ -181,10 +183,10 @@ internal class TelemetryEventHandler(
         val rumConfig = configuration?.rumConfig
         val crashConfig = configuration?.crashReportConfig
         val viewTrackingStrategy = when (rumConfig?.viewTrackingStrategy) {
-            is ActivityViewTrackingStrategy -> TelemetryConfigurationEvent.ViewTrackingStrategy.ACTIVITYVIEWTRACKINGSTRATEGY
-            is FragmentViewTrackingStrategy -> TelemetryConfigurationEvent.ViewTrackingStrategy.FRAGMENTVIEWTRACKINGSTRATEGY
-            is MixedViewTrackingStrategy -> TelemetryConfigurationEvent.ViewTrackingStrategy.MIXEDVIEWTRACKINGSTRATEGY
-            is NavigationViewTrackingStrategy -> TelemetryConfigurationEvent.ViewTrackingStrategy.NAVIGATIONVIEWTRACKINGSTRATEGY
+            is ActivityViewTrackingStrategy -> VTS.ACTIVITYVIEWTRACKINGSTRATEGY
+            is FragmentViewTrackingStrategy -> VTS.FRAGMENTVIEWTRACKINGSTRATEGY
+            is MixedViewTrackingStrategy -> VTS.MIXEDVIEWTRACKINGSTRATEGY
+            is NavigationViewTrackingStrategy -> VTS.NAVIGATIONVIEWTRACKINGSTRATEGY
             else -> null
         }
 

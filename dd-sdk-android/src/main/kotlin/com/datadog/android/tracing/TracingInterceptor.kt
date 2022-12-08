@@ -13,6 +13,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
+import com.datadog.android.core.internal.utils.HUNDRED
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.sdkLogger
@@ -34,6 +35,7 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import java.net.HttpURLConnection
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -67,7 +69,7 @@ import java.util.concurrent.atomic.AtomicReference
  * @param tracedRequestListener a listener for automatically created [Span]s
  *
  */
-@Suppress("StringLiteralDuplication")
+@Suppress("TooManyFunctions", "StringLiteralDuplication")
 open class TracingInterceptor
 internal constructor(
     internal val tracedHosts: List<String>,
@@ -110,7 +112,7 @@ internal constructor(
         tracedRequestListener,
         getGlobalFirstPartyHostDetector(),
         null,
-        RateBasedSampler(traceSamplingRate / 100),
+        RateBasedSampler(traceSamplingRate / HUNDRED),
         { AndroidTracer.Builder().build() }
     )
 
@@ -131,7 +133,7 @@ internal constructor(
         tracedRequestListener,
         getGlobalFirstPartyHostDetector(),
         null,
-        RateBasedSampler(traceSamplingRate / 100),
+        RateBasedSampler(traceSamplingRate / HUNDRED),
         { AndroidTracer.Builder().build() }
     )
 
@@ -187,7 +189,7 @@ internal constructor(
     private fun isRequestTraceable(request: Request): Boolean {
         val url = request.url()
         return firstPartyHostDetector.isFirstPartyUrl(url) ||
-            localFirstPartyHostDetector.isFirstPartyUrl(url)
+                localFirstPartyHostDetector.isFirstPartyUrl(url)
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
@@ -278,6 +280,7 @@ internal constructor(
         return span
     }
 
+    @Suppress("ReturnCount")
     private fun extractSamplingDecision(request: Request): Boolean? {
         val samplingPriority = request.header(SAMPLING_PRIORITY_HEADER)?.toIntOrNull()
             ?: return null
@@ -343,10 +346,10 @@ internal constructor(
         } else {
             val statusCode = response.code()
             span.setTag(Tags.HTTP_STATUS.key, statusCode)
-            if (statusCode in 400..499) {
+            if (statusCode in HttpURLConnection.HTTP_BAD_REQUEST until HttpURLConnection.HTTP_INTERNAL_ERROR) {
                 (span as? MutableSpan)?.isError = true
             }
-            if (statusCode == 404) {
+            if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
                 (span as? MutableSpan)?.resourceName = RESOURCE_NAME_404
             }
             onRequestIntercepted(request, span, response, null)
@@ -391,18 +394,18 @@ internal constructor(
 
         internal const val WARNING_TRACING_NO_HOSTS =
             "You added a TracingInterceptor to your OkHttpClient, " +
-                "but you did not specify any first party hosts. " +
-                "Your requests won't be traced.\n" +
-                "To set a list of known hosts, you can use the " +
-                "Configuration.Builder::setFirstPartyHosts() method."
+                    "but you did not specify any first party hosts. " +
+                    "Your requests won't be traced.\n" +
+                    "To set a list of known hosts, you can use the " +
+                    "Configuration.Builder::setFirstPartyHosts() method."
         internal const val WARNING_TRACING_DISABLED =
             "You added a TracingInterceptor to your OkHttpClient, " +
-                "but you did not enable the TracingFeature. " +
-                "Your requests won't be traced."
+                    "but you did not enable the TracingFeature. " +
+                    "Your requests won't be traced."
         internal const val WARNING_DEFAULT_TRACER =
             "You added a TracingInterceptor to your OkHttpClient, " +
-                "but you didn't register any Tracer. " +
-                "We automatically created a local tracer for you."
+                    "but you didn't register any Tracer. " +
+                    "We automatically created a local tracer for you."
 
         /**
          * Temporary helper method for now, it'll be removed eventually.
@@ -410,12 +413,13 @@ internal constructor(
         @Suppress("FunctionMaxLength")
         internal fun getGlobalFirstPartyHostDetector(): FirstPartyHostDetector {
             return (
-                (Datadog.globalSdkCore as? DatadogCore)
-                    ?.coreFeature
-                    ?.firstPartyHostDetector
-                    ?: FirstPartyHostDetector(emptyList())
-                )
+                    (Datadog.globalSdkCore as? DatadogCore)
+                        ?.coreFeature
+                        ?.firstPartyHostDetector
+                        ?: FirstPartyHostDetector(emptyList())
+                    )
         }
+
         internal const val DEFAULT_TRACE_SAMPLING_RATE: Float = 20f
 
         // taken from DatadogHttpCodec

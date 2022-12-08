@@ -13,6 +13,7 @@ import androidx.annotation.FloatRange
 import androidx.fragment.app.Fragment
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.sampling.RateBasedSampler
+import com.datadog.android.core.internal.utils.HUNDRED
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
@@ -306,7 +307,7 @@ interface RumMonitor {
                     handler = Handler(Looper.getMainLooper()),
                     telemetryEventHandler = TelemetryEventHandler(
                         sdkCore = datadogCore,
-                        RateBasedSampler(rumFeature.telemetrySamplingRate / 100)
+                        RateBasedSampler(rumFeature.telemetrySamplingRate / HUNDRED)
                     ),
                     firstPartyHostDetector = coreFeature.firstPartyHostDetector,
                     cpuVitalMonitor = rumFeature.cpuVitalMonitor,

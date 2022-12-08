@@ -6,12 +6,15 @@
 
 import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesTask
 
+val ddTraceRepository = "https://github.com/DataDog/dd-trace-java.git"
+val ddTraceVersion = "v0.50.0"
+
 tasks.register<GitCloneDependenciesTask>("cloneDdTrace") {
     extension.apply {
         clone(
-            "https://github.com/DataDog/dd-trace-java.git",
+            ddTraceRepository,
             "dd-trace-ot",
-            "v0.50.0",
+            ddTraceVersion,
             listOf(
                 "dd-trace-ot.gradle",
                 "README.md",
@@ -33,9 +36,9 @@ tasks.register<GitCloneDependenciesTask>("cloneDdTrace") {
             )
         )
         clone(
-            "https://github.com/DataDog/dd-trace-java.git",
+            ddTraceRepository,
             "dd-trace-api",
-            "v0.50.0",
+            ddTraceVersion,
             listOf(
                 "dd-trace-api.gradle",
                 "src/main/java/datadog/trace/api/GlobalTracer.java",
@@ -44,9 +47,9 @@ tasks.register<GitCloneDependenciesTask>("cloneDdTrace") {
             )
         )
         clone(
-            "https://github.com/DataDog/dd-trace-java.git",
+            ddTraceRepository,
             "utils/thread-utils",
-            "v0.50.0",
+            ddTraceVersion,
             listOf(
                 "thread-utils.gradle",
                 "src/test/"

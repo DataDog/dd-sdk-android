@@ -128,6 +128,6 @@ class ContextExtTest {
         assertThat(result).isInstanceOf(RumResourceInputStream::class.java)
         val rumRIS = result as RumResourceInputStream
         assertThat(rumRIS.delegate).isSameAs(mockIS)
-        assertThat(rumRIS.url).isEqualTo("res/0x${resourceId.toString(16)}")
+        assertThat(rumRIS.url).isEqualTo("res/0x${resourceId.toString(HEX_RADIX)}")
     }
 }

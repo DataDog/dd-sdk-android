@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+package java.util.concurrent
+
 import android.content.Context
 import com.datadog.android.ndk.NdkCrashReportsPlugin
 import com.datadog.android.plugin.DatadogPluginConfig

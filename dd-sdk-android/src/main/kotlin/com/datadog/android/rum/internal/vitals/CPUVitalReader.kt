@@ -19,6 +19,7 @@ internal class CPUVitalReader(
     internal val statFile: File = STAT_FILE
 ) : VitalReader {
 
+    @Suppress("ReturnCount")
     override fun readVitalData(): Double? {
         if (!(statFile.existsSafe() && statFile.canReadSafe())) {
             return null

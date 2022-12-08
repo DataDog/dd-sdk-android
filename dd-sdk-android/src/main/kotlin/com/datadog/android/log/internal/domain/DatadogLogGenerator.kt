@@ -16,6 +16,7 @@ import com.datadog.android.v2.api.context.DatadogContext
 import io.opentracing.util.GlobalTracer
 import java.util.Date
 
+@Suppress("TooManyFunctions")
 internal class DatadogLogGenerator(
     /**
      * Custom service name. If not provided, value will be taken from [DatadogContext].

@@ -21,7 +21,7 @@ internal class SnapshotProducer(
         return convertViewToNode(rootView, pixelsDensity, LinkedList())
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "ReturnCount")
     private fun convertViewToNode(
         view: View,
         pixelsDensity: Float,

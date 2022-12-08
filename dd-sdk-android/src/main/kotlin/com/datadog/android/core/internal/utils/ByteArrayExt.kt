@@ -71,6 +71,7 @@ internal fun Collection<ByteArray>.join(
  *
  * @return An index of the first occurrence of [b] or `-1` if none is found.
  */
+@Suppress("ReturnCount")
 internal fun ByteArray.indexOf(b: Byte, startIndex: Int = 0): Int {
     if (startIndex < 0) return -1
 
@@ -89,18 +90,17 @@ internal fun ByteArray.indexOf(b: Byte, startIndex: Int = 0): Int {
  * @return true if the copy was successful.
  */
 internal fun ByteArray.copyTo(srcPos: Int, dest: ByteArray, destPos: Int, length: Int): Boolean {
-    if (destPos + length > dest.size) {
+    return if (destPos + length > dest.size) {
         sdkLogger.w("Cannot copy ByteArray, dest doesn't have enough space")
-        return false
-    }
-    if (srcPos + length > size) {
+        false
+    } else     if (srcPos + length > size) {
         sdkLogger.w("Cannot copy ByteArray, src doesn't have enough data")
-        return false
+        false
+    } else {
+        // this and dest can't be null, NPE cannot happen here
+        // both are ByteArrays, ArrayStoreException cannot happen here
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        System.arraycopy(this, srcPos, dest, destPos, length)
+        true
     }
-
-    // this and dest can't be null, NPE cannot happen here
-    // both are ByteArrays, ArrayStoreException cannot happen here
-    @Suppress("UnsafeThirdPartyFunctionCall")
-    System.arraycopy(this, srcPos, dest, destPos, length)
-    return true
 }

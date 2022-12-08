@@ -25,6 +25,7 @@ import java.util.UUID
 // TODO: RUMM-2547 Drop this class and return a list of requests
 //  instead from SessionReplayRequestFactory
 // This class is not test as it is meant for non - production usage. It will be dropped later.
+@Suppress("TooManyFunctions")
 internal class SessionReplayOkHttpUploader(
     private val endpoint: String,
     internal val callFactory: Call.Factory,

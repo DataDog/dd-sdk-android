@@ -38,15 +38,11 @@ internal class FileEventBatchWriter(
         newMetadata: ByteArray?
     ): Boolean {
         // prevent useless operation for empty event
-        if (event.isEmpty()) {
-            return true
-        }
-
-        if (!checkEventSize(event.size)) {
-            return false
-        }
-
-        return if (eventsWriter.writeData(batchFile, event, true)) {
+        return if (event.isEmpty()) {
+            true
+        } else         if (!checkEventSize(event.size)) {
+            false
+        } else if (eventsWriter.writeData(batchFile, event, true)) {
             if (newMetadata?.isNotEmpty() == true && metadataFile != null) {
                 writeBatchMetadata(metadataFile, newMetadata)
             }

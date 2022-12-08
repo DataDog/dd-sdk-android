@@ -101,7 +101,8 @@ internal class PlainBatchFileReaderWriter(
     }
 
     @Throws(IOException::class)
-    @Suppress("UnsafeThirdPartyFunctionCall", "ComplexMethod") // Called within a try/catch block
+    @Suppress("UnsafeThirdPartyFunctionCall", "ComplexMethod", "LoopWithTooManyJumpStatements")
+    // Called within a try/catch block
     private fun readFileData(
         file: File
     ): List<ByteArray> {
@@ -146,6 +147,7 @@ internal class PlainBatchFileReaderWriter(
         return result
     }
 
+    @Suppress("ReturnCount")
     @Throws(IOException::class)
     private fun readBlock(stream: InputStream, expectedBlockType: BlockType): BlockReadResult {
         @Suppress("UnsafeThirdPartyFunctionCall") // allocation size is always positive

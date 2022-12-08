@@ -279,6 +279,9 @@ internal suspend fun <T> trackDragInteraction(
 
 // region private
 
+internal const val SHIFT_SIZE = 15
+internal const val SHIFT_MASK = 0x7FFF
+
 private val ScrollableState.currentPosition: Int?
     get() {
         return when (this) {
@@ -288,8 +291,8 @@ private val ScrollableState.currentPosition: Int?
                 // in another 15 bits (int in Java is using 2's complement) => we have space for
                 // 65,535 elements and 32,767 max offset in each. NB: firstVisibleItemScrollOffset
                 // is offset relative to the item start, not to the list start.
-                (this.firstVisibleItemIndex shl 15) or
-                    (this.firstVisibleItemScrollOffset and 0x7FFF)
+                (this.firstVisibleItemIndex shl SHIFT_SIZE) or
+                    (this.firstVisibleItemScrollOffset and SHIFT_MASK)
             }
             is ScrollState -> {
                 this.value

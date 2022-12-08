@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.monitor
 
 import android.os.Handler
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
@@ -384,7 +385,7 @@ internal class DatadogRumMonitor(
             ?.queue
             ?.drainTo(tasks)
         executorService.shutdown()
-        executorService.awaitTermination(10, TimeUnit.SECONDS)
+        executorService.awaitTermination(CoreFeature.DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
         tasks.forEach {
             it.run()
         }

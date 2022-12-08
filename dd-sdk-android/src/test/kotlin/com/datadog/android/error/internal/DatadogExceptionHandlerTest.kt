@@ -525,14 +525,6 @@ internal class DatadogExceptionHandlerTest {
         }
     }
 
-    private fun Throwable.asLogError(): LogEvent.Error {
-        return LogEvent.Error(
-            kind = this.javaClass.canonicalName ?: this.javaClass.simpleName,
-            message = this.message,
-            stack = this.stackTraceToString()
-        )
-    }
-
     companion object {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val rumMonitor = GlobalRumMonitorTestConfiguration()

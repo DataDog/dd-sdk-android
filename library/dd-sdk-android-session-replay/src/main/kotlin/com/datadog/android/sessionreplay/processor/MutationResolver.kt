@@ -37,7 +37,7 @@ internal class MutationResolver {
      * @return the mutations as [MobileSegment.MobileIncrementalData.MobileMutationData]
      * describing changes from `oldArray` to `newArray` or null if no difference was found.
      */
-    @Suppress("LongMethod", "ComplexMethod", "NestedBlockDepth")
+    @Suppress("LongMethod", "ComplexMethod", "NestedBlockDepth", "ReturnCount")
     internal fun resolveMutations(
         oldSnapshot: List<MobileSegment.Wireframe>,
         newSnapshot: List<MobileSegment.Wireframe>
@@ -232,14 +232,12 @@ internal class MutationResolver {
         currentWireframe: MobileSegment.Wireframe,
         prevWireframe: MobileSegment.Wireframe
     ): MobileSegment.WireframeUpdateMutation? {
-        if (prevWireframe == currentWireframe) {
-            return null
-        }
-        if (!prevWireframe.javaClass.isAssignableFrom(currentWireframe.javaClass)) {
+        return if (prevWireframe == currentWireframe) {
+            null
+        } else if (!prevWireframe.javaClass.isAssignableFrom(currentWireframe.javaClass)) {
             // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
-            return null
-        }
-        return when (prevWireframe) {
+            null
+        } else when (prevWireframe) {
             is MobileSegment.Wireframe.TextWireframe -> resolveTextUpdateMutation(
                 prevWireframe,
                 currentWireframe as MobileSegment.Wireframe.TextWireframe

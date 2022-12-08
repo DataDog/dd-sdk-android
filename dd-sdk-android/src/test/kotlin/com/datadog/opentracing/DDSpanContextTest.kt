@@ -119,10 +119,6 @@ internal class DDSpanContextTest {
         )
     }
 
-    @AfterEach
-    fun `tear down`() {
-    }
-
     @Test
     fun `M initialize correctly all the fields W initialized`() {
         assertThat(testedContext)

@@ -12,6 +12,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
+import com.datadog.android.core.internal.utils.HUNDRED
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.GlobalRum
@@ -114,6 +115,7 @@ internal constructor(
      * be kept, `100.0` means all traces will be kept (default value is `20.0`).
      */
     @JvmOverloads
+    @Suppress("MagicNumber")
     constructor(
         firstPartyHosts: List<String>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
@@ -125,7 +127,7 @@ internal constructor(
         tracedRequestListener = tracedRequestListener,
         firstPartyHostDetector = getGlobalFirstPartyHostDetector(),
         rumResourceAttributesProvider = rumResourceAttributesProvider,
-        traceSampler = RateBasedSampler(traceSamplingRate / 100),
+        traceSampler = RateBasedSampler(traceSamplingRate / HUNDRED),
         localTracerFactory = { AndroidTracer.Builder().build() }
     )
 
@@ -152,7 +154,7 @@ internal constructor(
         tracedRequestListener = tracedRequestListener,
         firstPartyHostDetector = getGlobalFirstPartyHostDetector(),
         rumResourceAttributesProvider = rumResourceAttributesProvider,
-        traceSampler = RateBasedSampler(traceSamplingRate / 100f),
+        traceSampler = RateBasedSampler(traceSamplingRate / HUNDRED),
         localTracerFactory = { AndroidTracer.Builder().build() }
     )
 

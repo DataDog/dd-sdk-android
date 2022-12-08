@@ -17,6 +17,7 @@ import java.util.concurrent.Future
  * A utility method to perform a Thread.sleep() safely.
  * @return whether the thread was interrupted during the sleep
  */
+@Suppress("ReturnCount")
 internal fun sleepSafe(durationMs: Long): Boolean {
     try {
         Thread.sleep(durationMs)

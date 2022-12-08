@@ -99,7 +99,7 @@ internal class JetpackViewAttributesProviderTest : ObjectTest<JetpackViewAttribu
         } else {
             whenever(mockResources.getResourceEntryName(mockRecyclerView.id))
                 .thenThrow(Resources.NotFoundException(forge.aString()))
-            "0x${parentId.toString(16)}"
+            "0x${parentId.toHexString()}"
         }
 
         // When
@@ -146,7 +146,7 @@ internal class JetpackViewAttributesProviderTest : ObjectTest<JetpackViewAttribu
         } else {
             whenever(mockResources.getResourceEntryName(mockRecyclerView.id))
                 .thenThrow(Resources.NotFoundException(forge.aString()))
-            "0x${parentId.toString(16)}"
+            "0x${parentId.toHexString()}"
         }
 
         // When

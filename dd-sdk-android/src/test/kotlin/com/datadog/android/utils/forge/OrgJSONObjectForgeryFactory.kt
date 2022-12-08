@@ -16,7 +16,7 @@ class OrgJSONObjectForgeryFactory : ForgeryFactory<JSONObject> {
     override fun getForgery(forge: Forge): JSONObject {
         return JSONObject().apply {
             val fieldCount = forge.aTinyInt()
-            for (i in 0..fieldCount) {
+            repeat(fieldCount) {
                 put(
                     forge.anAlphabeticalString(),
                     forge.anElementFrom(

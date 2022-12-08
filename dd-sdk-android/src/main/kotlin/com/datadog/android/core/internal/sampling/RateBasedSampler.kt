@@ -9,16 +9,17 @@ package com.datadog.android.core.internal.sampling
 import java.security.SecureRandom
 
 internal class RateBasedSampler(internal val sampleRate: Float) : Sampler {
+
+    constructor(sampleRate: Double) : this(sampleRate.toFloat())
+
     private val random by lazy { SecureRandom() }
 
     override fun sample(): Boolean {
-        if (sampleRate == 0f) {
-            return false
+        return when (sampleRate) {
+            0f -> false
+            1f -> true
+            else -> random.nextFloat() <= sampleRate
         }
-        if (sampleRate == 1f) {
-            return true
-        }
-        return random.nextFloat() <= sampleRate
     }
 
     override fun getSamplingRate(): Float? {

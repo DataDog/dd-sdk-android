@@ -580,7 +580,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
 
     private fun forgeFragmentArguments(forge: Forge): Bundle {
         val arguments = Bundle()
-        for (i in 0..10) {
+        repeat(10) {
             val key = forge.anAlphabeticalString()
             val value = forge.anAsciiString()
             arguments.putString(key, value)

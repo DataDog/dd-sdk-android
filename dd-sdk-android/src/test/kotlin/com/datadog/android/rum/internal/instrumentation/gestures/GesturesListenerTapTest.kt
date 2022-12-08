@@ -368,7 +368,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         verifyMonitorCalledWithUserAction(
             validTarget,
             "",
-            "0x${targetId.toString(16)}"
+            "0x${targetId.toHexString()}"
         )
     }
 
@@ -406,7 +406,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         verifyMonitorCalledWithUserAction(
             validTarget,
             "",
-            "0x${targetId.toString(16)}"
+            "0x${targetId.toHexString()}"
         )
     }
 

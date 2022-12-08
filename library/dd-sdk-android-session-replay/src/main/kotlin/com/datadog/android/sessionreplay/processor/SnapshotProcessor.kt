@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.TimeUnit
 
+@Suppress("TooManyFunctions")
 internal class SnapshotProcessor(
     private val rumContextProvider: RumContextProvider,
     private val timeProvider: TimeProvider,

@@ -138,6 +138,7 @@ internal class UiRumDebugListener :
 
     // region private
 
+    @Suppress("MagicNumber")
     @UiThread
     private fun showRumViewsInfo(viewNames: List<String>) {
         rumViewsContainer?.run {
@@ -182,7 +183,7 @@ internal class UiRumDebugListener :
             ?.findViewById<View>(android.R.id.content) as? FrameLayout
     }
 
-    @Suppress("SameParameterValue")
+    @Suppress("SameParameterValue", "MagicNumber")
     private fun dpToPx(dp: Float, context: Context): Int {
         val displayMetrics = context.resources.displayMetrics
         return ((dp * displayMetrics.density) + 0.5).toInt()

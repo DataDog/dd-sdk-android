@@ -96,7 +96,7 @@ class GesturesUtilsTest {
 
         // When
         assertThat(mockAppContext.resourceIdName(resourceId))
-            .isEqualTo("0x${resourceId.toString(16)}")
+            .isEqualTo("0x${resourceId.toHexString()}")
     }
 
     @Test
@@ -114,7 +114,7 @@ class GesturesUtilsTest {
 
         // When
         assertThat(mockAppContext.resourceIdName(resourceId))
-            .isEqualTo("0x${resourceId.toString(16)}")
+            .isEqualTo("0x${resourceId.toHexString()}")
     }
 
     @Test
@@ -128,7 +128,7 @@ class GesturesUtilsTest {
 
         // When
         assertThat(mockAppContext.resourceIdName(resourceId))
-            .isEqualTo("0x${resourceId.toString(16)}")
+            .isEqualTo("0x${resourceId.toHexString()}")
     }
 
     @Test

@@ -17,6 +17,7 @@ internal class EncryptedFileReaderWriter(
     internal val delegate: FileReaderWriter
 ) : FileReaderWriter by delegate {
 
+    @Suppress("ReturnCount")
     @WorkerThread
     override fun writeData(
         file: File,

@@ -305,7 +305,7 @@ internal class NavigationViewTrackingStrategyTest {
         whenever(mockPredicate.accept(mockNavDestination)) doReturn true
         val arguments = Bundle()
         val expectedAttrs = mutableMapOf<String, Any?>()
-        for (i in 0..10) {
+        repeat(10) {
             val key = forge.anAlphabeticalString()
             val value = forge.anAsciiString()
             arguments.putString(key, value)
@@ -329,7 +329,7 @@ internal class NavigationViewTrackingStrategyTest {
         testedStrategy = NavigationViewTrackingStrategy(fakeNavViewId, false)
 
         val arguments = Bundle()
-        for (i in 0..10) {
+        repeat(10) {
             val key = forge.anAlphabeticalString()
             val value = forge.anAsciiString()
             arguments.putString(key, value)

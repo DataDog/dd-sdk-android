@@ -680,7 +680,7 @@ internal class RumContinuousActionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isSameAs(testedScope)
         assertThat(result3).isNull()
-        assertThat(key as Any?).isNull()
+        assertThat(keyas? Any).isNull()
     }
 
     @Test
