@@ -58,7 +58,7 @@ In addition to RUM’s default attributes, you can measure where your applicatio
 {{% /tab %}}
 {{< /tabs >}}
 
-Once the timing is sent, the timing is accessible as `@view.custom_timings.<timing_name>`. For example: `@view.custom_timings.hero_image`. You must [create a measure](https://docs.datadoghq.com/real_user_monitoring/explorer/?tab=measures#setup-facets-and-measures) before graphing it in RUM analytics or in dashboards. 
+Once the timing is sent, the timing is accessible as `@view.custom_timings.<timing_name>`. For example: `@view.custom_timings.hero_image`. You must [create a measure][10] before graphing it in RUM analytics or in dashboards. 
 
 ### Custom Actions
 
@@ -452,3 +452,4 @@ GlobalRum.registerIfAbsent(monitor)
 [7]: https://github.com/DataDog/dd-sdk-android/tree/master/sample/kotlin/src/main/kotlin/com/datadog/android/sample/widget
 [8]: https://square.github.io/okhttp/features/events/
 [9]: https://docs.datadoghq.com/real_user_monitoring/android/data_collected/#event-specific-attributes
+[10]: https://docs.datadoghq.com/real_user_monitoring/explorer/search/#setup-facets-and-measures
