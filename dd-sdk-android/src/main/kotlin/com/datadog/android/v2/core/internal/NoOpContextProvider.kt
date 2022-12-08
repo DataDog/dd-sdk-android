@@ -6,7 +6,6 @@
 
 package com.datadog.android.v2.core.internal
 
-import com.datadog.android.DatadogSite
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.DeviceInfo
@@ -20,7 +19,6 @@ internal class NoOpContextProvider : ContextProvider {
     // TODO RUMM-0000 this one is quite ugly. Should return type be nullable?
     override val context: DatadogContext
         get() = DatadogContext(
-            site = DatadogSite.US1,
             clientToken = "",
             service = "",
             env = "",
