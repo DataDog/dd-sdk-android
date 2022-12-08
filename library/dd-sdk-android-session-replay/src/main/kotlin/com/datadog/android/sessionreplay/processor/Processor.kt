@@ -11,7 +11,7 @@ import com.datadog.android.sessionreplay.recorder.Node
 import com.datadog.android.sessionreplay.recorder.OrientationChanged
 
 internal interface Processor {
-    fun process(node: Node, orientationChanged: OrientationChanged? = null)
+    fun processScreenSnapshot(node: Node, orientationChanged: OrientationChanged? = null)
 
-    fun process(touchData: MobileSegment.MobileIncrementalData.TouchData)
+    fun processTouchEventsRecords(touchEventsRecords: List<MobileSegment.MobileRecord>)
 }

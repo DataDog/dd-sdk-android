@@ -9,7 +9,7 @@ package com.datadog.android.sessionreplay
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
-import com.datadog.android.sessionreplay.processor.SnapshotProcessor
+import com.datadog.android.sessionreplay.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.recorder.Recorder
 import com.datadog.android.sessionreplay.recorder.ScreenRecorder
 import com.datadog.android.sessionreplay.recorder.SnapshotProducer
@@ -41,7 +41,7 @@ class SessionReplayLifecycleCallback(
         LinkedBlockingDeque()
     )
     internal var recorder: Recorder = ScreenRecorder(
-        SnapshotProcessor(
+        RecordedDataProcessor(
             rumContextProvider,
             timeProvider,
             processorExecutorService,

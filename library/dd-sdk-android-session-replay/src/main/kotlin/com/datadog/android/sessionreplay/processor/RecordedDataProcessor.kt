@@ -21,7 +21,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.TimeUnit
 
-internal class SnapshotProcessor(
+internal class RecordedDataProcessor(
     private val rumContextProvider: RumContextProvider,
     private val timeProvider: TimeProvider,
     private val executorService: ExecutorService,
@@ -35,7 +35,7 @@ internal class SnapshotProcessor(
     private var lastSnapshotTimestamp = 0L
 
     @MainThread
-    override fun process(node: Node, orientationChanged: OrientationChanged?) {
+    override fun processScreenSnapshot(node: Node, orientationChanged: OrientationChanged?) {
         buildRunnable { timestamp, newContext, currentContext ->
             Runnable {
                 @Suppress("ThreadSafety") // this runs inside an executor
@@ -45,11 +45,11 @@ internal class SnapshotProcessor(
     }
 
     @MainThread
-    override fun process(touchData: MobileSegment.MobileIncrementalData.TouchData) {
-        buildRunnable { timestamp, newContext, _ ->
+    override fun processTouchEventsRecords(touchEventsRecords: List<MobileSegment.MobileRecord>) {
+        buildRunnable { _, newContext, _ ->
             Runnable {
                 @Suppress("ThreadSafety") // this runs inside an executor
-                handleTouchData(newContext, timestamp, touchData)
+                handleTouchRecords(newContext, touchEventsRecords)
             }
         }?.let { executeRunnable(it) }
     }
@@ -57,16 +57,11 @@ internal class SnapshotProcessor(
     // region Internal
 
     @WorkerThread
-    private fun handleTouchData(
+    private fun handleTouchRecords(
         rumContext: SessionReplayRumContext,
-        timestamp: Long,
-        touchData: MobileSegment.MobileIncrementalData.TouchData
+        touchData: List<MobileSegment.MobileRecord>
     ) {
-        val touchDataRecord = MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
-            timestamp,
-            touchData
-        )
-        val enrichedRecord = bundleRecordInEnrichedRecord(rumContext, listOf(touchDataRecord))
+        val enrichedRecord = bundleRecordInEnrichedRecord(rumContext, touchData)
         writer.write(enrichedRecord)
     }
 
@@ -220,8 +215,8 @@ internal class SnapshotProcessor(
 
     private fun MobileSegment.Wireframe.bounds(): Bounds {
         return when (this) {
-            is MobileSegment.Wireframe.ShapeWireframe -> this.bounds()
-            is MobileSegment.Wireframe.TextWireframe -> this.bounds()
+            is MobileSegment.Wireframe.ShapeWireframe -> bounds()
+            is MobileSegment.Wireframe.TextWireframe -> bounds()
         }
     }
 

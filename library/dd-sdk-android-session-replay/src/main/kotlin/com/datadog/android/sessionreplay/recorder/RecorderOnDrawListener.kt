@@ -31,7 +31,7 @@ internal class RecorderOnDrawListener(
         trackedActivity.get()?.let { activity ->
             activity.window?.let {
                 snapshotProducer.produce(it.decorView, pixelsDensity)?.let { node ->
-                    processor.process(node, resolveOrientationChange(activity, it.decorView))
+                    processor.processScreenSnapshot(node, resolveOrientationChange(activity, it.decorView))
                 }
             }
         }

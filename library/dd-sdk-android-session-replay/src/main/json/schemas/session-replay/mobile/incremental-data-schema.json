@@ -13,6 +13,9 @@
     },
     {
       "$ref": "../common/viewport-resize-data-schema.json"
+    },
+    {
+      "$ref": "../common/pointer-interaction-data-schema.json"
     }
   ]
 }
