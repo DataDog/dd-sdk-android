@@ -18,20 +18,17 @@ import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
-import com.google.gson.JsonParser
 import java.util.Locale
 
-internal class RumEventDeserializer : Deserializer<Any> {
+internal class RumEventDeserializer : Deserializer<JsonObject, Any> {
 
     // region Deserializer
 
-    override fun deserialize(model: String): Any? {
+    override fun deserialize(model: JsonObject): Any? {
         return try {
-            val jsonObject = JsonParser.parseString(model).asJsonObject
             parseEvent(
-                jsonObject.getAsJsonPrimitive(EVENT_TYPE_KEY_NAME)?.asString,
-                model,
-                jsonObject
+                model.getAsJsonPrimitive(EVENT_TYPE_KEY_NAME)?.asString,
+                model
             )
         } catch (e: JsonParseException) {
             sdkLogger.errorWithTelemetry(
@@ -54,21 +51,21 @@ internal class RumEventDeserializer : Deserializer<Any> {
 
     @SuppressWarnings("ThrowingInternalException")
     @Throws(JsonParseException::class)
-    private fun parseEvent(eventType: String?, model: String, modelAsJson: JsonObject): Any {
+    private fun parseEvent(eventType: String?, model: JsonObject): Any {
         return when (eventType) {
-            EVENT_TYPE_VIEW -> ViewEvent.fromJson(model)
-            EVENT_TYPE_RESOURCE -> ResourceEvent.fromJson(model)
-            EVENT_TYPE_ACTION -> ActionEvent.fromJson(model)
-            EVENT_TYPE_ERROR -> ErrorEvent.fromJson(model)
-            EVENT_TYPE_LONG_TASK -> LongTaskEvent.fromJson(model)
+            EVENT_TYPE_VIEW -> ViewEvent.fromJsonObject(model)
+            EVENT_TYPE_RESOURCE -> ResourceEvent.fromJsonObject(model)
+            EVENT_TYPE_ACTION -> ActionEvent.fromJsonObject(model)
+            EVENT_TYPE_ERROR -> ErrorEvent.fromJsonObject(model)
+            EVENT_TYPE_LONG_TASK -> LongTaskEvent.fromJsonObject(model)
             EVENT_TYPE_TELEMETRY -> {
-                val status = modelAsJson
+                val status = model
                     .getAsJsonObject(EVENT_TELEMETRY_KEY_NAME)
                     .getAsJsonPrimitive(EVENT_TELEMETRY_STATUS_KEY_NAME)
                     .asString
                 when (status) {
-                    TELEMETRY_TYPE_DEBUG -> TelemetryDebugEvent.fromJson(model)
-                    TELEMETRY_TYPE_ERROR -> TelemetryErrorEvent.fromJson(model)
+                    TELEMETRY_TYPE_DEBUG -> TelemetryDebugEvent.fromJsonObject(model)
+                    TELEMETRY_TYPE_ERROR -> TelemetryErrorEvent.fromJsonObject(model)
                     else -> throw JsonParseException(
                         "We could not deserialize the telemetry event with status: $status"
                     )

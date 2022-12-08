@@ -4,31 +4,29 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.ndk
+package com.datadog.android.core.internal.persistence
 
-import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.log.Logger
+import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
+import com.google.gson.JsonParser
 import java.util.Locale
 
-internal class NdkCrashLogDeserializer(
-    private val internalLogger: Logger
-) : Deserializer<String, NdkCrashLog> {
-
-    override fun deserialize(model: String): NdkCrashLog? {
+internal class JsonObjectDeserializer : Deserializer<String, JsonObject> {
+    override fun deserialize(model: String): JsonObject? {
         return try {
-            NdkCrashLog.fromJson(model)
-        } catch (e: JsonParseException) {
-            internalLogger.errorWithTelemetry(
+            JsonParser.parseString(model).asJsonObject
+        } catch (jpe: JsonParseException) {
+            sdkLogger.errorWithTelemetry(
                 DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
-                e
+                jpe
             )
             null
-        } catch (e: IllegalStateException) {
-            internalLogger.errorWithTelemetry(
+        } catch (ise: IllegalStateException) {
+            sdkLogger.errorWithTelemetry(
                 DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
-                e
+                ise
             )
             null
         }
@@ -36,6 +34,6 @@ internal class NdkCrashLogDeserializer(
 
     companion object {
         const val DESERIALIZE_ERROR_MESSAGE_FORMAT =
-            "Error while trying to deserialize the serialized NDK Crash info: %s"
+            "Error while trying to deserialize the serialized RumEvent: %s"
     }
 }

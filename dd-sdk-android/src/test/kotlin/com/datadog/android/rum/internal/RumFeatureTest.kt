@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.domain.RumDataWriter
+import com.datadog.android.rum.internal.ndk.NdkCrashEventHandler
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
@@ -36,6 +37,7 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
+import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doNothing
@@ -46,6 +48,7 @@ import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -83,12 +86,15 @@ internal class RumFeatureTest {
     @Mock
     lateinit var mockSdkCore: SdkCore
 
+    @Mock
+    lateinit var mockNdkCrashEventHandler: NdkCrashEventHandler
+
     @BeforeEach
     fun `set up RUM`() {
         doNothing().whenever(mockChoreographer).postFrameCallback(any())
         mockChoreographerInstance(mockChoreographer)
 
-        testedFeature = RumFeature(mockSdkCore, coreFeature.mockInstance)
+        testedFeature = RumFeature(mockSdkCore, coreFeature.mockInstance, mockNdkCrashEventHandler)
     }
 
     @Test
@@ -475,7 +481,7 @@ internal class RumFeatureTest {
             .unregisterActivityLifecycleCallbacks(listener)
     }
 
-    // region FeatureEventReceiver#onReceive
+    // region FeatureEventReceiver#onReceive + JVM crash
 
     @Test
     fun `𝕄 log dev warning and do nothing else 𝕎 onReceive() { unknown type }`() {
@@ -527,15 +533,14 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 log dev warning 𝕎 onReceive() { crash event + missing mandatory fields }`(
+    fun `𝕄 log dev warning 𝕎 onReceive() { JVM crash event + missing mandatory fields }`(
         forge: Forge
     ) {
         // Given
         val event = mutableMapOf(
-            "type" to "crash",
+            "type" to "jvm_crash",
             "message" to forge.anAlphabeticalString(),
-            "throwable" to forge.aThrowable(),
-            "source" to "source"
+            "throwable" to forge.aThrowable()
         )
         event.remove(
             forge.anElementFrom(event.keys.filterNot { it == "type" })
@@ -548,7 +553,7 @@ internal class RumFeatureTest {
         verify(logger.mockDevLogHandler)
             .handleLog(
                 Log.WARN,
-                RumFeature.EVENT_MISSING_MANDATORY_FIELDS
+                RumFeature.JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS
             )
 
         verifyZeroInteractions(
@@ -558,36 +563,7 @@ internal class RumFeatureTest {
     }
 
     @Test
-    fun `𝕄 log dev warning 𝕎 onReceive() { crash event + wrong value of source property }`(
-        forge: Forge
-    ) {
-        // Given
-        val source = forge.anAlphabeticalString()
-        val event = mutableMapOf(
-            "type" to "crash",
-            "message" to forge.anAlphabeticalString(),
-            "throwable" to forge.aThrowable(),
-            "source" to source
-        )
-
-        // When
-        testedFeature.onReceive(event)
-
-        // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
-                RumFeature.WRONG_VALUE_OF_SOURCE_PROPERTY_WARNING.format(Locale.US, source)
-            )
-
-        verifyZeroInteractions(
-            mockSdkCore,
-            rumMonitor.mockInstance
-        )
-    }
-
-    @Test
-    fun `𝕄 add crash 𝕎 onReceive() { crash event }`(
+    fun `𝕄 add crash 𝕎 onReceive() { JVM crash event }`(
         forge: Forge
     ) {
         // Given
@@ -595,10 +571,9 @@ internal class RumFeatureTest {
         val fakeMessage = forge.anAlphabeticalString()
 
         val event = mutableMapOf(
-            "type" to "crash",
+            "type" to "jvm_crash",
             "message" to fakeMessage,
-            "throwable" to fakeThrowable,
-            "source" to "source"
+            "throwable" to fakeThrowable
         )
 
         // When
@@ -613,6 +588,42 @@ internal class RumFeatureTest {
             )
 
         verifyZeroInteractions(
+            mockSdkCore,
+            logger.mockDevLogHandler
+        )
+    }
+
+    @Test
+    fun `𝕄 forward to RUM NDK crash event handler 𝕎 onReceive() { NDK crash event }`(
+        @LongForgery fakeTimestamp: Long,
+        @StringForgery fakeSignalName: String,
+        @StringForgery fakeMessage: String,
+        @StringForgery fakeStacktrace: String,
+        @Forgery fakeViewEventJson: JsonObject
+    ) {
+        // Given
+        val event = mutableMapOf(
+            "type" to "ndk_crash",
+            "timestamp" to fakeTimestamp,
+            "signalName" to fakeSignalName,
+            "stacktrace" to fakeStacktrace,
+            "message" to fakeMessage,
+            "lastViewEvent" to fakeViewEventJson
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(mockNdkCrashEventHandler)
+            .handleEvent(
+                event,
+                mockSdkCore,
+                testedFeature.dataWriter
+            )
+
+        verifyZeroInteractions(
+            rumMonitor.mockInstance,
             mockSdkCore,
             logger.mockDevLogHandler
         )

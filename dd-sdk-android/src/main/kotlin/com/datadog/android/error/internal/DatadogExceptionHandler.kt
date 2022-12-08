@@ -37,10 +37,9 @@ internal class DatadogExceptionHandler(
                 mapOf(
                     "threadName" to t.name,
                     "throwable" to e,
-                    "syncWrite" to true,
                     "timestamp" to System.currentTimeMillis(),
                     "message" to createCrashMessage(e),
-                    "type" to "crash",
+                    "type" to "jvm_crash",
                     "loggerName" to LOGGER_NAME
                 )
             )
@@ -53,10 +52,9 @@ internal class DatadogExceptionHandler(
         if (rumFeature != null) {
             rumFeature.sendEvent(
                 mapOf(
-                    "type" to "crash",
+                    "type" to "jvm_crash",
                     "throwable" to e,
-                    "message" to createCrashMessage(e),
-                    "source" to "source"
+                    "message" to createCrashMessage(e)
                 )
             )
         } else {

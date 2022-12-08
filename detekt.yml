@@ -1212,9 +1212,11 @@ datadog:
       - "kotlin.Long.or(kotlin.Long)"
       - "kotlin.Number.toLong()"
       # endregion
-      # region Kotlin Pair
+      # region Kotlin Pair + Triple
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.model.MobileSegment, com.google.gson.JsonObject)"
       - "kotlin.Pair.constructor(com.datadog.android.sessionreplay.utils.SessionReplayRumContext, com.google.gson.JsonArray)"
+      - "kotlin.Triple.constructor(kotlin.Nothing?, kotlin.Nothing?, kotlin.Nothing?)"
+      - "kotlin.Triple.constructor(kotlin.String, kotlin.String, kotlin.String)"
       # endregion
       # region Kotlin String
       - "kotlin.String.all(kotlin.Function1)"

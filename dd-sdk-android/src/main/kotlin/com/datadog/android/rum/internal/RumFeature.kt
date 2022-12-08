@@ -31,7 +31,9 @@ import com.datadog.android.rum.internal.debug.UiRumDebugListener
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.event.RumEventSerializer
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.internal.ndk.DatadogNdkCrashEventHandler
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
+import com.datadog.android.rum.internal.ndk.NdkCrashEventHandler
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
@@ -60,7 +62,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 internal class RumFeature(
     private val sdkCore: SdkCore,
-    private val coreFeature: CoreFeature
+    private val coreFeature: CoreFeature,
+    private val ndkCrashEventHandler: NdkCrashEventHandler = DatadogNdkCrashEventHandler()
 ) : FeatureEventReceiver {
     internal var dataWriter: DataWriter<Any> = NoOpDataWriter()
     internal val initialized = AtomicBoolean(false)
@@ -149,7 +152,6 @@ internal class RumFeature(
             fileWriter = BatchFileReaderWriter.create(sdkLogger, coreFeature.localDataEncryption),
             internalLogger = sdkLogger,
             lastViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir)
-
         )
     }
 
@@ -163,8 +165,10 @@ internal class RumFeature(
             return
         }
 
-        if (event["type"] == "crash") {
-            addCrash(event)
+        if (event["type"] == "jvm_crash") {
+            addJvmCrash(event)
+        } else if (event["type"] == "ndk_crash") {
+            ndkCrashEventHandler.handleEvent(event, sdkCore, dataWriter)
         } else {
             devLogger.w(UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"]))
         }
@@ -259,28 +263,18 @@ internal class RumFeature(
         anrDetectorExecutorService.executeSafe("ANR detection", anrDetectorRunnable)
     }
 
-    private fun addCrash(crashEvent: Map<*, *>) {
+    private fun addJvmCrash(crashEvent: Map<*, *>) {
         val throwable = crashEvent["throwable"] as? Throwable
         val message = crashEvent["message"] as? String
-        val source = (crashEvent["source"] as? String)?.let { rawValue ->
-            val value = RumErrorSource.values().firstOrNull { enumValue ->
-                enumValue.name.equals(rawValue, ignoreCase = true)
-            }
-            if (value == null) {
-                @Suppress("InvalidStringFormat") // compileTimeInitializer is null here
-                devLogger.w(WRONG_VALUE_OF_SOURCE_PROPERTY_WARNING.format(Locale.US, rawValue))
-            }
-            value
-        }
 
-        if (throwable == null || message == null || source == null) {
-            devLogger.w(EVENT_MISSING_MANDATORY_FIELDS)
+        if (throwable == null || message == null) {
+            devLogger.w(JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS)
             return
         }
 
         (GlobalRum.get() as? AdvancedRumMonitor)?.addCrash(
             message,
-            source,
+            RumErrorSource.SOURCE,
             throwable
         )
     }
@@ -296,11 +290,9 @@ internal class RumFeature(
             "RUM feature receive an event of unsupported type=%s."
         internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =
             "RUM feature received an event with unknown value of \"type\" property=%s."
-        internal const val EVENT_MISSING_MANDATORY_FIELDS = "RUM feature received a crash event" +
-            " where one or more mandatory (throwable, message, source) fields" +
-            " are either missing or have wrong type."
-        internal val WRONG_VALUE_OF_SOURCE_PROPERTY_WARNING =
-            "Value %s of \"source\" property cannot be matched" +
-                " to the ${RumErrorSource::class.java.simpleName} values."
+        internal const val JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS =
+            "RUM feature received a JVM crash event" +
+                " where one or more mandatory (throwable, message) fields" +
+                " are either missing or have wrong type."
     }
 }
