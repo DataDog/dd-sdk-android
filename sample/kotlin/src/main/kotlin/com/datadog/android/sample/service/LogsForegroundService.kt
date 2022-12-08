@@ -25,7 +25,7 @@ import java.io.IOException
 import java.lang.IllegalStateException
 import java.security.SecureRandom
 
-@Suppress("MagicNumber")
+@Suppress("MagicNumber", "UndocumentedPublicClass")
 class LogsForegroundService : Service() {
 
     private val random = SecureRandom()
@@ -168,15 +168,15 @@ class LogsForegroundService : Service() {
     }
 
     companion object {
-        const val CHANNEL_ID = "LogsServiceChannel"
-        const val NOTIFICATION_ID = 1
-        const val STOP_SERVICE_ACTION = "STOP_SERVICE"
-        const val SEND_RUM_ERROR = "SEND_RUM_ERROR"
-        const val SEND_RUM_ACTION = "SEND_RUM_ACTION"
-        const val START_RUM_RESOURCE = "START_RUM_RESOURCE"
-        const val STOP_RUM_RESOURCE = "STOP_RUM_RESOURCE"
-        const val BACKGROUND_RESOURCE_URL = "background/background-resource/1"
-        const val BACKGROUND_ACTION_KEY = "BackgroundAction"
-        const val BACKGROUND_ERROR_KEY = "BackgroundError"
+        internal const val CHANNEL_ID = "LogsServiceChannel"
+        internal const val NOTIFICATION_ID = 1
+        internal const val STOP_SERVICE_ACTION = "STOP_SERVICE"
+        internal const val SEND_RUM_ERROR = "SEND_RUM_ERROR"
+        internal const val SEND_RUM_ACTION = "SEND_RUM_ACTION"
+        internal const val START_RUM_RESOURCE = "START_RUM_RESOURCE"
+        internal const val STOP_RUM_RESOURCE = "STOP_RUM_RESOURCE"
+        internal const val BACKGROUND_RESOURCE_URL = "background/background-resource/1"
+        internal const val BACKGROUND_ACTION_KEY = "BackgroundAction"
+        internal const val BACKGROUND_ERROR_KEY = "BackgroundError"
     }
 }

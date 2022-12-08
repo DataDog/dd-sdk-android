@@ -10,7 +10,7 @@ import com.datadog.android.sample.data.model.Log
 import com.datadog.android.sample.datalist.DataSourceType
 import io.reactivex.rxjava3.core.SingleSource
 
-interface DataSource {
+internal interface DataSource {
     fun fetchLogs(): SingleSource<List<Log>>
 
     fun persistLogs(logs: List<Log>)

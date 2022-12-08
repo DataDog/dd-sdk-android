@@ -15,7 +15,7 @@ import com.datadog.android.ktx.tracing.withinSpan
 import com.datadog.android.sample.R
 import java.io.BufferedReader
 
-class AboutViewModel : ViewModel() {
+internal class AboutViewModel : ViewModel() {
 
     private var asyncAboutTask: AsyncTask<Unit, Unit, String>? = null
     private var asyncLicenseTask: AsyncTask<Unit, Unit, String>? = null

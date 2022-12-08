@@ -15,7 +15,7 @@ import com.datadog.android.log.Logger
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.R
 
-class LogsFragment :
+internal class LogsFragment :
     Fragment(),
     View.OnClickListener {
 

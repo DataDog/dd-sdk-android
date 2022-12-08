@@ -3,8 +3,13 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.sample.logs
 
-import androidx.lifecycle.ViewModel
+package com.datadog.android.sample.compose
 
-internal class LogsViewModel : ViewModel()
+internal enum class Page {
+    Navigation,
+    Interactions;
+
+    val trackingName: String
+        get() = "Compose $this"
+}

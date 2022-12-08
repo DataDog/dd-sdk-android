@@ -20,7 +20,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 
-class SQLiteDataSource(val context: Context) : DataSource {
+internal class SQLiteDataSource(val context: Context) : DataSource {
 
     // region LocalDataSource
 

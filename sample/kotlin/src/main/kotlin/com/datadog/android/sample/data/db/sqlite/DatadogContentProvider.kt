@@ -15,7 +15,7 @@ import android.net.Uri
 import com.datadog.android.ktx.sqlite.transactionTraced
 import com.datadog.android.sample.data.db.DatadogDbContract
 
-class DatadogContentProvider : ContentProvider() {
+internal class DatadogContentProvider : ContentProvider() {
 
     lateinit var sqliteHelper: DatadogSqliteHelper
     private val uriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {

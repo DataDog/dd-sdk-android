@@ -52,8 +52,8 @@ import java.io.OutputStreamWriter
  */
 @OptIn(KotlinPoetKspPreview::class, DelicateKotlinPoetApi::class)
 class NoOpFactorySymbolProcessor(
-    val codeGenerator: CodeGenerator,
-    val logger: KSPLogger
+    private val codeGenerator: CodeGenerator,
+    private val logger: KSPLogger
 ) : SymbolProcessor {
 
     private var invoked = false
@@ -131,7 +131,7 @@ class NoOpFactorySymbolProcessor(
     }
 
     /**
-     * Generate the Class Implementation based on the given Parent interface
+     * Generate the Class Implementation based on the given Parent interface.
      */
     private fun generateTypeSpec(
         declaration: KSClassDeclaration,
@@ -401,6 +401,6 @@ class NoOpFactorySymbolProcessor(
 
     companion object {
         private val ignoredFunctions = arrayOf("equals(other)", "hashCode()", "toString()")
-        const val KOTLIN_COLLECTIONS_PACKAGE = "kotlin.collections"
+        private const val KOTLIN_COLLECTIONS_PACKAGE = "kotlin.collections"
     }
 }

@@ -9,7 +9,7 @@ import androidx.lifecycle.ViewModel
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.server.LocalServer
 
-class WebViewModel : ViewModel() {
+internal class WebViewModel : ViewModel() {
 
     val localServer = LocalServer()
     val url: String = localServer.getUrl()

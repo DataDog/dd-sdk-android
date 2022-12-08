@@ -51,6 +51,9 @@ import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import timber.log.Timber
 
+/**
+ * The main [Application] for the sample project.
+ */
 @Suppress("MagicNumber")
 class SampleApplication : Application() {
 
@@ -64,7 +67,7 @@ class SampleApplication : Application() {
     )
 
     private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(RumInterceptor(traceSamplingRate = HUNDRED))
+        .addInterceptor(RumInterceptor(traceSamplingRate = 100f))
         .addNetworkInterceptor(TracingInterceptor(traceSamplingRate = 100f))
         .eventListenerFactory(DatadogEventListener.Factory())
         .build()
@@ -242,9 +245,9 @@ class SampleApplication : Application() {
             System.loadLibrary("datadog-native-sample-lib")
         }
 
-        const val ATTR_IS_MAPPED = "is_mapped"
+        internal const val ATTR_IS_MAPPED = "is_mapped"
 
-        fun getViewModelFactory(context: Context): ViewModelProvider.Factory {
+        internal fun getViewModelFactory(context: Context): ViewModelProvider.Factory {
             return ViewModelFactory(
                 getOkHttpClient(context),
                 getRemoteDataSource(context),
@@ -252,7 +255,7 @@ class SampleApplication : Application() {
             )
         }
 
-        fun getOkHttpClient(context: Context): OkHttpClient {
+        internal fun getOkHttpClient(context: Context): OkHttpClient {
             val application = context.applicationContext as SampleApplication
             return application.okHttpClient
         }

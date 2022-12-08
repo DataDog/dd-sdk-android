@@ -8,7 +8,7 @@ package com.datadog.android.sample.picture
 
 import android.widget.ImageView
 
-interface ImageLoader {
+internal interface ImageLoader {
 
     val type: ImageLoaderType
 

@@ -14,7 +14,7 @@ import com.datadog.android.sample.picture.ImageLoaderType
 import timber.log.Timber
 import java.lang.IllegalArgumentException
 
-object Preferences {
+internal object Preferences {
 
     fun defaultPreferences(context: Context): DefaultPreferences = DefaultPreferences(context)
 

@@ -6,7 +6,7 @@
 
 package com.datadog.android.nightly.activities
 
-const val HUNDRED_PERCENT = 100f
-const val DATA_SIZE = 200L
-const val REPEATED_TESTS = 100
-const val CRASH_DELAY_MS = 1000L
+internal const val HUNDRED_PERCENT = 100f
+internal const val DATA_SIZE = 200L
+internal const val REPEATED_TESTS = 100
+internal const val CRASH_DELAY_MS = 1000L

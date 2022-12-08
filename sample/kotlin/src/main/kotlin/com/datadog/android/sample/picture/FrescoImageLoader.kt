@@ -20,7 +20,7 @@ import com.facebook.imagepipeline.backends.okhttp3.OkHttpImagePipelineConfigFact
 import com.facebook.imagepipeline.cache.MemoryCacheParams
 import okhttp3.OkHttpClient
 
-class FrescoImageLoader : ImageLoader {
+internal class FrescoImageLoader : ImageLoader {
 
     override val type: ImageLoaderType = ImageLoaderType.FRESCO
 

@@ -15,7 +15,7 @@ import java.security.MessageDigest
 import java.security.SecureRandom
 
 @Suppress("MagicNumber")
-class FailingTransformation : BitmapTransformation() {
+internal class FailingTransformation : BitmapTransformation() {
 
     private val random = SecureRandom()
 

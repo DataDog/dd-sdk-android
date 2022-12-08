@@ -13,7 +13,7 @@ import android.provider.BaseColumns
 import com.datadog.android.sample.data.db.DatadogDbContract
 import com.datadog.android.sqlite.DatadogDatabaseErrorHandler
 
-class DatadogSqliteHelper(context: Context) :
+internal class DatadogSqliteHelper(context: Context) :
     SQLiteOpenHelper(
         context,
         DatadogDbContract.DB_NAME,

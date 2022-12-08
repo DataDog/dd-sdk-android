@@ -37,7 +37,7 @@ import okhttp3.Response
 import java.util.Locale
 import java.util.Random
 
-class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
+internal class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
 
     private var asyncOperationTask: AsyncTask<Unit, Unit, Unit>? = null
     private var networkRequestTask: AsyncTask<Unit, Unit, Result>? = null

@@ -16,7 +16,7 @@ import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
 import com.datadog.android.webview.DatadogEventBridge
 
-class WebFragment : Fragment() {
+internal class WebFragment : Fragment() {
 
     private lateinit var viewModel: WebViewModel
     private lateinit var webView: WebView

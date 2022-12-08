@@ -7,6 +7,9 @@
 
 package java.util.concurrent
 
+/**
+ * A fake placeholder class to let AssertJ work in instrumented tests for API<24.
+ */
 class CompletableFuture {
-    // fake class, is needed to make AssertJ working in instrumented tests for API <24.
+    // no-op
 }

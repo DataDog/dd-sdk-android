@@ -44,7 +44,7 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalTrackingApi::class)
 @Preview
 @Composable
-fun InteractionSampleView() {
+internal fun InteractionSampleView() {
     val collection = remember { mutableStateListOf<Int>().apply { addAll(1..100) } }
 
     val scrollState = rememberLazyListState().apply {
@@ -65,7 +65,7 @@ fun InteractionSampleView() {
 @Suppress("MagicNumber")
 @OptIn(ExperimentalTrackingApi::class)
 @Composable
-fun ItemRow(index: Int, onDismissed: () -> Unit) {
+internal fun ItemRow(index: Int, onDismissed: () -> Unit) {
     val swipeableState = rememberSwipeableState(DragStates.VISIBLE)
 
     val startState = DragStates.VISIBLE

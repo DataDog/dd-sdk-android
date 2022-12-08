@@ -14,7 +14,7 @@ import timber.log.Timber
 import java.security.SecureRandom
 
 @Suppress("MagicNumber")
-class VitalsViewModel : ViewModel() {
+internal class VitalsViewModel : ViewModel() {
 
     private val rng = SecureRandom()
     private val piComputer = PiDigitComputerBBP()

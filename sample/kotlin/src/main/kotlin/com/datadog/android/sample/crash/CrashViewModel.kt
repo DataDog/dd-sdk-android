@@ -7,4 +7,4 @@ package com.datadog.android.sample.crash
 
 import androidx.lifecycle.ViewModel
 
-class CrashViewModel : ViewModel()
+internal class CrashViewModel : ViewModel()

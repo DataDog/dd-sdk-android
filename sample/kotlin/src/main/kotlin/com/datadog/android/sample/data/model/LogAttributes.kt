@@ -8,7 +8,7 @@ package com.datadog.android.sample.data.model
 
 import com.google.gson.annotations.SerializedName
 
-data class LogAttributes(
+internal data class LogAttributes(
     @SerializedName("message") val message: String,
     @SerializedName("timestamp") val timestamp: String
 )

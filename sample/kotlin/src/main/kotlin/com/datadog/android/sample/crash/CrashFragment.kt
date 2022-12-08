@@ -20,7 +20,7 @@ import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
 
 @Suppress("MagicNumber")
-class CrashFragment :
+internal class CrashFragment :
     Fragment(),
     View.OnClickListener {
 

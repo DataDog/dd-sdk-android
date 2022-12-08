@@ -16,7 +16,7 @@ import com.datadog.android.sample.data.model.Log
 import com.datadog.android.sample.datalist.DataSourceType
 import io.reactivex.rxjava3.core.SingleSource
 
-class LocalDataSource(
+internal class LocalDataSource(
     val context: Context
 ) {
 

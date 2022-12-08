@@ -23,6 +23,7 @@ import com.datadog.android.sample.service.LogsForegroundService
 import com.google.android.material.snackbar.Snackbar
 import timber.log.Timber
 
+@Suppress("UndocumentedPublicProperty", "UndocumentedPublicClass")
 class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
 
     lateinit var navController: NavController
@@ -131,10 +132,10 @@ class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
     // endregion
 
     companion object {
-        const val LIPSUM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, …"
+        internal const val LIPSUM = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, …"
     }
 }
 
-interface TrackingConsentChangeListener {
+internal interface TrackingConsentChangeListener {
     fun onTrackingConsentChanged(trackingConsent: TrackingConsent)
 }

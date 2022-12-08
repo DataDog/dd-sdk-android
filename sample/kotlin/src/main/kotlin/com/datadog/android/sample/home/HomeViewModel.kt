@@ -7,4 +7,4 @@ package com.datadog.android.sample.home
 
 import androidx.lifecycle.ViewModel
 
-class HomeViewModel : ViewModel()
+internal class HomeViewModel : ViewModel()

@@ -18,7 +18,7 @@ import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.Preferences
 import com.datadog.android.sample.R
 
-class PictureFragment :
+internal class PictureFragment :
     Fragment(), View.OnClickListener {
 
     private lateinit var picture: ImageView
