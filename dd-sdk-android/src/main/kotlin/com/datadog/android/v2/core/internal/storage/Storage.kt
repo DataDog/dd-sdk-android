@@ -24,11 +24,17 @@ internal interface Storage {
     //   request transformation).
     /**
      * Utility to write data, asynchronously.
+     * @param forceNewBatch if `true` will force the writer to start a new batch before storing the
+     * data. By default this flag is `false`.
      * @param callback an operation to perform with a [EventBatchWriter] that will target the current
      * writeable Batch
      */
     @AnyThread
-    fun writeCurrentBatch(datadogContext: DatadogContext, callback: (EventBatchWriter) -> Unit)
+    fun writeCurrentBatch(
+        datadogContext: DatadogContext,
+        forceNewBatch: Boolean,
+        callback: (EventBatchWriter) -> Unit
+    )
 
     /**
      * Utility to read a batch, asynchronously.

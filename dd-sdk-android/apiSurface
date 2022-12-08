@@ -1960,7 +1960,7 @@ interface com.datadog.android.v2.api.FeatureConfiguration
 interface com.datadog.android.v2.api.FeatureEventReceiver
   fun onReceive(Any)
 interface com.datadog.android.v2.api.FeatureScope
-  fun withWriteContext((com.datadog.android.v2.api.context.DatadogContext, EventBatchWriter) -> Unit)
+  fun withWriteContext(Boolean = false, (com.datadog.android.v2.api.context.DatadogContext, EventBatchWriter) -> Unit)
   fun sendEvent(Any)
 data class com.datadog.android.v2.api.FeatureStorageConfiguration
   constructor(Long, Int, Long, Long)

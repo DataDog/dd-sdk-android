@@ -147,8 +147,8 @@ internal class RumActionScopeTest {
         whenever(mockContextProvider.context) doReturn fakeDatadogContextAtScopeStart
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-        whenever(mockRumFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
         whenever(mockFeaturesContextResolver.resolveHasReplay(fakeDatadogContext))

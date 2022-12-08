@@ -43,7 +43,7 @@ internal class BatchFileOrchestrator(
     // region FileOrchestrator
 
     @WorkerThread
-    override fun getWritableFile(): File? {
+    override fun getWritableFile(forceNewFile: Boolean): File? {
         if (!isRootDirValid()) {
             return null
         }
@@ -51,9 +51,11 @@ internal class BatchFileOrchestrator(
         deleteObsoleteFiles()
         freeSpaceIfNeeded()
 
-        val reusableFile = getReusableWritableFile()
-
-        return reusableFile ?: createNewFile()
+        return if (!forceNewFile) {
+            getReusableWritableFile() ?: createNewFile()
+        } else {
+            createNewFile()
+        }
     }
 
     @WorkerThread
