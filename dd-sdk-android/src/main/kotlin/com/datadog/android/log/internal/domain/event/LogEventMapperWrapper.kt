@@ -20,7 +20,7 @@ internal class LogEventMapperWrapper(
         return if (mappedEvent == null) {
             devLogger.w(EVENT_NULL_WARNING_MESSAGE.format(Locale.US, event))
             null
-        } else         if (mappedEvent !== event) {
+        } else if (mappedEvent !== event) {
             devLogger.w(NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(Locale.US, event))
             null
         } else {

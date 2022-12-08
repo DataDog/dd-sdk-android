@@ -578,7 +578,7 @@ internal class RumActionScopeTest {
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
         assertThat(result2).isNull()
-        assertThat(keyas? Any).isNull()
+        assertThat(key as? Any).isNull()
     }
 
     @Test

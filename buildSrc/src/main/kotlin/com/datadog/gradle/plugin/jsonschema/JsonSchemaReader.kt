@@ -320,7 +320,7 @@ class JsonSchemaReader(
         } else {
             throw UnsupportedOperationException(
                 "Unable to implement `oneOf` constraint with types:\n  " +
-                        options.joinToString("\n  ")
+                    options.joinToString("\n  ")
             )
         }
     }

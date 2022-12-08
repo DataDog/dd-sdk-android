@@ -27,9 +27,14 @@ object Identifier {
     const val PACKAGE_UTILS = "com.datadog.android.core.internal.utils"
 
     val SUPPRESSED_CLASS_RULES = arrayOf(
-        "StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber"
+        "StringLiteralDuplication",
+        "EmptyDefaultConstructor",
+        "MagicNumber"
     )
     val SUPPRESSED_SERIALISATION_RULES = arrayOf(
-        "CyclomaticComplexMethod", "LongMethod", "ThrowsCount", "TooGenericExceptionCaught"
+        "CyclomaticComplexMethod",
+        "LongMethod",
+        "ThrowsCount",
+        "TooGenericExceptionCaught"
     )
 }

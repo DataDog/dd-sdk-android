@@ -29,8 +29,6 @@ import java.lang.ArithmeticException
 import java.lang.IndexOutOfBoundsException
 import java.lang.RuntimeException
 
-
-
 internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_activity_layout) {
 
     private val forge = Forge()

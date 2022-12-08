@@ -7,7 +7,6 @@
 package com.datadog.tools.unit
 
 import java.lang.RuntimeException
-import java.util.concurrent.TimeUnit
 
 /**
  * Utility class which allows watch for the condition in the polling manner instead

@@ -32,7 +32,7 @@ internal class PiDigitComputerBBP {
             val numerator =
                 (kSquared * 120.asBigDecimal()) + (k * 151.asBigDecimal()) + 47.asBigDecimal()
             val denominator = (kQuad * 512.asBigDecimal()) + (kCubed * 1024.asBigDecimal()) +
-                    (kSquared * 712.asBigDecimal()) + (k * 194.asBigDecimal()) + 15.asBigDecimal()
+                (kSquared * 712.asBigDecimal()) + (k * 194.asBigDecimal()) + 15.asBigDecimal()
             val pow16 = 16.asBigDecimal().pow(i)
 
             val contrib = numerator.divide(denominator * pow16, MathContext(128))

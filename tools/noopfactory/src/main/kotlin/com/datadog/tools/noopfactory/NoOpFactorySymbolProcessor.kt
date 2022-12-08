@@ -75,7 +75,7 @@ class NoOpFactorySymbolProcessor(
                 } else {
                     logger.warn(
                         "Unable to generate a NoOpImplementation for ${it.simpleName}, " +
-                                "it is not an interface."
+                            "it is not an interface."
                     )
                 }
             }
@@ -119,7 +119,7 @@ class NoOpFactorySymbolProcessor(
             } catch (e: IOException) {
                 logger.warn(
                     "Error flushing writer for file ${fileSpec.packageName}.${fileSpec.name}: " +
-                            "${e.message}."
+                        "${e.message}."
                 )
             }
         } catch (e: IOException) {

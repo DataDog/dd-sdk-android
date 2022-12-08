@@ -187,6 +187,5 @@ class MultiClassGenerator(
 
     companion object {
         private const val PARSE_ERROR_MSG = "Unable to parse json into one of type"
-
     }
 }

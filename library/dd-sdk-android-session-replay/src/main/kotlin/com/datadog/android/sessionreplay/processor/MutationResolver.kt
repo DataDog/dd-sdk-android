@@ -237,15 +237,17 @@ internal class MutationResolver {
         } else if (!prevWireframe.javaClass.isAssignableFrom(currentWireframe.javaClass)) {
             // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
             null
-        } else when (prevWireframe) {
-            is MobileSegment.Wireframe.TextWireframe -> resolveTextUpdateMutation(
-                prevWireframe,
-                currentWireframe as MobileSegment.Wireframe.TextWireframe
-            )
-            is MobileSegment.Wireframe.ShapeWireframe -> resolveShapeUpdateMutation(
-                prevWireframe,
-                currentWireframe as MobileSegment.Wireframe.ShapeWireframe
-            )
+        } else {
+            when (prevWireframe) {
+                is MobileSegment.Wireframe.TextWireframe -> resolveTextUpdateMutation(
+                    prevWireframe,
+                    currentWireframe as MobileSegment.Wireframe.TextWireframe
+                )
+                is MobileSegment.Wireframe.ShapeWireframe -> resolveShapeUpdateMutation(
+                    prevWireframe,
+                    currentWireframe as MobileSegment.Wireframe.ShapeWireframe
+                )
+            }
         }
     }
 

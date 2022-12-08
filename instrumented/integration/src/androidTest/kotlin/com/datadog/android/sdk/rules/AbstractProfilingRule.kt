@@ -72,9 +72,9 @@ internal abstract class AbstractProfilingRule(
         assertThat(runAverage)
             .overridingErrorMessage(
                 "Expected average $name to stay below $absRunThreshold " +
-                        "($beforeRun + $runThreshold), " +
-                        "but it was $runAverage ($beforeRun + $diffAverage}, " +
-                        "with a peak at $peakRun ($beforeRun + $diffPeak)"
+                    "($beforeRun + $runThreshold), " +
+                    "but it was $runAverage ($beforeRun + $diffAverage}, " +
+                    "with a peak at $peakRun ($beforeRun + $diffPeak)"
             )
             .isLessThanOrEqualTo(absRunThreshold)
     }

@@ -82,7 +82,7 @@ internal class ByteArrayOutputStreamTest {
     ) {
         val line = forge.anAlphabeticalString()
         val stream = ByteArrayOutputStream()
-        PrintWriter(stream.writer(Charsets.UTF_8)).use { pw->
+        PrintWriter(stream.writer(Charsets.UTF_8)).use { pw ->
             repeat(20) {
                 pw.println(forge.aNumericalString())
             }

@@ -182,7 +182,7 @@ internal constructor(
     private fun isRequestTraceable(request: Request): Boolean {
         val url = request.url()
         return firstPartyHostDetector.isFirstPartyUrl(url) ||
-                localFirstPartyHostDetector.isFirstPartyUrl(url)
+            localFirstPartyHostDetector.isFirstPartyUrl(url)
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
@@ -387,18 +387,18 @@ internal constructor(
 
         internal const val WARNING_TRACING_NO_HOSTS =
             "You added a TracingInterceptor to your OkHttpClient, " +
-                    "but you did not specify any first party hosts. " +
-                    "Your requests won't be traced.\n" +
-                    "To set a list of known hosts, you can use the " +
-                    "Configuration.Builder::setFirstPartyHosts() method."
+                "but you did not specify any first party hosts. " +
+                "Your requests won't be traced.\n" +
+                "To set a list of known hosts, you can use the " +
+                "Configuration.Builder::setFirstPartyHosts() method."
         internal const val WARNING_TRACING_DISABLED =
             "You added a TracingInterceptor to your OkHttpClient, " +
-                    "but you did not enable the TracingFeature. " +
-                    "Your requests won't be traced."
+                "but you did not enable the TracingFeature. " +
+                "Your requests won't be traced."
         internal const val WARNING_DEFAULT_TRACER =
             "You added a TracingInterceptor to your OkHttpClient, " +
-                    "but you didn't register any Tracer. " +
-                    "We automatically created a local tracer for you."
+                "but you didn't register any Tracer. " +
+                "We automatically created a local tracer for you."
 
         /**
          * Temporary helper method for now, it'll be removed eventually.
@@ -406,11 +406,11 @@ internal constructor(
         @Suppress("FunctionMaxLength")
         internal fun getGlobalFirstPartyHostDetector(): FirstPartyHostDetector {
             return (
-                    (Datadog.globalSdkCore as? DatadogCore)
-                        ?.coreFeature
-                        ?.firstPartyHostDetector
-                        ?: FirstPartyHostDetector(emptyList())
-                    )
+                (Datadog.globalSdkCore as? DatadogCore)
+                    ?.coreFeature
+                    ?.firstPartyHostDetector
+                    ?: FirstPartyHostDetector(emptyList())
+                )
         }
 
         internal const val DEFAULT_TRACE_SAMPLING_RATE: Float = 20f

@@ -17,7 +17,7 @@ open class GitCloneDependenciesExtension : Serializable {
         var originRef: String,
         var destinationFolder: String
     ) : Serializable {
-        companion object{
+        companion object {
             private const val serialVersionUID: Long = 1L
         }
     }
@@ -36,7 +36,7 @@ open class GitCloneDependenciesExtension : Serializable {
         )
     }
 
-    companion object{
+    companion object {
         private const val serialVersionUID: Long = 1L
     }
 }

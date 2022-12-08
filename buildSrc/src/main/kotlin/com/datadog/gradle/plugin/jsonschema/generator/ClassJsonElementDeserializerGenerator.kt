@@ -87,7 +87,7 @@ class ClassJsonElementDeserializerGenerator(
         }
 
         val arguments = nonConstantProperties.map { it.name.variableName() } +
-                definition.additionalProperties?.let { Identifier.PARAM_ADDITIONAL_PROPS }
+            definition.additionalProperties?.let { Identifier.PARAM_ADDITIONAL_PROPS }
         val constructorArguments = arguments.filterNotNull().joinToString(", ")
         addStatement("return %L($constructorArguments)", definition.name)
     }

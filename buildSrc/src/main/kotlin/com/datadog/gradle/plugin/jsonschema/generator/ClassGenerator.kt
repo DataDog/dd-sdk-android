@@ -328,7 +328,7 @@ class ClassGenerator(
         val propertyName = property.name.variableName()
         val propertyType = property.type
         val isNullable = (property.optional || propertyType is TypeDefinition.Null) &&
-                (propertyType !is TypeDefinition.Constant)
+            (propertyType !is TypeDefinition.Constant)
         val notNullableType = propertyType.asKotlinTypeName(rootTypeName)
         val type = notNullableType.copy(nullable = isNullable)
         val initializer = if (propertyType is TypeDefinition.Constant) {
@@ -367,7 +367,7 @@ class ClassGenerator(
             }
             value is String -> "\"$value\""
             value is Double &&
-                    (type == JsonType.INTEGER || type == JsonPrimitiveType.INTEGER) -> {
+                (type == JsonType.INTEGER || type == JsonPrimitiveType.INTEGER) -> {
                 "${value.toLong()}L"
             }
             value is Double -> {
@@ -437,7 +437,7 @@ class ClassGenerator(
                 )
                 else -> throw IllegalArgumentException(
                     "Unable to generate default value for class: ${p.type}. " +
-                            "This feature is not supported yet"
+                        "This feature is not supported yet"
                 )
             }
         } else if (p.optional || p.type is TypeDefinition.Null) {

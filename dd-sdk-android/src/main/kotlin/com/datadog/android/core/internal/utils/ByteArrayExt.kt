@@ -93,7 +93,7 @@ internal fun ByteArray.copyTo(srcPos: Int, dest: ByteArray, destPos: Int, length
     return if (destPos + length > dest.size) {
         sdkLogger.w("Cannot copy ByteArray, dest doesn't have enough space")
         false
-    } else     if (srcPos + length > size) {
+    } else if (srcPos + length > size) {
         sdkLogger.w("Cannot copy ByteArray, src doesn't have enough data")
         false
     } else {

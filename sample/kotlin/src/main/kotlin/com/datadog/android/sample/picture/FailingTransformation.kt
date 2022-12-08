@@ -10,7 +10,6 @@ import android.graphics.Bitmap
 import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
 import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
 import com.bumptech.glide.load.resource.bitmap.TransformationUtils
-import java.lang.RuntimeException
 import java.security.MessageDigest
 import java.security.SecureRandom
 

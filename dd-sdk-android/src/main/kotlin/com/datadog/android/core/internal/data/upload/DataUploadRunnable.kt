@@ -103,7 +103,7 @@ internal class DataUploadRunnable(
     private fun increaseInterval() {
         currentDelayIntervalMs = min(
             maxDelayMs,
-            (currentDelayIntervalMs * INCREASE_PERCENT ).roundToLong()
+            (currentDelayIntervalMs * INCREASE_PERCENT).roundToLong()
         )
     }
 

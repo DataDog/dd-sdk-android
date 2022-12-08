@@ -88,7 +88,6 @@ object GlobalRum {
             devLogger.w("Unable to register the RumMonitor")
             false
         }
-
     }
 
     /**

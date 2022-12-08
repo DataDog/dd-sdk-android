@@ -40,7 +40,7 @@ internal class FileEventBatchWriter(
         // prevent useless operation for empty event
         return if (event.isEmpty()) {
             true
-        } else         if (!checkEventSize(event.size)) {
+        } else if (!checkEventSize(event.size)) {
             false
         } else if (eventsWriter.writeData(batchFile, event, true)) {
             if (newMetadata?.isNotEmpty() == true && metadataFile != null) {

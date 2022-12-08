@@ -8,8 +8,6 @@ package com.datadog.android.core.internal.utils
 
 import java.math.BigInteger
 
-
-
 internal const val HUNDRED = 100.0
 internal const val HEX_RADIX = 16
 

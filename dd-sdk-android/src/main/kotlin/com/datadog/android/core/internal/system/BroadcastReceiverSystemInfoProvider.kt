@@ -17,7 +17,6 @@ import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.utils.debugWithTelemetry
 
-
 internal class BroadcastReceiverSystemInfoProvider(
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
 ) :
