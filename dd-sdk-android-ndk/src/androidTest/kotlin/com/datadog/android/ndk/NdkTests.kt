@@ -22,7 +22,7 @@ import java.nio.charset.Charset
 import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
-internal class NdkTests {
+class NdkTests {
 
     @get:Rule
     val forge = ForgeRule()

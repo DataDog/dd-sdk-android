@@ -7,6 +7,7 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.core.internal.utils.orEmpty
+import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.core.internal.utils.toMutableMap
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
