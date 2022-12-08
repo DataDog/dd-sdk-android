@@ -50,6 +50,7 @@ class JsonSchemaReader(
      * @param ref the reference used to resolve the target definition
      * @return the found Definition reference or null
      */
+    @Suppress("ReturnCount")
     private fun findDefinitionReference(
         ref: String,
         fromFile: File
@@ -148,6 +149,7 @@ class JsonSchemaReader(
 
     // region Internal
 
+    @Suppress("FunctionMaxLength")
     private fun extractAdditionalPropertiesType(
         definition: JsonDefinition,
         fromFile: File
@@ -157,7 +159,7 @@ class JsonSchemaReader(
             is Map<*, *> -> {
                 val value = additional["type"]?.toString()
                 if (value == null) {
-                    throw IllegalStateException("additionalProperties object is missing a `type`")
+                    error("additionalProperties object is missing a `type`")
                 } else {
                     val type = JsonType.values().firstOrNull { it.name.equals(value, true) }
                     transform(JsonDefinition.ANY.copy(type = type), "?", fromFile)
@@ -171,7 +173,7 @@ class JsonSchemaReader(
                 }
             }
             else -> {
-                throw IllegalStateException("additionalProperties uses an unknown format")
+                error("additionalProperties uses an unknown format")
             }
         }
     }
@@ -277,7 +279,7 @@ class JsonSchemaReader(
             if (refDefinition != null) {
                 transform(refDefinition.definition, refDefinition.typeName, refDefinition.fromFile)
             } else {
-                throw IllegalStateException(
+                error(
                     "Definition reference not found: ${definition.ref}."
                 )
             }
@@ -294,8 +296,8 @@ class JsonSchemaReader(
         description: String?,
         fromFile: File
     ): TypeDefinition {
-        val options = oneOf.mapIndexed { i, it ->
-            transform(it, it.title ?: "${typeName}_$i", fromFile)
+        val options = oneOf.mapIndexed { i, type ->
+            transform(type, type.title ?: "${typeName}_$i", fromFile)
         }
 
         val asArray = options.filterIsInstance<TypeDefinition.Array>().firstOrNull()
@@ -318,7 +320,7 @@ class JsonSchemaReader(
         } else {
             throw UnsupportedOperationException(
                 "Unable to implement `oneOf` constraint with types:\n  " +
-                    options.joinToString("\n  ")
+                        options.joinToString("\n  ")
             )
         }
     }

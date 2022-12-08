@@ -22,8 +22,12 @@ class NodeListSequence(
         private val nodeList: NodeList
     ) : KIterator<Node> {
         private var i = 0
-        override fun hasNext() = nodeList.length > i
-        override fun next(): Node = nodeList.item(i++)
+        override fun hasNext() = i < nodeList.length
+        override fun next(): Node = if (i < nodeList.length) {
+            nodeList.item(i++)
+        } else {
+            throw NoSuchElementException("There's no next element!")
+        }
     }
 }
 

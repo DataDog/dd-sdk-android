@@ -59,6 +59,7 @@ class ClassJsonElementDeserializerGenerator(
 
     // region Internal
 
+    @Suppress("FunctionMaxLength")
     private fun FunSpec.Builder.appendDeserializerFunctionBlock(
         definition: TypeDefinition.Class,
         rootTypeName: String
@@ -206,12 +207,13 @@ class ClassJsonElementDeserializerGenerator(
                 arrayType.items.asKotlinTypeName(rootTypeName),
                 Identifier.FUN_FROM_JSON
             )
-            else -> throw IllegalStateException(
+            else -> error(
                 "Unable to deserialize an array of ${arrayType.items}"
             )
         }
     }
 
+    @Suppress("FunctionMaxLength")
     private fun FunSpec.Builder.appendDeserializationForConstantProperty(
         propertyType: TypeDefinition.Class,
         assignee: String,
@@ -319,6 +321,7 @@ class ClassJsonElementDeserializerGenerator(
         }
     }
 
+    @Suppress("FunctionMaxLength")
     private fun FunSpec.Builder.appendAdditionalPropertiesDeserialization(
         additionalProperties: TypeDefinition,
         hasKnownProperties: Boolean,

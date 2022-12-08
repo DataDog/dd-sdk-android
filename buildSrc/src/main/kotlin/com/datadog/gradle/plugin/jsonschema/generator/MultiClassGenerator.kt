@@ -24,7 +24,6 @@ class MultiClassGenerator(
     packageName,
     knownTypes
 ) {
-    private val stringDeserializer = ClassStringDeserializerGenerator(packageName, knownTypes)
 
     //region TypeSpecGenerator
 
@@ -56,7 +55,7 @@ class MultiClassGenerator(
                     )
                     wrapper.written = true
                 }
-                else -> throw IllegalStateException(
+                else -> error(
                     "Can't have type $it as child of a `one_of` block"
                 )
             }
@@ -89,6 +88,7 @@ class MultiClassGenerator(
             .build()
     }
 
+    @Suppress("FunctionMaxLength")
     private fun generateMultiClassStringDeserializer(
         definition: TypeDefinition.OneOfClass
     ): FunSpec {

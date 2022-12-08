@@ -16,7 +16,11 @@ open class GitCloneDependenciesExtension : Serializable {
         var excludedPrefixes: List<String>,
         var originRef: String,
         var destinationFolder: String
-    ) : Serializable
+    ) : Serializable {
+        companion object{
+            private const val serialVersionUID: Long = 1L
+        }
+    }
 
     internal val dependencies: MutableList<Dependency> = mutableListOf()
 
@@ -30,5 +34,9 @@ open class GitCloneDependenciesExtension : Serializable {
         dependencies.add(
             Dependency(repo, subFolder, excludedPrefixes, ref, destinationFolder)
         )
+    }
+
+    companion object{
+        private const val serialVersionUID: Long = 1L
     }
 }

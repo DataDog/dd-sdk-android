@@ -10,6 +10,7 @@ import org.gradle.api.logging.LogLevel
 import org.gradle.api.logging.Logger
 import org.slf4j.Marker
 
+@Suppress("MethodOverloading")
 class NoOpLogger : Logger {
     override fun getName(): String = "NoOp"
 

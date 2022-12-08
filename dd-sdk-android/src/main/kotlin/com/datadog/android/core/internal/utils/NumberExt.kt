@@ -9,5 +9,5 @@ package com.datadog.android.core.internal.utils
 import java.math.BigInteger
 
 internal fun BigInteger.toHexString(): String {
-    return toLong().toString(16)
+    return toLong().toHexString()
 }

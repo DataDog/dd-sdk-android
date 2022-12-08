@@ -38,6 +38,7 @@ class DependenciesLicenseProvider {
 
     // region Internal
 
+    @Suppress("FunctionMaxLength")
     private fun getConfigurationDependenciesMap(
         project: Project,
         transitive: Boolean
@@ -105,6 +106,7 @@ class DependenciesLicenseProvider {
         }
     }
 
+    @Suppress("FunctionMaxLength")
     private fun listThirdPartyLicensesInConfiguration(
         configuration: String,
         dependencies: List<ComponentIdentifier>,
@@ -145,15 +147,15 @@ class DependenciesLicenseProvider {
     }
 
     private fun configurationToComponent(configuration: String): ThirdPartyDependency.Component {
-        if (configuration in knownImportConfiguration) {
-            return ThirdPartyDependency.Component.IMPORT
+        return if (configuration in knownImportConfiguration) {
+            ThirdPartyDependency.Component.IMPORT
         } else if (configuration in knownImportTestConfiguration) {
-            return ThirdPartyDependency.Component.IMPORT_TEST
+            ThirdPartyDependency.Component.IMPORT_TEST
         } else if (configuration in knownBuildConfiguration) {
-            return ThirdPartyDependency.Component.BUILD
+            ThirdPartyDependency.Component.BUILD
         } else {
             logger.info("Unknown configuration $configuration")
-            return ThirdPartyDependency.Component.UNKNOWN
+            ThirdPartyDependency.Component.UNKNOWN
         }
     }
 
@@ -194,7 +196,6 @@ class DependenciesLicenseProvider {
         private const val TAG_LICENSES = "licenses"
         private const val TAG_LICENSE = "license"
         private const val TAG_NAME = "name"
-        private const val TAG_URL = "url"
 
         private val knownImportConfiguration = setOf(
             "archives",

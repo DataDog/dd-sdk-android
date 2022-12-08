@@ -22,6 +22,7 @@ fun FunSpec.Builder.addSuppressAnnotation(rules: Array<String>): FunSpec.Builder
     )
 }
 
+@Suppress("SpreadOperator")
 fun getSuppressAnnotationSpec(rules: Array<String>): AnnotationSpec {
     return AnnotationSpec.builder(Suppress::class)
         .addMember(rules.joinToString(", ") { "%S" }, *rules)

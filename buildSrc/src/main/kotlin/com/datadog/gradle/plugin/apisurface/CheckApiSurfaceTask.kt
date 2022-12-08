@@ -39,7 +39,7 @@ open class CheckApiSurfaceTask : DefaultTask() {
         val removals = lines.filter { it.matches(Regex("^-[^-].*$")) }
 
         if (additions.isNotEmpty() || removals.isNotEmpty()) {
-            throw IllegalStateException(
+            error(
                 "Make sure you run the ${ApiSurfacePlugin.TASK_GEN_API_SURFACE} task" +
                     " before you push your PR.\n" +
                     additions.joinToString("\n") + removals.joinToString("\n")
