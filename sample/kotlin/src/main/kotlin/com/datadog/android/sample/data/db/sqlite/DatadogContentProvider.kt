@@ -14,7 +14,6 @@ import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
 import com.datadog.android.ktx.sqlite.transactionTraced
 import com.datadog.android.sample.data.db.DatadogDbContract
-import com.datadog.android.sample.data.db.DatadogSqliteHelper
 
 class DatadogContentProvider : ContentProvider() {
 

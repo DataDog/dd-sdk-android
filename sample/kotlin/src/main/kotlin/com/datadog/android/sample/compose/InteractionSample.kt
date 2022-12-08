@@ -40,6 +40,7 @@ import com.datadog.android.compose.InteractionType
 import com.datadog.android.compose.TrackInteractionEffect
 import kotlin.math.roundToInt
 
+@Suppress("MagicNumber")
 @OptIn(ExperimentalTrackingApi::class)
 @Preview
 @Composable
@@ -61,6 +62,7 @@ fun InteractionSampleView() {
     }
 }
 
+@Suppress("MagicNumber")
 @OptIn(ExperimentalTrackingApi::class)
 @Composable
 fun ItemRow(index: Int, onDismissed: () -> Unit) {

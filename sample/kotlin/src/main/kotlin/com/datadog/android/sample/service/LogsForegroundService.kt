@@ -25,20 +25,10 @@ import java.io.IOException
 import java.lang.IllegalStateException
 import java.security.SecureRandom
 
+@Suppress("MagicNumber")
 class LogsForegroundService : Service() {
 
     private val random = SecureRandom()
-
-    private val logger: Logger by lazy {
-        Logger.Builder()
-            .setLoggerName("foreground_service")
-            .setLogcatLogsEnabled(true)
-            .build()
-            .apply {
-                addTag("flavor", BuildConfig.FLAVOR)
-                addTag("build_type", BuildConfig.BUILD_TYPE)
-            }
-    }
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -170,10 +160,10 @@ class LogsForegroundService : Service() {
 
     private fun randomThrowable(): Throwable {
         return when (random.nextInt() % 4) {
-            0 -> IllegalArgumentException()
-            1 -> IllegalStateException()
-            2 -> SecurityException()
-            else -> IOException()
+            0 -> IllegalArgumentException("We shouldn't be doing this")
+            1 -> IllegalStateException("We shouldn't be doing that either")
+            2 -> SecurityException("Something wrong with the security")
+            else -> IOException("Oups, can't read or write something")
         }
     }
 

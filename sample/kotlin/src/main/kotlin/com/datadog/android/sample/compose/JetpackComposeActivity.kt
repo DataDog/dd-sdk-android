@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
 
 class JetpackComposeActivity : AppCompatActivity() {
 
+    @Suppress("LongMethod")
     @OptIn(ExperimentalPagerApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

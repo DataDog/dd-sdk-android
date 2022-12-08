@@ -66,7 +66,7 @@ class DataListViewModel(val repository: DataRepository) : ViewModel() {
         class Error(val message: String) : UIResponse()
     }
 
-    sealed class UIRequest() {
+    sealed class UIRequest {
         object FetchData : UIRequest()
     }
 }

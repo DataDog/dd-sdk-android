@@ -19,6 +19,7 @@ import com.datadog.android.sample.R
 import com.datadog.android.sample.SampleApplication
 import okhttp3.Request
 import timber.log.Timber
+import java.io.IOException
 
 class WidgetIntentService : IntentService("WidgetIntentService") {
 
@@ -65,7 +66,7 @@ class WidgetIntentService : IntentService("WidgetIntentService") {
                 // Necessary to consume the response
                 Timber.d("Response: $content")
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
             Timber.e("Error: ${e.message}")
         }
         updateUIStatus(applicationContext, false)

@@ -14,6 +14,7 @@ import java.lang.RuntimeException
 import java.security.MessageDigest
 import java.security.SecureRandom
 
+@Suppress("MagicNumber")
 class FailingTransformation : BitmapTransformation() {
 
     private val random = SecureRandom()
@@ -31,7 +32,7 @@ class FailingTransformation : BitmapTransformation() {
         outHeight: Int
     ): Bitmap {
         if (random.nextInt() % 10 == 0) {
-            throw RuntimeException("Unable to apply ${javaClass.simpleName}")
+            error("Unable to apply ${javaClass.simpleName}")
         }
         return TransformationUtils.fitCenter(pool, toTransform, outWidth, outHeight)
     }

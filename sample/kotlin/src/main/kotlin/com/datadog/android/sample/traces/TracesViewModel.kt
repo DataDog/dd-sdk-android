@@ -6,7 +6,6 @@
 
 package com.datadog.android.sample.traces
 
-import android.annotation.SuppressLint
 import android.os.AsyncTask
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -35,6 +34,7 @@ import kotlinx.coroutines.flow.map
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import java.util.Locale
 import java.util.Random
 
 class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
@@ -65,7 +65,7 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
         onDone: () -> Unit = {}
     ) {
         scope.launchTraced("startCoroutineOperation", Dispatchers.Main) {
-            setTag("flavor", BuildConfig.FLAVOR)
+            setTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
             performTask(this)
             performFlowTask()
 
@@ -113,25 +113,26 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
 
     // region Flow/Coroutine
 
+    @Suppress("MagicNumber")
     private suspend fun performTask(scope: CoroutineScopeSpan) {
         delay(100)
 
         val deferred = scope.asyncTraced("coroutine async", Dispatchers.IO) {
-            setTag("flavor", BuildConfig.FLAVOR)
+            setTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
             delay(2000)
             42
         }
         delay(100)
 
         withContextTraced("coroutine unconfined task", Dispatchers.Unconfined) {
-            setTag("flavor", BuildConfig.FLAVOR)
+            setTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
             delay(500)
         }
 
         delay(100)
 
         withContextTraced("coroutine task", Dispatchers.Default) {
-            setTag("flavor", BuildConfig.FLAVOR)
+            setTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
             delay(500)
         }
 
@@ -141,15 +142,19 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
         scope.log(mapOf(Fields.MESSAGE to "The answer to life, the universe and everything is… $x"))
     }
 
-    @SuppressLint("DefaultLocale")
+    @Suppress("TooGenericExceptionCaught", "MagicNumber")
     private suspend fun performFlowTask() {
         delay(100)
         withContextTraced("coroutine flow collect", Dispatchers.Default) {
             try {
-                setTag("flavor", BuildConfig.FLAVOR)
+                setTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
                 getFlow()
                     .sendErrorToDatadog()
-                    .map { it.capitalize() }
+                    .map {
+                        it.replaceFirstChar { c ->
+                            if (c.isLowerCase()) c.titlecase(Locale.US) else c.toString()
+                        }
+                    }
                     .filter { it.length > 4 }
                     .collect {
                         if (Random().nextInt(5) == 0) {
@@ -164,6 +169,7 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
         }
     }
 
+    @Suppress("MagicNumber")
     private fun getFlow(): Flow<String> {
         return flow {
             val names = listOf("jake", "cassie", "marco", "rachel", "tobias", "ax", "david")
@@ -187,12 +193,14 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
     ) : AsyncTask<Unit, Unit, Result>() {
         private var currentActiveMainSpan: Span? = null
 
+        @Deprecated("Deprecated in Java")
         override fun onPreExecute() {
             super.onPreExecute()
             currentActiveMainSpan = GlobalTracer.get().activeSpan()
         }
 
-        @SuppressLint("LogNotTimber")
+        @Deprecated("Deprecated in Java")
+        @Suppress("TooGenericExceptionCaught", "LogNotTimber")
         override fun doInBackground(vararg params: Unit?): Result {
             val builder = Request.Builder()
                 .get()
@@ -220,6 +228,7 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
             }
         }
 
+        @Deprecated("Deprecated in Java")
         override fun onPostExecute(result: Result) {
             super.onPostExecute(result)
             if (!isCancelled) {
@@ -262,16 +271,19 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
                 .setLogcatLogsEnabled(true)
                 .build()
                 .apply {
-                    addTag("flavor", BuildConfig.FLAVOR)
+                    addTag(ATTR_FLAVOR, BuildConfig.FLAVOR)
                     addTag("build_type", BuildConfig.BUILD_TYPE)
                 }
         }
 
+        @Deprecated("Deprecated in Java")
         override fun onPreExecute() {
             super.onPreExecute()
             activeSpanInMainThread = GlobalTracer.get().activeSpan()
         }
 
+        @Suppress("MagicNumber")
+        @Deprecated("Deprecated in Java")
         override fun doInBackground(vararg params: Unit?) {
             withinSpan("AsyncOperation", activeSpanInMainThread) {
                 logger.v("Starting Async Operation...")
@@ -288,6 +300,7 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
             }
         }
 
+        @Deprecated("Deprecated in Java")
         override fun onPostExecute(result: Unit?) {
             if (!isCancelled) {
                 onDone()
@@ -296,4 +309,8 @@ class TracesViewModel(private val okHttpClient: OkHttpClient) : ViewModel() {
     }
 
     // endregion
+
+    companion object {
+        const val ATTR_FLAVOR = "flavor"
+    }
 }
