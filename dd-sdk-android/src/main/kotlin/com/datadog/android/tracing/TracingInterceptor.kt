@@ -61,13 +61,6 @@ import java.util.concurrent.atomic.AtomicReference
  *         // .addNetworkInterceptor(new TracingInterceptor(tracedHosts))
  *         .build();
  * ```
- *
- * @param tracedHosts a list of all the hosts that you want to be automatically tracked
- * by this interceptor. If no host is provided (via this argument or global
- * configuration [Configuration.Builder.setFirstPartyHosts]) the interceptor won't trace
- * any [okhttp3.Request], nor propagate tracing information to the backend.
- * @param tracedRequestListener a listener for automatically created [Span]s
- *
  */
 @Suppress("TooManyFunctions", "StringLiteralDuplication")
 open class TracingInterceptor

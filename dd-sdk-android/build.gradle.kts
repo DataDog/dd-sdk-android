@@ -37,6 +37,10 @@ plugins {
     id("transitiveDependencies")
 }
 
+/**
+ * Checks whether logcat logs should be enabled when building the release version of the library.
+ * @return true if logcat logs should be enabled
+ */
 fun isLogEnabledInRelease(): String {
     return project.findProperty(GradlePropertiesKeys.FORCE_ENABLE_LOGCAT) as? String ?: "false"
 }

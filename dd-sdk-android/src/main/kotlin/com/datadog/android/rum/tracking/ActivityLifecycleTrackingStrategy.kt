@@ -78,7 +78,7 @@ abstract class ActivityLifecycleTrackingStrategy :
 
     /**
      * Maps the Bundle key - value properties into compatible attributes for the Rum Events.
-     * @param bundle the Bundle we need to transform. Returns an empty Map if this is null.
+     * @param intent the [Intent] we need to transform. Returns an empty Map if this is null.
      */
     protected fun convertToRumAttributes(intent: Intent?): Map<String, Any?> {
         if (intent == null) return emptyMap()

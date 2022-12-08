@@ -13,6 +13,7 @@ internal interface LogHandler {
 
     /**
      * Handle the log.
+     * @param level the priority level (must be one of the Android Log.* constants)
      * @param message the message to be logged
      * @param throwable a (nullable) throwable to be logged with the message
      * @param attributes a map of attributes to include only for this message. If an attribute with
@@ -31,6 +32,7 @@ internal interface LogHandler {
 
     /**
      * Handle the log.
+     * @param level the priority level (must be one of the Android Log.* constants)
      * @param message the message to be logged
      * @param errorKind the kind of error to be logged with the message
      * @param errorMessage the message from the error to be logged with this message

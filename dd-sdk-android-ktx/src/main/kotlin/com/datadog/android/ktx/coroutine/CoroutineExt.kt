@@ -56,6 +56,7 @@ fun CoroutineScope.launchTraced(
  *
  * See [runBlocking] to learn more about running a coroutine waiting for completion.
  *
+ * @param T the type returned by the traced Coroutine block
  * @param operationName the name of the [Span] created around the coroutine code.
  * @param context the context of the coroutine. The default value is an event loop on the current
  * thread.
@@ -78,7 +79,11 @@ fun <T> runBlockingTraced(
  *
  * See [async] to learn more about using deferred coroutine results.
  *
+ * @param T the type returned by the traced Coroutine block
  * @param operationName the name of the [Span] created around the coroutine code.
+ * @param context the context to use for the async block
+ * @param start defines how the block is scheduled (use [CoroutineStart.LAZY] to start the
+ * coroutine lazily)
  * @param block the coroutine code.
  */
 @Suppress("DeferredIsResult")
@@ -102,6 +107,7 @@ fun <T : Any?> CoroutineScope.asyncTraced(
  *
  * See [Deferred.await] to learn more about awaiting completion on a Deferred result.
  *
+ * @param T the type returned by this [Deferred] instance
  * @param operationName the name of the [Span] created around the coroutine code.
  */
 suspend fun <T : Any?> Deferred<T>.awaitTraced(operationName: String): T {
@@ -119,6 +125,7 @@ suspend fun <T : Any?> Deferred<T>.awaitTraced(operationName: String): T {
  *
  * See [withContext] to learn more about running a coroutine within a specific [CoroutineContext].
  *
+ * @param T the type returned by the traced operation
  * @param operationName the name of the [Span] created around the coroutine code.
  * @param context the context of the coroutine.
  * @param block the coroutine code.

@@ -66,17 +66,6 @@ import java.util.Locale
  *         // .addNetworkInterceptor(new TracingInterceptor(tracedHosts))
  *         .build();
  * ```
- *
- * @param tracedHosts a list of all the hosts that you want to be automatically tracked
- * by our APM [TracingInterceptor]. If no host provided (via this argument or global
- * configuration [Configuration.Builder.setFirstPartyHosts]) the interceptor won't trace
- * any [okhttp3.Request], nor propagate tracing information to the backend.
- * Please note that the host constraint will only be applied on the [TracingInterceptor] and we will
- * continue to dispatch RUM Resource events for each request without applying any host filtering.
- * @param tracedRequestListener which listens on the intercepted [okhttp3.Request] and offers
- * the possibility to modify the created [io.opentracing.Span].
- * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
- * and offers the possibility to add custom attributes to the RUM resource events.
  */
 open class DatadogInterceptor
 internal constructor(

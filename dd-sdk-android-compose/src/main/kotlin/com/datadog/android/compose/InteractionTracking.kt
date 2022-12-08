@@ -109,6 +109,7 @@ sealed class InteractionType {
     /**
      * Swipe interaction type.
      *
+     * @param T the type of the state
      * @param swipeableState Instance of [SwipeableState] to query for the current values
      * of interaction.
      * @param orientation The orientation in which the swipeable can be swiped.
