@@ -8,16 +8,13 @@ import java.lang.IllegalStateException
 import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.String
-import kotlin.Suppress
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-@Suppress("StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber")
 public data class Shipping(
     public val item: String,
     public val destination: Address,
 ) {
-    @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount", "TooGenericExceptionCaught")
     public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("item", item)
@@ -41,8 +38,6 @@ public data class Shipping(
         }
 
         @JvmStatic
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): Shipping {
             try {
@@ -75,8 +70,6 @@ public data class Shipping(
         public val city: String,
         public val state: String,
     ) {
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         public fun toJson(): JsonElement {
             val json = JsonObject()
             json.addProperty("street_address", streetAddress)
@@ -101,8 +94,6 @@ public data class Shipping(
             }
 
             @JvmStatic
-            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                    "TooGenericExceptionCaught")
             @Throws(JsonParseException::class)
             public fun fromJsonObject(jsonObject: JsonObject): Address {
                 try {

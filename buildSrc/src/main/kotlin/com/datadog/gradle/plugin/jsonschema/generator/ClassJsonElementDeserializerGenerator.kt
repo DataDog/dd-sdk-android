@@ -29,7 +29,6 @@ class ClassJsonElementDeserializerGenerator(
 
         val funBuilder = FunSpec.builder(Identifier.FUN_FROM_JSON_OBJ)
             .addAnnotation(AnnotationSpec.builder(JvmStatic::class).build())
-            .addSuppressAnnotation(Identifier.SUPPRESSED_SERIALISATION_RULES)
             .returns(returnType)
 
         if (!isConstantClass) {

@@ -12,19 +12,16 @@ import kotlin.Any
 import kotlin.Array
 import kotlin.Long
 import kotlin.String
-import kotlin.Suppress
 import kotlin.collections.MutableMap
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-@Suppress("StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber")
 public data class Company(
     public val name: String? = null,
     public val ratings: Ratings? = null,
     public val information: Information? = null,
     public val additionalProperties: MutableMap<String, Any?> = mutableMapOf(),
 ) {
-    @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount", "TooGenericExceptionCaught")
     public fun toJson(): JsonElement {
         val json = JsonObject()
         name?.let { nameNonNull ->
@@ -62,8 +59,6 @@ public data class Company(
         }
 
         @JvmStatic
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): Company {
             try {
@@ -104,8 +99,6 @@ public data class Company(
         public val global: Long,
         public val additionalProperties: MutableMap<String, Long> = mutableMapOf(),
     ) {
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         public fun toJson(): JsonElement {
             val json = JsonObject()
             json.addProperty("global", global)
@@ -135,8 +128,6 @@ public data class Company(
             }
 
             @JvmStatic
-            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                    "TooGenericExceptionCaught")
             @Throws(JsonParseException::class)
             public fun fromJsonObject(jsonObject: JsonObject): Ratings {
                 try {
@@ -173,8 +164,6 @@ public data class Company(
         public val priority: Long? = null,
         public val additionalProperties: MutableMap<String, Any?> = mutableMapOf(),
     ) {
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         public fun toJson(): JsonElement {
             val json = JsonObject()
             date?.let { dateNonNull ->
@@ -209,8 +198,6 @@ public data class Company(
             }
 
             @JvmStatic
-            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                    "TooGenericExceptionCaught")
             @Throws(JsonParseException::class)
             public fun fromJsonObject(jsonObject: JsonObject): Information {
                 try {

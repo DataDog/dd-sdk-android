@@ -11,19 +11,16 @@ import kotlin.Array
 import kotlin.Boolean
 import kotlin.Long
 import kotlin.String
-import kotlin.Suppress
 import kotlin.collections.MutableMap
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-@Suppress("StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber")
 public data class Comment(
     public val message: String? = null,
     public val ratings: Ratings? = null,
     public val flags: Flags? = null,
     public val tags: Tags? = null,
 ) {
-    @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount", "TooGenericExceptionCaught")
     public fun toJson(): JsonElement {
         val json = JsonObject()
         message?.let { messageNonNull ->
@@ -57,8 +54,6 @@ public data class Comment(
         }
 
         @JvmStatic
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): Comment {
             try {
@@ -96,8 +91,6 @@ public data class Comment(
         public val global: Long,
         public val additionalProperties: MutableMap<String, Long> = mutableMapOf(),
     ) {
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         public fun toJson(): JsonElement {
             val json = JsonObject()
             json.addProperty("global", global)
@@ -127,8 +120,6 @@ public data class Comment(
             }
 
             @JvmStatic
-            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                    "TooGenericExceptionCaught")
             @Throws(JsonParseException::class)
             public fun fromJsonObject(jsonObject: JsonObject): Ratings {
                 try {
@@ -163,8 +154,6 @@ public data class Comment(
     public data class Flags(
         public val additionalProperties: MutableMap<String, Boolean> = mutableMapOf(),
     ) {
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         public fun toJson(): JsonElement {
             val json = JsonObject()
             additionalProperties.forEach { (k, v) ->
@@ -189,8 +178,6 @@ public data class Comment(
             }
 
             @JvmStatic
-            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                    "TooGenericExceptionCaught")
             @Throws(JsonParseException::class)
             public fun fromJsonObject(jsonObject: JsonObject): Flags {
                 try {
@@ -222,8 +209,6 @@ public data class Comment(
     public data class Tags(
         public val additionalProperties: MutableMap<String, String> = mutableMapOf(),
     ) {
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         public fun toJson(): JsonElement {
             val json = JsonObject()
             additionalProperties.forEach { (k, v) ->
@@ -248,8 +233,6 @@ public data class Comment(
             }
 
             @JvmStatic
-            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                    "TooGenericExceptionCaught")
             @Throws(JsonParseException::class)
             public fun fromJsonObject(jsonObject: JsonObject): Tags {
                 try {

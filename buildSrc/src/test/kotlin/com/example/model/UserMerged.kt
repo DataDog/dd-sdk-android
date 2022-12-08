@@ -8,11 +8,9 @@ import java.lang.IllegalStateException
 import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.String
-import kotlin.Suppress
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-@Suppress("StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber")
 public data class UserMerged(
     public val email: String? = null,
     public val phone: String? = null,
@@ -20,7 +18,6 @@ public data class UserMerged(
     public val firstname: String? = null,
     public val lastname: String,
 ) {
-    @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount", "TooGenericExceptionCaught")
     public fun toJson(): JsonElement {
         val json = JsonObject()
         email?.let { emailNonNull ->
@@ -55,8 +52,6 @@ public data class UserMerged(
         }
 
         @JvmStatic
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): UserMerged {
             try {
@@ -91,8 +86,6 @@ public data class UserMerged(
         public val notes: String? = null,
         public val source: String? = null,
     ) {
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         public fun toJson(): JsonElement {
             val json = JsonObject()
             notes?.let { notesNonNull ->
@@ -120,8 +113,6 @@ public data class UserMerged(
             }
 
             @JvmStatic
-            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                    "TooGenericExceptionCaught")
             @Throws(JsonParseException::class)
             public fun fromJsonObject(jsonObject: JsonObject): Info {
                 try {

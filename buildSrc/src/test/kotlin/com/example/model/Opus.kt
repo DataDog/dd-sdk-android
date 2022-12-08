@@ -11,7 +11,6 @@ import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.Long
 import kotlin.String
-import kotlin.Suppress
 import kotlin.collections.ArrayList
 import kotlin.collections.List
 import kotlin.jvm.JvmStatic
@@ -24,14 +23,12 @@ import kotlin.jvm.Throws
  * @param artists The opus's artists.
  * @param duration The opus's duration in seconds
  */
-@Suppress("StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber")
 public data class Opus(
     public val title: String? = null,
     public val composer: String? = null,
     public val artists: List<Artist>? = null,
     public val duration: Long? = null,
 ) {
-    @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount", "TooGenericExceptionCaught")
     public fun toJson(): JsonElement {
         val json = JsonObject()
         title?.let { titleNonNull ->
@@ -67,8 +64,6 @@ public data class Opus(
         }
 
         @JvmStatic
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): Opus {
             try {
@@ -111,8 +106,6 @@ public data class Opus(
         public val name: String? = null,
         public val role: Role? = null,
     ) {
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         public fun toJson(): JsonElement {
             val json = JsonObject()
             name?.let { nameNonNull ->
@@ -140,8 +133,6 @@ public data class Opus(
             }
 
             @JvmStatic
-            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                    "TooGenericExceptionCaught")
             @Throws(JsonParseException::class)
             public fun fromJsonObject(jsonObject: JsonObject): Artist {
                 try {

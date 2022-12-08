@@ -12,18 +12,15 @@ import java.lang.NumberFormatException
 import kotlin.Boolean
 import kotlin.Long
 import kotlin.String
-import kotlin.Suppress
 import kotlin.collections.ArrayList
 import kotlin.collections.List
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-@Suppress("StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber")
 public data class Household(
     public val pets: List<Animal>? = null,
     public val situation: Situation? = null,
 ) {
-    @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount", "TooGenericExceptionCaught")
     public fun toJson(): JsonElement {
         val json = JsonObject()
         pets?.let { petsNonNull ->
@@ -53,8 +50,6 @@ public data class Household(
         }
 
         @JvmStatic
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): Household {
             try {
@@ -98,8 +93,6 @@ public data class Household(
             public val water: Water,
             public val size: Long? = null,
         ) : Animal() {
-            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                    "TooGenericExceptionCaught")
             public override fun toJson(): JsonElement {
                 val json = JsonObject()
                 json.add("water", water.toJson())
@@ -125,8 +118,6 @@ public data class Household(
                 }
 
                 @JvmStatic
-                @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                        "TooGenericExceptionCaught")
                 @Throws(JsonParseException::class)
                 public fun fromJsonObject(jsonObject: JsonObject): Fish {
                     try {
@@ -157,8 +148,6 @@ public data class Household(
             public val food: Food,
             public val canFly: Boolean,
         ) : Animal() {
-            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                    "TooGenericExceptionCaught")
             public override fun toJson(): JsonElement {
                 val json = JsonObject()
                 json.add("food", food.toJson())
@@ -182,8 +171,6 @@ public data class Household(
                 }
 
                 @JvmStatic
-                @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                        "TooGenericExceptionCaught")
                 @Throws(JsonParseException::class)
                 public fun fromJsonObject(jsonObject: JsonObject): Bird {
                     try {
@@ -226,8 +213,6 @@ public data class Household(
             }
 
             @JvmStatic
-            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                    "TooGenericExceptionCaught")
             @Throws(JsonParseException::class)
             public fun fromJsonObject(jsonObject: JsonObject): Animal {
                 val errors = mutableListOf<Throwable>()
@@ -263,8 +248,6 @@ public data class Household(
         public data class Marriage(
             public val spouses: List<String>,
         ) : Situation() {
-            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                    "TooGenericExceptionCaught")
             public override fun toJson(): JsonElement {
                 val json = JsonObject()
                 val spousesArray = JsonArray(spouses.size)
@@ -289,8 +272,6 @@ public data class Household(
                 }
 
                 @JvmStatic
-                @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                        "TooGenericExceptionCaught")
                 @Throws(JsonParseException::class)
                 public fun fromJsonObject(jsonObject: JsonObject): Marriage {
                     try {
@@ -325,8 +306,6 @@ public data class Household(
         public data class Cotenancy(
             public val roommates: List<String>,
         ) : Situation() {
-            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                    "TooGenericExceptionCaught")
             public override fun toJson(): JsonElement {
                 val json = JsonObject()
                 val roommatesArray = JsonArray(roommates.size)
@@ -351,8 +330,6 @@ public data class Household(
                 }
 
                 @JvmStatic
-                @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                        "TooGenericExceptionCaught")
                 @Throws(JsonParseException::class)
                 public fun fromJsonObject(jsonObject: JsonObject): Cotenancy {
                     try {
@@ -400,8 +377,6 @@ public data class Household(
             }
 
             @JvmStatic
-            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                    "TooGenericExceptionCaught")
             @Throws(JsonParseException::class)
             public fun fromJsonObject(jsonObject: JsonObject): Situation {
                 val errors = mutableListOf<Throwable>()

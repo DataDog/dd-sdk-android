@@ -11,14 +11,12 @@ import java.lang.NumberFormatException
 import kotlin.Boolean
 import kotlin.Long
 import kotlin.String
-import kotlin.Suppress
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
 /**
  * A representation of the animal kingdom
  */
-@Suppress("StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber")
 public sealed class Animal {
     public abstract fun toJson(): JsonElement
 
@@ -26,8 +24,6 @@ public sealed class Animal {
         public val water: Water,
         public val size: Long? = null,
     ) : Animal() {
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         public override fun toJson(): JsonElement {
             val json = JsonObject()
             json.add("water", water.toJson())
@@ -53,8 +49,6 @@ public sealed class Animal {
             }
 
             @JvmStatic
-            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                    "TooGenericExceptionCaught")
             @Throws(JsonParseException::class)
             public fun fromJsonObject(jsonObject: JsonObject): Fish {
                 try {
@@ -85,8 +79,6 @@ public sealed class Animal {
         public val food: Food,
         public val canFly: Boolean,
     ) : Animal() {
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         public override fun toJson(): JsonElement {
             val json = JsonObject()
             json.add("food", food.toJson())
@@ -110,8 +102,6 @@ public sealed class Animal {
             }
 
             @JvmStatic
-            @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                    "TooGenericExceptionCaught")
             @Throws(JsonParseException::class)
             public fun fromJsonObject(jsonObject: JsonObject): Bird {
                 try {
@@ -154,8 +144,6 @@ public sealed class Animal {
         }
 
         @JvmStatic
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): Animal {
             val errors = mutableListOf<Throwable>()

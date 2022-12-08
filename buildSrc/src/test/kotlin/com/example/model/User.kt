@@ -9,11 +9,9 @@ import java.lang.IllegalStateException
 import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.String
-import kotlin.Suppress
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-@Suppress("StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber")
 public data class User(
     public val username: String,
     public val host: String,
@@ -21,7 +19,6 @@ public data class User(
     public val lastname: String,
     public val contactType: ContactType,
 ) {
-    @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount", "TooGenericExceptionCaught")
     public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("username", username)
@@ -50,8 +47,6 @@ public data class User(
         }
 
         @JvmStatic
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): User {
             try {

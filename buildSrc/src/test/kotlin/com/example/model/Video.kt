@@ -9,19 +9,16 @@ import java.lang.IllegalStateException
 import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.String
-import kotlin.Suppress
 import kotlin.collections.HashSet
 import kotlin.collections.Set
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-@Suppress("StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber")
 public data class Video(
     public val title: String,
     public val tags: Set<String>? = null,
     public val links: Set<String>? = null,
 ) {
-    @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount", "TooGenericExceptionCaught")
     public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("title", title)
@@ -54,8 +51,6 @@ public data class Video(
         }
 
         @JvmStatic
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): Video {
             try {

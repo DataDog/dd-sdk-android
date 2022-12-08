@@ -9,18 +9,15 @@ import java.lang.IllegalStateException
 import java.lang.NullPointerException
 import java.lang.NumberFormatException
 import kotlin.String
-import kotlin.Suppress
 import kotlin.collections.ArrayList
 import kotlin.collections.List
 import kotlin.jvm.JvmStatic
 import kotlin.jvm.Throws
 
-@Suppress("StringLiteralDuplication", "EmptyDefaultConstructor", "MagicNumber")
 public data class Paper(
     public val title: String,
     public val author: List<String>,
 ) {
-    @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount", "TooGenericExceptionCaught")
     public fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("title", title)
@@ -46,8 +43,6 @@ public data class Paper(
         }
 
         @JvmStatic
-        @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount",
-                "TooGenericExceptionCaught")
         @Throws(JsonParseException::class)
         public fun fromJsonObject(jsonObject: JsonObject): Paper {
             try {

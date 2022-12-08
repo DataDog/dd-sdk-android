@@ -34,10 +34,6 @@ class MultiClassGenerator(
         val typeBuilder = TypeSpec.classBuilder(definition.name)
             .addModifiers(KModifier.SEALED)
 
-        if (definition.name == rootTypeName) {
-            typeBuilder.addSuppressAnnotation(Identifier.SUPPRESSED_CLASS_RULES)
-        }
-
         if (definition.description.isNotBlank()) {
             val docBuilder = CodeBlock.builder()
             docBuilder.add(definition.description)
@@ -135,7 +131,6 @@ class MultiClassGenerator(
         val returnType = definition.asKotlinTypeName(rootTypeName)
         val funBuilder = FunSpec.builder(Identifier.FUN_FROM_JSON_OBJ)
             .addAnnotation(AnnotationSpec.builder(JvmStatic::class).build())
-            .addSuppressAnnotation(Identifier.SUPPRESSED_SERIALISATION_RULES)
             .throws(ClassNameRef.JsonParseException)
             .addParameter(Identifier.PARAM_JSON_OBJ, ClassNameRef.JsonObject)
             .returns(returnType)

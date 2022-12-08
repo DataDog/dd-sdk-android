@@ -44,10 +44,6 @@ class ClassGenerator(
     ): TypeSpec.Builder {
         val typeBuilder = TypeSpec.classBuilder(definition.name)
 
-        if (definition.name == rootTypeName) {
-            typeBuilder.addSuppressAnnotation(Identifier.SUPPRESSED_CLASS_RULES)
-        }
-
         if (definition.parentType != null) {
             typeBuilder.superclass(definition.parentType.asKotlinTypeName(rootTypeName))
         }
@@ -70,7 +66,12 @@ class ClassGenerator(
             )
         }
 
-        typeBuilder.primaryConstructor(generateConstructor(definition, rootTypeName))
+        if (
+            definition.properties.any { it.type !is TypeDefinition.Constant } ||
+            definition.additionalProperties != null
+        ) {
+            typeBuilder.primaryConstructor(generateConstructor(definition, rootTypeName))
+        }
 
         typeBuilder.addFunction(generateClassSerializer(definition))
 
@@ -112,7 +113,6 @@ class ClassGenerator(
 
     private fun generateClassSerializer(definition: TypeDefinition.Class): FunSpec {
         val funBuilder = FunSpec.builder(Identifier.FUN_TO_JSON)
-            .addSuppressAnnotation(Identifier.SUPPRESSED_SERIALISATION_RULES)
             .returns(ClassNameRef.JsonElement)
 
         if (definition.parentType != null) {
