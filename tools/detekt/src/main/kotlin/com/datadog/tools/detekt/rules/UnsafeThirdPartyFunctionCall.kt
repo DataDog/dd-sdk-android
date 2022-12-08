@@ -97,6 +97,7 @@ class UnsafeThirdPartyFunctionCall(
         caughtExceptions.pop()
     }
 
+    @Suppress("ReturnCount")
     override fun visitCallExpression(expression: KtCallExpression) {
         super.visitCallExpression(expression)
         if (bindingContext == BindingContext.EMPTY) {
@@ -150,6 +151,7 @@ class UnsafeThirdPartyFunctionCall(
         }
     }
 
+    @Suppress("ReturnCount")
     private fun checkFunctionCall(
         expression: KtCallExpression,
         call: String,

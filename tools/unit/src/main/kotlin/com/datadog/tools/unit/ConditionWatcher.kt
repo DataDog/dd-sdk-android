@@ -7,6 +7,7 @@
 package com.datadog.tools.unit
 
 import java.lang.RuntimeException
+import java.util.concurrent.TimeUnit
 
 /**
  * Utility class which allows watch for the condition in the polling manner instead
@@ -30,6 +31,7 @@ class ConditionWatcher(
      * satisfied in the given timeout period.
      * @param timeoutMs Maximum timeout in milliseconds.
      */
+    @Suppress("LoopWithTooManyJumpStatements")
     fun doWait(timeoutMs: Long = DEFAULT_TIMEOUT_LIMIT_MS) {
         var elapsedTime = 0L
         var isConditionMet = false
@@ -62,7 +64,7 @@ class ConditionWatcher(
     }
 
     private fun reportTimeout(timeoutMs: Long, assertionError: AssertionError?) {
-        val message = "Waiting took more than ${timeoutMs / 1000} seconds. Test stopped."
+        val message = "Waiting took more than $timeoutMs millisseconds. Test stopped."
         if (assertionError == null) {
             throw TimeoutException(message)
         } else {

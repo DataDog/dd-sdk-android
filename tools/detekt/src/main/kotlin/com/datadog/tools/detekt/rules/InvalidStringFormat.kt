@@ -51,6 +51,7 @@ class InvalidStringFormat : Rule() {
         Debt.TWENTY_MINS
     )
 
+    @Suppress("ReturnCount")
     override fun visitCallExpression(expression: KtCallExpression) {
         super.visitCallExpression(expression)
         if (bindingContext == BindingContext.EMPTY) {
@@ -291,12 +292,12 @@ class InvalidStringFormat : Rule() {
             "%(\\d+\\$)?([flags]+)?(\\d+)?(\\.\\d+)?([sbhcdoxegfa])"
         )
 
+        private const val INDEX_REF = 1
         // TODO check flags, width and precision for invalid use?
-        private val INDEX_REF = 1
-        private val INDEX_FLAGS = 2
-        private val INDEX_WIDTH = 3
-        private val INDEX_PRECISION = 4
-        private val INDEX_TYPE = 5
+//        private const val INDEX_FLAGS = 2
+//        private const val INDEX_WIDTH = 3
+//        private const val INDEX_PRECISION = 4
+        private const val INDEX_TYPE = 5
 
         private const val ERROR_UNKNOWN_FORMAT_STRING = "Unable to detect the format string value."
         private const val ERROR_INVALID_ARGUMENT_COUNT = "An argument is missing for specifier " +

@@ -95,6 +95,7 @@ class ByteArrayOutputStreamAssert(actual: ByteArrayOutputStream) :
 
     // region Internal
 
+    @Suppress("MagicNumber")
     private fun isLogMatch(
         line: String,
         level: Int,

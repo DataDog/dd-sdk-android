@@ -18,7 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith
  * A generic test class used to ensure a given type's implementation of `equals` and `hashCode`
  * respects the contract of those method.
  */
-@Suppress("ReplaceCallWithBinaryOperator", "StringLiteralDuplication")
+@Suppress("ReplaceCallWithBinaryOperator", "StringLiteralDuplication", "MagicNumber")
 @ExtendWith(ForgeExtension::class)
 abstract class ObjectTest<T : Any> {
 
