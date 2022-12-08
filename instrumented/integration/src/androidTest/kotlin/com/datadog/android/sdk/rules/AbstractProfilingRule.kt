@@ -72,9 +72,9 @@ internal abstract class AbstractProfilingRule(
         assertThat(runAverage)
             .overridingErrorMessage(
                 "Expected average $name to stay below $absRunThreshold " +
-                    "($beforeRun + $runThreshold), " +
-                    "but it was $runAverage ($beforeRun + $diffAverage}, " +
-                    "with a peak at $peakRun ($beforeRun + $diffPeak)"
+                        "($beforeRun + $runThreshold), " +
+                        "but it was $runAverage ($beforeRun + $diffAverage}, " +
+                        "with a peak at $peakRun ($beforeRun + $diffPeak)"
             )
             .isLessThanOrEqualTo(absRunThreshold)
     }
@@ -93,7 +93,7 @@ internal abstract class AbstractProfilingRule(
         val countDownLatch = CountDownLatch(1)
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            for (i in 0..config.iterations) {
+            repeat(config.iterations.toInt()) {
                 repeat(config.repeatPerIteration.toInt()) { action() }
                 list.add(measure())
                 Thread.sleep(config.sleepMs)

@@ -48,10 +48,9 @@ internal class ResourceTrackingTraceSamplingActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        val callsNumber = 100
-        val countDownLatch = CountDownLatch(callsNumber)
+        val countDownLatch = CountDownLatch(REPEATED_TESTS)
         localServer.start { it.respond(HttpStatusCode.OK, "{}") }
-        repeat(callsNumber) {
+        repeat(REPEATED_TESTS) {
             okHttpClient
                 .newCall(
                     Request.Builder()

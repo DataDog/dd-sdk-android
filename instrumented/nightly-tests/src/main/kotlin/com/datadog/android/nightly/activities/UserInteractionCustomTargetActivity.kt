@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.nightly.R
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumResourceKind
+import java.net.HttpURLConnection
 
 internal class UserInteractionCustomTargetActivity : AppCompatActivity() {
 
@@ -27,8 +28,8 @@ internal class UserInteractionCustomTargetActivity : AppCompatActivity() {
             )
             GlobalRum.get().stopResource(
                 key,
-                200,
-                200,
+                HttpURLConnection.HTTP_OK,
+                DATA_SIZE,
                 RumResourceKind.IMAGE,
                 emptyMap()
             )
