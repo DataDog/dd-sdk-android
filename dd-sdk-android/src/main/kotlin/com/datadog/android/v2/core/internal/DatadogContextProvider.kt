@@ -17,7 +17,6 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
     override val context: DatadogContext
         get() {
             return DatadogContext(
-                site = coreFeature.site,
                 clientToken = coreFeature.clientToken,
                 service = coreFeature.serviceName,
                 env = coreFeature.envName,
