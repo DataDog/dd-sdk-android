@@ -41,6 +41,7 @@ import com.datadog.tools.unit.forge.aThrowable
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argThat
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
@@ -65,6 +66,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
@@ -74,6 +76,8 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -1525,6 +1529,107 @@ internal class DatadogRumMonitorTest {
             )
             assertThat(lastValue.metric).isEqualTo(metric)
             assertThat(lastValue.value).isEqualTo(value)
+        }
+    }
+
+    @Test
+    fun `M allow only one thread inside rootScope#handleEvent at the time W handleEvent()`(
+        forge: Forge
+    ) {
+        // Given
+        val mockExecutorService = mock<ExecutorService>().apply {
+            // this is the mock for the inner ExecutorService, Futures returned by this one
+            // are never used in the code
+            whenever(submit(any())) doAnswer {
+                it.getArgument<Runnable>(0).run()
+                object : Future<Any> {
+                    override fun cancel(mayInterruptIfRunning: Boolean) =
+                        error("Not supposed to be called")
+
+                    override fun isCancelled(): Boolean = error("Not supposed to be called")
+                    override fun isDone(): Boolean = error("Not supposed to be called")
+                    override fun get(): Any = error("Not supposed to be called")
+                    override fun get(timeout: Long, unit: TimeUnit?): Any =
+                        error("Not supposed to be called")
+                }
+            }
+        }
+
+        testedMonitor = DatadogRumMonitor(
+            fakeApplicationId,
+            mockSdkCore,
+            fakeSamplingRate,
+            fakeBackgroundTrackingEnabled,
+            fakeTrackFrustrations,
+            mockWriter,
+            mockHandler,
+            mockTelemetryEventHandler,
+            mockDetector,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockSessionListener,
+            mockContextProvider,
+            executorService = mockExecutorService
+        )
+
+        var isMethodOccupied = false
+        val mockRootScope = mock<RumScope>().apply {
+            whenever(handleEvent(any(), any())) doAnswer {
+                if (isMethodOccupied) {
+                    throw IllegalStateException(
+                        "Only one thread should" +
+                            " be allowed to enter rootScope at the time."
+                    )
+                }
+                isMethodOccupied = true
+                Thread.sleep(100)
+                isMethodOccupied = false
+                null
+            }
+        }
+        testedMonitor.rootScope = mockRootScope
+        // this is another executor, to imitate a bunch of external concurrent
+        // calls to DatadogRumMonitor
+        val executor = Executors.newFixedThreadPool(10)
+        val futures = mutableListOf<Future<*>>()
+
+        // When
+        repeat(10) {
+            futures += executor.submit {
+                // we are not going to generate all set of the events, only AddError + fatal
+                // which has a special handling + few simple others
+                val event = forge.anElementFrom(
+                    RumRawEvent.AddError(
+                        message = forge.anAlphaNumericalString(),
+                        source = forge.aValueFrom(RumErrorSource::class.java),
+                        isFatal = true,
+                        throwable = forge.aThrowable(),
+                        stacktrace = forge.anAlphaNumericalString(),
+                        attributes = emptyMap()
+                    ),
+                    RumRawEvent.StartAction(
+                        type = forge.aValueFrom(RumActionType::class.java),
+                        name = forge.anAlphaNumericalString(),
+                        waitForStop = forge.aBool(),
+                        attributes = emptyMap()
+                    ),
+                    RumRawEvent.StartView(
+                        key = Any(),
+                        name = forge.anAlphaNumericalString(),
+                        attributes = emptyMap()
+                    )
+                )
+                testedMonitor.handleEvent(event)
+            }
+        }
+
+        // Then
+        assertDoesNotThrow {
+            futures.forEach {
+                // none of these should throw
+                it.get()
+            }
         }
     }
 
