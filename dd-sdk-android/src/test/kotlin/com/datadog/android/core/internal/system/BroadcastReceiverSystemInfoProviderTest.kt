@@ -41,6 +41,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -129,7 +130,7 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.LOLLIPOP
 
         val batteryIntent: Intent = mock()
-        val scaledLevel = (level * scale) / 100
+        val scaledLevel = ((level * scale) / 100f).roundToInt()
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_STATUS), any()))
             .doReturn(status.androidStatus())
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_PLUGGED), any()))
@@ -166,7 +167,7 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.KITKAT
 
         val batteryIntent: Intent = mock()
-        val scaledLevel = (level * scale) / 100
+        val scaledLevel = ((level * scale) / 100f).roundToInt()
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_STATUS), any()))
             .doReturn(status.androidStatus())
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_PLUGGED), any()))
@@ -221,7 +222,7 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         @IntForgery(min = 50, max = 10000) scale: Int
     ) {
         // Given
-        val scaledLevel = (level * scale) / 100
+        val scaledLevel = ((level * scale) / 100f).roundToInt()
         whenever(mockIntent.getIntExtra(eq(BatteryManager.EXTRA_STATUS), any()))
             .doReturn(status.androidStatus())
         whenever(mockIntent.getIntExtra(eq(BatteryManager.EXTRA_LEVEL), any())) doReturn scaledLevel
@@ -337,7 +338,7 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         @IntForgery(min = 50, max = 10000) scale: Int
     ) {
         // Given
-        val scaledLevel = (level * scale) / 100
+        val scaledLevel = ((level * scale) / 100f).roundToInt()
         val batteryIntent: Intent = mock()
         whenever(
             batteryIntent.getIntExtra(
@@ -371,7 +372,7 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         @IntForgery(min = 50, max = 10000) scale: Int
     ) {
         // Given
-        val scaledLevel = (level * scale) / 100
+        val scaledLevel = ((level * scale) / 100f).roundToInt()
         val batteryIntent: Intent = mock()
         whenever(
             batteryIntent.getIntExtra(
@@ -409,7 +410,7 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         @IntForgery(min = 50, max = 10000) scale: Int
     ) {
         // Given
-        val scaledLevel = (level * scale) / 100
+        val scaledLevel = ((level * scale) / 100f).roundToInt()
         val batteryIntent: Intent = mock()
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_SCALE), any())) doReturn scale
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_LEVEL), any())) doReturn
@@ -435,7 +436,7 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         @IntForgery(min = 50, max = 10000) scale: Int
     ) {
         // Given
-        val scaledLevel = (level * scale) / 100
+        val scaledLevel = ((level * scale) / 100f).roundToInt()
         val batteryIntent: Intent = mock()
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_SCALE), any())) doReturn scale
         whenever(batteryIntent.getIntExtra(eq(BatteryManager.EXTRA_LEVEL), any())) doReturn
