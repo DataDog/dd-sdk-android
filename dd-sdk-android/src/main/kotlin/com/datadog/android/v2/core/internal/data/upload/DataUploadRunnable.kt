@@ -32,7 +32,8 @@ internal class DataUploadRunnable(
     private val contextProvider: ContextProvider,
     private val networkInfoProvider: NetworkInfoProvider,
     private val systemInfoProvider: SystemInfoProvider,
-    uploadFrequency: UploadFrequency
+    uploadFrequency: UploadFrequency,
+    private val batchUploadWaitTimeoutMs: Long = CoreFeature.NETWORK_TIMEOUT_MS
 ) : UploadRunnable {
 
     internal var currentDelayIntervalMs = DEFAULT_DELAY_FACTOR * uploadFrequency.baseStepMs
@@ -55,18 +56,21 @@ internal class DataUploadRunnable(
                     lock.countDown()
                 }
             ) { batchId, reader ->
-                val batch = reader.read()
-                val batchMeta = reader.currentMetadata()
+                try {
+                    val batch = reader.read()
+                    val batchMeta = reader.currentMetadata()
 
-                consumeBatch(
-                    context,
-                    batchId,
-                    batch,
-                    batchMeta
-                )
-                lock.countDown()
+                    consumeBatch(
+                        context,
+                        batchId,
+                        batch,
+                        batchMeta
+                    )
+                } finally {
+                    lock.countDown()
+                }
             }
-            lock.await(CoreFeature.NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            lock.await(batchUploadWaitTimeoutMs, TimeUnit.MILLISECONDS)
         }
 
         scheduleNextUpload()
