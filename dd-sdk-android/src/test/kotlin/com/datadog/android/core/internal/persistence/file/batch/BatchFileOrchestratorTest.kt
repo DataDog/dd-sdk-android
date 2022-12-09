@@ -340,7 +340,7 @@ internal class BatchFileOrchestratorTest {
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
         var previousFile = testedOrchestrator.getWritableFile()
 
-        repeat(5) {
+        repeat(4) {
             checkNotNull(previousFile)
 
             val previousData = forge.aList(MAX_ITEM_PER_BATCH) {

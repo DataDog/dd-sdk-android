@@ -63,7 +63,7 @@ class ConditionWatcher(
     }
 
     private fun reportTimeout(timeoutMs: Long, assertionError: AssertionError?) {
-        val message = "Waiting took more than $timeoutMs millisseconds. Test stopped."
+        val message = "Waiting took more than $timeoutMs milliseconds. Test stopped."
         if (assertionError == null) {
             throw TimeoutException(message)
         } else {

@@ -46,10 +46,11 @@ The whole project is covered by a set of static analysis tools, linters and test
 ./gradlew instrumentTestAll
 
 # launches the detekt static analysis for all modules
-# the detekt client needs to be installed on your machine via Homebrew
-# the configuration files are stored in the dd-source repository
+# the detekt client needs to be installed on your machine as stated in the official documentation
+# https://detekt.dev/docs/gettingstarted/cli
+# the configuration files are stored in Datadog's dd-source repository
 detekt --config {dd-source}/domains/mobile/config/android/gitlab/detekt/detekt-common.yml
-detekt --config {dd-source}/domains/mobile/config/android/gitlab/detekt/detekt-common.yml
+detekt --config {dd-source}/domains/mobile/config/android/gitlab/detekt/detekt-public-api.yml
 
 # launches the ktlint check and formatter for all Kotlin files 
 # the ktlint client needs to be installed on your machine 

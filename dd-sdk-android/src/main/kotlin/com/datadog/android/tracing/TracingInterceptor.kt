@@ -13,9 +13,9 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
-import com.datadog.android.core.internal.utils.HUNDRED
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.utils.warningWithTelemetry
 import com.datadog.android.v2.core.DatadogCore
@@ -105,7 +105,7 @@ internal constructor(
         tracedRequestListener,
         getGlobalFirstPartyHostDetector(),
         null,
-        RateBasedSampler(traceSamplingRate / HUNDRED),
+        RateBasedSampler(traceSamplingRate.percent()),
         { AndroidTracer.Builder().build() }
     )
 
@@ -126,7 +126,7 @@ internal constructor(
         tracedRequestListener,
         getGlobalFirstPartyHostDetector(),
         null,
-        RateBasedSampler(traceSamplingRate / HUNDRED),
+        RateBasedSampler(traceSamplingRate.percent()),
         { AndroidTracer.Builder().build() }
     )
 

@@ -29,7 +29,7 @@ internal class UserInteractionCustomTargetActivity : AppCompatActivity() {
             GlobalRum.get().stopResource(
                 key,
                 HttpURLConnection.HTTP_OK,
-                DATA_SIZE,
+                FAKE_RESOURCE_DOWNLOADED_BYTES,
                 RumResourceKind.IMAGE,
                 emptyMap()
             )

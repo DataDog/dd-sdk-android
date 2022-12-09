@@ -18,3 +18,5 @@ internal fun Long.toHexString() = toString(HEX_RADIX)
 internal fun BigInteger.toHexString(): String {
     return toLong().toHexString()
 }
+
+internal fun Float.percent() = this / HUNDRED
