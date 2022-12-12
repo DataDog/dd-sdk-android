@@ -117,7 +117,7 @@ internal class RecorderOnDrawListenerTest {
 
         // Then
         val argumentCaptor = argumentCaptor<OrientationChanged>()
-        verify(mockProcessor).process(
+        verify(mockProcessor).processScreenSnapshot(
             eq(fakeNode),
             argumentCaptor.capture()
         )
@@ -153,7 +153,7 @@ internal class RecorderOnDrawListenerTest {
 
         // Then
         val argumentCaptor = argumentCaptor<OrientationChanged>()
-        verify(mockProcessor).process(eq(fakeNode), argumentCaptor.capture())
+        verify(mockProcessor).processScreenSnapshot(eq(fakeNode), argumentCaptor.capture())
         assertThat(argumentCaptor.firstValue)
             .isEqualTo(
                 OrientationChanged(
@@ -174,7 +174,7 @@ internal class RecorderOnDrawListenerTest {
 
         // Then
         val argumentCaptor = argumentCaptor<OrientationChanged>()
-        verify(mockProcessor, times(2)).process(
+        verify(mockProcessor, times(2)).processScreenSnapshot(
             eq(fakeNode),
             argumentCaptor.capture()
         )
@@ -205,7 +205,7 @@ internal class RecorderOnDrawListenerTest {
 
         // Then
         val argumentCaptor = argumentCaptor<OrientationChanged>()
-        verify(mockProcessor, times(2)).process(
+        verify(mockProcessor, times(2)).processScreenSnapshot(
             eq(fakeNode),
             argumentCaptor.capture()
         )

@@ -121,6 +121,13 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
       companion object 
         fun fromJson(kotlin.String): ViewportResizeData
         fun fromJsonObject(com.google.gson.JsonObject): ViewportResizeData
+    data class PointerInteractionData : MobileIncrementalData
+      constructor(PointerEventType, PointerType, kotlin.Long, kotlin.Number, kotlin.Number)
+      val source: kotlin.Long
+      override fun toJson(): com.google.gson.JsonElement
+      companion object 
+        fun fromJson(kotlin.String): PointerInteractionData
+        fun fromJsonObject(com.google.gson.JsonObject): PointerInteractionData
     companion object 
       fun fromJson(kotlin.String): MobileIncrementalData
       fun fromJsonObject(com.google.gson.JsonObject): MobileIncrementalData
@@ -249,6 +256,22 @@ data class com.datadog.android.sessionreplay.model.MobileSegment
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Source
+  enum PointerEventType
+    constructor(kotlin.String)
+    - DOWN
+    - UP
+    - MOVE
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): PointerEventType
+  enum PointerType
+    constructor(kotlin.String)
+    - MOUSE
+    - TOUCH
+    - PEN
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): PointerType
   enum Horizontal
     constructor(kotlin.String)
     - LEFT

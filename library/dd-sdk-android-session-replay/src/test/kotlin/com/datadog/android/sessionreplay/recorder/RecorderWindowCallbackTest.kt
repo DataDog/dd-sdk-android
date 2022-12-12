@@ -9,6 +9,8 @@ package com.datadog.android.sessionreplay.recorder
 import android.view.MotionEvent
 import android.view.Window
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.model.MobileSegment.MobileIncrementalData
+import com.datadog.android.sessionreplay.model.MobileSegment.MobileRecord
 import com.datadog.android.sessionreplay.processor.Processor
 import com.datadog.android.sessionreplay.utils.ForgeConfigurator
 import com.datadog.android.sessionreplay.utils.TimeProvider
@@ -121,7 +123,7 @@ internal class RecorderWindowCallbackTest {
         testedWindowCallback.dispatchTouchEvent(mockEvent)
 
         // Then
-        assertThat(testedWindowCallback.positions).isEmpty()
+        assertThat(testedWindowCallback.pointerInteractions).isEmpty()
     }
 
     @Test
@@ -142,93 +144,79 @@ internal class RecorderWindowCallbackTest {
     @Test
     fun `M update the positions W onTouchEvent() { ActionDown }`(forge: Forge) {
         // Given
-        val fakePositions = forge.positions()
-        val relatedMotionEvent = fakePositions.asMotionEvent(MotionEvent.ACTION_DOWN)
+        val fakeRecords = forge.touchRecords(MobileSegment.PointerEventType.DOWN)
+        val relatedMotionEvent = fakeRecords.asMotionEvent()
 
         // When
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent)
 
         // Then
-        assertThat(testedWindowCallback.positions).isEqualTo(fakePositions)
+        assertThat(testedWindowCallback.pointerInteractions).isEqualTo(fakeRecords)
     }
 
     @Test
     fun `M update the positions and flush them W onTouchEvent() { ActionUp }`(forge: Forge) {
         // Given
-        val fakePositions = forge.positions()
-        val relatedMotionEvent = fakePositions.asMotionEvent(MotionEvent.ACTION_UP)
+        val fakeRecords = forge.touchRecords(MobileSegment.PointerEventType.UP)
+        val relatedMotionEvent = fakeRecords.asMotionEvent()
 
         // When
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent)
 
         // Then
-        assertThat(testedWindowCallback.positions).isEmpty()
-        verify(mockProcessor).process(MobileSegment.MobileIncrementalData.TouchData(fakePositions))
+        assertThat(testedWindowCallback.pointerInteractions).isEmpty()
+        verify(mockProcessor).processTouchEventsRecords(fakeRecords)
     }
 
     @Test
     fun `M debounce the positions update W onTouchEvent() {one gesture cycle}`(forge: Forge) {
         // Given
-        val fakeEvent1Positions = forge.positions()
-        val relatedMotionEvent1 = fakeEvent1Positions.asMotionEvent(MotionEvent.ACTION_DOWN)
-        val fakeEvent2Positions = forge.positions()
-        val relatedMotionEvent2 = fakeEvent2Positions.asMotionEvent(MotionEvent.ACTION_MOVE)
-        val fakeEvent3Positions = forge.positions()
-        val relatedMotionEvent3 = fakeEvent3Positions.asMotionEvent(MotionEvent.ACTION_MOVE)
-        val fakeEvent4Positions = forge.positions()
-        val relatedMotionEvent4 = fakeEvent4Positions.asMotionEvent(MotionEvent.ACTION_MOVE)
-        val fakeEvent5Positions = forge.positions()
-        val relatedMotionEvent5 = fakeEvent5Positions.asMotionEvent(MotionEvent.ACTION_UP)
+        val fakeEvent1Records = forge.touchRecords(MobileSegment.PointerEventType.DOWN)
+        val relatedMotionEvent1 = fakeEvent1Records.asMotionEvent()
+        val fakeEvent2Records = forge.touchRecords(MobileSegment.PointerEventType.MOVE)
+        val relatedMotionEvent2 = fakeEvent2Records.asMotionEvent()
+        val fakeEvent3Records = forge.touchRecords(MobileSegment.PointerEventType.MOVE)
+        val relatedMotionEvent3 = fakeEvent3Records.asMotionEvent()
+        val fakeEvent4Records = forge.touchRecords(MobileSegment.PointerEventType.MOVE)
+        val relatedMotionEvent4 = fakeEvent4Records.asMotionEvent()
+        val fakeEvent5Records = forge.touchRecords(MobileSegment.PointerEventType.UP)
+        val relatedMotionEvent5 = fakeEvent5Records.asMotionEvent()
+        val expectedRecords = fakeEvent1Records +
+            fakeEvent2Records +
+            fakeEvent4Records +
+            fakeEvent5Records
 
         // When
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent1)
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent2)
         // must skip 3 as the motion update delay was not reached
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent3)
-        Thread.sleep(
-            TimeUnit.NANOSECONDS
-                .toMillis(TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS)
-        )
+        Thread.sleep(TimeUnit.NANOSECONDS.toMillis(TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS))
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent4)
 
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent5)
 
         // Then
-        verify(mockProcessor).process(
-            MobileSegment.MobileIncrementalData.TouchData(
-                fakeEvent1Positions +
-                    fakeEvent2Positions +
-                    fakeEvent4Positions +
-                    fakeEvent5Positions
-            )
-        )
+        verify(mockProcessor).processTouchEventsRecords(expectedRecords)
     }
 
     @Test
     fun `M perform intermediary flush W onTouchEvent() {one long gesture cycle}`(forge: Forge) {
         // Given
-        val fakeDownEventPositions = forge.positions()
-        val fakeDownEvent = fakeDownEventPositions.asMotionEvent(MotionEvent.ACTION_DOWN)
-        val fakeMovePositionsBeforeFlush = forge.aList(size = forge.anInt(min = 1, max = 5)) {
-            positions()
+        val fakeDownEventRecords = forge.touchRecords(MobileSegment.PointerEventType.DOWN)
+        val fakeDownEvent = fakeDownEventRecords.asMotionEvent()
+        val fakeMoveRecordsBeforeFlush = forge.aList(size = forge.anInt(min = 1, max = 5)) {
+            touchRecords(MobileSegment.PointerEventType.MOVE)
         }
-        val fakeMoveEventsBeforeFlush = fakeMovePositionsBeforeFlush
-            .map { it.asMotionEvent(MotionEvent.ACTION_MOVE) }
-        val fakeMovePositionsAfterFlush = forge.aList(size = forge.anInt(min = 1, max = 5)) {
-            positions()
+        val fakeMoveEventsBeforeFlush = fakeMoveRecordsBeforeFlush.map { it.asMotionEvent() }
+        val fakeMoveRecordsAfterFlush = forge.aList(size = forge.anInt(min = 1, max = 5)) {
+            touchRecords(MobileSegment.PointerEventType.MOVE)
         }
-        val fakeMoveEventsAfterFlush = fakeMovePositionsAfterFlush
-            .map { it.asMotionEvent(MotionEvent.ACTION_MOVE) }
-        val fakeUpEventPositions = forge.positions()
-        val fakeUpEvent = fakeUpEventPositions.asMotionEvent(MotionEvent.ACTION_UP)
-        val expectedTouchData1 = MobileSegment.MobileIncrementalData.TouchData(
-            fakeDownEventPositions +
-                fakeMovePositionsBeforeFlush.flatten()
-        )
-        val expectedTouchData2 = MobileSegment.MobileIncrementalData.TouchData(
-            fakeMovePositionsAfterFlush.flatten() +
-                fakeUpEventPositions
-        )
+        val fakeMoveEventsAfterFlush = fakeMoveRecordsAfterFlush.map { it.asMotionEvent() }
+        val fakeUpEventRecords = forge.touchRecords(MobileSegment.PointerEventType.UP)
+        val fakeUpEvent = fakeUpEventRecords.asMotionEvent()
+        val expectedRecords1 = fakeDownEventRecords + fakeMoveRecordsBeforeFlush.flatten()
+        val expectedRecords2 = fakeMoveRecordsAfterFlush.flatten() + fakeUpEventRecords
 
         // When
         testedWindowCallback.dispatchTouchEvent(fakeDownEvent)
@@ -245,44 +233,39 @@ internal class RecorderWindowCallbackTest {
             Thread.sleep(TimeUnit.NANOSECONDS.toMillis(TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS))
             testedWindowCallback.dispatchTouchEvent(it)
         }
-
         testedWindowCallback.dispatchTouchEvent(fakeUpEvent)
 
         // Then
-        val argumentCaptor = argumentCaptor<MobileSegment.MobileIncrementalData.TouchData>()
-        verify(mockProcessor, times(2)).process(argumentCaptor.capture())
-        assertThat(argumentCaptor.firstValue).isEqualTo(expectedTouchData1)
-        assertThat(argumentCaptor.lastValue).isEqualTo(expectedTouchData2)
+        val argumentCaptor = argumentCaptor<List<MobileRecord>>()
+        verify(mockProcessor, times(2)).processTouchEventsRecords(argumentCaptor.capture())
+        assertThat(argumentCaptor.firstValue).isEqualTo(expectedRecords1)
+        assertThat(argumentCaptor.lastValue).isEqualTo(expectedRecords2)
     }
 
     @Test
     fun `M always collect the first move event after down W onTouchEvent()`(forge: Forge) {
         // Given
-        val fakeGesture1DownPositions = forge.positions()
-        val fakeGesture1DownEvent = fakeGesture1DownPositions.asMotionEvent(MotionEvent.ACTION_DOWN)
-        val fakeGesture1MovePositions = forge.positions()
-        val fakeGesture1MoveEvent = fakeGesture1MovePositions.asMotionEvent(MotionEvent.ACTION_MOVE)
-        val fakeGesture1UpPositions = forge.positions()
-        val fakeGesture1UpEvent = fakeGesture1UpPositions.asMotionEvent(MotionEvent.ACTION_UP)
+        val fakeGesture1DownRecords = forge.touchRecords(MobileSegment.PointerEventType.DOWN)
+        val fakeGesture1DownEvent = fakeGesture1DownRecords.asMotionEvent()
+        val fakeGesture1MoveRecords = forge.touchRecords(MobileSegment.PointerEventType.MOVE)
+        val fakeGesture1MoveEvent = fakeGesture1MoveRecords.asMotionEvent()
+        val fakeGesture1UpRecords = forge.touchRecords(MobileSegment.PointerEventType.UP)
+        val fakeGesture1UpEvent = fakeGesture1UpRecords.asMotionEvent()
 
-        val fakeGesture2DownPositions = forge.positions()
-        val fakeGesture2DownEvent = fakeGesture2DownPositions.asMotionEvent(MotionEvent.ACTION_DOWN)
-        val fakeGesture2MovePositions = forge.positions()
-        val fakeGesture2MoveEvent = fakeGesture2MovePositions.asMotionEvent(MotionEvent.ACTION_MOVE)
-        val fakeGesture2UpPositions = forge.positions()
-        val fakeGesture2UpEvent = fakeGesture2UpPositions.asMotionEvent(MotionEvent.ACTION_UP)
-
-        val expectedTouchData1 = MobileSegment.MobileIncrementalData.TouchData(
-            fakeGesture1DownPositions +
-                fakeGesture1MovePositions +
-                fakeGesture1UpPositions
-        )
-
-        val expectedTouchData2 = MobileSegment.MobileIncrementalData.TouchData(
-            fakeGesture2DownPositions +
-                fakeGesture2MovePositions +
-                fakeGesture2UpPositions
-        )
+        val fakeGesture2DownRecords = forge.touchRecords(MobileSegment.PointerEventType.DOWN)
+        val fakeGesture2DownEvent = fakeGesture2DownRecords.asMotionEvent()
+        val fakeGesture2MoveRecords = forge.touchRecords(MobileSegment.PointerEventType.MOVE)
+        val fakeGesture2MoveEvent = fakeGesture2MoveRecords.asMotionEvent()
+        val fakeGesture2UpRecords = forge.touchRecords(MobileSegment.PointerEventType.UP)
+        val fakeGesture2UpEvent = fakeGesture2UpRecords.asMotionEvent()
+        val expectedTouchRecords1 =
+            fakeGesture1DownRecords +
+                fakeGesture1MoveRecords +
+                fakeGesture1UpRecords
+        val expectedTouchRecords2 =
+            fakeGesture2DownRecords +
+                fakeGesture2MoveRecords +
+                fakeGesture2UpRecords
 
         // When
         testedWindowCallback.dispatchTouchEvent(fakeGesture1DownEvent)
@@ -293,10 +276,10 @@ internal class RecorderWindowCallbackTest {
         testedWindowCallback.dispatchTouchEvent(fakeGesture2UpEvent)
 
         // Then
-        val argumentCaptor = argumentCaptor<MobileSegment.MobileIncrementalData.TouchData>()
-        verify(mockProcessor, times(2)).process(argumentCaptor.capture())
-        assertThat(argumentCaptor.firstValue).isEqualTo(expectedTouchData1)
-        assertThat(argumentCaptor.lastValue).isEqualTo(expectedTouchData2)
+        val argumentCaptor = argumentCaptor<List<MobileRecord>>()
+        verify(mockProcessor, times(2)).processTouchEventsRecords(argumentCaptor.capture())
+        assertThat(argumentCaptor.firstValue).isEqualTo(expectedTouchRecords1)
+        assertThat(argumentCaptor.lastValue).isEqualTo(expectedTouchRecords2)
     }
 
     @Test
@@ -304,47 +287,37 @@ internal class RecorderWindowCallbackTest {
         forge: Forge
     ) {
         // Given
-        val fakeDownPositions = forge.positions()
-        val fakeDownEvent = fakeDownPositions.asMotionEvent(MotionEvent.ACTION_DOWN)
-        val fakeEvent1MovePositions = forge.positions()
-        val fakeMotion1Event = fakeEvent1MovePositions.asMotionEvent(MotionEvent.ACTION_MOVE)
-        val fakeEvent2MovePositions = forge.positions()
-        val fakeMotion2Event = fakeEvent2MovePositions.asMotionEvent(MotionEvent.ACTION_MOVE)
-
-        val expectedTouchData1 = MobileSegment.MobileIncrementalData.TouchData(
-            fakeDownPositions +
-                fakeEvent1MovePositions
-        )
-        val expectedTouchData2 = MobileSegment.MobileIncrementalData.TouchData(fakeEvent2MovePositions)
+        val fakeDownRecords = forge.touchRecords(MobileSegment.PointerEventType.DOWN)
+        val fakeDownEvent = fakeDownRecords.asMotionEvent()
+        val fakeEvent1MoveRecords = forge.touchRecords(MobileSegment.PointerEventType.MOVE)
+        val fakeMotion1Event = fakeEvent1MoveRecords.asMotionEvent()
+        val fakeEvent2MoveRecords = forge.touchRecords(MobileSegment.PointerEventType.MOVE)
+        val fakeMotion2Event = fakeEvent2MoveRecords.asMotionEvent()
+        val expectedTouchRecords1 = fakeDownRecords + fakeEvent1MoveRecords
 
         // When
         testedWindowCallback.dispatchTouchEvent(fakeDownEvent)
-        Thread.sleep(
-            TimeUnit.NANOSECONDS.toMillis(TEST_FLUSH_BUFFER_THRESHOLD_NS)
-        )
+        Thread.sleep(TimeUnit.NANOSECONDS.toMillis(TEST_FLUSH_BUFFER_THRESHOLD_NS))
         testedWindowCallback.dispatchTouchEvent(fakeMotion1Event)
-        Thread.sleep(
-            TimeUnit.NANOSECONDS
-                .toMillis(TEST_FLUSH_BUFFER_THRESHOLD_NS)
-        )
+        Thread.sleep(TimeUnit.NANOSECONDS.toMillis(TEST_FLUSH_BUFFER_THRESHOLD_NS))
         testedWindowCallback.dispatchTouchEvent(fakeMotion2Event)
 
         // Then
-        val argumentCaptor = argumentCaptor<MobileSegment.MobileIncrementalData.TouchData>()
-        verify(mockProcessor, times(2)).process(argumentCaptor.capture())
-        assertThat(argumentCaptor.firstValue).isEqualTo(expectedTouchData1)
-        assertThat(argumentCaptor.lastValue).isEqualTo(expectedTouchData2)
+        val argumentCaptor = argumentCaptor<List<MobileRecord>>()
+        verify(mockProcessor, times(2)).processTouchEventsRecords(argumentCaptor.capture())
+        assertThat(argumentCaptor.firstValue).isEqualTo(expectedTouchRecords1)
+        assertThat(argumentCaptor.lastValue).isEqualTo(fakeEvent2MoveRecords)
     }
 
     @Test
     fun `M flush the positions W onTouchEvent() { full gesture lifecycle }`(forge: Forge) {
         // Given
-        val fakeEvent1Positions = forge.positions()
-        val relatedMotionEvent1 = fakeEvent1Positions.asMotionEvent(MotionEvent.ACTION_DOWN)
-        val fakeEvent2Positions = forge.positions()
-        val relatedMotionEvent2 = fakeEvent2Positions.asMotionEvent(MotionEvent.ACTION_MOVE)
-        val fakeEvent3Positions = forge.positions()
-        val relatedMotionEvent3 = fakeEvent3Positions.asMotionEvent(MotionEvent.ACTION_UP)
+        val fakeEvent1Records = forge.touchRecords(MobileSegment.PointerEventType.DOWN)
+        val relatedMotionEvent1 = fakeEvent1Records.asMotionEvent()
+        val fakeEvent2Records = forge.touchRecords(MobileSegment.PointerEventType.MOVE)
+        val relatedMotionEvent2 = fakeEvent2Records.asMotionEvent()
+        val fakeEvent3Records = forge.touchRecords(MobileSegment.PointerEventType.UP)
+        val relatedMotionEvent3 = fakeEvent3Records.asMotionEvent()
 
         // When
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent1)
@@ -352,45 +325,49 @@ internal class RecorderWindowCallbackTest {
         testedWindowCallback.dispatchTouchEvent(relatedMotionEvent3)
 
         // Then
-        verify(mockProcessor).process(
-            MobileSegment.MobileIncrementalData.TouchData(
-                fakeEvent1Positions +
-                    fakeEvent2Positions +
-                    fakeEvent3Positions
-            )
-        )
-        assertThat(testedWindowCallback.positions).isEmpty()
+        val expectedRecords = fakeEvent1Records + fakeEvent2Records + fakeEvent3Records
+        verify(mockProcessor).processTouchEventsRecords(expectedRecords)
+        assertThat(testedWindowCallback.pointerInteractions).isEmpty()
     }
 
     // endregion
 
     // region Internal
 
-    private fun Forge.positions(): List<MobileSegment.Position> {
+    private fun Forge.touchRecords(eventType: MobileSegment.PointerEventType):
+        List<MobileRecord.MobileIncrementalSnapshotRecord> {
         val pointerIds = aList { anInt(min = 1) }
         val positionMaxValue = (FLOAT_MAX_INT_VALUE / fakeDensity).toLong()
         return pointerIds.map {
-            MobileSegment.Position(
+            MobileSegment.MobileIncrementalData.PointerInteractionData(
+                eventType,
+                MobileSegment.PointerType.TOUCH,
                 it.toLong(),
                 aLong(min = 0, max = positionMaxValue),
-                aLong(min = 0, max = positionMaxValue),
-                fakeTimestamp
+                aLong(min = 0, max = positionMaxValue)
             )
         }
+            .map {
+                MobileRecord.MobileIncrementalSnapshotRecord(timestamp = fakeTimestamp, data = it)
+            }
     }
 
-    private fun List<MobileSegment.Position>.asMotionEvent(action: Int): MotionEvent {
+    private fun List<MobileRecord.MobileIncrementalSnapshotRecord>.asMotionEvent():
+        MotionEvent {
         val mockMotionEvent: MotionEvent = mock { event ->
-            whenever(event.action).thenReturn(action)
             whenever(event.pointerCount).thenReturn(this@asMotionEvent.size)
         }
-        this.forEachIndexed { index, position ->
-            val pointerId = position.id.toInt()
+        this.forEachIndexed { index, record ->
+            val pointerInteractionData =
+                record.data as MobileIncrementalData.PointerInteractionData
+            val pointerId = pointerInteractionData.pointerId.toInt()
             whenever(mockMotionEvent.getPointerId(index)).thenReturn(pointerId)
+            val motionEventAction = pointerInteractionData.pointerEventType.asMotionEventAction()
+            whenever(mockMotionEvent.action).thenReturn(motionEventAction)
             doAnswer {
                 val coords = it.arguments[1] as MotionEvent.PointerCoords
-                coords.x = (position.x * fakeDensity).toFloat()
-                coords.y = (position.y * fakeDensity).toFloat()
+                coords.x = (pointerInteractionData.x.toInt() * fakeDensity).toFloat()
+                coords.y = (pointerInteractionData.y.toInt() * fakeDensity).toFloat()
                 null
             }.whenever(mockMotionEvent).getPointerCoords(
                 eq(index),
@@ -399,6 +376,14 @@ internal class RecorderWindowCallbackTest {
         }
 
         return mockMotionEvent
+    }
+
+    private fun MobileSegment.PointerEventType.asMotionEventAction(): Int {
+        return when (this) {
+            MobileSegment.PointerEventType.DOWN -> MotionEvent.ACTION_DOWN
+            MobileSegment.PointerEventType.UP -> MotionEvent.ACTION_UP
+            MobileSegment.PointerEventType.MOVE -> MotionEvent.ACTION_MOVE
+        }
     }
 
     // endregion

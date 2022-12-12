@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.processor
 
 import com.datadog.android.sessionreplay.RecordWriter
 import com.datadog.android.sessionreplay.model.MobileSegment
+import com.datadog.android.sessionreplay.model.MobileSegment.MobileIncrementalData
 import com.datadog.android.sessionreplay.recorder.Node
 import com.datadog.android.sessionreplay.recorder.OrientationChanged
 import com.datadog.android.sessionreplay.utils.ForgeConfigurator
@@ -50,7 +51,7 @@ import java.util.concurrent.TimeUnit
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class SnapshotProcessorTest {
+internal class RecordedDataProcessorTest {
 
     @Mock
     lateinit var mockWriter: RecordWriter
@@ -76,7 +77,7 @@ internal class SnapshotProcessorTest {
     @Forgery
     lateinit var fakeRumContext: SessionReplayRumContext
 
-    lateinit var testedProcessor: SnapshotProcessor
+    lateinit var testedProcessor: RecordedDataProcessor
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -90,7 +91,7 @@ internal class SnapshotProcessorTest {
         }
         whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeTimestamp)
         whenever(mockRumContextProvider.getRumContext()).thenReturn(fakeRumContext)
-        testedProcessor = SnapshotProcessor(
+        testedProcessor = RecordedDataProcessor(
             mockRumContextProvider,
             mockTimeProvider,
             mockExecutorService,
@@ -106,7 +107,7 @@ internal class SnapshotProcessorTest {
         val fakeSnapshot = forge.aSingleLevelSnapshot()
 
         // When
-        testedProcessor.process(fakeSnapshot)
+        testedProcessor.processScreenSnapshot(fakeSnapshot)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -129,7 +130,7 @@ internal class SnapshotProcessorTest {
 
         // When
         whenever(mockNodeFlattener.flattenNode(fakeSnapshot)).thenReturn(fakeFlattenedSnapshot)
-        testedProcessor.process(fakeSnapshot)
+        testedProcessor.processScreenSnapshot(fakeSnapshot)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -162,8 +163,8 @@ internal class SnapshotProcessorTest {
             .thenReturn(fakeFlattenedSnapshotView2)
 
         // When
-        testedProcessor.process(fakeSnapshotView1)
-        testedProcessor.process(fakeSnapshotView2)
+        testedProcessor.processScreenSnapshot(fakeSnapshotView1)
+        testedProcessor.processScreenSnapshot(fakeSnapshotView2)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -200,11 +201,11 @@ internal class SnapshotProcessorTest {
         }
         whenever(mockNodeFlattener.flattenNode(fakeSnapshot1)).thenReturn(fakeFlattenedSnapshot1)
         whenever(mockNodeFlattener.flattenNode(fakeSnapshot2)).thenReturn(fakeFlattenedSnapshot2)
-        testedProcessor.process(fakeSnapshot1)
-        Thread.sleep(TimeUnit.NANOSECONDS.toMillis(SnapshotProcessor.FULL_SNAPSHOT_INTERVAL_IN_NS))
+        testedProcessor.processScreenSnapshot(fakeSnapshot1)
+        Thread.sleep(TimeUnit.NANOSECONDS.toMillis(RecordedDataProcessor.FULL_SNAPSHOT_INTERVAL_IN_NS))
 
         // When
-        testedProcessor.process(fakeSnapshot2)
+        testedProcessor.processScreenSnapshot(fakeSnapshot2)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -238,10 +239,10 @@ internal class SnapshotProcessorTest {
                 fakeFlattenedSnapshot2
             )
         ).thenReturn(fakeMutationData)
-        testedProcessor.process(fakeSnapshot1)
+        testedProcessor.processScreenSnapshot(fakeSnapshot1)
 
         // When
-        testedProcessor.process(fakeSnapshot2)
+        testedProcessor.processScreenSnapshot(fakeSnapshot2)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -268,7 +269,7 @@ internal class SnapshotProcessorTest {
         whenever(mockNodeFlattener.flattenNode(fakeSnapshot)).thenReturn(listOf(rootWireframe))
 
         // When
-        testedProcessor.process(fakeSnapshot)
+        testedProcessor.processScreenSnapshot(fakeSnapshot)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -297,7 +298,7 @@ internal class SnapshotProcessorTest {
         )
 
         // When
-        testedProcessor.process(fakeSnapshot)
+        testedProcessor.processScreenSnapshot(fakeSnapshot)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -313,10 +314,10 @@ internal class SnapshotProcessorTest {
         // Given
         val fakeSnapshot1 = forge.aSingleLevelSnapshot()
         val fakeSnapshot2 = forge.aSingleLevelSnapshot()
-        testedProcessor.process(fakeSnapshot1)
+        testedProcessor.processScreenSnapshot(fakeSnapshot1)
 
         // When
-        testedProcessor.process(fakeSnapshot2)
+        testedProcessor.processScreenSnapshot(fakeSnapshot2)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -333,10 +334,10 @@ internal class SnapshotProcessorTest {
         // Given
         val fakeSnapshot1 = forge.aSingleLevelSnapshot()
         val fakeSnapshot2 = forge.aSingleLevelSnapshot()
-        testedProcessor.process(fakeSnapshot1)
+        testedProcessor.processScreenSnapshot(fakeSnapshot1)
 
         // When
-        testedProcessor.process(fakeSnapshot2)
+        testedProcessor.processScreenSnapshot(fakeSnapshot2)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -365,12 +366,12 @@ internal class SnapshotProcessorTest {
         val fakeSnapshot3 = Node(rootWireframe)
         whenever(mockNodeFlattener.flattenNode(fakeSnapshot3)).thenReturn(listOf(rootWireframe))
 
-        testedProcessor.process(fakeSnapshot1)
-        testedProcessor.process(fakeSnapshot2)
+        testedProcessor.processScreenSnapshot(fakeSnapshot1)
+        testedProcessor.processScreenSnapshot(fakeSnapshot2)
         whenever(mockRumContextProvider.getRumContext()).thenReturn(forge.getForgery())
 
         // When
-        testedProcessor.process(fakeSnapshot3)
+        testedProcessor.processScreenSnapshot(fakeSnapshot3)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -388,12 +389,12 @@ internal class SnapshotProcessorTest {
         val fakeSnapshot1 = forge.aSingleLevelSnapshot()
         val fakeSnapshot2 = forge.aSingleLevelSnapshot()
         val fakeSnapshot3 = forge.aSingleLevelSnapshot()
-        testedProcessor.process(fakeSnapshot1)
-        testedProcessor.process(fakeSnapshot2)
+        testedProcessor.processScreenSnapshot(fakeSnapshot1)
+        testedProcessor.processScreenSnapshot(fakeSnapshot2)
         whenever(mockRumContextProvider.getRumContext()).thenReturn(forge.getForgery())
 
         // When
-        testedProcessor.process(fakeSnapshot3)
+        testedProcessor.processScreenSnapshot(fakeSnapshot3)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -410,12 +411,12 @@ internal class SnapshotProcessorTest {
         val fakeSnapshot1 = forge.aSingleLevelSnapshot()
         val fakeSnapshot2 = forge.aSingleLevelSnapshot()
         val fakeSnapshot3 = forge.aSingleLevelSnapshot()
-        testedProcessor.process(fakeSnapshot1)
-        testedProcessor.process(fakeSnapshot2)
+        testedProcessor.processScreenSnapshot(fakeSnapshot1)
+        testedProcessor.processScreenSnapshot(fakeSnapshot2)
         whenever(mockRumContextProvider.getRumContext()).thenReturn(forge.getForgery())
 
         // When
-        testedProcessor.process(fakeSnapshot3)
+        testedProcessor.processScreenSnapshot(fakeSnapshot3)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -455,10 +456,10 @@ internal class SnapshotProcessorTest {
                 fakeFlattenedSnapshot2
             )
         ).thenReturn(fakeMutationData)
-        testedProcessor.process(fakeSnapshot1)
+        testedProcessor.processScreenSnapshot(fakeSnapshot1)
 
         // When
-        testedProcessor.process(fakeSnapshot2)
+        testedProcessor.processScreenSnapshot(fakeSnapshot2)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -487,10 +488,10 @@ internal class SnapshotProcessorTest {
                 fakeFlattenedSnapshot2
             )
         ).thenReturn(null)
-        testedProcessor.process(fakeSnapshot1)
+        testedProcessor.processScreenSnapshot(fakeSnapshot1)
 
         // When
-        testedProcessor.process(fakeSnapshot2)
+        testedProcessor.processScreenSnapshot(fakeSnapshot2)
 
         // Then
         // We should only send the FullSnapshotRecord. The IncrementalSnapshotRecord will not be
@@ -505,16 +506,17 @@ internal class SnapshotProcessorTest {
     // region TouchData
 
     @Test
-    fun `M send it to the writer as EnrichedRecord W process { TouchData }`(forge: Forge) {
+    fun `M send it to the writer as EnrichedRecord W process { TouchRecords }`(forge: Forge) {
         // Given
-        val fakeTouchData = MobileSegment.MobileIncrementalData.TouchData(
-            forge.aList(forge.anInt(min = 1, max = 10)) {
-                MobileSegment.Position(aLong(), aLong(), aLong(), aLong())
-            }
-        )
+        val fakeTouchRecords = forge.aList {
+            MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
+                timestamp = forge.aPositiveLong(),
+                data = forge.getForgery<MobileIncrementalData.PointerInteractionData>()
+            )
+        }
 
         // When
-        testedProcessor.process(fakeTouchData)
+        testedProcessor.processTouchEventsRecords(fakeTouchRecords)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -522,11 +524,7 @@ internal class SnapshotProcessorTest {
         assertThat(captor.firstValue.applicationId).isEqualTo(fakeRumContext.applicationId)
         assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
         assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
-        assertThat(captor.firstValue.records.size).isEqualTo(1)
-        val incrementalSnapshotRecord = captor.firstValue.records[0] as
-            MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord
-        assertThat(incrementalSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
-        assertThat(incrementalSnapshotRecord.data).isEqualTo(fakeTouchData)
+        assertThat(captor.firstValue.records).isEqualTo(fakeTouchRecords)
     }
 
     // endregion
@@ -540,7 +538,7 @@ internal class SnapshotProcessorTest {
         val fakeOrientationChanged = OrientationChanged(forge.anInt(), forge.anInt())
 
         // When
-        testedProcessor.process(fakeSnapshot, fakeOrientationChanged)
+        testedProcessor.processScreenSnapshot(fakeSnapshot, fakeOrientationChanged)
 
         // Then
 
@@ -567,8 +565,8 @@ internal class SnapshotProcessorTest {
         val fakeOrientationChanged2 = OrientationChanged(forge.anInt(), forge.anInt())
 
         // When
-        testedProcessor.process(fakeSnapshot1, fakeOrientationChanged1)
-        testedProcessor.process(fakeSnapshot2, fakeOrientationChanged2)
+        testedProcessor.processScreenSnapshot(fakeSnapshot1, fakeOrientationChanged1)
+        testedProcessor.processScreenSnapshot(fakeSnapshot2, fakeOrientationChanged2)
 
         // Then
 
@@ -604,8 +602,8 @@ internal class SnapshotProcessorTest {
         val fakeOrientationChanged2 = OrientationChanged(forge.anInt(), forge.anInt())
 
         // When
-        testedProcessor.process(fakeSnapshot1, fakeOrientationChanged1)
-        testedProcessor.process(fakeSnapshot2, fakeOrientationChanged2)
+        testedProcessor.processScreenSnapshot(fakeSnapshot1, fakeOrientationChanged1)
+        testedProcessor.processScreenSnapshot(fakeSnapshot2, fakeOrientationChanged2)
 
         // Then
 
@@ -700,13 +698,14 @@ internal class SnapshotProcessorTest {
     private fun processArgument(argument: Any) {
         when (argument) {
             is Node -> {
-                testedProcessor.process(argument)
+                testedProcessor.processScreenSnapshot(argument)
             }
-            is MobileSegment.MobileIncrementalData.TouchData -> {
-                testedProcessor.process(argument)
+            is List<*> -> {
+                val records = argument.filterIsInstance<MobileSegment.MobileRecord>()
+                testedProcessor.processTouchEventsRecords(records)
             }
             is Pair<*, *> -> {
-                testedProcessor.process(
+                testedProcessor.processScreenSnapshot(
                     argument.first as Node,
                     argument.second as OrientationChanged
                 )
@@ -743,31 +742,27 @@ internal class SnapshotProcessorTest {
     // endregion
 
     companion object {
+
+        private val FORGE: Forge = Forge().apply {
+            ForgeConfigurator().configure(this)
+        }
+
         @JvmStatic
         fun processorArguments(): List<Any> {
-            val fakeSnapshot = Node(
-                wireframe =
-                MobileSegment.Wireframe.ShapeWireframe(
-                    0,
-                    0,
-                    0,
-                    0,
-                    0
-                )
-            )
-
-            val fakeTouchData = MobileSegment.MobileIncrementalData.TouchData(
-                positions =
-                listOf(
-                    MobileSegment.Position(0, 0, 0, 0),
-                    MobileSegment.Position(0, 0, 0, 0)
-                )
-            )
-
+            val fakeSnapshot = Node(wireframe = FORGE.getForgery())
+            val fakeTouchRecords = FORGE.aList {
+                FORGE.getForgery<MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord>()
+            }
             val fakeSnapshotWithOrientationChanged =
-                Pair(fakeSnapshot, OrientationChanged(0, 0))
+                Pair(
+                    fakeSnapshot,
+                    OrientationChanged(
+                        FORGE.aPositiveInt(),
+                        FORGE.aPositiveInt()
+                    )
+                )
 
-            return listOf(fakeSnapshot, fakeTouchData, fakeSnapshotWithOrientationChanged)
+            return listOf(fakeSnapshot, fakeTouchRecords, fakeSnapshotWithOrientationChanged)
         }
     }
 }

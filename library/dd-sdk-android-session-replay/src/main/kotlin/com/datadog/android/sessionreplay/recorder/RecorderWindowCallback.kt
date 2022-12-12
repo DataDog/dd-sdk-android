@@ -28,7 +28,7 @@ internal class RecorderWindowCallback(
     private val flushPositionBufferThresholdInNs: Long = FLUSH_BUFFER_THRESHOLD_NS
 ) : Window.Callback by wrappedCallback {
 
-    internal var positions: MutableList<MobileSegment.Position> = LinkedList()
+    internal var pointerInteractions: MutableList<MobileSegment.MobileRecord> = LinkedList()
     private var lastOnMoveUpdateTimeInNs: Long = 0L
     private var lastPerformedFlushTimeInNs: Long = System.nanoTime()
 
@@ -68,13 +68,13 @@ internal class RecorderWindowCallback(
             MotionEvent.ACTION_DOWN -> {
                 // reset the flush time to avoid flush in the next event
                 lastPerformedFlushTimeInNs = System.nanoTime()
-                updatePositions(event)
+                updatePositions(event, MobileSegment.PointerEventType.DOWN)
                 // reset the on move update time in order to take into account the first move event
                 lastOnMoveUpdateTimeInNs = 0
             }
             MotionEvent.ACTION_MOVE -> {
                 if (System.nanoTime() - lastOnMoveUpdateTimeInNs >= motionUpdateThresholdInNs) {
-                    updatePositions(event)
+                    updatePositions(event, MobileSegment.PointerEventType.MOVE)
                     lastOnMoveUpdateTimeInNs = System.nanoTime()
                 }
                 // make sure we flush from time to time to avoid glitches in the player
@@ -85,37 +85,39 @@ internal class RecorderWindowCallback(
                 }
             }
             MotionEvent.ACTION_UP -> {
-                updatePositions(event)
+                updatePositions(event, MobileSegment.PointerEventType.UP)
                 flushPositions()
                 lastOnMoveUpdateTimeInNs = 0
             }
         }
     }
 
-    private fun updatePositions(event: MotionEvent) {
+    private fun updatePositions(event: MotionEvent, eventType: MobileSegment.PointerEventType) {
         for (i in 0 until event.pointerCount) {
             val pointerId = event.getPointerId(i).toLong()
             val pointerCoordinates = MotionEvent.PointerCoords()
             event.getPointerCoords(i, pointerCoordinates)
-            positions.add(
-                MobileSegment.Position(
-                    pointerId,
-                    pointerCoordinates.x.toLong().densityNormalized(pixelsDensity),
-                    pointerCoordinates.y.toLong().densityNormalized(pixelsDensity),
-                    timeProvider.getDeviceTimestamp()
+            pointerInteractions.add(
+                MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
+                    timestamp = timeProvider.getDeviceTimestamp(),
+                    data = MobileSegment.MobileIncrementalData.PointerInteractionData(
+                        eventType,
+                        MobileSegment.PointerType.TOUCH,
+                        pointerId,
+                        pointerCoordinates.x.toLong().densityNormalized(pixelsDensity),
+                        pointerCoordinates.y.toLong().densityNormalized(pixelsDensity)
+                    )
                 )
             )
         }
     }
 
     private fun flushPositions() {
-        if (positions.isEmpty()) {
+        if (pointerInteractions.isEmpty()) {
             return
         }
-        val touchData = MobileSegment.MobileIncrementalData
-            .TouchData(LinkedList(positions))
-        processor.process(touchData)
-        positions.clear()
+        processor.processTouchEventsRecords(ArrayList(pointerInteractions))
+        pointerInteractions.clear()
         lastPerformedFlushTimeInNs = System.nanoTime()
     }
 
