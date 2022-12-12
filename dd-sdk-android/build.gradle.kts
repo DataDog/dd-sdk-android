@@ -62,6 +62,7 @@ android {
 
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
+        java.srcDir("build/generated/json2kotlin/main/kotlin")
     }
     sourceSets.named("test") {
         java.srcDir("src/test/kotlin")
