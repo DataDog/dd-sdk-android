@@ -33,7 +33,6 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.domain.SessionReplayRequestFactory
-import com.datadog.android.sessionreplay.internal.net.SessionReplayOkHttpUploader
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
@@ -407,12 +406,7 @@ internal class DatadogCore(
         if (configuration != null) {
             registerFeature(
                 SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME,
-                SessionReplayRequestFactory(
-                    SessionReplayOkHttpUploader(
-                        configuration.endpointUrl,
-                        coreFeature.okHttpClient
-                    )
-                )
+                SessionReplayRequestFactory(configuration.endpointUrl)
             )
             features[SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME]?.let {
                 it.initialize(appContext, configuration.plugins)
