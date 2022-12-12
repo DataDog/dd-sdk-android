@@ -15,12 +15,15 @@ import java.io.File
 class ApiSurfacePlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
-        val srcDir = File(target.projectDir, "src")
+        val srcDir = File(File(target.projectDir, "src"), "main")
+        val genDir = File(File(target.buildDir, "generated"), "json2kotlin")
         val surfaceFile = File(target.projectDir, FILE_NAME)
+        genDir.mkdirs()
 
         target.tasks
             .register(TASK_GEN_API_SURFACE, GenerateApiSurfaceTask::class.java) {
-                this.srcDir = File(srcDir, "main")
+                this.srcDir = srcDir
+                this.genDir = genDir
                 this.surfaceFile = surfaceFile
             }
         target.tasks
