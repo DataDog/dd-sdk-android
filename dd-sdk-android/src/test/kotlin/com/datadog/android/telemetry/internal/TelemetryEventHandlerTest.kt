@@ -12,7 +12,6 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
 import com.datadog.android.core.internal.sampling.Sampler
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
@@ -86,9 +85,6 @@ internal class TelemetryEventHandlerTest {
     private lateinit var testedTelemetryHandler: TelemetryEventHandler
 
     @Mock
-    lateinit var mockTimeProvider: TimeProvider
-
-    @Mock
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
@@ -115,8 +111,6 @@ internal class TelemetryEventHandlerTest {
     fun `set up`(forge: Forge) {
         fakeServerOffset = forge.aLong(-50000, 50000)
 
-        whenever(mockTimeProvider.getServerOffsetMillis()) doReturn fakeServerOffset
-
         fakeDatadogContext = fakeDatadogContext.copy(
             source = "android",
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
@@ -129,7 +123,10 @@ internal class TelemetryEventHandlerTest {
                         "action_id" to fakeRumContext.actionId
                     )
                 )
-            }
+            },
+            time = fakeDatadogContext.time.copy(
+                serverTimeOffsetMs = fakeServerOffset
+            )
         )
 
         whenever(mockSampler.sample()) doReturn true
@@ -145,7 +142,6 @@ internal class TelemetryEventHandlerTest {
         testedTelemetryHandler =
             TelemetryEventHandler(
                 mockSdkCore,
-                mockTimeProvider,
                 mockSampler,
                 MAX_EVENTS_PER_SESSION_TEST
             )

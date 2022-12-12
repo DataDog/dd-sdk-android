@@ -9,7 +9,6 @@ package com.datadog.android.telemetry.internal
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.sampling.Sampler
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
@@ -30,7 +29,6 @@ import java.util.Locale
 
 internal class TelemetryEventHandler(
     internal val sdkCore: SdkCore,
-    private val timeProvider: TimeProvider,
     internal val eventSampler: Sampler,
     internal val maxEventCountPerSession: Int = MAX_EVENTS_PER_SESSION
 ) : RumSessionListener {
@@ -45,10 +43,9 @@ internal class TelemetryEventHandler(
 
         seenInCurrentSession.add(event.identity)
 
-        val timestamp = event.eventTime.timestamp + timeProvider.getServerOffsetMillis()
-
         sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
+                val timestamp = event.eventTime.timestamp + datadogContext.time.serverTimeOffsetMs
                 val telemetryEvent: Any? = when (event.type) {
                     TelemetryType.DEBUG -> {
                         createDebugEvent(datadogContext, timestamp, event.message)

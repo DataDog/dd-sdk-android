@@ -306,7 +306,6 @@ interface RumMonitor {
                     handler = Handler(Looper.getMainLooper()),
                     telemetryEventHandler = TelemetryEventHandler(
                         sdkCore = datadogCore,
-                        coreFeature.timeProvider,
                         RateBasedSampler(rumFeature.telemetrySamplingRate / 100)
                     ),
                     firstPartyHostDetector = coreFeature.firstPartyHostDetector,
