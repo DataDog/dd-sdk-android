@@ -20,6 +20,7 @@ import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
+import java.net.HttpURLConnection
 
 /**
  * A [WebViewClient] propagating all relevant events to the [GlobalRum] monitor.
@@ -68,7 +69,7 @@ open class RumWebViewClient : WebViewClient() {
         if (url != null) {
             GlobalRum.get().stopResource(
                 url,
-                200,
+                HttpURLConnection.HTTP_OK,
                 null,
                 RumResourceKind.DOCUMENT,
                 onProvideRumResourceAttributes(view, url)

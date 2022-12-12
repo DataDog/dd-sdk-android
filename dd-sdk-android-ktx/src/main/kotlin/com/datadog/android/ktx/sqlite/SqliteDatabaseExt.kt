@@ -16,6 +16,7 @@ import io.opentracing.util.GlobalTracer
  * A [io.opentracing.Span]  will be created around the transaction and will be closed when the
  * transaction finishes.
  *
+ * @param T the type of data returned by the traced operation
  * @param operationName the name of the [Span] created around the transaction.
  * @param exclusive Run in `EXCLUSIVE` mode when true, `IMMEDIATE` mode otherwise.
  * @param body the code to be executed inside the transaction.

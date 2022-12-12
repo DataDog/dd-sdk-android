@@ -52,8 +52,8 @@ import java.io.OutputStreamWriter
  */
 @OptIn(KotlinPoetKspPreview::class, DelicateKotlinPoetApi::class)
 class NoOpFactorySymbolProcessor(
-    val codeGenerator: CodeGenerator,
-    val logger: KSPLogger
+    private val codeGenerator: CodeGenerator,
+    private val logger: KSPLogger
 ) : SymbolProcessor {
 
     private var invoked = false
@@ -131,7 +131,7 @@ class NoOpFactorySymbolProcessor(
     }
 
     /**
-     * Generate the Class Implementation based on the given Parent interface
+     * Generate the Class Implementation based on the given Parent interface.
      */
     private fun generateTypeSpec(
         declaration: KSClassDeclaration,
@@ -210,6 +210,7 @@ class NoOpFactorySymbolProcessor(
      * }
      * ```
      */
+    @Suppress("FunctionMaxLength")
     private fun generateParentInterfacesImplementation(
         typeSpecBuilder: TypeSpec.Builder,
         declaration: KSClassDeclaration
@@ -217,24 +218,32 @@ class NoOpFactorySymbolProcessor(
         val interfaces = mutableListOf(declaration)
         val functions: MutableMap<String, KSFunctionDeclaration> = mutableMapOf()
         while (interfaces.isNotEmpty()) {
-            val interfaceType = interfaces.removeAt(0)
-            if (interfaceType.classKind == ClassKind.INTERFACE) {
-                fetchInterfaceFunctions(interfaceType, functions)
-
-                interfaceType.superTypes.forEach {
-                    val superDeclaration = it.resolve().declaration
-                    if (superDeclaration is KSClassDeclaration &&
-                        superDeclaration.classKind == ClassKind.INTERFACE
-                    ) {
-                        interfaces.add(superDeclaration)
-                    }
-                }
-            }
+            generateFirstInterfaceImplementation(interfaces, functions)
         }
 
         val typeParamResolver = declaration.typeParameters.toTypeParameterResolver()
         functions.values.forEach {
             typeSpecBuilder.addFunction(generateFunctionImplementation(it, typeParamResolver))
+        }
+    }
+
+    @Suppress("FunctionMaxLength")
+    private fun generateFirstInterfaceImplementation(
+        interfaces: MutableList<KSClassDeclaration>,
+        functions: MutableMap<String, KSFunctionDeclaration>
+    ) {
+        val interfaceType = interfaces.removeAt(0)
+        if (interfaceType.classKind == ClassKind.INTERFACE) {
+            fetchInterfaceFunctions(interfaceType, functions)
+
+            interfaceType.superTypes.forEach {
+                val superDeclaration = it.resolve().declaration
+                if (superDeclaration is KSClassDeclaration &&
+                    superDeclaration.classKind == ClassKind.INTERFACE
+                ) {
+                    interfaces.add(superDeclaration)
+                }
+            }
         }
     }
 
@@ -247,7 +256,7 @@ class NoOpFactorySymbolProcessor(
         executableElements: MutableMap<String, KSFunctionDeclaration>
     ) {
         declaration.getAllFunctions().forEach {
-            val id = it.id()
+            val id = it.identifier()
             if ((id !in ignoredFunctions) && !executableElements.containsKey(id)) {
                 executableElements[id] = it
             }
@@ -296,6 +305,7 @@ class NoOpFactorySymbolProcessor(
      *  (one of [Map], [List], [Set]), otherwise assume a NoOp implementation exist
      *  - otherwise it will assume a default constructor for the given type exists.
      */
+    @Suppress("LongMethod", "FunctionMaxLength")
     private fun generateFunctionReturnStatement(
         funSpecBuilder: FunSpec.Builder,
         returnType: KSType,
@@ -312,6 +322,7 @@ class NoOpFactorySymbolProcessor(
         }?.name?.asString()
 
         funSpecBuilder.returns(returnTypeName)
+        val returnNewInstance = "return %M()"
         when {
             returnTypeName.isNullable -> funSpecBuilder.addStatement("return null")
             returnTypeName == BOOLEAN -> funSpecBuilder.addStatement("return false")
@@ -322,21 +333,21 @@ class NoOpFactorySymbolProcessor(
             returnTypeName == STRING -> funSpecBuilder.addStatement("return \"\"")
             returnTypeName == UNIT -> {}
             rawTypeName == LIST -> funSpecBuilder.addStatement(
-                "return %M()",
+                returnNewInstance,
                 MemberName(
                     KOTLIN_COLLECTIONS_PACKAGE,
                     "emptyList"
                 )
             )
             rawTypeName == MAP -> funSpecBuilder.addStatement(
-                "return %M()",
+                returnNewInstance,
                 MemberName(
                     KOTLIN_COLLECTIONS_PACKAGE,
                     "emptyMap"
                 )
             )
             rawTypeName == SET -> funSpecBuilder.addStatement(
-                "return %M()",
+                returnNewInstance,
                 MemberName(
                     KOTLIN_COLLECTIONS_PACKAGE,
                     "emptySet"
@@ -380,7 +391,7 @@ class NoOpFactorySymbolProcessor(
     /**
      * @return the identifier name of the [KSFunctionDeclaration]
      */
-    private fun KSFunctionDeclaration.id(): String {
+    private fun KSFunctionDeclaration.identifier(): String {
         return simpleName.asString() + parameters.joinToString(",", "(", ")") {
             it.name?.asString() ?: "?"
         }
@@ -390,6 +401,6 @@ class NoOpFactorySymbolProcessor(
 
     companion object {
         private val ignoredFunctions = arrayOf("equals(other)", "hashCode()", "toString()")
-        const val KOTLIN_COLLECTIONS_PACKAGE = "kotlin.collections"
+        private const val KOTLIN_COLLECTIONS_PACKAGE = "kotlin.collections"
     }
 }

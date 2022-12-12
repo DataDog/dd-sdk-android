@@ -10,7 +10,7 @@ import android.widget.ImageView
 import androidx.lifecycle.ViewModel
 import java.security.SecureRandom
 
-class PictureViewModel : ViewModel() {
+internal class PictureViewModel : ViewModel() {
 
     val random = SecureRandom()
     var loader: ImageLoader = GlideImageLoader()

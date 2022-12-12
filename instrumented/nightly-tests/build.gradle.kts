@@ -1,13 +1,11 @@
 import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.kotlinConfig
 import org.gradle.api.JavaVersion
 
 plugins {
     id("com.android.application")
     kotlin("android")
-    id("io.gitlab.arturbosch.detekt")
 }
 
 val nightlyTestsTokenKey = "NIGHTLY_TESTS_TOKEN"
@@ -120,10 +118,6 @@ dependencies {
         exclude(group = "org.mockito")
     }
     androidTestImplementation(libs.bundles.integrationTests)
-
-    detekt(project(":tools:detekt"))
-    detekt(libs.detektCli)
 }
 
 kotlinConfig()
-detektConfig()

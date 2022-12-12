@@ -17,7 +17,7 @@ class GsonJsonObjectForgeryFactory : ForgeryFactory<JsonObject> {
     override fun getForgery(forge: Forge): JsonObject {
         return JsonObject().apply {
             val fieldCount = forge.aTinyInt()
-            for (i in 0..fieldCount) {
+            repeat(fieldCount) {
                 add(
                     forge.anAlphabeticalString(),
                     forge.anElementFrom(

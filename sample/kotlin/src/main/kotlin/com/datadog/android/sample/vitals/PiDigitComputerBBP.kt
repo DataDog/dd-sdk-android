@@ -12,6 +12,7 @@ import java.math.MathContext
 /**
  * A Utility class able to compute Pi or Pi n-th digit using the Bailey–Borwein–Plouffe formula.
  */
+@Suppress("MagicNumber")
 internal class PiDigitComputerBBP {
 
     // region Computation
@@ -23,15 +24,16 @@ internal class PiDigitComputerBBP {
         var sum = BigDecimal.ZERO
 
         for (i in 0..n) {
-            val k = i.bd()
+            val k = i.asBigDecimal()
             val kSquared = (k * k)
             val kCubed = (k * k * k)
             val kQuad = (k * k * k * k)
 
-            val numerator = (kSquared * 120.bd()) + (k * 151.bd()) + 47.bd()
-            val denominator = (kQuad * 512.bd()) + (kCubed * 1024.bd()) +
-                (kSquared * 712.bd()) + (k * 194.bd()) + 15.bd()
-            val pow16 = 16.bd().pow(i)
+            val numerator =
+                (kSquared * 120.asBigDecimal()) + (k * 151.asBigDecimal()) + 47.asBigDecimal()
+            val denominator = (kQuad * 512.asBigDecimal()) + (kCubed * 1024.asBigDecimal()) +
+                (kSquared * 712.asBigDecimal()) + (k * 194.asBigDecimal()) + 15.asBigDecimal()
+            val pow16 = 16.asBigDecimal().pow(i)
 
             val contrib = numerator.divide(denominator * pow16, MathContext(128))
             sum += contrib
@@ -48,7 +50,7 @@ internal class PiDigitComputerBBP {
         val s5 = piIntermediateSum(5, n)
         val s6 = piIntermediateSum(6, n)
 
-        val result = ((4.bd() * s1) - (2.bd() * s4) - s5 - s6).frac()
+        val result = ((4.asBigDecimal() * s1) - (2.asBigDecimal() * s4) - s5 - s6).fraction()
 
         return result.firstHexDigit()
     }
@@ -65,14 +67,14 @@ internal class PiDigitComputerBBP {
 
         for (k in 0 until infinity) {
             val p = n - k
-            val b = (8.bd() * k.bd()) + j.bd()
+            val b = (8.asBigDecimal() * k.asBigDecimal()) + j.asBigDecimal()
 
             val contrib = if (p >= 0) {
-                val a = 16.bd().pow(p)
+                val a = 16.asBigDecimal().pow(p)
                 a.divide(b, MathContext(128))
             } else {
-                val a = 16.bd().pow(-p)
-                (1.bd().divide(a * b, MathContext(128))).frac()
+                val a = 16.asBigDecimal().pow(-p)
+                (1.asBigDecimal().divide(a * b, MathContext(128))).fraction()
             }
 
             sum += contrib
@@ -85,16 +87,16 @@ internal class PiDigitComputerBBP {
 
     // region BigDecimal utils
 
-    private fun Number.bd(): BigDecimal {
+    private fun Number.asBigDecimal(): BigDecimal {
         return BigDecimal.valueOf(this.toDouble())
     }
 
-    private fun BigDecimal.frac(): BigDecimal {
+    private fun BigDecimal.fraction(): BigDecimal {
         return remainder(BigDecimal.ONE)
     }
 
     private fun BigDecimal.firstHexDigit(): String {
-        val y = (16.bd() * abs().frac()).toInt()
+        val y = (16.asBigDecimal() * abs().fraction()).toInt()
         return if (y in 0 until 16) {
             HEX_DIGITS[y].toString()
         } else {
@@ -105,7 +107,6 @@ internal class PiDigitComputerBBP {
     // endregion
 
     companion object {
-        private val MATH_PRECISION = MathContext(128)
         private val HEX_DIGITS = "0123456789ABCDEF".toCharArray()
     }
 }

@@ -24,7 +24,7 @@ internal class GesturesTrackingPlaygroundActivity : AppCompatActivity() {
     lateinit var button: Button
     lateinit var recyclerView: RecyclerView
     private var adapter = Adapter()
-    internal var adapterData: MutableList<String> = MutableList(100) {
+    internal var adapterData: MutableList<String> = MutableList(DATA_COUNT) {
         "Item $it"
     }
 
@@ -108,4 +108,8 @@ internal class GesturesTrackingPlaygroundActivity : AppCompatActivity() {
     }
 
     // endregion
+
+    companion object {
+        const val DATA_COUNT = 100
+    }
 }

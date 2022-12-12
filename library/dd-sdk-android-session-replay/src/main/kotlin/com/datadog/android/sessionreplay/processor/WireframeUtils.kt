@@ -41,6 +41,7 @@ internal class WireframeUtils {
         }
     }
 
+    @Suppress("ReturnCount")
     internal fun checkIsValidWireframe(
         wireframe: MobileSegment.Wireframe,
         topWireframes: List<MobileSegment.Wireframe>

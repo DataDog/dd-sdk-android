@@ -12,7 +12,9 @@ import java.util.LinkedList
 
 /**
  * Sets a static value on the target class.
- * @param fieldName the name of the field
+ * @param T the type of the static field
+ * @param R the type of the instance owning the static field
+ * @param fieldName the name of the static field
  * @param fieldValue the value to set
  */
 @Suppress("SwallowedException")
@@ -30,7 +32,9 @@ fun <T, R> Class<T>.setStaticValue(
 
 /**
  * Gets the static value from the target class.
- * @param fieldName the name of the field
+ * @param T the type of the static field
+ * @param R the type of the instance owning the static field
+ * @param fieldName the name of the static field
  */
 inline fun <reified T, reified R> Class<T>.getStaticValue(fieldName: String): R {
     val field = getDeclaredField(fieldName)
@@ -43,6 +47,7 @@ inline fun <reified T, reified R> Class<T>.getStaticValue(fieldName: String): R 
 
 /**
  * Sets the field value on the target instance.
+ * @param T the type of the field
  * @param fieldName the name of the field
  * @param fieldValue the value of the field
  */
@@ -79,7 +84,10 @@ fun <T> Any.setFieldValue(
 
 /**
  * Gets the field value from the target instance.
+ * @param T the type of the field
+ * @param R the type of the instance owning the field
  * @param fieldName the name of the field
+ * @param enclosingClass the class on which the field is declared
  */
 inline fun <reified T, R : Any> R.getFieldValue(
     fieldName: String,

@@ -19,7 +19,7 @@ import io.realm.Realm
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 
-class RealmDataSource(val context: Context) : DataSource {
+internal class RealmDataSource(val context: Context) : DataSource {
 
     init {
         RealmFeature.initialise(context)

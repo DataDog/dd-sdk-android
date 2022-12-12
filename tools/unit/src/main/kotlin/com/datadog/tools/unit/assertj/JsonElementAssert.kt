@@ -37,7 +37,7 @@ class JsonElementAssert(actual: JsonElement) :
             is BigDecimal -> assertThat(actual.asBigDecimal).isEqualTo(expected)
             is List<*> -> JsonArrayAssert(actual.asJsonArray).isJsonArrayOf(expected)
             else -> {
-                throw IllegalStateException(
+                error(
                     "Cannot assert on element type ${expected.javaClass}"
                 )
             }

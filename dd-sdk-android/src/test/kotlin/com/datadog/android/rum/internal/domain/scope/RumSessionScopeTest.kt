@@ -529,7 +529,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
         val initialContext = testedScope.getRumContext()
         val repeatCount = (TEST_MAX_DURATION_MS / TEST_SLEEP_MS) + 1
-        for (i in 0..repeatCount) {
+        repeat(repeatCount.toInt()) {
             Thread.sleep(TEST_SLEEP_MS)
             testedScope.handleEvent(forge.startActionEvent(false), mockWriter)
         }
@@ -555,7 +555,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
         val initialContext = testedScope.getRumContext()
         val repeatCount = (TEST_MAX_DURATION_MS / TEST_SLEEP_MS) + 1
-        for (i in 0..repeatCount) {
+        repeat(repeatCount.toInt()) {
             Thread.sleep(TEST_SLEEP_MS)
             testedScope.handleEvent(forge.startActionEvent(), mockWriter)
         }
@@ -581,7 +581,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
         val initialContext = testedScope.getRumContext()
         val repeatCount = (TEST_MAX_DURATION_MS / TEST_SLEEP_MS) + 1
-        for (i in 0..repeatCount) {
+        repeat(repeatCount.toInt()) {
             Thread.sleep(TEST_SLEEP_MS)
             testedScope.handleEvent(forge.startActionEvent(), mockWriter)
         }
@@ -633,7 +633,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
         val initialContext = testedScope.getRumContext()
         val repeatCount = (TEST_MAX_DURATION_MS / TEST_SLEEP_MS) + 1
-        for (i in 0..repeatCount) {
+        repeat(repeatCount.toInt()) {
             Thread.sleep(TEST_SLEEP_MS)
             testedScope.handleEvent(forge.startActionEvent(false), mockWriter)
         }
@@ -705,7 +705,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
         val initialContext = testedScope.getRumContext()
         val repeatCount = (TEST_MAX_DURATION_MS / TEST_SLEEP_MS) + 1
-        for (i in 0..repeatCount) {
+        repeat(repeatCount.toInt()) {
             Thread.sleep(TEST_SLEEP_MS)
             testedScope.handleEvent(forge.startActionEvent(false), mockWriter)
         }

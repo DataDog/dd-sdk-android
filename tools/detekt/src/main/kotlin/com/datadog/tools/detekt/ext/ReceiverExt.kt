@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.types.FlexibleType
 import org.jetbrains.kotlin.types.lowerIfFlexible
 import org.jetbrains.kotlin.types.typeUtil.makeNotNullable
 
+@Suppress("ReturnCount")
 internal fun Receiver?.type(bindingContext: BindingContext): String? {
     if (this == null) return null
     if (this is ExpressionReceiver) {

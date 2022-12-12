@@ -6,7 +6,7 @@
 
 package com.datadog.android.sample.datalist
 
-enum class DataSourceType {
+internal enum class DataSourceType {
     REALM,
     ROOM,
     SQLITE,

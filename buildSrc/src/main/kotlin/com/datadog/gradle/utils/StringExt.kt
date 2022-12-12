@@ -20,6 +20,7 @@ fun List<String>.joinToCamelCaseAsVar(): String = when (size) {
     else -> get(0).toCamelCaseAsVar() + drop(1).joinToCamelCase()
 }
 
+@Suppress("ReturnCount")
 fun String.toCamelCase(): String {
     val split = this.split("_")
     if (split.size == 0) return ""
@@ -27,6 +28,7 @@ fun String.toCamelCase(): String {
     return split.joinToCamelCase()
 }
 
+@Suppress("ReturnCount")
 fun String.toCamelCaseAsVar(): String {
     val split = this.split("_")
     if (split.isEmpty()) return ""

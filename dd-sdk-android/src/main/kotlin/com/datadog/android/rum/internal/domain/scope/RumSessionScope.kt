@@ -10,6 +10,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
+import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
@@ -143,7 +144,7 @@ internal class RumSessionScope(
     }
 
     private fun renewSession(nanoTime: Long) {
-        val keepSession = (random.nextFloat() * 100f) < samplingRate
+        val keepSession = random.nextFloat() < samplingRate.percent()
         sessionState = if (keepSession) State.TRACKED else State.NOT_TRACKED
         sessionId = UUID.randomUUID().toString()
         sessionStartNs.set(nanoTime)

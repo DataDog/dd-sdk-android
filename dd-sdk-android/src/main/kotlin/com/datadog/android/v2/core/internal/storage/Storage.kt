@@ -24,6 +24,7 @@ internal interface Storage {
     //   request transformation).
     /**
      * Utility to write data, asynchronously.
+     * @param datadogContext the context for the write operation
      * @param callback an operation to perform with a [EventBatchWriter] that will target the current
      * writeable Batch
      */

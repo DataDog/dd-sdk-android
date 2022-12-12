@@ -11,7 +11,7 @@ import com.datadog.android.sample.LogsDatabase
 import com.datadog.android.sqldelight.DatadogSqliteCallback
 import com.squareup.sqldelight.android.AndroidSqliteDriver
 
-object Database {
+internal object Database {
 
     @Volatile
     private var INSTANCE: LogsDatabase? = null

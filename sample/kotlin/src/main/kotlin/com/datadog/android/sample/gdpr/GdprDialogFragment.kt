@@ -19,7 +19,7 @@ import com.datadog.android.sample.Preferences
 import com.datadog.android.sample.R
 import com.datadog.android.sample.TrackingConsentChangeListener
 
-class GdprDialogFragment : DialogFragment() {
+internal class GdprDialogFragment : DialogFragment() {
     lateinit var trackingConsentSelector: RadioGroup
     override fun onCreateView(
         inflater: LayoutInflater,

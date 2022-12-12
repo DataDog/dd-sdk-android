@@ -18,9 +18,7 @@ class BytesCompressor {
     @Suppress("UndocumentedPublicFunction")
     fun compressBytes(uncompressedData: ByteArray): ByteArray {
         // Create the compressor with highest level of compression.
-        // We are using compression level 6 in order to align with the same compression type used
-        // in the browser sdk.
-        val deflater = Deflater(6)
+        val deflater = Deflater(COMPRESSION_LEVEL)
         // We will start with an OutputStream double the size of the data
         val outputStream = ByteArrayOutputStream(uncompressedData.size * 2)
         // Compress the data
@@ -87,5 +85,9 @@ class BytesCompressor {
         private const val HEADER_SIZE_IN_BYTES = 2
         private const val SYNC_FLAG_SIZE_IN_BYTES = 4
         internal const val CHECKSUM_FLAG_SIZE_IN_BYTES = 6
+
+        // We are using compression level 6 in order to align with the same compression type used
+        // in the browser sdk.
+        private const val COMPRESSION_LEVEL = 6
     }
 }

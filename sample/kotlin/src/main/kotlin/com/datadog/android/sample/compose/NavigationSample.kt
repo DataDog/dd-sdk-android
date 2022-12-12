@@ -34,7 +34,7 @@ import kotlin.random.Random
 
 @OptIn(ExperimentalTrackingApi::class)
 @Composable
-fun NavigationSampleView() {
+internal fun NavigationSampleView() {
     val navController = rememberNavController().apply {
         NavigationViewTrackingEffect(
             navController = this,
@@ -45,7 +45,7 @@ fun NavigationSampleView() {
     ViewNavigation(navController = navController)
 }
 
-class SimpleViewIdPreviewProvider : PreviewParameterProvider<String> {
+internal class SimpleViewIdPreviewProvider : PreviewParameterProvider<String> {
     override val values: Sequence<String>
         get() = sequenceOf("one", "two", "three")
 }
@@ -53,7 +53,7 @@ class SimpleViewIdPreviewProvider : PreviewParameterProvider<String> {
 @OptIn(ExperimentalTrackingApi::class)
 @Preview
 @Composable
-fun SimpleView(
+internal fun SimpleView(
     @PreviewParameter(provider = SimpleViewIdPreviewProvider::class) viewId: String,
     onNavigate: () -> Unit = {}
 ) {
@@ -76,7 +76,7 @@ fun SimpleView(
 }
 
 @Composable
-fun ViewNavigation(
+internal fun ViewNavigation(
     navController: NavHostController
 ) {
     NavHost(
@@ -106,7 +106,7 @@ fun ViewNavigation(
     }
 }
 
-sealed class Screen(
+internal sealed class Screen(
     val compositionRoute: String,
     open val navigationRoute: String = compositionRoute
 ) {
@@ -123,6 +123,6 @@ sealed class Screen(
     }
 }
 
-fun <T> oneOf(vararg items: T): T {
+internal fun <T> oneOf(vararg items: T): T {
     return items[Random.nextInt(items.size)]
 }

@@ -37,7 +37,7 @@ internal class CPUProfileForLogs {
     @Ignore("Not ran on CI, run locally whenever we build a new release.")
     fun profileLoggingWithAdditionalAttributes() {
         val attributes = mutableMapOf<String, String>()
-        for (i in 0..100) {
+        repeat(100) {
             attributes[forge.anAlphabeticalString()] = forge.anHexadecimalString()
         }
 

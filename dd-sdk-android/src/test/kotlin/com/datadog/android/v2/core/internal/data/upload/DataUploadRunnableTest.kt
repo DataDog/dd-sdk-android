@@ -562,7 +562,7 @@ internal class DataUploadRunnableTest {
         ) doReturn uploadStatus
 
         // WHen
-        for (i in 0 until runCount) {
+        repeat(runCount) {
             testedRunnable.run()
         }
 

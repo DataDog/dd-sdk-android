@@ -13,8 +13,7 @@ import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.Query
 
-interface RemoteDataSource {
-
+internal interface RemoteDataSource {
     @Headers(
         "Content-Type: application/json",
         "DD-API-KEY:${BuildConfig.DD_API_KEY}",

@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.utils.warningWithTelemetry
 import com.datadog.android.v2.core.DatadogCore
@@ -34,6 +35,7 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import java.net.HttpURLConnection
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -59,15 +61,8 @@ import java.util.concurrent.atomic.AtomicReference
  *         // .addNetworkInterceptor(new TracingInterceptor(tracedHosts))
  *         .build();
  * ```
- *
- * @param tracedHosts a list of all the hosts that you want to be automatically tracked
- * by this interceptor. If no host is provided (via this argument or global
- * configuration [Configuration.Builder.setFirstPartyHosts]) the interceptor won't trace
- * any [okhttp3.Request], nor propagate tracing information to the backend.
- * @param tracedRequestListener a listener for automatically created [Span]s
- *
  */
-@Suppress("StringLiteralDuplication")
+@Suppress("TooManyFunctions", "StringLiteralDuplication")
 open class TracingInterceptor
 internal constructor(
     internal val tracedHosts: List<String>,
@@ -110,7 +105,7 @@ internal constructor(
         tracedRequestListener,
         getGlobalFirstPartyHostDetector(),
         null,
-        RateBasedSampler(traceSamplingRate / 100),
+        RateBasedSampler(traceSamplingRate.percent()),
         { AndroidTracer.Builder().build() }
     )
 
@@ -131,7 +126,7 @@ internal constructor(
         tracedRequestListener,
         getGlobalFirstPartyHostDetector(),
         null,
-        RateBasedSampler(traceSamplingRate / 100),
+        RateBasedSampler(traceSamplingRate.percent()),
         { AndroidTracer.Builder().build() }
     )
 
@@ -278,6 +273,7 @@ internal constructor(
         return span
     }
 
+    @Suppress("ReturnCount")
     private fun extractSamplingDecision(request: Request): Boolean? {
         val samplingPriority = request.header(SAMPLING_PRIORITY_HEADER)?.toIntOrNull()
             ?: return null
@@ -343,10 +339,10 @@ internal constructor(
         } else {
             val statusCode = response.code()
             span.setTag(Tags.HTTP_STATUS.key, statusCode)
-            if (statusCode in 400..499) {
+            if (statusCode in HttpURLConnection.HTTP_BAD_REQUEST until HttpURLConnection.HTTP_INTERNAL_ERROR) {
                 (span as? MutableSpan)?.isError = true
             }
-            if (statusCode == 404) {
+            if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
                 (span as? MutableSpan)?.resourceName = RESOURCE_NAME_404
             }
             onRequestIntercepted(request, span, response, null)
@@ -416,6 +412,7 @@ internal constructor(
                     ?: FirstPartyHostDetector(emptyList())
                 )
         }
+
         internal const val DEFAULT_TRACE_SAMPLING_RATE: Float = 20f
 
         // taken from DatadogHttpCodec

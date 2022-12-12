@@ -14,7 +14,7 @@ import com.datadog.android.sample.data.db.DatadogDbContract
 import java.util.UUID
 
 @Entity(tableName = DatadogDbContract.Logs.TABLE_NAME)
-data class LogRoom(
+internal data class LogRoom(
     @PrimaryKey
     @ColumnInfo(name = BaseColumns._ID)
     val uid: String = UUID.randomUUID().toString(),

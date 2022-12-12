@@ -10,11 +10,11 @@ import android.graphics.Bitmap
 import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
 import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
 import com.bumptech.glide.load.resource.bitmap.TransformationUtils
-import java.lang.RuntimeException
 import java.security.MessageDigest
 import java.security.SecureRandom
 
-class FailingTransformation : BitmapTransformation() {
+@Suppress("MagicNumber")
+internal class FailingTransformation : BitmapTransformation() {
 
     private val random = SecureRandom()
 
@@ -31,7 +31,7 @@ class FailingTransformation : BitmapTransformation() {
         outHeight: Int
     ): Bitmap {
         if (random.nextInt() % 10 == 0) {
-            throw RuntimeException("Unable to apply ${javaClass.simpleName}")
+            error("Unable to apply ${javaClass.simpleName}")
         }
         return TransformationUtils.fitCenter(pool, toTransform, outWidth, outHeight)
     }

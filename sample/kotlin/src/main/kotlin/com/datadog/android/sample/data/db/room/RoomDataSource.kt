@@ -16,7 +16,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 
-class RoomDataSource(val context: Context) : DataSource {
+internal class RoomDataSource(val context: Context) : DataSource {
 
     private val logDao = LogsDatabase.getInstance(context).logDao()
 

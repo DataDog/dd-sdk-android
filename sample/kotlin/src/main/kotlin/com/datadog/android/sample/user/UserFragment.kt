@@ -19,7 +19,7 @@ import com.datadog.android.sample.Preferences
 import com.datadog.android.sample.R
 import com.google.android.material.snackbar.Snackbar
 
-class UserFragment : Fragment(), View.OnClickListener {
+internal class UserFragment : Fragment(), View.OnClickListener {
 
     lateinit var idField: EditText
     lateinit var nameField: EditText

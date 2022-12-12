@@ -43,6 +43,7 @@ internal open class BatchFileDataWriter<T : Any>(
     /**
      * Called whenever data is written successfully.
      * @param data the data written
+     * @param rawData the data written (as the actual [ByteArray] written on disk)
      */
     @WorkerThread
     internal open fun onDataWritten(data: T, rawData: ByteArray) {}

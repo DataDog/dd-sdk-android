@@ -7,6 +7,7 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.core.internal.utils.orEmpty
+import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.core.internal.utils.toMutableMap
 import com.datadog.android.core.model.NetworkInfo
 import com.datadog.android.core.model.UserInfo
@@ -25,9 +26,9 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
         val isTopLevel = forge.aNullable { if (forge.aBool()) 1L else 0L }
         val metrics = forge.exhaustiveMetrics()
         val meta = forge.exhaustiveMeta()
-        val traceId = forge.aLong(min = 1).toString(16)
-        val spanId = forge.aLong(min = 1).toString(16)
-        val parentId = forge.aLong(min = 1).toString(16)
+        val traceId = forge.aLong(min = 1).toHexString()
+        val spanId = forge.aLong(min = 1).toHexString()
+        val parentId = forge.aLong(min = 1).toHexString()
         val duration = forge.aLong(min = 0)
         val startTime = TimeUnit.SECONDS.toNanos(System.currentTimeMillis())
         val appPackageVersion = forge.aStringMatching("[0-9]\\.[0-9]\\.[0-9]")

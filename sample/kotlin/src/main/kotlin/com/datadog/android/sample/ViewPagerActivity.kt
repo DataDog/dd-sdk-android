@@ -6,6 +6,7 @@
 
 package com.datadog.android.sample
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
@@ -16,9 +17,12 @@ import com.datadog.android.sample.viewpager.FragmentA
 import com.datadog.android.sample.viewpager.FragmentB
 import com.datadog.android.sample.viewpager.FragmentC
 
+/**
+ * An [Activity] with a [ViewPager] holding multiple fragments.
+ */
 class ViewPagerActivity : AppCompatActivity() {
 
-    lateinit var viewPager: ViewPager
+    private lateinit var viewPager: ViewPager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

@@ -18,6 +18,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Response
 import java.io.IOException
+import java.net.HttpURLConnection
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Proxy
@@ -123,7 +124,7 @@ internal constructor(val key: String) : EventListener() {
     override fun responseHeadersEnd(call: Call, response: Response) {
         super.responseHeadersEnd(call, response)
         headersEnd = System.nanoTime()
-        if (response.code() >= 400) {
+        if (response.code() >= HttpURLConnection.HTTP_BAD_REQUEST) {
             sendTiming()
         }
     }

@@ -105,7 +105,7 @@ internal class UploadWorker(
 
             @Suppress("UnsafeThirdPartyFunctionCall") // if interrupt happens, WorkManager
             // will handle it
-            lock.await(30, TimeUnit.SECONDS)
+            lock.await(LOCK_AWAIT_SECONDS, TimeUnit.SECONDS)
         }
 
         private fun consumeBatch(
@@ -120,4 +120,8 @@ internal class UploadWorker(
     }
 
     // endregion
+
+    companion object {
+        const val LOCK_AWAIT_SECONDS = 30L
+    }
 }

@@ -22,6 +22,7 @@ class KotlinFileVisitor {
 
     // region KotlinFileVisitor
 
+    @Suppress("TooGenericExceptionCaught")
     fun visitFile(file: File, printAst: Boolean = false) {
         val code = file.readText()
         val source = AstSource.String(description = "Content of file ${file.path}", content = code)
@@ -44,7 +45,7 @@ class KotlinFileVisitor {
         when (ast) {
             is AstNode -> visitAstNode(ast, level)
             is AstTerminal -> ignoreNode()
-            else -> throw IllegalStateException("Unable to handle $ast")
+            else -> error("Unable to handle $ast")
         }
     }
 
@@ -409,12 +410,6 @@ class KotlinFileVisitor {
 
     private fun Ast.isTerminal(description: String): Boolean {
         return this is AstTerminal && this.description == description
-    }
-
-    private fun AstNode.firstChildTerminal(description: String): AstTerminal {
-        val first = firstChildTerminalOrNull(description)
-        checkNotNull(first) { "Unable to find a child with description $description in \n$this" }
-        return first
     }
 
     private fun AstNode.firstChildTerminalOrNull(description: String): AstTerminal? {

@@ -25,6 +25,7 @@ fun Span.setError(message: String) {
 
 /**
  * Wraps the provided lambda within a [Span].
+ * @param T the type returned by the lambda
  * @param operationName the name of the [Span] created around the lambda
  * @param parentSpan the parent [Span] (default is `null`)
  * @param activate whether the created [Span] should be made active for the current thread

@@ -17,13 +17,13 @@ public data class Version(
     public val id: Id,
     public val date: Date? = null,
 ) {
-    public val version: Long = 42L
+    public val major: Long = 42L
 
     public val delta: Number = 3.1415
 
     public fun toJson(): JsonElement {
         val json = JsonObject()
-        json.addProperty("version", version)
+        json.addProperty("major", major)
         json.addProperty("delta", delta)
         json.add("id", id.toJson())
         date?.let { dateNonNull ->
@@ -75,7 +75,7 @@ public data class Version(
         }
     }
 
-    public class Id() {
+    public class Id {
         public val serialNumber: Number = 12112.0
 
         public fun toJson(): JsonElement {
@@ -85,7 +85,7 @@ public data class Version(
         }
     }
 
-    public class Date() {
+    public class Date {
         public val year: Long = 2021L
 
         public val month: Long = 3L

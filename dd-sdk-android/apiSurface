@@ -1720,7 +1720,6 @@ data class com.datadog.android.telemetry.model.TelemetryConfigurationEvent
     fun fromJson(kotlin.String): TelemetryConfigurationEvent
     fun fromJsonObject(com.google.gson.JsonObject): TelemetryConfigurationEvent
   class Dd
-    constructor()
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
   data class Application
@@ -1787,7 +1786,6 @@ data class com.datadog.android.telemetry.model.TelemetryDebugEvent
     fun fromJson(kotlin.String): TelemetryDebugEvent
     fun fromJsonObject(com.google.gson.JsonObject): TelemetryDebugEvent
   class Dd
-    constructor()
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
   data class Application
@@ -1840,7 +1838,6 @@ data class com.datadog.android.telemetry.model.TelemetryErrorEvent
     fun fromJson(kotlin.String): TelemetryErrorEvent
     fun fromJsonObject(com.google.gson.JsonObject): TelemetryErrorEvent
   class Dd
-    constructor()
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
   data class Application
@@ -1937,7 +1934,6 @@ data class com.datadog.android.tracing.model.SpanEvent
       fun fromJson(kotlin.String): Dd
       fun fromJsonObject(com.google.gson.JsonObject): Dd
   class Span
-    constructor()
     val kind: kotlin.String
     fun toJson(): com.google.gson.JsonElement
   data class Tracer

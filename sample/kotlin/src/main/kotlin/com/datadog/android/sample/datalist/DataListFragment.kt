@@ -19,7 +19,7 @@ import com.datadog.android.sample.SampleApplication
 import com.datadog.android.sample.data.model.Log
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
-class DataListFragment : Fragment() {
+internal class DataListFragment : Fragment() {
 
     lateinit var viewModel: DataListViewModel
     lateinit var recyclerView: RecyclerView

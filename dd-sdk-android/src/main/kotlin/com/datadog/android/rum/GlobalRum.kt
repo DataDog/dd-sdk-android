@@ -77,17 +77,16 @@ object GlobalRum {
      */
     @JvmStatic
     fun registerIfAbsent(provider: Callable<RumMonitor>): Boolean {
-        if (isRegistered.get()) {
+        return if (isRegistered.get()) {
             devLogger.w("RumMonitor has already been registered")
-            return false
+            false
+        } else if (isRegistered.compareAndSet(false, true)) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // User provided callable, let it throw
+            monitor = provider.call()
+            true
         } else {
-            if (isRegistered.compareAndSet(false, true)) {
-                @Suppress("UnsafeThirdPartyFunctionCall") // User provided callable, let it throw
-                monitor = provider.call()
-                return true
-            } else {
-                return false
-            }
+            devLogger.w("Unable to register the RumMonitor")
+            false
         }
     }
 

@@ -48,10 +48,9 @@ internal class ResourceTrackingTraceSamplingActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        val callsNumber = 100
-        val countDownLatch = CountDownLatch(callsNumber)
+        val countDownLatch = CountDownLatch(REQUEST_COUNT)
         localServer.start { it.respond(HttpStatusCode.OK, "{}") }
-        repeat(callsNumber) {
+        repeat(REQUEST_COUNT) {
             okHttpClient
                 .newCall(
                     Request.Builder()
@@ -76,5 +75,9 @@ internal class ResourceTrackingTraceSamplingActivity : AppCompatActivity() {
     override fun onPause() {
         localServer.stop()
         super.onPause()
+    }
+
+    companion object {
+        internal const val REQUEST_COUNT = 100
     }
 }

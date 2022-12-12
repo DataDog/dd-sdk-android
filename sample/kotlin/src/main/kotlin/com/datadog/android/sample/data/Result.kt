@@ -6,7 +6,7 @@
 
 package com.datadog.android.sample.data
 
-sealed class Result {
+internal sealed class Result {
     class Success<out T>(val data: T) : Result()
     class Failure(val message: String? = null, val throwable: Throwable? = null) : Result()
 }

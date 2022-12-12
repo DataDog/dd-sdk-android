@@ -15,7 +15,7 @@ import com.squareup.picasso.OkHttp3Downloader
 import com.squareup.picasso.Picasso
 import okhttp3.OkHttpClient
 
-class PicassoImageLoader : ImageLoader {
+internal class PicassoImageLoader : ImageLoader {
 
     override val type: ImageLoaderType = ImageLoaderType.PICASSO
 

@@ -12,7 +12,8 @@ import org.assertj.core.api.ListAssert
  *  Verifies that the actual list contains at least one object which is an instance
  *  of the provided class.
  *
- *  @param clazz the class object
+ * @param T the type of items in the List
+ * @param clazz the class object
  */
 fun <T> ListAssert<T>.containsInstanceOf(clazz: Class<*>): ListAssert<T> {
     overridingErrorMessage(

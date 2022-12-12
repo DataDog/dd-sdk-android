@@ -772,7 +772,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with RUM Telemetry eventMapper 𝕎 _InternalProxy setTelemetryConfigurationEventMapper() & build()`() {
+    fun `𝕄 build config with RUM Telemetry eventMapper 𝕎 setTelemetryConfigurationEventMapper()`() {
         // Given
         val eventMapper: EventMapper<TelemetryConfigurationEvent> = mock()
 

@@ -3,7 +3,7 @@
   "title": "Version",
   "type": "object",
   "properties": {
-    "version": {
+    "major": {
       "type": "integer",
       "const": 42
     },
@@ -35,7 +35,7 @@
     }
   },
   "required": [
-    "version",
+    "major",
     "id"
   ]
 }

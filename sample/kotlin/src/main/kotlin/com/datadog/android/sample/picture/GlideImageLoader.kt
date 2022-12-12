@@ -12,7 +12,7 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.transition.DrawableCrossFadeFactory
 import com.datadog.android.sample.R
 
-class GlideImageLoader : ImageLoader {
+internal class GlideImageLoader : ImageLoader {
 
     private val factory = DrawableCrossFadeFactory.Builder().setCrossFadeEnabled(true).build()
 

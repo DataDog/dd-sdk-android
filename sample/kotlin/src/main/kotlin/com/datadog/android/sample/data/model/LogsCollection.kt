@@ -8,4 +8,4 @@ package com.datadog.android.sample.data.model
 
 import com.google.gson.annotations.SerializedName
 
-data class LogsCollection(@SerializedName("data") val data: List<Log>)
+internal data class LogsCollection(@SerializedName("data") val data: List<Log>)

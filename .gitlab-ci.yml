@@ -63,19 +63,6 @@ analysis:android-lint:
   script:
     - GRADLE_OPTS="-Xmx2560m" ./gradlew :lintCheckAll --stacktrace --no-daemon
 
-analysis:detekt:
-  tags: [ "runner:main" ]
-  image: $CI_IMAGE_DOCKER
-  stage: analysis
-  timeout: 30m
-  cache:
-    key: $CI_COMMIT_REF_SLUG
-    paths:
-      - cache/caches/
-      - cache/notifications/
-  script:
-    - GRADLE_OPTS="-Xmx2560m" ./gradlew :detektAll --stacktrace --no-daemon --build-cache --gradle-user-home cache/
-
 analysis:licenses:
   tags: [ "runner:main" ]
   image: $CI_IMAGE_DOCKER
@@ -89,7 +76,7 @@ static-analysis:
   variables: 
     GRADLE_OPTS: "-Xmx2560m -Dorg.gradle.daemon=false -Dorg.gradle.logging.stacktrace=all"
   trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/release/static-analysis.yml"
+    include: "https://gitlab-templates.ddbuild.io/mobile/v11527537-9cf2bf2b/static-analysis.yml"
     strategy: depend
 
 analysis:nightly-tests-coverage:

@@ -19,7 +19,6 @@ import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
 import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.log.model.LogEvent
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumErrorSource
@@ -523,14 +522,6 @@ internal class DatadogExceptionHandlerTest {
                 }
                 .newInstance(anElementFrom("", aWhitespaceString())) as Throwable
         }
-    }
-
-    private fun Throwable.asLogError(): LogEvent.Error {
-        return LogEvent.Error(
-            kind = this.javaClass.canonicalName ?: this.javaClass.simpleName,
-            message = this.message,
-            stack = this.stackTraceToString()
-        )
     }
 
     companion object {

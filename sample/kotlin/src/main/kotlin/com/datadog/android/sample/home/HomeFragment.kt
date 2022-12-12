@@ -18,7 +18,7 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment.findNavController
 import com.datadog.android.sample.R
 
-class HomeFragment :
+internal class HomeFragment :
     Fragment(),
     View.OnClickListener {
 

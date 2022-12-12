@@ -16,7 +16,7 @@ import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.subjects.PublishSubject
 
-class DataListViewModel(val repository: DataRepository) : ViewModel() {
+internal class DataListViewModel(val repository: DataRepository) : ViewModel() {
 
     private val uiRequestSubject: PublishSubject<UIRequest> = PublishSubject.create()
     private var disposable: Disposable? = null
@@ -66,7 +66,7 @@ class DataListViewModel(val repository: DataRepository) : ViewModel() {
         class Error(val message: String) : UIResponse()
     }
 
-    sealed class UIRequest() {
+    sealed class UIRequest {
         object FetchData : UIRequest()
     }
 }

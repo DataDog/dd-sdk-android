@@ -19,9 +19,14 @@ import com.datadog.android.sample.R
 import com.datadog.android.sample.SampleApplication
 import okhttp3.Request
 import timber.log.Timber
+import java.io.IOException
 
+/**
+ * An [WidgetIntentService] to showcase tracking interactions with a home screen widget.
+ */
 class WidgetIntentService : IntentService("WidgetIntentService") {
 
+    @Deprecated("Deprecated in Java")
     override fun onHandleIntent(intent: Intent?) {
         when (intent?.action) {
             LOAD_RANDOM_RESOURCE_ACTION -> {
@@ -65,7 +70,7 @@ class WidgetIntentService : IntentService("WidgetIntentService") {
                 // Necessary to consume the response
                 Timber.d("Response: $content")
             }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
             Timber.e("Error: ${e.message}")
         }
         updateUIStatus(applicationContext, false)
@@ -91,9 +96,9 @@ class WidgetIntentService : IntentService("WidgetIntentService") {
     }
 
     companion object {
-        const val LOAD_RANDOM_RESOURCE_ACTION = "load_random_resource"
-        const val WIDGET_ID_ARG = "widget_id"
-        const val WIDGET_NAME_ARG = "widget_name"
-        const val WIDGET_CLICKED_TARGET_NAME = "widget_clicked_target_name"
+        internal const val LOAD_RANDOM_RESOURCE_ACTION = "load_random_resource"
+        internal const val WIDGET_ID_ARG = "widget_id"
+        internal const val WIDGET_NAME_ARG = "widget_name"
+        internal const val WIDGET_CLICKED_TARGET_NAME = "widget_clicked_target_name"
     }
 }

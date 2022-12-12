@@ -12,7 +12,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 
 @Dao
-interface LogDao {
+internal interface LogDao {
 
     @Query(value = "SELECT * FROM logs where ttl >= :minTtl")
     fun getAll(minTtl: Long): List<LogRoom>

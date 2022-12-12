@@ -87,6 +87,7 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
+@Suppress("TooManyFunctions")
 internal class CoreFeature {
 
     internal val initialized = AtomicBoolean(false)
@@ -221,8 +222,8 @@ internal class CoreFeature {
         // the thread until the active task is finished.
         persistenceExecutorService.shutdown()
         uploadExecutorService.shutdown()
-        persistenceExecutorService.awaitTermination(10, TimeUnit.SECONDS)
-        uploadExecutorService.awaitTermination(10, TimeUnit.SECONDS)
+        persistenceExecutorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
+        uploadExecutorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
         tasks.forEach {
             it.run()
         }
@@ -258,8 +259,8 @@ internal class CoreFeature {
                 DatadogEndpoint.NTP_2,
                 DatadogEndpoint.NTP_3
             ),
-            cacheExpirationMs = TimeUnit.MINUTES.toMillis(30),
-            minWaitTimeBetweenSyncMs = TimeUnit.MINUTES.toMillis(5),
+            cacheExpirationMs = TimeUnit.MINUTES.toMillis(NTP_CACHE_EXPIRATION_MINUTES),
+            minWaitTimeBetweenSyncMs = TimeUnit.MINUTES.toMillis(NTP_DELAY_BETWEEN_SYNCS_MINUTES),
             syncListener = LoggingSyncListener()
         ).apply {
             if (!disableKronosBackgroundSync) {
@@ -526,6 +527,10 @@ internal class CoreFeature {
             CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA256,
             CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA256
         )
+
+        const val DRAIN_WAIT_SECONDS = 10L
+        const val NTP_CACHE_EXPIRATION_MINUTES = 30L
+        const val NTP_DELAY_BETWEEN_SYNCS_MINUTES = 5L
 
         // endregion
     }

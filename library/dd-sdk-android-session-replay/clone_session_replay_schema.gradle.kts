@@ -5,10 +5,13 @@
  */
 import com.datadog.gradle.plugin.gitclone.GitCloneDependenciesTask
 
+val eventFormatRepo = "https://github.com/DataDog/rum-events-format.git"
+val eventFormatVersion = "master"
+
 tasks.register<GitCloneDependenciesTask>("cloneSessionReplayRootSchemas") {
     extension.apply {
         clone(
-            "https://github.com/DataDog/rum-events-format.git",
+            eventFormatRepo,
             "schemas/",
             destinationFolder = "src/main/json/schemas",
             excludedPrefixes = listOf(
@@ -19,7 +22,7 @@ tasks.register<GitCloneDependenciesTask>("cloneSessionReplayRootSchemas") {
                 "session-replay-schema",
                 "session-replay-browser-schema"
             ),
-            ref = "master"
+            ref = eventFormatVersion
         )
     }
 }
@@ -27,10 +30,10 @@ tasks.register<GitCloneDependenciesTask>("cloneSessionReplayRootSchemas") {
 tasks.register<GitCloneDependenciesTask>("cloneSessionReplayMobileSchemas") {
     extension.apply {
         clone(
-            "https://github.com/DataDog/rum-events-format.git",
+            eventFormatRepo,
             "schemas/session-replay/mobile",
             destinationFolder = "src/main/json/schemas/session-replay/mobile",
-            ref = "master"
+            ref = eventFormatVersion
         )
     }
 }
@@ -38,10 +41,10 @@ tasks.register<GitCloneDependenciesTask>("cloneSessionReplayMobileSchemas") {
 tasks.register<GitCloneDependenciesTask>("cloneSessionReplayCommonSchemas") {
     extension.apply {
         clone(
-            "https://github.com/DataDog/rum-events-format.git",
+            eventFormatRepo,
             "schemas/session-replay/common",
             destinationFolder = "src/main/json/schemas/session-replay/common",
-            ref = "master"
+            ref = eventFormatVersion
         )
     }
 }

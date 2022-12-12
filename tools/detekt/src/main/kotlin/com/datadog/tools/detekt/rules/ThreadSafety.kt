@@ -22,6 +22,12 @@ import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.types.SimpleType
 import org.jetbrains.kotlin.types.UnresolvedType
 
+/**
+ * A rule to ensure thread safety is ensured.
+ * This rule is based on Android's thread information annotations (e.g.: `@MainThread`) to prevent
+ * any method call that would cause an operation to be ran on the wrong thread group.
+ * @active
+ */
 class ThreadSafety : Rule() {
 
     private enum class ThreadGroup(

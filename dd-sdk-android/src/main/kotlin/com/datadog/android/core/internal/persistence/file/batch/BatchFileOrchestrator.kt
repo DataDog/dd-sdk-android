@@ -22,6 +22,7 @@ import com.datadog.android.log.internal.utils.errorWithTelemetry
 import java.io.File
 import java.io.FileFilter
 import java.util.Locale
+import kotlin.math.roundToLong
 
 internal class BatchFileOrchestrator(
     private val rootDir: File,
@@ -33,8 +34,8 @@ internal class BatchFileOrchestrator(
 
     // Offset the recent threshold for read and write to avoid conflicts
     // Arbitrary offset as ±5% of the threshold
-    private val recentReadDelayMs = (config.recentDelayMs * 1.05).toLong()
-    private val recentWriteDelayMs = (config.recentDelayMs * 0.95).toLong()
+    private val recentReadDelayMs = (config.recentDelayMs * INCREASE_PERCENT).roundToLong()
+    private val recentWriteDelayMs = (config.recentDelayMs * DECREASE_PERCENT).roundToLong()
 
     // keep track of how many items were written in the last known file
     private var previousFile: File? = null
@@ -120,7 +121,7 @@ internal class BatchFileOrchestrator(
 
     // region Internal
 
-    @Suppress("LiftReturnOrAssignment")
+    @Suppress("LiftReturnOrAssignment", "ReturnCount")
     private fun isRootDirValid(): Boolean {
         if (rootDir.existsSafe()) {
             if (rootDir.isDirectory) {
@@ -166,6 +167,7 @@ internal class BatchFileOrchestrator(
         return newFile
     }
 
+    @Suppress("ReturnCount")
     private fun getReusableWritableFile(): File? {
         val files = listSortedBatchFiles()
         val lastFile = files.lastOrNull() ?: return null
@@ -267,6 +269,10 @@ internal class BatchFileOrchestrator(
     // endregion
 
     companion object {
+
+        const val DECREASE_PERCENT = 0.95
+        const val INCREASE_PERCENT = 1.05
+
         private val batchFileNameRegex = Regex("\\d+")
         internal const val ERROR_ROOT_NOT_WRITABLE = "The provided root dir is not writable: %s"
         internal const val ERROR_ROOT_NOT_DIR = "The provided root file is not a directory: %s"

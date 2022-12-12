@@ -82,11 +82,11 @@ internal class ByteArrayOutputStreamTest {
     ) {
         val line = forge.anAlphabeticalString()
         val stream = ByteArrayOutputStream()
-        PrintWriter(stream.writer(Charsets.UTF_8)).use {
-            for (i in 0..20) {
-                it.println(forge.aNumericalString())
+        PrintWriter(stream.writer(Charsets.UTF_8)).use { pw ->
+            repeat(20) {
+                pw.println(forge.aNumericalString())
             }
-            it.print(line)
+            pw.print(line)
         }
 
         val lastLine = stream.lastLine()
@@ -101,11 +101,11 @@ internal class ByteArrayOutputStreamTest {
     ) {
         val line = forge.anAlphabeticalString()
         val stream = ByteArrayOutputStream()
-        PrintWriter(stream.writer(Charsets.UTF_8)).use {
-            for (i in 0..20) {
-                it.println(forge.aNumericalString())
+        PrintWriter(stream.writer(Charsets.UTF_8)).use { pw ->
+            repeat(20) {
+                pw.println(forge.aNumericalString())
             }
-            it.println(line)
+            pw.println(line)
         }
 
         val lastLine = stream.lastLine()

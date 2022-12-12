@@ -132,7 +132,7 @@ internal class EncryptionTest {
             }
 
             override fun decrypt(data: ByteArray): ByteArray {
-                throw IllegalStateException("Shouldn't be called in this test")
+                throw UnsupportedOperationException("Shouldn't be called in this test")
             }
         }
 

@@ -58,6 +58,7 @@ class ClassJsonElementDeserializerGenerator(
 
     // region Internal
 
+    @Suppress("FunctionMaxLength")
     private fun FunSpec.Builder.appendDeserializerFunctionBlock(
         definition: TypeDefinition.Class,
         rootTypeName: String
@@ -205,12 +206,13 @@ class ClassJsonElementDeserializerGenerator(
                 arrayType.items.asKotlinTypeName(rootTypeName),
                 Identifier.FUN_FROM_JSON
             )
-            else -> throw IllegalStateException(
+            else -> error(
                 "Unable to deserialize an array of ${arrayType.items}"
             )
         }
     }
 
+    @Suppress("FunctionMaxLength")
     private fun FunSpec.Builder.appendDeserializationForConstantProperty(
         propertyType: TypeDefinition.Class,
         assignee: String,
@@ -285,7 +287,10 @@ class ClassJsonElementDeserializerGenerator(
         if (propertyType.allowsNull()) {
             val elementName = "json${propertyType.name.variableName()}"
             addStatement("val $elementName = $getter")
-            beginControlFlow("$assignee = if ($elementName is %T || $elementName == null)", ClassNameRef.JsonNull)
+            beginControlFlow(
+                "$assignee = if ($elementName is %T || $elementName == null)",
+                ClassNameRef.JsonNull
+            )
             addStatement(
                 "%T.%L(null)",
                 propertyType.asKotlinTypeName(rootTypeName),
@@ -315,6 +320,7 @@ class ClassJsonElementDeserializerGenerator(
         }
     }
 
+    @Suppress("FunctionMaxLength")
     private fun FunSpec.Builder.appendAdditionalPropertiesDeserialization(
         additionalProperties: TypeDefinition,
         hasKnownProperties: Boolean,

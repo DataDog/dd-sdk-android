@@ -11,6 +11,7 @@ package com.datadog.android.core.configuration
  * Smaller batches will means smaller but more network requests,
  * whereas larger batches will mean fewer but larger network requests.
  */
+@Suppress("MagicNumber")
 enum class BatchSize(
     internal val windowDurationMs: Long
 ) {
