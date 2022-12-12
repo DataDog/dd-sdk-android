@@ -7,7 +7,7 @@ To propose improvements, feel free to submit a PR or open an Issue.
 
 ## Setup your developer Environment
 
-To setup your enviroment, make sure you installed [Android Studio](https://developer.android.com/studio).
+To setup your environment, make sure you installed [Android Studio](https://developer.android.com/studio).
 
 **Note**: you can also compile and develop using only the Android SDK and your IDE of choice, e.g.: IntelliJ Idea, Vim, etc.
 
@@ -169,7 +169,7 @@ following regions.
 
 ```kotlin
 
-class Foo :Observable(), Runnable {
+class Foo : Observable(), Runnable {
     
     // region Observable
 
