@@ -16,6 +16,9 @@ open class GenerateApiSurfaceTask : DefaultTask() {
     @get:InputDirectory
     lateinit var srcDir: File
 
+    @get:InputDirectory
+    lateinit var genDir: File
+
     @get: OutputFile
     lateinit var surfaceFile: File
     private lateinit var visitor: KotlinFileVisitor
@@ -31,6 +34,7 @@ open class GenerateApiSurfaceTask : DefaultTask() {
     fun applyTask() {
         visitor = KotlinFileVisitor()
         visitDirectoryRecursively(srcDir)
+        visitDirectoryRecursively(genDir)
 
         surfaceFile.printWriter().use {
             it.print(visitor.description.toString())
