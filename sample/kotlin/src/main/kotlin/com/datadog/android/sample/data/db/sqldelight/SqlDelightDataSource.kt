@@ -18,7 +18,7 @@ import timber.log.Timber
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 
-class SqlDelightDataSource(val context: Context) : DataSource {
+internal class SqlDelightDataSource(val context: Context) : DataSource {
 
     private val logsDatabase = Database.getInstance(context)
 

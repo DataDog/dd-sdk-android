@@ -35,7 +35,7 @@ internal class ResourceTrackingCustomAttributesActivity : ResourceTrackingActivi
                             )
                         }
                     },
-                    traceSamplingRate = 100f
+                    traceSamplingRate = HUNDRED_PERCENT
                 )
             )
             .build()

@@ -6,7 +6,6 @@
 
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -25,7 +24,6 @@ plugins {
 
     // Analysis tools
     id("com.github.ben-manes.versions")
-    id("io.gitlab.arturbosch.detekt")
 
     // Internal Generation
     id("thirdPartyLicences")
@@ -85,12 +83,11 @@ dependencies {
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttpMock)
 
-    detekt(project(":tools:detekt"))
-    detekt(libs.detektCli)
+    // TODO MTG-12 detekt(project(":tools:detekt"))
+    // TODO MTG-12 detekt(libs.detektCli)
 }
 
 kotlinConfig()
-detektConfig()
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()

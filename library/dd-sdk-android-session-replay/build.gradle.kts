@@ -6,7 +6,6 @@
 
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -25,7 +24,6 @@ plugins {
 
     // Analysis tools
     id("com.github.ben-manes.versions")
-    id("io.gitlab.arturbosch.detekt")
 
     // Internal Generation
     id("thirdPartyLicences")
@@ -47,6 +45,7 @@ android {
 
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
+        java.srcDir("build/generated/json2kotlin/main/kotlin")
     }
     sourceSets.named("test") {
         java.srcDir("src/test/kotlin")
@@ -81,19 +80,14 @@ dependencies {
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
 
-    detekt(project(":tools:detekt"))
-    detekt(libs.detektCli)
+    // TODO MTG-12 detekt(project(":tools:detekt"))
+    // TODO MTG-12 detekt(libs.detektCli)
 }
 
 apply(from = "clone_session_replay_schema.gradle.kts")
 apply(from = "generate_session_replay_models.gradle.kts")
 
 kotlinConfig()
-detektConfig(
-    excludes = listOf(
-        "**/com/datadog/android/sessionreplay/model/**"
-    )
-)
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()

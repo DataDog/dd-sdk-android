@@ -25,6 +25,7 @@ object SPDXLicenceConverter {
         }
     }
 
+    @Suppress("ReturnCount")
     private fun convertLicense(license: String): SPDXLicense? {
         if (license.isBlank()) return null
 

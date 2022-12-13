@@ -66,7 +66,12 @@ class ClassGenerator(
             )
         }
 
-        typeBuilder.primaryConstructor(generateConstructor(definition, rootTypeName))
+        if (
+            definition.properties.any { it.type !is TypeDefinition.Constant } ||
+            definition.additionalProperties != null
+        ) {
+            typeBuilder.primaryConstructor(generateConstructor(definition, rootTypeName))
+        }
 
         typeBuilder.addFunction(generateClassSerializer(definition))
 
@@ -174,7 +179,7 @@ class ClassGenerator(
         if (constantValue is String || constantValue is Number) {
             addStatement("json.addProperty(%S, %L)", name, name.variableName())
         } else {
-            throw IllegalStateException(
+            error(
                 "Unable to generate serialization for constant $constantValue with type $type"
             )
         }
@@ -250,6 +255,7 @@ class ClassGenerator(
         )
     }
 
+    @Suppress("FunctionMaxLength")
     private fun FunSpec.Builder.appendAdditionalPropertiesSerialization(
         additionalProperties: TypeDefinition,
         hasKnownProperties: Boolean
@@ -268,13 +274,13 @@ class ClassGenerator(
             )
             is TypeDefinition.Enum -> addStatement("json.add(k, v.%L()) }", Identifier.FUN_TO_JSON)
             is TypeDefinition.Null -> addStatement("json.add(k, null) }")
-            is TypeDefinition.Array -> throw IllegalStateException(
+            is TypeDefinition.Array -> error(
                 "Unable to generate custom serialization for Array type $additionalProperties"
             )
-            is TypeDefinition.Constant -> throw IllegalStateException(
+            is TypeDefinition.Constant -> error(
                 "Unable to generate custom serialization for constant type $additionalProperties"
             )
-            else -> throw IllegalStateException(
+            else -> error(
                 "Unable to generate custom serialization for unknown type $additionalProperties"
             )
         }
@@ -355,7 +361,7 @@ class ClassGenerator(
     ): String {
         return when {
             value is JsonPrimitiveType -> {
-                throw IllegalStateException(
+                error(
                     "Unable to get Kotlin Value from $value with type $type"
                 )
             }
@@ -370,9 +376,7 @@ class ClassGenerator(
             value is Boolean -> {
                 "$value"
             }
-            else -> throw IllegalStateException(
-                "Unable to get Kotlin Value from $value with type $type"
-            )
+            else -> error("Unable to get Kotlin Value from $value with type $type")
         }
     }
 
@@ -390,6 +394,7 @@ class ClassGenerator(
         return typeBuilder.build()
     }
 
+    @Suppress("FunctionMaxLength")
     private fun generateReservedPropertiesArray(definition: TypeDefinition.Class): PropertySpec {
         val propertyNames = definition.properties.joinToString(", ") { "\"${it.name}\"" }
 

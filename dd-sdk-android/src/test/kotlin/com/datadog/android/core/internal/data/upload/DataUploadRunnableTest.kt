@@ -372,7 +372,7 @@ internal class DataUploadRunnableTest {
         whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.NETWORK_ERROR
 
-        for (i in 0 until runCount) {
+        repeat(runCount) {
             testedRunnable.run()
         }
         verify(mockDataUploader, times(runCount)).upload(batch.data)
@@ -461,7 +461,7 @@ internal class DataUploadRunnableTest {
         whenever(mockReader.lockAndReadNext()) doReturn batch
         whenever(mockDataUploader.upload(batch.data)) doReturn UploadStatus.HTTP_SERVER_ERROR
 
-        for (i in 0 until runCount) {
+        repeat(runCount) {
             testedRunnable.run()
         }
 

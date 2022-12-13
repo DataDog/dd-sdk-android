@@ -17,7 +17,7 @@ import io.ktor.server.engine.ApplicationEngine
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 
-class LocalServer {
+internal class LocalServer {
 
     var engine: ApplicationEngine? = null
 

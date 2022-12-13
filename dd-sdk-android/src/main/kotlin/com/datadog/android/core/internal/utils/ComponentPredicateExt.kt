@@ -11,6 +11,7 @@ import com.datadog.android.rum.tracking.ComponentPredicate
 
 /**
  * Executes the provided operation if the predicate verifies the argument.
+ * @param T the type of component
  * @param component to be verified
  * @param operation to be executed
  */

@@ -11,12 +11,14 @@ import androidx.preference.PreferenceManager
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sample.datalist.DataSourceType
 import com.datadog.android.sample.picture.ImageLoaderType
+import timber.log.Timber
 import java.lang.IllegalArgumentException
 
-object Preferences {
+internal object Preferences {
 
     fun defaultPreferences(context: Context): DefaultPreferences = DefaultPreferences(context)
 
+    @Suppress("TooManyFunctions")
     class DefaultPreferences(context: Context) {
 
         private val applicationContext = context.applicationContext
@@ -71,6 +73,7 @@ object Preferences {
             return try {
                 DataSourceType.valueOf(source.orEmpty())
             } catch (e: IllegalArgumentException) {
+                Timber.e("Error getting pref $PREF_LOCAL_DATA_SOURCE")
                 DataSourceType.ROOM
             }
         }
@@ -82,6 +85,7 @@ object Preferences {
             return try {
                 ImageLoaderType.valueOf(source.orEmpty())
             } catch (e: IllegalArgumentException) {
+                Timber.e("Error getting pref $PREF_IMAGE_LOADER")
                 ImageLoaderType.GLIDE
             }
         }

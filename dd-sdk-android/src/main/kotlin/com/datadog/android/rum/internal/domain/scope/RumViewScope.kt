@@ -47,7 +47,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.max
 import kotlin.math.min
 
-@Suppress("LargeClass", "LongParameterList")
+@Suppress("TooManyFunctions", "LargeClass", "LongParameterList")
 internal open class RumViewScope(
     private val parentScope: RumScope,
     private val sdkCore: SdkCore,
@@ -278,6 +278,7 @@ internal open class RumViewScope(
         }
     }
 
+    @Suppress("ReturnCount")
     @WorkerThread
     private fun onStartAction(
         event: RumRawEvent.StartAction,
@@ -976,7 +977,7 @@ internal open class RumViewScope(
         } else {
             (activity.getSystemService(Context.WINDOW_SERVICE) as? WindowManager)?.defaultDisplay
         } ?: return
-        refreshRateScale = 60.0 / display.refreshRate
+        refreshRateScale = STANDARD_FPS / display.refreshRate
     }
 
     enum class RumViewType {
@@ -989,6 +990,7 @@ internal open class RumViewScope(
     // endregion
 
     companion object {
+        internal const val STANDARD_FPS = 60.0
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)
 
         internal const val ACTION_DROPPED_WARNING = "RUM Action (%s on %s) was dropped, because" +

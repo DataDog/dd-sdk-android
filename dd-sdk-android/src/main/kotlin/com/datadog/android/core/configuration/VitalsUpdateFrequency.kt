@@ -9,6 +9,7 @@ package com.datadog.android.core.configuration
 /**
  * Defines the frequency at which mobile vitals monitor updates the data.
  */
+@Suppress("MagicNumber")
 enum class VitalsUpdateFrequency(
     internal val periodInMs: Long
 ) {

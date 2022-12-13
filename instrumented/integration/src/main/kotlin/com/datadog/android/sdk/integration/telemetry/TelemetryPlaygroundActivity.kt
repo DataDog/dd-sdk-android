@@ -40,7 +40,7 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
         // we will use a large long task threshold to make sure we will not have LongTask events
         // noise in our integration tests.
         val config = RuntimeConfig.configBuilder()
-            .sampleTelemetry(100f)
+            .sampleTelemetry(HUNDRED_PERCENT)
             .trackLongTasks(RuntimeConfig.LONG_TASK_LARGE_THRESHOLD)
             .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
             .build()
@@ -103,6 +103,8 @@ internal class TelemetryPlaygroundActivity : AppCompatActivity(R.layout.main_act
     }
 
     companion object {
+        private const val HUNDRED_PERCENT = 100f
+
         internal const val TELEMETRY_DEBUG_MESSAGE_KEY = "telemetry_debug_message"
         internal const val TELEMETRY_ERROR_MESSAGE_KEY = "telemetry_error_message"
     }

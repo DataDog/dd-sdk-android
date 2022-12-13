@@ -92,6 +92,7 @@ internal class LogcatLogHandler(
         }
     }
 
+    @Suppress("ThrowingExceptionsWithoutMessageOrCause")
     internal fun getCallerStackElement(): StackTraceElement? {
         return if (isDebug && useClassnameAsTag) {
             val stackTrace = Throwable().stackTrace

@@ -18,6 +18,8 @@ internal const val CLOSABLE_ERROR_NESSAGE = "Error while using the closeable"
  * is thrown or not.
  * This extension works exactly as the [Closeable.use] extension and in case the [block] will throw
  * any exception this will be intercepted and propagated as a Rum error event.
+ * @param T a [Closeable] type
+ * @param R the type returned by the block operation
  * @param block a function to process this [Closeable] resource.
  * @return the result of [block] function invoked on this resource.
  */

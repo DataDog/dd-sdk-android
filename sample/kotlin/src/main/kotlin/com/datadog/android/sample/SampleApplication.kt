@@ -51,6 +51,10 @@ import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import timber.log.Timber
 
+/**
+ * The main [Application] for the sample project.
+ */
+@Suppress("MagicNumber")
 class SampleApplication : Application() {
 
     private val tracedHosts = listOf(
@@ -158,31 +162,31 @@ class SampleApplication : Application() {
         configBuilder
             .setRumViewEventMapper(object : ViewEventMapper {
                 override fun map(event: ViewEvent): ViewEvent {
-                    event.context?.additionalProperties?.put("is_mapped", true)
+                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                     return event
                 }
             })
             .setRumActionEventMapper(object : EventMapper<ActionEvent> {
                 override fun map(event: ActionEvent): ActionEvent {
-                    event.context?.additionalProperties?.put("is_mapped", true)
+                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                     return event
                 }
             })
             .setRumResourceEventMapper(object : EventMapper<ResourceEvent> {
                 override fun map(event: ResourceEvent): ResourceEvent {
-                    event.context?.additionalProperties?.put("is_mapped", true)
+                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                     return event
                 }
             })
             .setRumErrorEventMapper(object : EventMapper<ErrorEvent> {
                 override fun map(event: ErrorEvent): ErrorEvent {
-                    event.context?.additionalProperties?.put("is_mapped", true)
+                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                     return event
                 }
             })
             .setRumLongTaskEventMapper(object : EventMapper<LongTaskEvent> {
                 override fun map(event: LongTaskEvent): LongTaskEvent {
-                    event.context?.additionalProperties?.put("is_mapped", true)
+                    event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                     return event
                 }
             })
@@ -190,7 +194,7 @@ class SampleApplication : Application() {
         try {
             configBuilder.useSite(DatadogSite.valueOf(BuildConfig.DD_SITE_NAME))
         } catch (e: IllegalArgumentException) {
-            // no-op
+            Timber.e("Error setting site to ${BuildConfig.DD_SITE_NAME}")
         }
 
         if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
@@ -209,6 +213,7 @@ class SampleApplication : Application() {
         return configBuilder.build()
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun initializeTimber() {
         val logger = Logger.Builder()
             .setLoggerName("timber")
@@ -228,7 +233,7 @@ class SampleApplication : Application() {
                 }
             }
         } catch (t: Throwable) {
-            // ignore
+            Timber.e(t, "Error setting device and abi properties")
         }
         logger.addAttribute("device", device)
         logger.addAttribute("supported_abis", abis)
@@ -244,7 +249,9 @@ class SampleApplication : Application() {
             System.loadLibrary("datadog-native-sample-lib")
         }
 
-        fun getViewModelFactory(context: Context): ViewModelProvider.Factory {
+        internal const val ATTR_IS_MAPPED = "is_mapped"
+
+        internal fun getViewModelFactory(context: Context): ViewModelProvider.Factory {
             return ViewModelFactory(
                 getOkHttpClient(context),
                 getRemoteDataSource(context),
@@ -252,7 +259,7 @@ class SampleApplication : Application() {
             )
         }
 
-        fun getOkHttpClient(context: Context): OkHttpClient {
+        internal fun getOkHttpClient(context: Context): OkHttpClient {
             val application = context.applicationContext as SampleApplication
             return application.okHttpClient
         }

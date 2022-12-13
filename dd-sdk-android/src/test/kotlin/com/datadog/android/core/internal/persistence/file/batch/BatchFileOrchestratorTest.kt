@@ -361,14 +361,14 @@ internal class BatchFileOrchestratorTest {
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
         var previousFile = testedOrchestrator.getWritableFile()
 
-        for (round in 1 until 5) {
+        repeat(4) {
             checkNotNull(previousFile)
 
             val previousData = forge.aList(MAX_ITEM_PER_BATCH) {
                 forge.anAlphabeticalString()
             }
 
-            previousFile.writeText(previousData[0])
+            previousFile?.writeText(previousData[0])
 
             for (i in 1 until MAX_ITEM_PER_BATCH) {
                 val file = testedOrchestrator.getWritableFile()
@@ -388,7 +388,7 @@ internal class BatchFileOrchestratorTest {
                 .hasParent(fakeRootDir)
             assertThat(nextFile.name.toLong())
                 .isBetween(start, end)
-            assertThat(previousFile.readText())
+            assertThat(previousFile?.readText())
                 .isEqualTo(previousData.joinToString(separator = ""))
 
             previousFile = nextFile

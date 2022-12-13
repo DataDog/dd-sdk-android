@@ -72,7 +72,7 @@ private fun rumContextValues(): Triple<String, String, String> {
     val rumContext: Map<String, Any?> = sdkCore.getFeatureContext("rum")
     val appId: String = rumContext["application_id"] as String
     val sessionId: String = rumContext["session_id"] as String
-    val viewId: String? = rumContext["view_id"] as String?
+    val viewId: String? = rumContext["view_id"] as? String
     return Triple(appId, sessionId, viewId ?: "null")
 }
 

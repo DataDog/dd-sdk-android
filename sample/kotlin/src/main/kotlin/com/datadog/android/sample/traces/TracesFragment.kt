@@ -13,12 +13,13 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.ProgressBar
+import androidx.annotation.DrawableRes
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
 import com.datadog.android.sample.SampleApplication
 
-class TracesFragment : Fragment(), View.OnClickListener {
+internal class TracesFragment : Fragment(), View.OnClickListener {
 
     lateinit var viewModel: TracesViewModel
     lateinit var progressBarAsync: ProgressBar
@@ -94,43 +95,43 @@ class TracesFragment : Fragment(), View.OnClickListener {
                 )
             }
             R.id.start_request -> {
-                showProgressBarAndHideRequestStatus()
+                setInProgress()
                 viewModel.startRequest(
                     onResponse = {
-                        hideProgressBarAndUpdateRequestStatus(R.drawable.ic_check_circle_green_24dp)
+                        setCompleteStatus(R.drawable.ic_check_circle_green_24dp)
                     },
                     onException = {
-                        hideProgressBarAndUpdateRequestStatus(R.drawable.ic_error_red_24dp)
+                        setCompleteStatus(R.drawable.ic_error_red_24dp)
                     },
                     onCancel = {
-                        hideProgressBarAndUpdateRequestStatus(R.drawable.ic_cancel_red_24dp)
+                        setCompleteStatus(R.drawable.ic_cancel_red_24dp)
                     }
                 )
             }
             R.id.start_404_request -> {
-                showProgressBarAndHideRequestStatus()
+                setInProgress()
                 viewModel.start404Request(
                     onResponse = {
-                        hideProgressBarAndUpdateRequestStatus(R.drawable.ic_check_circle_green_24dp)
+                        setCompleteStatus(R.drawable.ic_check_circle_green_24dp)
                     },
                     onException = {
-                        hideProgressBarAndUpdateRequestStatus(R.drawable.ic_error_red_24dp)
+                        setCompleteStatus(R.drawable.ic_error_red_24dp)
                     },
                     onCancel = {
-                        hideProgressBarAndUpdateRequestStatus(R.drawable.ic_cancel_red_24dp)
+                        setCompleteStatus(R.drawable.ic_cancel_red_24dp)
                     }
                 )
             }
         }
     }
 
-    private fun hideProgressBarAndUpdateRequestStatus(requestStatusDrawableId: Int) {
+    private fun setCompleteStatus(@DrawableRes requestStatusDrawableId: Int) {
         requestStatus.setImageResource(requestStatusDrawableId)
         requestStatus.visibility = View.VISIBLE
         progressBarRequest.visibility = View.INVISIBLE
     }
 
-    private fun showProgressBarAndHideRequestStatus() {
+    private fun setInProgress() {
         progressBarRequest.visibility = View.VISIBLE
         requestStatus.visibility = View.INVISIBLE
     }

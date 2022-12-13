@@ -3,6 +3,7 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 import android.content.Context
 import android.content.res.Resources
 import android.view.View
+import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.rum.tracking.InteractionPredicate
 
 internal fun resolveTargetName(
@@ -31,4 +32,4 @@ internal fun View.targetClassName(): String {
     return this.javaClass.canonicalName ?: this.javaClass.simpleName
 }
 
-private fun idAsStringHexa(id: Int) = "0x${id.toString(16)}"
+private fun idAsStringHexa(id: Int) = "0x${id.toHexString()}"

@@ -6,7 +6,7 @@
 
 package com.datadog.android.sample.picture
 
-enum class ImageLoaderType {
+internal enum class ImageLoaderType {
     COIL,
     FRESCO,
     GLIDE,

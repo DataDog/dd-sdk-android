@@ -96,7 +96,7 @@ class JsonObjectAssert(actual: JsonObject) :
             is Float -> hasField(name, expectedValue)
             is Double -> hasField(name, expectedValue)
             is List<*> -> hasField(name, expectedValue)
-            else -> throw IllegalStateException(
+            else -> error(
                 "Cannot assert on field type ${expectedValue.javaClass}"
             )
         }

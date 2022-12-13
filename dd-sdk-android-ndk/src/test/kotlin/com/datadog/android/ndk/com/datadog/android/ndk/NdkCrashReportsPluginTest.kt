@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+package com.datadog.android.ndk.com.datadog.android.ndk
+
 import android.content.Context
 import com.datadog.android.ndk.NdkCrashReportsPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
@@ -30,7 +32,7 @@ import java.io.File
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class NdkCrashReportsPluginTest {
+class NdkCrashReportsPluginTest {
 
     lateinit var testedPlugin: NdkCrashReportsPlugin
 

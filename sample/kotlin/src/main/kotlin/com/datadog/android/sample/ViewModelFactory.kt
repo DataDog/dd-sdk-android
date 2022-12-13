@@ -15,7 +15,7 @@ import com.datadog.android.sample.datalist.DataListViewModel
 import com.datadog.android.sample.traces.TracesViewModel
 import okhttp3.OkHttpClient
 
-class ViewModelFactory(
+internal class ViewModelFactory(
     private val okHttpClient: OkHttpClient,
     private val remoteDataSource: RemoteDataSource,
     private val localDataSource: LocalDataSource

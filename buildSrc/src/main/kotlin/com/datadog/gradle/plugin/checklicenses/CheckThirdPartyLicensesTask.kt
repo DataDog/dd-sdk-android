@@ -95,6 +95,7 @@ open class CheckThirdPartyLicensesTask : DefaultTask() {
 
     // region Internal
 
+    @Suppress("DestructuringDeclarationWithTooManyEntries")
     private fun parseCsvFile(): List<ThirdPartyDependency> {
         val result = mutableListOf<ThirdPartyDependency>()
         var firstLineRead = false

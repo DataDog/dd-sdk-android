@@ -8,7 +8,6 @@ import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.BuildConfigPropertiesKeys
 import com.datadog.gradle.config.GradlePropertiesKeys
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -28,7 +27,6 @@ plugins {
 
     // Analysis tools
     id("com.github.ben-manes.versions")
-    id("io.gitlab.arturbosch.detekt")
 
     // Tests
     id("de.mobilej.unmock")
@@ -39,6 +37,10 @@ plugins {
     id("transitiveDependencies")
 }
 
+/**
+ * Checks whether logcat logs should be enabled when building the release version of the library.
+ * @return true if logcat logs should be enabled
+ */
 fun isLogEnabledInRelease(): String {
     return project.findProperty(GradlePropertiesKeys.FORCE_ENABLE_LOGCAT) as? String ?: "false"
 }
@@ -60,6 +62,7 @@ android {
 
     sourceSets.named("main") {
         java.srcDir("src/main/kotlin")
+        java.srcDir("build/generated/json2kotlin/main/kotlin")
     }
     sourceSets.named("test") {
         java.srcDir("src/test/kotlin")
@@ -154,8 +157,8 @@ dependencies {
     unmock(libs.robolectric)
 
     // Static Analysis
-    detekt(project(":tools:detekt"))
-    detekt(libs.detektCli)
+    // TODO MTG-12 detekt(project(":tools:detekt"))
+    // TODO MTG-12 detekt(libs.detektCli)
 }
 
 unMock {
@@ -182,14 +185,6 @@ apply(from = "generate_trace_models.gradle.kts")
 apply(from = "generate_log_models.gradle.kts")
 
 kotlinConfig()
-detektConfig(
-    excludes = listOf(
-        "**/com/datadog/android/rum/model/**",
-        "**/com/datadog/android/telemetry/model/**",
-        "**/com/datadog/android/tracing/model/**",
-        "**/com/datadog/android/log/model/**"
-    )
-)
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()

@@ -24,7 +24,7 @@ internal open class WebViewTrackingActivity : AppCompatActivity() {
         webView.webViewClient = WebViewClient()
         webView.settings.javaScriptEnabled = true
         setupWebView(webView)
-        val fakeToken = "pubbd${Random.nextLong().toString(16)}"
+        val fakeToken = "pub${Random.nextLong().toString(HEX_RADIX)}"
         val fakeAppId = UUID.randomUUID().toString()
         webView.loadUrl(
             "https://datadoghq.dev/browser-sdk-test-playground/" +
@@ -42,6 +42,7 @@ internal open class WebViewTrackingActivity : AppCompatActivity() {
     }
 
     companion object {
+        const val HEX_RADIX = 16
         internal const val TEST_METHOD_NAME = "web_view_tracking"
     }
 }

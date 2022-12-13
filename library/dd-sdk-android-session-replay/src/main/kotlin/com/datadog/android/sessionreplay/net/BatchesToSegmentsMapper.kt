@@ -64,6 +64,7 @@ class BatchesToSegmentsMapper {
         return mapToSegment(reducedEnrichedRecord.first, reducedEnrichedRecord.second)
     }
 
+    @Suppress("ReturnCount")
     private fun mapToSegment(rumContext: SessionReplayRumContext, records: JsonArray):
         Pair<MobileSegment, JsonObject>? {
         val orderedRecords = records

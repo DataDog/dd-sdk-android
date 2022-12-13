@@ -13,6 +13,7 @@ import kotlin.jvm.Throws
 
 // TODO RUMM-2172 use meta.
 //  For now it has nothing (fake property just because data class requires it)
+@Suppress("UnusedPrivateMember")
 internal data class EventMeta(private val fake: String = "") {
 
     val asBytes: ByteArray
@@ -25,7 +26,7 @@ internal data class EventMeta(private val fake: String = "") {
     companion object {
 
         @Throws(JsonParseException::class)
-        @Suppress("ThrowingInternalException", "TooGenericExceptionCaught")
+        @Suppress("ThrowingInternalException", "TooGenericExceptionCaught", "ThrowsCount")
         fun fromBytes(metaBytes: ByteArray): EventMeta {
             return try {
                 // there is Throws annotation

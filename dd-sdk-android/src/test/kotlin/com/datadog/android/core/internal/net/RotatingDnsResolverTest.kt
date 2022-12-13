@@ -71,7 +71,7 @@ internal class RotatingDnsResolverTest {
         val result = mutableListOf<InetAddress>()
 
         // When
-        for (i in fakeInetAddresses.indices) {
+        fakeInetAddresses.forEach {
             result.add(testedDns.lookup(fakeHostname).first())
         }
 

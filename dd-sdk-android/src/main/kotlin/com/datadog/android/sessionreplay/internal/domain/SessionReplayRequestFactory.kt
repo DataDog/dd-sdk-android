@@ -109,6 +109,7 @@ internal class SessionReplayRequestFactory(
         )
     }
 
+    @Suppress("ReturnCount")
     private fun resolveRequest(context: DatadogContext, body: RequestBody?): Request {
         if (body != null) {
             val bodyAsByteArray = safeBodyToByteArray(body) ?: return getEmptyRequest()

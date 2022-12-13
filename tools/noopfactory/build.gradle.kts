@@ -5,7 +5,6 @@
  */
 
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.taskConfig
@@ -13,7 +12,6 @@ import com.datadog.gradle.config.taskConfig
 plugins {
     id("org.jetbrains.kotlin.jvm")
     id("com.github.ben-manes.versions")
-    id("io.gitlab.arturbosch.detekt")
 }
 
 dependencies {
@@ -34,6 +32,5 @@ taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
     }
 }
-detektConfig()
 junitConfig()
 dependencyUpdateConfig()

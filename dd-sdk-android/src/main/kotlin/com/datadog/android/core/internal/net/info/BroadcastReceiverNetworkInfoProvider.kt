@@ -140,7 +140,7 @@ internal class BroadcastReceiverNetworkInfoProvider(
             TelephonyManager.NETWORK_TYPE_TD_SCDMA -> "TD_SCDMA"
             TelephonyManager.NETWORK_TYPE_LTE -> "LTE"
             TelephonyManager.NETWORK_TYPE_IWLAN -> "IWLAN"
-            19 -> "LTE_CA"
+            NETWORK_TYPE_LTE_CA -> "LTE_CA"
             TelephonyManager.NETWORK_TYPE_NR -> "New Radio"
             else -> null
         }
@@ -149,6 +149,8 @@ internal class BroadcastReceiverNetworkInfoProvider(
     // endregion
 
     companion object {
+
+        const val NETWORK_TYPE_LTE_CA = 19 // @Hide TelephonyManager.NETWORK_TYPE_LTE_CA,
 
         private val knownMobileTypes = setOf(
             ConnectivityManager.TYPE_MOBILE,
@@ -183,7 +185,7 @@ internal class BroadcastReceiverNetworkInfoProvider(
         private val known4GSubtypes = setOf(
             TelephonyManager.NETWORK_TYPE_LTE,
             TelephonyManager.NETWORK_TYPE_IWLAN,
-            19 // @Hide TelephonyManager.NETWORK_TYPE_LTE_CA,
+            NETWORK_TYPE_LTE_CA
         )
 
         private val known5GSubtypes = setOf(

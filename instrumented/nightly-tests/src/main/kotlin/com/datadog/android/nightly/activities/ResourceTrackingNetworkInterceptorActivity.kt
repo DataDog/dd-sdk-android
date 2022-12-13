@@ -17,14 +17,14 @@ internal class ResourceTrackingNetworkInterceptorActivity : ResourceTrackingActi
 
     override val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
-            .addInterceptor(RumInterceptor(traceSamplingRate = 100f))
+            .addInterceptor(RumInterceptor(traceSamplingRate = HUNDRED_PERCENT))
             .addNetworkInterceptor(
                 TracingInterceptor(
                     listOf(
                         HOST,
                         LocalServer.HOST
                     ),
-                    traceSamplingRate = 100f
+                    traceSamplingRate = HUNDRED_PERCENT
                 )
             )
             .build()

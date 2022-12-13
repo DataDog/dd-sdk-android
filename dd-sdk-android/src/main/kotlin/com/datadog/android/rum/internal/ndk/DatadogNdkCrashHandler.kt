@@ -29,7 +29,7 @@ import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
 
-@Suppress("LongParameterList")
+@Suppress("TooManyFunctions", "LongParameterList")
 internal class DatadogNdkCrashHandler(
     storageDir: File,
     private val dataPersistenceExecutorService: ExecutorService,

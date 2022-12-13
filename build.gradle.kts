@@ -59,7 +59,6 @@ task<Delete>("clean") {
 
 tasks.register("checkAll") {
     dependsOn(
-        "detektAll",
         "lintCheckAll",
         "unitTestAll",
         "koverReportAll",
@@ -121,7 +120,6 @@ tasks.register("unitTestDebug") {
 tasks.register("unitTestTools") {
     dependsOn(
         ":sample:kotlin:assembleUs1Release",
-        ":tools:detekt:test",
         ":tools:unit:testReleaseUnitTest"
     )
 }
@@ -187,26 +185,6 @@ tasks.register("checkApiSurfaceChangesAll") {
 
 tasks.register("checkGeneratedFiles") {
     dependsOn("checkApiSurfaceChangesAll")
-}
-
-tasks.register("detektAll") {
-    dependsOn(
-        ":dd-sdk-android:detektMain",
-        ":dd-sdk-android-coil:detektMain",
-        ":dd-sdk-android-compose:detektMain",
-        ":dd-sdk-android-fresco:detektMain",
-        ":dd-sdk-android-glide:detektMain",
-        ":dd-sdk-android-ktx:detektMain",
-        ":dd-sdk-android-ndk:detektMain",
-        ":dd-sdk-android-rx:detektMain",
-        ":dd-sdk-android-sqldelight:detektMain",
-        ":dd-sdk-android-timber:detektMain",
-        ":dd-sdk-android-tv:detektMain",
-        ":instrumented:integration:detekt",
-        ":instrumented:nightly-tests:detekt",
-        ":library:dd-sdk-android-session-replay:detektMain",
-        ":tools:unit:detekt"
-    )
 }
 
 tasks.register("koverReportAll") {

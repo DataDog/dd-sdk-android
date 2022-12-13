@@ -9,7 +9,6 @@ package com.datadog.android.telemetry.internal
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.sampling.Sampler
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
@@ -27,10 +26,10 @@ import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.storage.DataWriter
 import io.opentracing.util.GlobalTracer
 import java.util.Locale
+import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrackingStrategy as VTS
 
 internal class TelemetryEventHandler(
     internal val sdkCore: SdkCore,
-    private val timeProvider: TimeProvider,
     internal val eventSampler: Sampler,
     internal val maxEventCountPerSession: Int = MAX_EVENTS_PER_SESSION
 ) : RumSessionListener {
@@ -45,10 +44,9 @@ internal class TelemetryEventHandler(
 
         seenInCurrentSession.add(event.identity)
 
-        val timestamp = event.eventTime.timestamp + timeProvider.getServerOffsetMillis()
-
         sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
+                val timestamp = event.eventTime.timestamp + datadogContext.time.serverTimeOffsetMs
                 val telemetryEvent: Any? = when (event.type) {
                     TelemetryType.DEBUG -> {
                         createDebugEvent(datadogContext, timestamp, event.message)
@@ -97,6 +95,7 @@ internal class TelemetryEventHandler(
 
     // region private
 
+    @Suppress("ReturnCount")
     private fun canWrite(event: RumRawEvent.SendTelemetry): Boolean {
         if (!eventSampler.sample()) return false
 
@@ -184,10 +183,10 @@ internal class TelemetryEventHandler(
         val rumConfig = configuration?.rumConfig
         val crashConfig = configuration?.crashReportConfig
         val viewTrackingStrategy = when (rumConfig?.viewTrackingStrategy) {
-            is ActivityViewTrackingStrategy -> TelemetryConfigurationEvent.ViewTrackingStrategy.ACTIVITYVIEWTRACKINGSTRATEGY
-            is FragmentViewTrackingStrategy -> TelemetryConfigurationEvent.ViewTrackingStrategy.FRAGMENTVIEWTRACKINGSTRATEGY
-            is MixedViewTrackingStrategy -> TelemetryConfigurationEvent.ViewTrackingStrategy.MIXEDVIEWTRACKINGSTRATEGY
-            is NavigationViewTrackingStrategy -> TelemetryConfigurationEvent.ViewTrackingStrategy.NAVIGATIONVIEWTRACKINGSTRATEGY
+            is ActivityViewTrackingStrategy -> VTS.ACTIVITYVIEWTRACKINGSTRATEGY
+            is FragmentViewTrackingStrategy -> VTS.FRAGMENTVIEWTRACKINGSTRATEGY
+            is MixedViewTrackingStrategy -> VTS.MIXEDVIEWTRACKINGSTRATEGY
+            is NavigationViewTrackingStrategy -> VTS.NAVIGATIONVIEWTRACKINGSTRATEGY
             else -> null
         }
 

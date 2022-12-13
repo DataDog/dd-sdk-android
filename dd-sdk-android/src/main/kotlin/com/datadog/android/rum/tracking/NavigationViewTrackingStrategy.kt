@@ -35,6 +35,7 @@ import java.util.WeakHashMap
  *
  * @param navigationViewId the id of the NavHost view within the hosting [Activity].
  * @param trackArguments whether to track navigation arguments
+ * @param componentPredicate the predicate to keep/discard/rename the tracked [NavDestination]s
  */
 class NavigationViewTrackingStrategy(
     @IdRes private val navigationViewId: Int,

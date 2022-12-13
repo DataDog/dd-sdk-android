@@ -60,6 +60,7 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
+@Suppress("TooManyFunctions")
 internal class RumFeature(
     private val sdkCore: SdkCore,
     private val coreFeature: CoreFeature,

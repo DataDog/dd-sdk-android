@@ -80,7 +80,7 @@ data class UserInfo(
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        @Suppress("StringLiteralDuplication")
+        @Suppress("StringLiteralDuplication", "ThrowsCount")
         fun fromJsonObject(jsonObject: JsonObject): UserInfo {
             try {
                 val id = jsonObject.get("id")?.asString

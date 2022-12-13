@@ -14,6 +14,8 @@ import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.ndk.NdkCrashReportsPlugin
+import com.datadog.android.nightly.activities.CRASH_DELAY_MS
+import com.datadog.android.nightly.activities.HUNDRED_PERCENT
 import com.datadog.android.nightly.utils.NeverUseThatEncryption
 import com.datadog.android.plugin.Feature
 import com.datadog.android.privacy.TrackingConsent
@@ -58,7 +60,7 @@ internal open class NdkCrashService : CrashService() {
 
     private fun scheduleNdkCrash() {
         // we will give time to the RUM view event to persist before crashing the process
-        Handler(Looper.getMainLooper()).postDelayed({ simulateNdkCrash() }, 1000)
+        Handler(Looper.getMainLooper()).postDelayed({ simulateNdkCrash() }, CRASH_DELAY_MS)
     }
 
     private fun startSdk(
@@ -73,7 +75,7 @@ internal open class NdkCrashService : CrashService() {
             crashReportsEnabled = true,
             rumEnabled = rumEnabled,
             sessionReplayEnabled = true
-        ).sampleTelemetry(100f)
+        ).sampleTelemetry(HUNDRED_PERCENT)
         if (ndkCrashReportsEnabled) {
             @Suppress("DEPRECATION")
             configBuilder.addPlugin(NdkCrashReportsPlugin(), Feature.CRASH)

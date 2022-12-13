@@ -125,16 +125,12 @@ open class GitCloneDependenciesTask : DefaultTask() {
     }
 
     private fun keepLine(line: String): Boolean {
-        if (LOG_LINE_REGEX.matches(line)) {
-            return false
+        return when {
+            LOG_LINE_REGEX.matches(line) -> false
+            SLF4J_REGEX.matches(line) -> false
+            LOMBOK_IMPORTS_REGEX.matches(line) -> false
+            else -> true
         }
-        if (SLF4J_REGEX.matches(line)) {
-            return false
-        }
-        if (LOMBOK_IMPORTS_REGEX.matches(line)) {
-            return false
-        }
-        return true
     }
 
     private fun deleteClone(target: File) {

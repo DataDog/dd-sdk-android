@@ -7,4 +7,4 @@ package com.datadog.android.sample.logs
 
 import androidx.lifecycle.ViewModel
 
-class LogsViewModel : ViewModel()
+internal class LogsViewModel : ViewModel()

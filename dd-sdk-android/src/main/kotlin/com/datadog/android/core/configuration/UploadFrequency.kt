@@ -9,6 +9,7 @@ package com.datadog.android.core.configuration
 /**
  * Defines the frequency at which batch upload are tried.
  */
+@Suppress("MagicNumber")
 enum class UploadFrequency(
     internal val baseStepMs: Long
 ) {

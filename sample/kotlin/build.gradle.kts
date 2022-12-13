@@ -8,7 +8,6 @@ import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.configureFlavorForSampleApp
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
@@ -19,7 +18,6 @@ plugins {
     kotlin("android")
     kotlin("kapt")
     id("com.github.ben-manes.versions")
-    id("io.gitlab.arturbosch.detekt")
     id("thirdPartyLicences")
     id("org.jetbrains.dokka")
     id("realm-android")
@@ -186,7 +184,6 @@ taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
     }
 }
-detektConfig()
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()

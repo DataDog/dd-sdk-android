@@ -20,6 +20,7 @@ import io.opentracing.util.GlobalTracer
  * Starts a [Transaction] and runs [body] in that transaction.
  * A span will be created around the transaction code and sent to Datadog.
  *
+ * @param T the type of the wrapped SQL [Transacter]
  * @param operationName the name of the [Span] created around the coroutine code.
  * @param noEnclosing in case we want the currently opened transaction to be automatically closed
  * @param body the code to be executed inside the transaction
@@ -43,6 +44,8 @@ fun <T : Transacter> T.transactionTraced(
  * Starts a [Transaction] and runs [body] in that transaction.
  * A span will be created around the transaction code and sent to Datadog.
  *
+ * @param T the type of the wrapped SQL [Transacter]
+ * @param R the type of the data returned by the SQL transaction
  * @param operationName the name of the [Span] created around the coroutine code.
  * @param noEnclosing in case we want the currently opened transaction to be automatically closed
  * @param body the code to be executed inside the transaction

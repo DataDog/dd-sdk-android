@@ -7,7 +7,7 @@ To propose improvements, feel free to submit a PR or open an Issue.
 
 ## Setup your developer Environment
 
-To setup your enviroment, make sure you installed [Android Studio](https://developer.android.com/studio).
+To setup your environment, make sure you installed [Android Studio](https://developer.android.com/studio).
 
 **Note**: you can also compile and develop using only the Android SDK and your IDE of choice, e.g.: IntelliJ Idea, Vim, etc.
 
@@ -46,9 +46,14 @@ The whole project is covered by a set of static analysis tools, linters and test
 ./gradlew instrumentTestAll
 
 # launches the detekt static analysis for all modules
-./gradlew detektAll
+# the detekt client needs to be installed on your machine as stated in the official documentation
+# https://detekt.dev/docs/gettingstarted/cli
+# the configuration files are stored in Datadog's dd-source repository
+detekt --config {dd-source}/domains/mobile/config/android/gitlab/detekt/detekt-common.yml
+detekt --config {dd-source}/domains/mobile/config/android/gitlab/detekt/detekt-public-api.yml
 
-# launches the ktlint check and formatter for all Kotlin files (the ktlint client needs to be installed on your machine)
+# launches the ktlint check and formatter for all Kotlin files 
+# the ktlint client needs to be installed on your machine 
 ktlint -F "**/*.kt" "**/*.kts" '!**/build/generated/**' '!**/build/kspCaches/**'
 
 # launches the Android linter for all modules
@@ -143,6 +148,13 @@ any change you introduce are still compatible with Java. If you want to add
 Kotlin specific features (DSL, lambdas, …), make sure there is a way to get the
 same feature from a Java source code.
 
+### Code qualituy
+
+Our code uses [Detekt](https://detekt.dev/) static analysis with a shared configuration, slightly
+stricter than the default one. A Detekt check is ran on every on every PR to ensure that all new code
+follow this rule.
+Current Detekt version: 1.22.0
+
 ### Code style
 
 Our coding style is ensured by [KtLint](https://ktlint.github.io/), with the
@@ -157,7 +169,7 @@ following regions.
 
 ```kotlin
 
-class Foo :Observable(), Runnable {
+class Foo : Observable(), Runnable {
     
     // region Observable
 

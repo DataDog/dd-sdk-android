@@ -13,7 +13,7 @@ import io.realm.annotations.PrimaryKey
 import io.realm.annotations.RealmField
 import java.util.UUID
 
-open class LogRealm(
+internal open class LogRealm(
     @RealmField(name = BaseColumns._ID)
     @PrimaryKey
     var id: String = UUID.randomUUID().toString(),

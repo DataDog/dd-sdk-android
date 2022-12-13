@@ -13,7 +13,8 @@ import androidx.lifecycle.ViewModel
 import timber.log.Timber
 import java.security.SecureRandom
 
-class VitalsViewModel : ViewModel() {
+@Suppress("MagicNumber")
+internal class VitalsViewModel : ViewModel() {
 
     private val rng = SecureRandom()
     private val piComputer = PiDigitComputerBBP()

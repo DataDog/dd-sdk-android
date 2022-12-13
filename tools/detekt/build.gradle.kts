@@ -5,14 +5,12 @@
  */
 
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.detektConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
     id("com.github.ben-manes.versions")
-    id("io.gitlab.arturbosch.detekt")
 }
 
 dependencies {
@@ -27,6 +25,5 @@ dependencies {
 }
 
 kotlinConfig()
-detektConfig()
 junitConfig()
 dependencyUpdateConfig()

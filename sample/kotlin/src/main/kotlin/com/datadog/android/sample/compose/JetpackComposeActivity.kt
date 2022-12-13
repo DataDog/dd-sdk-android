@@ -33,8 +33,12 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
+/**
+ * An activity to showcase Jetpack Compose instrumentation.
+ */
 class JetpackComposeActivity : AppCompatActivity() {
 
+    @Suppress("LongMethod")
     @OptIn(ExperimentalPagerApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -115,12 +119,4 @@ class JetpackComposeActivity : AppCompatActivity() {
             }
         }
     }
-}
-
-enum class Page {
-    Navigation,
-    Interactions;
-
-    val trackingName: String
-        get() = "Compose $this"
 }

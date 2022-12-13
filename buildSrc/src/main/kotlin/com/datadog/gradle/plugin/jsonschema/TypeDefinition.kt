@@ -35,7 +35,7 @@ sealed class TypeDefinition {
         override val description: String = ""
     ) : TypeDefinition() {
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
-            throw IllegalStateException("Can't merge Constant with type $other")
+            error("Can't merge Constant with type $other")
         }
 
         override fun matches(other: TypeDefinition): Boolean {
@@ -52,7 +52,7 @@ sealed class TypeDefinition {
             if (other is Primitive && type == other.type) {
                 return Primitive(type, "$description\n${other.description}".trim())
             } else {
-                throw IllegalStateException("Can't merge Primitive with type $other")
+                error("Can't merge Primitive with type $other")
             }
         }
 
@@ -77,7 +77,7 @@ sealed class TypeDefinition {
         override val description: String = ""
     ) : TypeDefinition() {
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
-            throw IllegalStateException("Can't merge Array with type $other")
+            error("Can't merge Array with type $other")
         }
 
         override fun matches(other: TypeDefinition): Boolean {
@@ -180,7 +180,7 @@ sealed class TypeDefinition {
     ) : TypeDefinition() {
 
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
-            throw IllegalStateException("Can't merge Enum with type $other")
+            error("Can't merge Enum with type $other")
         }
 
         override fun matches(other: TypeDefinition): Boolean {
@@ -191,7 +191,7 @@ sealed class TypeDefinition {
             return when (type) {
                 JsonType.NUMBER -> Number::class
                 JsonType.STRING, JsonType.OBJECT, null -> String::class
-                else -> throw IllegalStateException("Not yet implemented")
+                else -> error("Not yet implemented")
             }
         }
 
@@ -227,7 +227,7 @@ sealed class TypeDefinition {
     ) : TypeDefinition() {
 
         override fun mergedWith(other: TypeDefinition): TypeDefinition {
-            throw IllegalStateException("Can't merge Multiclass with type $other")
+            error("Can't merge Multiclass with type $other")
         }
 
         override fun matches(other: TypeDefinition): Boolean {

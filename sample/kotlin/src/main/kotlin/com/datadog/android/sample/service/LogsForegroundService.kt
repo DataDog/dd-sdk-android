@@ -14,31 +14,19 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import com.datadog.android.log.Logger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.R
 import java.io.IOException
 import java.lang.IllegalStateException
 import java.security.SecureRandom
 
+@Suppress("MagicNumber", "UndocumentedPublicClass")
 class LogsForegroundService : Service() {
 
     private val random = SecureRandom()
-
-    private val logger: Logger by lazy {
-        Logger.Builder()
-            .setLoggerName("foreground_service")
-            .setLogcatLogsEnabled(true)
-            .build()
-            .apply {
-                addTag("flavor", BuildConfig.FLAVOR)
-                addTag("build_type", BuildConfig.BUILD_TYPE)
-            }
-    }
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -170,23 +158,23 @@ class LogsForegroundService : Service() {
 
     private fun randomThrowable(): Throwable {
         return when (random.nextInt() % 4) {
-            0 -> IllegalArgumentException()
-            1 -> IllegalStateException()
-            2 -> SecurityException()
-            else -> IOException()
+            0 -> IllegalArgumentException("We shouldn't be doing this")
+            1 -> IllegalStateException("We shouldn't be doing that either")
+            2 -> SecurityException("Something wrong with the security")
+            else -> IOException("Oups, can't read or write something")
         }
     }
 
     companion object {
-        const val CHANNEL_ID = "LogsServiceChannel"
-        const val NOTIFICATION_ID = 1
-        const val STOP_SERVICE_ACTION = "STOP_SERVICE"
-        const val SEND_RUM_ERROR = "SEND_RUM_ERROR"
-        const val SEND_RUM_ACTION = "SEND_RUM_ACTION"
-        const val START_RUM_RESOURCE = "START_RUM_RESOURCE"
-        const val STOP_RUM_RESOURCE = "STOP_RUM_RESOURCE"
-        const val BACKGROUND_RESOURCE_URL = "background/background-resource/1"
-        const val BACKGROUND_ACTION_KEY = "BackgroundAction"
-        const val BACKGROUND_ERROR_KEY = "BackgroundError"
+        internal const val CHANNEL_ID = "LogsServiceChannel"
+        internal const val NOTIFICATION_ID = 1
+        internal const val STOP_SERVICE_ACTION = "STOP_SERVICE"
+        internal const val SEND_RUM_ERROR = "SEND_RUM_ERROR"
+        internal const val SEND_RUM_ACTION = "SEND_RUM_ACTION"
+        internal const val START_RUM_RESOURCE = "START_RUM_RESOURCE"
+        internal const val STOP_RUM_RESOURCE = "STOP_RUM_RESOURCE"
+        internal const val BACKGROUND_RESOURCE_URL = "background/background-resource/1"
+        internal const val BACKGROUND_ACTION_KEY = "BackgroundAction"
+        internal const val BACKGROUND_ERROR_KEY = "BackgroundError"
     }
 }

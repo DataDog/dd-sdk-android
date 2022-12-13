@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 import android.app.Application
 import android.content.res.Resources
 import android.view.View
+import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.utils.forge.Configurator
 import com.nhaarman.mockitokotlin2.mock
@@ -96,7 +97,7 @@ class GesturesUtilsTest {
 
         // When
         assertThat(mockAppContext.resourceIdName(resourceId))
-            .isEqualTo("0x${resourceId.toString(16)}")
+            .isEqualTo("0x${resourceId.toHexString()}")
     }
 
     @Test
@@ -114,7 +115,7 @@ class GesturesUtilsTest {
 
         // When
         assertThat(mockAppContext.resourceIdName(resourceId))
-            .isEqualTo("0x${resourceId.toString(16)}")
+            .isEqualTo("0x${resourceId.toHexString()}")
     }
 
     @Test
@@ -128,7 +129,7 @@ class GesturesUtilsTest {
 
         // When
         assertThat(mockAppContext.resourceIdName(resourceId))
-            .isEqualTo("0x${resourceId.toString(16)}")
+            .isEqualTo("0x${resourceId.toHexString()}")
     }
 
     @Test

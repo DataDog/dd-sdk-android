@@ -4,15 +4,16 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sample.data.db
+package com.datadog.android.sample.data.db.sqlite
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.provider.BaseColumns
+import com.datadog.android.sample.data.db.DatadogDbContract
 import com.datadog.android.sqlite.DatadogDatabaseErrorHandler
 
-class DatadogSqliteHelper(context: Context) :
+internal class DatadogSqliteHelper(context: Context) :
     SQLiteOpenHelper(
         context,
         DatadogDbContract.DB_NAME,

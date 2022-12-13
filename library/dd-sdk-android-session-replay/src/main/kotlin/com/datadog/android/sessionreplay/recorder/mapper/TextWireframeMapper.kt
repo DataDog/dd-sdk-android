@@ -43,7 +43,7 @@ internal open class TextWireframeMapper(
         return MobileSegment.TextStyle(
             resolveFontFamily(textView.typeface),
             textView.textSize.toLong().densityNormalized(pixelsDensity),
-            colorAndAlphaAsStringHexa(textView.currentTextColor, OPAQUE_AS_HEXA)
+            colorAndAlphaAsStringHexa(textView.currentTextColor, COLOR_CHANNEL_MAX_VALUE)
         )
     }
 

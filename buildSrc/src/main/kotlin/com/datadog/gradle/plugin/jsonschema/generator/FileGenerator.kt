@@ -55,7 +55,7 @@ class FileGenerator(
         val rootTypeName = when (definition) {
             is TypeDefinition.Class -> definition.name
             is TypeDefinition.OneOfClass -> definition.name
-            else -> throw IllegalStateException("Top level type $definition is not supported")
+            else -> error("Top level type $definition is not supported")
         }
 
         val fileBuilder = FileSpec.builder(packageName, rootTypeName)

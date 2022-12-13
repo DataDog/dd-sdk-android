@@ -27,8 +27,6 @@ import com.google.gson.JsonArray
  * The goal is to make those events part of a unique mobile session.
  * Please note that the WebView events will not be tracked unless the web page's URL Host is part of
  * the list defined in the global [Configuration], or in this constructor.
- * @param allowedHosts a list of all the hosts that you want to track when loaded in the
- * WebView.
  * @see [Configuration.Builder.setWebViewTrackingHosts]
  */
 class DatadogEventBridge

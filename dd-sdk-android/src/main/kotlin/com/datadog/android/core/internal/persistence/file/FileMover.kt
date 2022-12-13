@@ -36,6 +36,7 @@ internal class FileMover(val internalLogger: Logger) {
     /**
      * Move the children files from `srcDir` to the `destDir`.
      */
+    @Suppress("ReturnCount")
     @WorkerThread
     fun moveFiles(srcDir: File, destDir: File): Boolean {
         if (!srcDir.existsSafe()) {

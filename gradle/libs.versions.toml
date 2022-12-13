@@ -49,7 +49,7 @@ kover="0.5.0"
 kspTesting="1.4.7"
 
 # Tools
-detekt = "1.18.0"
+detekt = "1.22.0"
 dokka = "1.6.10"
 unmock = "0.7.9"
 robolectric = "4.4_r1-robolectric-r2"
@@ -88,7 +88,6 @@ kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", ver
 kotlinSPGradlePlugin = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin", version.ref = "kotlinSP" }
 dokkaGradlePlugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 unmockGradlePlugin = { module = "com.github.bjoernq:unmockplugin", version.ref = "unmock" }
-detektGradlePlugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
 realmGradlePlugin = { module = "io.realm:realm-gradle-plugin", version.ref = "realm" }
 sqlDelightGradlePlugin = { module = "com.squareup.sqldelight:gradle-plugin", version.ref = "sqlDelight" }
 

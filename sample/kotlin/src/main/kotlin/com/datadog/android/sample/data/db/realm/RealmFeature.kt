@@ -9,7 +9,7 @@ package com.datadog.android.sample.data.db.realm
 import android.content.Context
 import io.realm.Realm
 
-object RealmFeature {
+internal object RealmFeature {
 
     private var wasInitialised = false
 

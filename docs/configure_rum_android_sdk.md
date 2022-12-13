@@ -1,7 +1,8 @@
 # Configure Android SDK
 
-If you have not set up the SDK yet, follow the [in-app setup instructions][1] or refer to the [Android RUM setup documentation][2]. 
+## Overview
 
+If you have not set up the SDK yet, follow the [in-app setup instructions][1] or refer to the [Android RUM setup documentation][2]. 
 
 ## Enrich user sessions
 
@@ -57,24 +58,26 @@ In addition to RUM’s default attributes, you can measure where your applicatio
 {{% /tab %}}
 {{< /tabs >}}
 
-Once the timing is sent, the timing is accessible as `@view.custom_timings.<timing_name>`. For example: `@view.custom_timings.hero_image`. You must [create a measure](https://docs.datadoghq.com/real_user_monitoring/explorer/?tab=measures#setup-facets-and-measures) before graphing it in RUM analytics or in dashboards. 
+Once the timing is sent, the timing is accessible as `@view.custom_timings.<timing_name>`. For example: `@view.custom_timings.hero_image`. You must [create a measure][10] before graphing it in RUM analytics or in dashboards. 
 
 ### Custom Actions
 
 In addition to [tracking actions automatically][5], you can also track specific custom user actions (such as taps, clicks, and scrolls) with `RumMonitor#addUserAction`. For continuous action tracking (for example, tracking a user scrolling a list), use `RumMonitor#startUserAction` and `RumMonitor#stopUserAction`.
 
+Note the action type should be one of the following: "custom", "click", "tap", "scroll", "swipe", "back".
+
 {{< tabs >}}
 {{% tab "Kotlin" %}}
    ```kotlin
        fun onUserInteraction() { 
-            GlobalRum.get().addUserAction(resourceKey, method, url, resourceAttributes)
+            GlobalRum.get().addUserAction(actionType, name, actionAttributes)
        }
    ```
 {{% /tab %}}
 {{% tab "Java" %}}
    ```java
        public void onUserInteraction() {
-            GlobalRum.get().addUserAction(resourceKey, method, url, resourceAttributes);
+            GlobalRum.get().addUserAction(actionType, name, actionAttributes);
        }
    ```
 {{% /tab %}}
@@ -447,5 +450,6 @@ GlobalRum.registerIfAbsent(monitor)
 [5]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#initialization-parameters
 [6]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#automatically-track-network-requests
 [7]: https://github.com/DataDog/dd-sdk-android/tree/master/sample/kotlin/src/main/kotlin/com/datadog/android/sample/widget
-[8]: https://square.github.io/okhttp/events/
-[9]: https://docs.datadoghq.com/real_user_monitoring/android/data_collected/?tab=error#event-specific-attributes
+[8]: https://square.github.io/okhttp/features/events/
+[9]: https://docs.datadoghq.com/real_user_monitoring/android/data_collected/#event-specific-attributes
+[10]: https://docs.datadoghq.com/real_user_monitoring/explorer/search/#setup-facets-and-measures

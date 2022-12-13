@@ -17,6 +17,7 @@ import com.squareup.kotlinpoet.TypeName
 
 internal val NOTHING_NULLABLE = NOTHING.copy(nullable = true)
 
+@Suppress("ReturnCount")
 internal fun String.variableName(): String {
     val split = this.split("_").filter { it.isNotBlank() }
     if (split.isEmpty()) return ""

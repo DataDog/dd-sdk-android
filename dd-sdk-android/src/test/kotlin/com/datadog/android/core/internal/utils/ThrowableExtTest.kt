@@ -33,10 +33,10 @@ internal class ThrowableExtTest {
         // Then
         val lines = result.lines()
         assertThat(lines.first()).contains(fakeThrowable.message)
-        stack.forEachIndexed { i, it ->
+        stack.forEachIndexed { i, frame ->
             assertThat(lines[i + 1])
-                .contains(it.className)
-                .contains(it.methodName)
+                .contains(frame.className)
+                .contains(frame.methodName)
         }
     }
 
@@ -55,25 +55,25 @@ internal class ThrowableExtTest {
         // Then
         val lines = result.lines()
         assertThat(lines.first()).contains(message)
-        topStack.forEachIndexed { i, it ->
+        topStack.forEachIndexed { i, frame ->
             assertThat(lines[i + 1])
-                .contains(it.className)
-                .contains(it.methodName)
+                .contains(frame.className)
+                .contains(frame.methodName)
         }
 
         val offset = topStack.size + 1
         assertThat(lines.get(offset))
             .contains("Caused by")
             .contains(fakeThrowable.message)
-        stack.forEachIndexed { i, it ->
+        stack.forEachIndexed { i, frame ->
             // When the "Caused by …" stacktrace has common frames with the previous one,
             // those are not displayed and replaced with "… n more"
             // In this test, there are at least 8 non common frames between the fakeThrowable
             // and topThrowable
             if (i < 8) {
                 assertThat(lines[i + offset + 1])
-                    .contains(it.className)
-                    .contains(it.methodName)
+                    .contains(frame.className)
+                    .contains(frame.methodName)
             }
         }
     }

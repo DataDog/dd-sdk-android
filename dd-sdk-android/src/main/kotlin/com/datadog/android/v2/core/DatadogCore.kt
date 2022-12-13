@@ -53,8 +53,12 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Internal implementation of the [SdkCore] interface.
+ * @param context the application's Android [Context]
  * @param credentials the Datadog credentials for this instance
+ * @param configuration the Datadog configuration for this instance
+ * @param instanceId the unique identifier for this instance
  */
+@Suppress("TooManyFunctions")
 internal class DatadogCore(
     context: Context,
     internal val credentials: Credentials,

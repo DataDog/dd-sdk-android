@@ -123,8 +123,9 @@ open class GenerateJsonSchemaTask : DefaultTask() {
     }
 
     private fun getOutputDir(): File {
-        val srcDir = File(project.projectDir, "src")
-        val mainDir = File(srcDir, "main")
+        val genDir = File(project.buildDir, "generated")
+        val json2kotlinDir = File(genDir, "json2kotlin")
+        val mainDir = File(json2kotlinDir, "main")
         val file = File(mainDir, "kotlin")
         if (!file.exists()) file.mkdirs()
         return file

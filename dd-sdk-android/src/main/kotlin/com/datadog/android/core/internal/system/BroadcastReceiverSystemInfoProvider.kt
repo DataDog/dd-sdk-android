@@ -16,6 +16,7 @@ import android.os.PowerManager
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.log.internal.utils.debugWithTelemetry
+import kotlin.math.roundToInt
 
 internal class BroadcastReceiverSystemInfoProvider(
     private val buildSdkVersionProvider: BuildSdkVersionProvider = DefaultBuildSdkVersionProvider()
@@ -75,11 +76,13 @@ internal class BroadcastReceiverSystemInfoProvider(
             BatteryManager.EXTRA_STATUS,
             BatteryManager.BATTERY_STATUS_UNKNOWN
         )
-        val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-        val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, 100)
-        val pluggedStatus = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)
+        val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, BATTERY_LEVEL_UNKNOWN)
+        val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, DEFAULT_BATTERY_SCALE)
+        val pluggedStatus = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, BATTERY_UNPLUGGED)
         val batteryStatus = SystemInfo.BatteryStatus.fromAndroidStatus(status)
-        val batteryLevel = (level * 100) / scale
+
+        @Suppress("UnsafeThirdPartyFunctionCall") // Not a NaN here
+        val batteryLevel = ((level * DEFAULT_BATTERY_SCALE.toFloat()) / scale).roundToInt()
         val onExternalPowerSource = pluggedStatus in PLUGGED_IN_STATUS_VALUES
         val batteryFullOrCharging = batteryStatus in batteryFullOrChargingStatus
         systemInfo = systemInfo.copy(
@@ -103,6 +106,10 @@ internal class BroadcastReceiverSystemInfoProvider(
     // endregion
 
     companion object {
+
+        private const val DEFAULT_BATTERY_SCALE = 100
+        private const val BATTERY_UNPLUGGED = -1
+        private const val BATTERY_LEVEL_UNKNOWN = -1
 
         private val batteryFullOrChargingStatus = setOf(
             SystemInfo.BatteryStatus.CHARGING,

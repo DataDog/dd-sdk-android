@@ -24,6 +24,7 @@ internal interface Storage {
     //   request transformation).
     /**
      * Utility to write data, asynchronously.
+     * @param datadogContext the context for the write operation
      * @param forceNewBatch if `true` will force the writer to start a new batch before storing the
      * data. By default this flag is `false`.
      * @param callback an operation to perform with a [EventBatchWriter] that will target the current

@@ -9,7 +9,7 @@ package com.datadog.android.sample
 import androidx.navigation.NavDestination
 import com.datadog.android.rum.tracking.ComponentPredicate
 
-class SampleNavigationPredicate : ComponentPredicate<NavDestination> {
+internal class SampleNavigationPredicate : ComponentPredicate<NavDestination> {
     override fun accept(component: NavDestination): Boolean {
         return true
     }

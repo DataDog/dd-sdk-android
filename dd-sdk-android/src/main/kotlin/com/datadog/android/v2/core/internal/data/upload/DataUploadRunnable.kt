@@ -24,6 +24,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToLong
 
 internal class DataUploadRunnable(
     private val threadPoolExecutor: ScheduledThreadPoolExecutor,
@@ -32,7 +33,8 @@ internal class DataUploadRunnable(
     private val contextProvider: ContextProvider,
     private val networkInfoProvider: NetworkInfoProvider,
     private val systemInfoProvider: SystemInfoProvider,
-    uploadFrequency: UploadFrequency
+    uploadFrequency: UploadFrequency,
+    private val batchUploadWaitTimeoutMs: Long = CoreFeature.NETWORK_TIMEOUT_MS
 ) : UploadRunnable {
 
     internal var currentDelayIntervalMs = DEFAULT_DELAY_FACTOR * uploadFrequency.baseStepMs
@@ -55,18 +57,21 @@ internal class DataUploadRunnable(
                     lock.countDown()
                 }
             ) { batchId, reader ->
-                val batch = reader.read()
-                val batchMeta = reader.currentMetadata()
+                try {
+                    val batch = reader.read()
+                    val batchMeta = reader.currentMetadata()
 
-                consumeBatch(
-                    context,
-                    batchId,
-                    batch,
-                    batchMeta
-                )
-                lock.countDown()
+                    consumeBatch(
+                        context,
+                        batchId,
+                        batch,
+                        batchMeta
+                    )
+                } finally {
+                    lock.countDown()
+                }
             }
-            lock.await(CoreFeature.NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            lock.await(batchUploadWaitTimeoutMs, TimeUnit.MILLISECONDS)
         }
 
         scheduleNextUpload()
@@ -120,11 +125,17 @@ internal class DataUploadRunnable(
     }
 
     private fun decreaseInterval() {
-        currentDelayIntervalMs = max(minDelayMs, currentDelayIntervalMs * DECREASE_PERCENT / 100)
+        currentDelayIntervalMs = max(
+            minDelayMs,
+            (currentDelayIntervalMs * DECREASE_PERCENT).roundToLong()
+        )
     }
 
     private fun increaseInterval() {
-        currentDelayIntervalMs = min(maxDelayMs, currentDelayIntervalMs * INCREASE_PERCENT / 100)
+        currentDelayIntervalMs = min(
+            maxDelayMs,
+            (currentDelayIntervalMs * INCREASE_PERCENT).roundToLong()
+        )
     }
 
     // endregion
@@ -136,7 +147,7 @@ internal class DataUploadRunnable(
         internal const val DEFAULT_DELAY_FACTOR = 5
         internal const val MAX_DELAY_FACTOR = 10
 
-        const val DECREASE_PERCENT = 90
-        const val INCREASE_PERCENT = 110
+        const val DECREASE_PERCENT = 0.90
+        const val INCREASE_PERCENT = 1.10
     }
 }

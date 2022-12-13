@@ -13,6 +13,8 @@ import android.os.Looper
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.nightly.activities.CRASH_DELAY_MS
+import com.datadog.android.nightly.activities.HUNDRED_PERCENT
 import com.datadog.android.nightly.exceptions.RumDisabledException
 import com.datadog.android.nightly.exceptions.RumEnabledException
 import com.datadog.android.privacy.TrackingConsent
@@ -52,7 +54,7 @@ internal open class JvmCrashService : CrashService() {
     @SuppressWarnings("ThrowingInternalException")
     private fun scheduleJvmCrash(exception: Exception) {
         // we will give time to the RUM view event to persist before crashing the process
-        Handler(Looper.getMainLooper()).postDelayed({ throw exception }, 1000)
+        Handler(Looper.getMainLooper()).postDelayed({ throw exception }, CRASH_DELAY_MS)
     }
 
     private fun startSdk(
@@ -66,7 +68,7 @@ internal open class JvmCrashService : CrashService() {
             crashReportsEnabled = crashReportsEnabled,
             rumEnabled = rumEnabled,
             sessionReplayEnabled = true
-        ).sampleTelemetry(100f)
+        ).sampleTelemetry(HUNDRED_PERCENT)
         Datadog.initialize(
             this,
             getCredentials(),

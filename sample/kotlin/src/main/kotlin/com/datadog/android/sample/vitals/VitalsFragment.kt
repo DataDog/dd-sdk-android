@@ -16,7 +16,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
 
-class VitalsFragment :
+internal class VitalsFragment :
     Fragment(),
     View.OnClickListener,
     CompoundButton.OnCheckedChangeListener {

@@ -83,7 +83,7 @@ data class NetworkInfo(
 
         @JvmStatic
         @Throws(JsonParseException::class)
-        @Suppress("StringLiteralDuplication")
+        @Suppress("StringLiteralDuplication", "ThrowsCount")
         fun fromJsonObject(jsonObject: JsonObject): NetworkInfo {
             try {
                 val connectivity = Connectivity.fromJson(jsonObject.get("connectivity").asString)

@@ -13,7 +13,7 @@ import coil.load
 import com.datadog.android.coil.DatadogCoilRequestListener
 import okhttp3.OkHttpClient
 
-class CoilImageLoader : ImageLoader {
+internal class CoilImageLoader : ImageLoader {
 
     private val listener = DatadogCoilRequestListener()
 

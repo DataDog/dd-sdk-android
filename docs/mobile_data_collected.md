@@ -11,10 +11,10 @@ There are additional [metrics and attributes that are specific to a given event 
 | Event Type     | Retention | Description                                                                                                                                                                                                                                                   |
 |----------------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Session  | 30 days   | A session represents a real user journey on your mobile application. It begins when the user launches the application, and the session remains live as long as the user stays active. During the user journey, all RUM events generated as part of the session will share the same `session.id` attribute. **Note:** The session resets after 15 minutes of inactivity. If the application is killed by the OS, you can reset the session while the application is in the background. |
-| View     | 30 days   | A view represents a unique screen (or screen segment) on your mobile application. A view starts and stops when the `onActivityResumed` and `onActivityPaused` callbacks are called through the `ActivityLifecycleCallbacks` interface. Each occurrence is classified as a distinct view. While a user stays on a view, RUM event attributes (Errors, Resources, Actions) get attached to the view with a unique `view.id`.                     |
+| View     | 30 days   | A view represents a unique screen (or screen segment) on your mobile application. A view starts and stops when the `onActivityResumed` and `onActivityPaused` callbacks are called through the `ActivityLifecycleCallbacks` interface. Each occurrence is classified as a distinct view. While a user stays on a view, RUM event attributes (Errors, Resources, and Actions) get attached to the view with a unique `view.id`.                     |
 | Resource  | 15 days   | A resource represents network requests to first-party hosts, APIs, and third-party providers in your mobile application. All requests generated during a user session are attached to the view with a unique `resource.id`.                                                                                           |
 | Error     | 30 days   | An error represents an exception or crash emitted by the mobile application attached to the view it is generated in.                                                                                                                                            |
-| Action    | 30 days   | An action represents user activity in your mobile application (application launch, tap, swipe, back etc). Each action is attached with a unique `action.id` attached to the view it gets generated in.                                                                                                                                              |
+| Action    | 30 days   | An action represents user activity in your mobile application (such as an application launch, tap, swipe, or back). Each action is attached with a unique `action.id` attached to the view it gets generated in.                                                                                                                                              |
 | Long Task | 15 days | A long task event is generated for any task in the application that blocks the main thread for more than the specified duration threshold. |
 
 The following diagram illustrates the RUM event hierarchy:
@@ -32,7 +32,7 @@ RUM collects common attributes for all events and attributes specific to each ev
 |------------------|--------|-----------------------------|
 | `date` | integer  | Start of the event in milliseconds from epoch. |
 | `type`     | string | The type of the event (for example, `view` or `resource`).             |
-| `service` | string | The [unified service name][4] for this application used to corelate user sessions. |
+| `service` | string | The [unified service name][4] for this application used to correlate user sessions. |
 | `application.id` | string | The Datadog application ID. |
 
 ### Device
@@ -45,8 +45,8 @@ The following device-related attributes are attached automatically to all events
 | `device.brand`  | string | The device brand as reported by the device (System User-Agent).  |
 | `device.model`   | string | The device model as reported by the device (System User-Agent).    |
 | `device.name` | string | The device name as reported by the device (System User-Agent).  |
-| `connectivity.status` | string | Status of device network reachability (`connected`, `not connected`, `maybe`). |
-| `connectivity.interfaces` | string | The list of available network interfaces (for example, `bluetooth`, `cellular`, `ethernet`, `wifi`). |
+| `connectivity.status` | string | Status of device network reachability (`connected`, `not connected`, or `maybe`). |
+| `connectivity.interfaces` | string | The list of available network interfaces (for example, `bluetooth`, `cellular`, `ethernet`, or `wifi`). |
 | `connectivity.cellular.technology` | string | The type of a radio technology used for cellular connection. |
 | `connectivity.cellular.carrier_name` | string | The name of the SIM carrier. |
 
@@ -57,9 +57,9 @@ The following OS-related attributes are attached automatically to all events col
 
 | Attribute name                           | Type   | Description                                     |
 |------------------------------------------|--------|-------------------------------------------------|
-| `os.name`       | string | The OS name as reported by the by the device (System User-Agent).       |
-| `os.version`  | string | The OS version as reported by the by the device (System User-Agent).  |
-| `os.version_major`   | string | The OS version major as reported by the by the device (System User-Agent).   |
+| `os.name`       | string | The OS name as reported by the device (System User-Agent).       |
+| `os.version`  | string | The OS version as reported by the device (System User-Agent).  |
+| `os.version_major`   | string | The OS version major as reported by the device (System User-Agent).   |
 
 
 ### Geo-location
@@ -71,8 +71,8 @@ The following attributes are related to the geo-location of IP addresses:
 | `geo.country`         | string | Name of the country.                                                                                                                 |
 | `geo.country_iso_code`     | string | ISO Code of the country (for example, `US` for the United States or `FR` for France).                                                  |
 | `geo.country_subdivision`     | string | Name of the first subdivision level of the country (for example, `California` in the United States or the `Sarthe` department in France). |
-| `geo.continent_code`       | string | ISO code of the continent (`EU`, `AS`, `NA`, `AF`, `AN`, `SA`, `OC`).                                                                 |
-| `geo.continent`       | string | Name of the continent (`Europe`, `Australia`, `North America`, `Africa`, `Antarctica`, `South America`, `Oceania`).                    |
+| `geo.continent_code`       | string | ISO code of the continent (`EU`, `AS`, `NA`, `AF`, `AN`, `SA`, or `OC`).                                                                 |
+| `geo.continent`       | string | Name of the continent (`Europe`, `Australia`, `North America`, `Africa`, `Antarctica`, `South America`, or `Oceania`).                    |
 | `geo.city`            | string | The name of the city (for example, `San Francisco`, `Paris`, or `New York`).                                                                                   |
 
 
@@ -173,7 +173,7 @@ Front-end errors are collected with Real User Monitoring (RUM). The error messag
 |-----------------|--------|-------------------------------------------------------------------|
 | `error.source`  | string | Where the error originates from (for example, `webview`, `logger`, or `network`).     |
 | `error.type`    | string | The error type (or error code in some cases).                   |
-| `error.message` | string | A concise, human-readable, one-line message explaining the event. |
+| `error.message` | string | A concise, human-readable one-line message explaining the event. |
 | `error.stack`   | string | The stack trace or complementary information about the error.     |
 | `error.issue_id`   | string | The stack trace or complementary information about the error.     |
 
@@ -211,7 +211,7 @@ Network errors include information about failing HTTP requests. The following fa
 
 ## Data Storage
 
-Before data is uploaded to Datadog, it is stored in cleartext in your application's cache directory. This cache folder is protected by [Android's Application Sandbox][6], meaning that on most devices this data can't be read by other applications. However, if the mobile device is rooted, or someone tempers with the linux kernel, the stored data might become readable.
+Before data is uploaded to Datadog, it is stored in cleartext in your application's cache directory. This cache folder is protected by [Android's Application Sandbox][6], meaning that on most devices this data can't be read by other applications. However, if the mobile device is rooted, or someone tempers with the Linux kernel, the stored data might become readable.
 
 ## Further Reading
 

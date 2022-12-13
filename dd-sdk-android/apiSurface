@@ -7,8 +7,6 @@ object com.datadog.android.Datadog
   fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
   fun addUserExtraInfo(Map<String, Any?> = emptyMap())
   fun enableRumDebugging(Boolean)
-  fun stopSessionRecording()
-  fun startSessionRecording()
   val _internal: _InternalProxy
 object com.datadog.android.DatadogEndpoint
   const val LOGS_US1: String
@@ -30,11 +28,6 @@ object com.datadog.android.DatadogEndpoint
   const val NTP_1: String
   const val NTP_2: String
   const val NTP_3: String
-  const val SESSION_REPLAY_US1: String
-  const val SESSION_REPLAY_US3: String
-  const val SESSION_REPLAY_US5: String
-  const val SESSION_REPLAY_US1_FED: String
-  const val SESSION_REPLAY_EU1: String
 class com.datadog.android.DatadogEventListener : okhttp3.EventListener
   override fun callStart(okhttp3.Call)
   override fun dnsStart(okhttp3.Call, String)
@@ -68,7 +61,6 @@ enum com.datadog.android.DatadogSite
   fun logsEndpoint(): String
   fun tracesEndpoint(): String
   fun rumEndpoint(): String
-  fun sessionReplayEndpoint(): String
 class com.datadog.android._InternalProxy
   class _TelemetryProxy
     fun debug(String)
@@ -85,7 +77,7 @@ enum com.datadog.android.core.configuration.BatchSize
   - LARGE
 data class com.datadog.android.core.configuration.Configuration
   class Builder
-    constructor(Boolean, Boolean, Boolean, Boolean, Boolean)
+    constructor(Boolean, Boolean, Boolean, Boolean)
     fun build(): Configuration
     fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
     fun setFirstPartyHosts(List<String>): Builder
@@ -95,7 +87,6 @@ data class com.datadog.android.core.configuration.Configuration
     fun useCustomTracesEndpoint(String): Builder
     fun useCustomCrashReportsEndpoint(String): Builder
     fun useCustomRumEndpoint(String): Builder
-    fun useCustomSessionReplayEndpoint(String): Builder
     fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
     fun disableInteractionTracking(): Builder
     fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
@@ -117,7 +108,6 @@ data class com.datadog.android.core.configuration.Configuration
     fun setAdditionalConfiguration(Map<String, Any>): Builder
     fun setProxy(java.net.Proxy, okhttp3.Authenticator?): Builder
     fun setEncryption(com.datadog.android.security.Encryption): Builder
-    fun setSessionReplayPrivacy(com.datadog.android.sessionreplay.SessionReplayPrivacy): Builder
     fun setVitalsUpdateFrequency(VitalsUpdateFrequency): Builder
   companion object 
 data class com.datadog.android.core.configuration.Credentials
@@ -224,72 +214,6 @@ class com.datadog.android.log.Logger
   fun addTag(String)
   fun removeTag(String)
   fun removeTagsWithKey(String)
-data class com.datadog.android.log.model.LogEvent
-  constructor(Status, kotlin.String, kotlin.String, kotlin.String, Logger, Dd, Usr? = null, Network? = null, Error? = null, kotlin.String, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
-  fun toJson(): com.google.gson.JsonElement
-  companion object 
-    fun fromJson(kotlin.String): LogEvent
-    fun fromJsonObject(com.google.gson.JsonObject): LogEvent
-  data class Logger
-    constructor(kotlin.String, kotlin.String? = null, kotlin.String)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Logger
-      fun fromJsonObject(com.google.gson.JsonObject): Logger
-  data class Dd
-    constructor(Device)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Dd
-      fun fromJsonObject(com.google.gson.JsonObject): Dd
-  data class Usr
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Usr
-      fun fromJsonObject(com.google.gson.JsonObject): Usr
-  data class Network
-    constructor(Client)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Network
-      fun fromJsonObject(com.google.gson.JsonObject): Network
-  data class Error
-    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Error
-      fun fromJsonObject(com.google.gson.JsonObject): Error
-  data class Device
-    constructor(kotlin.String)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Device
-      fun fromJsonObject(com.google.gson.JsonObject): Device
-  data class Client
-    constructor(SimCarrier? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Client
-      fun fromJsonObject(com.google.gson.JsonObject): Client
-  data class SimCarrier
-    constructor(kotlin.String? = null, kotlin.String? = null)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): SimCarrier
-      fun fromJsonObject(com.google.gson.JsonObject): SimCarrier
-  enum Status
-    constructor(kotlin.String)
-    - CRITICAL
-    - ERROR
-    - WARN
-    - INFO
-    - DEBUG
-    - TRACE
-    - EMERGENCY
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Status
 data class com.datadog.android.plugin.DatadogContext
   constructor(DatadogRumContext? = null)
 DEPRECATED interface com.datadog.android.plugin.DatadogPlugin : com.datadog.android.privacy.TrackingConsentProviderCallback
@@ -306,7 +230,6 @@ enum com.datadog.android.plugin.Feature
   - CRASH
   - TRACE
   - RUM
-  - SESSION_REPLAY
 enum com.datadog.android.privacy.TrackingConsent
   - GRANTED
   - NOT_GRANTED
@@ -418,6 +341,337 @@ interface com.datadog.android.rum.RumSessionListener
 class com.datadog.android.rum._RumInternalProxy
   fun addLongTask(Long, String)
   fun updatePerformanceMetric(RumPerformanceMetric, Double)
+class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStream
+  constructor(java.io.InputStream, String)
+  override fun read(): Int
+  override fun read(ByteArray): Int
+  override fun read(ByteArray, Int, Int): Int
+  override fun available(): Int
+  override fun skip(Long): Long
+  override fun markSupported(): Boolean
+  override fun mark(Int)
+  override fun reset()
+  override fun close()
+  companion object 
+open class com.datadog.android.rum.tracking.AcceptAllActivities : ComponentPredicate<android.app.Activity>
+  override fun accept(android.app.Activity): Boolean
+  override fun getViewName(android.app.Activity): String?
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
+open class com.datadog.android.rum.tracking.AcceptAllDefaultFragment : ComponentPredicate<android.app.Fragment>
+  override fun accept(android.app.Fragment): Boolean
+  override fun getViewName(android.app.Fragment): String?
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
+open class com.datadog.android.rum.tracking.AcceptAllNavDestinations : ComponentPredicate<androidx.navigation.NavDestination>
+  override fun accept(androidx.navigation.NavDestination): Boolean
+  override fun getViewName(androidx.navigation.NavDestination): String?
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
+open class com.datadog.android.rum.tracking.AcceptAllSupportFragments : ComponentPredicate<androidx.fragment.app.Fragment>
+  override fun accept(androidx.fragment.app.Fragment): Boolean
+  override fun getViewName(androidx.fragment.app.Fragment): String?
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
+abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy : android.app.Application.ActivityLifecycleCallbacks, TrackingStrategy
+  override fun register(android.content.Context)
+  override fun unregister(android.content.Context?)
+  override fun onActivityPaused(android.app.Activity)
+  override fun onActivityStarted(android.app.Activity)
+  override fun onActivityDestroyed(android.app.Activity)
+  override fun onActivitySaveInstanceState(android.app.Activity, android.os.Bundle)
+  override fun onActivityStopped(android.app.Activity)
+  override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
+  override fun onActivityResumed(android.app.Activity)
+  protected fun convertToRumAttributes(android.content.Intent?): Map<String, Any?>
+  protected fun convertToRumAttributes(android.os.Bundle?): Map<String, Any?>
+  companion object 
+class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
+  constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
+  override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
+  override fun onActivityStarted(android.app.Activity)
+  override fun onActivityResumed(android.app.Activity)
+  override fun onActivityPostResumed(android.app.Activity)
+  override fun onActivityPaused(android.app.Activity)
+  override fun onActivityDestroyed(android.app.Activity)
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
+interface com.datadog.android.rum.tracking.ComponentPredicate<T>
+  fun accept(T): Boolean
+  fun getViewName(T): String?
+class com.datadog.android.rum.tracking.FragmentViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
+  constructor(Boolean, ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android.app.Fragment> = AcceptAllDefaultFragment())
+  override fun onActivityStarted(android.app.Activity)
+  override fun onActivityStopped(android.app.Activity)
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
+interface com.datadog.android.rum.tracking.InteractionPredicate
+  fun getTargetName(Any): String?
+class com.datadog.android.rum.tracking.MixedViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
+  constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities(), ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android.app.Fragment> = AcceptAllDefaultFragment())
+  override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
+  override fun onActivityStarted(android.app.Activity)
+  override fun onActivityResumed(android.app.Activity)
+  override fun onActivityPaused(android.app.Activity)
+  override fun onActivityStopped(android.app.Activity)
+  override fun onActivityDestroyed(android.app.Activity)
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
+class com.datadog.android.rum.tracking.NavigationViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy, androidx.navigation.NavController.OnDestinationChangedListener
+  constructor(Int, Boolean, ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations())
+  override fun onActivityStarted(android.app.Activity)
+  override fun onActivityStopped(android.app.Activity)
+  override fun onActivityPaused(android.app.Activity)
+  override fun onDestinationChanged(androidx.navigation.NavController, androidx.navigation.NavDestination, android.os.Bundle?)
+  fun startTracking()
+  fun stopTracking()
+interface com.datadog.android.rum.tracking.TrackingStrategy
+  fun register(android.content.Context)
+  fun unregister(android.content.Context?)
+interface com.datadog.android.rum.tracking.ViewAttributesProvider
+  fun extractAttributes(android.view.View, MutableMap<String, Any?>)
+interface com.datadog.android.rum.tracking.ViewTrackingStrategy : TrackingStrategy
+DEPRECATED open class com.datadog.android.rum.webview.RumWebChromeClient : android.webkit.WebChromeClient
+  constructor()
+  override fun onConsoleMessage(android.webkit.ConsoleMessage?): Boolean
+  companion object 
+DEPRECATED open class com.datadog.android.rum.webview.RumWebViewClient : android.webkit.WebViewClient
+  override fun onPageStarted(android.webkit.WebView?, String?, android.graphics.Bitmap?)
+  override fun onPageFinished(android.webkit.WebView?, String?)
+  override fun onReceivedError(android.webkit.WebView?, Int, String?, String?)
+  override fun onReceivedError(android.webkit.WebView?, android.webkit.WebResourceRequest?, android.webkit.WebResourceError?)
+  override fun onReceivedHttpError(android.webkit.WebView?, android.webkit.WebResourceRequest?, android.webkit.WebResourceResponse?)
+  override fun onReceivedSslError(android.webkit.WebView?, android.webkit.SslErrorHandler?, android.net.http.SslError?)
+  open fun onProvideRumResourceAttributes(android.webkit.WebView?, String?): Map<String, Any?>
+  companion object 
+interface com.datadog.android.security.Encryption
+  fun encrypt(ByteArray): ByteArray
+  fun decrypt(ByteArray): ByteArray
+class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
+  constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
+  override fun onCorruption(android.database.sqlite.SQLiteDatabase)
+  companion object 
+class com.datadog.android.tracing.AndroidTracer : com.datadog.opentracing.DDTracer
+  override fun buildSpan(String): DDSpanBuilder
+  class Builder
+    constructor()
+    fun build(): AndroidTracer
+    fun setServiceName(String): Builder
+    fun setPartialFlushThreshold(Int): Builder
+    fun addGlobalTag(String, String): Builder
+    fun setBundleWithRumEnabled(Boolean): Builder
+  companion object 
+    fun logThrowable(io.opentracing.Span, Throwable)
+    fun logErrorMessage(io.opentracing.Span, String)
+interface com.datadog.android.tracing.TracedRequestListener
+  fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
+open class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
+  constructor(List<String>, TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+  constructor(TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+  override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
+  protected open fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
+  companion object 
+interface com.datadog.android.v2.api.EventBatchWriter
+  fun currentMetadata(): ByteArray?
+  fun write(ByteArray, ByteArray?): Boolean
+interface com.datadog.android.v2.api.FeatureConfiguration
+  fun register(SdkCore)
+interface com.datadog.android.v2.api.FeatureEventReceiver
+  fun onReceive(Any)
+interface com.datadog.android.v2.api.FeatureScope
+  fun withWriteContext((com.datadog.android.v2.api.context.DatadogContext, EventBatchWriter) -> Unit)
+  fun sendEvent(Any)
+data class com.datadog.android.v2.api.FeatureStorageConfiguration
+  constructor(Long, Int, Long, Long)
+data class com.datadog.android.v2.api.FeatureUploadConfiguration
+  constructor(RequestFactory)
+interface com.datadog.android.v2.api.InternalLogger
+  enum Level
+    - DEBUG
+    - INFO
+    - WARN
+    - ERROR
+  enum Target
+    - USER
+    - MAINTAINER
+    - TELEMETRY
+  fun log(Level, Target, String, Throwable?, Map<String, Any?>)
+  fun log(Level, List<Target>, String, Throwable?, Map<String, Any?>)
+interface com.datadog.android.v2.api.PayloadFormat
+  fun prefixBytes(): ByteArray
+  fun suffixBytes(): ByteArray
+  fun separatorBytes(): ByteArray
+data class com.datadog.android.v2.api.Request
+  constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
+interface com.datadog.android.v2.api.RequestFactory
+  fun create(com.datadog.android.v2.api.context.DatadogContext, List<ByteArray>, ByteArray?): Request
+  companion object 
+    const val CONTENT_TYPE_JSON: String
+    const val CONTENT_TYPE_TEXT_UTF8: String
+    const val HEADER_API_KEY: String
+    const val HEADER_EVP_ORIGIN: String
+    const val HEADER_EVP_ORIGIN_VERSION: String
+    const val HEADER_REQUEST_ID: String
+    const val QUERY_PARAM_SOURCE: String
+    const val QUERY_PARAM_TAGS: String
+interface com.datadog.android.v2.api.SdkCore
+  val time: com.datadog.android.v2.api.context.TimeInfo
+  fun registerFeature(String, FeatureStorageConfiguration, FeatureUploadConfiguration)
+  fun getFeature(String): FeatureScope?
+  fun setVerbosity(Int)
+  fun getVerbosity(): Int
+  fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
+  fun setUserInfo(com.datadog.android.core.model.UserInfo)
+  fun addUserProperties(Map<String, Any?>)
+  fun stop()
+  fun clearAllData()
+  fun flushStoredData()
+  fun updateFeatureContext(String, (MutableMap<String, Any?>) -> Unit)
+  fun getFeatureContext(String): Map<String, Any?>
+  fun setEventReceiver(String, FeatureEventReceiver)
+  fun removeEventReceiver(String)
+enum com.datadog.android.v2.api.SdkEndpoint
+  - US1
+  - US3
+  - US5
+  - US1_FED
+  - EU1
+data class com.datadog.android.v2.api.context.CarrierInfo
+  constructor(String?, String?)
+data class com.datadog.android.v2.api.context.DatadogContext
+  constructor(com.datadog.android.DatadogSite, String, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, com.datadog.android.privacy.TrackingConsent, Map<String, Map<String, Any?>>)
+data class com.datadog.android.v2.api.context.DeviceInfo
+  constructor(String, String, String, DeviceType, String, String, String, String, String)
+enum com.datadog.android.v2.api.context.DeviceType
+  - MOBILE
+  - TABLET
+  - TV
+  - DESKTOP
+  - OTHER
+data class com.datadog.android.v2.api.context.NetworkInfo
+  constructor(Connectivity, String?, Long?, Long?, Long?, Long?, String?)
+  enum Connectivity
+    - NETWORK_NOT_CONNECTED
+    - NETWORK_ETHERNET
+    - NETWORK_WIFI
+    - NETWORK_WIMAX
+    - NETWORK_BLUETOOTH
+    - NETWORK_2G
+    - NETWORK_3G
+    - NETWORK_4G
+    - NETWORK_5G
+    - NETWORK_MOBILE_OTHER
+    - NETWORK_CELLULAR
+    - NETWORK_OTHER
+data class com.datadog.android.v2.api.context.ProcessInfo
+  constructor(Boolean, Int)
+data class com.datadog.android.v2.api.context.TimeInfo
+  constructor(Long, Long, Long, Long)
+data class com.datadog.android.v2.api.context.UserInfo
+  constructor(String?, String?, String?, Map<String, Any?>)
+class com.datadog.android.webview.DatadogEventBridge
+  constructor()
+  constructor(List<String>)
+  fun send(String)
+  fun getAllowedWebViewHosts(): String
+  companion object 
+    fun setup(android.webkit.WebView)
+class com.datadog.tools.annotation.NoOpImplementation
+data class com.datadog.android.core.model.NetworkInfo
+  constructor(Connectivity = Connectivity.NETWORK_NOT_CONNECTED, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null)
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): NetworkInfo
+    fun fromJsonObject(com.google.gson.JsonObject): NetworkInfo
+  enum Connectivity
+    constructor(kotlin.String)
+    - NETWORK_NOT_CONNECTED
+    - NETWORK_ETHERNET
+    - NETWORK_WIFI
+    - NETWORK_WIMAX
+    - NETWORK_BLUETOOTH
+    - NETWORK_2G
+    - NETWORK_3G
+    - NETWORK_4G
+    - NETWORK_5G
+    - NETWORK_MOBILE_OTHER
+    - NETWORK_CELLULAR
+    - NETWORK_OTHER
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Connectivity
+data class com.datadog.android.core.model.UserInfo
+  constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): UserInfo
+    fun fromJsonObject(com.google.gson.JsonObject): UserInfo
+data class com.datadog.android.log.model.LogEvent
+  constructor(Status, kotlin.String, kotlin.String, kotlin.String, Logger, Dd, Usr? = null, Network? = null, Error? = null, kotlin.String, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): LogEvent
+    fun fromJsonObject(com.google.gson.JsonObject): LogEvent
+  data class Logger
+    constructor(kotlin.String, kotlin.String? = null, kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Logger
+      fun fromJsonObject(com.google.gson.JsonObject): Logger
+  data class Dd
+    constructor(Device)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Dd
+      fun fromJsonObject(com.google.gson.JsonObject): Dd
+  data class Usr
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Usr
+      fun fromJsonObject(com.google.gson.JsonObject): Usr
+  data class Network
+    constructor(Client)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Network
+      fun fromJsonObject(com.google.gson.JsonObject): Network
+  data class Error
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Error
+      fun fromJsonObject(com.google.gson.JsonObject): Error
+  data class Device
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Device
+      fun fromJsonObject(com.google.gson.JsonObject): Device
+  data class Client
+    constructor(SimCarrier? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Client
+      fun fromJsonObject(com.google.gson.JsonObject): Client
+  data class SimCarrier
+    constructor(kotlin.String? = null, kotlin.String? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): SimCarrier
+      fun fromJsonObject(com.google.gson.JsonObject): SimCarrier
+  enum Status
+    constructor(kotlin.String)
+    - CRITICAL
+    - ERROR
+    - WARN
+    - INFO
+    - DEBUG
+    - TRACE
+    - EMERGENCY
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Status
 data class com.datadog.android.rum.model.ActionChildProperties
   constructor(Action? = null)
   fun toJson(): com.google.gson.JsonElement
@@ -1584,116 +1838,6 @@ data class com.datadog.android.rum.model.ViewEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Plan
-class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStream
-  constructor(java.io.InputStream, String)
-  override fun read(): Int
-  override fun read(ByteArray): Int
-  override fun read(ByteArray, Int, Int): Int
-  override fun available(): Int
-  override fun skip(Long): Long
-  override fun markSupported(): Boolean
-  override fun mark(Int)
-  override fun reset()
-  override fun close()
-  companion object 
-open class com.datadog.android.rum.tracking.AcceptAllActivities : ComponentPredicate<android.app.Activity>
-  override fun accept(android.app.Activity): Boolean
-  override fun getViewName(android.app.Activity): String?
-  override fun equals(Any?): Boolean
-  override fun hashCode(): Int
-open class com.datadog.android.rum.tracking.AcceptAllDefaultFragment : ComponentPredicate<android.app.Fragment>
-  override fun accept(android.app.Fragment): Boolean
-  override fun getViewName(android.app.Fragment): String?
-  override fun equals(Any?): Boolean
-  override fun hashCode(): Int
-open class com.datadog.android.rum.tracking.AcceptAllNavDestinations : ComponentPredicate<androidx.navigation.NavDestination>
-  override fun accept(androidx.navigation.NavDestination): Boolean
-  override fun getViewName(androidx.navigation.NavDestination): String?
-  override fun equals(Any?): Boolean
-  override fun hashCode(): Int
-open class com.datadog.android.rum.tracking.AcceptAllSupportFragments : ComponentPredicate<androidx.fragment.app.Fragment>
-  override fun accept(androidx.fragment.app.Fragment): Boolean
-  override fun getViewName(androidx.fragment.app.Fragment): String?
-  override fun equals(Any?): Boolean
-  override fun hashCode(): Int
-abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy : android.app.Application.ActivityLifecycleCallbacks, TrackingStrategy
-  override fun register(android.content.Context)
-  override fun unregister(android.content.Context?)
-  override fun onActivityPaused(android.app.Activity)
-  override fun onActivityStarted(android.app.Activity)
-  override fun onActivityDestroyed(android.app.Activity)
-  override fun onActivitySaveInstanceState(android.app.Activity, android.os.Bundle)
-  override fun onActivityStopped(android.app.Activity)
-  override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
-  override fun onActivityResumed(android.app.Activity)
-  protected fun convertToRumAttributes(android.content.Intent?): Map<String, Any?>
-  protected fun convertToRumAttributes(android.os.Bundle?): Map<String, Any?>
-  companion object 
-class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
-  constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
-  override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
-  override fun onActivityStarted(android.app.Activity)
-  override fun onActivityResumed(android.app.Activity)
-  override fun onActivityPostResumed(android.app.Activity)
-  override fun onActivityPaused(android.app.Activity)
-  override fun onActivityDestroyed(android.app.Activity)
-  override fun equals(Any?): Boolean
-  override fun hashCode(): Int
-interface com.datadog.android.rum.tracking.ComponentPredicate<T>
-  fun accept(T): Boolean
-  fun getViewName(T): String?
-class com.datadog.android.rum.tracking.FragmentViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
-  constructor(Boolean, ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android.app.Fragment> = AcceptAllDefaultFragment())
-  override fun onActivityStarted(android.app.Activity)
-  override fun onActivityStopped(android.app.Activity)
-  override fun equals(Any?): Boolean
-  override fun hashCode(): Int
-interface com.datadog.android.rum.tracking.InteractionPredicate
-  fun getTargetName(Any): String?
-class com.datadog.android.rum.tracking.MixedViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
-  constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities(), ComponentPredicate<androidx.fragment.app.Fragment> = AcceptAllSupportFragments(), ComponentPredicate<android.app.Fragment> = AcceptAllDefaultFragment())
-  override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
-  override fun onActivityStarted(android.app.Activity)
-  override fun onActivityResumed(android.app.Activity)
-  override fun onActivityPaused(android.app.Activity)
-  override fun onActivityStopped(android.app.Activity)
-  override fun onActivityDestroyed(android.app.Activity)
-  override fun equals(Any?): Boolean
-  override fun hashCode(): Int
-class com.datadog.android.rum.tracking.NavigationViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy, androidx.navigation.NavController.OnDestinationChangedListener
-  constructor(Int, Boolean, ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations())
-  override fun onActivityStarted(android.app.Activity)
-  override fun onActivityStopped(android.app.Activity)
-  override fun onActivityPaused(android.app.Activity)
-  override fun onDestinationChanged(androidx.navigation.NavController, androidx.navigation.NavDestination, android.os.Bundle?)
-  fun startTracking()
-  fun stopTracking()
-interface com.datadog.android.rum.tracking.TrackingStrategy
-  fun register(android.content.Context)
-  fun unregister(android.content.Context?)
-interface com.datadog.android.rum.tracking.ViewAttributesProvider
-  fun extractAttributes(android.view.View, MutableMap<String, Any?>)
-interface com.datadog.android.rum.tracking.ViewTrackingStrategy : TrackingStrategy
-DEPRECATED open class com.datadog.android.rum.webview.RumWebChromeClient : android.webkit.WebChromeClient
-  constructor()
-  override fun onConsoleMessage(android.webkit.ConsoleMessage?): Boolean
-  companion object 
-DEPRECATED open class com.datadog.android.rum.webview.RumWebViewClient : android.webkit.WebViewClient
-  override fun onPageStarted(android.webkit.WebView?, String?, android.graphics.Bitmap?)
-  override fun onPageFinished(android.webkit.WebView?, String?)
-  override fun onReceivedError(android.webkit.WebView?, Int, String?, String?)
-  override fun onReceivedError(android.webkit.WebView?, android.webkit.WebResourceRequest?, android.webkit.WebResourceError?)
-  override fun onReceivedHttpError(android.webkit.WebView?, android.webkit.WebResourceRequest?, android.webkit.WebResourceResponse?)
-  override fun onReceivedSslError(android.webkit.WebView?, android.webkit.SslErrorHandler?, android.net.http.SslError?)
-  open fun onProvideRumResourceAttributes(android.webkit.WebView?, String?): Map<String, Any?>
-  companion object 
-interface com.datadog.android.security.Encryption
-  fun encrypt(ByteArray): ByteArray
-  fun decrypt(ByteArray): ByteArray
-class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
-  constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
-  override fun onCorruption(android.database.sqlite.SQLiteDatabase)
-  companion object 
 data class com.datadog.android.telemetry.model.TelemetryConfigurationEvent
   constructor(Dd, kotlin.Long, kotlin.String, Source, kotlin.String, Application? = null, Session? = null, View? = null, Action? = null, kotlin.collections.List<kotlin.String>? = null, Telemetry)
   val type: kotlin.String
@@ -1702,7 +1846,6 @@ data class com.datadog.android.telemetry.model.TelemetryConfigurationEvent
     fun fromJson(kotlin.String): TelemetryConfigurationEvent
     fun fromJsonObject(com.google.gson.JsonObject): TelemetryConfigurationEvent
   class Dd
-    constructor()
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
   data class Application
@@ -1769,7 +1912,6 @@ data class com.datadog.android.telemetry.model.TelemetryDebugEvent
     fun fromJson(kotlin.String): TelemetryDebugEvent
     fun fromJsonObject(com.google.gson.JsonObject): TelemetryDebugEvent
   class Dd
-    constructor()
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
   data class Application
@@ -1822,7 +1964,6 @@ data class com.datadog.android.telemetry.model.TelemetryErrorEvent
     fun fromJson(kotlin.String): TelemetryErrorEvent
     fun fromJsonObject(com.google.gson.JsonObject): TelemetryErrorEvent
   class Dd
-    constructor()
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
   data class Application
@@ -1873,26 +2014,6 @@ data class com.datadog.android.telemetry.model.TelemetryErrorEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Source
-class com.datadog.android.tracing.AndroidTracer : com.datadog.opentracing.DDTracer
-  override fun buildSpan(String): DDSpanBuilder
-  class Builder
-    constructor()
-    fun build(): AndroidTracer
-    fun setServiceName(String): Builder
-    fun setPartialFlushThreshold(Int): Builder
-    fun addGlobalTag(String, String): Builder
-    fun setBundleWithRumEnabled(Boolean): Builder
-  companion object 
-    fun logThrowable(io.opentracing.Span, Throwable)
-    fun logErrorMessage(io.opentracing.Span, String)
-interface com.datadog.android.tracing.TracedRequestListener
-  fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
-open class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
-  constructor(List<String>, TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
-  constructor(TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
-  override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
-  protected open fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
-  companion object 
 data class com.datadog.android.tracing.model.SpanEvent
   constructor(kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.Long, kotlin.Long, kotlin.Long = 0L, Metrics, Meta)
   val type: kotlin.String
@@ -1919,7 +2040,6 @@ data class com.datadog.android.tracing.model.SpanEvent
       fun fromJson(kotlin.String): Dd
       fun fromJsonObject(com.google.gson.JsonObject): Dd
   class Span
-    constructor()
     val kind: kotlin.String
     fun toJson(): com.google.gson.JsonElement
   data class Tracer
@@ -1952,100 +2072,3 @@ data class com.datadog.android.tracing.model.SpanEvent
     companion object 
       fun fromJson(kotlin.String): SimCarrier
       fun fromJsonObject(com.google.gson.JsonObject): SimCarrier
-interface com.datadog.android.v2.api.EventBatchWriter
-  fun currentMetadata(): ByteArray?
-  fun write(ByteArray, ByteArray?): Boolean
-interface com.datadog.android.v2.api.FeatureConfiguration
-  fun register(SdkCore)
-interface com.datadog.android.v2.api.FeatureEventReceiver
-  fun onReceive(Any)
-interface com.datadog.android.v2.api.FeatureScope
-  fun withWriteContext(Boolean = false, (com.datadog.android.v2.api.context.DatadogContext, EventBatchWriter) -> Unit)
-  fun sendEvent(Any)
-data class com.datadog.android.v2.api.FeatureStorageConfiguration
-  constructor(Long, Int, Long, Long)
-data class com.datadog.android.v2.api.FeatureUploadConfiguration
-  constructor(RequestFactory)
-interface com.datadog.android.v2.api.InternalLogger
-  enum Level
-    - DEBUG
-    - INFO
-    - WARN
-    - ERROR
-  enum Target
-    - USER
-    - MAINTAINER
-    - TELEMETRY
-  fun log(Level, Target, String, Throwable?, Map<String, Any?>)
-  fun log(Level, List<Target>, String, Throwable?, Map<String, Any?>)
-data class com.datadog.android.v2.api.Request
-  constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
-interface com.datadog.android.v2.api.RequestFactory
-  fun create(com.datadog.android.v2.api.context.DatadogContext, List<ByteArray>, ByteArray?): Request
-  companion object 
-    const val CONTENT_TYPE_JSON: String
-    const val CONTENT_TYPE_TEXT_UTF8: String
-    const val HEADER_API_KEY: String
-    const val HEADER_EVP_ORIGIN: String
-    const val HEADER_EVP_ORIGIN_VERSION: String
-    const val HEADER_REQUEST_ID: String
-    const val QUERY_PARAM_SOURCE: String
-    const val QUERY_PARAM_TAGS: String
-interface com.datadog.android.v2.api.SdkCore
-  val time: com.datadog.android.v2.api.context.TimeInfo
-  fun registerFeature(String, FeatureStorageConfiguration, FeatureUploadConfiguration)
-  fun getFeature(String): FeatureScope?
-  fun setVerbosity(Int)
-  fun getVerbosity(): Int
-  fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
-  fun setUserInfo(com.datadog.android.v2.api.context.UserInfo)
-  fun addUserProperties(Map<String, Any?>)
-  fun stop()
-  fun clearAllData()
-  fun flushStoredData()
-  fun updateFeatureContext(String, (MutableMap<String, Any?>) -> Unit)
-  fun getFeatureContext(String): Map<String, Any?>
-  fun setEventReceiver(String, FeatureEventReceiver)
-  fun removeEventReceiver(String)
-data class com.datadog.android.v2.api.context.CarrierInfo
-  constructor(String?, String?)
-data class com.datadog.android.v2.api.context.DatadogContext
-  constructor(String, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, com.datadog.android.privacy.TrackingConsent, Map<String, Map<String, Any?>>)
-data class com.datadog.android.v2.api.context.DeviceInfo
-  constructor(String, String, String, DeviceType, String, String, String, String, String)
-enum com.datadog.android.v2.api.context.DeviceType
-  - MOBILE
-  - TABLET
-  - TV
-  - DESKTOP
-  - OTHER
-data class com.datadog.android.v2.api.context.NetworkInfo
-  constructor(Connectivity = Connectivity.NETWORK_NOT_CONNECTED, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null)
-  enum Connectivity
-    constructor(kotlin.String)
-    - NETWORK_NOT_CONNECTED
-    - NETWORK_ETHERNET
-    - NETWORK_WIFI
-    - NETWORK_WIMAX
-    - NETWORK_BLUETOOTH
-    - NETWORK_2G
-    - NETWORK_3G
-    - NETWORK_4G
-    - NETWORK_5G
-    - NETWORK_MOBILE_OTHER
-    - NETWORK_CELLULAR
-    - NETWORK_OTHER
-data class com.datadog.android.v2.api.context.ProcessInfo
-  constructor(Boolean, Int)
-data class com.datadog.android.v2.api.context.TimeInfo
-  constructor(Long, Long, Long, Long)
-data class com.datadog.android.v2.api.context.UserInfo
-  constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, Map<kotlin.String, kotlin.Any?> = emptyMap())
-class com.datadog.android.webview.DatadogEventBridge
-  constructor()
-  constructor(List<String>)
-  fun send(String)
-  fun getAllowedWebViewHosts(): String
-  companion object 
-    fun setup(android.webkit.WebView)
-class com.datadog.tools.annotation.NoOpImplementation

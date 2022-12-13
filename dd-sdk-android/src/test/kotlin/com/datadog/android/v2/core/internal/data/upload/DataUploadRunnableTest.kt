@@ -20,10 +20,12 @@ import com.datadog.android.v2.core.internal.storage.BatchConfirmation
 import com.datadog.android.v2.core.internal.storage.BatchId
 import com.datadog.android.v2.core.internal.storage.BatchReader
 import com.datadog.android.v2.core.internal.storage.Storage
+import com.datadog.tools.unit.forge.aThrowable
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.same
@@ -113,7 +115,8 @@ internal class DataUploadRunnableTest {
             mockContextProvider,
             mockNetworkInfoProvider,
             mockSystemInfoProvider,
-            fakeUploadFrequency
+            fakeUploadFrequency,
+            TEST_BATCH_UPLOAD_WAIT_TIMEOUT_MS
         )
     }
 
@@ -328,7 +331,7 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `M not send batch W run() { batteryFullOrCharging, powerSaveMode}`(
+    fun `M not send batch W run() { batteryFullOrCharging, powerSaveMode }`(
         @IntForgery(min = 0, max = 100) batteryLevel: Int
     ) {
         // Given
@@ -353,7 +356,7 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `M not send batch W run() { batteryLeveHigh, powerSaveMode}`(
+    fun `M not send batch W run() { batteryLeveHigh, powerSaveMode }`(
         @IntForgery(min = DataUploadRunnable.LOW_BATTERY_THRESHOLD + 1) batteryLevel: Int
     ) {
         // Given
@@ -378,7 +381,7 @@ internal class DataUploadRunnableTest {
     }
 
     @Test
-    fun `M not send batch W run() { onExternalPower, powerSaveMode}`(
+    fun `M not send batch W run() { onExternalPower, powerSaveMode }`(
         @IntForgery(min = 0, max = DataUploadRunnable.LOW_BATTERY_THRESHOLD) batteryLevel: Int
     ) {
         // Given
@@ -559,7 +562,7 @@ internal class DataUploadRunnableTest {
         ) doReturn uploadStatus
 
         // WHen
-        for (i in 0 until runCount) {
+        repeat(runCount) {
             testedRunnable.run()
         }
 
@@ -879,5 +882,74 @@ internal class DataUploadRunnableTest {
                 next
             }
         }
+    }
+
+    // region async
+
+    @Test
+    fun `𝕄 respect batch wait upload timeout 𝕎 run()`() {
+        // Given
+        whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
+            // imitate async which never completes
+        }
+
+        // When
+        testedRunnable.run()
+
+        // Then
+        verify(mockThreadPoolExecutor).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    @Test
+    fun `𝕄 stop waiting 𝕎 run() { exception is thrown }`(
+        @StringForgery batch: List<String>,
+        @StringForgery batchMeta: String,
+        forge: Forge
+    ) {
+        // Given
+        val batchId = mock<BatchId>()
+        val batchReader = mock<BatchReader>()
+        val batchData = batch.map { it.toByteArray() }
+        val batchMetadata = forge.aNullable { batchMeta.toByteArray() }
+
+        whenever(batchReader.read()) doReturn batchData
+        whenever(batchReader.currentMetadata()) doReturn batchMetadata
+
+        whenever(mockStorage.readNextBatch(any(), any())) doAnswer {
+            Thread {
+                it.getArgument<(BatchId, BatchReader) -> Unit>(1).invoke(batchId, batchReader)
+            }.start()
+        }
+
+        whenever(
+            mockDataUploader.upload(
+                fakeContext,
+                batchData,
+                batchMetadata
+            )
+        ) doThrow forge.aThrowable()
+
+        // When
+        val start = System.currentTimeMillis()
+        testedRunnable.run()
+
+        // Then
+        assertThat(System.currentTimeMillis() - start)
+            .isLessThan(TEST_BATCH_UPLOAD_WAIT_TIMEOUT_MS)
+        verify(mockThreadPoolExecutor).schedule(
+            same(testedRunnable),
+            any(),
+            eq(TimeUnit.MILLISECONDS)
+        )
+    }
+
+    // endregion
+
+    companion object {
+        const val TEST_BATCH_UPLOAD_WAIT_TIMEOUT_MS = 100L
     }
 }

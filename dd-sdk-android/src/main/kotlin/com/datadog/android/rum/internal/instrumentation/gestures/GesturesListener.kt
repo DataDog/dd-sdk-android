@@ -26,6 +26,7 @@ import java.lang.ref.WeakReference
 import java.util.LinkedList
 import kotlin.math.abs
 
+@Suppress("TooManyFunctions")
 internal class GesturesListener(
     private val windowReference: WeakReference<Window>,
     private val attributesProviders: Array<ViewAttributesProvider> = emptyArray(),
@@ -75,6 +76,7 @@ internal class GesturesListener(
         return false
     }
 
+    @Suppress("ReturnCount")
     override fun onScroll(
         startDownEvent: MotionEvent,
         currentMoveEvent: MotionEvent,
