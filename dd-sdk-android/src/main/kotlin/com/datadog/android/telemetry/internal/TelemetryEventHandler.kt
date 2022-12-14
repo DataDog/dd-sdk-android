@@ -31,7 +31,7 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrack
 internal class TelemetryEventHandler(
     internal val sdkCore: SdkCore,
     internal val eventSampler: Sampler,
-    internal val maxEventCountPerSession: Int = MAX_EVENTS_PER_SESSION
+    private val maxEventCountPerSession: Int = MAX_EVENTS_PER_SESSION
 ) : RumSessionListener {
 
     private var trackNetworkRequests = false
