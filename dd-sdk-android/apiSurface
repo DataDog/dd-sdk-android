@@ -7,6 +7,8 @@ object com.datadog.android.Datadog
   fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
   fun addUserExtraInfo(Map<String, Any?> = emptyMap())
   fun enableRumDebugging(Boolean)
+  fun stopSessionRecording()
+  fun startSessionRecording()
   val _internal: _InternalProxy
 object com.datadog.android.DatadogEndpoint
   const val LOGS_US1: String
@@ -28,6 +30,11 @@ object com.datadog.android.DatadogEndpoint
   const val NTP_1: String
   const val NTP_2: String
   const val NTP_3: String
+  const val SESSION_REPLAY_US1: String
+  const val SESSION_REPLAY_US3: String
+  const val SESSION_REPLAY_US5: String
+  const val SESSION_REPLAY_US1_FED: String
+  const val SESSION_REPLAY_EU1: String
 class com.datadog.android.DatadogEventListener : okhttp3.EventListener
   override fun callStart(okhttp3.Call)
   override fun dnsStart(okhttp3.Call, String)
@@ -61,6 +68,7 @@ enum com.datadog.android.DatadogSite
   fun logsEndpoint(): String
   fun tracesEndpoint(): String
   fun rumEndpoint(): String
+  fun sessionReplayEndpoint(): String
 class com.datadog.android._InternalProxy
   class _TelemetryProxy
     fun debug(String)
@@ -77,7 +85,7 @@ enum com.datadog.android.core.configuration.BatchSize
   - LARGE
 data class com.datadog.android.core.configuration.Configuration
   class Builder
-    constructor(Boolean, Boolean, Boolean, Boolean)
+    constructor(Boolean, Boolean, Boolean, Boolean, Boolean)
     fun build(): Configuration
     fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
     fun setFirstPartyHosts(List<String>): Builder
@@ -87,6 +95,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun useCustomTracesEndpoint(String): Builder
     fun useCustomCrashReportsEndpoint(String): Builder
     fun useCustomRumEndpoint(String): Builder
+    fun useCustomSessionReplayEndpoint(String): Builder
     fun trackInteractions(Array<com.datadog.android.rum.tracking.ViewAttributesProvider> = emptyArray(), com.datadog.android.rum.tracking.InteractionPredicate = NoOpInteractionPredicate()): Builder
     fun disableInteractionTracking(): Builder
     fun trackLongTasks(Long = DEFAULT_LONG_TASK_THRESHOLD_MS): Builder
@@ -108,6 +117,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun setAdditionalConfiguration(Map<String, Any>): Builder
     fun setProxy(java.net.Proxy, okhttp3.Authenticator?): Builder
     fun setEncryption(com.datadog.android.security.Encryption): Builder
+    fun setSessionReplayPrivacy(com.datadog.android.sessionreplay.SessionReplayPrivacy): Builder
     fun setVitalsUpdateFrequency(VitalsUpdateFrequency): Builder
   companion object 
 data class com.datadog.android.core.configuration.Credentials
@@ -230,6 +240,7 @@ enum com.datadog.android.plugin.Feature
   - CRASH
   - TRACE
   - RUM
+  - SESSION_REPLAY
 enum com.datadog.android.privacy.TrackingConsent
   - GRANTED
   - NOT_GRANTED
@@ -479,7 +490,7 @@ interface com.datadog.android.v2.api.FeatureConfiguration
 interface com.datadog.android.v2.api.FeatureEventReceiver
   fun onReceive(Any)
 interface com.datadog.android.v2.api.FeatureScope
-  fun withWriteContext((com.datadog.android.v2.api.context.DatadogContext, EventBatchWriter) -> Unit)
+  fun withWriteContext(Boolean = false, (com.datadog.android.v2.api.context.DatadogContext, EventBatchWriter) -> Unit)
   fun sendEvent(Any)
 data class com.datadog.android.v2.api.FeatureStorageConfiguration
   constructor(Long, Int, Long, Long)
@@ -497,10 +508,6 @@ interface com.datadog.android.v2.api.InternalLogger
     - TELEMETRY
   fun log(Level, Target, String, Throwable?, Map<String, Any?>)
   fun log(Level, List<Target>, String, Throwable?, Map<String, Any?>)
-interface com.datadog.android.v2.api.PayloadFormat
-  fun prefixBytes(): ByteArray
-  fun suffixBytes(): ByteArray
-  fun separatorBytes(): ByteArray
 data class com.datadog.android.v2.api.Request
   constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
 interface com.datadog.android.v2.api.RequestFactory
@@ -521,7 +528,7 @@ interface com.datadog.android.v2.api.SdkCore
   fun setVerbosity(Int)
   fun getVerbosity(): Int
   fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
-  fun setUserInfo(com.datadog.android.core.model.UserInfo)
+  fun setUserInfo(com.datadog.android.v2.api.context.UserInfo)
   fun addUserProperties(Map<String, Any?>)
   fun stop()
   fun clearAllData()
@@ -530,16 +537,10 @@ interface com.datadog.android.v2.api.SdkCore
   fun getFeatureContext(String): Map<String, Any?>
   fun setEventReceiver(String, FeatureEventReceiver)
   fun removeEventReceiver(String)
-enum com.datadog.android.v2.api.SdkEndpoint
-  - US1
-  - US3
-  - US5
-  - US1_FED
-  - EU1
 data class com.datadog.android.v2.api.context.CarrierInfo
   constructor(String?, String?)
 data class com.datadog.android.v2.api.context.DatadogContext
-  constructor(com.datadog.android.DatadogSite, String, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, com.datadog.android.privacy.TrackingConsent, Map<String, Map<String, Any?>>)
+  constructor(String, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, com.datadog.android.privacy.TrackingConsent, Map<String, Map<String, Any?>>)
 data class com.datadog.android.v2.api.context.DeviceInfo
   constructor(String, String, String, DeviceType, String, String, String, String, String)
 enum com.datadog.android.v2.api.context.DeviceType
@@ -549,8 +550,9 @@ enum com.datadog.android.v2.api.context.DeviceType
   - DESKTOP
   - OTHER
 data class com.datadog.android.v2.api.context.NetworkInfo
-  constructor(Connectivity, String?, Long?, Long?, Long?, Long?, String?)
+  constructor(Connectivity = Connectivity.NETWORK_NOT_CONNECTED, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null)
   enum Connectivity
+    constructor(kotlin.String)
     - NETWORK_NOT_CONNECTED
     - NETWORK_ETHERNET
     - NETWORK_WIFI
@@ -568,7 +570,7 @@ data class com.datadog.android.v2.api.context.ProcessInfo
 data class com.datadog.android.v2.api.context.TimeInfo
   constructor(Long, Long, Long, Long)
 data class com.datadog.android.v2.api.context.UserInfo
-  constructor(String?, String?, String?, Map<String, Any?>)
+  constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, Map<kotlin.String, kotlin.Any?> = emptyMap())
 class com.datadog.android.webview.DatadogEventBridge
   constructor()
   constructor(List<String>)
@@ -577,35 +579,6 @@ class com.datadog.android.webview.DatadogEventBridge
   companion object 
     fun setup(android.webkit.WebView)
 class com.datadog.tools.annotation.NoOpImplementation
-data class com.datadog.android.core.model.NetworkInfo
-  constructor(Connectivity = Connectivity.NETWORK_NOT_CONNECTED, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null)
-  fun toJson(): com.google.gson.JsonElement
-  companion object 
-    fun fromJson(kotlin.String): NetworkInfo
-    fun fromJsonObject(com.google.gson.JsonObject): NetworkInfo
-  enum Connectivity
-    constructor(kotlin.String)
-    - NETWORK_NOT_CONNECTED
-    - NETWORK_ETHERNET
-    - NETWORK_WIFI
-    - NETWORK_WIMAX
-    - NETWORK_BLUETOOTH
-    - NETWORK_2G
-    - NETWORK_3G
-    - NETWORK_4G
-    - NETWORK_5G
-    - NETWORK_MOBILE_OTHER
-    - NETWORK_CELLULAR
-    - NETWORK_OTHER
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Connectivity
-data class com.datadog.android.core.model.UserInfo
-  constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
-  fun toJson(): com.google.gson.JsonElement
-  companion object 
-    fun fromJson(kotlin.String): UserInfo
-    fun fromJsonObject(com.google.gson.JsonObject): UserInfo
 data class com.datadog.android.log.model.LogEvent
   constructor(Status, kotlin.String, kotlin.String, kotlin.String, Logger, Dd, Usr? = null, Network? = null, Error? = null, kotlin.String, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
   fun toJson(): com.google.gson.JsonElement
