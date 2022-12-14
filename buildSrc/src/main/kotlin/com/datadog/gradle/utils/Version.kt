@@ -43,8 +43,16 @@ data class Version(
             override val suffix: String = "-SNAPSHOT"
         }
 
-        object DevSnapshot : Type() {
-            override val suffix: String = "-dev-SNAPSHOT"
+        data class SrAlphaSnapshot(val number: Int) : Type() {
+            override val suffix: String = "-sr-alpha$number-SNAPSHOT"
+        }
+
+        data class SrBetaSnapshot(val number: Int) : Type() {
+            override val suffix: String = "-sr-beta$number-SNAPSHOT"
+        }
+
+        object SrSnapshot : Type() {
+            override val suffix: String = "-sr-SNAPSHOT"
         }
     }
 
