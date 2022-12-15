@@ -19,15 +19,7 @@ internal class ShapeWireframeForgeryFactory :
             y = forge.aPositiveLong(),
             width = forge.aPositiveLong(strict = true),
             height = forge.aPositiveLong(strict = true),
-            shapeStyle = forge.aNullable {
-                MobileSegment.ShapeStyle(
-                    backgroundColor = forge.aNullable {
-                        forge.aStringMatching("#[0-9A-F]{6}FF")
-                    },
-                    opacity = forge.aFloat(min = 0f, max = 1f),
-                    cornerRadius = forge.aPositiveLong()
-                )
-            },
+            shapeStyle = forge.aNullable { getForgery() },
             border = forge.aNullable {
                 MobileSegment.ShapeBorder(
                     forge.aStringMatching("#[0-9A-F]{6}FF"),

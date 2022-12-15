@@ -51,7 +51,7 @@ internal class WireframeUtils {
             return false
         }
         topWireframes.forEach {
-            if (it.bounds().isCovering(wireframeBounds)) {
+            if (it.bounds().isCovering(wireframeBounds) && it.isOpaque()) {
                 return false
             }
         }
@@ -70,6 +70,23 @@ internal class WireframeUtils {
             is MobileSegment.Wireframe.ShapeWireframe -> this.bounds()
             is MobileSegment.Wireframe.TextWireframe -> this.bounds()
         }
+    }
+
+    private fun MobileSegment.Wireframe.isOpaque(): Boolean {
+        return this.shapeStyle()?.isOpaque() ?: false
+    }
+
+    private fun MobileSegment.Wireframe.shapeStyle(): MobileSegment.ShapeStyle? {
+        return when (this) {
+            is MobileSegment.Wireframe.TextWireframe -> this.shapeStyle
+            is MobileSegment.Wireframe.ShapeWireframe -> this.shapeStyle
+        }
+    }
+
+    private fun MobileSegment.ShapeStyle.isOpaque(): Boolean {
+        return this.opacity == FULL_OPACITY_ALPHA &&
+            this.backgroundColor != null &&
+            this.backgroundColor.takeLast(2) == FULL_OPACITY_ALPHA_AS_HEXA_STRING
     }
 
     private fun MobileSegment.Wireframe.ShapeWireframe.bounds(): Bounds {
@@ -102,4 +119,9 @@ internal class WireframeUtils {
         val width: Long,
         val height: Long
     )
+
+    companion object {
+        const val FULL_OPACITY_ALPHA_AS_HEXA_STRING = "FF"
+        const val FULL_OPACITY_ALPHA = 1f
+    }
 }
