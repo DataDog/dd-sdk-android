@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import kotlin.math.abs
+import kotlin.math.max
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -239,7 +240,7 @@ internal class WireframeUtilsTest {
 
     @ParameterizedTest
     @MethodSource("coverAllWireframes")
-    fun `M return false W checkIsValidWireframe(){ covered by another }`(
+    fun `M return false W checkIsValidWireframe(){ covered by another with solid background }`(
         fakeWireframe: MobileSegment.Wireframe,
         forge: Forge
     ) {
@@ -255,13 +256,129 @@ internal class WireframeUtilsTest {
                 x = fakeX,
                 y = fakeY,
                 width = fakeWidth,
-                height = fakeHeight
+                height = fakeHeight,
+                shapeStyle = forge.forgeNonTransparentShapeStyle()
             )
             fakeCoverAllWireframe
         }
 
         // Then
         assertThat(testedWireframeUtils.checkIsValidWireframe(fakeWireframe, topWireframes)).isFalse
+    }
+
+    @ParameterizedTest
+    @MethodSource("coverAllWireframes")
+    fun `M return true W checkIsValidWireframe(){ covered by another without background }`(
+        fakeWireframe: MobileSegment.Wireframe,
+        forge: Forge
+    ) {
+        // Given
+        val topWireframes = forge.aList {
+            val fakeX = forge.aLong(min = -100, max = fakeWireframe.x())
+            val fakeY = forge.aLong(min = -100, max = fakeWireframe.y())
+            val fakeMinWidth = abs(fakeX) - abs(fakeWireframe.x()) + fakeWireframe.width()
+            val fakeMinHeight = abs(fakeY) - abs(fakeWireframe.y()) + fakeWireframe.height()
+            val fakeWidth = forge.aLong(min = fakeMinWidth, max = Int.MAX_VALUE.toLong())
+            val fakeHeight = forge.aLong(min = fakeMinHeight, max = Int.MAX_VALUE.toLong())
+            val fakeCoverAllWireframe = fakeWireframe.copy(
+                x = fakeX,
+                y = fakeY,
+                width = fakeWidth,
+                height = fakeHeight,
+                shapeStyle = null
+            )
+            fakeCoverAllWireframe
+        }
+
+        // Then
+        assertThat(testedWireframeUtils.checkIsValidWireframe(fakeWireframe, topWireframes)).isTrue
+    }
+
+    @ParameterizedTest
+    @MethodSource("coverAllWireframes")
+    fun `M return true W checkIsValidWireframe(){ covered by another with translucent background }`(
+        fakeWireframe: MobileSegment.Wireframe,
+        forge: Forge
+    ) {
+        // Given
+        val topWireframes = forge.aList {
+            val fakeX = forge.aLong(min = -100, max = fakeWireframe.x())
+            val fakeY = forge.aLong(min = -100, max = fakeWireframe.y())
+            val fakeMinWidth = abs(fakeX) - abs(fakeWireframe.x()) + fakeWireframe.width()
+            val fakeMinHeight = abs(fakeY) - abs(fakeWireframe.y()) + fakeWireframe.height()
+            val fakeWidth = forge.aLong(min = fakeMinWidth, max = Int.MAX_VALUE.toLong())
+            val fakeHeight = forge.aLong(min = fakeMinHeight, max = Int.MAX_VALUE.toLong())
+            val fakeCoverAllWireframe = fakeWireframe.copy(
+                x = fakeX,
+                y = fakeY,
+                width = fakeWidth,
+                height = fakeHeight,
+                shapeStyle = forge.forgeNonTransparentShapeStyle()
+                    .copy(opacity = forge.aFloat(min = 0f, max = 1f))
+            )
+            fakeCoverAllWireframe
+        }
+
+        // Then
+        assertThat(testedWireframeUtils.checkIsValidWireframe(fakeWireframe, topWireframes)).isTrue
+    }
+
+    @ParameterizedTest
+    @MethodSource("coverAllWireframes")
+    fun `M return true W checkIsValidWireframe(){covered by another with background with no color}`(
+        fakeWireframe: MobileSegment.Wireframe,
+        forge: Forge
+    ) {
+        // Given
+        val topWireframes = forge.aList {
+            val fakeX = forge.aLong(min = -100, max = fakeWireframe.x())
+            val fakeY = forge.aLong(min = -100, max = fakeWireframe.y())
+            val fakeMinWidth = abs(fakeX) - abs(fakeWireframe.x()) + fakeWireframe.width()
+            val fakeMinHeight = abs(fakeY) - abs(fakeWireframe.y()) + fakeWireframe.height()
+            val fakeWidth = forge.aLong(min = fakeMinWidth, max = Int.MAX_VALUE.toLong())
+            val fakeHeight = forge.aLong(min = fakeMinHeight, max = Int.MAX_VALUE.toLong())
+            val fakeCoverAllWireframe = fakeWireframe.copy(
+                x = fakeX,
+                y = fakeY,
+                width = fakeWidth,
+                height = fakeHeight,
+                shapeStyle = forge.forgeNonTransparentShapeStyle()
+                    .copy(backgroundColor = null)
+            )
+            fakeCoverAllWireframe
+        }
+
+        // Then
+        assertThat(testedWireframeUtils.checkIsValidWireframe(fakeWireframe, topWireframes)).isTrue
+    }
+
+    @ParameterizedTest
+    @MethodSource("coverAllWireframes")
+    fun `M return true W checkIsValidWireframe(){covered by another with translucent color}`(
+        fakeWireframe: MobileSegment.Wireframe,
+        forge: Forge
+    ) {
+        // Given
+        val topWireframes = forge.aList {
+            val fakeX = forge.aLong(min = -100, max = fakeWireframe.x())
+            val fakeY = forge.aLong(min = -100, max = fakeWireframe.y())
+            val fakeMinWidth = abs(fakeX) - abs(fakeWireframe.x()) + fakeWireframe.width()
+            val fakeMinHeight = abs(fakeY) - abs(fakeWireframe.y()) + fakeWireframe.height()
+            val fakeWidth = forge.aLong(min = fakeMinWidth, max = Int.MAX_VALUE.toLong())
+            val fakeHeight = forge.aLong(min = fakeMinHeight, max = Int.MAX_VALUE.toLong())
+            val fakeCoverAllWireframe = fakeWireframe.copy(
+                x = fakeX,
+                y = fakeY,
+                width = fakeWidth,
+                height = fakeHeight,
+                shapeStyle = forge.forgeNonTransparentShapeStyle()
+                    .copy(backgroundColor = forge.aStringMatching("#[0-9A-F]{6}[0-9A-E]{2}"))
+            )
+            fakeCoverAllWireframe
+        }
+
+        // Then
+        assertThat(testedWireframeUtils.checkIsValidWireframe(fakeWireframe, topWireframes)).isTrue
     }
 
     @ParameterizedTest
@@ -277,7 +394,9 @@ internal class WireframeUtilsTest {
                 x = fakeWireframe.x(),
                 y = fakeY,
                 width = fakeWireframe.width(),
-                height = fakeWireframe.height()
+                height = fakeWireframe.height(),
+                shapeStyle = forge.forgeNonTransparentShapeStyle()
+
             )
             fakeCoverAllWireframe
         }
@@ -299,7 +418,8 @@ internal class WireframeUtilsTest {
                 x = fakeWireframe.x(),
                 y = fakeWireframe.y(),
                 width = fakeWireframe.width(),
-                height = fakeHeight
+                height = fakeHeight,
+                shapeStyle = forge.forgeNonTransparentShapeStyle()
             )
             fakeCoverAllWireframe
         }
@@ -321,7 +441,8 @@ internal class WireframeUtilsTest {
                 x = fakeX,
                 y = fakeWireframe.y(),
                 width = fakeWireframe.width(),
-                height = fakeWireframe.height()
+                height = fakeWireframe.height(),
+                shapeStyle = forge.forgeNonTransparentShapeStyle()
             )
             fakeCoverAllWireframe
         }
@@ -343,7 +464,8 @@ internal class WireframeUtilsTest {
                 x = fakeWireframe.x(),
                 y = fakeWireframe.y(),
                 width = fakeWidth,
-                height = fakeWireframe.height()
+                height = fakeWireframe.height(),
+                shapeStyle = forge.forgeNonTransparentShapeStyle()
             )
             fakeCoverAllWireframe
         }
@@ -596,6 +718,13 @@ internal class WireframeUtilsTest {
         }
     }
 
+    private fun MobileSegment.Wireframe.shapeStyle(): MobileSegment.ShapeStyle? {
+        return when (this) {
+            is MobileSegment.Wireframe.ShapeWireframe -> shapeStyle
+            is MobileSegment.Wireframe.TextWireframe -> shapeStyle
+        }
+    }
+
     private fun Forge.getForgeryWithIntRangeCoordinates(): MobileSegment.Wireframe {
         return getForgery<MobileSegment.Wireframe.ShapeWireframe>()
             .copy(
@@ -605,6 +734,17 @@ internal class WireframeUtilsTest {
                 height = aLong(min = 1, max = 100)
             )
     }
+
+    private fun Forge.forgeNonTransparentShapeStyle(): MobileSegment.ShapeStyle {
+        return MobileSegment.ShapeStyle(
+            backgroundColor = aNullable {
+                aStringMatching("#[0-9A-F]{6}FF")
+            },
+            opacity = 1f,
+            cornerRadius = aPositiveLong()
+        )
+    }
+
     // endregion
 
     companion object {
@@ -636,20 +776,28 @@ internal class WireframeUtilsTest {
             }
         }
 
-        private fun MobileSegment.Wireframe.copy(x: Long, y: Long, width: Long, height: Long):
+        private fun MobileSegment.Wireframe.copy(
+            x: Long,
+            y: Long,
+            width: Long,
+            height: Long,
+            shapeStyle: MobileSegment.ShapeStyle?
+        ):
             MobileSegment.Wireframe {
             return when (this) {
                 is MobileSegment.Wireframe.ShapeWireframe -> copy(
                     x = x,
                     y = y,
                     width = width,
-                    height = height
+                    height = height,
+                    shapeStyle = shapeStyle
                 )
                 is MobileSegment.Wireframe.TextWireframe -> copy(
                     x = x,
                     y = y,
                     width = width,
-                    height = height
+                    height = height,
+                    shapeStyle = shapeStyle
                 )
             }
         }
