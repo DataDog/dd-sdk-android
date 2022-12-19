@@ -4,12 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.recorder
+package com.datadog.android.sessionreplay.recorder.callback
 
 import android.view.MotionEvent
 import android.view.Window
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.processor.Processor
+import com.datadog.android.sessionreplay.recorder.densityNormalized
 import com.datadog.android.sessionreplay.utils.TimeProvider
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit
@@ -24,6 +25,7 @@ internal class RecorderWindowCallback(
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         MotionEvent.obtain(it)
     },
+    private val motionEventUtils: MotionEventUtils = MotionEventUtils,
     private val motionUpdateThresholdInNs: Long = MOTION_UPDATE_DELAY_THRESHOLD_NS,
     private val flushPositionBufferThresholdInNs: Long = FLUSH_BUFFER_THRESHOLD_NS
 ) : Window.Callback by wrappedCallback {
@@ -93,19 +95,19 @@ internal class RecorderWindowCallback(
     }
 
     private fun updatePositions(event: MotionEvent, eventType: MobileSegment.PointerEventType) {
-        for (i in 0 until event.pointerCount) {
-            val pointerId = event.getPointerId(i).toLong()
-            val pointerCoordinates = MotionEvent.PointerCoords()
-            event.getPointerCoords(i, pointerCoordinates)
+        for (pointerIndex in 0 until event.pointerCount) {
+            val pointerId = event.getPointerId(pointerIndex).toLong()
+            val pointerAbsoluteX = motionEventUtils.getPointerAbsoluteX(event, pointerIndex)
+            val pointerAbsoluteY = motionEventUtils.getPointerAbsoluteY(event, pointerIndex)
             pointerInteractions.add(
                 MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
                     timestamp = timeProvider.getDeviceTimestamp(),
                     data = MobileSegment.MobileIncrementalData.PointerInteractionData(
-                        eventType,
-                        MobileSegment.PointerType.TOUCH,
-                        pointerId,
-                        pointerCoordinates.x.toLong().densityNormalized(pixelsDensity),
-                        pointerCoordinates.y.toLong().densityNormalized(pixelsDensity)
+                        pointerEventType = eventType,
+                        pointerType = MobileSegment.PointerType.TOUCH,
+                        pointerId = pointerId,
+                        x = pointerAbsoluteX.toLong().densityNormalized(pixelsDensity),
+                        y = pointerAbsoluteY.toLong().densityNormalized(pixelsDensity)
                     )
                 )
             )

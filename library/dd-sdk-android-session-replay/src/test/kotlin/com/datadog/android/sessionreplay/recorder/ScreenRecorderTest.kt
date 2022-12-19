@@ -12,16 +12,24 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
+import com.datadog.android.sessionreplay.RecordCallback
 import com.datadog.android.sessionreplay.processor.Processor
+import com.datadog.android.sessionreplay.recorder.callback.NoOpWindowCallback
+import com.datadog.android.sessionreplay.recorder.callback.RecorderWindowCallback
+import com.datadog.android.sessionreplay.recorder.listener.WindowsOnDrawListener
+import com.datadog.android.sessionreplay.utils.ForgeConfigurator
 import com.datadog.android.sessionreplay.utils.TimeProvider
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -32,12 +40,14 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.LinkedList
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class ScreenRecorderTest {
 
     lateinit var testedRecorder: ScreenRecorder
@@ -51,233 +61,370 @@ internal class ScreenRecorderTest {
     @Mock
     lateinit var mockSnapshotProducer: SnapshotProducer
 
+    lateinit var fakeWindowsList: List<Window>
+
+    lateinit var mockActivity: Activity
+
+    @Mock
+    lateinit var mockRecordCallback: RecordCallback
+
     @BeforeEach
-    fun `set up`() {
-        testedRecorder = ScreenRecorder(mockProcessor, mockSnapshotProducer, mockTimeProvider)
+    fun `set up`(forge: Forge) {
+        mockActivity = forge.aMockedActivity()
+        fakeWindowsList = forge.aMockedWindowsList()
+        testedRecorder = ScreenRecorder(
+            mockProcessor,
+            mockSnapshotProducer,
+            mockTimeProvider,
+            mockRecordCallback
+        )
     }
 
-    // region Tests
+    // region OnDrawListener
 
     @Test
-    fun `M register the RecorderOnDrawListener W startRecording()`(forge: Forge) {
-        // Given
-        val mockViewTreeObserver: ViewTreeObserver = mock()
-        val mockActivity = mockActivity(forge, mockViewTreeObserver)
-
+    fun `M register the OnDrawListener W startRecording()`() {
         // When
-        testedRecorder.startRecording(mockActivity)
+        testedRecorder.startRecording(fakeWindowsList, mockActivity)
 
         // Then
         val captor = argumentCaptor<ViewTreeObserver.OnDrawListener>()
-        verify(mockViewTreeObserver).addOnDrawListener(captor.capture())
-        assertThat(captor.firstValue).isInstanceOf(RecorderOnDrawListener::class.java)
+        fakeWindowsList.forEach {
+            verify(it.decorView.viewTreeObserver).addOnDrawListener(captor.capture())
+        }
+        captor.allValues.forEach { assertThat(it).isInstanceOf(WindowsOnDrawListener::class.java) }
     }
 
     @Test
-    fun `M register the RecorderWindowCallback W startRecording()`(forge: Forge) {
-        // Given
-        val mockWindow: Window = mock()
-        val mockDefaultCallback: Window.Callback = mock()
-        val mockActivity = mockActivity(
-            forge,
-            window = mockWindow,
-            defaultWindowCallback = mockDefaultCallback
-        )
-
+    fun `M register one single listener instance W startRecording()`() {
         // When
-        testedRecorder.startRecording(mockActivity)
-
-        // Then
-        val captor = argumentCaptor<Window.Callback>()
-        verify(mockWindow).callback = captor.capture()
-        assertThat(captor.firstValue).isInstanceOf(RecorderWindowCallback::class.java)
-        assertThat((captor.firstValue as RecorderWindowCallback).wrappedCallback)
-            .isEqualTo(mockDefaultCallback)
-    }
-
-    @Test
-    fun `M register the RecorderWindowCallback W startRecording{default callback is null}`(
-        forge: Forge
-    ) {
-        // Given
-        val mockWindow: Window = mock()
-        val mockActivity = mockActivity(
-            forge,
-            window = mockWindow,
-            defaultWindowCallback = null
-        )
-
-        // When
-        testedRecorder.startRecording(mockActivity)
-
-        // Then
-        val captor = argumentCaptor<Window.Callback>()
-        verify(mockWindow).callback = captor.capture()
-        assertThat(captor.firstValue).isInstanceOf(RecorderWindowCallback::class.java)
-        assertThat((captor.firstValue as RecorderWindowCallback).wrappedCallback)
-            .isInstanceOf(NoOpWindowCallback::class.java)
-    }
-
-    @Test
-    fun `M do nothing W startRecording() { activity window is null }`() {
-        // Given
-        val mockActivity: Activity = mock()
-
-        // When
-        testedRecorder.startRecording(mockActivity)
-
-        // Then
-        assertThat(testedRecorder.drawListeners).isEmpty()
-    }
-
-    @Test
-    fun `M unregister the RecorderOnDrawListener W stopRecording()`(forge: Forge) {
-        // Given
-        val mockViewTreeObserver: ViewTreeObserver = mock()
-        val mockActivity = mockActivity(forge, mockViewTreeObserver)
-        testedRecorder.startRecording(mockActivity)
-
-        // When
-        testedRecorder.stopRecording(mockActivity)
+        testedRecorder.startRecording(fakeWindowsList, mockActivity)
 
         // Then
         val captor = argumentCaptor<ViewTreeObserver.OnDrawListener>()
-        verify(mockViewTreeObserver).addOnDrawListener(captor.capture())
-        verify(mockViewTreeObserver).removeOnDrawListener(captor.firstValue)
+        fakeWindowsList.forEach {
+            verify(it.decorView.viewTreeObserver).addOnDrawListener(captor.capture())
+        }
+        captor.allValues.reduce { acc, next ->
+            assertThat(acc).isSameAs(next)
+            next
+        }
     }
 
     @Test
-    fun `M remove the RecorderWindowCallback W stopRecording(){default callback is not null}`(
-        forge: Forge
-    ) {
+    fun `M unregister and clean the listeners W stopRecording(windows)`() {
         // Given
-        val mockWindow: Window = mock()
-        val mockDefaultCallback: Window.Callback = mock()
-        val mockActivity = mockActivity(
-            forge,
-            window = mockWindow,
-            defaultWindowCallback = mockDefaultCallback
-        )
-        testedRecorder.startRecording(mockActivity)
-        val startRecordingCapture = argumentCaptor<Window.Callback>()
-        verify(mockWindow).callback = startRecordingCapture.capture()
-        assertThat(startRecordingCapture.firstValue)
-            .isInstanceOf(RecorderWindowCallback::class.java)
-        whenever(mockWindow.callback).thenReturn(startRecordingCapture.firstValue)
+        testedRecorder.startRecording(fakeWindowsList, mockActivity)
 
         // When
-        testedRecorder.stopRecording(mockActivity)
+        testedRecorder.stopRecording(fakeWindowsList)
 
         // Then
-        val stopRecordingCaptureTarget = argumentCaptor<Window.Callback>()
-        verify(mockWindow, times(2)).callback = stopRecordingCaptureTarget.capture()
-        assertThat(stopRecordingCaptureTarget.secondValue).isSameAs(mockDefaultCallback)
+        fakeWindowsList.forEach {
+            val captor = argumentCaptor<ViewTreeObserver.OnDrawListener>()
+            verify(it.decorView.viewTreeObserver).addOnDrawListener(captor.capture())
+            verify(it.decorView.viewTreeObserver).removeOnDrawListener(captor.firstValue)
+        }
+        assertThat(testedRecorder.windowsListeners).isEmpty()
     }
 
     @Test
-    fun `M remove the RecorderWindowCallback W stopRecording(){default callback was null}`(
-        forge: Forge
-    ) {
+    fun `M unregister and clean the listeners W stopRecording()`() {
         // Given
-        val mockWindow: Window = mock()
-        val mockActivity = mockActivity(
-            forge,
-            window = mockWindow,
-            defaultWindowCallback = null
-        )
-        testedRecorder.startRecording(mockActivity)
-        val startRecordingCapture = argumentCaptor<Window.Callback>()
-        verify(mockWindow).callback = startRecordingCapture.capture()
-        assertThat(startRecordingCapture.firstValue)
-            .isInstanceOf(RecorderWindowCallback::class.java)
-        whenever(mockWindow.callback).thenReturn(startRecordingCapture.firstValue)
+        testedRecorder.startRecording(fakeWindowsList, mockActivity)
 
         // When
-        testedRecorder.stopRecording(mockActivity)
+        testedRecorder.stopRecording()
 
         // Then
-        val stopRecordingCaptureTarget = argumentCaptor<Window.Callback>()
-        verify(mockWindow, times(2)).callback = stopRecordingCaptureTarget.capture()
-        assertThat(stopRecordingCaptureTarget.secondValue).isNull()
+        fakeWindowsList.forEach {
+            val captor = argumentCaptor<ViewTreeObserver.OnDrawListener>()
+            verify(it.decorView.viewTreeObserver).addOnDrawListener(captor.capture())
+            verify(it.decorView.viewTreeObserver).removeOnDrawListener(captor.firstValue)
+        }
+        assertThat(testedRecorder.windowsListeners).isEmpty()
     }
 
     @Test
-    fun `M do nothing W stopRecording(){window callback was not wrapped}`(
-        forge: Forge
-    ) {
+    fun `M unregister first and clean the listeners W startRecording()`() {
         // Given
-        val mockWindow: Window = mock()
-        val mockDefaultCallback: Window.Callback = mock()
-        val mockActivity = mockActivity(
-            forge,
-            window = mockWindow,
-            defaultWindowCallback = mockDefaultCallback
-        )
+        testedRecorder.startRecording(fakeWindowsList, mockActivity)
 
         // When
-        testedRecorder.stopRecording(mockActivity)
+        testedRecorder.startRecording(fakeWindowsList, mockActivity)
 
         // Then
-        verify(mockWindow, never()).callback = any()
+        fakeWindowsList.forEach {
+            val captor = argumentCaptor<ViewTreeObserver.OnDrawListener>()
+            it.decorView.viewTreeObserver.inOrder {
+                verify().addOnDrawListener(captor.capture())
+                verify().removeOnDrawListener(captor.firstValue)
+                verify().addOnDrawListener(captor.capture())
+            }
+        }
     }
 
     @Test
-    fun `M do nothing W stopRecording(){window callback was not wrapped and was null}`(
-        forge: Forge
-    ) {
+    fun `M register listener startRecording() { more activities }`(forge: Forge) {
         // Given
-        val mockWindow: Window = mock()
-        val mockActivity = mockActivity(
-            forge,
-            window = mockWindow,
-            defaultWindowCallback = null
-        )
+        val fakeWindowsActivityPairs = forge.aList {
+            aMockedWindowsList() to aMockedActivity()
+        }
 
         // When
-        testedRecorder.stopRecording(mockActivity)
+        fakeWindowsActivityPairs.forEach {
+            testedRecorder.startRecording(it.first, it.second)
+        }
 
         // Then
-        verify(mockWindow, never()).callback = any()
+        fakeWindowsActivityPairs.map { it.first }.flatten().forEach {
+            it.decorView.viewTreeObserver.inOrder {
+                verify().addOnDrawListener(any())
+            }
+        }
+    }
+
+    // endregion
+
+    // region WindowCallback
+
+    @Test
+    fun `M register the RecorderWindowCallback W startRecording()`() {
+        // When
+        testedRecorder.startRecording(fakeWindowsList, mockActivity)
+
+        // Then
+        fakeWindowsList.forEach {
+            val captor = argumentCaptor<Window.Callback>()
+            verify(it).callback = captor.capture()
+            assertThat(captor.firstValue).isInstanceOf(RecorderWindowCallback::class.java)
+            assertThat((captor.firstValue as RecorderWindowCallback).wrappedCallback)
+                .isEqualTo(it.callback)
+        }
     }
 
     @Test
-    fun `M clean the listeners the RecorderOnDrawListener W stopRecording()`(forge: Forge) {
+    fun `M register the RecorderWindowCallback W startRecording{default callback is null}`() {
         // Given
-        val mockViewTreeObserver: ViewTreeObserver = mock()
-        val mockActivity = mockActivity(forge, mockViewTreeObserver)
-        testedRecorder.startRecording(mockActivity)
+        fakeWindowsList.forEach {
+            whenever(it.callback).thenReturn(null)
+        }
 
         // When
-        testedRecorder.stopRecording(mockActivity)
+        testedRecorder.startRecording(fakeWindowsList, mockActivity)
 
         // Then
-        assertThat(testedRecorder.drawListeners).isEmpty()
+        fakeWindowsList.forEach {
+            val captor = argumentCaptor<Window.Callback>()
+            verify(it).callback = captor.capture()
+            assertThat(captor.firstValue).isInstanceOf(RecorderWindowCallback::class.java)
+            assertThat((captor.firstValue as RecorderWindowCallback).wrappedCallback)
+                .isInstanceOf(NoOpWindowCallback::class.java)
+        }
+    }
+
+    @Test
+    fun `M remove the RecorderWindowCallback W stopRecording(windows){default is not null}`() {
+        // Given
+        val defaultCallbacks = LinkedList<Window.Callback>()
+        fakeWindowsList.forEach {
+            defaultCallbacks.add(it.callback)
+        }
+        testedRecorder.startRecording(fakeWindowsList, mockActivity)
+        fakeWindowsList.forEach {
+            defaultCallbacks.add(it.callback)
+            val startRecordingCapture = argumentCaptor<Window.Callback>()
+            verify(it).callback = startRecordingCapture.capture()
+            assertThat(startRecordingCapture.firstValue)
+                .isInstanceOf(RecorderWindowCallback::class.java)
+            whenever(it.callback).thenReturn(startRecordingCapture.firstValue)
+        }
+
+        // When
+        testedRecorder.stopRecording(fakeWindowsList)
+
+        // Then
+        fakeWindowsList.forEach {
+            val stopRecordingCaptureTarget = argumentCaptor<Window.Callback>()
+            verify(it, times(2)).callback = stopRecordingCaptureTarget.capture()
+            assertThat(stopRecordingCaptureTarget.secondValue)
+                .isSameAs(defaultCallbacks.removeFirst())
+        }
+    }
+
+    @Test
+    fun `M remove the RecorderWindowCallback W stopRecording(){default is not null}`() {
+        // Given
+        val defaultCallbacks = LinkedList<Window.Callback>()
+        fakeWindowsList.forEach {
+            defaultCallbacks.add(it.callback)
+        }
+        testedRecorder.startRecording(fakeWindowsList, mockActivity)
+        fakeWindowsList.forEach {
+            val startRecordingCapture = argumentCaptor<Window.Callback>()
+            verify(it).callback = startRecordingCapture.capture()
+            assertThat(startRecordingCapture.firstValue)
+                .isInstanceOf(RecorderWindowCallback::class.java)
+            whenever(it.callback).thenReturn(startRecordingCapture.firstValue)
+        }
+
+        // When
+        testedRecorder.stopRecording()
+
+        // Then
+        fakeWindowsList.forEach {
+            val stopRecordingCaptureTarget = argumentCaptor<Window.Callback>()
+            verify(it, times(2)).callback = stopRecordingCaptureTarget.capture()
+            assertThat(stopRecordingCaptureTarget.secondValue)
+                .isSameAs(defaultCallbacks.removeFirst())
+        }
+    }
+
+    @Test
+    fun `M remove the RecorderWindowCallback W stopRecording(windows){default was null}`() {
+        // Given
+        fakeWindowsList.forEach {
+            whenever(it.callback).thenReturn(null)
+        }
+        testedRecorder.startRecording(fakeWindowsList, mockActivity)
+        fakeWindowsList.forEach {
+            val startRecordingCapture = argumentCaptor<Window.Callback>()
+            verify(it).callback = startRecordingCapture.capture()
+            assertThat(startRecordingCapture.firstValue)
+                .isInstanceOf(RecorderWindowCallback::class.java)
+            whenever(it.callback).thenReturn(startRecordingCapture.firstValue)
+        }
+
+        // When
+        testedRecorder.stopRecording(fakeWindowsList)
+
+        // Then
+        fakeWindowsList.forEach {
+            val stopRecordingCaptureTarget = argumentCaptor<Window.Callback>()
+            verify(it, times(2)).callback = stopRecordingCaptureTarget.capture()
+            assertThat(stopRecordingCaptureTarget.secondValue).isNull()
+        }
+    }
+
+    @Test
+    fun `M remove the RecorderWindowCallback W stopRecording(){default was null}`() {
+        // Given
+        fakeWindowsList.forEach {
+            whenever(it.callback).thenReturn(null)
+        }
+        testedRecorder.startRecording(fakeWindowsList, mockActivity)
+        fakeWindowsList.forEach {
+            val startRecordingCapture = argumentCaptor<Window.Callback>()
+            verify(it).callback = startRecordingCapture.capture()
+            assertThat(startRecordingCapture.firstValue)
+                .isInstanceOf(RecorderWindowCallback::class.java)
+            whenever(it.callback).thenReturn(startRecordingCapture.firstValue)
+        }
+
+        // When
+        testedRecorder.stopRecording()
+
+        // Then
+        fakeWindowsList.forEach {
+            val stopRecordingCaptureTarget = argumentCaptor<Window.Callback>()
+            verify(it, times(2)).callback = stopRecordingCaptureTarget.capture()
+            assertThat(stopRecordingCaptureTarget.secondValue).isNull()
+        }
+    }
+
+    @Test
+    fun `M do nothing W stopRecording(windows){window callback was not wrapped}`() {
+        // When
+        testedRecorder.stopRecording(fakeWindowsList)
+
+        // Then
+        fakeWindowsList.forEach {
+            verify(it, never()).callback = any()
+        }
+    }
+
+    @Test
+    fun `M do nothing W stopRecording(){window callback was not wrapped and was null}`() {
+        // When
+        testedRecorder.stopRecording()
+
+        // Then
+        fakeWindowsList.forEach {
+            verify(it, never()).callback = any()
+        }
+    }
+
+    // endregion
+
+    // region Record Callback
+
+    @Test
+    fun `M notify the callback W startRecording()`(forge: Forge) {
+        // Given
+        val mockWindows = forge.aMockedWindowsList()
+
+        // When
+        testedRecorder.startRecording(mockWindows, mockActivity)
+
+        // Then
+        verify(mockRecordCallback).onStartRecording()
+        verifyNoMoreInteractions(mockRecordCallback)
+    }
+
+    @Test
+    fun `M notify the callback W stopRecording(windows)`(forge: Forge) {
+        // Given
+        val mockWindows = forge.aMockedWindowsList()
+        testedRecorder.startRecording(mockWindows, mockActivity)
+
+        // When
+        testedRecorder.stopRecording(mockWindows)
+
+        // Then
+        verify(mockRecordCallback).onStartRecording()
+        verify(mockRecordCallback).onStopRecording()
+        verifyNoMoreInteractions(mockRecordCallback)
+    }
+
+    @Test
+    fun `M notify the callback W stopRecording`(forge: Forge) {
+        // Given
+        val mockWindows = forge.aMockedWindowsList()
+        testedRecorder.startRecording(mockWindows, mockActivity)
+
+        // When
+        testedRecorder.stopRecording()
+
+        // Then
+        verify(mockRecordCallback).onStartRecording()
+        verify(mockRecordCallback).onStopRecording()
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     // endregion
 
     // region Internal
 
-    private fun mockActivity(
-        forge: Forge,
-        viewTreeObserver: ViewTreeObserver = mock(),
-        window: Window = mock(),
-        defaultWindowCallback: Window.Callback? = null
-    ): Activity {
-        val fakeDensity = forge.aFloat()
+    private fun Forge.aMockedActivity(): Activity {
+        val mockActivity: Activity = mock()
+        val fakeDensity = aPositiveFloat()
         val displayMetrics = DisplayMetrics().apply { density = fakeDensity }
         val mockResources: Resources = mock {
             whenever(it.displayMetrics).thenReturn(displayMetrics)
         }
-        val mockDecorView: View = mock {
-            whenever(it.viewTreeObserver).thenReturn(viewTreeObserver)
-        }
-        whenever(window.decorView).thenReturn(mockDecorView)
-        val mockActivity: Activity = mock()
         whenever(mockActivity.resources).thenReturn(mockResources)
-        whenever(mockActivity.window).thenReturn(window)
-        whenever(mockActivity.window.callback).thenReturn(defaultWindowCallback)
         return mockActivity
+    }
+
+    private fun Forge.aMockedWindowsList(): List<Window> {
+        return aList {
+            mock {
+                val mockDecorView: View = mock()
+                whenever(mockDecorView.viewTreeObserver).thenReturn(mock())
+                whenever(it.decorView).thenReturn(mockDecorView)
+                whenever(it.callback).thenReturn(mock())
+            }
+        }
     }
 
     // endregion

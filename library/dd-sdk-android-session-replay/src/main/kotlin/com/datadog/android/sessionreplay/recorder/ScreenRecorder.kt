@@ -9,46 +9,64 @@ package com.datadog.android.sessionreplay.recorder
 import android.app.Activity
 import android.view.ViewTreeObserver
 import android.view.Window
+import com.datadog.android.sessionreplay.NoOpRecordCallback
+import com.datadog.android.sessionreplay.RecordCallback
 import com.datadog.android.sessionreplay.processor.Processor
+import com.datadog.android.sessionreplay.recorder.callback.NoOpWindowCallback
+import com.datadog.android.sessionreplay.recorder.callback.RecorderWindowCallback
+import com.datadog.android.sessionreplay.recorder.listener.WindowsOnDrawListener
 import com.datadog.android.sessionreplay.utils.TimeProvider
+import java.util.WeakHashMap
 
 internal class ScreenRecorder(
     private val processor: Processor,
     private val snapshotProducer: SnapshotProducer,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val recordCallback: RecordCallback = NoOpRecordCallback()
 ) : Recorder {
-    internal val drawListeners: MutableMap<Int, ViewTreeObserver.OnDrawListener> = HashMap()
+    internal val windowsListeners: WeakHashMap<Window, ViewTreeObserver.OnDrawListener> =
+        WeakHashMap()
 
-    override fun startRecording(activity: Activity) {
-        if (activity.window != null) {
-            with(
-                RecorderOnDrawListener(
-                    activity,
-                    activity.resources.displayMetrics.density,
-                    processor,
-                    snapshotProducer
-                )
-            ) {
-                drawListeners[activity.hashCode()] = this
-                activity.window.decorView.viewTreeObserver?.addOnDrawListener(this)
-            }
-
-            wrapWindowCallback(
-                activity.window,
-                activity.resources.displayMetrics.density
-            )
+    override fun startRecording(windows: List<Window>, ownerActivity: Activity) {
+        // first we make sure we don't record a window multiple times
+        stopRecordingAndRemove(windows)
+        val screenDensity = ownerActivity.resources.displayMetrics.density
+        val onDrawListener = WindowsOnDrawListener(
+            ownerActivity,
+            windows,
+            screenDensity,
+            processor,
+            snapshotProducer
+        )
+        windows.forEach { window ->
+            val decorView = window.decorView
+            windowsListeners[window] = onDrawListener
+            decorView.viewTreeObserver?.addOnDrawListener(onDrawListener)
+            wrapWindowCallback(window, screenDensity)
         }
+        recordCallback.onStartRecording()
     }
 
-    override fun stopRecording(activity: Activity) {
-        activity.hashCode().let { windowHashCode ->
-            drawListeners.remove(windowHashCode)?.let {
-                activity.window.decorView.viewTreeObserver.removeOnDrawListener(it)
-            }
-        }
+    override fun stopRecording(windows: List<Window>) {
+        stopRecordingAndRemove(windows)
+        recordCallback.onStopRecording()
+    }
 
-        if (activity.window != null) {
-            unwrapWindowCallback(activity.window)
+    override fun stopRecording() {
+        windowsListeners.entries.forEach {
+            it.key.decorView.viewTreeObserver.removeOnDrawListener(it.value)
+            unwrapWindowCallback(it.key)
+        }
+        windowsListeners.clear()
+        recordCallback.onStopRecording()
+    }
+
+    private fun stopRecordingAndRemove(windows: List<Window>) {
+        windows.forEach { window ->
+            windowsListeners.remove(window)?.let {
+                window.decorView.viewTreeObserver.removeOnDrawListener(it)
+            }
+            unwrapWindowCallback(window)
         }
     }
 

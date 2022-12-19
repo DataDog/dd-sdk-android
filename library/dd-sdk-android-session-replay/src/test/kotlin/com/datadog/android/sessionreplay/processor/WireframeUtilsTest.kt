@@ -737,9 +737,7 @@ internal class WireframeUtilsTest {
 
     private fun Forge.forgeNonTransparentShapeStyle(): MobileSegment.ShapeStyle {
         return MobileSegment.ShapeStyle(
-            backgroundColor = aNullable {
-                aStringMatching("#[0-9A-F]{6}FF")
-            },
+            backgroundColor = aStringMatching("#[0-9A-F]{6}FF"),
             opacity = 1f,
             cornerRadius = aPositiveLong()
         )
