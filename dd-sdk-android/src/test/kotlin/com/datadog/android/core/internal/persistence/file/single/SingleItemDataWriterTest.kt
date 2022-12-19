@@ -156,7 +156,7 @@ internal class SingleItemDataWriterTest {
         verifyZeroInteractions(mockFileWriter)
         verify(mockInternalLogger).log(
             InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             Serializer.ERROR_SERIALIZING.format(Locale.US, data.javaClass.simpleName),
             fakeThrowable
         )

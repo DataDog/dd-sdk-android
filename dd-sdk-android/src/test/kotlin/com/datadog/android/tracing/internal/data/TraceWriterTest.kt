@@ -258,7 +258,7 @@ internal class TraceWriterTest {
         verify(mockInternalLogger)
             .log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 TraceWriter.ERROR_SERIALIZING.format(Locale.US, SpanEvent::class.java.simpleName),
                 fakeThrowable
             )

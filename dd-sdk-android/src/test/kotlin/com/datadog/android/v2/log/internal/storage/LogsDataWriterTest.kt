@@ -139,7 +139,7 @@ internal class LogsDataWriterTest {
                 eq(InternalLogger.Level.ERROR),
                 targets = eq(
                     listOf(
-                        InternalLogger.Target.MAINTAINER,
+                        InternalLogger.Target.USER,
                         InternalLogger.Target.TELEMETRY
                     )
                 ),
