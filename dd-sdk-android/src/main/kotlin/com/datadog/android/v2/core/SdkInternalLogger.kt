@@ -7,12 +7,38 @@
 package com.datadog.android.v2.core
 
 import android.util.Log
-import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.BuildConfig
+import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.telemetry
 import com.datadog.android.v2.api.InternalLogger
 
-internal object SdkInternalLogger : InternalLogger {
+internal class SdkInternalLogger(
+    devLogHandlerFactory: () -> LogcatLogHandler = {
+        LogcatLogHandler(DEV_LOG_TAG) { level ->
+            level >= Datadog.globalSdkCore.getVerbosity()
+        }
+    },
+    sdkLogHandlerFactory: () -> LogcatLogHandler? = {
+        if (BuildConfig.LOGCAT_ENABLED) {
+            LogcatLogHandler(SDK_LOG_TAG)
+        } else {
+            null
+        }
+    }
+) : InternalLogger {
+
+    /**
+     * Global Dev Logger. This logger is meant for user's debugging purposes.
+     * Logcat logs are conditioned by the [Datadog.libraryVerbosity].
+     * No Datadog logs should be sent.
+     */
+    internal val devLogger = devLogHandlerFactory.invoke()
+
+    /**
+     * Global SDK Logger. This logger is meant for internal debugging purposes.
+     * Logcat logs are conditioned by a BuildConfig flag (set to false for releases).
+     */
+    internal val sdkLogger = sdkLogHandlerFactory.invoke()
 
     // region InternalLogger
 
@@ -20,15 +46,12 @@ internal object SdkInternalLogger : InternalLogger {
         level: InternalLogger.Level,
         target: InternalLogger.Target,
         message: String,
-        error: Throwable?,
-        attributes: Map<String, Any?>
+        throwable: Throwable?
     ) {
         when (target) {
-            // TODO RUMM-2764 we should remove sdkLogger, devLogger and telemetry
-            //  and use only this instance for logging
-            InternalLogger.Target.USER -> logToUser(level, message, error, attributes)
-            InternalLogger.Target.MAINTAINER -> logToMaintainer(level, message, error, attributes)
-            InternalLogger.Target.TELEMETRY -> logToTelemetry(level, message, error)
+            InternalLogger.Target.USER -> logToUser(level, message, throwable)
+            InternalLogger.Target.MAINTAINER -> logToMaintainer(level, message, throwable)
+            InternalLogger.Target.TELEMETRY -> logToTelemetry(level, message, throwable)
         }
     }
 
@@ -36,11 +59,10 @@ internal object SdkInternalLogger : InternalLogger {
         level: InternalLogger.Level,
         targets: List<InternalLogger.Target>,
         message: String,
-        error: Throwable?,
-        attributes: Map<String, Any?>
+        throwable: Throwable?
     ) {
         targets.forEach {
-            log(level, it, message, error, attributes)
+            log(level, it, message, throwable)
         }
     }
 
@@ -51,28 +73,24 @@ internal object SdkInternalLogger : InternalLogger {
     private fun logToUser(
         level: InternalLogger.Level,
         message: String,
-        error: Throwable?,
-        attributes: Map<String, Any?>
+        error: Throwable?
     ) {
         devLogger.log(
             level.toLogLevel(),
             message,
-            error,
-            attributes
+            error
         )
     }
 
     private fun logToMaintainer(
         level: InternalLogger.Level,
         message: String,
-        error: Throwable?,
-        attributes: Map<String, Any?>
+        error: Throwable?
     ) {
-        sdkLogger.log(
+        sdkLogger?.log(
             level.toLogLevel(),
             message,
-            error,
-            attributes
+            error
         )
     }
 
@@ -93,11 +111,17 @@ internal object SdkInternalLogger : InternalLogger {
 
     private fun InternalLogger.Level.toLogLevel(): Int {
         return when (this) {
+            InternalLogger.Level.VERBOSE -> Log.VERBOSE
             InternalLogger.Level.DEBUG -> Log.DEBUG
             InternalLogger.Level.INFO -> Log.INFO
             InternalLogger.Level.WARN -> Log.WARN
             InternalLogger.Level.ERROR -> Log.ERROR
         }
+    }
+
+    companion object {
+        internal const val SDK_LOG_TAG = "DD_LOG"
+        internal const val DEV_LOG_TAG = "Datadog"
     }
 
     // endregion

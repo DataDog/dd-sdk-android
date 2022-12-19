@@ -6,7 +6,6 @@
 
 package com.datadog.android.log.internal
 
-import android.util.Log
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.LogAttributes
@@ -14,12 +13,13 @@ import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.NetworkInfo
@@ -193,9 +193,10 @@ internal class LogsFeatureTest {
         testedFeature.onReceive(Any())
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 LogsFeature.UNSUPPORTED_EVENT_TYPE.format(
                     Locale.US,
                     Any()::class.java.canonicalName
@@ -203,7 +204,7 @@ internal class LogsFeatureTest {
             )
 
         verifyZeroInteractions(
-            logger.mockDevLogHandler,
+            logger.mockInternalLogger,
             mockSdkCore,
             mockDataWriter
         )
@@ -223,9 +224,10 @@ internal class LogsFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 LogsFeature.UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"])
             )
 
@@ -277,9 +279,10 @@ internal class LogsFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 LogsFeature.JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING
             )
 
@@ -496,9 +499,10 @@ internal class LogsFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 LogsFeature.NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING
             )
 
@@ -662,7 +666,7 @@ internal class LogsFeatureTest {
     }
 
     companion object {
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

@@ -6,11 +6,11 @@
 
 package com.datadog.android.core.internal.persistence.file
 
-import android.util.Log
 import com.datadog.android.log.Logger
 import com.datadog.android.security.Encryption
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -100,7 +100,6 @@ internal class EncryptedFileReaderWriterTest {
             )
 
         verifyZeroInteractions(mockInternalLogger)
-        verifyZeroInteractions(logger.mockDevLogHandler)
     }
 
     @Test
@@ -120,8 +119,9 @@ internal class EncryptedFileReaderWriterTest {
         // Then
         assertThat(result).isFalse()
 
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             EncryptedFileReaderWriter.BAD_ENCRYPTION_RESULT_MESSAGE
         )
         verifyZeroInteractions(mockInternalLogger)
@@ -142,8 +142,9 @@ internal class EncryptedFileReaderWriterTest {
         // Then
         assertThat(result).isFalse()
 
-        verify(logger.mockSdkLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
             EncryptedFileReaderWriter.APPEND_MODE_NOT_SUPPORTED_MESSAGE
         )
         verifyZeroInteractions(mockInternalLogger)
@@ -205,7 +206,6 @@ internal class EncryptedFileReaderWriterTest {
         assertThat(readResult).isEqualTo(data.toByteArray())
 
         verifyZeroInteractions(mockInternalLogger)
-        verifyZeroInteractions(logger.mockDevLogHandler)
     }
 
     // endregion
@@ -225,7 +225,7 @@ internal class EncryptedFileReaderWriterTest {
 
     companion object {
 
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

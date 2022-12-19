@@ -6,10 +6,9 @@
 
 package com.datadog.android.core.internal.user
 
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.assertj.DeserializedMapAssert
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.UserInfo
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -35,11 +34,11 @@ internal class UserInfoDeserializerTest {
     lateinit var testedDeserializer: UserInfoDeserializer
 
     @Mock
-    lateinit var mockLogHandler: LogHandler
+    lateinit var mockInternalLogger: InternalLogger
 
     @BeforeEach
     fun `set up`() {
-        testedDeserializer = UserInfoDeserializer(Logger(mockLogHandler))
+        testedDeserializer = UserInfoDeserializer(mockInternalLogger)
     }
 
     @Test

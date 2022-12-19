@@ -7,13 +7,13 @@
 package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
-import android.util.Log
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.sessionreplay.SessionReplayLifecycleCallback
 import com.datadog.android.sessionreplay.internal.storage.SessionReplayRecordWriter
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -324,9 +324,10 @@ internal class SessionReplayFeatureTest {
         testedFeature.onReceive(Any())
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 SessionReplayFeature.UNSUPPORTED_EVENT_TYPE.format(
                     Locale.US,
                     Any()::class.java.canonicalName
@@ -352,9 +353,10 @@ internal class SessionReplayFeatureTest {
         // Then
         val expectedMessage = SessionReplayFeature.UNKNOWN_EVENT_TYPE_PROPERTY_VALUE
             .format(Locale.US, event[SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY])
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 expectedMessage
             )
 
@@ -373,9 +375,10 @@ internal class SessionReplayFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
             )
 
@@ -398,9 +401,10 @@ internal class SessionReplayFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
             )
 
@@ -409,7 +413,7 @@ internal class SessionReplayFeatureTest {
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

@@ -11,7 +11,8 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.v2.api.InternalLogger
 
 /**
  * The ActivityLifecycleTrackingStrategy as an [Application.ActivityLifecycleCallbacks]
@@ -27,7 +28,9 @@ abstract class ActivityLifecycleTrackingStrategy :
         if (context is Application) {
             context.registerActivityLifecycleCallbacks(this)
         } else {
-            devLogger.e(
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
                 "In order to use the RUM automatic tracking feature you will have" +
                     "to use the Application context when initializing the SDK"
             )

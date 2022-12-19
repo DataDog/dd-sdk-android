@@ -16,10 +16,11 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
@@ -50,7 +51,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import android.util.Log as AndroidLog
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -209,8 +209,9 @@ internal class DatadogTest {
         Datadog.initialize(appContext.mockInstance, credentials, configuration, fakeConsent)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            AndroidLog.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             Datadog.MESSAGE_ALREADY_INITIALIZED
         )
     }
@@ -267,8 +268,9 @@ internal class DatadogTest {
         // Then
         assertThat(Datadog.isInitialized()).isFalse()
         assertThat(Datadog.globalSdkCore).isInstanceOf(NoOpSdkCore::class.java)
-        verify(logger.mockDevLogHandler).handleLog(
-            AndroidLog.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Datadog.CANNOT_CREATE_SDK_INSTANCE_ID_ERROR
         )
     }
@@ -371,7 +373,7 @@ internal class DatadogTest {
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val mainLooper = MainLooperTestConfiguration()
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
         val coreFeature = CoreFeatureTestConfiguration(appContext)
 
         @TestConfigurationsProvider

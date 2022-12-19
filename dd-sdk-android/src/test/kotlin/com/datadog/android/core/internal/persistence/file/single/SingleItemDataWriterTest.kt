@@ -11,16 +11,11 @@ import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileWriter
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.eq
-import com.nhaarman.mockitokotlin2.isNull
-import com.nhaarman.mockitokotlin2.same
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
@@ -60,7 +55,7 @@ internal class SingleItemDataWriterTest {
     lateinit var mockFileWriter: FileWriter
 
     @Mock
-    lateinit var mockLogHandler: LogHandler
+    lateinit var mockInternalLogger: InternalLogger
 
     @Forgery
     lateinit var fakeThrowable: Throwable
@@ -86,7 +81,7 @@ internal class SingleItemDataWriterTest {
             mockOrchestrator,
             mockSerializer,
             mockFileWriter,
-            Logger(mockLogHandler),
+            mockInternalLogger,
             fakeFilePersistenceConfig.copy(maxItemSize = Long.MAX_VALUE)
         )
     }
@@ -159,13 +154,11 @@ internal class SingleItemDataWriterTest {
 
         // Then
         verifyZeroInteractions(mockFileWriter)
-        verify(mockLogHandler).handleLog(
-            eq(ERROR_WITH_TELEMETRY_LEVEL),
-            eq(Serializer.ERROR_SERIALIZING.format(Locale.US, data.javaClass.simpleName)),
-            same(fakeThrowable),
-            eq(emptyMap()),
-            eq(emptySet()),
-            isNull()
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            Serializer.ERROR_SERIALIZING.format(Locale.US, data.javaClass.simpleName),
+            fakeThrowable
         )
     }
 
@@ -182,7 +175,7 @@ internal class SingleItemDataWriterTest {
             mockOrchestrator,
             mockSerializer,
             mockFileWriter,
-            Logger(mockLogHandler),
+            mockInternalLogger,
             fakeFilePersistenceConfig.copy(
                 maxItemSize = maxLimit
             )
@@ -193,8 +186,9 @@ internal class SingleItemDataWriterTest {
 
         // Then
         verifyZeroInteractions(mockFileWriter)
-        verify(mockLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             SingleItemDataWriter.ERROR_LARGE_DATA.format(Locale.US, dataSize, maxLimit)
         )
     }

@@ -12,9 +12,8 @@ import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.percent
-import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.rum.RumAttributes
@@ -28,6 +27,7 @@ import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.tracing.NoOpTracedRequestListener
 import com.datadog.android.tracing.TracedRequestListener
 import com.datadog.android.tracing.TracingInterceptor
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import io.opentracing.Span
 import io.opentracing.Tracer
@@ -163,7 +163,11 @@ internal constructor(
 
             GlobalRum.get().startResource(requestId, method, url)
         } else {
-            devLogger.w(WARN_RUM_DISABLED)
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                WARN_RUM_DISABLED
+            )
         }
         return super.intercept(chain)
     }
@@ -253,13 +257,28 @@ internal constructor(
             val contentLength = body.contentLength()
             if (contentLength == 0L) null else contentLength
         } catch (e: IOException) {
-            sdkLogger.e(ERROR_PEEK_BODY, e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                ERROR_PEEK_BODY,
+                e
+            )
             null
         } catch (e: IllegalStateException) {
-            sdkLogger.e(ERROR_PEEK_BODY, e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                ERROR_PEEK_BODY,
+                e
+            )
             null
         } catch (e: IllegalArgumentException) {
-            sdkLogger.e(ERROR_PEEK_BODY, e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                ERROR_PEEK_BODY,
+                e
+            )
             null
         }
     }

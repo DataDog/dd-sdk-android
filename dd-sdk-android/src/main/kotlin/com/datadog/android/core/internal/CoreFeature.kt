@@ -56,8 +56,7 @@ import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.core.internal.user.UserInfoDeserializer
-import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.ndk.DatadogNdkCrashHandler
 import com.datadog.android.rum.internal.ndk.NdkCrashHandler
@@ -66,6 +65,7 @@ import com.datadog.android.rum.internal.ndk.NdkNetworkInfoDataWriter
 import com.datadog.android.rum.internal.ndk.NdkUserInfoDataWriter
 import com.datadog.android.rum.internal.ndk.NoOpNdkCrashHandler
 import com.datadog.android.security.Encryption
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.internal.ContextProvider
 import com.datadog.android.v2.core.internal.DatadogContextProvider
 import com.datadog.android.v2.core.internal.NoOpContextProvider
@@ -188,7 +188,12 @@ internal class CoreFeature {
             } catch (ise: IllegalStateException) {
                 // this may be called from the test
                 // when Kronos is already shut down
-                sdkLogger.e("Trying to shut down Kronos when it is already not running", ise)
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
+                    "Trying to shut down Kronos when it is already not running",
+                    ise
+                )
             }
 
             featuresContext.clear()
@@ -236,13 +241,13 @@ internal class CoreFeature {
             ndkCrashHandler = DatadogNdkCrashHandler(
                 storageDir,
                 persistenceExecutorService,
-                NdkCrashLogDeserializer(sdkLogger),
+                NdkCrashLogDeserializer(internalLogger),
                 rumEventDeserializer = JsonObjectDeserializer(),
-                NetworkInfoDeserializer(sdkLogger),
-                UserInfoDeserializer(sdkLogger),
-                sdkLogger,
-                rumFileReader = BatchFileReaderWriter.create(sdkLogger, localDataEncryption),
-                envFileReader = FileReaderWriter.create(sdkLogger, localDataEncryption)
+                NetworkInfoDeserializer(internalLogger),
+                UserInfoDeserializer(internalLogger),
+                internalLogger,
+                rumFileReader = BatchFileReaderWriter.create(internalLogger, localDataEncryption),
+                envFileReader = FileReaderWriter.create(internalLogger, localDataEncryption)
             )
             ndkCrashHandler.prepareData()
         }
@@ -266,7 +271,12 @@ internal class CoreFeature {
                     syncInBackground()
                 } catch (ise: IllegalStateException) {
                     // should never happen
-                    sdkLogger.e("Cannot launch time sync", ise)
+                    internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.MAINTAINER,
+                        "Cannot launch time sync",
+                        ise
+                    )
                 }
             }
         }
@@ -301,7 +311,12 @@ internal class CoreFeature {
                 }
             }
         } catch (e: PackageManager.NameNotFoundException) {
-            devLogger.e("Unable to read your application's version name", e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                "Unable to read your application's version name",
+                e
+            )
             null
         }
     }
@@ -337,13 +352,13 @@ internal class CoreFeature {
                 storageDir,
                 trackingConsentProvider,
                 persistenceExecutorService,
-                FileReaderWriter.create(sdkLogger, localDataEncryption),
-                FileMover(sdkLogger),
-                sdkLogger,
+                FileReaderWriter.create(internalLogger, localDataEncryption),
+                FileMover(internalLogger),
+                internalLogger,
                 buildFilePersistenceConfig()
             ),
             persistenceExecutorService,
-            sdkLogger
+            internalLogger
         )
         userInfoProvider = DatadogUserInfoProvider(userInfoWriter)
     }
@@ -354,13 +369,13 @@ internal class CoreFeature {
                 storageDir,
                 trackingConsentProvider,
                 persistenceExecutorService,
-                FileReaderWriter.create(sdkLogger, localDataEncryption),
-                FileMover(sdkLogger),
-                sdkLogger,
+                FileReaderWriter.create(internalLogger, localDataEncryption),
+                FileMover(internalLogger),
+                internalLogger,
                 buildFilePersistenceConfig()
             ),
             persistenceExecutorService,
-            sdkLogger
+            internalLogger
         )
         networkInfoProvider = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             CallbackNetworkInfoProvider(networkInfoWriter)
@@ -409,7 +424,7 @@ internal class CoreFeature {
     private fun setupExecutors() {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
         uploadExecutorService =
-            LoggingScheduledThreadPoolExecutor(CORE_DEFAULT_POOL_SIZE, devLogger)
+            LoggingScheduledThreadPoolExecutor(CORE_DEFAULT_POOL_SIZE, internalLogger)
         @Suppress("UnsafeThirdPartyFunctionCall") // workQueue can't be null
         persistenceExecutorService = LoggingThreadPoolExecutor(
             CORE_DEFAULT_POOL_SIZE,
@@ -417,7 +432,7 @@ internal class CoreFeature {
             THREAD_POOL_MAX_KEEP_ALIVE_MS,
             TimeUnit.MILLISECONDS,
             LinkedBlockingDeque(),
-            devLogger
+            internalLogger
         )
     }
 
@@ -449,7 +464,12 @@ internal class CoreFeature {
                 Thread.currentThread().interrupt()
             } catch (se: SecurityException) {
                 // this should not happen
-                sdkLogger.e("Thread was unable to set its own interrupted state", se)
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
+                    "Thread was unable to set its own interrupted state",
+                    se
+                )
             }
         }
     }

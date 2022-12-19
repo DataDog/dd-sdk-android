@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal
 
 import android.app.Application
-import android.util.Log
 import android.view.Choreographer
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.VitalsUpdateFrequency
@@ -28,9 +27,10 @@ import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -489,9 +489,10 @@ internal class RumFeatureTest {
         testedFeature.onReceive(Any())
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 RumFeature.UNSUPPORTED_EVENT_TYPE.format(
                     Locale.US,
                     Any()::class.java.canonicalName
@@ -517,9 +518,10 @@ internal class RumFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 RumFeature.UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(
                     Locale.US,
                     event["type"]
@@ -550,9 +552,10 @@ internal class RumFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 RumFeature.JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS
             )
 
@@ -589,7 +592,7 @@ internal class RumFeatureTest {
 
         verifyZeroInteractions(
             mockSdkCore,
-            logger.mockDevLogHandler
+            logger.mockInternalLogger
         )
     }
 
@@ -625,7 +628,7 @@ internal class RumFeatureTest {
         verifyZeroInteractions(
             rumMonitor.mockInstance,
             mockSdkCore,
-            logger.mockDevLogHandler
+            logger.mockInternalLogger
         )
     }
 
@@ -635,7 +638,7 @@ internal class RumFeatureTest {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

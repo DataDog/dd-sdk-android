@@ -13,10 +13,11 @@ import androidx.annotation.FloatRange
 import androidx.fragment.app.Fragment
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.sampling.RateBasedSampler
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.tools.annotation.NoOpImplementation
 
@@ -290,13 +291,19 @@ interface RumMonitor {
             val rumFeature = datadogCore?.rumFeature
             val rumApplicationId = coreFeature?.rumApplicationId
             return if (rumFeature == null || coreFeature == null || contextProvider == null) {
-                devLogger.e(
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
                     RUM_NOT_ENABLED_ERROR_MESSAGE + "\n" +
                         Datadog.MESSAGE_SDK_INITIALIZATION_GUIDE
                 )
                 NoOpRumMonitor()
             } else if (rumApplicationId.isNullOrBlank()) {
-                devLogger.e(INVALID_APPLICATION_ID_ERROR_MESSAGE)
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
+                    INVALID_APPLICATION_ID_ERROR_MESSAGE
+                )
                 NoOpRumMonitor()
             } else {
                 DatadogRumMonitor(

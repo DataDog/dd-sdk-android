@@ -7,7 +7,7 @@
 package com.datadog.android.tracing.internal
 
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.tracing.internal.data.NoOpWriter
 import com.datadog.android.tracing.internal.data.TraceWriter
 import com.datadog.android.tracing.internal.domain.event.DdSpanToSpanEventMapper
@@ -44,7 +44,7 @@ internal class TracingFeature(
             legacyMapper = DdSpanToSpanEventMapper(),
             eventMapper = SpanEventMapperWrapper(configuration.spanEventMapper),
             serializer = SpanEventSerializer(),
-            internalLogger = sdkLogger
+            internalLogger = internalLogger
         )
     }
 

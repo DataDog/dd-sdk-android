@@ -6,14 +6,8 @@
 
 package com.datadog.android.core.internal.persistence.file
 
-import android.util.Log
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
-import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.android.v2.api.InternalLogger
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -26,6 +20,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -34,8 +29,7 @@ import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -52,6 +46,9 @@ internal class FileMoverTest {
     @TempDir
     lateinit var fakeRootDirectory: File
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     private lateinit var fakeSrcDir: File
     private lateinit var fakeDstDir: File
 
@@ -59,7 +56,7 @@ internal class FileMoverTest {
     fun setUp() {
         fakeSrcDir = File(fakeRootDirectory, fakeSrcDirName)
         fakeDstDir = File(fakeRootDirectory, fakeDstDirName)
-        testedFileMover = FileMover(Logger(logger.mockSdkLogHandler))
+        testedFileMover = FileMover(mockInternalLogger)
     }
 
     // region delete
@@ -142,8 +139,9 @@ internal class FileMoverTest {
 
         // Then
         assertThat(result).isTrue()
-        verify(logger.mockSdkLogHandler).handleLog(
-            Log.INFO,
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.MAINTAINER,
             FileMover.INFO_MOVE_NO_SRC.format(Locale.US, fakeSrcDir.path)
         )
     }
@@ -159,8 +157,9 @@ internal class FileMoverTest {
 
         // Then
         assertThat(result).isFalse()
-        verify(logger.mockSdkLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             FileMover.ERROR_MOVE_NOT_DIR.format(Locale.US, fakeSrcDir.path)
         )
     }
@@ -176,8 +175,9 @@ internal class FileMoverTest {
 
         // Then
         assertThat(result).isFalse()
-        verify(logger.mockSdkLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             FileMover.ERROR_MOVE_NOT_DIR.format(Locale.US, fakeDstDir.path)
         )
     }
@@ -253,14 +253,4 @@ internal class FileMoverTest {
     }
 
     // endregion
-
-    companion object {
-        val logger = LoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
-    }
 }

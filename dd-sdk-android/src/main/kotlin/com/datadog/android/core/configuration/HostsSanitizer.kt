@@ -6,7 +6,8 @@
 
 package com.datadog.android.core.configuration
 
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.v2.api.InternalLogger
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.Locale
@@ -23,7 +24,9 @@ internal class HostsSanitizer {
             if (it.matches(validUrlRegex)) {
                 try {
                     val parsedUrl = URL(it)
-                    devLogger.w(
+                    internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        InternalLogger.Target.USER,
                         WARNING_USING_URL.format(
                             Locale.US,
                             it,
@@ -33,7 +36,12 @@ internal class HostsSanitizer {
                     )
                     parsedUrl.host
                 } catch (e: MalformedURLException) {
-                    devLogger.e(ERROR_MALFORMED_URL.format(Locale.US, it, feature), e)
+                    internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.USER,
+                        ERROR_MALFORMED_URL.format(Locale.US, it, feature),
+                        e
+                    )
                     null
                 }
             } else if (it.matches(validHostNameRegEx)) {
@@ -42,7 +50,11 @@ internal class HostsSanitizer {
                 // special rule exception to accept `localhost` as a valid domain name
                 it
             } else {
-                devLogger.e(ERROR_MALFORMED_HOST_IP_ADDRESS.format(Locale.US, it, feature))
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
+                    ERROR_MALFORMED_HOST_IP_ADDRESS.format(Locale.US, it, feature)
+                )
                 null
             }
         }

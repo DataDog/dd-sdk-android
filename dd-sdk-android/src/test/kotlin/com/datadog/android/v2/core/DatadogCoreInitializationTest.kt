@@ -20,18 +20,22 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.CustomAttributes
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.webview.internal.log.WebViewLogsFeature
 import com.datadog.android.webview.internal.rum.WebViewRumFeature
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.anyOrNull
+import com.nhaarman.mockitokotlin2.eq
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -171,8 +175,9 @@ internal class DatadogCoreInitializationTest {
         assertThat(testedCore.coreFeature.initialized.get()).isTrue()
         assertThat(testedCore.rumFeature!!.initialized.get()).isTrue()
         assertThat(testedCore.webViewRumFeature!!.initialized.get()).isTrue()
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             DatadogCore.WARNING_MESSAGE_APPLICATION_ID_IS_NULL
         )
     }
@@ -197,7 +202,13 @@ internal class DatadogCoreInitializationTest {
         assertThat(testedCore.coreFeature.initialized.get()).isTrue()
         assertThat(testedCore.rumFeature).isNull()
         assertThat(testedCore.webViewRumFeature).isNull()
-        verifyZeroInteractions(logger.mockDevLogHandler)
+        verify(logger.mockInternalLogger, never())
+            .log(
+                any(),
+                any<InternalLogger.Target>(),
+                eq(DatadogCore.WARNING_MESSAGE_APPLICATION_ID_IS_NULL),
+                anyOrNull()
+            )
     }
 
     @Test
@@ -603,7 +614,7 @@ internal class DatadogCoreInitializationTest {
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val mainLooper = MainLooperTestConfiguration()
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
         val coreFeature = CoreFeatureTestConfiguration(appContext)
 
         @TestConfigurationsProvider

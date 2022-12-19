@@ -6,8 +6,8 @@
 
 package com.datadog.android.core.internal.utils
 
-import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.rum.tracking.ComponentPredicate
+import com.datadog.android.v2.api.InternalLogger
 
 /**
  * Executes the provided operation if the predicate verifies the argument.
@@ -24,7 +24,12 @@ internal inline fun <reified T : Any> ComponentPredicate<T>.runIfValid(
         try {
             operation(component)
         } catch (e: Exception) {
-            sdkLogger.errorWithTelemetry("Internal operation failed", e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                "Internal operation failed",
+                e
+            )
         }
     }
 }

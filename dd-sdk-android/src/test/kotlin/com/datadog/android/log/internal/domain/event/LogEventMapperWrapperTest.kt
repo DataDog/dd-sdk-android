@@ -6,11 +6,11 @@
 
 package com.datadog.android.log.internal.domain.event
 
-import android.util.Log
 import com.datadog.android.event.EventMapper
 import com.datadog.android.log.model.LogEvent
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -87,8 +87,9 @@ internal class LogEventMapperWrapperTest {
         testedEventMapper.map(mockLogEvent)
 
         // THEN
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             LogEventMapperWrapper.NOT_SAME_EVENT_INSTANCE_WARNING_MESSAGE.format(
                 Locale.US,
                 mockLogEvent.toString()
@@ -118,8 +119,9 @@ internal class LogEventMapperWrapperTest {
         testedEventMapper.map(mockLogEvent)
 
         // THEN
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             LogEventMapperWrapper.EVENT_NULL_WARNING_MESSAGE.format(
                 Locale.US,
                 mockLogEvent.toString()
@@ -128,7 +130,7 @@ internal class LogEventMapperWrapperTest {
     }
 
     companion object {
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

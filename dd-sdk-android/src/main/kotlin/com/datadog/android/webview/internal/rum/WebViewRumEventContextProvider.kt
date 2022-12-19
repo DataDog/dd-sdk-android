@@ -6,10 +6,10 @@
 
 package com.datadog.android.webview.internal.rum
 
-import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 
 internal class WebViewRumEventContextProvider {
@@ -30,8 +30,16 @@ internal class WebViewRumEventContextProvider {
             rumSessionId == RumContext.NULL_UUID
         ) {
             rumFeatureDisabled = true
-            devLogger.w(RUM_NOT_INITIALIZED_WARNING_MESSAGE)
-            sdkLogger.e(RUM_NOT_INITIALIZED_ERROR_MESSAGE)
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                RUM_NOT_INITIALIZED_WARNING_MESSAGE
+            )
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                RUM_NOT_INITIALIZED_ERROR_MESSAGE
+            )
             null
         } else {
             RumContext(applicationId = rumApplicationId, sessionId = rumSessionId)

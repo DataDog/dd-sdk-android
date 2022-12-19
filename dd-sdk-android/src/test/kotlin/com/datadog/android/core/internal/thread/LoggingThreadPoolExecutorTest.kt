@@ -18,7 +18,7 @@ internal class LoggingThreadPoolExecutorTest :
             keepAliveTime = 100,
             TimeUnit.MILLISECONDS,
             LinkedBlockingDeque(),
-            mockLogger
+            mockInternalLogger
         )
     }
 }

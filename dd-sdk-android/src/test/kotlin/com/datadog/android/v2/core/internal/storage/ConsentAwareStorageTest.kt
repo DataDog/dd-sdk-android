@@ -275,8 +275,7 @@ internal class ConsentAwareStorageTest {
             eq(InternalLogger.Level.ERROR),
             eq(InternalLogger.Target.MAINTAINER),
             eq(ConsentAwareStorage.ERROR_WRITE_CONTEXT_EXECUTION_REJECTED),
-            isA<RejectedExecutionException>(),
-            eq(emptyMap())
+            isA<RejectedExecutionException>()
         )
     }
 
@@ -532,9 +531,7 @@ internal class ConsentAwareStorageTest {
         verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
-            ConsentAwareStorage.WARNING_DELETE_FAILED.format(Locale.US, file.path),
-            null,
-            emptyMap()
+            ConsentAwareStorage.WARNING_DELETE_FAILED.format(Locale.US, file.path)
         )
         verifyNoMoreInteractions(mockInternalLogger)
     }
@@ -567,9 +564,7 @@ internal class ConsentAwareStorageTest {
         verify(mockInternalLogger).log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
-            ConsentAwareStorage.WARNING_DELETE_FAILED.format(Locale.US, mockMetaFile.path),
-            null,
-            emptyMap()
+            ConsentAwareStorage.WARNING_DELETE_FAILED.format(Locale.US, mockMetaFile.path)
         )
         verifyNoMoreInteractions(mockInternalLogger)
     }

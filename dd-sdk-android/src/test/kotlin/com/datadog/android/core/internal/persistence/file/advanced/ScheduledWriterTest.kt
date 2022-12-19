@@ -6,11 +6,9 @@
 
 package com.datadog.android.core.internal.persistence.file.advanced
 
-import android.util.Log
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doThrow
@@ -49,14 +47,14 @@ internal class ScheduledWriterTest {
     lateinit var mockExecutorService: ExecutorService
 
     @Mock
-    lateinit var mockLogHandler: LogHandler
+    lateinit var mockInternalLogger: InternalLogger
 
     @BeforeEach
     fun `set up`() {
         testedWriter = ScheduledWriter<String>(
             mockDelegateWriter,
             mockExecutorService,
-            Logger(mockLogHandler)
+            mockInternalLogger
         )
     }
 
@@ -94,8 +92,9 @@ internal class ScheduledWriterTest {
 
         // Then
         verifyZeroInteractions(mockDelegateWriter)
-        verify(mockLogHandler).handleLog(
-            Log.ERROR,
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
             ScheduledWriter.ERROR_REJECTED,
             throwable = exception
         )
@@ -135,8 +134,9 @@ internal class ScheduledWriterTest {
 
         // Then
         verifyZeroInteractions(mockDelegateWriter)
-        verify(mockLogHandler).handleLog(
-            Log.ERROR,
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
             ScheduledWriter.ERROR_REJECTED,
             throwable = exception
         )

@@ -8,14 +8,14 @@ package com.datadog.android.core.internal.persistence.file.advanced
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.internal.persistence.DataWriter
-import com.datadog.android.log.Logger
+import com.datadog.android.v2.api.InternalLogger
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.RejectedExecutionException
 
 internal class ScheduledWriter<T : Any>(
     internal val delegateWriter: DataWriter<T>,
     internal val executorService: ExecutorService,
-    private val internalLogger: Logger
+    private val internalLogger: InternalLogger
 ) : DataWriter<T> {
 
     // region DataWriter
@@ -28,7 +28,12 @@ internal class ScheduledWriter<T : Any>(
                 delegateWriter.write(element)
             }
         } catch (e: RejectedExecutionException) {
-            internalLogger.e(ERROR_REJECTED, e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                ERROR_REJECTED,
+                e
+            )
         }
     }
 
@@ -40,7 +45,12 @@ internal class ScheduledWriter<T : Any>(
                 delegateWriter.write(data)
             }
         } catch (e: RejectedExecutionException) {
-            internalLogger.e(ERROR_REJECTED, e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                ERROR_REJECTED,
+                e
+            )
         }
     }
 

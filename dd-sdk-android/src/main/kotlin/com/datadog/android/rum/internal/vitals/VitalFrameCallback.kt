@@ -7,7 +7,8 @@
 package com.datadog.android.rum.internal.vitals
 
 import android.view.Choreographer
-import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.v2.api.InternalLogger
 import java.util.concurrent.TimeUnit
 
 /**
@@ -39,7 +40,12 @@ internal class VitalFrameCallback(
             try {
                 Choreographer.getInstance().postFrameCallback(this)
             } catch (e: IllegalStateException) {
-                sdkLogger.e("Unable to post VitalFrameCallback, thread doesn't have looper", e)
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
+                    "Unable to post VitalFrameCallback, thread doesn't have looper",
+                    e
+                )
             }
         }
     }

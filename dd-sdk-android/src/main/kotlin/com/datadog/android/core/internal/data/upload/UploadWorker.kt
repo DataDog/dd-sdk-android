@@ -13,7 +13,8 @@ import androidx.work.WorkerParameters
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.net.UploadStatus
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.internal.net.DataUploader
@@ -32,7 +33,11 @@ internal class UploadWorker(
     @WorkerThread
     override fun doWork(): Result {
         if (!Datadog.isInitialized()) {
-            devLogger.e(Datadog.MESSAGE_NOT_INITIALIZED)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                Datadog.MESSAGE_NOT_INITIALIZED
+            )
             return Result.success()
         }
 

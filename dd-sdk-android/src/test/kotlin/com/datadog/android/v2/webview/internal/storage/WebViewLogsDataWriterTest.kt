@@ -7,11 +7,9 @@
 package com.datadog.android.v2.webview.internal.storage
 
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.forge.aThrowable
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
@@ -37,8 +35,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -50,7 +47,7 @@ internal class WebViewLogsDataWriterTest {
     lateinit var mockSerializer: Serializer<JsonObject>
 
     @Mock
-    lateinit var mockLogger: Logger
+    lateinit var mockLogger: InternalLogger
 
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
@@ -139,10 +136,15 @@ internal class WebViewLogsDataWriterTest {
 
         verify(mockLogger)
             .log(
-                eq(ERROR_WITH_TELEMETRY_LEVEL),
+                eq(InternalLogger.Level.ERROR),
+                targets = eq(
+                    listOf(
+                        InternalLogger.Target.MAINTAINER,
+                        InternalLogger.Target.TELEMETRY
+                    )
+                ),
                 any(),
-                eq(fakeThrowable),
-                eq(emptyMap())
+                eq(fakeThrowable)
             )
 
         verifyZeroInteractions(mockEventBatchWriter)

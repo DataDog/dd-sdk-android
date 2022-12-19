@@ -16,7 +16,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -1036,7 +1036,7 @@ internal class RumEventSerializerTest {
                 .doesNotContainKey(RumAttributes.INTERNAL_ERROR_SOURCE_TYPE)
                 .doesNotContainKey(RumAttributes.INTERNAL_ERROR_IS_CRASH)
         }
-        verifyZeroInteractions(logger.mockDevLogHandler)
+        verifyZeroInteractions(logger.mockInternalLogger)
     }
 
     @Test
@@ -1127,7 +1127,7 @@ internal class RumEventSerializerTest {
     // endregion
 
     companion object {
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

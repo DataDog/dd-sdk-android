@@ -7,13 +7,14 @@
 package com.datadog.android.rum.internal.ndk
 
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.event.RumEventDeserializer
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.internal.domain.scope.tryFromSource
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.storage.DataWriter
@@ -29,7 +30,11 @@ internal class DatadogNdkCrashEventHandler(
         val rumFeature = sdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
 
         if (rumFeature == null) {
-            devLogger.i(INFO_RUM_FEATURE_NOT_REGISTERED)
+            internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                INFO_RUM_FEATURE_NOT_REGISTERED
+            )
             return
         }
 
@@ -44,7 +49,11 @@ internal class DatadogNdkCrashEventHandler(
         if (timestamp == null || signalName == null || stacktrace == null ||
             errorLogMessage == null || lastViewEvent == null
         ) {
-            devLogger.w(NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS)
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS
+            )
             return
         }
 

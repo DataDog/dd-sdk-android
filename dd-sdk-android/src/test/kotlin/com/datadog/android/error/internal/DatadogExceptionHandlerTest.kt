@@ -7,7 +7,6 @@
 package com.datadog.android.error.internal
 
 import android.content.Context
-import android.util.Log
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.impl.WorkManagerImpl
@@ -22,11 +21,12 @@ import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -162,11 +162,11 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.INFO,
-                DatadogExceptionHandler.MISSING_LOGS_FEATURE_INFO
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            DatadogExceptionHandler.MISSING_LOGS_FEATURE_INFO
+        )
     }
 
     @Test
@@ -371,8 +371,9 @@ internal class DatadogExceptionHandlerTest {
         // Then
         verify(mockScheduledThreadExecutor)
             .waitToIdle(DatadogExceptionHandler.MAX_WAIT_FOR_IDLE_TIME_IN_MS)
-        verify(logger.mockDevLogHandler, never()).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger, never()).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             DatadogExceptionHandler.EXECUTOR_NOT_IDLED_WARNING_MESSAGE
         )
     }
@@ -394,8 +395,9 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             DatadogExceptionHandler.EXECUTOR_NOT_IDLED_WARNING_MESSAGE
         )
     }
@@ -446,11 +448,11 @@ internal class DatadogExceptionHandlerTest {
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.INFO,
-                DatadogExceptionHandler.MISSING_RUM_FEATURE_INFO
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            DatadogExceptionHandler.MISSING_RUM_FEATURE_INFO
+        )
     }
 
     @Test
@@ -568,7 +570,7 @@ internal class DatadogExceptionHandlerTest {
     companion object {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val mainLooper = MainLooperTestConfiguration()
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

@@ -79,8 +79,7 @@ internal class ConsentAwareStorage(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
                 ERROR_WRITE_CONTEXT_EXECUTION_REJECTED,
-                rje,
-                emptyMap()
+                rje
             )
         }
     }
@@ -180,9 +179,7 @@ internal class ConsentAwareStorage(
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                WARNING_DELETE_FAILED.format(Locale.US, batchFile.path),
-                null,
-                emptyMap()
+                WARNING_DELETE_FAILED.format(Locale.US, batchFile.path)
             )
         }
     }
@@ -194,9 +191,7 @@ internal class ConsentAwareStorage(
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                WARNING_DELETE_FAILED.format(Locale.US, metadataFile.path),
-                null,
-                emptyMap()
+                WARNING_DELETE_FAILED.format(Locale.US, metadataFile.path)
             )
         }
     }

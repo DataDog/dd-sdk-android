@@ -6,7 +6,6 @@
 
 package com.datadog.android.telemetry.internal
 
-import android.util.Log
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
@@ -27,10 +26,11 @@ import com.datadog.android.telemetry.assertj.TelemetryErrorEventAssert.Companion
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.storage.DataWriter
@@ -545,18 +545,18 @@ internal class TelemetryEventHandlerTest {
         testedTelemetryHandler.handleEvent(anotherEvent, mockWriter)
 
         // Then
-        verify(logger.mockSdkLogHandler)
-            .handleLog(
-                Log.INFO,
-                TelemetryEventHandler.ALREADY_SEEN_EVENT_MESSAGE.format(
-                    Locale.US,
-                    TelemetryEventId(
-                        rawEvent.type,
-                        rawEvent.message,
-                        rawEvent.kind
-                    )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.MAINTAINER,
+            TelemetryEventHandler.ALREADY_SEEN_EVENT_MESSAGE.format(
+                Locale.US,
+                TelemetryEventId(
+                    rawEvent.type,
+                    rawEvent.message,
+                    rawEvent.kind
                 )
             )
+        )
 
         argumentCaptor<Any> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
@@ -596,11 +596,11 @@ internal class TelemetryEventHandlerTest {
         }
 
         // Then
-        verify(logger.mockSdkLogHandler, times(extraNumber))
-            .handleLog(
-                Log.INFO,
-                TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE
-            )
+        verify(logger.mockInternalLogger, times(extraNumber)).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.MAINTAINER,
+            TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE
+        )
 
         argumentCaptor<Any> {
             verify(mockWriter, times(expectedInvocations))
@@ -666,11 +666,11 @@ internal class TelemetryEventHandlerTest {
         }
 
         // Then
-        verify(logger.mockSdkLogHandler, times(extraNumber))
-            .handleLog(
-                Log.INFO,
-                TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE
-            )
+        verify(logger.mockInternalLogger, times(extraNumber)).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.MAINTAINER,
+            TelemetryEventHandler.MAX_EVENT_NUMBER_REACHED_MESSAGE
+        )
 
         argumentCaptor<Any> {
             verify(mockWriter, times(expectedInvocations))
@@ -737,7 +737,7 @@ internal class TelemetryEventHandlerTest {
         // if limit would be counted before the sampler, it will be twice less writes
         verify(mockWriter, times(MAX_EVENTS_PER_SESSION_TEST))
             .write(eq(mockEventBatchWriter), any())
-        verifyZeroInteractions(logger.mockSdkLogHandler)
+        verifyZeroInteractions(logger.mockInternalLogger)
     }
 
     // endregion
@@ -872,7 +872,7 @@ internal class TelemetryEventHandlerTest {
 
         private const val MAX_EVENTS_PER_SESSION_TEST = 10
 
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

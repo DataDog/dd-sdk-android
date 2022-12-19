@@ -13,13 +13,11 @@ import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.readTextSafe
-import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
@@ -37,7 +35,7 @@ internal class DatadogNdkCrashHandler(
     private val rumEventDeserializer: Deserializer<String, JsonObject>,
     private val networkInfoDeserializer: Deserializer<String, NetworkInfo>,
     private val userInfoDeserializer: Deserializer<String, UserInfo>,
-    private val internalLogger: Logger,
+    private val internalLogger: InternalLogger,
     private val rumFileReader: BatchFileReader,
     private val envFileReader: FileReader
 ) : NdkCrashHandler {
@@ -59,7 +57,12 @@ internal class DatadogNdkCrashHandler(
                 readCrashData()
             }
         } catch (e: RejectedExecutionException) {
-            internalLogger.errorWithTelemetry(ERROR_TASK_REJECTED, e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                ERROR_TASK_REJECTED,
+                e
+            )
         }
     }
 
@@ -71,7 +74,12 @@ internal class DatadogNdkCrashHandler(
                 checkAndHandleNdkCrashReport(sdkCore)
             }
         } catch (e: RejectedExecutionException) {
-            internalLogger.errorWithTelemetry(ERROR_TASK_REJECTED, e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                ERROR_TASK_REJECTED,
+                e
+            )
         }
     }
 
@@ -101,7 +109,12 @@ internal class DatadogNdkCrashHandler(
                 }
             }
         } catch (e: SecurityException) {
-            internalLogger.errorWithTelemetry(ERROR_READ_NDK_DIR, e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                ERROR_READ_NDK_DIR,
+                e
+            )
         } finally {
             clearCrashLog()
         }
@@ -187,7 +200,12 @@ internal class DatadogNdkCrashHandler(
                 val viewId = extractId("view")
                 Triple(applicationId, sessionId, viewId)
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                internalLogger.w(WARN_CANNOT_READ_VIEW_INFO_DATA, e)
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.MAINTAINER,
+                    WARN_CANNOT_READ_VIEW_INFO_DATA,
+                    e
+                )
                 Triple(null, null, null)
             }
             logAttributes = if (applicationId != null && sessionId != null && viewId != null) {
@@ -245,7 +263,11 @@ internal class DatadogNdkCrashHandler(
                 )
             )
         } else {
-            devLogger.i(INFO_RUM_FEATURE_NOT_REGISTERED)
+            internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                INFO_RUM_FEATURE_NOT_REGISTERED
+            )
         }
     }
 
@@ -273,7 +295,11 @@ internal class DatadogNdkCrashHandler(
                 )
             )
         } else {
-            devLogger.i(INFO_LOGS_FEATURE_NOT_REGISTERED)
+            internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                INFO_LOGS_FEATURE_NOT_REGISTERED
+            )
         }
     }
 
@@ -283,7 +309,12 @@ internal class DatadogNdkCrashHandler(
             try {
                 ndkCrashDataDirectory.listFilesSafe()?.forEach { it.deleteRecursively() }
             } catch (e: Throwable) {
-                internalLogger.errorWithTelemetry(
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    targets = listOf(
+                        InternalLogger.Target.MAINTAINER,
+                        InternalLogger.Target.TELEMETRY
+                    ),
                     "Unable to clear the NDK crash report file:" +
                         " ${ndkCrashDataDirectory.absolutePath}",
                     e

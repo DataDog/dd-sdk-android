@@ -6,7 +6,7 @@
 
 package com.datadog.android.webview.internal.log
 
-import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.log.internal.domain.event.WebViewLogEventSerializer
 import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
@@ -34,7 +34,7 @@ internal class WebViewLogsFeature {
     private fun createDataWriter(): DataWriter<JsonObject> {
         return WebViewLogsDataWriter(
             serializer = WebViewLogEventSerializer(),
-            internalLogger = sdkLogger
+            internalLogger = internalLogger
         )
     }
 

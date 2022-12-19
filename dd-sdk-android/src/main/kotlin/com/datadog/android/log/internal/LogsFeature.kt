@@ -8,14 +8,14 @@ package com.datadog.android.log.internal
 
 import androidx.annotation.AnyThread
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.internal.domain.event.LogEventSerializer
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.v2.api.FeatureEventReceiver
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
@@ -52,7 +52,11 @@ internal class LogsFeature(
     @AnyThread
     override fun onReceive(event: Any) {
         if (event !is Map<*, *>) {
-            devLogger.w(UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName))
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName)
+            )
             return
         }
 
@@ -61,7 +65,11 @@ internal class LogsFeature(
         } else if (event["type"] == "ndk_crash") {
             sendNdkCrashLog(event)
         } else {
-            devLogger.w(UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"]))
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"])
+            )
         }
     }
 
@@ -77,7 +85,7 @@ internal class LogsFeature(
                 LogEventMapperWrapper(configuration.logsEventMapper),
                 LogEventSerializer()
             ),
-            internalLogger = sdkLogger
+            internalLogger = internalLogger
         )
     }
 
@@ -93,7 +101,11 @@ internal class LogsFeature(
         if (threadName == null || throwable == null ||
             timestamp == null || message == null || loggerName == null
         ) {
-            devLogger.w(JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING)
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING
+            )
             return
         }
 
@@ -127,7 +139,12 @@ internal class LogsFeature(
         try {
             lock.await(MAX_WRITE_WAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         } catch (e: InterruptedException) {
-            sdkLogger.e("Log event write operation wait was interrupted.", e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                "Log event write operation wait was interrupted.",
+                e
+            )
         }
     }
 
@@ -145,7 +162,11 @@ internal class LogsFeature(
         @Suppress("ComplexCondition")
         if (loggerName == null || message == null || timestamp == null || attributes == null
         ) {
-            devLogger.w(NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING)
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING
+            )
             return
         }
 

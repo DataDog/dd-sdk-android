@@ -8,11 +8,10 @@ package com.datadog.android.tracing.internal.data
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.event.EventMapper
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.tracing.model.SpanEvent
 import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.storage.ContextAwareMapper
@@ -26,7 +25,7 @@ internal class TraceWriter(
     private val legacyMapper: ContextAwareMapper<DDSpan, SpanEvent>,
     internal val eventMapper: EventMapper<SpanEvent>,
     private val serializer: ContextAwareSerializer<SpanEvent>,
-    private val internalLogger: Logger
+    private val internalLogger: InternalLogger
 ) : Writer {
 
     // region Writer
@@ -71,7 +70,9 @@ internal class TraceWriter(
                 writer.write(serialized, null)
             }
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
-            internalLogger.errorWithTelemetry(
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_SERIALIZING.format(Locale.US, mapped.javaClass.simpleName),
                 e
             )

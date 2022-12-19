@@ -7,8 +7,7 @@
 package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -16,6 +15,7 @@ import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
+import com.datadog.android.v2.api.InternalLogger
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import java.util.Locale
@@ -31,13 +31,17 @@ internal class RumEventDeserializer : Deserializer<JsonObject, Any> {
                 model
             )
         } catch (e: JsonParseException) {
-            sdkLogger.errorWithTelemetry(
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
                 e
             )
             null
         } catch (e: IllegalStateException) {
-            sdkLogger.errorWithTelemetry(
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
                 e
             )

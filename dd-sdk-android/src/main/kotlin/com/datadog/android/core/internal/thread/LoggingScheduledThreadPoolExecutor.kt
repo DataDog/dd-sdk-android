@@ -6,14 +6,17 @@
 
 package com.datadog.android.core.internal.thread
 
-import com.datadog.android.log.Logger
+import com.datadog.android.v2.api.InternalLogger
 import java.util.concurrent.ScheduledThreadPoolExecutor
 
 /**
  * [ScheduledThreadPoolExecutor] with a [ScheduledThreadPoolExecutor.afterExecute] hook,
  * which will log any unhandled exception raised.
  */
-internal class LoggingScheduledThreadPoolExecutor(corePoolSize: Int, private val logger: Logger) :
+internal class LoggingScheduledThreadPoolExecutor(
+    corePoolSize: Int,
+    private val logger: InternalLogger
+) :
     ScheduledThreadPoolExecutor(corePoolSize) {
     override fun afterExecute(r: Runnable?, t: Throwable?) {
         @Suppress("UnsafeThirdPartyFunctionCall") // we just call super

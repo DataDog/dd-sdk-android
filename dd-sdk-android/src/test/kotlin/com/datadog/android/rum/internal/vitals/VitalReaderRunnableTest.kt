@@ -6,11 +6,11 @@
 
 package com.datadog.android.rum.internal.vitals
 
-import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -163,8 +163,9 @@ internal class VitalReaderRunnableTest {
         testedRunnable.run()
 
         // Then
-        verify(logger.mockSdkLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             "Unable to schedule Vitals monitoring task on the executor",
             exception
         )
@@ -173,7 +174,7 @@ internal class VitalReaderRunnableTest {
     companion object {
         private const val TEST_PERIOD_MS = 50L
 
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

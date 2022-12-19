@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import android.util.Log
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRum
@@ -24,12 +23,13 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.utils.asTimingsPayload
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aFilteredMap
 import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.ContextProvider
@@ -2163,8 +2163,9 @@ internal class RumResourceScopeTest {
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
-        verify(loggerTestConfiguration.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(internalLoggerTestConfiguration.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             RumResourceScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, fakeUrl)
         )
         verifyNoMoreInteractions(mockWriter)
@@ -2226,8 +2227,9 @@ internal class RumResourceScopeTest {
                 }
         }
         verify(mockParentScope, never()).handleEvent(any(), any())
-        verify(loggerTestConfiguration.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(internalLoggerTestConfiguration.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             RumResourceScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, fakeUrl)
         )
         verifyNoMoreInteractions(mockWriter)
@@ -2252,12 +2254,12 @@ internal class RumResourceScopeTest {
         private const val RESOURCE_DURATION_MS = 50L
 
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val loggerTestConfiguration = LoggerTestConfiguration()
+        val internalLoggerTestConfiguration = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor, loggerTestConfiguration)
+            return listOf(rumMonitor, internalLoggerTestConfiguration)
         }
     }
 }

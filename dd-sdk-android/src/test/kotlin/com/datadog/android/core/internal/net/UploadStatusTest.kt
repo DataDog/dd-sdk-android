@@ -8,12 +8,10 @@ package com.datadog.android.core.internal.net
 
 import android.util.Log
 import com.datadog.android.Datadog
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.logger.LogHandler
-import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyZeroInteractions
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -39,9 +37,7 @@ internal class UploadStatusTest {
     lateinit var fakeContext: String
 
     @Mock
-    lateinit var mockLogHandler: LogHandler
-
-    lateinit var mockLogger: Logger
+    lateinit var mockLogger: InternalLogger
 
     @IntForgery(min = 0)
     var fakeByteSize: Int = 0
@@ -54,238 +50,164 @@ internal class UploadStatusTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        mockLogger = Logger(mockLogHandler)
         fakeContext = forge.anAlphabeticalString()
         Datadog.setVerbosity(Log.VERBOSE)
     }
 
     @Test
-    fun `𝕄 not log SUCCESS 𝕎 logStatus() {ignoreInfo=true}`() {
+    fun `𝕄 log SUCCESS only to USER 𝕎 logStatus()`() {
         // When
         UploadStatus.SUCCESS.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger,
-            ignoreInfo = true,
-            fakeSendToTelemetry
+            mockLogger
         )
 
         // Then
-        verifyZeroInteractions(mockLogHandler)
-    }
-
-    @Test
-    fun `𝕄 log SUCCESS 𝕎 logStatus() {ignoreInfo=false}`() {
-        // When
-        UploadStatus.SUCCESS.logStatus(
-            fakeContext,
-            fakeByteSize,
-            mockLogger,
-            ignoreInfo = false,
-            fakeSendToTelemetry
-        )
-
-        // Then
-        verify(mockLogHandler)
-            .handleLog(
-                Log.VERBOSE,
+        verify(mockLogger)
+            .log(
+                InternalLogger.Level.VERBOSE,
+                InternalLogger.Target.USER,
                 "Batch [$fakeByteSize bytes] ($fakeContext) sent successfully."
             )
+        verifyNoMoreInteractions(mockLogger)
     }
 
     @Test
-    fun `𝕄 log NETWORK_ERROR 𝕎 logStatus()`() {
+    fun `𝕄 log NETWORK_ERROR only to USER 𝕎 logStatus()`() {
         // When
         UploadStatus.NETWORK_ERROR.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger,
-            ignoreInfo = fakeIgnoreInfo,
-            sendToTelemetry = fakeSendToTelemetry
+            mockLogger
         )
 
         // Then
-        verify(mockLogHandler)
-            .handleLog(
-                Log.ERROR,
+        verify(mockLogger)
+            .log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
                 "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                     "because of a network error; we will retry later."
             )
+        verifyNoMoreInteractions(mockLogger)
     }
 
     @Test
-    fun `𝕄 log INVALID_TOKEN_ERROR 𝕎 logStatus() {ignoreInfo=true}`() {
+    fun `𝕄 log INVALID_TOKEN_ERROR only to USER 𝕎 logStatus()`() {
         // When
         UploadStatus.INVALID_TOKEN_ERROR.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger,
-            ignoreInfo = true,
-            sendToTelemetry = fakeSendToTelemetry
+            mockLogger
         )
 
         // Then
-        verifyZeroInteractions(mockLogHandler)
-    }
-
-    @Test
-    fun `𝕄 log INVALID_TOKEN_ERROR 𝕎 logStatus() {ignoreInfo=false}`() {
-        // When
-        UploadStatus.INVALID_TOKEN_ERROR.logStatus(
-            fakeContext,
-            fakeByteSize,
-            mockLogger,
-            ignoreInfo = false,
-            sendToTelemetry = fakeSendToTelemetry
-        )
-
-        // Then
-        verify(mockLogHandler)
-            .handleLog(
-                Log.ERROR,
+        verify(mockLogger)
+            .log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
                 "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                     "because your token is invalid. Make sure that the provided token still " +
                     "exists and you're targeting the relevant Datadog site."
             )
+        verifyNoMoreInteractions(mockLogger)
     }
 
     @Test
-    fun `𝕄 log HTTP_REDIRECTION 𝕎 logStatus()`() {
+    fun `𝕄 log HTTP_REDIRECTION only to USER 𝕎 logStatus()`() {
         // When
         UploadStatus.HTTP_REDIRECTION.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger,
-            ignoreInfo = fakeIgnoreInfo,
-            sendToTelemetry = fakeSendToTelemetry
+            mockLogger
         )
 
         // Then
-        verify(mockLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(mockLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                     "because of a network redirection; the batch was dropped."
             )
+        verifyNoMoreInteractions(mockLogger)
     }
 
     @Test
-    fun `𝕄 log without telemetry HTTP_CLIENT_ERROR 𝕎 logStatus() {sendToTelemetry=false}`() {
+    fun `𝕄 log HTTP_CLIENT_ERROR to USER and TELEMETRY 𝕎 logStatus()`() {
         // When
         UploadStatus.HTTP_CLIENT_ERROR.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger,
-            ignoreInfo = fakeIgnoreInfo,
-            sendToTelemetry = false
+            mockLogger
         )
 
         // Then
-        verify(mockLogHandler)
-            .handleLog(
-                Log.ERROR,
+        verify(mockLogger)
+            .log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                     "because of a processing error or invalid data; " +
                     "the batch was dropped."
             )
+        verifyNoMoreInteractions(mockLogger)
     }
 
     @Test
-    fun `𝕄 log with telemetry HTTP_CLIENT_ERROR 𝕎 logStatus() {sendToTelemetry=true}`() {
-        // When
-        UploadStatus.HTTP_CLIENT_ERROR.logStatus(
-            fakeContext,
-            fakeByteSize,
-            mockLogger,
-            ignoreInfo = fakeIgnoreInfo,
-            sendToTelemetry = true
-        )
-
-        // Then
-        verify(mockLogHandler)
-            .handleLog(
-                ERROR_WITH_TELEMETRY_LEVEL,
-                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                    "because of a processing error or invalid data; " +
-                    "the batch was dropped."
-            )
-    }
-
-    @Test
-    fun `𝕄 log w-o telemetry HTTP_CLIENT_ERROR_RATE_LIMITING 𝕎 logStatus() {telemetry=false}`() {
+    fun `𝕄 log HTTP_CLIENT_ERROR_RATE_LIMITING to USER and TELEMETRY 𝕎 logStatus()`() {
         // When
         UploadStatus.HTTP_CLIENT_RATE_LIMITING.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger,
-            ignoreInfo = fakeIgnoreInfo,
-            sendToTelemetry = false
+            mockLogger
         )
 
         // Then
-        verify(mockLogHandler)
-            .handleLog(
-                Log.ERROR,
+        verify(mockLogger)
+            .log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
                 "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                     "because of a request error; we will retry later."
             )
     }
 
     @Test
-    fun `𝕄 log with telemetry HTTP_CLIENT_ERROR_RATE_LIMITING 𝕎 logStatus() {telemetry=true}`() {
-        // When
-        UploadStatus.HTTP_CLIENT_RATE_LIMITING.logStatus(
-            fakeContext,
-            fakeByteSize,
-            mockLogger,
-            ignoreInfo = fakeIgnoreInfo,
-            sendToTelemetry = true
-        )
-
-        // Then
-        verify(mockLogHandler)
-            .handleLog(
-                ERROR_WITH_TELEMETRY_LEVEL,
-                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
-                    "because of a request error; we will retry later."
-            )
-    }
-
-    @Test
-    fun `𝕄 log HTTP_SERVER_ERROR 𝕎 logStatus()`() {
+    fun `𝕄 log HTTP_SERVER_ERROR only to USER 𝕎 logStatus()`() {
         // When
         UploadStatus.HTTP_SERVER_ERROR.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger,
-            ignoreInfo = fakeIgnoreInfo,
-            sendToTelemetry = fakeSendToTelemetry
+            mockLogger
         )
 
         // Then
-        verify(mockLogHandler)
-            .handleLog(
-                Log.ERROR,
+        verify(mockLogger)
+            .log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
                 "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                     "because of a server processing error; we will retry later."
             )
+        verifyNoMoreInteractions(mockLogger)
     }
 
     @Test
-    fun `𝕄 log UNKNOWN_ERROR 𝕎 logStatus()`() {
+    fun `𝕄 log UNKNOWN_ERROR only to USER 𝕎 logStatus()`() {
         // When
         UploadStatus.UNKNOWN_ERROR.logStatus(
             fakeContext,
             fakeByteSize,
-            mockLogger,
-            ignoreInfo = fakeIgnoreInfo,
-            sendToTelemetry = fakeSendToTelemetry
+            mockLogger
         )
 
         // Then
-        verify(mockLogHandler)
-            .handleLog(
-                Log.ERROR,
+        verify(mockLogger)
+            .log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
                 "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                     "because of an unknown error; the batch was dropped."
             )

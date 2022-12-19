@@ -6,8 +6,7 @@
 
 package com.datadog.android.core.internal.persistence
 
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 
 /**
@@ -33,13 +32,15 @@ internal interface Serializer<T : Any> {
 @Suppress("TooGenericExceptionCaught")
 internal fun <T : Any> Serializer<T>.serializeToByteArray(
     model: T,
-    internalLogger: Logger
+    internalLogger: InternalLogger
 ): ByteArray? {
     return try {
         val serialized = serialize(model)
         serialized?.toByteArray(Charsets.UTF_8)
     } catch (e: Throwable) {
-        internalLogger.errorWithTelemetry(
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             Serializer.ERROR_SERIALIZING.format(Locale.US, model.javaClass.simpleName),
             e
         )

@@ -6,26 +6,20 @@
 
 package com.datadog.android.rum.internal.ndk
 
-import android.util.Log
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.internal.persistence.file.FileReader
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReader
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.Logger
 import com.datadog.android.log.internal.LogsFeature
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.android.v2.api.context.UserInfo
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
@@ -63,8 +57,7 @@ import java.util.concurrent.ExecutorService
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -97,7 +90,7 @@ internal class DatadogNdkCrashHandlerTest {
     lateinit var mockRumFeatureScope: FeatureScope
 
     @Mock
-    lateinit var mockLogHandler: LogHandler
+    lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     lateinit var mockRumFileReader: BatchFileReader
@@ -143,7 +136,7 @@ internal class DatadogNdkCrashHandlerTest {
             mockRumEventDeserializer,
             mockNetworkInfoDeserializer,
             mockUserInfoDeserializer,
-            internalLogger = Logger(mockLogHandler),
+            mockInternalLogger,
             mockRumFileReader,
             mockEnvFileReader
         )
@@ -281,7 +274,7 @@ internal class DatadogNdkCrashHandlerTest {
         // Then
         verify(mockExecutorService).submit(captureRunnable.capture())
         captureRunnable.firstValue.run()
-        verifyZeroInteractions(mockSdkCore, mockLogHandler)
+        verifyZeroInteractions(mockSdkCore, mockInternalLogger)
     }
 
     @Test
@@ -302,13 +295,13 @@ internal class DatadogNdkCrashHandlerTest {
         verifyZeroInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
 
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.INFO,
-                DatadogNdkCrashHandler.INFO_LOGS_FEATURE_NOT_REGISTERED
-            )
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            DatadogNdkCrashHandler.INFO_LOGS_FEATURE_NOT_REGISTERED
+        )
 
-        verifyZeroInteractions(mockLogHandler, mockLogsFeatureScope)
+        verifyZeroInteractions(mockInternalLogger, mockLogsFeatureScope)
     }
 
     @Test
@@ -329,7 +322,7 @@ internal class DatadogNdkCrashHandlerTest {
         verifyZeroInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
-        verifyZeroInteractions(mockLogHandler)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -358,7 +351,7 @@ internal class DatadogNdkCrashHandlerTest {
         verifyZeroInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
-        verifyZeroInteractions(mockLogHandler)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -385,7 +378,7 @@ internal class DatadogNdkCrashHandlerTest {
         verifyZeroInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
-        verifyZeroInteractions(mockLogHandler)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -467,14 +460,12 @@ internal class DatadogNdkCrashHandlerTest {
         verifyZeroInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
-        verify(mockLogHandler)
-            .handleLog(
-                eq(Log.WARN),
+        verify(mockInternalLogger)
+            .log(
+                eq(InternalLogger.Level.WARN),
+                eq(InternalLogger.Target.MAINTAINER),
                 eq(DatadogNdkCrashHandler.WARN_CANNOT_READ_VIEW_INFO_DATA),
-                throwable = any(),
-                attributes = eq(emptyMap()),
-                tags = eq(emptySet()),
-                timestamp = isNull()
+                throwable = any()
             )
     }
 
@@ -500,11 +491,11 @@ internal class DatadogNdkCrashHandlerTest {
         verify(mockExecutorService).submit(captureRunnable.capture())
         verifyZeroInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.INFO,
-                DatadogNdkCrashHandler.INFO_RUM_FEATURE_NOT_REGISTERED
-            )
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            DatadogNdkCrashHandler.INFO_RUM_FEATURE_NOT_REGISTERED
+        )
     }
 
     // region Internal
@@ -542,14 +533,4 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     // endregion
-
-    companion object {
-        val logger = LoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
-    }
 }

@@ -11,7 +11,8 @@ import android.webkit.WebView
 import androidx.annotation.MainThread
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
 import com.datadog.android.webview.internal.NoOpWebViewEventConsumer
@@ -122,7 +123,11 @@ internal constructor(
         @MainThread
         fun setup(webView: WebView) {
             if (!webView.settings.javaScriptEnabled) {
-                devLogger.w(JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE)
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE
+                )
             }
             webView.addJavascriptInterface(DatadogEventBridge(), DATADOG_EVENT_BRIDGE_NAME)
         }
