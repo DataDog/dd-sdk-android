@@ -8,8 +8,8 @@ package com.datadog.android.v2.core.internal.net
 
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.system.AndroidInfoProvider
-import com.datadog.android.log.Logger
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
 import com.nhaarman.mockitokotlin2.any
@@ -64,7 +64,7 @@ internal class DataOkHttpUploaderTest {
     lateinit var mockRequestFactory: RequestFactory
 
     @Mock
-    lateinit var mockLogger: Logger
+    lateinit var mockLogger: InternalLogger
 
     @Mock
     lateinit var mockCallFactory: Call.Factory
@@ -523,7 +523,9 @@ internal class DataOkHttpUploaderTest {
         testedUploader.upload(fakeContext, batchData, batchMetadata)
 
         // Then
-        verify(mockLogger).w(
+        verify(mockLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
             DataOkHttpUploader.WARNING_USER_AGENT_HEADER_RESERVED
         )
     }

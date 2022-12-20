@@ -6,18 +6,17 @@
 
 package com.datadog.android.sessionreplay.internal.domain
 
-import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.Logger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.net.BytesCompressor
+import com.datadog.android.v2.api.InternalLogger
 import com.google.gson.JsonObject
 import okhttp3.MediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 
 internal class RequestBodyFactory(
-    private val compressor: BytesCompressor = BytesCompressor(),
-    internal val internalLogger: Logger = sdkLogger
+    private val compressor: BytesCompressor = BytesCompressor()
 ) {
 
     fun create(
@@ -30,7 +29,12 @@ internal class RequestBodyFactory(
             val segmentAsBinary = (serializedSegment.toString() + "\n").toByteArray()
             buildRequestBody(segment, segmentAsBinary)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            internalLogger.e("Unable to create session replay request body.", e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                "Unable to create session replay request body.",
+                e
+            )
             null
         }
     }

@@ -498,6 +498,7 @@ data class com.datadog.android.v2.api.FeatureUploadConfiguration
   constructor(RequestFactory)
 interface com.datadog.android.v2.api.InternalLogger
   enum Level
+    - VERBOSE
     - DEBUG
     - INFO
     - WARN
@@ -506,8 +507,8 @@ interface com.datadog.android.v2.api.InternalLogger
     - USER
     - MAINTAINER
     - TELEMETRY
-  fun log(Level, Target, String, Throwable?, Map<String, Any?>)
-  fun log(Level, List<Target>, String, Throwable?, Map<String, Any?>)
+  fun log(Level, Target, String, Throwable? = null)
+  fun log(Level, List<Target>, String, Throwable? = null)
 data class com.datadog.android.v2.api.Request
   constructor(String, String, String, Map<String, String>, ByteArray, String? = null)
 interface com.datadog.android.v2.api.RequestFactory

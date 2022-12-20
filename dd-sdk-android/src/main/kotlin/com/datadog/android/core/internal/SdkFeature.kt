@@ -18,8 +18,7 @@ import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.sdkLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.plugin.DatadogPlugin
 import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.v2.api.EventBatchWriter
@@ -27,8 +26,8 @@ import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureScope
 import com.datadog.android.v2.api.FeatureStorageConfiguration
 import com.datadog.android.v2.api.FeatureUploadConfiguration
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.android.v2.core.SdkInternalLogger
 import com.datadog.android.v2.core.internal.NoOpContextProvider
 import com.datadog.android.v2.core.internal.data.upload.DataFlusher
 import com.datadog.android.v2.core.internal.data.upload.DataUploadScheduler
@@ -143,7 +142,11 @@ internal class SdkFeature(
     override fun sendEvent(event: Any) {
         val receiver = eventReceiver.get()
         if (receiver == null) {
-            devLogger.i(NO_EVENT_RECEIVER.format(Locale.US, featureName))
+            internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                NO_EVENT_RECEIVER.format(Locale.US, featureName)
+            )
         } else {
             receiver.onReceive(event)
         }
@@ -155,16 +158,20 @@ internal class SdkFeature(
 
     // TODO RUMM-0000 Should be moved out, to the public API of feature registration
     @Suppress("EmptyFunctionBlock")
-    fun onInitialize() {}
+    fun onInitialize() {
+    }
 
     @Suppress("EmptyFunctionBlock")
-    fun onPostInitialized() {}
+    fun onPostInitialized() {
+    }
 
     @Suppress("EmptyFunctionBlock")
-    fun onStop() {}
+    fun onStop() {
+    }
 
     @Suppress("EmptyFunctionBlock")
-    fun onPostStopped() {}
+    fun onPostStopped() {
+    }
 
     // endregion
 
@@ -218,7 +225,7 @@ internal class SdkFeature(
             storageDir = coreFeature.storageDir,
             featureName = featureName,
             executorService = coreFeature.persistenceExecutorService,
-            internalLogger = sdkLogger
+            internalLogger = internalLogger
         )
         this.fileOrchestrator = fileOrchestrator
 
@@ -227,15 +234,15 @@ internal class SdkFeature(
             grantedOrchestrator = fileOrchestrator.grantedOrchestrator,
             pendingOrchestrator = fileOrchestrator.pendingOrchestrator,
             batchEventsReaderWriter = BatchFileReaderWriter.create(
-                internalLogger = sdkLogger,
+                internalLogger = internalLogger,
                 encryption = coreFeature.localDataEncryption
             ),
             batchMetadataReaderWriter = FileReaderWriter.create(
-                internalLogger = sdkLogger,
+                internalLogger = internalLogger,
                 encryption = coreFeature.localDataEncryption
             ),
-            fileMover = FileMover(sdkLogger),
-            internalLogger = SdkInternalLogger,
+            fileMover = FileMover(internalLogger),
+            internalLogger = internalLogger,
             filePersistenceConfig = coreFeature.buildFilePersistenceConfig().copy(
                 maxBatchSize = storageConfiguration.maxBatchSize,
                 maxItemSize = storageConfiguration.maxItemSize,
@@ -248,7 +255,7 @@ internal class SdkFeature(
     private fun createUploader(uploadConfiguration: FeatureUploadConfiguration): DataUploader {
         return DataOkHttpUploader(
             requestFactory = uploadConfiguration.requestFactory,
-            internalLogger = sdkLogger,
+            internalLogger = internalLogger,
             callFactory = coreFeature.okHttpClient,
             sdkVersion = coreFeature.sdkVersion,
             androidInfoProvider = coreFeature.androidInfoProvider
@@ -263,9 +270,9 @@ internal class SdkFeature(
         val flusher = DataFlusher(
             coreFeature.contextProvider,
             fileOrchestrator,
-            BatchFileReaderWriter.create(sdkLogger, coreFeature.localDataEncryption),
-            FileReaderWriter.create(sdkLogger, coreFeature.localDataEncryption),
-            FileMover(sdkLogger)
+            BatchFileReaderWriter.create(internalLogger, coreFeature.localDataEncryption),
+            FileReaderWriter.create(internalLogger, coreFeature.localDataEncryption),
+            FileMover(internalLogger)
         )
         @Suppress("ThreadSafety")
         flusher.flush(uploader)

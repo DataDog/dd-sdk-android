@@ -6,10 +6,10 @@
 
 package com.datadog.android.sessionreplay.internal.domain
 
-import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.Logger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.sessionreplay.net.BatchesToSegmentsMapper
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.Request
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
@@ -22,7 +22,6 @@ internal class SessionReplayRequestFactory(
     private val endpoint: String,
     private val batchToSegmentsMapper: BatchesToSegmentsMapper = BatchesToSegmentsMapper(),
     private val requestBodyFactory: RequestBodyFactory = RequestBodyFactory(),
-    internal val internalLogger: Logger = sdkLogger,
     private val bodyToByteArrayFactory: (RequestBody) -> ByteArray = {
         val buffer = Buffer()
         // this is handled below in the wrapper function
@@ -134,7 +133,12 @@ internal class SessionReplayRequestFactory(
         return try {
             bodyToByteArrayFactory(body)
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
-            internalLogger.e(EXTRACT_BYTE_ARRAY_FROM_BODY_ERROR_MESSAGE, e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                EXTRACT_BYTE_ARRAY_FROM_BODY_ERROR_MESSAGE,
+                e
+            )
             null
         }
     }

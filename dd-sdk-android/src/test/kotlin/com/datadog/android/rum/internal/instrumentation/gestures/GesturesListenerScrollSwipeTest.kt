@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.instrumentation.gestures
 
-import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -18,6 +17,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
@@ -314,9 +314,10 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(endUpEvent)
 
         // Then
-        verify(logger.mockDevLogHandler, times(intermediaryEvents.size))
-            .handleLog(
-                Log.INFO,
+        verify(logger.mockInternalLogger, times(intermediaryEvents.size))
+            .log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
                 GesturesListener.MSG_NO_TARGET_SCROLL_SWIPE
             )
         verifyZeroInteractions(rumMonitor.mockInstance)
@@ -360,7 +361,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onUp(endUpEvent)
 
         // Then
-        verifyZeroInteractions(logger.mockDevLogHandler)
+        verifyZeroInteractions(logger.mockInternalLogger)
         verifyZeroInteractions(rumMonitor.mockInstance)
     }
 

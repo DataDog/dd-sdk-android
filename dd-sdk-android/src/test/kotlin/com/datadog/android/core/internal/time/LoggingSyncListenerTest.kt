@@ -6,8 +6,8 @@
 
 package com.datadog.android.core.internal.time
 
-import android.util.Log
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -40,17 +40,16 @@ internal class LoggingSyncListenerTest {
         testableListener.onError(fakeHost, throwable)
 
         // Then
-        verify(logger.mockSdkLogHandler)
-            .handleLog(
-                Log.ERROR,
-                "Kronos onError @host:$fakeHost",
-                throwable,
-                mapOf("kronos.sync.host" to fakeHost)
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            "Kronos onError @host:$fakeHost",
+            throwable
+        )
     }
 
     companion object {
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

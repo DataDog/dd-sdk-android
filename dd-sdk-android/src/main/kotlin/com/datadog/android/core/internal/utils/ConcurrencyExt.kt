@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.internal.utils
 
-import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.v2.api.InternalLogger
 import java.util.Locale
 import java.util.concurrent.Executor
 import java.util.concurrent.RejectedExecutionException
@@ -21,7 +21,12 @@ internal fun Executor.executeSafe(operationName: String, runnable: Runnable) {
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         execute(runnable)
     } catch (e: RejectedExecutionException) {
-        sdkLogger.errorWithTelemetry(ERROR_TASK_REJECTED.format(Locale.US, operationName), e)
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            ERROR_TASK_REJECTED.format(Locale.US, operationName),
+            e
+        )
     }
 }
 
@@ -35,7 +40,12 @@ internal fun ScheduledExecutorService.scheduleSafe(
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         schedule(runnable, delay, unit)
     } catch (e: RejectedExecutionException) {
-        sdkLogger.errorWithTelemetry(ERROR_TASK_REJECTED.format(Locale.US, operationName), e)
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            ERROR_TASK_REJECTED.format(Locale.US, operationName),
+            e
+        )
         null
     }
 }

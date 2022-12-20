@@ -6,11 +6,8 @@
 
 package com.datadog.android.rum.internal.domain
 
-import android.util.Log
 import com.datadog.android.core.internal.persistence.Serializer
 import com.datadog.android.core.internal.persistence.file.FileWriter
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -18,9 +15,9 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -69,7 +66,7 @@ internal class RumDataWriterTest {
     lateinit var mockFileWriter: FileWriter
 
     @Mock
-    lateinit var mockLogHandler: LogHandler
+    lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
@@ -90,7 +87,7 @@ internal class RumDataWriterTest {
         testedWriter = RumDataWriter(
             mockSerializer,
             mockFileWriter,
-            Logger(mockLogHandler),
+            mockInternalLogger,
             fakeLastViewEventFile
         )
     }
@@ -196,7 +193,7 @@ internal class RumDataWriterTest {
         // Then
         verify(mockFileWriter)
             .writeData(fakeLastViewEventFile, fakeSerializedData, false)
-        verifyZeroInteractions(logger.mockSdkLogHandler)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -211,14 +208,14 @@ internal class RumDataWriterTest {
 
         // Then
         verifyZeroInteractions(mockFileWriter)
-        verify(logger.mockSdkLogHandler)
-            .handleLog(
-                Log.INFO,
-                RumDataWriter.LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(
-                    Locale.US,
-                    fakeLastViewEventFile.parent
-                )
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.MAINTAINER,
+            RumDataWriter.LAST_VIEW_EVENT_DIR_MISSING_MESSAGE.format(
+                Locale.US,
+                fakeLastViewEventFile.parent
             )
+        )
     }
 
     @Test
@@ -327,12 +324,11 @@ internal class RumDataWriterTest {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(rumMonitor, logger)
+            return listOf(rumMonitor)
         }
     }
 }

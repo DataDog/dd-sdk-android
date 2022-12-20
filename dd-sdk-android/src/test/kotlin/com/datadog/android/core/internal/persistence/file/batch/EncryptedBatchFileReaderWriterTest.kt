@@ -6,11 +6,11 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
-import android.util.Log
 import com.datadog.android.log.Logger
 import com.datadog.android.security.Encryption
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -103,7 +103,6 @@ internal class EncryptedBatchFileReaderWriterTest {
             )
 
         verifyZeroInteractions(mockInternalLogger)
-        verifyZeroInteractions(logger.mockDevLogHandler)
     }
 
     @Test
@@ -124,8 +123,9 @@ internal class EncryptedBatchFileReaderWriterTest {
         // Then
         assertThat(result).isFalse()
 
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             EncryptedBatchReaderWriter.BAD_ENCRYPTION_RESULT_MESSAGE
         )
         verifyZeroInteractions(mockInternalLogger)
@@ -196,7 +196,6 @@ internal class EncryptedBatchFileReaderWriterTest {
         assertThat(readResult).containsExactlyElementsOf(events)
 
         verifyZeroInteractions(mockInternalLogger)
-        verifyZeroInteractions(logger.mockDevLogHandler)
     }
 
     // endregion
@@ -216,7 +215,7 @@ internal class EncryptedBatchFileReaderWriterTest {
 
     companion object {
 
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

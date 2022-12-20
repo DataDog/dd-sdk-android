@@ -18,10 +18,9 @@ import com.datadog.android.core.internal.event.NoOpEventMapper
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.thread.NoOpScheduledExecutorService
-import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
-import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.rum.GlobalRum
@@ -50,6 +49,7 @@ import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.v2.api.FeatureEventReceiver
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.android.v2.core.internal.storage.NoOpDataWriter
@@ -150,8 +150,11 @@ internal class RumFeature(
                 configuration.rumEventMapper,
                 RumEventSerializer()
             ),
-            fileWriter = BatchFileReaderWriter.create(sdkLogger, coreFeature.localDataEncryption),
-            internalLogger = sdkLogger,
+            fileWriter = BatchFileReaderWriter.create(
+                internalLogger,
+                coreFeature.localDataEncryption
+            ),
+            internalLogger = internalLogger,
             lastViewEventFile = DatadogNdkCrashHandler.getLastViewEventFile(coreFeature.storageDir)
         )
     }
@@ -162,7 +165,11 @@ internal class RumFeature(
 
     override fun onReceive(event: Any) {
         if (event !is Map<*, *>) {
-            devLogger.w(UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName))
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName)
+            )
             return
         }
 
@@ -171,7 +178,11 @@ internal class RumFeature(
         } else if (event["type"] == "ndk_crash") {
             ndkCrashEventHandler.handleEvent(event, sdkCore, dataWriter)
         } else {
-            devLogger.w(UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"]))
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"])
+            )
         }
     }
 
@@ -219,7 +230,7 @@ internal class RumFeature(
 
     private fun initializeVitalReaders(periodInMs: Long) {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
-        vitalExecutorService = LoggingScheduledThreadPoolExecutor(1, devLogger)
+        vitalExecutorService = LoggingScheduledThreadPoolExecutor(1, internalLogger)
 
         initializeVitalMonitor(CPUVitalReader(), cpuVitalMonitor, periodInMs)
         initializeVitalMonitor(MemoryVitalReader(), memoryVitalMonitor, periodInMs)
@@ -229,8 +240,15 @@ internal class RumFeature(
             Choreographer.getInstance().postFrameCallback(vitalFrameCallback)
         } catch (e: IllegalStateException) {
             // This can happen if the SDK is initialized on a Thread with no looper
-            sdkLogger.e("Unable to initialize the Choreographer FrameCallback", e)
-            devLogger.w(
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                "Unable to initialize the Choreographer FrameCallback",
+                e
+            )
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 "It seems you initialized the SDK on a thread without a Looper: " +
                     "we won't be able to track your Views' refresh rate."
             )
@@ -269,7 +287,11 @@ internal class RumFeature(
         val message = crashEvent["message"] as? String
 
         if (throwable == null || message == null) {
-            devLogger.w(JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS)
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                JVM_CRASH_EVENT_MISSING_MANDATORY_FIELDS
+            )
             return
         }
 

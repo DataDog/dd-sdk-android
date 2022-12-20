@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.domain.scope
 
 import android.app.ActivityManager.RunningAppProcessInfo
 import android.os.Build
-import android.util.Log
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
@@ -16,8 +15,9 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.TimeInfo
@@ -151,7 +151,7 @@ internal class RumViewManagerScopeTest {
         // Then
         verify(mockChildScope).handleEvent(fakeEvent, mockWriter)
         assertThat(result).isSameAs(testedScope)
-        verifyZeroInteractions(mockWriter, logger.mockDevLogHandler)
+        verifyZeroInteractions(mockWriter, logger.mockInternalLogger)
     }
 
     @Test
@@ -435,8 +435,12 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(Log.WARN, RumViewManagerScope.MESSAGE_MISSING_VIEW)
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                RumViewManagerScope.MESSAGE_MISSING_VIEW
+            )
     }
 
     @Test
@@ -451,7 +455,7 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(logger.mockDevLogHandler)
+        verifyZeroInteractions(logger.mockInternalLogger)
     }
 
     // endregion
@@ -581,8 +585,9 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             RumViewManagerScope.MESSAGE_MISSING_VIEW
         )
     }
@@ -599,7 +604,7 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyZeroInteractions(logger.mockDevLogHandler)
+        verifyZeroInteractions(logger.mockInternalLogger)
     }
 
     // endregion
@@ -708,7 +713,7 @@ internal class RumViewManagerScopeTest {
 
     companion object {
 
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

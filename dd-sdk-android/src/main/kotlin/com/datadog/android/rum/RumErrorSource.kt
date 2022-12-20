@@ -9,7 +9,7 @@ package com.datadog.android.rum
 /**
  * Describe the source of a RUM Error.
  * @see [RumMonitor]
-*/
+ */
 enum class RumErrorSource {
     /** Error originated in the Network layer. */
     NETWORK,

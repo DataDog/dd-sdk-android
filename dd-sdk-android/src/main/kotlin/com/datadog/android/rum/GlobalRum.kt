@@ -6,10 +6,11 @@
 
 package com.datadog.android.rum
 
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.GlobalRum.get
 import com.datadog.android.rum.GlobalRum.registerIfAbsent
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.v2.api.InternalLogger
 import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -78,14 +79,22 @@ object GlobalRum {
     @JvmStatic
     fun registerIfAbsent(provider: Callable<RumMonitor>): Boolean {
         return if (isRegistered.get()) {
-            devLogger.w("RumMonitor has already been registered")
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                "RumMonitor has already been registered"
+            )
             false
         } else if (isRegistered.compareAndSet(false, true)) {
             @Suppress("UnsafeThirdPartyFunctionCall") // User provided callable, let it throw
             monitor = provider.call()
             true
         } else {
-            devLogger.w("Unable to register the RumMonitor")
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                "Unable to register the RumMonitor"
+            )
             false
         }
     }

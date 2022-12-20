@@ -7,12 +7,10 @@
 package com.datadog.android.v2.log.internal.storage
 
 import com.datadog.android.core.internal.persistence.Serializer
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.forge.aThrowable
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doReturn
@@ -37,8 +35,7 @@ import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -50,14 +47,14 @@ internal class LogsDataWriterTest {
     lateinit var mockSerializer: Serializer<LogEvent>
 
     @Mock
-    lateinit var mockLogger: Logger
+    lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
     @BeforeEach
     fun `set up`() {
-        testedWriter = LogsDataWriter(mockSerializer, mockLogger)
+        testedWriter = LogsDataWriter(mockSerializer, mockInternalLogger)
     }
 
     @Test
@@ -80,7 +77,7 @@ internal class LogsDataWriterTest {
         // Then
         assertThat(result).isTrue
         verify(mockEventBatchWriter).write(fakeSerializedLogEvent.toByteArray(), null)
-        verifyZeroInteractions(mockLogger)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -103,7 +100,7 @@ internal class LogsDataWriterTest {
         // Then
         assertThat(result).isFalse
         verify(mockEventBatchWriter).write(fakeLogEvent.toString().toByteArray(), null)
-        verifyZeroInteractions(mockLogger)
+        verifyZeroInteractions(mockInternalLogger)
     }
 
     @Test
@@ -119,7 +116,7 @@ internal class LogsDataWriterTest {
         // Then
         assertThat(result).isFalse
 
-        verifyZeroInteractions(mockEventBatchWriter, mockLogger)
+        verifyZeroInteractions(mockEventBatchWriter, mockInternalLogger)
     }
 
     @Test
@@ -137,12 +134,17 @@ internal class LogsDataWriterTest {
         // Then
         assertThat(result).isFalse
 
-        verify(mockLogger)
+        verify(mockInternalLogger)
             .log(
-                eq(ERROR_WITH_TELEMETRY_LEVEL),
+                eq(InternalLogger.Level.ERROR),
+                targets = eq(
+                    listOf(
+                        InternalLogger.Target.USER,
+                        InternalLogger.Target.TELEMETRY
+                    )
+                ),
                 any(),
-                eq(fakeThrowable),
-                eq(emptyMap())
+                eq(fakeThrowable)
             )
 
         verifyZeroInteractions(mockEventBatchWriter)

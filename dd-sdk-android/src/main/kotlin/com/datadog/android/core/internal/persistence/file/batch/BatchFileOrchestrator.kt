@@ -16,9 +16,7 @@ import com.datadog.android.core.internal.persistence.file.isFileSafe
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.mkdirsSafe
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.utils.debugWithTelemetry
-import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.v2.api.InternalLogger
 import java.io.File
 import java.io.FileFilter
 import java.util.Locale
@@ -27,7 +25,7 @@ import kotlin.math.roundToLong
 internal class BatchFileOrchestrator(
     private val rootDir: File,
     private val config: FilePersistenceConfig,
-    private val internalLogger: Logger
+    private val internalLogger: InternalLogger
 ) : FileOrchestrator {
 
     private val fileFilter = BatchFileFilter()
@@ -104,7 +102,9 @@ internal class BatchFileOrchestrator(
             // is requested with granted orchestrator (due to consent change). Not an issue, because
             // batch file should be migrated to the same folder, but leaving this debug point
             // just in case.
-            internalLogger.debugWithTelemetry(
+            internalLogger.log(
+                InternalLogger.Level.DEBUG,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 DEBUG_DIFFERENT_ROOT.format(Locale.US, file.path, rootDir.path)
             )
         }
@@ -112,7 +112,9 @@ internal class BatchFileOrchestrator(
         return if (file.name.matches(batchFileNameRegex)) {
             file.metadata
         } else {
-            internalLogger.errorWithTelemetry(
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_NOT_BATCH_FILE.format(Locale.US, file.path)
             )
             null
@@ -130,13 +132,23 @@ internal class BatchFileOrchestrator(
                 if (rootDir.canWriteSafe()) {
                     return true
                 } else {
-                    internalLogger.errorWithTelemetry(
+                    internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        targets = listOf(
+                            InternalLogger.Target.MAINTAINER,
+                            InternalLogger.Target.TELEMETRY
+                        ),
                         ERROR_ROOT_NOT_WRITABLE.format(Locale.US, rootDir.path)
                     )
                     return false
                 }
             } else {
-                internalLogger.errorWithTelemetry(
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    targets = listOf(
+                        InternalLogger.Target.MAINTAINER,
+                        InternalLogger.Target.TELEMETRY
+                    ),
                     ERROR_ROOT_NOT_DIR.format(Locale.US, rootDir.path)
                 )
                 return false
@@ -152,7 +164,12 @@ internal class BatchFileOrchestrator(
                 if (rootDir.mkdirsSafe()) {
                     return true
                 } else {
-                    internalLogger.errorWithTelemetry(
+                    internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        targets = listOf(
+                            InternalLogger.Target.MAINTAINER,
+                            InternalLogger.Target.TELEMETRY
+                        ),
                         ERROR_CANT_CREATE_ROOT.format(Locale.US, rootDir.path)
                     )
                     return false
@@ -223,7 +240,9 @@ internal class BatchFileOrchestrator(
         val maxDiskSpace = config.maxDiskSpace
         val sizeToFree = sizeOnDisk - maxDiskSpace
         if (sizeToFree > 0) {
-            internalLogger.errorWithTelemetry(
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 ERROR_DISK_FULL.format(Locale.US, sizeOnDisk, maxDiskSpace, sizeToFree)
             )
             files.fold(sizeToFree) { remainingSizeToFree, file ->

@@ -9,7 +9,6 @@
 package com.datadog.android.core.internal
 
 import android.app.Application
-import android.util.Log
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
@@ -18,11 +17,12 @@ import com.datadog.android.plugin.DatadogPluginConfig
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.FeatureEventReceiver
 import com.datadog.android.v2.api.FeatureUploadConfiguration
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.NoOpContextProvider
 import com.datadog.android.v2.core.internal.data.upload.DataUploadScheduler
@@ -340,11 +340,11 @@ internal class SdkFeatureTest {
         testedFeature.sendEvent(fakeEvent)
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.INFO,
-                SdkFeature.NO_EVENT_RECEIVER.format(Locale.US, fakeFeatureName)
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            SdkFeature.NO_EVENT_RECEIVER.format(Locale.US, fakeFeatureName)
+        )
     }
 
     // endRegion
@@ -352,7 +352,7 @@ internal class SdkFeatureTest {
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

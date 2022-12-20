@@ -7,7 +7,6 @@
 package com.datadog.android.v2.core
 
 import android.app.Application
-import android.util.Log
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.core.internal.CoreFeature
@@ -26,11 +25,12 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.config.MainLooperTestConfiguration
 import com.datadog.android.utils.extension.mockChoreographerInstance
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.FeatureEventReceiver
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.TimeInfo
 import com.datadog.android.v2.api.context.UserInfo
 import com.datadog.android.v2.core.internal.ContextProvider
@@ -304,11 +304,11 @@ internal class DatadogCoreTest {
         testedCore.setEventReceiver(feature, fakeReceiver)
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.INFO,
-                DatadogCore.MISSING_FEATURE_FOR_EVENT_RECEIVER.format(Locale.US, feature)
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            DatadogCore.MISSING_FEATURE_FOR_EVENT_RECEIVER.format(Locale.US, feature)
+        )
     }
 
     @Test
@@ -328,11 +328,11 @@ internal class DatadogCoreTest {
         testedCore.setEventReceiver(feature, fakeReceiver)
 
         // Then
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.INFO,
-                DatadogCore.EVENT_RECEIVER_ALREADY_EXISTS.format(Locale.US, feature)
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            DatadogCore.EVENT_RECEIVER_ALREADY_EXISTS.format(Locale.US, feature)
+        )
     }
 
     @Test
@@ -496,7 +496,7 @@ internal class DatadogCoreTest {
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val mainLooper = MainLooperTestConfiguration()
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

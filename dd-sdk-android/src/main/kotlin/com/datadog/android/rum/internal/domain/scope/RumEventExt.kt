@@ -7,9 +7,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import com.datadog.android.core.internal.utils.devLogger
-import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
@@ -20,6 +18,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.DeviceType
 import com.datadog.android.v2.api.context.NetworkInfo
 import java.util.Locale
@@ -28,7 +27,12 @@ internal fun String.toMethod(): ResourceEvent.Method {
     return try {
         ResourceEvent.Method.valueOf(this.uppercase(Locale.US))
     } catch (e: IllegalArgumentException) {
-        sdkLogger.errorWithTelemetry("Unable to convert [$this] to a valid http method", e)
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            "Unable to convert [$this] to a valid http method",
+            e
+        )
         ResourceEvent.Method.GET
     }
 }
@@ -37,7 +41,12 @@ internal fun String.toErrorMethod(): ErrorEvent.Method {
     return try {
         ErrorEvent.Method.valueOf(this.uppercase(Locale.US))
     } catch (e: IllegalArgumentException) {
-        sdkLogger.errorWithTelemetry("Unable to convert [$this] to a valid http method", e)
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            "Unable to convert [$this] to a valid http method",
+            e
+        )
         ErrorEvent.Method.GET
     }
 }
@@ -379,7 +388,12 @@ internal fun ViewEvent.Source.Companion.tryFromSource(source: String):
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
-        devLogger.e(UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source), e)
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source),
+            e
+        )
         null
     }
 }
@@ -389,7 +403,12 @@ internal fun LongTaskEvent.Source.Companion.tryFromSource(source: String):
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
-        devLogger.e(UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source), e)
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source),
+            e
+        )
         null
     }
 }
@@ -399,7 +418,12 @@ internal fun ErrorEvent.ErrorEventSource.Companion.tryFromSource(source: String)
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
-        devLogger.e(UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source), e)
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source),
+            e
+        )
         null
     }
 }
@@ -409,7 +433,12 @@ internal fun ActionEvent.Source.Companion.tryFromSource(source: String):
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
-        devLogger.e(UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source), e)
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source),
+            e
+        )
         null
     }
 }
@@ -419,7 +448,12 @@ internal fun ResourceEvent.Source.Companion.tryFromSource(source: String):
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {
-        devLogger.e(UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source), e)
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source),
+            e
+        )
         null
     }
 }

@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.ndk
 
-import android.util.Log
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.ErrorEventAssert
@@ -15,10 +14,11 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.api.context.UserInfo
@@ -389,11 +389,11 @@ internal class DatadogNdkCrashEventHandlerTest {
 
         // Then
         verifyZeroInteractions(mockRumWriter, mockEventBatchWriter)
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.INFO,
-                DatadogNdkCrashEventHandler.INFO_RUM_FEATURE_NOT_REGISTERED
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            DatadogNdkCrashEventHandler.INFO_RUM_FEATURE_NOT_REGISTERED
+        )
     }
 
     @Test
@@ -419,9 +419,10 @@ internal class DatadogNdkCrashEventHandlerTest {
 
         // Then
         verifyZeroInteractions(mockRumWriter, mockEventBatchWriter)
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 DatadogNdkCrashEventHandler.NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS
             )
     }
@@ -458,9 +459,10 @@ internal class DatadogNdkCrashEventHandlerTest {
 
         // Then
         verifyZeroInteractions(mockRumWriter, mockEventBatchWriter)
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 DatadogNdkCrashEventHandler.NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS
             )
     }
@@ -472,7 +474,7 @@ internal class DatadogNdkCrashEventHandlerTest {
     }
 
     companion object {
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

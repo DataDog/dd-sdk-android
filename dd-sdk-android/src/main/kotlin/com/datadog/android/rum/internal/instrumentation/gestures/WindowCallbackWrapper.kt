@@ -10,14 +10,14 @@ import android.view.KeyEvent
 import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.Window
-import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
+import com.datadog.android.v2.api.InternalLogger
 import java.lang.ref.WeakReference
 import kotlin.Exception
 
@@ -46,18 +46,35 @@ internal class WindowCallbackWrapper(
             try {
                 gesturesDetector.onTouchEvent(copy)
             } catch (e: Exception) {
-                sdkLogger.errorWithTelemetry("Error processing MotionEvent", e)
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    targets = listOf(
+                        InternalLogger.Target.MAINTAINER,
+                        InternalLogger.Target.TELEMETRY
+                    ),
+                    "Error processing MotionEvent",
+                    e
+                )
             } finally {
                 copy.recycle()
             }
         } else {
-            sdkLogger.errorWithTelemetry("Received MotionEvent=null")
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                "Received MotionEvent=null"
+            )
         }
 
         return try {
             wrappedCallback.dispatchTouchEvent(event)
         } catch (e: Exception) {
-            sdkLogger.errorWithTelemetry("Wrapped callback failed processing MotionEvent", e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                "Wrapped callback failed processing MotionEvent",
+                e
+            )
             EVENT_CONSUMED
         }
     }
@@ -77,14 +94,23 @@ internal class WindowCallbackWrapper(
         return try {
             wrappedCallback.onMenuItemSelected(featureId, item)
         } catch (e: Exception) {
-            sdkLogger.errorWithTelemetry("Wrapped callback failed processing MenuItem selection", e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                "Wrapped callback failed processing MenuItem selection",
+                e
+            )
             EVENT_CONSUMED
         }
     }
 
     override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
         if (event == null) {
-            sdkLogger.errorWithTelemetry("Received KeyEvent=null")
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                "Received KeyEvent=null"
+            )
         } else if (event.keyCode == KeyEvent.KEYCODE_BACK &&
             event.action == KeyEvent.ACTION_UP
         ) {
@@ -97,7 +123,12 @@ internal class WindowCallbackWrapper(
         return try {
             wrappedCallback.dispatchKeyEvent(event)
         } catch (e: Exception) {
-            sdkLogger.errorWithTelemetry("Wrapped callback failed processing KeyEvent", e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                "Wrapped callback failed processing KeyEvent",
+                e
+            )
             EVENT_CONSUMED
         }
     }

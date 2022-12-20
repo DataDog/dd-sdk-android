@@ -7,14 +7,14 @@
 package com.datadog.android.webview
 
 import android.content.Context
-import android.util.Log
 import android.webkit.WebSettings
 import android.webkit.WebView
 import com.datadog.android.Datadog
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.android.webview.internal.MixedWebViewEventConsumer
@@ -199,14 +199,15 @@ internal class DatadogEventBridgeTest {
             argThat { this is DatadogEventBridge },
             eq(DatadogEventBridge.DATADOG_EVENT_BRIDGE_NAME)
         )
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             DatadogEventBridge.JAVA_SCRIPT_NOT_ENABLED_WARNING_MESSAGE
         )
     }
 
     companion object {
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
 

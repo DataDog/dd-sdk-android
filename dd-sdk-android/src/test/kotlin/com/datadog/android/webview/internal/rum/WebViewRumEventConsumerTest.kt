@@ -6,7 +6,6 @@
 
 package com.datadog.android.webview.internal.rum
 
-import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
 import com.datadog.android.rum.GlobalRum
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -16,11 +15,12 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aRumEventAsJson
 import com.datadog.android.v2.api.EventBatchWriter
 import com.datadog.android.v2.api.FeatureScope
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.storage.DataWriter
@@ -31,7 +31,6 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.anyOrNull
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
@@ -525,8 +524,9 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeRumEvent)
 
         // Then
-        verify(logger.mockSdkLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             WebViewRumEventConsumer.JSON_PARSING_ERROR_MESSAGE,
             fakeException
         )
@@ -594,13 +594,11 @@ internal class WebViewRumEventConsumerTest {
         testedConsumer.consume(fakeRumEvent)
 
         // Then
-        verify(logger.mockSdkLogHandler).handleLog(
-            eq(ERROR_WITH_TELEMETRY_LEVEL),
+        verify(logger.mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            targets = eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
             eq(WebViewRumEventConsumer.JSON_PARSING_ERROR_MESSAGE),
-            any<Throwable>(),
-            anyOrNull(),
-            anyOrNull(),
-            anyOrNull()
+            any()
         )
     }
 
@@ -833,7 +831,7 @@ internal class WebViewRumEventConsumerTest {
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

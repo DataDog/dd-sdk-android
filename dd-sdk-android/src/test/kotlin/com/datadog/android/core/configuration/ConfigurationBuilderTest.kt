@@ -9,7 +9,6 @@
 package com.datadog.android.core.configuration
 
 import android.os.Build
-import android.util.Log
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
 import com.datadog.android._InternalProxy
@@ -39,8 +38,9 @@ import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.security.Encryption
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -945,8 +945,9 @@ internal class ConfigurationBuilderTest {
             .build()
 
         // then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             Configuration.PLUGINS_DEPRECATED_WARN_MESSAGE
         )
     }
@@ -966,8 +967,9 @@ internal class ConfigurationBuilderTest {
         testedBuilder.trackInteractions()
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
                 Feature.RUM.featureName,
@@ -993,8 +995,9 @@ internal class ConfigurationBuilderTest {
         testedBuilder.trackLongTasks(durationMs)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
                 Feature.RUM.featureName,
@@ -1019,8 +1022,9 @@ internal class ConfigurationBuilderTest {
         testedBuilder.useViewTrackingStrategy(viewStrategy)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
                 Feature.RUM.featureName,
@@ -1046,8 +1050,9 @@ internal class ConfigurationBuilderTest {
         testedBuilder.sampleRumSessions(samplingRate)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
                 Feature.RUM.featureName,
@@ -1072,8 +1077,9 @@ internal class ConfigurationBuilderTest {
         testedBuilder.setRumViewEventMapper(eventMapper)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
                 Feature.RUM.featureName,
@@ -1098,8 +1104,9 @@ internal class ConfigurationBuilderTest {
         testedBuilder.setRumResourceEventMapper(eventMapper)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
                 Feature.RUM.featureName,
@@ -1124,8 +1131,9 @@ internal class ConfigurationBuilderTest {
         testedBuilder.setRumActionEventMapper(eventMapper)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
                 Feature.RUM.featureName,
@@ -1150,8 +1158,9 @@ internal class ConfigurationBuilderTest {
         testedBuilder.setRumErrorEventMapper(eventMapper)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
                 Feature.RUM.featureName,
@@ -1176,8 +1185,9 @@ internal class ConfigurationBuilderTest {
         testedBuilder.setRumLongTaskEventMapper(eventMapper)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
                 Feature.RUM.featureName,
@@ -1202,8 +1212,9 @@ internal class ConfigurationBuilderTest {
         testedBuilder.addPlugin(logsPlugin, Feature.LOG)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
                 Feature.LOG.featureName,
@@ -1228,8 +1239,9 @@ internal class ConfigurationBuilderTest {
         testedBuilder.addPlugin(tracesPlugin, Feature.TRACE)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
                 Feature.TRACE.featureName,
@@ -1254,8 +1266,9 @@ internal class ConfigurationBuilderTest {
         testedBuilder.addPlugin(crashPlugin, Feature.CRASH)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
                 Feature.CRASH.featureName,
@@ -1280,8 +1293,9 @@ internal class ConfigurationBuilderTest {
         testedBuilder.addPlugin(rumPlugin, Feature.RUM)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
                 Feature.RUM.featureName,
@@ -1311,8 +1325,9 @@ internal class ConfigurationBuilderTest {
         )
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.WARN,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             "Configuration.Builder#addPlugin has been deprecated since version 1.15.0, " +
                 "and will be removed in version 2.0.0."
         )
@@ -1335,8 +1350,9 @@ internal class ConfigurationBuilderTest {
         testedBuilder.useCustomLogsEndpoint(url)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
                 Feature.LOG.featureName,
@@ -1362,8 +1378,9 @@ internal class ConfigurationBuilderTest {
         testedBuilder.useCustomTracesEndpoint(url)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
                 Feature.TRACE.featureName,
@@ -1389,8 +1406,9 @@ internal class ConfigurationBuilderTest {
         testedBuilder.useCustomCrashReportsEndpoint(url)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
                 Feature.CRASH.featureName,
@@ -1416,8 +1434,9 @@ internal class ConfigurationBuilderTest {
         testedBuilder.useCustomRumEndpoint(url)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             Configuration.ERROR_FEATURE_DISABLED.format(
                 Locale.US,
                 Feature.RUM.featureName,
@@ -1840,7 +1859,7 @@ internal class ConfigurationBuilderTest {
     }
 
     companion object {
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

@@ -6,7 +6,7 @@
 
 package com.datadog.android.core.internal.thread
 
-import com.datadog.android.log.Logger
+import com.datadog.android.v2.api.InternalLogger
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -21,7 +21,7 @@ internal class LoggingThreadPoolExecutor(
     keepAliveTime: Long,
     unit: TimeUnit?,
     workQueue: BlockingQueue<Runnable>?,
-    private val logger: Logger
+    private val logger: InternalLogger
 ) : ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue) {
 
     override fun afterExecute(r: Runnable?, t: Throwable?) {

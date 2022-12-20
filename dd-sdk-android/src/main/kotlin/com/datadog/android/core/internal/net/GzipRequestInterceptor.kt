@@ -6,8 +6,8 @@
 
 package com.datadog.android.core.internal.net
 
-import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.utils.warningWithTelemetry
+import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.v2.api.InternalLogger
 import okhttp3.Interceptor
 import okhttp3.MediaType
 import okhttp3.MultipartBody
@@ -51,7 +51,15 @@ internal class GzipRequestInterceptor : Interceptor {
                     .method(originalRequest.method(), gzip(body))
                     .build()
             } catch (e: Exception) {
-                sdkLogger.warningWithTelemetry("Unable to gzip request body", e)
+                internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    targets = listOf(
+                        InternalLogger.Target.MAINTAINER,
+                        InternalLogger.Target.TELEMETRY
+                    ),
+                    "Unable to gzip request body",
+                    e
+                )
                 originalRequest
             }
             chain.proceed(compressedRequest)

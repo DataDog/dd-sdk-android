@@ -6,58 +6,14 @@
 
 package com.datadog.android.core.internal.utils
 
-import com.datadog.android.BuildConfig
-import com.datadog.android.Datadog
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.logger.ConditionalLogHandler
-import com.datadog.android.log.internal.logger.InternalLogHandler
-import com.datadog.android.log.internal.logger.LogcatLogHandler
-import com.datadog.android.log.internal.logger.NoOpLogHandler
-import com.datadog.android.log.internal.logger.TelemetryLogHandler
 import com.datadog.android.telemetry.internal.Telemetry
+import com.datadog.android.v2.api.InternalLogger
+import com.datadog.android.v2.core.SdkInternalLogger
 import java.util.Locale
 
-internal const val SDK_LOG_PREFIX = "DD_LOG"
-internal const val DEV_LOG_PREFIX = "Datadog"
+internal var internalLogger: InternalLogger = SdkInternalLogger()
 
 internal val telemetry: Telemetry = Telemetry()
-
-/**
- * Global SDK Logger. This logger is meant for internal debugging purposes.
- * Logcat logs are conditioned by a BuildConfig flag (set to false for releases).
- */
-internal var sdkLogger: Logger = buildSdkLogger()
-    private set
-
-internal fun buildSdkLogger(): Logger {
-    val logcatLogHandler = if (BuildConfig.LOGCAT_ENABLED) {
-        LogcatLogHandler(SDK_LOG_PREFIX, true)
-    } else {
-        NoOpLogHandler()
-    }
-    return Logger(
-        InternalLogHandler(logcatLogHandler, TelemetryLogHandler(telemetry))
-    )
-}
-
-/**
- * Global Dev Logger. This logger is meant for user's debugging purposes.
- * Logcat logs are conditioned by the [Datadog.libraryVerbosity].
- * No Datadog logs should be sent.
- */
-internal val devLogger: Logger = buildDevLogger()
-
-private fun buildDevLogger(): Logger {
-    return Logger(buildDevLogHandler())
-}
-
-internal fun buildDevLogHandler(): ConditionalLogHandler {
-    return ConditionalLogHandler(
-        LogcatLogHandler(DEV_LOG_PREFIX, false)
-    ) { i, _ ->
-        i >= Datadog.globalSdkCore.getVerbosity()
-    }
-}
 
 /**
  * Warns the user that they're using a deprecated feature.
@@ -73,7 +29,9 @@ internal fun warnDeprecated(
     alternative: String? = null
 ) {
     if (alternative == null) {
-        devLogger.w(
+        internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             WARN_DEPRECATED.format(
                 Locale.US,
                 target,
@@ -82,7 +40,9 @@ internal fun warnDeprecated(
             )
         )
     } else {
-        devLogger.w(
+        internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
             WARN_DEPRECATED_WITH_ALT.format(
                 Locale.US,
                 target,

@@ -6,8 +6,7 @@
 
 package com.datadog.android.core.internal.net
 
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.v2.api.InternalLogger
 
 @Suppress("StringLiteralDuplication")
 internal enum class UploadStatus(val shouldRetry: Boolean) {
@@ -23,9 +22,7 @@ internal enum class UploadStatus(val shouldRetry: Boolean) {
     fun logStatus(
         context: String,
         byteSize: Int,
-        logger: Logger,
-        ignoreInfo: Boolean,
-        sendToTelemetry: Boolean,
+        logger: InternalLogger,
         requestId: String? = null
     ) {
         val batchInfo = if (requestId == null) {
@@ -34,45 +31,55 @@ internal enum class UploadStatus(val shouldRetry: Boolean) {
             "Batch $requestId [$byteSize bytes] ($context)"
         }
         when (this) {
-            NETWORK_ERROR -> logger.e(
+            NETWORK_ERROR -> logger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
                 "$batchInfo failed because of a network error; we will retry later."
             )
-            INVALID_TOKEN_ERROR -> if (!ignoreInfo) {
-                logger.e(
-                    "$batchInfo failed because your token is invalid. " +
-                        "Make sure that the provided token still exists " +
-                        "and you're targeting the relevant Datadog site."
-                )
-            }
-            HTTP_REDIRECTION -> logger.w(
+            INVALID_TOKEN_ERROR -> logger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                "$batchInfo failed because your token is invalid. " +
+                    "Make sure that the provided token still exists " +
+                    "and you're targeting the relevant Datadog site."
+            )
+            HTTP_REDIRECTION -> logger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 "$batchInfo failed because of a network redirection; the batch was dropped."
             )
             HTTP_CLIENT_ERROR -> {
                 val message = "$batchInfo failed because of a processing error or invalid data; " +
                     "the batch was dropped."
-                if (sendToTelemetry) {
-                    logger.errorWithTelemetry(message)
-                } else {
-                    logger.e(message)
-                }
+                logger.log(
+                    InternalLogger.Level.ERROR,
+                    targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                    message
+                )
             }
             HTTP_CLIENT_RATE_LIMITING -> {
                 val message = "$batchInfo failed because of a request error; we will retry later."
-                if (sendToTelemetry) {
-                    logger.errorWithTelemetry(message)
-                } else {
-                    logger.e(message)
-                }
+                logger.log(
+                    InternalLogger.Level.ERROR,
+                    targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                    message
+                )
             }
-            HTTP_SERVER_ERROR -> logger.e(
+            HTTP_SERVER_ERROR -> logger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
                 "$batchInfo failed because of a server processing error; we will retry later."
             )
-            UNKNOWN_ERROR -> logger.e(
+            UNKNOWN_ERROR -> logger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
                 "$batchInfo failed because of an unknown error; the batch was dropped."
             )
-            SUCCESS -> if (!ignoreInfo) {
-                logger.v("$batchInfo sent successfully.")
-            }
+            SUCCESS -> logger.log(
+                InternalLogger.Level.VERBOSE,
+                InternalLogger.Target.USER,
+                "$batchInfo sent successfully."
+            )
         }
     }
 }

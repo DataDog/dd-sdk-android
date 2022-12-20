@@ -6,8 +6,8 @@
 
 package com.datadog.android.core.internal.persistence
 
-import com.datadog.android.core.internal.utils.sdkLogger
-import com.datadog.android.log.internal.utils.errorWithTelemetry
+import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.v2.api.InternalLogger
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
@@ -18,13 +18,17 @@ internal class JsonObjectDeserializer : Deserializer<String, JsonObject> {
         return try {
             JsonParser.parseString(model).asJsonObject
         } catch (jpe: JsonParseException) {
-            sdkLogger.errorWithTelemetry(
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
                 jpe
             )
             null
         } catch (ise: IllegalStateException) {
-            sdkLogger.errorWithTelemetry(
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 DESERIALIZE_ERROR_MESSAGE_FORMAT.format(Locale.US, model),
                 ise
             )

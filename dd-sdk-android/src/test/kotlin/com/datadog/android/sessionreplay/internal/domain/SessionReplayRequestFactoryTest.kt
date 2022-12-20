@@ -6,13 +6,17 @@
 
 package com.datadog.android.sessionreplay.internal.domain
 
-import com.datadog.android.log.Logger
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.net.BatchesToSegmentsMapper
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonObject
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.verify
@@ -44,7 +48,8 @@ import java.util.stream.Stream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -80,9 +85,6 @@ internal class SessionReplayRequestFactoryTest {
     lateinit var fakeMediaType: MediaType
 
     var fakeBatchMetadata: ByteArray? = null
-
-    @Mock
-    lateinit var mockInternalLogger: Logger
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -219,7 +221,6 @@ internal class SessionReplayRequestFactoryTest {
             fakeEndpoint,
             mockBatchesToSegmentsMapper,
             mockRequestBodyFactory,
-            internalLogger = mockInternalLogger,
             bodyToByteArrayFactory = {
                 throw fakeThrowable
             }
@@ -233,11 +234,13 @@ internal class SessionReplayRequestFactoryTest {
         )
 
         // Then
-        verify(mockInternalLogger).e(
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
             errorMessage,
             fakeThrowable
         )
-        verifyNoMoreInteractions(mockInternalLogger)
+        verifyNoMoreInteractions(logger.mockInternalLogger)
     }
 
     // endregion
@@ -270,6 +273,14 @@ internal class SessionReplayRequestFactoryTest {
     // endregion
 
     companion object {
+
+        val logger = InternalLoggerTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(logger)
+        }
 
         @JvmStatic
         fun throwableAndLogMessageValues(): Stream<Arguments> {

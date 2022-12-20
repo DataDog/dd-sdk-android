@@ -6,20 +6,13 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
-import android.util.Log
 import com.datadog.android.core.internal.persistence.file.EventMeta
-import com.datadog.android.log.Logger
-import com.datadog.android.log.internal.utils.ERROR_WITH_TELEMETRY_LEVEL
-import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.tools.unit.annotations.TestConfigurationsProvider
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.android.v2.api.InternalLogger
 import com.google.gson.JsonParseException
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.isA
-import com.nhaarman.mockitokotlin2.isNull
 import com.nhaarman.mockitokotlin2.verify
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -33,6 +26,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.api.io.TempDir
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -42,8 +36,7 @@ import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -60,6 +53,9 @@ internal class PlainBatchFileReaderWriterTest {
     @TempDir
     lateinit var fakeRootDirectory: File
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     private lateinit var fakeSrcDir: File
     private lateinit var fakeDstDir: File
 
@@ -67,7 +63,7 @@ internal class PlainBatchFileReaderWriterTest {
     fun `set up`() {
         fakeSrcDir = File(fakeRootDirectory, fakeSrcDirName)
         fakeDstDir = File(fakeRootDirectory, fakeDstDirName)
-        testedReaderWriter = PlainBatchFileReaderWriter(Logger(logger.mockSdkLogHandler))
+        testedReaderWriter = PlainBatchFileReaderWriter(mockInternalLogger)
     }
 
     // region writeData
@@ -186,13 +182,11 @@ internal class PlainBatchFileReaderWriterTest {
         // Then
         assertThat(result).isFalse()
         assertThat(file).doesNotExist()
-        verify(logger.mockSdkLogHandler).handleLog(
-            eq(ERROR_WITH_TELEMETRY_LEVEL),
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            targets = eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
             eq(PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path)),
-            any(),
-            eq(emptyMap()),
-            eq(emptySet()),
-            isNull()
+            any()
         )
     }
 
@@ -215,13 +209,11 @@ internal class PlainBatchFileReaderWriterTest {
 
         // Then
         assertThat(result).isFalse()
-        verify(logger.mockSdkLogHandler).handleLog(
-            eq(ERROR_WITH_TELEMETRY_LEVEL),
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            targets = eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
             eq(PlainBatchFileReaderWriter.ERROR_WRITE.format(Locale.US, file.path)),
-            any(),
-            eq(emptyMap()),
-            eq(emptySet()),
-            isNull()
+            any()
         )
     }
 
@@ -243,13 +235,11 @@ internal class PlainBatchFileReaderWriterTest {
         // Then
         assertThat(result).isEmpty()
         assertThat(file).doesNotExist()
-        verify(logger.mockSdkLogHandler).handleLog(
-            eq(ERROR_WITH_TELEMETRY_LEVEL),
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            targets = eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
             eq(PlainBatchFileReaderWriter.ERROR_READ.format(Locale.US, file.path)),
-            any(),
-            eq(emptyMap()),
-            eq(emptySet()),
-            isNull()
+            any()
         )
     }
 
@@ -266,13 +256,11 @@ internal class PlainBatchFileReaderWriterTest {
 
         // Then
         assertThat(result).isEmpty()
-        verify(logger.mockSdkLogHandler).handleLog(
-            eq(ERROR_WITH_TELEMETRY_LEVEL),
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            targets = eq(listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY)),
             eq(PlainBatchFileReaderWriter.ERROR_READ.format(Locale.US, file.path)),
-            any(),
-            eq(emptyMap()),
-            eq(emptySet()),
-            isNull()
+            any()
         )
     }
 
@@ -290,12 +278,9 @@ internal class PlainBatchFileReaderWriterTest {
 
         // Then
         assertThat(result).isEmpty()
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
-            PlainBatchFileReaderWriter.WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)
-        )
-        verify(logger.mockSdkLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             PlainBatchFileReaderWriter.WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)
         )
     }
@@ -349,7 +334,7 @@ internal class PlainBatchFileReaderWriterTest {
 
         val malformedMetaIndex = forge.anInt(min = 0, max = events.size)
         testedReaderWriter = PlainBatchFileReaderWriter(
-            Logger(logger.mockSdkLogHandler),
+            mockInternalLogger,
             metaParser = object : (ByteArray) -> EventMeta {
                 // in case of malformed meta we should drop corresponding event and continue reading
                 var invocations = 0
@@ -372,13 +357,11 @@ internal class PlainBatchFileReaderWriterTest {
         // Then
         assertThat(result).containsExactlyElementsOf(events.minus(events[malformedMetaIndex]))
 
-        verify(logger.mockSdkLogHandler).handleLog(
-            eq(Log.ERROR),
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.MAINTAINER),
             eq(PlainBatchFileReaderWriter.ERROR_FAILED_META_PARSE),
-            isA<JsonParseException>(),
-            eq(emptyMap()),
-            eq(emptySet()),
-            isNull()
+            isA<JsonParseException>()
         )
     }
 
@@ -431,12 +414,9 @@ internal class PlainBatchFileReaderWriterTest {
         // Then
         assertThat(result).containsExactlyElementsOf(events.take(badEventIndex))
 
-        verify(logger.mockDevLogHandler).handleLog(
-            Log.ERROR,
-            PlainBatchFileReaderWriter.WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)
-        )
-        verify(logger.mockSdkLogHandler).handleLog(
-            ERROR_WITH_TELEMETRY_LEVEL,
+        verify(mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
             PlainBatchFileReaderWriter.WARNING_NOT_ALL_DATA_READ.format(Locale.US, file.path)
         )
     }
@@ -558,14 +538,4 @@ internal class PlainBatchFileReaderWriterTest {
     }
 
     // endregion
-
-    companion object {
-        val logger = LoggerTestConfiguration()
-
-        @TestConfigurationsProvider
-        @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(logger)
-        }
-    }
 }

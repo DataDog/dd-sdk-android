@@ -6,13 +6,13 @@
 
 package com.datadog.android.telemetry.internal
 
-import android.util.Log
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.forge.aStringNotMatchingSet
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -75,16 +75,14 @@ internal class TelemetryEventExtTest {
         TelemetryDebugEvent.Source.tryFromSource(fakeInvalidSource)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            eq(Log.ERROR),
+        verify(logger.mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.USER),
             eq(
                 UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
                     .format(Locale.US, fakeInvalidSource)
             ),
-            argThat { this is NoSuchElementException },
-            eq(emptyMap()),
-            eq(emptySet()),
-            eq(null)
+            argThat { this is NoSuchElementException }
         )
     }
 
@@ -112,16 +110,14 @@ internal class TelemetryEventExtTest {
         TelemetryErrorEvent.Source.tryFromSource(fakeInvalidSource)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            eq(Log.ERROR),
+        verify(logger.mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.USER),
             eq(
                 UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
                     .format(Locale.US, fakeInvalidSource)
             ),
-            argThat { this is NoSuchElementException },
-            eq(emptyMap()),
-            eq(emptySet()),
-            eq(null)
+            argThat { this is NoSuchElementException }
         )
     }
 
@@ -149,23 +145,21 @@ internal class TelemetryEventExtTest {
         TelemetryConfigurationEvent.Source.tryFromSource(fakeInvalidSource)
 
         // Then
-        verify(logger.mockDevLogHandler).handleLog(
-            eq(Log.ERROR),
+        verify(logger.mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.USER),
             eq(
                 UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT
                     .format(Locale.US, fakeInvalidSource)
             ),
-            argThat { this is NoSuchElementException },
-            eq(emptyMap()),
-            eq(emptySet()),
-            eq(null)
+            argThat { this is NoSuchElementException }
         )
     }
 
     // endregion
 
     companion object {
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

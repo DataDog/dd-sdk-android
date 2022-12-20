@@ -11,12 +11,12 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
-import android.util.Log
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.log.assertj.NetworkInfoAssert.Companion.assertThat
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.NetworkInfo
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -425,11 +425,11 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.register(context)
 
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.ERROR,
-                CallbackNetworkInfoProvider.ERROR_REGISTER
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            CallbackNetworkInfoProvider.ERROR_REGISTER
+        )
     }
 
     @Test
@@ -445,12 +445,12 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.register(context)
 
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.ERROR,
-                CallbackNetworkInfoProvider.ERROR_REGISTER,
-                exception
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            CallbackNetworkInfoProvider.ERROR_REGISTER,
+            exception
+        )
     }
 
     @Test
@@ -468,12 +468,12 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.register(context)
 
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.ERROR,
-                CallbackNetworkInfoProvider.ERROR_REGISTER,
-                exception
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            CallbackNetworkInfoProvider.ERROR_REGISTER,
+            exception
+        )
     }
 
     @Test
@@ -595,12 +595,12 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.unregister(context)
 
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.ERROR,
-                CallbackNetworkInfoProvider.ERROR_UNREGISTER,
-                exception
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            CallbackNetworkInfoProvider.ERROR_UNREGISTER,
+            exception
+        )
     }
 
     @Test
@@ -610,11 +610,11 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.unregister(context)
 
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.ERROR,
-                CallbackNetworkInfoProvider.ERROR_UNREGISTER
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            CallbackNetworkInfoProvider.ERROR_UNREGISTER
+        )
     }
 
     @Test
@@ -631,12 +631,12 @@ internal class CallbackNetworkInfoProviderTest {
 
         testedProvider.unregister(context)
 
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.ERROR,
-                CallbackNetworkInfoProvider.ERROR_UNREGISTER,
-                exception
-            )
+        verify(logger.mockInternalLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            CallbackNetworkInfoProvider.ERROR_UNREGISTER,
+            exception
+        )
     }
 
     @Test
@@ -649,7 +649,7 @@ internal class CallbackNetworkInfoProviderTest {
     }
 
     companion object {
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic

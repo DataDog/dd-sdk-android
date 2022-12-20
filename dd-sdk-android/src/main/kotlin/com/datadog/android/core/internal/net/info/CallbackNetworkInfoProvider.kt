@@ -16,7 +16,8 @@ import android.os.Build
 import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
-import com.datadog.android.core.internal.utils.devLogger
+import com.datadog.android.core.internal.utils.internalLogger
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.context.NetworkInfo
 
 @TargetApi(Build.VERSION_CODES.N)
@@ -61,7 +62,11 @@ internal class CallbackNetworkInfoProvider(
         val connMgr = systemService as? ConnectivityManager
 
         if (connMgr == null) {
-            devLogger.e(ERROR_REGISTER)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                ERROR_REGISTER
+            )
             return
         }
 
@@ -75,13 +80,23 @@ internal class CallbackNetworkInfoProvider(
         } catch (e: SecurityException) {
             // RUMM-852 On some devices we get a SecurityException with message
             // "package does not belong to xxxx"
-            devLogger.e(ERROR_REGISTER, e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                ERROR_REGISTER,
+                e
+            )
             lastNetworkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_OTHER)
         } catch (e: Exception) {
             // RUMM-918 in some cases the device throws a IllegalArgumentException on register
             // "Too many NetworkRequests filed" This happens when registerDefaultNetworkCallback is
             // called too many times without matching unregisterNetworkCallback
-            devLogger.e(ERROR_REGISTER, e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                ERROR_REGISTER,
+                e
+            )
             lastNetworkInfo = NetworkInfo(NetworkInfo.Connectivity.NETWORK_OTHER)
         }
     }
@@ -92,7 +107,11 @@ internal class CallbackNetworkInfoProvider(
         val connMgr = systemService as? ConnectivityManager
 
         if (connMgr == null) {
-            devLogger.e(ERROR_UNREGISTER)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                ERROR_UNREGISTER
+            )
             return
         }
 
@@ -101,11 +120,21 @@ internal class CallbackNetworkInfoProvider(
         } catch (e: SecurityException) {
             // RUMM-852 On some devices we get a SecurityException with message
             // "package does not belong to xxxx"
-            devLogger.e(ERROR_UNREGISTER, e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                ERROR_UNREGISTER,
+                e
+            )
         } catch (e: RuntimeException) {
             // RUMM-918 in some cases the device throws a IllegalArgumentException on unregister
             // e.g. when the callback was not registered
-            devLogger.e(ERROR_UNREGISTER, e)
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                ERROR_UNREGISTER,
+                e
+            )
         }
     }
 

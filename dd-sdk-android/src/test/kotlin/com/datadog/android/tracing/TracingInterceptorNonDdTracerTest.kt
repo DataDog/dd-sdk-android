@@ -16,8 +16,9 @@ import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
-import com.datadog.android.utils.config.LoggerTestConfiguration
+import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.core.DatadogCore
 import com.datadog.android.v2.core.NoOpSdkCore
 import com.datadog.opentracing.DDTracer
@@ -664,9 +665,10 @@ internal open class TracingInterceptorNonDdTracerTest {
 
         verifyZeroInteractions(mockLocalTracer)
         verifyZeroInteractions(mockTracer)
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 TracingInterceptor.WARNING_TRACING_DISABLED
             )
     }
@@ -694,9 +696,10 @@ internal open class TracingInterceptorNonDdTracerTest {
         verify(localSpan).setTag("http.status_code", statusCode)
         verify(localSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 TracingInterceptor.WARNING_DEFAULT_TRACER
             )
     }
@@ -734,9 +737,10 @@ internal open class TracingInterceptorNonDdTracerTest {
         verify(mockSpan).finish()
         assertThat(response1).isSameAs(expectedResponse1)
         assertThat(response2).isSameAs(expectedResponse2)
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 TracingInterceptor.WARNING_DEFAULT_TRACER
             )
     }
@@ -891,9 +895,10 @@ internal open class TracingInterceptorNonDdTracerTest {
         testedInterceptor = instantiateTestedInterceptor { mockLocalTracer }
 
         verifyZeroInteractions(mockTracer, mockLocalTracer)
-        verify(logger.mockDevLogHandler)
-            .handleLog(
-                Log.WARN,
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 TracingInterceptor.WARNING_TRACING_NO_HOSTS
             )
     }
@@ -1002,7 +1007,7 @@ internal open class TracingInterceptorNonDdTracerTest {
 
         val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val coreFeature = CoreFeatureTestConfiguration(appContext)
-        val logger = LoggerTestConfiguration()
+        val logger = InternalLoggerTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
