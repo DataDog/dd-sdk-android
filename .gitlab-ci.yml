@@ -73,10 +73,10 @@ analysis:licenses:
 
 static-analysis:
   stage: analysis
-  variables: 
-    GRADLE_OPTS: "-Xmx2560m -Dorg.gradle.daemon=false -Dorg.gradle.logging.stacktrace=all"
+  variables:
+    DETEKT_PUBLIC_API: "true"
   trigger:
-    include: "https://gitlab-templates.ddbuild.io/mobile/v11792839-3933abb4/static-analysis.yml"
+    include: "https://gitlab-templates.ddbuild.io/mobile/v11982331-054cb5d6/static-analysis.yml"
     strategy: depend
 
 analysis:nightly-tests-coverage:
