@@ -10,7 +10,8 @@ import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogInterceptor
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.configuration.HostsSanitizer
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.utils.devLogger
@@ -65,20 +66,24 @@ import java.util.concurrent.atomic.AtomicReference
 @Suppress("TooManyFunctions", "StringLiteralDuplication")
 open class TracingInterceptor
 internal constructor(
-    internal val tracedHosts: List<String>,
+    internal val tracedHosts: Map<String, List<TracingHeaderType>>,
     internal val tracedRequestListener: TracedRequestListener,
-    internal val firstPartyHostDetector: FirstPartyHostDetector,
+    internal val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver,
     internal val traceOrigin: String?,
     internal val traceSampler: Sampler,
-    internal val localTracerFactory: () -> Tracer
-) : Interceptor {
+    internal val localTracerFactory: (List<TracingHeaderType>) -> Tracer
+    ) : Interceptor {
 
     private val localTracerReference: AtomicReference<Tracer> = AtomicReference()
+    private val sanitizedHosts =  HostsSanitizer().sanitizeHosts(
+        tracedHosts.keys.toList(),
+        NETWORK_REQUESTS_TRACKING_FEATURE_NAME
+    )
 
-    private val localFirstPartyHostDetector = FirstPartyHostDetector(tracedHosts)
+    private val localFirstPartyHostHeaderTypeResolver = FirstPartyHostHeaderTypeResolver(tracedHosts.filterKeys { sanitizedHosts.contains(it) })
 
     init {
-        if (localFirstPartyHostDetector.isEmpty() && firstPartyHostDetector.isEmpty()) {
+        if (localFirstPartyHostHeaderTypeResolver.isEmpty() && firstPartyHostResolver.isEmpty()) {
             devLogger.w(WARNING_TRACING_NO_HOSTS)
         }
     }
@@ -87,7 +92,7 @@ internal constructor(
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s.
      *
      * @param tracedHosts a list of all the hosts that you want to be automatically tracked
-     * by this interceptor. If no host is provided (via this argument or global
+     * by this interceptor with Datadog style headers. If no host is provided (via this argument or global
      * configuration [Configuration.Builder.setFirstPartyHosts]) the interceptor won't trace any OkHttp [Request],
      * nor propagate tracing information to the backend.
      * @param tracedRequestListener a listener for automatically created [Span]s
@@ -101,12 +106,41 @@ internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
-        tracedHosts,
+        tracedHosts.associateWith { listOf(TracingHeaderType.DATADOG) },
         tracedRequestListener,
         getGlobalFirstPartyHostDetector(),
         null,
         RateBasedSampler(traceSamplingRate.percent()),
-        { AndroidTracer.Builder().build() }
+        { AndroidTracer.Builder().setTracingHeaderTypes(it).build() }
+        )
+
+
+    /**
+     * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s.
+     *
+     * @param tracedHostsWithHeaderType a list of all the hosts and header types that you want to be automatically tracked
+     * by this interceptor. If registering a GlobalTracer, the tracer must be configured with
+     * [AndroidTracer.Builder.setTracingHeaderTypes] containing all the necessary header types configured for OkHttp tracking.
+     * If no hosts are provided (via this argument or global
+     * configuration [Configuration.Builder.setFirstPartyHosts] or [Configuration.Builder.setFirstPartyHostsWithHeaderType] )
+     * the interceptor won't trace any OkHttp [Request], nor propagate tracing information to the backend.
+     * @param tracedRequestListener a listener for automatically created [Span]s
+     * @param traceSamplingRate the sampling rate for APM traces created for auto-instrumented
+     * requests. It must be a value between `0.0` and `100.0`. A value of `0.0` means no trace will
+     * be kept, `100.0` means all traces will be kept (default value is `20.0`).
+     */
+    @JvmOverloads
+    constructor(
+        tracedHostsWithHeaderType: Map<String, List<TracingHeaderType>>,
+        tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
+        @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
+    ) : this(
+        tracedHostsWithHeaderType,
+        tracedRequestListener,
+        getGlobalFirstPartyHostDetector(),
+        null,
+        RateBasedSampler(traceSamplingRate.percent()),
+        { AndroidTracer.Builder().setTracingHeaderTypes(it).build() }
     )
 
     /**
@@ -122,12 +156,12 @@ internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
-        emptyList(),
+        emptyMap(),
         tracedRequestListener,
         getGlobalFirstPartyHostDetector(),
         null,
         RateBasedSampler(traceSamplingRate.percent()),
-        { AndroidTracer.Builder().build() }
+        { AndroidTracer.Builder().setTracingHeaderTypes(it).build() }
     )
 
     // region Interceptor
@@ -181,8 +215,8 @@ internal constructor(
 
     private fun isRequestTraceable(request: Request): Boolean {
         val url = request.url()
-        return firstPartyHostDetector.isFirstPartyUrl(url) ||
-            localFirstPartyHostDetector.isFirstPartyUrl(url)
+        return firstPartyHostResolver.isFirstPartyUrl(url) ||
+            localFirstPartyHostHeaderTypeResolver.isFirstPartyUrl(url)
     }
 
     @Suppress("TooGenericExceptionCaught", "ThrowingInternalException")
@@ -240,6 +274,7 @@ internal constructor(
             // clear the localTracer reference if any
             localTracerReference.set(null)
             GlobalTracer.get()
+
         } else {
             // we check if we already have a local tracer if not we instantiate one
             resolveLocalTracer()
@@ -250,7 +285,10 @@ internal constructor(
         // only register once
         if (localTracerReference.get() == null) {
             @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
-            localTracerReference.compareAndSet(null, localTracerFactory())
+            val localHeaderTypes = localFirstPartyHostHeaderTypeResolver.getAllHeaderTypes()
+            val globalHeaderTypes = firstPartyHostResolver.getAllHeaderTypes()
+            val allHeaders = localHeaderTypes.plus(globalHeaderTypes).toList()
+            localTracerReference.compareAndSet(null, localTracerFactory(allHeaders))
             devLogger.w(WARNING_DEFAULT_TRACER)
         }
         return localTracerReference.get()
@@ -275,11 +313,48 @@ internal constructor(
 
     @Suppress("ReturnCount")
     private fun extractSamplingDecision(request: Request): Boolean? {
-        val samplingPriority = request.header(SAMPLING_PRIORITY_HEADER)?.toIntOrNull()
-            ?: return null
-        if (samplingPriority == PrioritySampling.UNSET) return null
-        return samplingPriority == PrioritySampling.USER_KEEP ||
-            samplingPriority == PrioritySampling.SAMPLER_KEEP
+        val datadogSamplingPriority = request.header(DATADOG_SAMPLING_PRIORITY_HEADER)?.toIntOrNull()
+        if (datadogSamplingPriority != null) {
+            if (datadogSamplingPriority == PrioritySampling.UNSET) return null
+            return datadogSamplingPriority == PrioritySampling.USER_KEEP ||
+                    datadogSamplingPriority == PrioritySampling.SAMPLER_KEEP
+        }
+        val b3MSamplingPriority = request.header(B3M_SAMPLING_PRIORITY_KEY)
+        if(b3MSamplingPriority != null){
+            return when(b3MSamplingPriority){
+                "1" -> true
+                "0" -> false
+                else -> null
+            }
+        }
+
+        val b3HeaderValue = request.header(B3_HEADER_KEY)
+        if(b3HeaderValue != null){
+            val b3HeaderParts = b3HeaderValue.split("-")
+            if(b3HeaderParts.size >= 3){
+                return when(b3HeaderParts[2]){
+                    "1","d" -> return true
+                    "0" -> return false
+                    else -> null
+                }
+            }
+        }
+
+        val w3cHeaderValue = request.header(W3C_TRACEPARENT_KEY)
+        if(w3cHeaderValue != null) {
+            val w3CHeaderParts = w3cHeaderValue.split("-")
+            if (w3CHeaderParts.size >= 4) {
+                return when (w3CHeaderParts[3].toIntOrNull()) {
+                    1 -> return true
+                    0 -> return false
+                    else -> null
+                }
+            }
+        }
+
+        return null
+
+
     }
 
     private fun extractParentContext(tracer: Tracer, request: Request): SpanContext? {
@@ -303,16 +378,46 @@ internal constructor(
         span: Span?
     ): Request.Builder {
         val tracedRequestBuilder = request.newBuilder()
+        var tracingHeaderTypes = localFirstPartyHostHeaderTypeResolver.headerTypesForUrl(request.url())
+        tracingHeaderTypes = if(!tracingHeaderTypes.isEmpty()) tracingHeaderTypes else firstPartyHostResolver.headerTypesForUrl(request.url())
 
         if (span == null) {
-            listOf(
-                SAMPLING_PRIORITY_HEADER,
-                TRACE_ID_HEADER,
-                SPAN_ID_HEADER
-            ).forEach {
-                tracedRequestBuilder.removeHeader(it)
+            for (headerType in tracingHeaderTypes){
+                when(headerType){
+                    TracingHeaderType.DATADOG -> {
+                        listOf(
+                            DATADOG_SAMPLING_PRIORITY_HEADER,
+                            DATADOG_TRACE_ID_HEADER,
+                            DATADOG_SPAN_ID_HEADER,
+                            DATADOG_ORIGIN_HEADER
+                        ).forEach {
+                            tracedRequestBuilder.removeHeader(it)
+                        }
+                        tracedRequestBuilder.addHeader(DATADOG_SAMPLING_PRIORITY_HEADER, DATADOG_DROP_SAMPLING_DECISION)
+                    }
+
+                    TracingHeaderType.B3 -> {
+                        tracedRequestBuilder.removeHeader(B3_HEADER_KEY)
+                        tracedRequestBuilder.addHeader(B3_HEADER_KEY, B3_DROP_SAMPLING_DECISION)
+                    }
+
+                    TracingHeaderType.B3MULTI -> {
+                        listOf(
+                            B3M_TRACE_ID_KEY,
+                            B3M_SPAN_ID_KEY,
+                            B3M_SAMPLING_PRIORITY_KEY
+                        ).forEach {
+                            tracedRequestBuilder.removeHeader(it)
+                        }
+                        tracedRequestBuilder.addHeader(B3M_SAMPLING_PRIORITY_KEY, B3M_DROP_SAMPLING_DECISION)
+                    }
+
+                    TracingHeaderType.TRACECONTEXT ->{
+                        tracedRequestBuilder.removeHeader(W3C_TRACEPARENT_KEY)
+                        tracedRequestBuilder.addHeader(W3C_TRACEPARENT_KEY, W3C_DROP_SAMPLING_DECISION)
+                    }
+                }
             }
-            tracedRequestBuilder.addHeader(SAMPLING_PRIORITY_HEADER, DROP_SAMPLING_DECISION)
         } else {
             tracer.inject(
                 span.context(),
@@ -321,7 +426,26 @@ internal constructor(
                     // By default the `addHeader` method adds a value and doesn't replace it
                     // We need to remove the old trace/span info to use the one for the current span
                     tracedRequestBuilder.removeHeader(key)
-                    tracedRequestBuilder.addHeader(key, value)
+                    when(key){
+                        DATADOG_SAMPLING_PRIORITY_HEADER,
+                        DATADOG_TRACE_ID_HEADER,
+                        DATADOG_SPAN_ID_HEADER,
+                        DATADOG_ORIGIN_HEADER-> if(tracingHeaderTypes.contains(TracingHeaderType.DATADOG)) {
+                            tracedRequestBuilder.addHeader(key, value)
+                        }
+                        B3_HEADER_KEY -> if(tracingHeaderTypes.contains(TracingHeaderType.B3)){
+                            tracedRequestBuilder.addHeader(key, value)
+                        }
+                        B3M_SPAN_ID_KEY,
+                        B3M_TRACE_ID_KEY,
+                        B3M_SAMPLING_PRIORITY_KEY -> if(tracingHeaderTypes.contains(TracingHeaderType.B3MULTI)){
+                            tracedRequestBuilder.addHeader(key, value)
+                        }
+                        W3C_TRACEPARENT_KEY -> if(tracingHeaderTypes.contains(TracingHeaderType.TRACECONTEXT)){
+                            tracedRequestBuilder.addHeader(key, value)
+                        }
+                        else -> tracedRequestBuilder.addHeader(key, value)
+                    }
                 }
             )
         }
@@ -404,22 +528,37 @@ internal constructor(
          * Temporary helper method for now, it'll be removed eventually.
          */
         @Suppress("FunctionMaxLength")
-        internal fun getGlobalFirstPartyHostDetector(): FirstPartyHostDetector {
+        internal fun getGlobalFirstPartyHostDetector(): FirstPartyHostHeaderTypeResolver {
             return (
                 (Datadog.globalSdkCore as? DatadogCore)
                     ?.coreFeature
-                    ?.firstPartyHostDetector
-                    ?: FirstPartyHostDetector(emptyList())
+                    ?.firstPartyHostHeaderTypeResolver
+                    ?: FirstPartyHostHeaderTypeResolver(emptyMap())
                 )
         }
 
+        internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"
         internal const val DEFAULT_TRACE_SAMPLING_RATE: Float = 20f
 
         // taken from DatadogHttpCodec
-        internal const val TRACE_ID_HEADER = "x-datadog-trace-id"
-        internal const val SPAN_ID_HEADER = "x-datadog-parent-id"
-        internal const val SAMPLING_PRIORITY_HEADER = "x-datadog-sampling-priority"
+        internal const val DATADOG_TRACE_ID_HEADER = "x-datadog-trace-id"
+        internal const val DATADOG_SPAN_ID_HEADER = "x-datadog-parent-id"
+        internal const val DATADOG_SAMPLING_PRIORITY_HEADER = "x-datadog-sampling-priority"
+        internal const val DATADOG_DROP_SAMPLING_DECISION = "0"
+        internal const val DATADOG_ORIGIN_HEADER = "x-datadog-origin"
 
-        internal const val DROP_SAMPLING_DECISION = "0"
+        // taken from B3HttpCodec
+        internal const val B3_HEADER_KEY = "b3"
+        internal const val B3_DROP_SAMPLING_DECISION = "0"
+
+        // taken from B3MHttpCodec
+        internal const val B3M_TRACE_ID_KEY = "X-B3-TraceId"
+        internal const val B3M_SPAN_ID_KEY = "X-B3-SpanId"
+        internal const val B3M_SAMPLING_PRIORITY_KEY = "X-B3-Sampled"
+        internal const val B3M_DROP_SAMPLING_DECISION = "0"
+
+        // taken from W3CHttpCodec
+        internal const val W3C_TRACEPARENT_KEY = "traceparent"
+        internal const val W3C_DROP_SAMPLING_DECISION = "00-00000000000000000000000000000000-0000000000000000-00"
     }
 }

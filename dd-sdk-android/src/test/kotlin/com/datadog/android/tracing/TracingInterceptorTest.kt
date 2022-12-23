@@ -9,7 +9,7 @@ package com.datadog.android.tracing
 import android.util.Log
 import com.datadog.android.Datadog
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.core.internal.utils.loggableStackTrace
@@ -69,6 +69,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.*
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -107,7 +108,7 @@ internal open class TracingInterceptorTest {
     lateinit var mockRequestListener: TracedRequestListener
 
     @Mock
-    lateinit var mockDetector: FirstPartyHostDetector
+    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockTraceSampler: Sampler
@@ -142,8 +143,7 @@ internal open class TracingInterceptorTest {
     @StringForgery
     lateinit var fakeOrigin: String
 
-    @StringForgery(regex = HOSTNAME_PATTERN)
-    lateinit var fakeLocalHosts: List<String>
+    lateinit var fakeLocalHosts: Map<String, List<TracingHeaderType>>
 
     // endregion
 
@@ -163,6 +163,7 @@ internal open class TracingInterceptorTest {
 
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()
+        fakeLocalHosts = forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to listOf(TracingHeaderType.DATADOG) }
         fakeMediaType = MediaType.parse(mediaType)
         fakeUrl = forgeUrlWithQueryParams(forge)
         fakeRequest = forgeRequest(forge)
@@ -177,13 +178,13 @@ internal open class TracingInterceptorTest {
     }
 
     open fun instantiateTestedInterceptor(
-        tracedHosts: List<String> = emptyList(),
-        factory: () -> Tracer
+        tracedHosts: Map<String, List<TracingHeaderType>> = emptyMap(),
+        factory : (List<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return TracingInterceptor(
             tracedHosts,
             mockRequestListener,
-            mockDetector,
+            mockResolver,
             fakeOrigin,
             mockTraceSampler,
             factory
@@ -225,7 +226,7 @@ internal open class TracingInterceptorTest {
         val interceptor = TracingInterceptor(hosts)
 
         // Then
-        assertThat(interceptor.tracedHosts).containsAll(hosts)
+        assertThat(interceptor.tracedHosts.keys).containsAll(hosts)
         assertThat(interceptor.tracedRequestListener)
             .isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler)
@@ -243,7 +244,7 @@ internal open class TracingInterceptorTest {
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         stubChain(mockChain, statusCode)
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
             carrier.put(key, value)
@@ -259,12 +260,13 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `𝕄 inject non-tracing header 𝕎 intercept() {global known host + not sampled}`(
+    fun `𝕄 inject non-tracing datadog header 𝕎 intercept() {global known host + not sampled}`(
         @IntForgery(min = 200, max = 600) statusCode: Int
     ) {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.DATADOG))
         stubChain(mockChain, statusCode)
 
         // When
@@ -275,10 +277,12 @@ internal open class TracingInterceptorTest {
         verifyZeroInteractions(mockTracer, mockLocalTracer)
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
-            assertThat(lastValue.header(TracingInterceptor.SAMPLING_PRIORITY_HEADER))
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER))
                 .isEqualTo("0")
-            assertThat(lastValue.header(TracingInterceptor.TRACE_ID_HEADER)).isNull()
-            assertThat(lastValue.header(TracingInterceptor.SPAN_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_TRACE_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_ORIGIN_HEADER)).isNull()
+
         }
     }
 
@@ -289,9 +293,9 @@ internal open class TracingInterceptorTest {
         @IntForgery(min = 200, max = 600) statusCode: Int,
         forge: Forge
     ) {
-        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts))
+        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
         stubChain(mockChain, statusCode)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
@@ -314,9 +318,9 @@ internal open class TracingInterceptorTest {
     ) {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
-        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts))
+        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
         stubChain(mockChain, statusCode)
 
         // When
@@ -327,10 +331,12 @@ internal open class TracingInterceptorTest {
         verifyZeroInteractions(mockTracer, mockLocalTracer)
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
-            assertThat(lastValue.header(TracingInterceptor.SAMPLING_PRIORITY_HEADER))
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER))
                 .isEqualTo("0")
-            assertThat(lastValue.header(TracingInterceptor.TRACE_ID_HEADER)).isNull()
-            assertThat(lastValue.header(TracingInterceptor.SPAN_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_TRACE_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_ORIGIN_HEADER)).isNull()
+
         }
     }
 
@@ -346,7 +352,7 @@ internal open class TracingInterceptorTest {
         whenever(parentSpan.context()) doReturn parentSpanContext
         whenever(mockSpanBuilder.asChildOf(parentSpanContext)) doReturn mockSpanBuilder
         fakeRequest = forgeRequest(forge) { it.tag(Span::class.java, parentSpan) }
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
@@ -373,7 +379,7 @@ internal open class TracingInterceptorTest {
     ) {
         fakeRequest = fakeRequest.newBuilder().addHeader(key, previousValue).build()
         stubChain(mockChain, statusCode)
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
             carrier.put(key, value)
@@ -396,9 +402,9 @@ internal open class TracingInterceptorTest {
         @IntForgery(min = 200, max = 600) statusCode: Int,
         forge: Forge
     ) {
-        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts))
+        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge).newBuilder().addHeader(key, previousValue).build()
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
         stubChain(mockChain, statusCode)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
@@ -420,9 +426,9 @@ internal open class TracingInterceptorTest {
         @StringForgery message: String,
         forge: Forge
     ) {
-        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts))
+        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
         stubChain(mockChain, statusCode)
         doThrow(IllegalStateException(message)).whenever(mockTracer)
             .inject<TextMapInject>(any(), any(), any())
@@ -445,7 +451,7 @@ internal open class TracingInterceptorTest {
         val parentSpanContext: SpanContext = mock()
         whenever(mockTracer.extract<TextMapExtract>(any(), any())) doReturn parentSpanContext
         whenever(mockSpanBuilder.asChildOf(any<SpanContext>())) doReturn mockSpanBuilder
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
@@ -471,10 +477,10 @@ internal open class TracingInterceptorTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
-                TracingInterceptor.SAMPLING_PRIORITY_HEADER,
+                TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER,
                 forge.anElementFrom(
                     PrioritySampling.SAMPLER_KEEP.toString(),
                     PrioritySampling.USER_KEEP.toString()
@@ -505,10 +511,11 @@ internal open class TracingInterceptorTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.DATADOG))
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
-                TracingInterceptor.SAMPLING_PRIORITY_HEADER,
+                TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER,
                 forge.anElementFrom(
                     PrioritySampling.SAMPLER_DROP.toString(),
                     PrioritySampling.USER_DROP.toString()
@@ -525,10 +532,10 @@ internal open class TracingInterceptorTest {
         assertThat(response).isSameAs(fakeResponse)
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
-            assertThat(lastValue.header(TracingInterceptor.SAMPLING_PRIORITY_HEADER))
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER))
                 .isEqualTo("0")
-            assertThat(lastValue.header(TracingInterceptor.TRACE_ID_HEADER)).isNull()
-            assertThat(lastValue.header(TracingInterceptor.SPAN_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_TRACE_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
         }
         verifyZeroInteractions(mockTracer, mockLocalTracer, mockSpanBuilder, mockSpan)
     }
@@ -539,7 +546,7 @@ internal open class TracingInterceptorTest {
     ) {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 
         // When
@@ -554,14 +561,14 @@ internal open class TracingInterceptorTest {
     fun `𝕄 create a span with info 𝕎 intercept() for successful request`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl
-        verify(mockSpan).setTag("http.url", fakeUrl)
+        verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
+        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).finish()
@@ -575,15 +582,15 @@ internal open class TracingInterceptorTest {
     ) {
         val fakeUrlWithoutQueryParams = forgeUrlWithoutQueryParams(forge)
         fakeRequest = forgeRequest(forge, fakeUrlWithoutQueryParams)
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrlWithoutQueryParams)))
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrlWithoutQueryParams)))
             .thenReturn(true)
         stubChain(mockChain, statusCode)
 
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan as MutableSpan).resourceName = fakeUrlWithoutQueryParams
-        verify(mockSpan).setTag("http.url", fakeUrlWithoutQueryParams)
+        verify(mockSpan as MutableSpan).resourceName = fakeUrlWithoutQueryParams.lowercase(Locale.US)
+        verify(mockSpan).setTag("http.url", fakeUrlWithoutQueryParams.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).finish()
@@ -594,14 +601,14 @@ internal open class TracingInterceptorTest {
     fun `𝕄 create a span with info 𝕎 intercept() for failing request {4xx}`(
         @IntForgery(min = 400, max = 500) statusCode: Int
     ) {
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl
-        verify(mockSpan).setTag("http.url", fakeUrl)
+        verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
+        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan as MutableSpan).setError(true)
@@ -613,14 +620,14 @@ internal open class TracingInterceptorTest {
     fun `𝕄 create a span with info 𝕎 intercept() for failing request {5xx}`(
         @IntForgery(min = 500, max = 600) statusCode: Int
     ) {
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl
-        verify(mockSpan).setTag("http.url", fakeUrl)
+        verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
+        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan as MutableSpan, never()).setError(true)
@@ -630,13 +637,13 @@ internal open class TracingInterceptorTest {
 
     @Test
     fun `𝕄 create a span with info 𝕎 intercept() for 404 request`() {
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, 404)
 
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan).setTag("http.url", fakeUrl)
+        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", 404)
         verify(mockSpan as MutableSpan).setError(true)
@@ -649,7 +656,7 @@ internal open class TracingInterceptorTest {
     fun `𝕄 create a span with info 𝕎 intercept() for throwing request`(
         @Forgery throwable: Throwable
     ) {
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         whenever(mockChain.request()) doReturn fakeRequest
         whenever(mockChain.proceed(any())) doThrow throwable
 
@@ -658,12 +665,12 @@ internal open class TracingInterceptorTest {
         }
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan).setTag("http.url", fakeUrl)
+        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("error.type", throwable.javaClass.canonicalName)
         verify(mockSpan).setTag("error.msg", throwable.message)
         verify(mockSpan).setTag("error.stack", throwable.loggableStackTrace())
-        verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl
+        verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(mockSpan).finish()
     }
 
@@ -673,7 +680,7 @@ internal open class TracingInterceptorTest {
     ) {
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
         Datadog.globalSdkCore = NoOpSdkCore()
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 
         testedInterceptor.intercept(mockChain)
@@ -694,7 +701,7 @@ internal open class TracingInterceptorTest {
         val localSpanBuilder: DDTracer.DDSpanBuilder = mock()
         val localSpan: Span = mock(extraInterfaces = arrayOf(MutableSpan::class))
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
         whenever(localSpanBuilder.asChildOf(null as SpanContext?)) doReturn localSpanBuilder
         whenever(localSpanBuilder.withOrigin(getExpectedOrigin())) doReturn localSpanBuilder
@@ -707,10 +714,10 @@ internal open class TracingInterceptorTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(localSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(localSpan).setTag("http.url", fakeUrl)
+        verify(localSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
-        verify(localSpan as MutableSpan).resourceName = fakeBaseUrl
+        verify(localSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(localSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
         verify(logger.mockDevLogHandler)
@@ -727,7 +734,7 @@ internal open class TracingInterceptorTest {
         val localSpanBuilder: DDTracer.DDSpanBuilder = mock()
         val localSpan: Span = mock(extraInterfaces = arrayOf(MutableSpan::class))
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
         whenever(localSpanBuilder.asChildOf(null as SpanContext?)) doReturn localSpanBuilder
         whenever(localSpanBuilder.withOrigin(getExpectedOrigin())) doReturn localSpanBuilder
@@ -745,16 +752,16 @@ internal open class TracingInterceptorTest {
         val expectedResponse2 = fakeResponse
 
         verify(localSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(localSpan).setTag("http.url", fakeUrl)
+        verify(localSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
-        verify(localSpan as MutableSpan).resourceName = fakeBaseUrl
+        verify(localSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(localSpan).finish()
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan).setTag("http.url", fakeUrl)
+        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
-        verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl
+        verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(mockSpan).finish()
         assertThat(response1).isSameAs(expectedResponse1)
         assertThat(response2).isSameAs(expectedResponse2)
@@ -771,7 +778,7 @@ internal open class TracingInterceptorTest {
         @StringForgery tagKey: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) tagValue: String
     ) {
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
         whenever(
             mockRequestListener.onRequestIntercepted(any(), any(), anyOrNull(), anyOrNull())
@@ -784,10 +791,10 @@ internal open class TracingInterceptorTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan).setTag("http.url", fakeUrl)
+        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
-        verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl
+        verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(mockSpan).setTag(tagKey, tagValue)
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
@@ -799,7 +806,7 @@ internal open class TracingInterceptorTest {
         @StringForgery tagKey: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) tagValue: String
     ) {
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
         whenever(
             mockRequestListener.onRequestIntercepted(any(), any(), anyOrNull(), anyOrNull())
@@ -812,7 +819,7 @@ internal open class TracingInterceptorTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan).setTag("http.url", fakeUrl)
+        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(tagKey, tagValue)
@@ -826,7 +833,7 @@ internal open class TracingInterceptorTest {
     ) {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 
         // When
@@ -843,7 +850,7 @@ internal open class TracingInterceptorTest {
         @StringForgery tagKey: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) tagValue: String
     ) {
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         whenever(
             mockRequestListener.onRequestIntercepted(any(), any(), anyOrNull(), anyOrNull())
         ).doAnswer {
@@ -859,7 +866,7 @@ internal open class TracingInterceptorTest {
         }
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan).setTag("http.url", fakeUrl)
+        verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("error.type", throwable.javaClass.canonicalName)
         verify(mockSpan).setTag("error.msg", throwable.message)
@@ -874,7 +881,7 @@ internal open class TracingInterceptorTest {
     ) {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         whenever(mockChain.request()) doReturn fakeRequest
         whenever(mockChain.proceed(any())) doThrow throwable
 
@@ -888,20 +895,20 @@ internal open class TracingInterceptorTest {
     @Test
     fun `M do not update the hostDetector W host list provided`(forge: Forge) {
         // GIVEN
-        val localHosts = forge.aList { forge.aStringMatching(HOSTNAME_PATTERN) }
+        val localHosts = forge.aMap { aStringMatching(HOSTNAME_PATTERN) to listOf(TracingHeaderType.DATADOG)}
 
         // WHEN
         testedInterceptor = instantiateTestedInterceptor(localHosts) { mockLocalTracer }
 
         // THEN
-        verify(mockDetector, never()).addKnownHosts(localHosts)
+        verify(mockResolver, never()).addKnownHostsWithHeaderTypes(localHosts)
     }
 
     @Test
     fun `𝕄 do nothing 𝕎 intercept() for request with unknown host`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
         stubChain(mockChain, statusCode)
 
         val response = testedInterceptor.intercept(mockChain)
@@ -913,7 +920,7 @@ internal open class TracingInterceptorTest {
     @Test
     fun `𝕄 warn 𝕎 init() with no known host`() {
         // GIVEN
-        whenever(mockDetector.isEmpty()).thenReturn(true)
+        whenever(mockResolver.isEmpty()).thenReturn(true)
 
         // WHEN
         testedInterceptor = instantiateTestedInterceptor { mockLocalTracer }
@@ -937,7 +944,7 @@ internal open class TracingInterceptorTest {
             mockLocalTracer
         }
         GlobalTracer::class.java.setStaticValue("isRegistered", false)
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 
         // need this setup, otherwise #intercept actually throws NPE, which pollutes the log
@@ -1026,8 +1033,8 @@ internal open class TracingInterceptorTest {
     // endregion
 
     companion object {
-        const val HOSTNAME_PATTERN = "([a-z][a-z0-9_~-]{3,9}\\.){1,4}[a-z][a-z0-9]{2,3}"
-
+        const val HOSTNAME_PATTERN =  "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{1,4}[a-zA-Z0-9]{2,3})\\.)+" +
+                    "([A-Za-z]|[A-Za-z][A-Za-z0-9-]{1,2}[A-Za-z0-9])"
         val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider

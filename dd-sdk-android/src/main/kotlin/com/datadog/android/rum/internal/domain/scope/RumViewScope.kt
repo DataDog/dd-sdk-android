@@ -13,7 +13,7 @@ import android.os.Build
 import android.view.WindowManager
 import androidx.annotation.WorkerThread
 import androidx.fragment.app.Fragment
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.devLogger
@@ -56,7 +56,7 @@ internal open class RumViewScope(
     internal val name: String,
     eventTime: Time,
     initialAttributes: Map<String, Any?>,
-    internal val firstPartyHostDetector: FirstPartyHostDetector,
+    internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     internal val cpuVitalMonitor: VitalMonitor,
     internal val memoryVitalMonitor: VitalMonitor,
     internal val frameRateVitalMonitor: VitalMonitor,
@@ -339,7 +339,7 @@ internal open class RumViewScope(
             this,
             sdkCore,
             updatedEvent,
-            firstPartyHostDetector,
+            firstPartyHostHeaderTypeResolver,
             serverTimeOffsetInMs,
             contextProvider,
             featuresContextResolver
@@ -1013,7 +1013,7 @@ internal open class RumViewScope(
             parentScope: RumScope,
             sdkCore: SdkCore,
             event: RumRawEvent.StartView,
-            firstPartyHostDetector: FirstPartyHostDetector,
+            firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
             cpuVitalMonitor: VitalMonitor,
             memoryVitalMonitor: VitalMonitor,
             frameRateVitalMonitor: VitalMonitor,
@@ -1027,7 +1027,7 @@ internal open class RumViewScope(
                 event.name,
                 event.eventTime,
                 event.attributes,
-                firstPartyHostDetector,
+                firstPartyHostHeaderTypeResolver,
                 cpuVitalMonitor,
                 memoryVitalMonitor,
                 frameRateVitalMonitor,

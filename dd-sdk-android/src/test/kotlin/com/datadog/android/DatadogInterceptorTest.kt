@@ -14,6 +14,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.tracing.NoOpTracedRequestListener
+import com.datadog.android.tracing.TracingHeaderType
 import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.tracing.TracingInterceptorNotSendingSpanTest
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
@@ -57,6 +58,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.io.IOException
+import java.util.*
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -76,14 +78,14 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     private lateinit var fakeAttributes: Map<String, Any?>
 
     override fun instantiateTestedInterceptor(
-        tracedHosts: List<String>,
-        factory: () -> Tracer
+        tracedHosts: Map<String, List<TracingHeaderType>>,
+        factory: (List<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         whenever((Datadog.globalSdkCore as DatadogCore).rumFeature) doReturn mock()
         return DatadogInterceptor(
             tracedHosts = tracedHosts,
             tracedRequestListener = mockRequestListener,
-            firstPartyHostDetector = mockDetector,
+            firstPartyHostResolver = mockResolver,
             rumResourceAttributesProvider = mockRumAttributesProvider,
             traceSampler = mockTraceSampler,
             localTracerFactory = factory
@@ -151,7 +153,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val interceptor = DatadogInterceptor(hosts)
 
         // Then
-        assertThat(interceptor.tracedHosts).containsAll(hosts)
+        assertThat(interceptor.tracedHosts.keys).containsAll(hosts)
         assertThat(interceptor.rumResourceAttributesProvider)
             .isInstanceOf(NoOpRumResourceAttributesProvider::class.java)
         assertThat(interceptor.tracedRequestListener)
@@ -191,7 +193,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl,
+                fakeUrl.lowercase(Locale.US),
                 expectedStartAttrs
             )
             verify(rumMonitor.mockInstance).stopResource(
@@ -229,7 +231,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl,
+                fakeUrl.lowercase(Locale.US),
                 expectedStartAttrs
             )
             verify(rumMonitor.mockInstance).stopResource(
@@ -277,7 +279,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl,
+                fakeUrl.lowercase(Locale.US),
                 emptyMap()
             )
             verify(rumMonitor.mockInstance).stopResource(
@@ -323,7 +325,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl,
+                fakeUrl.lowercase(Locale.US),
                 emptyMap()
             )
             verify(rumMonitor.mockInstance).stopResource(
@@ -382,7 +384,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl,
+                fakeUrl.lowercase(Locale.US),
                 expectedStartAttrs
             )
             verify(rumMonitor.mockInstance).stopResource(
@@ -439,7 +441,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl,
+                fakeUrl.lowercase(Locale.US),
                 expectedStartAttrs
             )
             verify(rumMonitor.mockInstance).stopResource(
@@ -479,7 +481,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl,
+                fakeUrl.lowercase(Locale.US),
                 expectedStartAttrs
             )
             verify(rumMonitor.mockInstance).stopResource(
@@ -517,7 +519,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl,
+                fakeUrl.lowercase(Locale.US),
                 expectedStartAttrs
             )
             verify(rumMonitor.mockInstance).stopResource(
@@ -550,13 +552,13 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl,
+                fakeUrl.lowercase(Locale.US),
                 expectedStartAttrs
             )
             verify(rumMonitor.mockInstance).stopResourceWithError(
                 requestId,
                 null,
-                "OkHttp request error $fakeMethod $fakeUrl",
+                "OkHttp request error $fakeMethod ${fakeUrl.lowercase(Locale.US)}",
                 RumErrorSource.NETWORK,
                 throwable,
                 fakeAttributes

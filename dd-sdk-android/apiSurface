@@ -44,9 +44,10 @@ class com.datadog.android.DatadogEventListener : okhttp3.EventListener
   override fun callFailed(okhttp3.Call, java.io.IOException)
   class Factory : okhttp3.EventListener.Factory
     override fun create(okhttp3.Call): okhttp3.EventListener
-open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.TracingInterceptor
-  constructor(List<String>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
-  constructor(com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+open class com.datadog.android.DatadogInterceptor : TracingInterceptor
+  constructor(Map<String, List<TracingHeaderType>>, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+  constructor(List<String>, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+  constructor(TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   override fun canSendSpan(): Boolean
@@ -81,6 +82,7 @@ data class com.datadog.android.core.configuration.Configuration
     fun build(): Configuration
     fun setUseDeveloperModeWhenDebuggable(Boolean): Builder
     fun setFirstPartyHosts(List<String>): Builder
+    fun setFirstPartyHostsWithHeaderType(Map<String, List<com.datadog.android.tracing.TracingHeaderType>>): Builder
     fun setWebViewTrackingHosts(List<String>): Builder
     fun useSite(com.datadog.android.DatadogSite): Builder
     fun useCustomLogsEndpoint(String): Builder
@@ -456,6 +458,7 @@ class com.datadog.android.tracing.AndroidTracer : com.datadog.opentracing.DDTrac
   class Builder
     constructor()
     fun build(): AndroidTracer
+    fun setTracingHeaderTypes(List<TracingHeaderType>): Builder
     fun setServiceName(String): Builder
     fun setPartialFlushThreshold(Int): Builder
     fun addGlobalTag(String, String): Builder
@@ -465,8 +468,15 @@ class com.datadog.android.tracing.AndroidTracer : com.datadog.opentracing.DDTrac
     fun logErrorMessage(io.opentracing.Span, String)
 interface com.datadog.android.tracing.TracedRequestListener
   fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
+enum com.datadog.android.tracing.TracingHeaderType
+  constructor(String)
+  - DATADOG
+  - B3
+  - B3MULTI
+  - TRACECONTEXT
 open class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
   constructor(List<String>, TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+  constructor(Map<String, List<TracingHeaderType>>, TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
   constructor(TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   protected open fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)

@@ -38,6 +38,7 @@ import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.security.Encryption
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import com.datadog.android.tracing.TracingHeaderType
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -103,7 +104,7 @@ internal class ConfigurationBuilderTest {
             Configuration.Core(
                 needsClearTextHttp = false,
                 enableDeveloperModeWhenDebuggable = false,
-                firstPartyHosts = emptyList(),
+                firstPartyHostsWithHeaderTypes = emptyMap(),
                 batchSize = BatchSize.MEDIUM,
                 uploadFrequency = UploadFrequency.AVERAGE,
                 proxy = null,
@@ -1307,7 +1308,8 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = hosts)
+            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHostsWithHeaderTypes =
+            hosts.associateWith { listOf(TracingHeaderType.DATADOG) })
         )
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
@@ -1339,7 +1341,7 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = hosts)
+            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHostsWithHeaderTypes = hosts.associateWith { listOf(TracingHeaderType.DATADOG) })
         )
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
@@ -1361,8 +1363,9 @@ internal class ConfigurationBuilderTest {
 
         // THEN
         assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHosts = hosts.map { URL(it).host })
-        )
+            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHostsWithHeaderTypes =
+            hosts.associate { URL(it).host to listOf(TracingHeaderType.DATADOG) }
+        ))
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)

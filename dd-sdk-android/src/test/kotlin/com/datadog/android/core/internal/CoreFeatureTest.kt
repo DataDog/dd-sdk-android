@@ -287,8 +287,8 @@ internal class CoreFeatureTest {
         )
 
         // Then
-        assertThat(testedFeature.firstPartyHostDetector.knownHosts)
-            .containsAll(fakeConfig.firstPartyHosts.map { it.lowercase(Locale.US) })
+        assertThat(testedFeature.firstPartyHostHeaderTypeResolver.knownHosts.keys)
+            .containsAll(fakeConfig.firstPartyHostsWithHeaderTypes.keys.map { it.lowercase(Locale.US) })
     }
 
     @Test
@@ -950,7 +950,7 @@ internal class CoreFeatureTest {
         testedFeature.stop()
 
         // Then
-        assertThat(testedFeature.firstPartyHostDetector.knownHosts)
+        assertThat(testedFeature.firstPartyHostHeaderTypeResolver.knownHosts)
             .isEmpty()
         assertThat(testedFeature.networkInfoProvider)
             .isInstanceOf(NoOpNetworkInfoProvider::class.java)

@@ -309,7 +309,7 @@ interface RumMonitor {
                         sdkCore = datadogCore,
                         eventSampler = RateBasedSampler(rumFeature.telemetrySamplingRate.percent())
                     ),
-                    firstPartyHostDetector = coreFeature.firstPartyHostDetector,
+                    firstPartyHostHeaderTypeResolver = coreFeature.firstPartyHostHeaderTypeResolver,
                     cpuVitalMonitor = rumFeature.cpuVitalMonitor,
                     memoryVitalMonitor = rumFeature.memoryVitalMonitor,
                     frameRateVitalMonitor = rumFeature.frameRateVitalMonitor,

@@ -8,7 +8,7 @@ package com.datadog.android
 
 import android.content.Context
 import android.util.Log
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.identifyRequest
 import com.datadog.android.core.internal.sampling.Sampler
 import com.datadog.android.rum.RumErrorSource
@@ -69,6 +69,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.*
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -96,7 +97,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     lateinit var mockRumAttributesProvider: RumResourceAttributesProvider
 
     @Mock
-    lateinit var mockDetector: FirstPartyHostDetector
+    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockSpanBuilder: DDTracer.DDSpanBuilder
@@ -154,9 +155,9 @@ internal class DatadogInterceptorWithoutTracesTest {
         fakeMediaType = MediaType.parse(mediaType)
         fakeRequest = forgeRequest(forge)
         testedInterceptor = DatadogInterceptor(
-            tracedHosts = emptyList(),
+            tracedHosts = emptyMap(),
             tracedRequestListener = mockRequestListener,
-            firstPartyHostDetector = mockDetector,
+            firstPartyHostResolver = mockResolver,
             rumResourceAttributesProvider = mockRumAttributesProvider,
             traceSampler = mockTraceSampler
         ) { mockLocalTracer }
@@ -203,7 +204,7 @@ internal class DatadogInterceptorWithoutTracesTest {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl,
+                fakeUrl.lowercase(Locale.US),
                 expectedStartAttrs
             )
             verify(rumMonitor.mockInstance).stopResource(
@@ -239,7 +240,7 @@ internal class DatadogInterceptorWithoutTracesTest {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl,
+                fakeUrl.lowercase(Locale.US),
                 expectedStartAttrs
             )
             verify(rumMonitor.mockInstance).stopResource(
@@ -273,13 +274,13 @@ internal class DatadogInterceptorWithoutTracesTest {
             verify(rumMonitor.mockInstance).startResource(
                 requestId,
                 fakeMethod,
-                fakeUrl,
+                fakeUrl.lowercase(Locale.US),
                 expectedStartAttrs
             )
             verify(rumMonitor.mockInstance).stopResourceWithError(
                 requestId,
                 null,
-                "OkHttp request error $fakeMethod $fakeUrl",
+                "OkHttp request error $fakeMethod ${fakeUrl.lowercase(Locale.US)}",
                 RumErrorSource.NETWORK,
                 throwable,
                 expectedStopAttrs
@@ -291,7 +292,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     fun `𝕄 create and drop a Span with info 𝕎 intercept() for successful request`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 
         val response = testedInterceptor.intercept(mockChain)
@@ -305,13 +306,13 @@ internal class DatadogInterceptorWithoutTracesTest {
     fun `𝕄 create and drop a span with info 𝕎 intercept() for failing request {4xx}`(
         @IntForgery(min = 400, max = 500) statusCode: Int
     ) {
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(DatadogInterceptor.ORIGIN_RUM)
-        verify(mockSpan as MutableSpan).setResourceName(fakeUrl)
+        verify(mockSpan as MutableSpan).setResourceName(fakeUrl.lowercase(Locale.US))
         verify(mockSpan as MutableSpan).setError(true)
         verify(mockSpan).drop()
         Assertions.assertThat(response).isSameAs(fakeResponse)
@@ -323,7 +324,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     ) {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
-        whenever(mockDetector.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         stubChain(mockChain, statusCode)
 
         // When

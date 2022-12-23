@@ -12,7 +12,7 @@ import android.util.Log
 import android.view.Display
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.resolveViewUrl
@@ -121,7 +121,7 @@ internal class RumViewScopeTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockDetector: FirstPartyHostDetector
+    lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
 
     @Mock
     lateinit var mockCpuVitalMonitor: VitalMonitor
@@ -264,7 +264,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -365,7 +365,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -476,7 +476,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -679,7 +679,7 @@ internal class RumViewScopeTest {
             name,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -736,7 +736,7 @@ internal class RumViewScopeTest {
             name,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -1287,7 +1287,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -1444,7 +1444,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -1535,7 +1535,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -3353,7 +3353,7 @@ internal class RumViewScopeTest {
         assertThat(resourceScope.method).isSameAs(method)
         assertThat(resourceScope.eventTimestamp)
             .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
-        assertThat(resourceScope.firstPartyHostDetector).isSameAs(mockDetector)
+        assertThat(resourceScope.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
     }
 
     @Test
@@ -3386,7 +3386,7 @@ internal class RumViewScopeTest {
         assertThat(resourceScope.method).isSameAs(method)
         assertThat(resourceScope.eventTimestamp)
             .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
-        assertThat(resourceScope.firstPartyHostDetector).isSameAs(mockDetector)
+        assertThat(resourceScope.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
     }
 
     @Test
@@ -5801,7 +5801,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -5894,7 +5894,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -5989,7 +5989,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -6084,7 +6084,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -6180,7 +6180,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -6276,7 +6276,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,
@@ -6796,7 +6796,7 @@ internal class RumViewScopeTest {
             fakeName,
             fakeEventTime,
             fakeAttributes,
-            mockDetector,
+            mockResolver,
             mockCpuVitalMonitor,
             mockMemoryVitalMonitor,
             mockFrameRateVitalMonitor,

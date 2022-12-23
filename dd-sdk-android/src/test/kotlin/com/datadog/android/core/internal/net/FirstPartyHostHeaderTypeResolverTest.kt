@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.net
 
+import com.datadog.android.tracing.TracingHeaderType
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -27,16 +28,16 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class FirstPartyHostDetectorTest {
+internal class FirstPartyHostHeaderTypeResolverTest {
 
-    lateinit var testedDetector: FirstPartyHostDetector
+    lateinit var testedDetector: FirstPartyHostHeaderTypeResolver
 
-    @StringForgery(regex = HOST_REGEX)
-    lateinit var fakeHosts: List<String>
+    lateinit var fakeHosts: Map<String, List<TracingHeaderType>>
 
     @BeforeEach
-    fun `set up`() {
-        testedDetector = FirstPartyHostDetector(fakeHosts)
+    fun `set up`(forge: Forge) {
+        fakeHosts = forge.aMap { forge.aStringMatching(HOST_REGEX) to listOf(TracingHeaderType.DATADOG) }
+        testedDetector = FirstPartyHostHeaderTypeResolver(fakeHosts)
     }
 
     @Test
@@ -66,7 +67,7 @@ internal class FirstPartyHostDetectorTest {
         forge: Forge
     ) {
         // Given
-        val host = forge.anElementFrom(fakeHosts)
+        val host = forge.anElementFrom(fakeHosts.keys)
         val url = HttpUrl.get("$scheme://$host$path")
 
         // When
@@ -103,7 +104,7 @@ internal class FirstPartyHostDetectorTest {
         forge: Forge
     ) {
         // Given
-        val host = forge.anElementFrom(fakeHosts)
+        val host = forge.anElementFrom(fakeHosts.keys)
         val url = HttpUrl.get("$scheme://$subdomain.$host$path")
 
         // When
@@ -121,7 +122,7 @@ internal class FirstPartyHostDetectorTest {
         forge: Forge
     ) {
         // Given
-        val host = forge.anElementFrom(fakeHosts)
+        val host = forge.anElementFrom(fakeHosts.keys)
         val url = HttpUrl.get("$scheme://$prefix$host$path")
 
         // When
@@ -139,7 +140,7 @@ internal class FirstPartyHostDetectorTest {
     ) {
         // Given
         var host = forge.aStringMatching(HOST_REGEX)
-        while (host in fakeHosts) {
+        while (host in fakeHosts.keys) {
             host = forge.aStringMatching(HOST_REGEX)
         }
         val url = "$scheme://$host$path"
@@ -158,7 +159,7 @@ internal class FirstPartyHostDetectorTest {
         forge: Forge
     ) {
         // Given
-        val host = forge.anElementFrom(fakeHosts)
+        val host = forge.anElementFrom(fakeHosts.keys)
         val url = "$scheme://$host$path"
 
         // When
@@ -176,7 +177,7 @@ internal class FirstPartyHostDetectorTest {
         forge: Forge
     ) {
         // Given
-        val host = forge.anElementFrom(fakeHosts)
+        val host = forge.anElementFrom(fakeHosts.keys)
         val url = "$scheme://$subdomain.$host$path"
 
         // When
@@ -215,7 +216,7 @@ internal class FirstPartyHostDetectorTest {
         val fakeNewAllowedHosts = forge.aList { forge.aStringMatching(HOST_REGEX) }
         val host = forge.anElementFrom(fakeNewAllowedHosts)
         val url = "$scheme://$host$path"
-        testedDetector = FirstPartyHostDetector(listOf("*"))
+        testedDetector = FirstPartyHostHeaderTypeResolver(mapOf("*" to emptyList()))
 
         // WHEN
         val result = testedDetector.isFirstPartyUrl(url)
@@ -234,7 +235,7 @@ internal class FirstPartyHostDetectorTest {
         val fakeNewAllowedHosts = forge.aList { forge.aStringMatching(HOST_REGEX) }
         val host = forge.anElementFrom(fakeNewAllowedHosts)
         val url = HttpUrl.get("$scheme://$host$path")
-        testedDetector = FirstPartyHostDetector(listOf("*"))
+        testedDetector = FirstPartyHostHeaderTypeResolver(mapOf("*" to emptyList()))
 
         // WHEN
         val result = testedDetector.isFirstPartyUrl(url)
@@ -251,7 +252,7 @@ internal class FirstPartyHostDetectorTest {
         forge: Forge
     ) {
         // Given
-        val host = forge.anElementFrom(fakeHosts)
+        val host = forge.anElementFrom(fakeHosts.keys)
         val url = "$scheme://$prefix$host$path"
 
         // When
@@ -275,7 +276,7 @@ internal class FirstPartyHostDetectorTest {
     @Test
     fun `𝕄 return true 𝕎 isEmpty() {empty host list}`() {
         // Given
-        val detector = FirstPartyHostDetector(emptyList())
+        val detector = FirstPartyHostHeaderTypeResolver(emptyMap())
 
         // When
         val result = detector.isEmpty()

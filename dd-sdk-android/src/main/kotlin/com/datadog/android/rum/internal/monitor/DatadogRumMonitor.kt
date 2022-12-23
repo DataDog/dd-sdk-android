@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.monitor
 import android.os.Handler
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.net.FirstPartyHostDetector
+import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumActionType
@@ -56,7 +56,7 @@ internal class DatadogRumMonitor(
     private val writer: DataWriter<Any>,
     internal val handler: Handler,
     internal val telemetryEventHandler: TelemetryEventHandler,
-    firstPartyHostDetector: FirstPartyHostDetector,
+    firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     cpuVitalMonitor: VitalMonitor,
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
@@ -71,7 +71,7 @@ internal class DatadogRumMonitor(
         samplingRate,
         backgroundTrackingEnabled,
         trackFrustrations,
-        firstPartyHostDetector,
+        firstPartyHostHeaderTypeResolver,
         cpuVitalMonitor,
         memoryVitalMonitor,
         frameRateVitalMonitor,
