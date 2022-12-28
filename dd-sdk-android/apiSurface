@@ -57,7 +57,6 @@ open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   override fun canSendSpan(): Boolean
-  companion object 
 enum com.datadog.android.DatadogSite
   constructor(String)
   - US1
@@ -119,7 +118,6 @@ data class com.datadog.android.core.configuration.Configuration
     fun setEncryption(com.datadog.android.security.Encryption): Builder
     fun setSessionReplayPrivacy(com.datadog.android.sessionreplay.SessionReplayPrivacy): Builder
     fun setVitalsUpdateFrequency(VitalsUpdateFrequency): Builder
-  companion object 
 data class com.datadog.android.core.configuration.Credentials
   constructor(String, String, String, String?, String? = null)
   companion object 
@@ -325,7 +323,6 @@ interface com.datadog.android.rum.RumMonitor
     fun sampleRumSessions(Float): Builder
     fun setSessionListener(RumSessionListener): Builder
     fun build(): RumMonitor
-    companion object 
 enum com.datadog.android.rum.RumPerformanceMetric
   - FLUTTER_BUILD_TIME
   - FLUTTER_RASTER_TIME
@@ -346,7 +343,6 @@ enum com.datadog.android.rum.RumResourceKind
   - CSS
   - MEDIA
   - OTHER
-  companion object 
 interface com.datadog.android.rum.RumSessionListener
   fun onSessionStarted(String, Boolean)
 class com.datadog.android.rum._RumInternalProxy
@@ -363,7 +359,6 @@ class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStr
   override fun mark(Int)
   override fun reset()
   override fun close()
-  companion object 
 open class com.datadog.android.rum.tracking.AcceptAllActivities : ComponentPredicate<android.app.Activity>
   override fun accept(android.app.Activity): Boolean
   override fun getViewName(android.app.Activity): String?
@@ -396,7 +391,6 @@ abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrateg
   override fun onActivityResumed(android.app.Activity)
   protected fun convertToRumAttributes(android.content.Intent?): Map<String, Any?>
   protected fun convertToRumAttributes(android.os.Bundle?): Map<String, Any?>
-  companion object 
 class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLifecycleTrackingStrategy, ViewTrackingStrategy
   constructor(Boolean, ComponentPredicate<android.app.Activity> = AcceptAllActivities())
   override fun onActivityCreated(android.app.Activity, android.os.Bundle?)
@@ -461,7 +455,6 @@ interface com.datadog.android.security.Encryption
 class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
   constructor(android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
   override fun onCorruption(android.database.sqlite.SQLiteDatabase)
-  companion object 
 class com.datadog.android.tracing.AndroidTracer : com.datadog.opentracing.DDTracer
   override fun buildSpan(String): DDSpanBuilder
   class Builder
@@ -481,7 +474,6 @@ open class com.datadog.android.tracing.TracingInterceptor : okhttp3.Interceptor
   constructor(TracedRequestListener = NoOpTracedRequestListener(), Float = DEFAULT_TRACE_SAMPLING_RATE)
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   protected open fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
-  companion object 
 interface com.datadog.android.v2.api.EventBatchWriter
   fun currentMetadata(): ByteArray?
   fun write(ByteArray, ByteArray?): Boolean

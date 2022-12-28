@@ -393,7 +393,7 @@ internal constructor(
 
     // endregion
 
-    companion object {
+    internal companion object {
         internal const val SPAN_NAME = "okhttp.request"
 
         internal const val RESOURCE_NAME_404 = "404"
