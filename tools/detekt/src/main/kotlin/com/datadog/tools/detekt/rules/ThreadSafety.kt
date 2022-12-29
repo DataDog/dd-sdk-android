@@ -18,9 +18,8 @@ import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
+import org.jetbrains.kotlin.resolve.calls.util.getResolvedCall
 import org.jetbrains.kotlin.types.SimpleType
-import org.jetbrains.kotlin.types.UnresolvedType
 
 /**
  * A rule to ensure thread safety is ensured.
@@ -110,7 +109,6 @@ class ThreadSafety : Rule() {
         return mapNotNull {
             val type = it.type
             when (type) {
-                is UnresolvedType -> type.presentableName.toMethodGroup()
                 is SimpleType -> {
                     val typeName = type.fqNameOrNull()?.shortName()?.asString()
                     if (typeName == null) {
