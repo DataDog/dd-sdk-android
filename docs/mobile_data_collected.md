@@ -213,6 +213,11 @@ Network errors include information about failing HTTP requests. The following fa
 
 Before data is uploaded to Datadog, it is stored in cleartext in your application's cache directory. This cache folder is protected by [Android's Application Sandbox][6], meaning that on most devices this data can't be read by other applications. However, if the mobile device is rooted, or someone tempers with the Linux kernel, the stored data might become readable.
 
+## Direct Boot mode support
+
+If your application supports [Direct Boot mode][7], please note that data captured before the device 
+is unlocked won't be captured, since the Credential encrypted storage won't be available yet.
+
 ## Further Reading
 
 {{< partial name="whats-next/whats-next.html" >}}
@@ -223,3 +228,4 @@ Before data is uploaded to Datadog, it is stored in cleartext in your applicatio
 [4]: https://docs.datadoghq.com/getting_started/tagging/unified_service_tagging/
 [5]: https://docs.datadoghq.com/real_user_monitoring/android/advanced_configuration/#track-user-sessions
 [6]: https://source.android.com/security/app-sandbox
+[7]: https://developer.android.com/training/articles/direct-boot
