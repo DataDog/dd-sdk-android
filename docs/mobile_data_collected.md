@@ -215,8 +215,8 @@ Before data is uploaded to Datadog, it is stored in cleartext in your applicatio
 
 ## Direct Boot mode support
 
-If your application supports [Direct Boot mode][7], please note that data captured before the device 
-is unlocked won't be captured, since the Credential encrypted storage won't be available yet.
+If your application supports [Direct Boot mode][7], note that data captured before the device 
+is unlocked won't be captured, since the credential encrypted storage won't be available yet.
 
 ## Further Reading
 
