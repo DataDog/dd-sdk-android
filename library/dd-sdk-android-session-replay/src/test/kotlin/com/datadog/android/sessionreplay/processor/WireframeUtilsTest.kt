@@ -22,7 +22,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import kotlin.math.abs
-import kotlin.math.max
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -178,7 +177,7 @@ internal class WireframeUtilsTest {
             bottom = fakeExpectedClipBottom
         )
 
-        val fakeRandomParents: List<MobileSegment.Wireframe> = forge.aList<MobileSegment.Wireframe> {
+        val fakeRandomParents: List<MobileSegment.Wireframe> = forge.aList {
             val aClipLeft = forge.aLong(min = -100, max = fakeExpectedClipLeft)
             val aClipTop = forge.aLong(min = -100, max = fakeExpectedClipTop)
             val aClipRight = forge.aLong(min = -100, max = fakeExpectedClipRight) - aClipLeft
@@ -737,9 +736,7 @@ internal class WireframeUtilsTest {
 
     private fun Forge.forgeNonTransparentShapeStyle(): MobileSegment.ShapeStyle {
         return MobileSegment.ShapeStyle(
-            backgroundColor = aNullable {
-                aStringMatching("#[0-9A-F]{6}FF")
-            },
+            backgroundColor = aStringMatching("#[0-9A-F]{6}FF"),
             opacity = 1f,
             cornerRadius = aPositiveLong()
         )
