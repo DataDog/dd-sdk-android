@@ -8,11 +8,20 @@ package com.datadog.android.sessionreplay
 
 import android.app.Activity
 import android.app.Application
+import android.view.Window
+import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks
 import com.datadog.android.sessionreplay.recorder.Recorder
+import com.datadog.android.sessionreplay.recorder.callback.RecorderFragmentLifecycleCallback
 import com.datadog.android.sessionreplay.utils.RumContextProvider
 import com.datadog.android.sessionreplay.utils.TimeProvider
+import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
+import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -52,8 +61,15 @@ class SessionReplayLifecycleCallbackTest {
     @Mock
     private lateinit var mockTimeProvider: TimeProvider
 
+    @Mock
+    private lateinit var mockActivity: Activity
+
+    @Mock
+    private lateinit var mockWindow: Window
+
     @BeforeEach
     fun `set up`() {
+        whenever(mockActivity.window).thenReturn(mockWindow)
         testedCallback = SessionReplayLifecycleCallback(
             mockRumContextProvider,
             fakePrivacy,
@@ -65,43 +81,63 @@ class SessionReplayLifecycleCallbackTest {
     }
 
     @Test
-    fun `M start recording activity W onActivityResumed()`() {
+    fun `M register fragment lifecycle W onActivityCreated(){FragmentActivity}`() {
         // Given
-        val mockActivity: Activity = mock()
+        val mockFragmentManager: FragmentManager = mock()
+        val mockFragmentActivity: FragmentActivity = mock {
+            whenever(it.supportFragmentManager).thenReturn(mockFragmentManager)
+        }
 
+        // When
+        testedCallback.onActivityCreated(mockFragmentActivity, mock())
+
+        // Then
+        val argumentCaptor = argumentCaptor<FragmentLifecycleCallbacks>()
+        verify(mockFragmentManager).registerFragmentLifecycleCallbacks(
+            argumentCaptor.capture(),
+            eq(true)
+        )
+        assertThat(argumentCaptor.firstValue)
+            .isInstanceOf(RecorderFragmentLifecycleCallback::class.java)
+    }
+
+    @Test
+    fun `M do nothing W onActivityCreated(){no FragmentActivity}`() {
+        // When
+        testedCallback.onActivityCreated(mockActivity, mock())
+
+        // Then
+        verifyZeroInteractions(mockActivity)
+    }
+
+    @Test
+    fun `M start recording activity W onActivityResumed()`() {
         // When
         testedCallback.onActivityResumed(mockActivity)
 
         // Then
-        verify(mockRecoder).startRecording(mockActivity)
-        assertThat(testedCallback.resumedActivities).containsKey(mockActivity)
+        verify(mockRecoder).startRecording(listOf(mockWindow), mockActivity)
     }
 
     @Test
     fun `M stop recording activity W onActivityPaused() { activity previously resumed }`() {
         // Given
-        val mockActivity: Activity = mock()
         testedCallback.onActivityResumed(mockActivity)
 
         // When
         testedCallback.onActivityPaused(mockActivity)
 
         // Then
-        verify(mockRecoder).stopRecording(mockActivity)
-        assertThat(testedCallback.resumedActivities).doesNotContainKey(mockActivity)
+        verify(mockRecoder).stopRecording(listOf(mockWindow))
     }
 
     @Test
     fun `M stop recording activity W onActivityPaused() { activity not previously resumed }`() {
-        // Given
-        val mockActivity: Activity = mock()
-
         // When
         testedCallback.onActivityPaused(mockActivity)
 
         // Then
-        verify(mockRecoder).stopRecording(mockActivity)
-        assertThat(testedCallback.resumedActivities).doesNotContainKey(mockActivity)
+        verify(mockRecoder).stopRecording(listOf(mockWindow))
     }
 
     @Test
@@ -132,8 +168,14 @@ class SessionReplayLifecycleCallbackTest {
     fun `M stop recording all resumed activities W unregisterAndStopRecorders()`() {
         // Given
         val mockApplication: Application = mock()
-        val mockActivity1: Activity = mock()
-        val mockActivity2: Activity = mock()
+        val mockWindow1: Window = mock()
+        val mockWindow2: Window = mock()
+        val mockActivity1: Activity = mock {
+            whenever(it.window).thenReturn(mockWindow1)
+        }
+        val mockActivity2: Activity = mock {
+            whenever(it.window).thenReturn(mockWindow2)
+        }
         testedCallback.onActivityResumed(mockActivity1)
         testedCallback.onActivityResumed(mockActivity2)
 
@@ -141,34 +183,6 @@ class SessionReplayLifecycleCallbackTest {
         testedCallback.unregisterAndStopRecorders(mockApplication)
 
         // Then
-        verify(mockRecoder).stopRecording(mockActivity1)
-        verify(mockRecoder).stopRecording(mockActivity2)
-        assertThat(testedCallback.resumedActivities).isEmpty()
-    }
-
-    @Test
-    fun `M notify the record callback W startedRecording`() {
-        // Given
-        val mockActivity: Activity = mock()
-
-        // When
-        testedCallback.onActivityResumed(mockActivity)
-
-        // Then
-        verify(mockRecoder).startRecording(mockActivity)
-        verify(mockRecordCallback).onStartRecording()
-    }
-
-    @Test
-    fun `M notify the record callback W stoppedRecording`() {
-        // Given
-        val mockActivity: Activity = mock()
-
-        // When
-        testedCallback.onActivityPaused(mockActivity)
-
-        // Then
-        verify(mockRecoder).stopRecording(mockActivity)
-        verify(mockRecordCallback).onStopRecording()
+        verify(mockRecoder).stopRecording()
     }
 }

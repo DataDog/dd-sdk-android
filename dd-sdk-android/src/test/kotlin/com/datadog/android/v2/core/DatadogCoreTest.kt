@@ -67,6 +67,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -159,6 +160,7 @@ internal class DatadogCoreTest {
     ) {
         // Given
         testedCore.coreFeature = mock()
+        whenever(testedCore.coreFeature.initialized).thenReturn(AtomicBoolean())
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
         whenever(testedCore.coreFeature.userInfoProvider) doReturn mockUserInfoProvider
 
@@ -360,6 +362,7 @@ internal class DatadogCoreTest {
     ) {
         // Given
         testedCore.coreFeature = mock()
+        whenever(testedCore.coreFeature.initialized).thenReturn(AtomicBoolean())
         val mockTimeProvider = mock<TimeProvider>()
         whenever(testedCore.coreFeature.timeProvider) doReturn mockTimeProvider
         whenever(mockTimeProvider.getServerOffsetNanos()) doReturn TimeUnit.MILLISECONDS.toNanos(
@@ -391,6 +394,7 @@ internal class DatadogCoreTest {
     fun `𝕄 provide time info without correction 𝕎 time() {NoOpTimeProvider}`() {
         // Given
         testedCore.coreFeature = mock()
+        whenever(testedCore.coreFeature.initialized).thenReturn(AtomicBoolean())
         whenever(testedCore.coreFeature.timeProvider) doReturn NoOpTimeProvider()
 
         // When

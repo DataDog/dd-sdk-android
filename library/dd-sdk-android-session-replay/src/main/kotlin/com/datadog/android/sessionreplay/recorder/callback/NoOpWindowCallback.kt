@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.recorder
+package com.datadog.android.sessionreplay.recorder.callback
 
 import android.view.ActionMode
 import android.view.KeyEvent

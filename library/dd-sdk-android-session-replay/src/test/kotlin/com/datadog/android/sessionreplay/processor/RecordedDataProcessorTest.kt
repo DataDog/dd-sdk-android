@@ -1,4 +1,4 @@
-/*
+ /*
  * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
@@ -39,7 +39,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.lang.NullPointerException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 import java.util.concurrent.RejectedExecutionException
@@ -104,10 +103,10 @@ internal class RecordedDataProcessorTest {
     @Test
     fun `M send to the writer as EnrichedRecord W process { snapshot }`(forge: Forge) {
         // Given
-        val fakeSnapshot = forge.aSingleLevelSnapshot()
+        val fakeSnapshots = forge.aList { aSingleLevelSnapshot() }
 
         // When
-        testedProcessor.processScreenSnapshot(fakeSnapshot)
+        testedProcessor.processScreenSnapshots(fakeSnapshots)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -123,14 +122,17 @@ internal class RecordedDataProcessorTest {
     @Test
     fun `M send FullSnapshot W process`(forge: Forge) {
         // Given
-        val fakeSnapshot = forge.aSingleLevelSnapshot()
-        val fakeFlattenedSnapshot = forge.aList {
-            getForgery(MobileSegment.Wireframe::class.java)
-        }
+        val fakeSnapshots = forge.aList { aSingleLevelSnapshot() }
+        val fakeFlattenedSnapshots = fakeSnapshots.map {
+            val fakeFlattenedSnapshot = forge.aList {
+                getForgery(MobileSegment.Wireframe::class.java)
+            }
+            whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
+            fakeFlattenedSnapshot
+        }.flatten()
 
         // When
-        whenever(mockNodeFlattener.flattenNode(fakeSnapshot)).thenReturn(fakeFlattenedSnapshot)
-        testedProcessor.processScreenSnapshot(fakeSnapshot)
+        testedProcessor.processScreenSnapshots(fakeSnapshots)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -139,7 +141,7 @@ internal class RecordedDataProcessorTest {
         val fullSnapshotRecord = captor.firstValue.records[2]
             as MobileSegment.MobileRecord.MobileFullSnapshotRecord
         assertThat(fullSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
-        assertThat(fullSnapshotRecord.data.wireframes).isEqualTo(fakeFlattenedSnapshot)
+        assertThat(fullSnapshotRecord.data.wireframes).isEqualTo(fakeFlattenedSnapshots)
     }
 
     @Test
@@ -149,22 +151,24 @@ internal class RecordedDataProcessorTest {
         whenever(mockRumContextProvider.getRumContext())
             .thenReturn(fakeRumContext)
             .thenReturn(fakeRumContext2)
-        val fakeSnapshotView1 = forge.aSingleLevelSnapshot()
-        val fakeSnapshotView2 = forge.aSingleLevelSnapshot()
-        val fakeFlattenedSnapshotView1 = forge.aList {
-            getForgery(MobileSegment.Wireframe::class.java)
+        val fakeSnapshotView1 = forge.aList { aSingleLevelSnapshot() }
+        val fakeSnapshotView2 = forge.aList { aSingleLevelSnapshot() }
+        fakeSnapshotView1.forEach {
+            val fakeFlattenedSnapshot = forge.aList {
+                getForgery(MobileSegment.Wireframe::class.java)
+            }
+            whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
         }
-        val fakeFlattenedSnapshotView2 = forge.aList {
-            getForgery(MobileSegment.Wireframe::class.java)
+        fakeSnapshotView2.forEach {
+            val fakeFlattenedSnapshot = forge.aList {
+                getForgery(MobileSegment.Wireframe::class.java)
+            }
+            whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
         }
-        whenever(mockNodeFlattener.flattenNode(fakeSnapshotView1))
-            .thenReturn(fakeFlattenedSnapshotView1)
-        whenever(mockNodeFlattener.flattenNode(fakeSnapshotView2))
-            .thenReturn(fakeFlattenedSnapshotView2)
 
         // When
-        testedProcessor.processScreenSnapshot(fakeSnapshotView1)
-        testedProcessor.processScreenSnapshot(fakeSnapshotView2)
+        testedProcessor.processScreenSnapshots(fakeSnapshotView1)
+        testedProcessor.processScreenSnapshots(fakeSnapshotView2)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -191,21 +195,27 @@ internal class RecordedDataProcessorTest {
         forge: Forge
     ) {
         // Given
-        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
-        val fakeSnapshot2 = forge.aSingleLevelSnapshot()
-        val fakeFlattenedSnapshot1 = forge.aList {
-            getForgery(MobileSegment.Wireframe::class.java)
+        val fakeSnapshot1 = forge.aList { aSingleLevelSnapshot() }
+        val fakeSnapshot2 = forge.aList { aSingleLevelSnapshot() }
+        fakeSnapshot1.map {
+            val fakeFlattenedSnapshot = forge.aList {
+                getForgery(MobileSegment.Wireframe::class.java)
+            }
+            whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
+            fakeFlattenedSnapshot
         }
-        val fakeFlattenedSnapshot2 = forge.aList {
-            getForgery(MobileSegment.Wireframe::class.java)
-        }
-        whenever(mockNodeFlattener.flattenNode(fakeSnapshot1)).thenReturn(fakeFlattenedSnapshot1)
-        whenever(mockNodeFlattener.flattenNode(fakeSnapshot2)).thenReturn(fakeFlattenedSnapshot2)
-        testedProcessor.processScreenSnapshot(fakeSnapshot1)
+        val fakeFlattenedSnapshot2 = fakeSnapshot2.map {
+            val fakeFlattenedSnapshot = forge.aList {
+                getForgery(MobileSegment.Wireframe::class.java)
+            }
+            whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
+            fakeFlattenedSnapshot
+        }.flatten()
+        testedProcessor.processScreenSnapshots(fakeSnapshot1)
         Thread.sleep(TimeUnit.NANOSECONDS.toMillis(RecordedDataProcessor.FULL_SNAPSHOT_INTERVAL_IN_NS))
 
         // When
-        testedProcessor.processScreenSnapshot(fakeSnapshot2)
+        testedProcessor.processScreenSnapshots(fakeSnapshot2)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -221,28 +231,34 @@ internal class RecordedDataProcessorTest {
         forge: Forge
     ) {
         // Given
-        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
-        val fakeSnapshot2 = forge.aSingleLevelSnapshot()
-        val fakeFlattenedSnapshot1 = forge.aList {
-            getForgery(MobileSegment.Wireframe::class.java)
-        }
-        val fakeFlattenedSnapshot2 = forge.aList {
-            getForgery(MobileSegment.Wireframe::class.java)
-        }
+        val fakeSnapshot1 = forge.aList { aSingleLevelSnapshot() }
+        val fakeSnapshot2 = forge.aList { aSingleLevelSnapshot() }
+        val fakeFlattenedSnapshot1 = fakeSnapshot1.map {
+            val fakeFlattenedSnapshot = forge.aList {
+                getForgery(MobileSegment.Wireframe::class.java)
+            }
+            whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
+            fakeFlattenedSnapshot
+        }.flatten()
+        val fakeFlattenedSnapshot2 = fakeSnapshot2.map {
+            val fakeFlattenedSnapshot = forge.aList {
+                getForgery(MobileSegment.Wireframe::class.java)
+            }
+            whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
+            fakeFlattenedSnapshot
+        }.flatten()
         val fakeMutationData: MobileSegment.MobileIncrementalData.MobileMutationData =
             forge.getForgery()
-        whenever(mockNodeFlattener.flattenNode(fakeSnapshot1)).thenReturn(fakeFlattenedSnapshot1)
-        whenever(mockNodeFlattener.flattenNode(fakeSnapshot2)).thenReturn(fakeFlattenedSnapshot2)
         whenever(
             mockMutationResolver.resolveMutations(
                 fakeFlattenedSnapshot1,
                 fakeFlattenedSnapshot2
             )
         ).thenReturn(fakeMutationData)
-        testedProcessor.processScreenSnapshot(fakeSnapshot1)
+        testedProcessor.processScreenSnapshots(fakeSnapshot1)
 
         // When
-        testedProcessor.processScreenSnapshot(fakeSnapshot2)
+        testedProcessor.processScreenSnapshots(fakeSnapshot2)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -265,11 +281,11 @@ internal class RecordedDataProcessorTest {
             fakeRootWidth,
             fakeRootHeight
         )
-        val fakeSnapshot = Node(wireframe = rootWireframe)
-        whenever(mockNodeFlattener.flattenNode(fakeSnapshot)).thenReturn(listOf(rootWireframe))
+        val fakeSnapshots = listOf(Node(wireframe = rootWireframe))
+        whenever(mockNodeFlattener.flattenNode(fakeSnapshots[0])).thenReturn(listOf(rootWireframe))
 
         // When
-        testedProcessor.processScreenSnapshot(fakeSnapshot)
+        testedProcessor.processScreenSnapshots(fakeSnapshots)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -286,19 +302,21 @@ internal class RecordedDataProcessorTest {
         // Given
         val fakeRootWidth = forge.aLong(min = 400)
         val fakeRootHeight = forge.aLong(min = 700)
-        val fakeSnapshot = Node(
-            wireframe =
-            MobileSegment.Wireframe.ShapeWireframe(
-                0,
-                0,
-                0,
-                fakeRootWidth,
-                fakeRootHeight
+        val fakeSnapshots = listOf(
+            Node(
+                wireframe =
+                MobileSegment.Wireframe.ShapeWireframe(
+                    0,
+                    0,
+                    0,
+                    fakeRootWidth,
+                    fakeRootHeight
+                )
             )
         )
 
         // When
-        testedProcessor.processScreenSnapshot(fakeSnapshot)
+        testedProcessor.processScreenSnapshots(fakeSnapshots)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -312,12 +330,13 @@ internal class RecordedDataProcessorTest {
     @Test
     fun `M not send MetaRecord W process { snapshot 2 on same view }`(forge: Forge) {
         // Given
-        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
-        val fakeSnapshot2 = forge.aSingleLevelSnapshot()
-        testedProcessor.processScreenSnapshot(fakeSnapshot1)
+        val fakeSnapshot1 = forge.aList { aSingleLevelSnapshot() }
+        val fakeSnapshot2 = forge.aList { aSingleLevelSnapshot() }
+
+        testedProcessor.processScreenSnapshots(fakeSnapshot1)
 
         // When
-        testedProcessor.processScreenSnapshot(fakeSnapshot2)
+        testedProcessor.processScreenSnapshots(fakeSnapshot2)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -332,12 +351,12 @@ internal class RecordedDataProcessorTest {
     @Test
     fun `M not send FocusRecord W process { snapshot 2 on same view }`(forge: Forge) {
         // Given
-        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
-        val fakeSnapshot2 = forge.aSingleLevelSnapshot()
-        testedProcessor.processScreenSnapshot(fakeSnapshot1)
+        val fakeSnapshot1 = forge.aList { aSingleLevelSnapshot() }
+        val fakeSnapshot2 = forge.aList { aSingleLevelSnapshot() }
+        testedProcessor.processScreenSnapshots(fakeSnapshot1)
 
         // When
-        testedProcessor.processScreenSnapshot(fakeSnapshot2)
+        testedProcessor.processScreenSnapshots(fakeSnapshot2)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -354,8 +373,8 @@ internal class RecordedDataProcessorTest {
         // Given
         val fakeRootWidth = forge.aLong(min = 400)
         val fakeRootHeight = forge.aLong(min = 700)
-        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
-        val fakeSnapshot2 = forge.aSingleLevelSnapshot()
+        val fakeSnapshot1 = listOf(forge.aSingleLevelSnapshot())
+        val fakeSnapshot2 = listOf(forge.aSingleLevelSnapshot())
         val rootWireframe = MobileSegment.Wireframe.ShapeWireframe(
             0,
             0,
@@ -363,15 +382,15 @@ internal class RecordedDataProcessorTest {
             fakeRootWidth,
             fakeRootHeight
         )
-        val fakeSnapshot3 = Node(rootWireframe)
-        whenever(mockNodeFlattener.flattenNode(fakeSnapshot3)).thenReturn(listOf(rootWireframe))
+        val fakeSnapshot3 = listOf(Node(rootWireframe))
+        whenever(mockNodeFlattener.flattenNode(fakeSnapshot3[0])).thenReturn(listOf(rootWireframe))
 
-        testedProcessor.processScreenSnapshot(fakeSnapshot1)
-        testedProcessor.processScreenSnapshot(fakeSnapshot2)
+        testedProcessor.processScreenSnapshots(fakeSnapshot1)
+        testedProcessor.processScreenSnapshots(fakeSnapshot2)
         whenever(mockRumContextProvider.getRumContext()).thenReturn(forge.getForgery())
 
         // When
-        testedProcessor.processScreenSnapshot(fakeSnapshot3)
+        testedProcessor.processScreenSnapshots(fakeSnapshot3)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -386,15 +405,15 @@ internal class RecordedDataProcessorTest {
     @Test
     fun `M send FocusRecord W process { snapshot 3 on new view }`(forge: Forge) {
         // Given
-        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
-        val fakeSnapshot2 = forge.aSingleLevelSnapshot()
-        val fakeSnapshot3 = forge.aSingleLevelSnapshot()
-        testedProcessor.processScreenSnapshot(fakeSnapshot1)
-        testedProcessor.processScreenSnapshot(fakeSnapshot2)
+        val fakeSnapshot1 = listOf(forge.aSingleLevelSnapshot())
+        val fakeSnapshot2 = listOf(forge.aSingleLevelSnapshot())
+        val fakeSnapshot3 = listOf(forge.aSingleLevelSnapshot())
+        testedProcessor.processScreenSnapshots(fakeSnapshot1)
+        testedProcessor.processScreenSnapshots(fakeSnapshot2)
         whenever(mockRumContextProvider.getRumContext()).thenReturn(forge.getForgery())
 
         // When
-        testedProcessor.processScreenSnapshot(fakeSnapshot3)
+        testedProcessor.processScreenSnapshots(fakeSnapshot3)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -408,15 +427,15 @@ internal class RecordedDataProcessorTest {
     @Test
     fun `M send ViewEndRecord on prev view W process { snapshot 3 on new view }`(forge: Forge) {
         // Given
-        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
-        val fakeSnapshot2 = forge.aSingleLevelSnapshot()
-        val fakeSnapshot3 = forge.aSingleLevelSnapshot()
-        testedProcessor.processScreenSnapshot(fakeSnapshot1)
-        testedProcessor.processScreenSnapshot(fakeSnapshot2)
+        val fakeSnapshot1 = listOf(forge.aSingleLevelSnapshot())
+        val fakeSnapshot2 = listOf(forge.aSingleLevelSnapshot())
+        val fakeSnapshot3 = listOf(forge.aSingleLevelSnapshot())
+        testedProcessor.processScreenSnapshots(fakeSnapshot1)
+        testedProcessor.processScreenSnapshots(fakeSnapshot2)
         whenever(mockRumContextProvider.getRumContext()).thenReturn(forge.getForgery())
 
         // When
-        testedProcessor.processScreenSnapshot(fakeSnapshot3)
+        testedProcessor.processScreenSnapshots(fakeSnapshot3)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -438,28 +457,34 @@ internal class RecordedDataProcessorTest {
         forge: Forge
     ) {
         // Given
-        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
-        val fakeSnapshot2 = forge.aSingleLevelSnapshot()
-        val fakeFlattenedSnapshot1 = forge.aList {
-            getForgery(MobileSegment.Wireframe::class.java)
-        }
-        val fakeFlattenedSnapshot2 = forge.aList {
-            getForgery(MobileSegment.Wireframe::class.java)
-        }
+        val fakeSnapshot1 = forge.aList { aSingleLevelSnapshot() }
+        val fakeSnapshot2 = forge.aList { aSingleLevelSnapshot() }
+        val fakeFlattenedSnapshot1 = fakeSnapshot1.map {
+            val fakeFlattenedSnapshot = forge.aList {
+                getForgery(MobileSegment.Wireframe::class.java)
+            }
+            whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
+            fakeFlattenedSnapshot
+        }.flatten()
+        val fakeFlattenedSnapshot2 = fakeSnapshot2.map {
+            val fakeFlattenedSnapshot = forge.aList {
+                getForgery(MobileSegment.Wireframe::class.java)
+            }
+            whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
+            fakeFlattenedSnapshot
+        }.flatten()
         val fakeMutationData: MobileSegment.MobileIncrementalData.MobileMutationData =
             forge.getForgery()
-        whenever(mockNodeFlattener.flattenNode(fakeSnapshot1)).thenReturn(fakeFlattenedSnapshot1)
-        whenever(mockNodeFlattener.flattenNode(fakeSnapshot2)).thenReturn(fakeFlattenedSnapshot2)
         whenever(
             mockMutationResolver.resolveMutations(
                 fakeFlattenedSnapshot1,
                 fakeFlattenedSnapshot2
             )
         ).thenReturn(fakeMutationData)
-        testedProcessor.processScreenSnapshot(fakeSnapshot1)
+        testedProcessor.processScreenSnapshots(fakeSnapshot1)
 
         // When
-        testedProcessor.processScreenSnapshot(fakeSnapshot2)
+        testedProcessor.processScreenSnapshots(fakeSnapshot2)
 
         // Then
         val captor = argumentCaptor<EnrichedRecord>()
@@ -474,24 +499,32 @@ internal class RecordedDataProcessorTest {
     @Test
     fun `M do nothing W process { no mutation was detected }`(forge: Forge) {
         // Given
-        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
-        val fakeSnapshot2 = fakeSnapshot1.copy()
-        val fakeFlattenedSnapshot1 = forge.aList {
-            getForgery(MobileSegment.Wireframe::class.java)
-        }
-        val fakeFlattenedSnapshot2 = ArrayList(fakeFlattenedSnapshot1)
-        whenever(mockNodeFlattener.flattenNode(fakeSnapshot1)).thenReturn(fakeFlattenedSnapshot1)
-        whenever(mockNodeFlattener.flattenNode(fakeSnapshot2)).thenReturn(fakeFlattenedSnapshot2)
+        val fakeSnapshot1 = forge.aList { aSingleLevelSnapshot() }
+        val fakeSnapshot2 = forge.aList { aSingleLevelSnapshot() }
+        val fakeFlattenedSnapshot1 = fakeSnapshot1.map {
+            val fakeFlattenedSnapshot = forge.aList {
+                getForgery(MobileSegment.Wireframe::class.java)
+            }
+            whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
+            fakeFlattenedSnapshot
+        }.flatten()
+        val fakeFlattenedSnapshot2 = fakeSnapshot2.map {
+            val fakeFlattenedSnapshot = forge.aList {
+                getForgery(MobileSegment.Wireframe::class.java)
+            }
+            whenever(mockNodeFlattener.flattenNode(it)).thenReturn(fakeFlattenedSnapshot)
+            fakeFlattenedSnapshot
+        }.flatten()
         whenever(
             mockMutationResolver.resolveMutations(
                 fakeFlattenedSnapshot1,
                 fakeFlattenedSnapshot2
             )
         ).thenReturn(null)
-        testedProcessor.processScreenSnapshot(fakeSnapshot1)
+        testedProcessor.processScreenSnapshots(fakeSnapshot1)
 
         // When
-        testedProcessor.processScreenSnapshot(fakeSnapshot2)
+        testedProcessor.processScreenSnapshots(fakeSnapshot2)
 
         // Then
         // We should only send the FullSnapshotRecord. The IncrementalSnapshotRecord will not be
@@ -534,11 +567,11 @@ internal class RecordedDataProcessorTest {
     @Test
     fun `M send it to the writer as EnrichedRecord W process { OrientationChanged }`(forge: Forge) {
         // Given
-        val fakeSnapshot = forge.aSingleLevelSnapshot()
+        val fakeSnapshot = forge.aList { forge.aSingleLevelSnapshot() }
         val fakeOrientationChanged = OrientationChanged(forge.anInt(), forge.anInt())
 
         // When
-        testedProcessor.processScreenSnapshot(fakeSnapshot, fakeOrientationChanged)
+        testedProcessor.processScreenSnapshots(fakeSnapshot, fakeOrientationChanged)
 
         // Then
 
@@ -559,14 +592,14 @@ internal class RecordedDataProcessorTest {
     @Test
     fun `M always send a FullSnapshot W process {OrientationChanged}`(forge: Forge) {
         // Given
-        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
-        val fakeSnapshot2 = forge.aSingleLevelSnapshot()
+        val fakeSnapshot1 = forge.aList { aSingleLevelSnapshot() }
+        val fakeSnapshot2 = forge.aList { aSingleLevelSnapshot() }
         val fakeOrientationChanged1 = OrientationChanged(forge.anInt(), forge.anInt())
         val fakeOrientationChanged2 = OrientationChanged(forge.anInt(), forge.anInt())
 
         // When
-        testedProcessor.processScreenSnapshot(fakeSnapshot1, fakeOrientationChanged1)
-        testedProcessor.processScreenSnapshot(fakeSnapshot2, fakeOrientationChanged2)
+        testedProcessor.processScreenSnapshots(fakeSnapshot1, fakeOrientationChanged1)
+        testedProcessor.processScreenSnapshots(fakeSnapshot2, fakeOrientationChanged2)
 
         // Then
 
@@ -596,14 +629,14 @@ internal class RecordedDataProcessorTest {
         whenever(mockRumContextProvider.getRumContext())
             .thenReturn(fakeRumContext)
             .thenReturn(fakeRumContext2)
-        val fakeSnapshot1 = forge.aSingleLevelSnapshot()
-        val fakeSnapshot2 = forge.aSingleLevelSnapshot()
+        val fakeSnapshot1 = forge.aList { aSingleLevelSnapshot() }
+        val fakeSnapshot2 = forge.aList { aSingleLevelSnapshot() }
         val fakeOrientationChanged1 = OrientationChanged(forge.anInt(), forge.anInt())
         val fakeOrientationChanged2 = OrientationChanged(forge.anInt(), forge.anInt())
 
         // When
-        testedProcessor.processScreenSnapshot(fakeSnapshot1, fakeOrientationChanged1)
-        testedProcessor.processScreenSnapshot(fakeSnapshot2, fakeOrientationChanged2)
+        testedProcessor.processScreenSnapshots(fakeSnapshot1, fakeOrientationChanged1)
+        testedProcessor.processScreenSnapshots(fakeSnapshot2, fakeOrientationChanged2)
 
         // Then
 
@@ -697,17 +730,15 @@ internal class RecordedDataProcessorTest {
 
     private fun processArgument(argument: Any) {
         when (argument) {
-            is Node -> {
-                testedProcessor.processScreenSnapshot(argument)
-            }
             is List<*> -> {
                 val records = argument.filterIsInstance<MobileSegment.MobileRecord>()
                 testedProcessor.processTouchEventsRecords(records)
             }
             is Pair<*, *> -> {
-                testedProcessor.processScreenSnapshot(
-                    argument.first as Node,
-                    argument.second as OrientationChanged
+                @Suppress("UNCHECKED_CAST", "CastToNullableType")
+                testedProcessor.processScreenSnapshots(
+                    argument.first as List<Node>,
+                    argument.second as OrientationChanged?
                 )
             }
             else -> fail(
@@ -749,20 +780,15 @@ internal class RecordedDataProcessorTest {
 
         @JvmStatic
         fun processorArguments(): List<Any> {
-            val fakeSnapshot = Node(wireframe = FORGE.getForgery())
+            val fakeSnapshots = FORGE.aList { Node(wireframe = FORGE.getForgery()) }
             val fakeTouchRecords = FORGE.aList {
                 FORGE.getForgery<MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord>()
             }
-            val fakeSnapshotWithOrientationChanged =
-                Pair(
-                    fakeSnapshot,
-                    OrientationChanged(
-                        FORGE.aPositiveInt(),
-                        FORGE.aPositiveInt()
-                    )
-                )
-
-            return listOf(fakeSnapshot, fakeTouchRecords, fakeSnapshotWithOrientationChanged)
+            return listOf(
+                fakeSnapshots to null,
+                fakeTouchRecords,
+                fakeSnapshots to OrientationChanged(FORGE.aPositiveInt(), FORGE.aPositiveInt())
+            )
         }
     }
 }

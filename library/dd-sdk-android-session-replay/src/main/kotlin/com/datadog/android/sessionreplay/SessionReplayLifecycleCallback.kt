@@ -9,13 +9,14 @@ package com.datadog.android.sessionreplay
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import androidx.fragment.app.FragmentActivity
 import com.datadog.android.sessionreplay.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.recorder.Recorder
 import com.datadog.android.sessionreplay.recorder.ScreenRecorder
 import com.datadog.android.sessionreplay.recorder.SnapshotProducer
+import com.datadog.android.sessionreplay.recorder.callback.RecorderFragmentLifecycleCallback
 import com.datadog.android.sessionreplay.utils.RumContextProvider
 import com.datadog.android.sessionreplay.utils.TimeProvider
-import java.util.WeakHashMap
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -29,7 +30,7 @@ class SessionReplayLifecycleCallback(
     privacy: SessionReplayPrivacy,
     recordWriter: RecordWriter,
     timeProvider: TimeProvider,
-    private val recordCallback: RecordCallback = NoOpRecordCallback()
+    recordCallback: RecordCallback = NoOpRecordCallback()
 ) : LifecycleCallback {
 
     @Suppress("UnsafeThirdPartyFunctionCall") // workQueue can't be null
@@ -48,14 +49,20 @@ class SessionReplayLifecycleCallback(
             recordWriter
         ),
         SnapshotProducer(privacy.mapper()),
-        timeProvider
+        timeProvider,
+        recordCallback
     )
-    internal val resumedActivities: WeakHashMap<Activity, Any?> = WeakHashMap()
 
     // region callback
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         // No Op
+        if (activity is FragmentActivity) {
+            activity.supportFragmentManager.registerFragmentLifecycleCallbacks(
+                RecorderFragmentLifecycleCallback(recorder),
+                true
+            )
+        }
     }
 
     override fun onActivityStarted(activity: Activity) {
@@ -63,15 +70,15 @@ class SessionReplayLifecycleCallback(
     }
 
     override fun onActivityResumed(activity: Activity) {
-        recorder.startRecording(activity)
-        recordCallback.onStartRecording()
-        resumedActivities[activity] = null
+        activity.window?.let {
+            recorder.startRecording(listOf(it), activity)
+        }
     }
 
     override fun onActivityPaused(activity: Activity) {
-        recorder.stopRecording(activity)
-        recordCallback.onStopRecording()
-        resumedActivities.remove(activity)
+        activity.window?.let {
+            recorder.stopRecording(listOf(it))
+        }
     }
 
     override fun onActivityStopped(activity: Activity) {
@@ -96,12 +103,7 @@ class SessionReplayLifecycleCallback(
 
     override fun unregisterAndStopRecorders(appContext: Application) {
         appContext.unregisterActivityLifecycleCallbacks(this)
-        resumedActivities.keys.forEach {
-            it?.let { activity ->
-                recorder.stopRecording(activity)
-            }
-        }
-        resumedActivities.clear()
+        recorder.stopRecording()
     }
 
     // endregion

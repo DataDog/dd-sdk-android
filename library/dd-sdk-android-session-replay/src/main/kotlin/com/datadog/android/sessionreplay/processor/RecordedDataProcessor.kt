@@ -36,11 +36,20 @@ internal class RecordedDataProcessor(
     private var lastSnapshotTimestamp = 0L
 
     @MainThread
-    override fun processScreenSnapshot(node: Node, orientationChanged: OrientationChanged?) {
+    override fun processScreenSnapshots(
+        nodes: List<Node>,
+        orientationChanged: OrientationChanged?
+    ) {
         buildRunnable { timestamp, newContext, currentContext ->
             Runnable {
                 @Suppress("ThreadSafety") // this runs inside an executor
-                handleSnapshot(newContext, currentContext, timestamp, node, orientationChanged)
+                handleSnapshots(
+                    newContext,
+                    currentContext,
+                    timestamp,
+                    nodes,
+                    orientationChanged
+                )
             }
         }?.let { executeRunnable(it) }
     }
@@ -67,14 +76,14 @@ internal class RecordedDataProcessor(
     }
 
     @WorkerThread
-    private fun handleSnapshot(
+    private fun handleSnapshots(
         newRumContext: SessionReplayRumContext,
         prevRumContext: SessionReplayRumContext,
         timestamp: Long,
-        snapshot: Node,
+        snapshots: List<Node>,
         orientationChanged: OrientationChanged?
     ) {
-        val wireframes = nodeFlattener.flattenNode(snapshot)
+        val wireframes = snapshots.flatMap { nodeFlattener.flattenNode(it) }
 
         if (wireframes.isEmpty()) {
             // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added

@@ -1,10 +1,10 @@
 /*
- * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
- * This product includes software developed at Datadog (https://www.datadoghq.com/).
- * Copyright 2016-Present Datadog, Inc.
- */
+* Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+* This product includes software developed at Datadog (https://www.datadoghq.com/).
+* Copyright 2016-Present Datadog, Inc.
+*/
 
-package com.datadog.android.sessionreplay.recorder
+package com.datadog.android.sessionreplay.recorder.callback
 
 import android.view.MotionEvent
 import android.view.Window
@@ -16,9 +16,7 @@ import com.datadog.android.sessionreplay.utils.ForgeConfigurator
 import com.datadog.android.sessionreplay.utils.TimeProvider
 import com.datadog.tools.unit.forge.aThrowable
 import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
@@ -68,6 +66,9 @@ internal class RecorderWindowCallbackTest {
     @IntForgery(min = 1, max = 10)
     var fakeDensity: Int = 1
 
+    @Mock
+    lateinit var mockEventUtils: MotionEventUtils
+
     @BeforeEach
     fun `set up`() {
         whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeTimestamp)
@@ -77,6 +78,7 @@ internal class RecorderWindowCallbackTest {
             mockWrappedCallback,
             mockTimeProvider,
             copyEvent = { it },
+            mockEventUtils,
             TEST_MOTION_UPDATE_DELAY_THRESHOLD_NS,
             TEST_FLUSH_BUFFER_THRESHOLD_NS
         )
@@ -338,17 +340,21 @@ internal class RecorderWindowCallbackTest {
         List<MobileRecord.MobileIncrementalSnapshotRecord> {
         val pointerIds = aList { anInt(min = 1) }
         val positionMaxValue = (FLOAT_MAX_INT_VALUE / fakeDensity).toLong()
-        return pointerIds.map {
-            MobileSegment.MobileIncrementalData.PointerInteractionData(
-                eventType,
-                MobileSegment.PointerType.TOUCH,
-                it.toLong(),
-                aLong(min = 0, max = positionMaxValue),
-                aLong(min = 0, max = positionMaxValue)
-            )
-        }
+        return pointerIds
             .map {
-                MobileRecord.MobileIncrementalSnapshotRecord(timestamp = fakeTimestamp, data = it)
+                MobileIncrementalData.PointerInteractionData(
+                    eventType,
+                    MobileSegment.PointerType.TOUCH,
+                    it.toLong(),
+                    aLong(min = 0, max = positionMaxValue),
+                    aLong(min = 0, max = positionMaxValue)
+                )
+            }
+            .map {
+                MobileRecord.MobileIncrementalSnapshotRecord(
+                    timestamp = fakeTimestamp,
+                    data = it
+                )
             }
     }
 
@@ -364,15 +370,12 @@ internal class RecorderWindowCallbackTest {
             whenever(mockMotionEvent.getPointerId(index)).thenReturn(pointerId)
             val motionEventAction = pointerInteractionData.pointerEventType.asMotionEventAction()
             whenever(mockMotionEvent.action).thenReturn(motionEventAction)
-            doAnswer {
-                val coords = it.arguments[1] as MotionEvent.PointerCoords
-                coords.x = (pointerInteractionData.x.toInt() * fakeDensity).toFloat()
-                coords.y = (pointerInteractionData.y.toInt() * fakeDensity).toFloat()
-                null
-            }.whenever(mockMotionEvent).getPointerCoords(
-                eq(index),
-                com.nhaarman.mockitokotlin2.any()
-            )
+            val expectedXPos = (pointerInteractionData.x.toInt() * fakeDensity).toFloat()
+            val expectedYPos = (pointerInteractionData.y.toInt() * fakeDensity).toFloat()
+            whenever(mockEventUtils.getPointerAbsoluteX(mockMotionEvent, index))
+                .thenReturn(expectedXPos)
+            whenever(mockEventUtils.getPointerAbsoluteY(mockMotionEvent, index))
+                .thenReturn(expectedYPos)
         }
 
         return mockMotionEvent
