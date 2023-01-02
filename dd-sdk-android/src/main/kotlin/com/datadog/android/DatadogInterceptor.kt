@@ -285,7 +285,7 @@ internal constructor(
 
     // endregion
 
-    companion object {
+    internal companion object {
 
         internal const val WARN_RUM_DISABLED =
             "You set up a DatadogInterceptor, but RUM features are disabled." +

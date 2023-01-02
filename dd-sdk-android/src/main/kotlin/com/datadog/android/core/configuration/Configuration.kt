@@ -708,7 +708,7 @@ internal constructor(
 
     // endregion
 
-    companion object {
+    internal companion object {
         internal const val DEFAULT_SAMPLING_RATE: Float = 100f
         internal const val DEFAULT_TELEMETRY_SAMPLING_RATE: Float = 20f
         internal const val DEFAULT_LONG_TASK_THRESHOLD_MS = 100L

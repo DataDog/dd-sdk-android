@@ -128,7 +128,7 @@ abstract class ActivityLifecycleTrackingStrategy :
 
     // endregion
 
-    companion object {
+    internal companion object {
         internal const val ARGUMENT_TAG = "view.arguments"
         internal const val INTENT_ACTION_TAG = "view.intent.action"
         internal const val INTENT_URI_TAG = "view.intent.uri"

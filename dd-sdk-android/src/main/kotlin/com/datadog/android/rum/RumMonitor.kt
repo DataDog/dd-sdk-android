@@ -328,7 +328,7 @@ interface RumMonitor {
             }
         }
 
-        companion object {
+        internal companion object {
             internal const val RUM_NOT_ENABLED_ERROR_MESSAGE =
                 "You're trying to create a RumMonitor instance, " +
                     "but the SDK was not initialized or RUM feature was disabled " +
