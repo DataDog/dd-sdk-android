@@ -10,6 +10,7 @@ import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
 import okhttp3.Call
@@ -35,7 +36,12 @@ internal class DataOkHttpUploader(
         batch: List<ByteArray>,
         batchMeta: ByteArray?
     ): UploadStatus {
-        val request = requestFactory.create(context, batch, batchMeta)
+        val request = try {
+            requestFactory.create(context, batch, batchMeta)
+        } catch (e: Exception) {
+            internalLogger.errorWithTelemetry("Unable to create the upload request.", e)
+            return UploadStatus.UNKNOWN_ERROR
+        }
 
         val uploadStatus = try {
             executeUploadRequest(request)

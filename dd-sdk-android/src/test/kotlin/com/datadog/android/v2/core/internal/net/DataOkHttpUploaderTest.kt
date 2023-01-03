@@ -9,6 +9,7 @@ package com.datadog.android.v2.core.internal.net
 import com.datadog.android.core.internal.net.UploadStatus
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.log.Logger
+import com.datadog.android.log.internal.utils.errorWithTelemetry
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
@@ -493,6 +494,48 @@ internal class DataOkHttpUploaderTest {
         // Then
         assertThat(result).isEqualTo(UploadStatus.NETWORK_ERROR)
         verifyRequest(fakeDatadogRequest)
+    }
+
+    @Test
+    fun `M return UnknownError W upload() { request factory throws }`(
+        @Forgery fakeException: java.lang.Exception,
+        @StringForgery batch: List<String>,
+        @StringForgery batchMeta: String
+    ) {
+        // Given
+        val batchData = batch.map { it.toByteArray() }
+        val batchMetadata = batchMeta.toByteArray()
+        whenever(mockRequestFactory.create(fakeContext, batchData, batchMetadata))
+            .doThrow(fakeException)
+
+        // When
+        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.UNKNOWN_ERROR)
+        verifyZeroInteractions(mockCallFactory)
+    }
+
+    @Test
+    fun `M log the exception to telemetry W upload() { request factory throws }`(
+        @Forgery fakeException: java.lang.Exception,
+        @StringForgery batch: List<String>,
+        @StringForgery batchMeta: String
+    ) {
+        // Given
+        val batchData = batch.map { it.toByteArray() }
+        val batchMetadata = batchMeta.toByteArray()
+        whenever(mockRequestFactory.create(fakeContext, batchData, batchMetadata))
+            .doThrow(fakeException)
+
+        // When
+        testedUploader.upload(fakeContext, batchData, batchMetadata)
+
+        // Then
+        verify(mockLogger).errorWithTelemetry(
+            "Unable to create the upload request.",
+            fakeException
+        )
     }
 
     // endregion

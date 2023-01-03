@@ -19,7 +19,9 @@ fun interface RequestFactory {
      * @param context Datadog SDK context.
      * @param batchData Raw data of the batch.
      * @param batchMetadata Raw metadata of the batch.
+     * @throws [Exception] in case the request could not be created.
      */
+    @kotlin.jvm.Throws
     fun create(
         context: DatadogContext,
         batchData: List<ByteArray>,
