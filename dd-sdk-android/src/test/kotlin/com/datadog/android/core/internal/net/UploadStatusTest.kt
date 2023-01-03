@@ -13,7 +13,6 @@ import com.datadog.android.v2.api.InternalLogger
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -41,12 +40,6 @@ internal class UploadStatusTest {
 
     @IntForgery(min = 0)
     var fakeByteSize: Int = 0
-
-    @BoolForgery
-    var fakeIgnoreInfo = false
-
-    @BoolForgery
-    var fakeSendToTelemetry = false
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -210,6 +203,26 @@ internal class UploadStatusTest {
                 InternalLogger.Target.USER,
                 "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
                     "because of an unknown error; the batch was dropped."
+            )
+    }
+
+    @Test
+    fun `𝕄 log INVALID_REQUEST_ERROR only to USER 𝕎 logStatus()`() {
+        // When
+        UploadStatus.REQUEST_CREATION_ERROR.logStatus(
+            fakeContext,
+            fakeByteSize,
+            mockLogger
+        )
+
+        // Then
+        verify(mockLogger)
+            .log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                "Batch [$fakeByteSize bytes] ($fakeContext) failed " +
+                    "because of an error when creating the request;" +
+                    " the batch was dropped."
             )
     }
 }

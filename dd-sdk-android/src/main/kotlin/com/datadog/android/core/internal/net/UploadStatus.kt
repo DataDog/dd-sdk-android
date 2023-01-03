@@ -12,6 +12,7 @@ import com.datadog.android.v2.api.InternalLogger
 internal enum class UploadStatus(val shouldRetry: Boolean) {
     SUCCESS(shouldRetry = false),
     NETWORK_ERROR(shouldRetry = true),
+    REQUEST_CREATION_ERROR(shouldRetry = false),
     INVALID_TOKEN_ERROR(shouldRetry = false),
     HTTP_REDIRECTION(shouldRetry = false),
     HTTP_CLIENT_ERROR(shouldRetry = false),
@@ -19,6 +20,7 @@ internal enum class UploadStatus(val shouldRetry: Boolean) {
     HTTP_CLIENT_RATE_LIMITING(shouldRetry = true),
     UNKNOWN_ERROR(shouldRetry = false);
 
+    @SuppressWarnings("LongMethod")
     fun logStatus(
         context: String,
         byteSize: Int,
@@ -74,6 +76,12 @@ internal enum class UploadStatus(val shouldRetry: Boolean) {
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
                 "$batchInfo failed because of an unknown error; the batch was dropped."
+            )
+            REQUEST_CREATION_ERROR -> logger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                "$batchInfo failed because of an error when creating the request; " +
+                    "the batch was dropped."
             )
             SUCCESS -> logger.log(
                 InternalLogger.Level.VERBOSE,

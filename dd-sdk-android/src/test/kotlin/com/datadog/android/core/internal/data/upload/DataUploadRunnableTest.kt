@@ -628,7 +628,8 @@ internal class DataUploadRunnableTest {
                     UploadStatus.SUCCESS,
                     UploadStatus.HTTP_REDIRECTION,
                     UploadStatus.HTTP_CLIENT_ERROR,
-                    UploadStatus.UNKNOWN_ERROR
+                    UploadStatus.UNKNOWN_ERROR,
+                    UploadStatus.REQUEST_CREATION_ERROR
                 )
             )
         }
