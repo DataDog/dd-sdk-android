@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal
 
+import android.util.Log
 import androidx.annotation.AnyThread
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.internal.utils.internalLogger
@@ -60,15 +61,17 @@ internal class LogsFeature(
             return
         }
 
-        if (event["type"] == "jvm_crash") {
+        if (event[TYPE_EVENT_KEY] == "jvm_crash") {
             sendJvmCrashLog(event)
-        } else if (event["type"] == "ndk_crash") {
+        } else if (event[TYPE_EVENT_KEY] == "ndk_crash") {
             sendNdkCrashLog(event)
+        } else if (event[TYPE_EVENT_KEY] == "span_log") {
+            sendSpanLog(event)
         } else {
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"])
+                UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event[TYPE_EVENT_KEY])
             )
         }
     }
@@ -91,11 +94,11 @@ internal class LogsFeature(
 
     @Suppress("ComplexMethod")
     private fun sendJvmCrashLog(data: Map<*, *>) {
-        val threadName = data["threadName"] as? String
-        val throwable = data["throwable"] as? Throwable
-        val timestamp = data["timestamp"] as? Long
-        val message = data["message"] as? String
-        val loggerName = data["loggerName"] as? String
+        val threadName = data[THREAD_NAME_EVENT_KEY] as? String
+        val throwable = data[THROWABLE_EVENT_KEY] as? Throwable
+        val timestamp = data[TIMESTAMP_EVENT_KEY] as? Long
+        val message = data[MESSAGE_EVENT_KEY] as? String
+        val loggerName = data[LOGGER_NAME_EVENT_KEY] as? String
 
         @Suppress("ComplexCondition")
         if (threadName == null || throwable == null ||
@@ -150,18 +153,17 @@ internal class LogsFeature(
 
     @Suppress("ComplexMethod")
     private fun sendNdkCrashLog(data: Map<*, *>) {
-        val timestamp = data["timestamp"] as? Long
-        val message = data["message"] as? String
-        val loggerName = data["loggerName"] as? String
-        val attributes = (data["attributes"] as? Map<*, *>)
+        val timestamp = data[TIMESTAMP_EVENT_KEY] as? Long
+        val message = data[MESSAGE_EVENT_KEY] as? String
+        val loggerName = data[LOGGER_NAME_EVENT_KEY] as? String
+        val attributes = (data[ATTRIBUTES_EVENT_KEY] as? Map<*, *>)
             ?.filterKeys { it is String }
             ?.mapKeys { it.key as String }
-        val networkInfo = data["networkInfo"] as? NetworkInfo
-        val userInfo = data["userInfo"] as? UserInfo
+        val networkInfo = data[NETWORK_INFO_EVENT_KEY] as? NetworkInfo
+        val userInfo = data[USER_INFO_EVENT_KEY] as? UserInfo
 
         @Suppress("ComplexCondition")
-        if (loggerName == null || message == null || timestamp == null || attributes == null
-        ) {
+        if (loggerName == null || message == null || timestamp == null || attributes == null) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -194,9 +196,61 @@ internal class LogsFeature(
             }
     }
 
+    private fun sendSpanLog(data: Map<*, *>) {
+        val timestamp = data[TIMESTAMP_EVENT_KEY] as? Long
+        val message = data[MESSAGE_EVENT_KEY] as? String
+        val loggerName = data[LOGGER_NAME_EVENT_KEY] as? String
+        val attributes = (data[ATTRIBUTES_EVENT_KEY] as? Map<*, *>)
+            ?.filterKeys { it is String }
+            ?.mapKeys { it.key as String }
+
+        @Suppress("ComplexCondition")
+        if (loggerName == null || message == null || attributes == null || timestamp == null) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                SPAN_LOG_EVENT_MISSING_MANDATORY_FIELDS_WARNING
+            )
+            return
+        }
+
+        sdkCore.getFeature(LOGS_FEATURE_NAME)
+            ?.withWriteContext { datadogContext, eventBatchWriter ->
+                val log = logGenerator.generateLog(
+                    Log.VERBOSE,
+                    datadogContext = datadogContext,
+                    attachNetworkInfo = true,
+                    loggerName = loggerName,
+                    message = message,
+                    throwable = null,
+                    attributes = attributes,
+                    timestamp = timestamp,
+                    // false, because span log event will already have the necessary attributes
+                    bundleWithTraces = false,
+                    bundleWithRum = true,
+                    threadName = Thread.currentThread().name,
+                    tags = emptySet()
+                )
+
+                @Suppress("ThreadSafety") // called in a worker thread context
+                dataWriter.write(eventBatchWriter, log)
+            }
+    }
+
     // endregion
 
     companion object {
+
+        private const val TYPE_EVENT_KEY = "type"
+        private const val TIMESTAMP_EVENT_KEY = "timestamp"
+        private const val LOGGER_NAME_EVENT_KEY = "loggerName"
+        private const val ATTRIBUTES_EVENT_KEY = "attributes"
+        private const val MESSAGE_EVENT_KEY = "message"
+        private const val THROWABLE_EVENT_KEY = "throwable"
+        private const val USER_INFO_EVENT_KEY = "userInfo"
+        private const val NETWORK_INFO_EVENT_KEY = "networkInfo"
+        private const val THREAD_NAME_EVENT_KEY = "threadName"
+
         internal const val LOGS_FEATURE_NAME = "logs"
         internal const val UNSUPPORTED_EVENT_TYPE =
             "Logs feature receive an event of unsupported type=%s."
@@ -210,6 +264,11 @@ internal class LogsFeature(
             "Logs feature received a NDK crash event where" +
                 " one or more mandatory (loggerName, message, timestamp, attributes)" +
                 " fields are either missing or have wrong type."
+        internal const val SPAN_LOG_EVENT_MISSING_MANDATORY_FIELDS_WARNING =
+            "Logs feature received a Span log event where" +
+                " one or more mandatory (loggerName, message, timestamp, attributes)" +
+                " fields are either missing or have wrong type."
+
         internal const val MAX_WRITE_WAIT_TIMEOUT_MS = 500L
     }
 }
