@@ -16,6 +16,8 @@ import java.util.concurrent.TimeUnit
 internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextProvider {
     override val context: DatadogContext
         get() {
+            // IMPORTANT All properties should be immutable and be frozen at the state
+            // of the context construction moment
             return DatadogContext(
                 clientToken = coreFeature.clientToken,
                 service = coreFeature.serviceName,
@@ -55,7 +57,17 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
                 },
                 userInfo = coreFeature.userInfoProvider.getUserInfo(),
                 trackingConsent = coreFeature.trackingConsentProvider.getConsent(),
-                featuresContext = coreFeature.featuresContext
+                // toMap call here (and in getFeatureContext) is VERY important - this will make
+                // independent snapshot of the features context which is not affected by the
+                // changes which can be made later by another thread.
+                // Values at the top 2 levels are frozen: feature-name key,
+                // and feature-specific-name key.
+                featuresContext = mutableMapOf<String, Map<String, Any?>>().apply {
+                    val source = coreFeature.featuresContext
+                    source.forEach { (key, value) ->
+                        this[key] = value.toMap()
+                    }
+                }
             )
         }
 
@@ -64,6 +76,6 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
     }
 
     override fun getFeatureContext(feature: String): Map<String, Any?> {
-        return coreFeature.featuresContext[feature] ?: emptyMap()
+        return coreFeature.featuresContext[feature]?.toMap() ?: emptyMap()
     }
 }
