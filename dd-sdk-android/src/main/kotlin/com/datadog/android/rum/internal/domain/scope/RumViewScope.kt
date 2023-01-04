@@ -359,7 +359,7 @@ internal open class RumViewScope(
         val rumContext = getRumContext()
 
         val updatedAttributes = addExtraAttributes(event.attributes)
-        val isFatal = updatedAttributes.remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean
+        val isFatal = updatedAttributes.remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean == true || event.isFatal
         val errorType = event.type ?: event.throwable?.javaClass?.canonicalName
         val throwableMessage = event.throwable?.message ?: ""
         val message = if (throwableMessage.isNotBlank() && event.message != throwableMessage) {
@@ -380,7 +380,7 @@ internal open class RumViewScope(
                         message = message,
                         source = event.source.toSchemaSource(),
                         stack = event.stacktrace ?: event.throwable?.loggableStackTrace(),
-                        isCrash = event.isFatal || (isFatal ?: false),
+                        isCrash = isFatal,
                         type = errorType,
                         sourceType = event.sourceType.toSchemaSourceType()
                     ),
@@ -432,7 +432,7 @@ internal open class RumViewScope(
                 writer.write(eventBatchWriter, errorEvent)
             }
 
-        if (event.isFatal) {
+        if (isFatal) {
             errorCount++
             crashCount++
             sendViewUpdate(event, writer)
