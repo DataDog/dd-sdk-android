@@ -659,6 +659,113 @@ internal class LogsFeatureTest {
 
     // endregion
 
+    // region FeatureEventReceiver#onReceive + span log event
+
+    @ParameterizedTest
+    @EnumSource(ValueMissingType::class)
+    fun `𝕄 log warning and do nothing 𝕎 onReceive() { corrupted mandatory fields, span log }`(
+        missingType: ValueMissingType,
+        @LongForgery fakeTimestamp: Long,
+        @StringForgery fakeMessage: String,
+        @StringForgery fakeLoggerName: String,
+        forge: Forge
+    ) {
+        // Given
+        testedFeature.dataWriter = mockDataWriter
+        val fakeAttributes = forge.exhaustiveAttributes()
+        val event = mutableMapOf<String, Any?>(
+            "type" to "span_log",
+            "timestamp" to fakeTimestamp,
+            "message" to fakeMessage,
+            "loggerName" to fakeLoggerName,
+            "attributes" to fakeAttributes
+        )
+
+        when (missingType) {
+            ValueMissingType.MISSING -> event.remove(
+                forge.anElementFrom(event.keys.filterNot { it == "type" })
+            )
+            ValueMissingType.NULL -> event[
+                forge.anElementFrom(event.keys.filterNot { it == "type" })
+            ] = null
+            ValueMissingType.WRONG_TYPE -> event[
+                forge.anElementFrom(event.keys.filterNot { it == "type" })
+            ] = Any()
+        }
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        verify(logger.mockInternalLogger)
+            .log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                LogsFeature.SPAN_LOG_EVENT_MISSING_MANDATORY_FIELDS_WARNING
+            )
+
+        verifyZeroInteractions(
+            mockSdkCore,
+            mockDataWriter
+        )
+    }
+
+    @Test
+    fun `𝕄 write span log event 𝕎 onReceive() { span log }`(
+        @LongForgery fakeTimestamp: Long,
+        @StringForgery fakeMessage: String,
+        @StringForgery fakeLoggerName: String,
+        forge: Forge
+    ) {
+        // Given
+        testedFeature.dataWriter = mockDataWriter
+        val fakeAttributes = forge.exhaustiveAttributes()
+        val event = mutableMapOf<String, Any?>(
+            "type" to "span_log",
+            "timestamp" to fakeTimestamp,
+            "message" to fakeMessage,
+            "loggerName" to fakeLoggerName,
+            "attributes" to fakeAttributes
+        )
+
+        // When
+        testedFeature.onReceive(event)
+
+        // Then
+        argumentCaptor<LogEvent> {
+            verify(mockDataWriter).write(eq(mockEventBatchWriter), capture())
+
+            val log = lastValue
+
+            assertThatLog(log)
+                .hasStatus(LogEvent.Status.TRACE)
+                .hasLoggerName(fakeLoggerName)
+                .hasServiceName(fakeDatadogContext.service)
+                .hasMessage(fakeMessage)
+                .hasThreadName(Thread.currentThread().name)
+                .hasDate((fakeTimestamp + fakeServerTimeOffset).toIsoFormattedTimestamp())
+                .hasNetworkInfo(fakeDatadogContext.networkInfo)
+                .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasExactlyAttributes(
+                    fakeAttributes + mapOf(
+                        LogAttributes.RUM_APPLICATION_ID to fakeRumContext.applicationId,
+                        LogAttributes.RUM_SESSION_ID to fakeRumContext.sessionId,
+                        LogAttributes.RUM_VIEW_ID to fakeRumContext.viewId,
+                        LogAttributes.RUM_ACTION_ID to fakeRumContext.actionId
+                    )
+                )
+                .hasExactlyTags(
+                    setOf(
+                        "${LogAttributes.ENV}:${fakeDatadogContext.env}",
+                        "${LogAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}",
+                        "${LogAttributes.VARIANT}:${fakeDatadogContext.variant}"
+                    )
+                )
+        }
+    }
+
+    // endregion
+
     enum class ValueMissingType {
         MISSING,
         NULL,

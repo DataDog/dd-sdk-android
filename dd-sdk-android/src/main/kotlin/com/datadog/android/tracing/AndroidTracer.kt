@@ -9,7 +9,6 @@ package com.datadog.android.tracing
 import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.log.Logger
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.tracing.internal.data.NoOpWriter
 import com.datadog.android.tracing.internal.handlers.AndroidSpanLogsHandler
@@ -73,9 +72,7 @@ class AndroidTracer internal constructor(
         private val globalTags: MutableMap<String, String> = mutableMapOf()
 
         constructor() : this(
-            AndroidSpanLogsHandler(
-                Logger.Builder().setLoggerName(TRACE_LOGGER_NAME).build()
-            )
+            AndroidSpanLogsHandler(Datadog.globalSdkCore)
         )
 
         // region Public API
@@ -218,8 +215,6 @@ class AndroidTracer internal constructor(
         // the minimum closed spans required for triggering a flush and deliver
         // everything to the writer
         internal const val DEFAULT_PARTIAL_MIN_FLUSH = 5
-
-        internal const val TRACE_LOGGER_NAME = "trace"
 
         internal const val TRACE_ID_BIT_SIZE = 63
 
