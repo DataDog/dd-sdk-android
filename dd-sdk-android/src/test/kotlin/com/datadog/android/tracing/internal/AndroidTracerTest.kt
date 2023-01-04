@@ -27,8 +27,11 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.trace.api.Config
 import com.datadog.trace.common.writer.Writer
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -56,6 +59,7 @@ import org.mockito.quality.Strictness
 import java.math.BigInteger
 import java.util.Random
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -565,6 +569,98 @@ internal class AndroidTracerTest {
     }
 
     // endregion
+
+    @Test
+    fun `M report active span context for the thread W build`(forge: Forge) {
+        // Given
+        val tracer = testedTracerBuilder
+            .setServiceName(fakeServiceName)
+            .build()
+        // call to updateFeatureContext is guarded by "synchronize" in the real implementation,
+        // but since we are using mock here, let's use thread-safe map instead.
+        val tracingContext = ConcurrentHashMap<String, Any?>()
+        whenever(
+            mockSdkCore.updateFeatureContext(eq(TracingFeature.TRACING_FEATURE_NAME), any())
+        ) doAnswer {
+            val callback = it.getArgument<(context: MutableMap<String, Any?>) -> Unit>(1)
+            callback.invoke(tracingContext)
+        }
+        val errorCollector = mutableListOf<Throwable>()
+
+        // When+Then
+        val threads = forge.aList(forge.anInt(min = 2, max = 5)) {
+            Thread {
+                val threadName = Thread.currentThread().name
+
+                val parentSpan = tracer.buildSpan(forge.anAlphabeticalString()).start()
+                val parentActiveScope = tracer.activateSpan(parentSpan)
+
+                with(tracingContext.activeContext(threadName)) {
+                    assertThat(this!!["span_id"]).isEqualTo(parentSpan.context().toSpanId())
+                    assertThat(this["trace_id"]).isEqualTo(parentSpan.context().toTraceId())
+                }
+
+                // should update the context for the child span
+                val childActiveSpan = tracer.buildSpan(forge.anAlphabeticalString())
+                    .asChildOf(parentSpan).start()
+                val childActiveScope = tracer.activateSpan(childActiveSpan)
+
+                with(tracingContext.activeContext(threadName)) {
+                    assertThat(this!!["span_id"]).isEqualTo(childActiveSpan.context().toSpanId())
+                    assertThat(this["trace_id"]).isEqualTo(childActiveSpan.context().toTraceId())
+                }
+
+                // should not update the context for the child non-active span
+                val childNonActiveSpan = tracer.buildSpan(forge.anAlphabeticalString())
+                    .asChildOf(parentSpan).start()
+
+                with(tracingContext.activeContext(threadName)) {
+                    assertThat(this!!["span_id"]).isEqualTo(childActiveSpan.context().toSpanId())
+                    assertThat(this["trace_id"]).isEqualTo(childActiveSpan.context().toTraceId())
+                }
+
+                childNonActiveSpan.finish()
+
+                with(tracingContext.activeContext(threadName)) {
+                    assertThat(this!!["span_id"]).isEqualTo(childActiveSpan.context().toSpanId())
+                    assertThat(this["trace_id"]).isEqualTo(childActiveSpan.context().toTraceId())
+                }
+
+                // should restore context of parent span
+                childActiveSpan.finish()
+                childActiveScope.close()
+
+                with(tracingContext.activeContext(threadName)) {
+                    assertThat(this!!["span_id"]).isEqualTo(parentSpan.context().toSpanId())
+                    assertThat(this["trace_id"]).isEqualTo(parentSpan.context().toTraceId())
+                }
+
+                // should clean everything
+                parentSpan.finish()
+                parentActiveScope.close()
+
+                assertThat(tracingContext.activeContext(threadName)).isNull()
+            }.apply {
+                setUncaughtExceptionHandler { _, e ->
+                    synchronized(errorCollector) {
+                        errorCollector += e
+                    }
+                }
+            }
+        }
+
+        threads.forEach { it.start() }
+        threads.forEach { it.join() }
+
+        if (errorCollector.isNotEmpty()) {
+            // if there are multiple, we need only one to start debugging
+            throw errorCollector[0]
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun Map<String, Any?>.activeContext(threadName: String) =
+        this["context@$threadName"] as? Map<String, String>
 
     companion object {
         val appContext = ApplicationContextTestConfiguration(Context::class.java)

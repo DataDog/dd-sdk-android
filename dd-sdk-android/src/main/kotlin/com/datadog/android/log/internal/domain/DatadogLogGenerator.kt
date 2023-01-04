@@ -12,8 +12,8 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.internal.utils.buildLogDateFormat
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.v2.api.context.DatadogContext
-import io.opentracing.util.GlobalTracer
 import java.util.Date
 
 @Suppress("TooManyFunctions")
@@ -126,8 +126,13 @@ internal class DatadogLogGenerator(
         networkInfo: NetworkInfo?
     ): LogEvent {
         val resolvedTimestamp = timestamp + datadogContext.time.serverTimeOffsetMs
-        val combinedAttributes =
-            resolveAttributes(datadogContext, attributes, bundleWithTraces, bundleWithRum)
+        val combinedAttributes = resolveAttributes(
+            datadogContext,
+            attributes,
+            bundleWithTraces,
+            threadName,
+            bundleWithRum
+        )
         val formattedDate = synchronized(simpleDateFormat) {
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             simpleDateFormat.format(Date(resolvedTimestamp))
@@ -261,15 +266,17 @@ internal class DatadogLogGenerator(
         datadogContext: DatadogContext,
         attributes: Map<String, Any?>,
         bundleWithTraces: Boolean,
+        threadName: String,
         bundleWithRum: Boolean
     ): MutableMap<String, Any?> {
         val combinedAttributes = mutableMapOf<String, Any?>().apply { putAll(attributes) }
-        if (bundleWithTraces && GlobalTracer.isRegistered()) {
-            val tracer = GlobalTracer.get()
-            val activeContext = tracer.activeSpan()?.context()
-            if (activeContext != null) {
-                combinedAttributes[LogAttributes.DD_TRACE_ID] = activeContext.toTraceId()
-                combinedAttributes[LogAttributes.DD_SPAN_ID] = activeContext.toSpanId()
+        if (bundleWithTraces) {
+            datadogContext.featuresContext[TracingFeature.TRACING_FEATURE_NAME]?.let {
+                val threadLocalContext = it["context@$threadName"] as? Map<*, *>
+                if (threadLocalContext != null) {
+                    combinedAttributes[LogAttributes.DD_TRACE_ID] = threadLocalContext["trace_id"]
+                    combinedAttributes[LogAttributes.DD_SPAN_ID] = threadLocalContext["span_id"]
+                }
             }
         }
         if (bundleWithRum) {
