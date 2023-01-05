@@ -34,7 +34,18 @@ internal class DataOkHttpUploader(
         batch: List<ByteArray>,
         batchMeta: ByteArray?
     ): UploadStatus {
-        val request = requestFactory.create(context, batch, batchMeta)
+        val request = try {
+            requestFactory.create(context, batch, batchMeta)
+        } catch (e: Exception) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                "Unable to create the request due to probably bad data format." +
+                    " The batch will be dropped.",
+                e
+            )
+            return UploadStatus.REQUEST_CREATION_ERROR
+        }
 
         val uploadStatus = try {
             executeUploadRequest(request)

@@ -856,7 +856,8 @@ internal class DataUploadRunnableTest {
                     UploadStatus.HTTP_CLIENT_ERROR,
                     UploadStatus.UNKNOWN_ERROR,
                     UploadStatus.INVALID_TOKEN_ERROR,
-                    UploadStatus.SUCCESS
+                    UploadStatus.SUCCESS,
+                    UploadStatus.REQUEST_CREATION_ERROR
                 )
             )
         }

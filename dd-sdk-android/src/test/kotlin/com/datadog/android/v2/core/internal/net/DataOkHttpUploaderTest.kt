@@ -495,6 +495,51 @@ internal class DataOkHttpUploaderTest {
         verifyRequest(fakeDatadogRequest)
     }
 
+    @Test
+    fun `M return RequestCreationError W upload() { request factory throws }`(
+        @Forgery fakeException: Exception,
+        @StringForgery batch: List<String>,
+        @StringForgery batchMeta: String
+    ) {
+        // Given
+        val batchData = batch.map { it.toByteArray() }
+        val batchMetadata = batchMeta.toByteArray()
+        whenever(mockRequestFactory.create(fakeContext, batchData, batchMetadata))
+            .doThrow(fakeException)
+
+        // When
+        val result = testedUploader.upload(fakeContext, batchData, batchMetadata)
+
+        // Then
+        assertThat(result).isEqualTo(UploadStatus.REQUEST_CREATION_ERROR)
+        verifyZeroInteractions(mockCallFactory)
+    }
+
+    @Test
+    fun `M log the exception to telemetry W upload() { request factory throws }`(
+        @Forgery fakeException: Exception,
+        @StringForgery batch: List<String>,
+        @StringForgery batchMeta: String
+    ) {
+        // Given
+        val batchData = batch.map { it.toByteArray() }
+        val batchMetadata = batchMeta.toByteArray()
+        whenever(mockRequestFactory.create(fakeContext, batchData, batchMetadata))
+            .doThrow(fakeException)
+
+        // When
+        testedUploader.upload(fakeContext, batchData, batchMetadata)
+
+        // Then
+        verify(mockLogger).log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            "Unable to create the request due to probably bad data format." +
+                " The batch will be dropped.",
+            fakeException
+        )
+    }
+
     // endregion
 
     @Test
