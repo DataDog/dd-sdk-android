@@ -6,10 +6,9 @@
 
 package com.datadog.android.sessionreplay.internal.domain
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
 import com.datadog.android.sessionreplay.net.BatchesToSegmentsMapper
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.Request
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
@@ -21,15 +20,7 @@ import java.util.UUID
 internal class SessionReplayRequestFactory(
     private val endpoint: String,
     private val batchToSegmentsMapper: BatchesToSegmentsMapper = BatchesToSegmentsMapper(),
-    private val requestBodyFactory: RequestBodyFactory = RequestBodyFactory(),
-    private val bodyToByteArrayFactory: (RequestBody) -> ByteArray = {
-        val buffer = Buffer()
-        // this is handled below in the wrapper function
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        it.writeTo(buffer)
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        buffer.readByteArray()
-    }
+    private val requestBodyFactory: RequestBodyFactory = RequestBodyFactory()
 ) : RequestFactory {
 
     private val intakeUrl by lazy {
@@ -48,27 +39,16 @@ internal class SessionReplayRequestFactory(
     ): Request {
         val serializedSegmentPair = batchToSegmentsMapper.map(batchData)
         if (serializedSegmentPair == null) {
-            // TODO: RUMM-2397 Add the proper logs here once the sdkLogger will be added
-            // the data in the batch is corrupted. We return an empty request just to make
-            // sure the batch will be deleted by the core.
-            return getEmptyRequest()
+            throw InvalidPayloadFormatException(
+                "The payload format was broken and an upload" +
+                    " request could not be created"
+            )
         }
         val body = requestBodyFactory.create(
             serializedSegmentPair.first,
             serializedSegmentPair.second
         )
         return resolveRequest(context, body)
-    }
-
-    private fun getEmptyRequest(): Request {
-        val id = UUID.randomUUID().toString()
-        return Request(
-            id,
-            "",
-            "",
-            emptyMap(),
-            body = ByteArray(0)
-        )
     }
 
     private fun tags(datadogContext: DatadogContext): String {
@@ -109,45 +89,33 @@ internal class SessionReplayRequestFactory(
     }
 
     @Suppress("ReturnCount")
-    private fun resolveRequest(context: DatadogContext, body: RequestBody?): Request {
-        if (body != null) {
-            val bodyAsByteArray = safeBodyToByteArray(body) ?: return getEmptyRequest()
-            val requestId = UUID.randomUUID().toString()
-            val description = "Session Replay Segment Upload Request"
-            val headers = resolveHeaders(context, requestId)
-            val requestUrl = buildUrl(context)
-            return Request(
-                requestId,
-                description,
-                requestUrl,
-                headers,
-                body = bodyAsByteArray,
-                contentType = body.contentType().toString()
-            )
-        } else {
-            return getEmptyRequest()
-        }
+    private fun resolveRequest(context: DatadogContext, body: RequestBody): Request {
+        val bodyAsByteArray = extractByteArrayFromBody(body)
+        val requestId = UUID.randomUUID().toString()
+        val description = "Session Replay Segment Upload Request"
+        val headers = resolveHeaders(context, requestId)
+        val requestUrl = buildUrl(context)
+        return Request(
+            requestId,
+            description,
+            requestUrl,
+            headers,
+            body = bodyAsByteArray,
+            contentType = body.contentType().toString()
+        )
     }
 
-    private fun safeBodyToByteArray(body: RequestBody): ByteArray? {
-        return try {
-            bodyToByteArrayFactory(body)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                EXTRACT_BYTE_ARRAY_FROM_BODY_ERROR_MESSAGE,
-                e
-            )
-            null
-        }
+    private fun extractByteArrayFromBody(body: RequestBody): ByteArray {
+        val buffer = Buffer()
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        body.writeTo(buffer)
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        return buffer.readByteArray()
     }
 
     // endregion
 
     companion object {
-        internal const val EXTRACT_BYTE_ARRAY_FROM_BODY_ERROR_MESSAGE =
-            "Unable to extract the ByteArray from session replay request body."
         private const val UPLOAD_URL = "%s/api/v2/%s"
     }
 }
