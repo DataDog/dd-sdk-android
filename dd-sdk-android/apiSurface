@@ -572,6 +572,35 @@ class com.datadog.android.webview.DatadogEventBridge
   companion object 
     fun setup(android.webkit.WebView)
 class com.datadog.tools.annotation.NoOpImplementation
+data class com.datadog.android.core.model.NetworkInfo
+  constructor(Connectivity = Connectivity.NETWORK_NOT_CONNECTED, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null)
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): NetworkInfo
+    fun fromJsonObject(com.google.gson.JsonObject): NetworkInfo
+  enum Connectivity
+    constructor(kotlin.String)
+    - NETWORK_NOT_CONNECTED
+    - NETWORK_ETHERNET
+    - NETWORK_WIFI
+    - NETWORK_WIMAX
+    - NETWORK_BLUETOOTH
+    - NETWORK_2G
+    - NETWORK_3G
+    - NETWORK_4G
+    - NETWORK_5G
+    - NETWORK_MOBILE_OTHER
+    - NETWORK_CELLULAR
+    - NETWORK_OTHER
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Connectivity
+data class com.datadog.android.core.model.UserInfo
+  constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): UserInfo
+    fun fromJsonObject(com.google.gson.JsonObject): UserInfo
 data class com.datadog.android.log.model.LogEvent
   constructor(Status, kotlin.String, kotlin.String, kotlin.String, Logger, Dd, Usr? = null, Network? = null, Error? = null, kotlin.String, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
   fun toJson(): com.google.gson.JsonElement
