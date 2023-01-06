@@ -15,7 +15,7 @@ import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.extension.asLogStatus
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
@@ -28,8 +28,6 @@ import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.datadog.tools.unit.setFieldValue
-import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
@@ -44,10 +42,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.noop.NoopTracerFactory
-import io.opentracing.util.GlobalTracer
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -138,12 +133,6 @@ internal class DatadogLogHandlerTest {
             writer = mockWriter,
             attachNetworkInfo = true
         )
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        GlobalTracer.get().setFieldValue("isRegistered", false)
-        GlobalTracer::class.java.setStaticValue("tracer", NoopTracerFactory.create())
     }
 
     @Test
@@ -629,14 +618,23 @@ internal class DatadogLogHandlerTest {
 
     @Test
     fun `it will add the span id and trace id if we active an active tracer`(
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeServiceName: String,
-        forge: Forge
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) fakeSpanId: String,
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) fakeTraceId: String
     ) {
         // Given
-        val tracer = AndroidTracer.Builder().setServiceName(fakeServiceName).build()
-        val span = tracer.buildSpan(forge.anAlphabeticalString()).start()
-        tracer.activateSpan(span)
-        GlobalTracer.registerIfAbsent(tracer)
+        val threadName = Thread.currentThread().name
+
+        val tracingContext = mapOf(
+            "context@$threadName" to mapOf(
+                "span_id" to fakeSpanId,
+                "trace_id" to fakeTraceId
+            )
+        )
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(TracingFeature.TRACING_FEATURE_NAME, tracingContext)
+            }
+        )
 
         // When
         testedHandler.handleLog(
@@ -652,8 +650,8 @@ internal class DatadogLogHandlerTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture())
 
             assertThat(lastValue.additionalProperties)
-                .containsEntry(LogAttributes.DD_TRACE_ID, tracer.traceId)
-                .containsEntry(LogAttributes.DD_SPAN_ID, tracer.spanId)
+                .containsEntry(LogAttributes.DD_TRACE_ID, fakeTraceId)
+                .containsEntry(LogAttributes.DD_SPAN_ID, fakeSpanId)
         }
     }
 

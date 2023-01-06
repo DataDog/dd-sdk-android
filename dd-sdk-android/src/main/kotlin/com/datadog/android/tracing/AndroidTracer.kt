@@ -10,6 +10,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.tracing.internal.data.NoOpWriter
 import com.datadog.android.tracing.internal.handlers.AndroidSpanLogsHandler
 import com.datadog.android.v2.api.InternalLogger
@@ -20,6 +21,7 @@ import com.datadog.opentracing.DDTracer
 import com.datadog.opentracing.LogHandler
 import com.datadog.trace.api.Config
 import com.datadog.trace.common.writer.Writer
+import com.datadog.trace.context.ScopeListener
 import io.opentracing.Span
 import io.opentracing.log.Fields
 import java.security.SecureRandom
@@ -42,6 +44,34 @@ class AndroidTracer internal constructor(
     private val logsHandler: LogHandler,
     private val bundleWithRum: Boolean
 ) : DDTracer(config, writer, random) {
+
+    init {
+        addScopeListener(object : ScopeListener {
+            override fun afterScopeActivated() {
+                // scope is thread-local and at the given time for the particular thread it can
+                // be only one active scope.
+                val threadName = Thread.currentThread().name
+                val activeContext = activeSpan()?.context()
+                if (activeContext != null) {
+                    val activeSpanId = activeContext.toSpanId()
+                    val activeTraceId = activeContext.toTraceId()
+                    sdkCore.updateFeatureContext(TracingFeature.TRACING_FEATURE_NAME) {
+                        it["context@$threadName"] = mapOf(
+                            "span_id" to activeSpanId,
+                            "trace_id" to activeTraceId
+                        )
+                    }
+                }
+            }
+
+            override fun afterScopeClosed() {
+                val threadName = Thread.currentThread().name
+                sdkCore.updateFeatureContext(TracingFeature.TRACING_FEATURE_NAME) {
+                    it.remove("context@$threadName")
+                }
+            }
+        })
+    }
 
     // region Tracer
 
