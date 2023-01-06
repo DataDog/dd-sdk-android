@@ -7,20 +7,17 @@
 package com.datadog.android.sessionreplay.internal.domain
 
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.net.BatchesToSegmentsMapper
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.v2.api.InternalLogger
 import com.datadog.android.v2.api.RequestFactory
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonObject
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -32,19 +29,15 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okio.Buffer
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.io.IOException
-import java.util.stream.Stream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -132,115 +125,27 @@ internal class SessionReplayRequestFactoryTest {
                 RequestFactory.HEADER_EVP_ORIGIN_VERSION to fakeDatadogContext.sdkVersion
             )
         )
-        assertThat(request.headers[RequestFactory.HEADER_REQUEST_ID]).isNotEmpty()
+        assertThat(request.headers[RequestFactory.HEADER_REQUEST_ID]).isNotEmpty
         assertThat(request.id).isEqualTo(request.headers[RequestFactory.HEADER_REQUEST_ID])
         assertThat(request.description).isEqualTo("Session Replay Segment Upload Request")
         assertThat(request.body).isEqualTo(mockRequestBody.toByteArray())
     }
 
     @Test
-    fun `M return an empty Request W create(){ payload is broken }`() {
+    fun `M throw exception W create(){ payload is broken }`() {
         // Given
         whenever(mockBatchesToSegmentsMapper.map(fakeBatchData))
             .thenReturn(null)
 
         // When
-        val request = testedRequestFactory.create(
-            fakeDatadogContext,
-            fakeBatchData,
-            fakeBatchMetadata
-        )
-
-        // Then
-        assertThat(request.body).isEmpty()
-        assertThat(request.url).isEmpty()
-        assertThat(request.description).isEmpty()
-        assertThat(request.headers).isEmpty()
-    }
-
-    // endregion
-
-    // region broken Body
-
-    @Test
-    fun `M return an empty Request W create(){ request body could not be created }`() {
-        // Given
-        whenever(mockRequestBodyFactory.create(any(), any())).thenReturn(null)
-
-        // When
-        val request = testedRequestFactory.create(
-            fakeDatadogContext,
-            fakeBatchData,
-            fakeBatchMetadata
-        )
-
-        // Then
-        assertThat(request.body).isEmpty()
-        assertThat(request.url).isEmpty()
-        assertThat(request.description).isEmpty()
-        assertThat(request.headers).isEmpty()
-    }
-
-    @ParameterizedTest
-    @MethodSource("throwableAndLogMessageValues")
-    fun `M return an empty Request W create(){ bodyToByteArray throws }`(
-        fakeThrowable: Throwable
-    ) {
-        // Given
-        testedRequestFactory = SessionReplayRequestFactory(
-            fakeEndpoint,
-            mockBatchesToSegmentsMapper,
-            mockRequestBodyFactory,
-            bodyToByteArrayFactory = {
-                throw fakeThrowable
-            }
-        )
-
-        // When
-        val request = testedRequestFactory.create(
-            fakeDatadogContext,
-            fakeBatchData,
-            fakeBatchMetadata
-        )
-
-        // Then
-        assertThat(request.body).isEmpty()
-        assertThat(request.url).isEmpty()
-        assertThat(request.description).isEmpty()
-        assertThat(request.headers).isEmpty()
-    }
-
-    @ParameterizedTest
-    @MethodSource("throwableAndLogMessageValues")
-    fun `M log exception W create(){ bodyToByteArray throws }`(
-        fakeThrowable: Throwable,
-        errorMessage: String
-    ) {
-        // Given
-        testedRequestFactory = SessionReplayRequestFactory(
-            fakeEndpoint,
-            mockBatchesToSegmentsMapper,
-            mockRequestBodyFactory,
-            bodyToByteArrayFactory = {
-                throw fakeThrowable
-            }
-        )
-
-        // When
-        testedRequestFactory.create(
-            fakeDatadogContext,
-            fakeBatchData,
-            fakeBatchMetadata
-        )
-
-        // Then
-        verify(logger.mockInternalLogger).log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            errorMessage,
-            fakeThrowable
-        )
-        verifyNoMoreInteractions(logger.mockInternalLogger)
+        assertThatThrownBy {
+            testedRequestFactory.create(fakeDatadogContext, fakeBatchData, fakeBatchMetadata)
+        }
+            .isInstanceOf(InvalidPayloadFormatException::class.java)
+            .hasMessage(
+                "The payload format was broken and " +
+                    "an upload request could not be created"
+            )
     }
 
     // endregion
@@ -280,25 +185,6 @@ internal class SessionReplayRequestFactoryTest {
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
             return listOf(logger)
-        }
-
-        @JvmStatic
-        fun throwableAndLogMessageValues(): Stream<Arguments> {
-            return listOf(
-                Arguments.of(
-                    AssertionError(),
-                    SessionReplayRequestFactory.EXTRACT_BYTE_ARRAY_FROM_BODY_ERROR_MESSAGE
-                ),
-                Arguments.of(
-                    IllegalArgumentException(),
-                    SessionReplayRequestFactory.EXTRACT_BYTE_ARRAY_FROM_BODY_ERROR_MESSAGE
-                ),
-                Arguments.of(
-                    IOException(),
-                    SessionReplayRequestFactory.EXTRACT_BYTE_ARRAY_FROM_BODY_ERROR_MESSAGE
-                )
-            )
-                .stream()
         }
     }
 }

@@ -22,6 +22,7 @@ import okhttp3.MultipartBody.Part
 import okhttp3.RequestBody
 import okio.Buffer
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -143,14 +144,13 @@ internal class RequestBodyFactoryTest {
     }
 
     @Test
-    fun `M return a null body W create() { exception thrown }`(
-        @Forgery fakeException: Exception
-    ) {
+    fun `M throw W create() { mockCompressor throws }`(@Forgery fakeException: Exception) {
         // Given
         whenever(mockCompressor.compressBytes(any())).thenThrow(fakeException)
 
         // Then
-        assertThat(testedRequestBodyFactory.create(fakeSegment, fakeSegmentAsJson)).isNull()
+        assertThatThrownBy { testedRequestBodyFactory.create(fakeSegment, fakeSegmentAsJson) }
+            .isEqualTo(fakeException)
     }
 
     private fun RequestBody.toByteArray(): ByteArray {

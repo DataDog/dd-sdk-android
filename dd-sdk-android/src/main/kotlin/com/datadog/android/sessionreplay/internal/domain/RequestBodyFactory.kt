@@ -6,10 +6,8 @@
 
 package com.datadog.android.sessionreplay.internal.domain
 
-import com.datadog.android.core.internal.utils.internalLogger
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.net.BytesCompressor
-import com.datadog.android.v2.api.InternalLogger
 import com.google.gson.JsonObject
 import okhttp3.MediaType
 import okhttp3.MultipartBody
@@ -22,24 +20,14 @@ internal class RequestBodyFactory(
     fun create(
         segment: MobileSegment,
         serializedSegment: JsonObject
-    ): RequestBody? {
-        return try {
-            // we need to add a new line at the end of each segment for being able to format it
-            // as an Array when read by the player
-            val segmentAsBinary = (serializedSegment.toString() + "\n").toByteArray()
-            buildRequestBody(segment, segmentAsBinary)
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                "Unable to create session replay request body.",
-                e
-            )
-            null
-        }
+    ): RequestBody {
+        // we need to add a new line at the end of each segment for being able to format it
+        // as an Array when read by the player
+        val segmentAsBinary = (serializedSegment.toString() + "\n").toByteArray()
+        return buildRequestBody(segment, segmentAsBinary)
     }
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // Called within a try/catch block
+    @Suppress("UnsafeThirdPartyFunctionCall") // Handled up in the caller chain
     private fun buildRequestBody(segment: MobileSegment, segmentAsBinary: ByteArray): RequestBody {
         val compressedData = compressor.compressBytes(segmentAsBinary)
         return MultipartBody.Builder()
