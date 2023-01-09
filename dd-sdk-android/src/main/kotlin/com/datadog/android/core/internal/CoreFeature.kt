@@ -12,6 +12,7 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Process
+import androidx.annotation.RequiresApi
 import com.datadog.android.BuildConfig
 import com.datadog.android.DatadogEndpoint
 import com.datadog.android.DatadogSite
@@ -254,8 +255,13 @@ internal class CoreFeature {
     }
 
     private fun initializeClockSync(appContext: Context) {
+        val safeContext = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            getSafeContext(appContext)
+        } else {
+            appContext
+        }
         kronosClock = AndroidClockFactory.createKronosClock(
-            appContext,
+            safeContext,
             ntpHosts = listOf(
                 DatadogEndpoint.NTP_0,
                 DatadogEndpoint.NTP_1,
@@ -280,6 +286,16 @@ internal class CoreFeature {
                 }
             }
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    private fun getSafeContext(appContext: Context): Context {
+        // When the host app uses the `directBootAware` flag on a  file encrypted device,
+        // the app can wake up during the boot sequence before the device is unlocked
+        // This mean any file I/O or access to shared preferences will throw an exception
+        // This safe context creates a device-protected storage which can be used for non sensitive
+        // data. It should not be used to store the data captured by the SDK.
+        return appContext.createDeviceProtectedStorageContext() ?: appContext
     }
 
     private fun readApplicationInformation(appContext: Context, credentials: Credentials) {
