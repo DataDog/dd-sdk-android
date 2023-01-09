@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.processor
 
 import com.datadog.android.sessionreplay.model.MobileSegment
+import java.util.Locale
 import kotlin.math.max
 
 internal class WireframeUtils {
@@ -86,7 +87,7 @@ internal class WireframeUtils {
     private fun MobileSegment.ShapeStyle.isOpaque(): Boolean {
         return this.opacity == FULL_OPACITY_ALPHA &&
             this.backgroundColor != null &&
-            this.backgroundColor.takeLast(2) == FULL_OPACITY_ALPHA_AS_HEXA_STRING
+            this.backgroundColor.takeLast(2).lowercase(Locale.US) == FULL_OPACITY_STRING_HEXA
     }
 
     private fun MobileSegment.Wireframe.ShapeWireframe.bounds(): Bounds {
@@ -121,7 +122,7 @@ internal class WireframeUtils {
     )
 
     companion object {
-        const val FULL_OPACITY_ALPHA_AS_HEXA_STRING = "FF"
-        const val FULL_OPACITY_ALPHA = 1f
+        private const val FULL_OPACITY_STRING_HEXA = "ff"
+        private const val FULL_OPACITY_ALPHA = 1f
     }
 }

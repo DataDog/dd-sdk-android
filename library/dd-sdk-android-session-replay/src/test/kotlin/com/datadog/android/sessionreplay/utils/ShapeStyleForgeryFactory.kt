@@ -15,7 +15,7 @@ internal class ShapeStyleForgeryFactory :
     override fun getForgery(forge: Forge): MobileSegment.ShapeStyle {
         return MobileSegment.ShapeStyle(
             backgroundColor = forge.aNullable {
-                forge.aStringMatching("#[0-9A-F]{6}FF")
+                forge.aStringMatching("#[0-9A-Fa-f]{6}[fF]{2}")
             },
             opacity = forge.aFloat(min = 0f, max = 1f),
             cornerRadius = forge.aPositiveLong()

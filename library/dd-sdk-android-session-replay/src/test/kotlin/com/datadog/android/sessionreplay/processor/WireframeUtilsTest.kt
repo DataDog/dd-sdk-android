@@ -371,7 +371,11 @@ internal class WireframeUtilsTest {
                 width = fakeWidth,
                 height = fakeHeight,
                 shapeStyle = forge.forgeNonTransparentShapeStyle()
-                    .copy(backgroundColor = forge.aStringMatching("#[0-9A-F]{6}[0-9A-E]{2}"))
+                    .copy(
+                        backgroundColor = forge.aStringMatching(
+                            "#[0-9A-Fa-f]{6}[0-9A-Ea-e]{2}"
+                        )
+                    )
             )
             fakeCoverAllWireframe
         }
@@ -736,7 +740,7 @@ internal class WireframeUtilsTest {
 
     private fun Forge.forgeNonTransparentShapeStyle(): MobileSegment.ShapeStyle {
         return MobileSegment.ShapeStyle(
-            backgroundColor = aStringMatching("#[0-9A-F]{6}FF"),
+            backgroundColor = aStringMatching("#[0-9A-Fa-f]{6}[fF]{2}"),
             opacity = 1f,
             cornerRadius = aPositiveLong()
         )
