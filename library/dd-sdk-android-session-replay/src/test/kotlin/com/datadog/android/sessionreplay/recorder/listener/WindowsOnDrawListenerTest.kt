@@ -9,15 +9,16 @@ package com.datadog.android.sessionreplay.recorder.listener
 import android.app.Activity
 import android.content.res.Configuration
 import android.content.res.Resources
+import android.content.res.Resources.Theme
 import android.view.View
 import android.view.Window
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.processor.Processor
 import com.datadog.android.sessionreplay.recorder.Debouncer
 import com.datadog.android.sessionreplay.recorder.Node
 import com.datadog.android.sessionreplay.recorder.OrientationChanged
 import com.datadog.android.sessionreplay.recorder.SnapshotProducer
 import com.datadog.android.sessionreplay.recorder.densityNormalized
-import com.datadog.android.sessionreplay.utils.ForgeConfigurator
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.eq
@@ -82,12 +83,16 @@ internal class WindowsOnDrawListenerTest {
     lateinit var fakeMockedWindows: List<Window>
     lateinit var fakeWindowsSnapshots: List<Node>
 
+    @Mock
+    lateinit var mockTheme: Theme
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeMockedWindows = forge.aMockedWindowsList()
         fakeWindowsSnapshots = fakeMockedWindows.map { forge.getForgery() }
+        whenever(mockActivity.theme).thenReturn(mockTheme)
         fakeMockedWindows.forEachIndexed { index, window ->
-            whenever(mockSnapshotProducer.produce(window.decorView, fakeDensity))
+            whenever(mockSnapshotProducer.produce(mockTheme, window.decorView, fakeDensity))
                 .thenReturn(fakeWindowsSnapshots[index])
         }
         whenever(mockDecorView.width).thenReturn(fakeDecorWidth)

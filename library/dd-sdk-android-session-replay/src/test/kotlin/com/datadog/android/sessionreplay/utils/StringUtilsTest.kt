@@ -7,38 +7,28 @@
 package com.datadog.android.sessionreplay.utils
 
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.quality.Strictness
 
-@Extensions(
-    ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
-)
-@MockitoSettings(strictness = Strictness.LENIENT)
+@Extensions(ExtendWith(ForgeExtension::class))
 @ForgeConfiguration(ForgeConfigurator::class)
-class SessionReplayRumContextTest {
+internal class StringUtilsTest {
 
     @Test
-    fun `M return true W isNotValid() { RumContext is not valid }`() {
+    fun `M return hex formatted color W formatColorAndAlphaAsHexa`(
+        @StringForgery(regex = "#[0-9a-f]{8}") fakeExpectedFormattedColor: String
+    ) {
         // Given
-        val rumContext = SessionReplayRumContext()
+        val color = fakeExpectedFormattedColor.substring(1 until 7).toInt(16)
+        val colorAlpha = fakeExpectedFormattedColor.substring(7..8).toInt(16)
 
         // Then
-        assertThat(rumContext.isNotValid()).isTrue
-    }
-
-    @Test
-    fun `M return false W isNotValid() { RumContext is valid }`(
-        @Forgery fakeContext: SessionReplayRumContext
-    ) {
-        assertThat(fakeContext.isNotValid()).isFalse()
+        assertThat(StringUtils.formatColorAndAlphaAsHexa(color, colorAlpha))
+            .isEqualTo(fakeExpectedFormattedColor)
     }
 }

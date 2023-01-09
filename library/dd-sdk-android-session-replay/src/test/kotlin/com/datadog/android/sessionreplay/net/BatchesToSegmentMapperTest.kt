@@ -6,9 +6,9 @@
 
 package com.datadog.android.sessionreplay.net
 
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.processor.EnrichedRecord
-import com.datadog.android.sessionreplay.utils.ForgeConfigurator
 import com.datadog.android.sessionreplay.utils.SessionReplayRumContext
 import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive

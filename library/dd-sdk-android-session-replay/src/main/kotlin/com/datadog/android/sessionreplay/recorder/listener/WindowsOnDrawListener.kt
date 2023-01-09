@@ -56,7 +56,7 @@ internal class WindowsOnDrawListener(
             .mapNotNull { it.get() }
             .mapNotNull {
                 val windowDecorView = it.decorView
-                snapshotProducer.produce(windowDecorView, pixelsDensity)
+                snapshotProducer.produce(ownerActivity.theme, windowDecorView, pixelsDensity)
             }
         if (nodes.isNotEmpty()) {
             processor.processScreenSnapshots(nodes, orientationChanged)

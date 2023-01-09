@@ -39,7 +39,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-class SessionReplayLifecycleCallbackTest {
+internal class SessionReplayLifecycleCallbackTest {
 
     lateinit var testedCallback: SessionReplayLifecycleCallback
 

@@ -13,11 +13,11 @@ import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
 import com.datadog.android.sessionreplay.RecordCallback
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.processor.Processor
 import com.datadog.android.sessionreplay.recorder.callback.NoOpWindowCallback
 import com.datadog.android.sessionreplay.recorder.callback.RecorderWindowCallback
 import com.datadog.android.sessionreplay.recorder.listener.WindowsOnDrawListener
-import com.datadog.android.sessionreplay.utils.ForgeConfigurator
 import com.datadog.android.sessionreplay.utils.TimeProvider
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor

@@ -42,7 +42,7 @@ internal class ViewWireframeMapper :
     private fun Drawable.resolveShapeStyleAndBorder(viewAlpha: Float):
         Pair<MobileSegment.ShapeStyle?, MobileSegment.ShapeBorder?>? {
         return if (this is ColorDrawable) {
-            val color = colorAndAlphaAsStringHexa(color, alpha.toLong())
+            val color = colorAndAlphaAsStringHexa(color, alpha)
             MobileSegment.ShapeStyle(color, viewAlpha) to null
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
             this is RippleDrawable &&

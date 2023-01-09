@@ -4,19 +4,18 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.utils
+package com.datadog.android.sessionreplay.forge
 
 import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-internal class IncrementalSnapshotRecordForgeryFactory :
-    ForgeryFactory<MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord> {
-    override fun getForgery(forge: Forge):
-        MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord {
-        return MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
+internal class FullSnapshotRecordForgeryFactory :
+    ForgeryFactory<MobileSegment.MobileRecord.MobileFullSnapshotRecord> {
+    override fun getForgery(forge: Forge): MobileSegment.MobileRecord.MobileFullSnapshotRecord {
+        return MobileSegment.MobileRecord.MobileFullSnapshotRecord(
             forge.aPositiveLong(),
-            forge.getForgery()
+            MobileSegment.Data(forge.aList { forge.getForgery() })
         )
     }
 }

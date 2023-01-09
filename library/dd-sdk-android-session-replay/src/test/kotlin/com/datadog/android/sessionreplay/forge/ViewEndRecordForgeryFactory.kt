@@ -4,18 +4,17 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.utils
+package com.datadog.android.sessionreplay.forge
 
 import com.datadog.android.sessionreplay.model.MobileSegment
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-internal class FocusRecordForgeryFactory :
-    ForgeryFactory<MobileSegment.MobileRecord.FocusRecord> {
-    override fun getForgery(forge: Forge): MobileSegment.MobileRecord.FocusRecord {
-        return MobileSegment.MobileRecord.FocusRecord(
-            forge.aPositiveLong(),
-            MobileSegment.Data2(forge.aBool())
+internal class ViewEndRecordForgeryFactory :
+    ForgeryFactory<MobileSegment.MobileRecord.ViewEndRecord> {
+    override fun getForgery(forge: Forge): MobileSegment.MobileRecord.ViewEndRecord {
+        return MobileSegment.MobileRecord.ViewEndRecord(
+            forge.aPositiveLong()
         )
     }
 }
