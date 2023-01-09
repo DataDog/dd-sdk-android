@@ -1,3 +1,10 @@
+# 1.16.0 / 2023-01-10
+
+* [BUGFIX] Global: Use safe context for directBootAware host apps. See [#1209](https://github.com/DataDog/dd-sdk-android/pull/1209)
+* [BUGFIX] Global: Provide frozen snapshot of features context when requested. See [#1213](https://github.com/DataDog/dd-sdk-android/pull/1213)
+* [IMPROVEMENT] Tracing: Tracing feature stores context in the common context storage. See [#1216](https://github.com/DataDog/dd-sdk-android/pull/1216)
+* [IMPROVEMENT] Telemetry: Apply extra sampling rate to the configuration telemetry. See [#1222](https://github.com/DataDog/dd-sdk-android/pull/1222)
+
 # 1.16.0-beta1 / 2022-12-13
 
 * [FEATURE] Global: Unlock encryption API for SDK v2. See [#935](https://github.com/DataDog/dd-sdk-android/pull/935)
