@@ -41,7 +41,6 @@ import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.atLeastOnce
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
@@ -59,16 +58,18 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.data.Percentage
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
+import org.mockito.invocation.InvocationOnMock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import org.mockito.stubbing.Answer
 import java.util.Locale
 import kotlin.reflect.jvm.jvmName
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrackingStrategy as VTS
@@ -89,6 +90,9 @@ internal class TelemetryEventHandlerTest {
 
     @Mock
     lateinit var mockSampler: Sampler
+
+    @Mock
+    lateinit var mockConfigurationSampler: Sampler
 
     @Mock
     lateinit var mockSdkCore: SdkCore
@@ -130,6 +134,7 @@ internal class TelemetryEventHandlerTest {
         )
 
         whenever(mockSampler.sample()) doReturn true
+        whenever(mockConfigurationSampler.sample()) doReturn true
 
         whenever(
             mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
@@ -143,6 +148,7 @@ internal class TelemetryEventHandlerTest {
             TelemetryEventHandler(
                 mockSdkCore,
                 mockSampler,
+                mockConfigurationSampler,
                 MAX_EVENTS_PER_SESSION_TEST
             )
     }
@@ -528,6 +534,48 @@ internal class TelemetryEventHandlerTest {
     }
 
     @Test
+    fun `𝕄 write debug&error event 𝕎 handleEvent(SendTelemetry) { configuration sampler returns false }`(
+        forge: Forge
+    ) {
+        // Given
+        val rawEvent = forge.anElementFrom(
+            forge.createRumRawTelemetryDebugEvent(),
+            forge.createRumRawTelemetryErrorEvent()
+        )
+        whenever(mockSampler.sample()) doReturn true
+        whenever(mockConfigurationSampler.sample()) doReturn false
+
+        // When
+        testedTelemetryHandler.handleEvent(rawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            if (rawEvent.type == TelemetryType.DEBUG) {
+                assertThat(lastValue).isInstanceOf(TelemetryDebugEvent::class.java)
+            } else {
+                assertThat(lastValue).isInstanceOf(TelemetryErrorEvent::class.java)
+            }
+        }
+    }
+
+    @Test
+    fun `𝕄 not write configuration event 𝕎 handleEvent(SendTelemetry) { event is not sampled }`(
+        forge: Forge
+    ) {
+        // Given
+        val rawEvent = forge.createRumRawTelemetryConfigurationEvent()
+        whenever(mockSampler.sample()) doReturn true
+        whenever(mockConfigurationSampler.sample()) doReturn false
+
+        // When
+        testedTelemetryHandler.handleEvent(rawEvent, mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+    }
+
+    @Test
     fun `𝕄 not write event 𝕎 handleEvent(SendTelemetry) { seen in the session }`(forge: Forge) {
         // Given
         val rawEvent = forge.createRumRawTelemetryEvent()
@@ -702,30 +750,34 @@ internal class TelemetryEventHandlerTest {
     @Test
     fun `𝕄 count the limit only after the sampling 𝕎 handleEvent(SendTelemetry)`(forge: Forge) {
         // Given
-        whenever(mockSampler.sample()) doAnswer { forge.aBool() }
-        val events = forge.aList(
-            size = MAX_EVENTS_PER_SESSION_TEST * 5
-        ) { createRumRawTelemetryEvent() }
-            // remove unwanted identity collisions
-            .groupBy { it.identity }.map { it.value.first() }
-            .take(MAX_EVENTS_PER_SESSION_TEST)
-        val repeats = 10
-        val expectedWrites = MAX_EVENTS_PER_SESSION_TEST * repeats / 2
-
-        // When
-        repeat(repeats) {
-            testedTelemetryHandler.onSessionStarted(forge.aString(), false)
-            events.forEach {
-                testedTelemetryHandler.handleEvent(it, mockWriter)
+        // sample out 50%
+        whenever(mockSampler.sample()) doAnswer object : Answer<Boolean> {
+            var invocationCount = 0
+            override fun answer(invocation: InvocationOnMock): Boolean {
+                invocationCount++
+                return invocationCount % 2 == 0
             }
         }
 
-        // Then
-        argumentCaptor<Any> {
-            verify(mockWriter, atLeastOnce())
-                .write(eq(mockEventBatchWriter), capture())
-            assertThat(allValues.size).isCloseTo(expectedWrites, Percentage.withPercentage(25.0))
+        val events = forge.aList(
+            size = MAX_EVENTS_PER_SESSION_TEST * 10
+        ) { createRumRawTelemetryEvent() }
+            // remove unwanted identity collisions
+            .groupBy { it.identity }
+            .map { it.value.first() }
+            .take(MAX_EVENTS_PER_SESSION_TEST * 2)
+
+        assumeTrue(events.size == MAX_EVENTS_PER_SESSION_TEST * 2)
+
+        // When
+        events.forEach {
+            testedTelemetryHandler.handleEvent(it, mockWriter)
         }
+
+        // Then
+        // if limit would be counted before the sampler, it will be twice less writes
+        verify(mockWriter, times(MAX_EVENTS_PER_SESSION_TEST))
+            .write(eq(mockEventBatchWriter), any())
         verifyZeroInteractions(logger.mockSdkLogHandler)
     }
 
