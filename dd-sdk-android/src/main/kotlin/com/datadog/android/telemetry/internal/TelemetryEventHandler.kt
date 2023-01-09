@@ -8,7 +8,9 @@ package com.datadog.android.telemetry.internal
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.internal.sampling.RateBasedSampler
 import com.datadog.android.core.internal.sampling.Sampler
+import com.datadog.android.core.internal.utils.percent
 import com.datadog.android.core.internal.utils.sdkLogger
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
@@ -31,6 +33,7 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrack
 internal class TelemetryEventHandler(
     internal val sdkCore: SdkCore,
     internal val eventSampler: Sampler,
+    internal val configurationExtraSampler: Sampler = RateBasedSampler(20f.percent()),
     internal val maxEventCountPerSession: Int = MAX_EVENTS_PER_SESSION
 ) : RumSessionListener {
 
@@ -98,6 +101,10 @@ internal class TelemetryEventHandler(
     @Suppress("ReturnCount")
     private fun canWrite(event: RumRawEvent.SendTelemetry): Boolean {
         if (!eventSampler.sample()) return false
+
+        if (event.type == TelemetryType.CONFIGURATION && !configurationExtraSampler.sample()) {
+            return false
+        }
 
         val eventIdentity = event.identity
 
