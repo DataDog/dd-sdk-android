@@ -297,7 +297,7 @@ internal class FirstPartyHostHeaderTypeResolverTest {
     @Test
     fun `𝕄 return header types 𝕎 headerTypesForUrl(String) {first party hosts}`(
         @StringForgery(regex = "http(s?)") scheme: String,
-        @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String,
+        @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String
     ) {
         for ((host, tracingHeaders) in fakeHosts) {
             // Given

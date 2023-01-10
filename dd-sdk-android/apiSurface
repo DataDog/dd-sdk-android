@@ -44,10 +44,10 @@ class com.datadog.android.DatadogEventListener : okhttp3.EventListener
   override fun callFailed(okhttp3.Call, java.io.IOException)
   class Factory : okhttp3.EventListener.Factory
     override fun create(okhttp3.Call): okhttp3.EventListener
-open class com.datadog.android.DatadogInterceptor : TracingInterceptor
-  constructor(Map<String, Set<TracingHeaderType>>, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
-  constructor(List<String>, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
-  constructor(TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+open class com.datadog.android.DatadogInterceptor : com.datadog.android.tracing.TracingInterceptor
+  constructor(Map<String, Set<com.datadog.android.tracing.TracingHeaderType>>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+  constructor(List<String>, com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
+  constructor(com.datadog.android.tracing.TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.rum.RumResourceAttributesProvider = NoOpRumResourceAttributesProvider(), Float = DEFAULT_TRACE_SAMPLING_RATE)
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   override fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   override fun canSendSpan(): Boolean

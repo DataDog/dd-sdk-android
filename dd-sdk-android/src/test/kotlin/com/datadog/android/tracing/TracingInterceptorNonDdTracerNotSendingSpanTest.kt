@@ -196,7 +196,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
     open fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>>,
-        factory : (Set<TracingHeaderType>) -> Tracer
+        factory: (Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return object :
             TracingInterceptor(
@@ -326,7 +326,6 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
                 .isEqualTo("00-%s-%s-00".format(mockSpan.context().toTraceId(), mockSpan.context().toSpanId()))
         }
     }
-
 
     @Test
     fun `𝕄 inject tracing header 𝕎 intercept() {local known host}`(
@@ -1092,7 +1091,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         val localHosts = forge.aList { forge.aStringMatching(HOSTNAME_PATTERN) }
 
         // WHEN
-        testedInterceptor = instantiateTestedInterceptor(localHosts.associateWith { setOf(TracingHeaderType.DATADOG )}) {mockLocalTracer}
+        testedInterceptor = instantiateTestedInterceptor(localHosts.associateWith { setOf(TracingHeaderType.DATADOG) }) { mockLocalTracer }
 
         // THEN
         verify(mockResolver, never()).addKnownHosts(localHosts)
@@ -1117,7 +1116,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     fun `𝕄 warn 𝕎 init() with no known host`() {
         whenever(mockResolver.isEmpty()) doReturn true
 
-        testedInterceptor = instantiateTestedInterceptor(emptyMap()) {mockLocalTracer}
+        testedInterceptor = instantiateTestedInterceptor(emptyMap()) { mockLocalTracer }
 
         verifyZeroInteractions(mockTracer, mockLocalTracer)
         verify(logger.mockDevLogHandler)
@@ -1228,8 +1227,8 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     // endregion
 
     companion object {
-        const val HOSTNAME_PATTERN =  "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{1,4}[a-zA-Z0-9]{2,3})\\.)+" +
-                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]{1,2}[A-Za-z0-9])"
+        const val HOSTNAME_PATTERN = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{1,4}[a-zA-Z0-9]{2,3})\\.)+" +
+            "([A-Za-z]|[A-Za-z][A-Za-z0-9-]{1,2}[A-Za-z0-9])"
         const val IPV4_PATTERN =
             "(([0-9]|[1-9][0-9]|1[0-9]){2}\\.|(2[0-4][0-9]|25[0-5])\\.){3}" +
                 "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"

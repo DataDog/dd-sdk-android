@@ -24,8 +24,11 @@ import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
-import com.datadog.android.tracing.*
+import com.datadog.android.tracing.AndroidTracer
 import com.datadog.android.tracing.NoOpTracedRequestListener
+import com.datadog.android.tracing.TracedRequestListener
+import com.datadog.android.tracing.TracingHeaderType
+import com.datadog.android.tracing.TracingInterceptor
 import com.datadog.android.v2.core.DatadogCore
 import io.opentracing.Span
 import io.opentracing.Tracer

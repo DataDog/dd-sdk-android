@@ -184,7 +184,7 @@ internal open class TracingInterceptorNonDdTracerTest {
 
     open fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>> = emptyMap(),
-        factory : (Set<TracingHeaderType>) -> Tracer
+        factory: (Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return TracingInterceptor(
             tracedHosts,
@@ -479,7 +479,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.header(TracingInterceptor.W3C_TRACEPARENT_KEY))
-            .isEqualTo("00-%s-%s-00".format(mockSpan.context().toTraceId(), mockSpan.context().toSpanId()))
+                .isEqualTo("00-%s-%s-00".format(mockSpan.context().toTraceId(), mockSpan.context().toSpanId()))
         }
     }
 
@@ -619,9 +619,11 @@ internal open class TracingInterceptorNonDdTracerTest {
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(
-            TracingHeaderType.DATADOG
-        ))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.DATADOG
+            )
+        )
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
                 TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER,
@@ -658,9 +660,11 @@ internal open class TracingInterceptorNonDdTracerTest {
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(
-            TracingHeaderType.B3MULTI
-        ))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.B3MULTI
+            )
+        )
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
                 TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY,
@@ -694,9 +698,11 @@ internal open class TracingInterceptorNonDdTracerTest {
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(
-            TracingHeaderType.B3
-        ))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.B3
+            )
+        )
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
                 TracingInterceptor.B3_HEADER_KEY,
@@ -730,9 +736,11 @@ internal open class TracingInterceptorNonDdTracerTest {
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(
-            TracingHeaderType.TRACECONTEXT
-        ))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.TRACECONTEXT
+            )
+        )
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
                 TracingInterceptor.W3C_TRACEPARENT_KEY,
@@ -764,9 +772,11 @@ internal open class TracingInterceptorNonDdTracerTest {
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(
-            TracingHeaderType.DATADOG
-        ))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.DATADOG
+            )
+        )
 
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
@@ -801,9 +811,11 @@ internal open class TracingInterceptorNonDdTracerTest {
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(
-            TracingHeaderType.B3MULTI
-        ))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.B3MULTI
+            )
+        )
 
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
@@ -835,9 +847,11 @@ internal open class TracingInterceptorNonDdTracerTest {
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(
-            TracingHeaderType.B3
-        ))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.B3
+            )
+        )
 
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
@@ -870,9 +884,11 @@ internal open class TracingInterceptorNonDdTracerTest {
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(
-            TracingHeaderType.TRACECONTEXT
-        ))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.TRACECONTEXT
+            )
+        )
 
         fakeRequest = forgeRequest(forge) {
             it.addHeader(

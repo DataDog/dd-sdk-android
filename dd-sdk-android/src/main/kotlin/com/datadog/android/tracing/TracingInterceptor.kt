@@ -72,10 +72,10 @@ internal constructor(
     internal val traceOrigin: String?,
     internal val traceSampler: Sampler,
     internal val localTracerFactory: (Set<TracingHeaderType>) -> Tracer
-    ) : Interceptor {
+) : Interceptor {
 
     private val localTracerReference: AtomicReference<Tracer> = AtomicReference()
-    private val sanitizedHosts =  HostsSanitizer().sanitizeHosts(
+    private val sanitizedHosts = HostsSanitizer().sanitizeHosts(
         tracedHosts.keys.toList(),
         NETWORK_REQUESTS_TRACKING_FEATURE_NAME
     )
@@ -112,8 +112,7 @@ internal constructor(
         null,
         RateBasedSampler(traceSamplingRate.percent()),
         { AndroidTracer.Builder().setTracingHeaderTypes(it).build() }
-        )
-
+    )
 
     /**
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s.
@@ -270,7 +269,6 @@ internal constructor(
             // clear the localTracer reference if any
             localTracerReference.set(null)
             GlobalTracer.get()
-
         } else {
             // we check if we already have a local tracer if not we instantiate one
             resolveLocalTracer()
@@ -313,11 +311,11 @@ internal constructor(
         if (datadogSamplingPriority != null) {
             if (datadogSamplingPriority == PrioritySampling.UNSET) return null
             return datadogSamplingPriority == PrioritySampling.USER_KEEP ||
-                    datadogSamplingPriority == PrioritySampling.SAMPLER_KEEP
+                datadogSamplingPriority == PrioritySampling.SAMPLER_KEEP
         }
         val b3MSamplingPriority = request.header(B3M_SAMPLING_PRIORITY_KEY)
-        if(b3MSamplingPriority != null){
-            return when(b3MSamplingPriority){
+        if (b3MSamplingPriority != null) {
+            return when (b3MSamplingPriority) {
                 "1" -> true
                 "0" -> false
                 else -> null
@@ -325,14 +323,14 @@ internal constructor(
         }
 
         val b3HeaderValue = request.header(B3_HEADER_KEY)
-        if(b3HeaderValue != null){
-            if(b3HeaderValue == "0"){
+        if (b3HeaderValue != null) {
+            if (b3HeaderValue == "0") {
                 return false
             }
             val b3HeaderParts = b3HeaderValue.split("-")
-            if(b3HeaderParts.size >= 3){
-                return when(b3HeaderParts[2]){
-                    "1","d" -> return true
+            if (b3HeaderParts.size >= 3) {
+                return when (b3HeaderParts[2]) {
+                    "1", "d" -> return true
                     "0" -> return false
                     else -> null
                 }
@@ -340,7 +338,7 @@ internal constructor(
         }
 
         val w3cHeaderValue = request.header(W3C_TRACEPARENT_KEY)
-        if(w3cHeaderValue != null) {
+        if (w3cHeaderValue != null) {
             val w3CHeaderParts = w3cHeaderValue.split("-")
             if (w3CHeaderParts.size >= 4) {
                 return when (w3CHeaderParts[3].toIntOrNull()) {
@@ -352,8 +350,6 @@ internal constructor(
         }
 
         return null
-
-
     }
 
     private fun extractParentContext(tracer: Tracer, request: Request): SpanContext? {
@@ -379,11 +375,11 @@ internal constructor(
     ): Request.Builder {
         val tracedRequestBuilder = request.newBuilder()
         var tracingHeaderTypes = localFirstPartyHostHeaderTypeResolver.headerTypesForUrl(request.url())
-        tracingHeaderTypes = if(!tracingHeaderTypes.isEmpty()) tracingHeaderTypes else firstPartyHostResolver.headerTypesForUrl(request.url())
+        tracingHeaderTypes = if (!tracingHeaderTypes.isEmpty()) tracingHeaderTypes else firstPartyHostResolver.headerTypesForUrl(request.url())
 
         if (!isSampled) {
-            for (headerType in tracingHeaderTypes){
-                when(headerType){
+            for (headerType in tracingHeaderTypes) {
+                when (headerType) {
                     TracingHeaderType.DATADOG -> {
                         listOf(
                             DATADOG_SAMPLING_PRIORITY_HEADER,
@@ -412,7 +408,7 @@ internal constructor(
                         tracedRequestBuilder.addHeader(B3M_SAMPLING_PRIORITY_KEY, B3M_DROP_SAMPLING_DECISION)
                     }
 
-                    TracingHeaderType.TRACECONTEXT ->{
+                    TracingHeaderType.TRACECONTEXT -> {
                         tracedRequestBuilder.removeHeader(W3C_TRACEPARENT_KEY)
                         tracedRequestBuilder.addHeader(W3C_TRACEPARENT_KEY, W3C_DROP_SAMPLING_DECISION.format(span.context().toTraceId(), span.context().toSpanId()))
                     }
@@ -426,22 +422,22 @@ internal constructor(
                     // By default the `addHeader` method adds a value and doesn't replace it
                     // We need to remove the old trace/span info to use the one for the current span
                     tracedRequestBuilder.removeHeader(key)
-                    when(key){
+                    when (key) {
                         DATADOG_SAMPLING_PRIORITY_HEADER,
                         DATADOG_TRACE_ID_HEADER,
                         DATADOG_SPAN_ID_HEADER,
-                        DATADOG_ORIGIN_HEADER-> if(tracingHeaderTypes.contains(TracingHeaderType.DATADOG)) {
+                        DATADOG_ORIGIN_HEADER -> if (tracingHeaderTypes.contains(TracingHeaderType.DATADOG)) {
                             tracedRequestBuilder.addHeader(key, value)
                         }
-                        B3_HEADER_KEY -> if(tracingHeaderTypes.contains(TracingHeaderType.B3)){
+                        B3_HEADER_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.B3)) {
                             tracedRequestBuilder.addHeader(key, value)
                         }
                         B3M_SPAN_ID_KEY,
                         B3M_TRACE_ID_KEY,
-                        B3M_SAMPLING_PRIORITY_KEY -> if(tracingHeaderTypes.contains(TracingHeaderType.B3MULTI)){
+                        B3M_SAMPLING_PRIORITY_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.B3MULTI)) {
                             tracedRequestBuilder.addHeader(key, value)
                         }
-                        W3C_TRACEPARENT_KEY -> if(tracingHeaderTypes.contains(TracingHeaderType.TRACECONTEXT)){
+                        W3C_TRACEPARENT_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.TRACECONTEXT)) {
                             tracedRequestBuilder.addHeader(key, value)
                         }
                         else -> tracedRequestBuilder.addHeader(key, value)

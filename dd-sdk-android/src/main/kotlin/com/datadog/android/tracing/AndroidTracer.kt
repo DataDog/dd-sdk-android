@@ -143,10 +143,11 @@ class AndroidTracer internal constructor(
          * Sets the tracing header styles that may be injected by this tracer
          * @param headerTypes the list of header types injected (default = datadog style headers)
          */
-        fun setTracingHeaderTypes(headerTypes : Set<TracingHeaderType>): Builder{
+        fun setTracingHeaderTypes(headerTypes: Set<TracingHeaderType>): Builder {
             this.tracingHeaderTypes = headerTypes
             return this
         }
+
         /**
          * Sets the service name that will appear in your traces.
          * @param serviceName the service name (default = application package name)

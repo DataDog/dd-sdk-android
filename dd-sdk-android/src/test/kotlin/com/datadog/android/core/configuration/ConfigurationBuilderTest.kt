@@ -1308,8 +1308,10 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHostsWithHeaderTypes =
-            hosts.associateWith { setOf(TracingHeaderType.DATADOG) })
+            Configuration.DEFAULT_CORE_CONFIG.copy(
+                firstPartyHostsWithHeaderTypes =
+                hosts.associateWith { setOf(TracingHeaderType.DATADOG) }
+            )
         )
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
@@ -1363,9 +1365,11 @@ internal class ConfigurationBuilderTest {
 
         // THEN
         assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHostsWithHeaderTypes =
-            hosts.associate { URL(it).host to setOf(TracingHeaderType.DATADOG) }
-        ))
+            Configuration.DEFAULT_CORE_CONFIG.copy(
+                firstPartyHostsWithHeaderTypes =
+                hosts.associate { URL(it).host to setOf(TracingHeaderType.DATADOG) }
+            )
+        )
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
         assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
@@ -1399,11 +1403,10 @@ internal class ConfigurationBuilderTest {
     fun `𝕄 build config with first party hosts and header types 𝕎 setFirstPartyHosts() { host names }`(
         @StringForgery(
             regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
-                    "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
         ) hosts: List<String>,
         forge: Forge
     ) {
-
         val hostWithHeaderTypes = hosts.associateWith { setOf(forge.anElementFrom(setOf(TracingHeaderType.DATADOG, TracingHeaderType.B3MULTI, TracingHeaderType.B3, TracingHeaderType.TRACECONTEXT))) }
 
         // When

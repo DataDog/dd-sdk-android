@@ -179,7 +179,7 @@ internal open class TracingInterceptorTest {
 
     open fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>> = emptyMap(),
-        factory : (Set<TracingHeaderType>) -> Tracer
+        factory: (Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return TracingInterceptor(
             tracedHosts,
@@ -290,7 +290,6 @@ internal open class TracingInterceptorTest {
             assertThat(lastValue.header(TracingInterceptor.DATADOG_TRACE_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_ORIGIN_HEADER)).isNull()
-
         }
     }
 
@@ -317,7 +316,6 @@ internal open class TracingInterceptorTest {
             assertThat(lastValue.header(TracingInterceptor.B3M_TRACE_ID_KEY)).isNull()
         }
     }
-
 
     @Test
     fun `𝕄 inject non-tracing b3 header 𝕎 intercept() {global known host + not sampled}`(
@@ -445,7 +443,6 @@ internal open class TracingInterceptorTest {
             assertThat(lastValue.header(TracingInterceptor.DATADOG_TRACE_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_ORIGIN_HEADER)).isNull()
-
         }
     }
 
@@ -735,7 +732,6 @@ internal open class TracingInterceptorTest {
             assertThat(lastValue.header(key)).isEqualTo(value)
         }
     }
-
 
     @Test
     fun `𝕄 respect b3multi sampling decision 𝕎 intercept() {sampled in upstream interceptor}`(
@@ -1302,7 +1298,7 @@ internal open class TracingInterceptorTest {
     @Test
     fun `M do not update the hostDetector W host list provided`(forge: Forge) {
         // GIVEN
-        val localHosts = forge.aMap { aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.DATADOG)}
+        val localHosts = forge.aMap { aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.DATADOG) }
 
         // WHEN
         testedInterceptor = instantiateTestedInterceptor(localHosts) { mockLocalTracer }
@@ -1440,8 +1436,8 @@ internal open class TracingInterceptorTest {
     // endregion
 
     companion object {
-        const val HOSTNAME_PATTERN =  "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{1,4}[a-zA-Z0-9]{2,3})\\.)+" +
-                    "([A-Za-z]|[A-Za-z][A-Za-z0-9-]{1,2}[A-Za-z0-9])"
+        const val HOSTNAME_PATTERN = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{1,4}[a-zA-Z0-9]{2,3})\\.)+" +
+            "([A-Za-z]|[A-Za-z][A-Za-z0-9-]{1,2}[A-Za-z0-9])"
         val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider

@@ -188,7 +188,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
     open fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>>,
-        factory : (Set<TracingHeaderType>) -> Tracer
+        factory: (Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return object :
             TracingInterceptor(
@@ -286,6 +286,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
             assertThat(lastValue.header(TracingInterceptor.B3M_TRACE_ID_KEY)).isNull()
         }
     }
+
     @Test
     fun `𝕄 inject non-tracing b3 header 𝕎 intercept() {global known host + not sampled}`(
         @IntForgery(min = 200, max = 600) statusCode: Int
@@ -307,6 +308,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
                 .isEqualTo("0")
         }
     }
+
     @Test
     fun `𝕄 inject non-tracing tracecontext header 𝕎 intercept() {global known host + not sampled}`(
         @IntForgery(min = 200, max = 600) statusCode: Int
@@ -814,7 +816,6 @@ internal open class TracingInterceptorNotSendingSpanTest {
                 .isEqualTo("00-%s-%s-00".format(mockSpan.context().toTraceId(), mockSpan.context().toSpanId()))
         }
     }
-
 
     @Test
     fun `𝕄 create a span with info 𝕎 intercept() for successful request`(
