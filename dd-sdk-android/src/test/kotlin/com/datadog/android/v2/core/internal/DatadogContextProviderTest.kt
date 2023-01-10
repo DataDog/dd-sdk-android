@@ -15,11 +15,13 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.forge.exhaustiveAttributes
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.whenever
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -155,6 +157,48 @@ internal class DatadogContextProviderTest {
         assertThat(context.trackingConsent).isEqualTo(fakeTrackingConsent)
 
         assertThat(context.featuresContext).isEqualTo(coreFeature.mockInstance.featuresContext)
+    }
+
+    @Test
+    fun `𝕄 create a frozen feature context 𝕎 context {feature context is changed after context creation}`(
+        forge: Forge
+    ) {
+        // Given
+        val mutableFeaturesContext = forge.aMap<String, Map<String, Any?>> {
+            aString() to forge.exhaustiveAttributes()
+        }.toMutableMap()
+
+        // create it explicitly, without relying on the same .toMap code as in the source
+        val featuresContextSnapshot = mutableMapOf<String, Map<String, Any?>>()
+        mutableFeaturesContext.forEach { (key, value) ->
+            val featureSnapshot = mutableMapOf<String, Any?>()
+            featuresContextSnapshot[key] = featureSnapshot.apply {
+                value.forEach { (innerKey, innerValue) ->
+                    this[innerKey] = innerValue
+                }
+            }
+        }
+
+        whenever(coreFeature.mockInstance.featuresContext) doReturn mutableFeaturesContext
+
+        val context = testedProvider.context
+
+        // When
+        mutableFeaturesContext.values.forEach { innerMap ->
+            val keysToRemove = innerMap.keys.take(forge.anInt(min = 0, max = innerMap.keys.size))
+            keysToRemove.forEach {
+                (innerMap as MutableMap<*, *>).remove(it)
+            }
+        }
+        val keysToRemove = mutableFeaturesContext.keys
+            .take(forge.anInt(min = 0, max = mutableFeaturesContext.keys.size))
+        keysToRemove.forEach {
+            mutableFeaturesContext.remove(it)
+        }
+
+        // Then
+        assertThat(mutableFeaturesContext).isNotEqualTo(featuresContextSnapshot)
+        assertThat(context.featuresContext).isEqualTo(featuresContextSnapshot)
     }
 
     @Test
