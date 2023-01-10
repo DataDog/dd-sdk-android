@@ -16,6 +16,7 @@ import com.datadog.android.log.internal.domain.event.LogEventMapperWrapper
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.config.LoggerTestConfiguration
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
@@ -26,12 +27,10 @@ import com.datadog.android.v2.api.SdkCore
 import com.datadog.android.v2.api.context.DatadogContext
 import com.datadog.android.v2.core.internal.storage.DataWriter
 import com.datadog.android.v2.log.internal.storage.LogsDataWriter
-import com.datadog.opentracing.DDSpanContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
-import com.datadog.tools.unit.setStaticValue
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
 import com.nhaarman.mockitokotlin2.doAnswer
@@ -47,11 +46,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.Span
-import io.opentracing.Tracer
-import io.opentracing.util.GlobalTracer
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -90,15 +85,6 @@ internal class LogsFeatureTest {
     @Mock
     lateinit var mockDataWriter: DataWriter<LogEvent>
 
-    @Mock
-    lateinit var mockTracer: Tracer
-
-    @Mock
-    lateinit var mockSpanContext: DDSpanContext
-
-    @Mock
-    lateinit var mockSpan: Span
-
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
@@ -110,6 +96,9 @@ internal class LogsFeatureTest {
 
     @StringForgery(StringForgeryType.HEXADECIMAL)
     lateinit var fakeTraceId: String
+
+    @StringForgery(StringForgeryType.ALPHABETICAL)
+    lateinit var fakeThreadName: String
 
     private var fakeServerTimeOffset: Long = 0L
 
@@ -129,28 +118,25 @@ internal class LogsFeatureTest {
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
 
-        whenever(mockTracer.activeSpan()).thenReturn(mockSpan)
-        whenever(mockSpan.context()) doReturn mockSpanContext
-        whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
-        whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId
-
         fakeDatadogContext = fakeDatadogContext.copy(
             time = fakeDatadogContext.time.copy(
                 serverTimeOffsetMs = fakeServerTimeOffset
             ),
             featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
                 put(RumFeature.RUM_FEATURE_NAME, fakeRumContext.toMap())
+                put(
+                    TracingFeature.TRACING_FEATURE_NAME,
+                    mapOf(
+                        "context@$fakeThreadName" to mapOf(
+                            "span_id" to fakeSpanId,
+                            "trace_id" to fakeTraceId
+                        )
+                    )
+                )
             }
         )
 
-        GlobalTracer.registerIfAbsent(mockTracer)
-
         testedFeature = LogsFeature(mockSdkCore)
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        GlobalTracer::class.java.setStaticValue("isRegistered", false)
     }
 
     @Test
@@ -233,7 +219,6 @@ internal class LogsFeatureTest {
 
     @Test
     fun `𝕄 log warning and do nothing 𝕎 onReceive() { missing mandatory fields }`(
-        @StringForgery fakeThreadName: String,
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -271,7 +256,6 @@ internal class LogsFeatureTest {
 
     @Test
     fun `𝕄 log warning and do nothing 𝕎 onReceive() { wrong type for mandatory fields }`(
-        @StringForgery fakeThreadName: String,
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -307,7 +291,6 @@ internal class LogsFeatureTest {
 
     @Test
     fun `𝕄 write crash log event 𝕎 onReceive() { bare minimum }`(
-        @StringForgery fakeThreadName: String,
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String
@@ -362,7 +345,6 @@ internal class LogsFeatureTest {
 
     @Test
     fun `𝕄 write crash log event 𝕎 onReceive() { with attributes }`(
-        @StringForgery fakeThreadName: String,
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -420,7 +402,6 @@ internal class LogsFeatureTest {
 
     @Test
     fun `𝕄 write crash log event 𝕎 onReceive() { with throwable }`(
-        @StringForgery fakeThreadName: String,
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -487,7 +468,6 @@ internal class LogsFeatureTest {
 
     @Test
     fun `𝕄 write crash log event 𝕎 onReceive() { bundleWithTraces = false }`(
-        @StringForgery fakeThreadName: String,
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -545,7 +525,6 @@ internal class LogsFeatureTest {
 
     @Test
     fun `𝕄 write crash log event 𝕎 onReceive() { bundleWithRum = false }`(
-        @StringForgery fakeThreadName: String,
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -600,7 +579,6 @@ internal class LogsFeatureTest {
 
     @Test
     fun `𝕄 write crash log event 𝕎 onReceive() { explicit network info }`(
-        @StringForgery fakeThreadName: String,
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -660,7 +638,6 @@ internal class LogsFeatureTest {
 
     @Test
     fun `𝕄 write crash log event 𝕎 onReceive() { explicit user info }`(
-        @StringForgery fakeThreadName: String,
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String,
@@ -720,7 +697,6 @@ internal class LogsFeatureTest {
 
     @Test
     fun `𝕄 write crash log event and wait 𝕎 onReceive() { syncWrite = true }`(
-        @StringForgery fakeThreadName: String,
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String
@@ -784,7 +760,6 @@ internal class LogsFeatureTest {
 
     @Test
     fun `𝕄 write crash log event and not wait 𝕎 onReceive() { syncWrite = true + timeout }`(
-        @StringForgery fakeThreadName: String,
         @LongForgery fakeTimestamp: Long,
         @StringForgery fakeMessage: String,
         @StringForgery fakeLoggerName: String

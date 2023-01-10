@@ -13,56 +13,36 @@ import com.datadog.android.log.assertj.LogEventAssert.Companion.assertThat
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.tracing.internal.TracingFeature
 import com.datadog.android.utils.extension.asLogStatus
 import com.datadog.android.utils.extension.toIsoFormattedTimestamp
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.v2.api.context.DatadogContext
-import com.datadog.opentracing.DDSpanContext
-import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.aThrowable
-import com.datadog.tools.unit.setStaticValue
-import com.datadog.trace.api.interceptor.MutableSpan
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.Span
-import io.opentracing.Tracer
-import io.opentracing.util.GlobalTracer
 import org.assertj.core.api.Assertions
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class),
-    ExtendWith(TestConfigurationExtension::class)
+    ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class DatadogLogGeneratorTest {
 
     lateinit var testedLogGenerator: DatadogLogGenerator
-
-    @Mock
-    lateinit var mockTracer: Tracer
-
-    @Mock
-    lateinit var mockSpanContext: DDSpanContext
-
-    @Mock(extraInterfaces = [MutableSpan::class])
-    lateinit var mockSpan: Span
 
     lateinit var fakeServiceName: String
     lateinit var fakeLoggerName: String
@@ -118,22 +98,21 @@ internal class DatadogLogGeneratorTest {
                         "action_id" to fakeRumContext.actionId
                     )
                 )
+                put(
+                    TracingFeature.TRACING_FEATURE_NAME,
+                    mapOf(
+                        "context@$fakeThreadName" to mapOf(
+                            "span_id" to fakeSpanId,
+                            "trace_id" to fakeTraceId
+                        )
+                    )
+                )
             }
         )
 
-        whenever(mockTracer.activeSpan()).thenReturn(mockSpan)
-        whenever(mockSpan.context()) doReturn mockSpanContext
-        whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
-        whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId
-        GlobalTracer.registerIfAbsent(mockTracer)
         testedLogGenerator = DatadogLogGenerator(
             fakeServiceName
         )
-    }
-
-    @AfterEach
-    fun `tear down`() {
-        GlobalTracer::class.java.setStaticValue("isRegistered", false)
     }
 
     @Test
@@ -662,9 +641,25 @@ internal class DatadogLogGeneratorTest {
     }
 
     @Test
-    fun `M do nothing W required to bundle the trace information {no active Span}`() {
+    fun `M do nothing W required to bundle the trace information {no active Span for given thread}`(
+        @StringForgery fakeOtherThreadName: String,
+        @StringForgery(StringForgeryType.HEXADECIMAL) fakeOtherThreadSpanId: String,
+        @StringForgery(StringForgeryType.HEXADECIMAL) fakeOtherThreadTraceId: String
+    ) {
         // GIVEN
-        whenever(mockTracer.activeSpan()).doReturn(null)
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(
+                    TracingFeature.TRACING_FEATURE_NAME,
+                    mapOf(
+                        "context@$fakeOtherThreadName" to mapOf(
+                            "span_id" to fakeOtherThreadSpanId,
+                            "trace_id" to fakeOtherThreadTraceId
+                        )
+                    )
+                )
+            }
+        )
 
         // WHEN
         val log = testedLogGenerator.generateLog(
@@ -691,9 +686,13 @@ internal class DatadogLogGeneratorTest {
     }
 
     @Test
-    fun `M do nothing W required to bundle the trace information {AndroidTracer not registered}`() {
+    fun `M do nothing W required to bundle the trace information {no tracing feature context}`() {
         // GIVEN
-        GlobalTracer::class.java.setStaticValue("isRegistered", false)
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                remove(TracingFeature.TRACING_FEATURE_NAME)
+            }
+        )
 
         // WHEN
         val log = testedLogGenerator.generateLog(
@@ -721,9 +720,6 @@ internal class DatadogLogGeneratorTest {
 
     @Test
     fun `M do nothing W not required to bundle the trace information`() {
-        // GIVEN
-        GlobalTracer::class.java.setStaticValue("isRegistered", false)
-
         // WHEN
         val log = testedLogGenerator.generateLog(
             fakeLevel,
