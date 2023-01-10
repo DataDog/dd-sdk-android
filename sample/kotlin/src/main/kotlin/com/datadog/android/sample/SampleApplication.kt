@@ -66,20 +66,26 @@ class SampleApplication : Application() {
         "datadoghq.dev"
     )
 
-    private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(RumInterceptor(traceSamplingRate = 100f))
-        .addNetworkInterceptor(TracingInterceptor(traceSamplingRate = 100f))
-        .eventListenerFactory(DatadogEventListener.Factory())
-        .build()
+    // TODO RUMM-0000 lazy is needed here, because without it global first party host detector is
+    //  not available yet at the interceptor construction time
+    private val okHttpClient by lazy {
+        OkHttpClient.Builder()
+            .addInterceptor(RumInterceptor(traceSamplingRate = 100f))
+            .addNetworkInterceptor(TracingInterceptor(traceSamplingRate = 100f))
+            .eventListenerFactory(DatadogEventListener.Factory())
+            .build()
+    }
 
-    private val retrofitClient = Retrofit.Builder()
-        .baseUrl("https://api.datadoghq.com/api/v2/")
-        .addConverterFactory(GsonConverterFactory.create(GsonBuilder().setLenient().create()))
-        .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
-        .client(okHttpClient)
-        .build()
+    private val retrofitClient by lazy {
+        Retrofit.Builder()
+            .baseUrl("https://api.datadoghq.com/api/v2/")
+            .addConverterFactory(GsonConverterFactory.create(GsonBuilder().setLenient().create()))
+            .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
+            .client(okHttpClient)
+            .build()
+    }
 
-    private val retrofitBaseDataSource = retrofitClient.create(RemoteDataSource::class.java)
+    private val retrofitBaseDataSource by lazy { retrofitClient.create(RemoteDataSource::class.java) }
 
     override fun onCreate() {
         super.onCreate()

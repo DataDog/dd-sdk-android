@@ -57,6 +57,7 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.Tracer
 import io.opentracing.util.GlobalTracer
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
@@ -89,6 +90,9 @@ internal class TelemetryEventHandlerTest {
 
     @Mock
     lateinit var mockSampler: Sampler
+
+    @Mock
+    lateinit var mockConfigurationSampler: Sampler
 
     @Mock
     lateinit var mockSdkCore: SdkCore
@@ -130,6 +134,7 @@ internal class TelemetryEventHandlerTest {
         )
 
         whenever(mockSampler.sample()) doReturn true
+        whenever(mockConfigurationSampler.sample()) doReturn true
 
         whenever(
             mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)
@@ -143,6 +148,7 @@ internal class TelemetryEventHandlerTest {
             TelemetryEventHandler(
                 mockSdkCore,
                 mockSampler,
+                mockConfigurationSampler,
                 MAX_EVENTS_PER_SESSION_TEST
             )
     }
@@ -526,6 +532,48 @@ internal class TelemetryEventHandlerTest {
         // Given
         val rawEvent = forge.createRumRawTelemetryEvent()
         whenever(mockSampler.sample()) doReturn false
+
+        // When
+        testedTelemetryHandler.handleEvent(rawEvent, mockWriter)
+
+        // Then
+        verifyZeroInteractions(mockWriter)
+    }
+
+    @Test
+    fun `𝕄 write debug&error event 𝕎 handleEvent(SendTelemetry) { configuration sampler returns false }`(
+        forge: Forge
+    ) {
+        // Given
+        val rawEvent = forge.anElementFrom(
+            forge.createRumRawTelemetryDebugEvent(),
+            forge.createRumRawTelemetryErrorEvent()
+        )
+        whenever(mockSampler.sample()) doReturn true
+        whenever(mockConfigurationSampler.sample()) doReturn false
+
+        // When
+        testedTelemetryHandler.handleEvent(rawEvent, mockWriter)
+
+        // Then
+        argumentCaptor<Any> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture())
+            if (rawEvent.type == TelemetryType.DEBUG) {
+                assertThat(lastValue).isInstanceOf(TelemetryDebugEvent::class.java)
+            } else {
+                assertThat(lastValue).isInstanceOf(TelemetryErrorEvent::class.java)
+            }
+        }
+    }
+
+    @Test
+    fun `𝕄 not write configuration event 𝕎 handleEvent(SendTelemetry) { event is not sampled }`(
+        forge: Forge
+    ) {
+        // Given
+        val rawEvent = forge.createRumRawTelemetryConfigurationEvent()
+        whenever(mockSampler.sample()) doReturn true
+        whenever(mockConfigurationSampler.sample()) doReturn false
 
         // When
         testedTelemetryHandler.handleEvent(rawEvent, mockWriter)
