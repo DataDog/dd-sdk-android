@@ -219,7 +219,7 @@ internal constructor(
         val rumFeature = (Datadog.globalSdkCore as? DatadogCore)?.rumFeature
         if (rumFeature != null) {
             if (response != null) {
-                handleResponse(request, response, span)
+                handleResponse(request, response, span, span != null)
             } else {
                 handleThrowable(request, throwable ?: IllegalStateException(ERROR_NO_RESPONSE))
             }
@@ -239,7 +239,8 @@ internal constructor(
     private fun handleResponse(
         request: Request,
         response: Response,
-        span: Span?
+        span: Span?,
+        isSampled: Boolean
     ) {
         val requestId = identifyRequest(request)
         val statusCode = response.code()
@@ -248,7 +249,7 @@ internal constructor(
             mimeType == null -> RumResourceKind.NATIVE
             else -> RumResourceKind.fromMimeType(mimeType)
         }
-        val attributes = if (span == null) {
+        val attributes = if (!isSampled || span == null) {
             emptyMap<String, Any?>()
         } else {
             mapOf(

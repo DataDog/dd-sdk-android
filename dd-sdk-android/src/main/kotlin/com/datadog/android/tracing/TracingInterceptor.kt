@@ -226,14 +226,10 @@ internal constructor(
         tracer: Tracer
     ): Response {
         val isSampled = extractSamplingDecision(request) ?: traceSampler.sample()
-        val span = if (isSampled) {
-            buildSpan(tracer, request)
-        } else {
-            null
-        }
+        val span = buildSpan(tracer, request)
 
         val updatedRequest = try {
-            updateRequest(request, tracer, span).build()
+            updateRequest(request, tracer, span, isSampled).build()
         } catch (e: IllegalStateException) {
             sdkLogger.warningWithTelemetry("Failed to update intercepted OkHttp request", e)
             request
@@ -241,10 +237,10 @@ internal constructor(
 
         try {
             val response = chain.proceed(updatedRequest)
-            handleResponse(request, response, span)
+            handleResponse(request, response, span, isSampled)
             return response
         } catch (e: Throwable) {
-            handleThrowable(request, e, span)
+            handleThrowable(request, e, span, isSampled)
             throw e
         }
     }
@@ -330,6 +326,9 @@ internal constructor(
 
         val b3HeaderValue = request.header(B3_HEADER_KEY)
         if(b3HeaderValue != null){
+            if(b3HeaderValue == "0"){
+                return false
+            }
             val b3HeaderParts = b3HeaderValue.split("-")
             if(b3HeaderParts.size >= 3){
                 return when(b3HeaderParts[2]){
@@ -375,13 +374,14 @@ internal constructor(
     private fun updateRequest(
         request: Request,
         tracer: Tracer,
-        span: Span?
+        span: Span,
+        isSampled: Boolean
     ): Request.Builder {
         val tracedRequestBuilder = request.newBuilder()
         var tracingHeaderTypes = localFirstPartyHostHeaderTypeResolver.headerTypesForUrl(request.url())
         tracingHeaderTypes = if(!tracingHeaderTypes.isEmpty()) tracingHeaderTypes else firstPartyHostResolver.headerTypesForUrl(request.url())
 
-        if (span == null) {
+        if (!isSampled) {
             for (headerType in tracingHeaderTypes){
                 when(headerType){
                     TracingHeaderType.DATADOG -> {
@@ -414,7 +414,7 @@ internal constructor(
 
                     TracingHeaderType.TRACECONTEXT ->{
                         tracedRequestBuilder.removeHeader(W3C_TRACEPARENT_KEY)
-                        tracedRequestBuilder.addHeader(W3C_TRACEPARENT_KEY, W3C_DROP_SAMPLING_DECISION)
+                        tracedRequestBuilder.addHeader(W3C_TRACEPARENT_KEY, W3C_DROP_SAMPLING_DECISION.format(span.context().toTraceId(), span.context().toSpanId()))
                     }
                 }
             }
@@ -456,9 +456,10 @@ internal constructor(
     private fun handleResponse(
         request: Request,
         response: Response,
-        span: Span?
+        span: Span?,
+        isSampled: Boolean
     ) {
-        if (span == null) {
+        if (!isSampled || span == null) {
             onRequestIntercepted(request, null, response, null)
         } else {
             val statusCode = response.code()
@@ -481,9 +482,10 @@ internal constructor(
     private fun handleThrowable(
         request: Request,
         throwable: Throwable,
-        span: Span?
+        span: Span?,
+        isSampled: Boolean
     ) {
-        if (span == null) {
+        if (!isSampled || span == null) {
             onRequestIntercepted(request, null, null, throwable)
         } else {
             (span as? MutableSpan)?.isError = true
@@ -559,6 +561,6 @@ internal constructor(
 
         // taken from W3CHttpCodec
         internal const val W3C_TRACEPARENT_KEY = "traceparent"
-        internal const val W3C_DROP_SAMPLING_DECISION = "00-00000000000000000000000000000000-0000000000000000-00"
+        internal const val W3C_DROP_SAMPLING_DECISION = "00-%s-%s-00"
     }
 }
