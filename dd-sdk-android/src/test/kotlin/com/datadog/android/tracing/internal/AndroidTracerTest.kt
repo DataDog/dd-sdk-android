@@ -573,12 +573,12 @@ internal class AndroidTracerTest {
     fun `M set correct propagating style W setting tracing header type`(forge: Forge) {
         // Given
         val threshold = forge.anInt(max = 100)
-        val tracingHeaderStyle = forge.anElementFrom(listOf(TracingHeaderType.DATADOG, TracingHeaderType.B3, TracingHeaderType.B3MULTI, TracingHeaderType.TRACECONTEXT))
+        val tracingHeaderStyle = forge.anElementFrom(setOf(TracingHeaderType.DATADOG, TracingHeaderType.B3, TracingHeaderType.B3MULTI, TracingHeaderType.TRACECONTEXT))
         // When
         val tracer = testedTracerBuilder
             .setServiceName(fakeServiceName)
             .setPartialFlushThreshold(threshold)
-            .setTracingHeaderTypes(listOf(tracingHeaderStyle))
+            .setTracingHeaderTypes(setOf(tracingHeaderStyle))
             .build()
         val properties = testedTracerBuilder.properties()
 

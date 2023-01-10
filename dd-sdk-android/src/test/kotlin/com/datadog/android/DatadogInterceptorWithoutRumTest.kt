@@ -50,8 +50,8 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
     lateinit var mockRumAttributesProvider: RumResourceAttributesProvider
 
     override fun instantiateTestedInterceptor(
-        tracedHosts: Map<String, List<TracingHeaderType>>,
-        factory: (List<TracingHeaderType>) -> Tracer
+        tracedHosts: Map<String, Set<TracingHeaderType>>,
+        factory: (Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return DatadogInterceptor(
             tracedHosts = tracedHosts,

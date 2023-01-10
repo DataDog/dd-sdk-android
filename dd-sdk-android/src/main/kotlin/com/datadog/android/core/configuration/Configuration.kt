@@ -71,7 +71,7 @@ internal constructor(
     internal data class Core(
         val needsClearTextHttp: Boolean,
         val enableDeveloperModeWhenDebuggable: Boolean,
-        val firstPartyHostsWithHeaderTypes: Map<String,List<TracingHeaderType>>,
+        val firstPartyHostsWithHeaderTypes: Map<String,Set<TracingHeaderType>>,
         val batchSize: BatchSize,
         val uploadFrequency: UploadFrequency,
         val proxy: Proxy?,
@@ -193,7 +193,7 @@ internal constructor(
                 NETWORK_REQUESTS_TRACKING_FEATURE_NAME
             )
             coreConfig = coreConfig.copy(
-                firstPartyHostsWithHeaderTypes = sanitizedHosts.associateWith { listOf(TracingHeaderType.DATADOG) }
+                firstPartyHostsWithHeaderTypes = sanitizedHosts.associateWith { setOf(TracingHeaderType.DATADOG) }
             )
             return this
         }
@@ -209,7 +209,7 @@ internal constructor(
          * @param hosts a list of all the hosts that you own.
          * See [DatadogInterceptor]
          */
-        fun setFirstPartyHostsWithHeaderType(hostsWithHeaderType: Map<String,List<TracingHeaderType>>): Builder {
+        fun setFirstPartyHostsWithHeaderType(hostsWithHeaderType: Map<String,Set<TracingHeaderType>>): Builder {
             val sanitizedHosts =  hostsSanitizer.sanitizeHosts(
                 hostsWithHeaderType.keys.toList(),
                 NETWORK_REQUESTS_TRACKING_FEATURE_NAME

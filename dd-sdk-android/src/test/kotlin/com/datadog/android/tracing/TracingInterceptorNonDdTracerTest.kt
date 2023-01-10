@@ -149,7 +149,7 @@ internal open class TracingInterceptorNonDdTracerTest {
     @StringForgery
     lateinit var fakeOrigin: String
 
-    lateinit var fakeLocalHosts: Map<String, List<TracingHeaderType>>
+    lateinit var fakeLocalHosts: Map<String, Set<TracingHeaderType>>
 
     // endregion
 
@@ -168,7 +168,7 @@ internal open class TracingInterceptorNonDdTracerTest {
 
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()
-        fakeLocalHosts = forge.aMap { forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to listOf(TracingHeaderType.DATADOG) }
+        fakeLocalHosts = forge.aMap { forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to setOf(TracingHeaderType.DATADOG) }
         fakeMediaType = MediaType.parse(mediaType)
         fakeUrl = forgeUrlWithQueryParams(forge)
         fakeRequest = forgeRequest(forge)
@@ -183,8 +183,8 @@ internal open class TracingInterceptorNonDdTracerTest {
     }
 
     open fun instantiateTestedInterceptor(
-        tracedHosts: Map<String, List<TracingHeaderType>> = emptyMap(),
-        factory : (List<TracingHeaderType>) -> Tracer
+        tracedHosts: Map<String, Set<TracingHeaderType>> = emptyMap(),
+        factory : (Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return TracingInterceptor(
             tracedHosts,
@@ -410,7 +410,7 @@ internal open class TracingInterceptorNonDdTracerTest {
     ) {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
-        fakeLocalHosts = forge.aMap { forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to listOf(TracingHeaderType.B3MULTI) }
+        fakeLocalHosts = forge.aMap { forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to setOf(TracingHeaderType.B3MULTI) }
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
         fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
@@ -438,7 +438,7 @@ internal open class TracingInterceptorNonDdTracerTest {
     ) {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
-        fakeLocalHosts = forge.aMap { forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to listOf(TracingHeaderType.B3) }
+        fakeLocalHosts = forge.aMap { forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to setOf(TracingHeaderType.B3) }
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
         fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
@@ -464,7 +464,7 @@ internal open class TracingInterceptorNonDdTracerTest {
     ) {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
-        fakeLocalHosts = forge.aMap { forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to listOf(TracingHeaderType.TRACECONTEXT) }
+        fakeLocalHosts = forge.aMap { forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to setOf(TracingHeaderType.TRACECONTEXT) }
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
         fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
@@ -1206,7 +1206,7 @@ internal open class TracingInterceptorNonDdTracerTest {
     @Test
     fun `M do not update the hostDetector W host list provided`(forge: Forge) {
         // GIVEN
-        val localHosts = forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to listOf(TracingHeaderType.DATADOG) }
+        val localHosts = forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.DATADOG) }
 
         // WHEN
         testedInterceptor = instantiateTestedInterceptor(localHosts) { mockLocalTracer }

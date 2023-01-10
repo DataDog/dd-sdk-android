@@ -11,7 +11,7 @@ import okhttp3.HttpUrl
 import java.util.Locale
 
 internal class FirstPartyHostHeaderTypeResolver(
-    hosts: Map<String,List<TracingHeaderType>>
+    hosts: Map<String,Set<TracingHeaderType>>
 ) {
 
     internal var knownHosts = hosts.entries.associate { it.key.lowercase(Locale.US) to it.value }
@@ -51,11 +51,11 @@ internal class FirstPartyHostHeaderTypeResolver(
 
     fun addKnownHosts(hosts: List<String>) {
         knownHosts = knownHosts + hosts.associate {
-            it.lowercase(Locale.US) to listOf(TracingHeaderType.DATADOG)
+            it.lowercase(Locale.US) to setOf(TracingHeaderType.DATADOG)
         }
     }
 
-    fun addKnownHostsWithHeaderTypes(hostsWithHeaderTypes: Map<String,List<TracingHeaderType>>) {
+    fun addKnownHostsWithHeaderTypes(hostsWithHeaderTypes: Map<String,Set<TracingHeaderType>>) {
         knownHosts = knownHosts + hostsWithHeaderTypes.entries.associate { it.key.lowercase(Locale.US) to it.value }
     }
 

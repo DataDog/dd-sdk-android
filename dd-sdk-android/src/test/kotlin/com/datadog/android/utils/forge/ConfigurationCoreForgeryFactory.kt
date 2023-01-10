@@ -29,7 +29,7 @@ internal class ConfigurationCoreForgeryFactory :
         return Configuration.Core(
             needsClearTextHttp = forge.aBool(),
             enableDeveloperModeWhenDebuggable = forge.aBool(),
-            firstPartyHostsWithHeaderTypes = forge.aMap { getForgery<URL>().host to listOf(TracingHeaderType.DATADOG) },
+            firstPartyHostsWithHeaderTypes = forge.aMap { getForgery<URL>().host to setOf(TracingHeaderType.DATADOG) },
             batchSize = forge.getForgery(),
             uploadFrequency = forge.getForgery(),
             proxy = proxy,

@@ -32,11 +32,11 @@ internal class FirstPartyHostHeaderTypeResolverTest {
 
     lateinit var testedDetector: FirstPartyHostHeaderTypeResolver
 
-    lateinit var fakeHosts: Map<String, List<TracingHeaderType>>
+    lateinit var fakeHosts: Map<String, Set<TracingHeaderType>>
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeHosts = forge.aMap { forge.aStringMatching(HOST_REGEX) to listOf(anElementFrom(listOf(TracingHeaderType.DATADOG, TracingHeaderType.B3, TracingHeaderType.B3MULTI, TracingHeaderType.TRACECONTEXT)))}
+        fakeHosts = forge.aMap { forge.aStringMatching(HOST_REGEX) to setOf(anElementFrom(setOf(TracingHeaderType.DATADOG, TracingHeaderType.B3, TracingHeaderType.B3MULTI, TracingHeaderType.TRACECONTEXT))) }
         testedDetector = FirstPartyHostHeaderTypeResolver(fakeHosts)
     }
 
@@ -216,7 +216,7 @@ internal class FirstPartyHostHeaderTypeResolverTest {
         val fakeNewAllowedHosts = forge.aList { forge.aStringMatching(HOST_REGEX) }
         val host = forge.anElementFrom(fakeNewAllowedHosts)
         val url = "$scheme://$host$path"
-        testedDetector = FirstPartyHostHeaderTypeResolver(mapOf("*" to emptyList()))
+        testedDetector = FirstPartyHostHeaderTypeResolver(mapOf("*" to emptySet()))
 
         // WHEN
         val result = testedDetector.isFirstPartyUrl(url)
@@ -235,7 +235,7 @@ internal class FirstPartyHostHeaderTypeResolverTest {
         val fakeNewAllowedHosts = forge.aList { forge.aStringMatching(HOST_REGEX) }
         val host = forge.anElementFrom(fakeNewAllowedHosts)
         val url = HttpUrl.get("$scheme://$host$path")
-        testedDetector = FirstPartyHostHeaderTypeResolver(mapOf("*" to emptyList()))
+        testedDetector = FirstPartyHostHeaderTypeResolver(mapOf("*" to emptySet()))
 
         // WHEN
         val result = testedDetector.isFirstPartyUrl(url)

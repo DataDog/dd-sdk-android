@@ -1309,7 +1309,7 @@ internal class ConfigurationBuilderTest {
         // Then
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHostsWithHeaderTypes =
-            hosts.associateWith { listOf(TracingHeaderType.DATADOG) })
+            hosts.associateWith { setOf(TracingHeaderType.DATADOG) })
         )
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
@@ -1341,7 +1341,7 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHostsWithHeaderTypes = hosts.associateWith { listOf(TracingHeaderType.DATADOG) })
+            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHostsWithHeaderTypes = hosts.associateWith { setOf(TracingHeaderType.DATADOG) })
         )
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
@@ -1364,7 +1364,7 @@ internal class ConfigurationBuilderTest {
         // THEN
         assertThat(config.coreConfig).isEqualTo(
             Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHostsWithHeaderTypes =
-            hosts.associate { URL(it).host to listOf(TracingHeaderType.DATADOG) }
+            hosts.associate { URL(it).host to setOf(TracingHeaderType.DATADOG) }
         ))
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
@@ -1404,7 +1404,7 @@ internal class ConfigurationBuilderTest {
         forge: Forge
     ) {
 
-        val hostWithHeaderTypes = hosts.associateWith { listOf(forge.anElementFrom(listOf(TracingHeaderType.DATADOG, TracingHeaderType.B3MULTI, TracingHeaderType.B3, TracingHeaderType.TRACECONTEXT))) }
+        val hostWithHeaderTypes = hosts.associateWith { setOf(forge.anElementFrom(setOf(TracingHeaderType.DATADOG, TracingHeaderType.B3MULTI, TracingHeaderType.B3, TracingHeaderType.TRACECONTEXT))) }
 
         // When
         val config = testedBuilder

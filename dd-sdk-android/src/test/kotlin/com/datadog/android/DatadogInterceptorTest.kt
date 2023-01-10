@@ -78,8 +78,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     private lateinit var fakeAttributes: Map<String, Any?>
 
     override fun instantiateTestedInterceptor(
-        tracedHosts: Map<String, List<TracingHeaderType>>,
-        factory: (List<TracingHeaderType>) -> Tracer
+        tracedHosts: Map<String, Set<TracingHeaderType>>,
+        factory: (Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         whenever((Datadog.globalSdkCore as DatadogCore).rumFeature) doReturn mock()
         return DatadogInterceptor(

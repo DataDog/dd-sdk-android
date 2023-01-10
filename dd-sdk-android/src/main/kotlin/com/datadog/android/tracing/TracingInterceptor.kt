@@ -66,12 +66,12 @@ import java.util.concurrent.atomic.AtomicReference
 @Suppress("TooManyFunctions", "StringLiteralDuplication")
 open class TracingInterceptor
 internal constructor(
-    internal val tracedHosts: Map<String, List<TracingHeaderType>>,
+    internal val tracedHosts: Map<String, Set<TracingHeaderType>>,
     internal val tracedRequestListener: TracedRequestListener,
     internal val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver,
     internal val traceOrigin: String?,
     internal val traceSampler: Sampler,
-    internal val localTracerFactory: (List<TracingHeaderType>) -> Tracer
+    internal val localTracerFactory: (Set<TracingHeaderType>) -> Tracer
     ) : Interceptor {
 
     private val localTracerReference: AtomicReference<Tracer> = AtomicReference()
@@ -106,7 +106,7 @@ internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
-        tracedHosts.associateWith { listOf(TracingHeaderType.DATADOG) },
+        tracedHosts.associateWith { setOf(TracingHeaderType.DATADOG) },
         tracedRequestListener,
         getGlobalFirstPartyHostDetector(),
         null,
@@ -131,7 +131,7 @@ internal constructor(
      */
     @JvmOverloads
     constructor(
-        tracedHostsWithHeaderType: Map<String, List<TracingHeaderType>>,
+        tracedHostsWithHeaderType: Map<String, Set<TracingHeaderType>>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
@@ -283,7 +283,7 @@ internal constructor(
             @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
             val localHeaderTypes = localFirstPartyHostHeaderTypeResolver.getAllHeaderTypes()
             val globalHeaderTypes = firstPartyHostResolver.getAllHeaderTypes()
-            val allHeaders = localHeaderTypes.plus(globalHeaderTypes).toList()
+            val allHeaders = localHeaderTypes.plus(globalHeaderTypes)
             localTracerReference.compareAndSet(null, localTracerFactory(allHeaders))
             devLogger.w(WARNING_DEFAULT_TRACER)
         }

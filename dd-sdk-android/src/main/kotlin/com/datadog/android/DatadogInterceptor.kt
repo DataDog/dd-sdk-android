@@ -67,12 +67,12 @@ import java.util.Locale
  */
 open class DatadogInterceptor
 internal constructor(
-    tracedHosts: Map<String, List<TracingHeaderType>>,
+    tracedHosts: Map<String, Set<TracingHeaderType>>,
     tracedRequestListener: TracedRequestListener,
     firstPartyHostResolver: FirstPartyHostHeaderTypeResolver,
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
     traceSampler: Sampler,
-    localTracerFactory: (List<TracingHeaderType>) -> Tracer
+    localTracerFactory: (Set<TracingHeaderType>) -> Tracer
 ) : TracingInterceptor(
     tracedHosts,
     tracedRequestListener,
@@ -105,7 +105,7 @@ internal constructor(
      */
     @JvmOverloads
     constructor(
-        firstPartyHostsWithHeaderType: Map<String, List<TracingHeaderType>>,
+        firstPartyHostsWithHeaderType: Map<String, Set<TracingHeaderType>>,
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         rumResourceAttributesProvider: RumResourceAttributesProvider =
             NoOpRumResourceAttributesProvider(),
@@ -147,7 +147,7 @@ internal constructor(
             NoOpRumResourceAttributesProvider(),
         @FloatRange(from = 0.0, to = 100.0) traceSamplingRate: Float = DEFAULT_TRACE_SAMPLING_RATE
     ) : this(
-        tracedHosts = firstPartyHosts.associateWith { listOf(TracingHeaderType.DATADOG) },
+        tracedHosts = firstPartyHosts.associateWith { setOf(TracingHeaderType.DATADOG) },
         tracedRequestListener = tracedRequestListener,
         firstPartyHostResolver = getGlobalFirstPartyHostDetector(),
         rumResourceAttributesProvider = rumResourceAttributesProvider,
