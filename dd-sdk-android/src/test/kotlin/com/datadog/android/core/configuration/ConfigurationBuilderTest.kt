@@ -1396,6 +1396,33 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
+    fun `𝕄 build config with first party hosts and header types 𝕎 setFirstPartyHosts() { host names }`(
+        @StringForgery(
+            regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
+                    "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
+        ) hosts: List<String>,
+        forge: Forge
+    ) {
+
+        val hostWithHeaderTypes = hosts.associateWith { listOf(forge.anElementFrom(listOf(TracingHeaderType.DATADOG, TracingHeaderType.B3MULTI, TracingHeaderType.B3, TracingHeaderType.TRACECONTEXT))) }
+
+        // When
+        val config = testedBuilder
+            .setFirstPartyHostsWithHeaderType(hostWithHeaderTypes)
+            .build()
+
+        // Then
+        assertThat(config.coreConfig).isEqualTo(
+            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHostsWithHeaderTypes = hostWithHeaderTypes)
+        )
+        assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
+        assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
+        assertThat(config.crashReportConfig).isEqualTo(Configuration.DEFAULT_CRASH_CONFIG)
+        assertThat(config.rumConfig).isEqualTo(Configuration.DEFAULT_RUM_CONFIG)
+        assertThat(config.additionalConfig).isEmpty()
+    }
+
+    @Test
     fun `𝕄 build config with web tracking hosts 𝕎 setWebViewTrackingHosts() { ip addresses }`(
         @StringForgery(
             regex = "(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}" +

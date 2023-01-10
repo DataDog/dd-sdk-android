@@ -318,23 +318,6 @@ internal class DatadogInterceptorWithoutTracesTest {
         Assertions.assertThat(response).isSameAs(fakeResponse)
     }
 
-    @Test
-    fun `𝕄 not create a Span 𝕎 intercept() for completed request {not sampled}`(
-        @IntForgery(min = 200, max = 600) statusCode: Int
-    ) {
-        // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
-        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        stubChain(mockChain, statusCode)
-
-        // When
-        val response = testedInterceptor.intercept(mockChain)
-
-        // Then
-        verifyZeroInteractions(mockSpan, mockSpanBuilder, mockLocalTracer)
-        Assertions.assertThat(response).isSameAs(fakeResponse)
-    }
-
     // region Internal
 
     private fun stubChain(chain: Interceptor.Chain, statusCode: Int) {

@@ -13,6 +13,7 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.tracing.AndroidTracer
+import com.datadog.android.tracing.TracingHeaderType
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.LoggerTestConfiguration
@@ -566,6 +567,28 @@ internal class AndroidTracerTest {
         val traceIdSpan1 = span1.traceId
         val traceIdSpan2 = span2.traceId
         assertThat(traceIdSpan1).isNotEqualTo(traceIdSpan2)
+    }
+
+    @Test
+    fun `M set correct propagating style W setting tracing header type`(forge: Forge) {
+        // Given
+        val threshold = forge.anInt(max = 100)
+        val tracingHeaderStyle = forge.anElementFrom(listOf(TracingHeaderType.DATADOG, TracingHeaderType.B3, TracingHeaderType.B3MULTI, TracingHeaderType.TRACECONTEXT))
+        // When
+        val tracer = testedTracerBuilder
+            .setServiceName(fakeServiceName)
+            .setPartialFlushThreshold(threshold)
+            .setTracingHeaderTypes(listOf(tracingHeaderStyle))
+            .build()
+        val properties = testedTracerBuilder.properties()
+
+        // Then
+        assertThat(tracer).isNotNull()
+
+        assertThat(properties.getProperty(Config.PROPAGATION_STYLE_INJECT).toString())
+            .isEqualTo(tracingHeaderStyle.toString())
+        assertThat(properties.getProperty(Config.PROPAGATION_STYLE_EXTRACT).toString())
+            .isEqualTo(tracingHeaderStyle.toString())
     }
 
     // endregion

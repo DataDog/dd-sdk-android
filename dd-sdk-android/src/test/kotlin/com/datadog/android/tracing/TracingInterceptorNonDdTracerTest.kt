@@ -275,13 +275,80 @@ internal open class TracingInterceptorNonDdTracerTest {
 
         // Then
         assertThat(response).isSameAs(fakeResponse)
-        verifyZeroInteractions(mockTracer, mockLocalTracer)
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER))
                 .isEqualTo("0")
             assertThat(lastValue.header(TracingInterceptor.DATADOG_TRACE_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
+        }
+    }
+
+    @Test
+    fun `𝕄 inject non-tracing b3multi header 𝕎 intercept() {global known host + not sampled}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int
+    ) {
+        // Given
+        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.B3MULTI))
+        stubChain(mockChain, statusCode)
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(lastValue.header(TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY))
+                .isEqualTo("0")
+            assertThat(lastValue.header(TracingInterceptor.B3M_SPAN_ID_KEY)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.B3M_TRACE_ID_KEY)).isNull()
+        }
+    }
+
+    @Test
+    fun `𝕄 inject non-tracing b3 header 𝕎 intercept() {global known host + not sampled}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int
+    ) {
+        // Given
+        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.B3))
+        stubChain(mockChain, statusCode)
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(lastValue.header(TracingInterceptor.B3_HEADER_KEY))
+                .isEqualTo("0")
+        }
+    }
+
+    @Test
+    fun `𝕄 inject non-tracing tracecontext header 𝕎 intercept() {global known host + not sampled}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int
+    ) {
+        // Given
+        whenever(mockTraceSampler.sample()).thenReturn(false)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.TRACECONTEXT))
+        stubChain(mockChain, statusCode)
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(lastValue.header(TracingInterceptor.W3C_TRACEPARENT_KEY))
+                .isEqualTo("00-%s-%s-00".format(mockSpan.context().toTraceId(), mockSpan.context().toSpanId()))
         }
     }
 
@@ -327,13 +394,92 @@ internal open class TracingInterceptorNonDdTracerTest {
 
         // Then
         assertThat(response).isSameAs(fakeResponse)
-        verifyZeroInteractions(mockTracer, mockLocalTracer)
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER))
                 .isEqualTo("0")
             assertThat(lastValue.header(TracingInterceptor.DATADOG_TRACE_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
+        }
+    }
+
+    @Test
+    fun `𝕄 inject non-tracing b3multi header 𝕎 intercept() {local known host + not sampled}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockTraceSampler.sample()).thenReturn(false)
+        fakeLocalHosts = forge.aMap { forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to listOf(TracingHeaderType.B3MULTI) }
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
+        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
+        fakeRequest = forgeRequest(forge)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
+        stubChain(mockChain, statusCode)
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(lastValue.header(TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY))
+                .isEqualTo("0")
+            assertThat(lastValue.header(TracingInterceptor.B3M_SPAN_ID_KEY)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.B3M_TRACE_ID_KEY)).isNull()
+        }
+    }
+
+    @Test
+    fun `𝕄 inject non-tracing b3 header 𝕎 intercept() {local known host + not sampled}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockTraceSampler.sample()).thenReturn(false)
+        fakeLocalHosts = forge.aMap { forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to listOf(TracingHeaderType.B3) }
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
+        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
+        fakeRequest = forgeRequest(forge)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
+        stubChain(mockChain, statusCode)
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(lastValue.header(TracingInterceptor.B3_HEADER_KEY))
+                .isEqualTo("0")
+        }
+    }
+
+    @Test
+    fun `𝕄 inject non-tracing tracecontext header 𝕎 intercept() {local known host + not sampled}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockTraceSampler.sample()).thenReturn(false)
+        fakeLocalHosts = forge.aMap { forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to listOf(TracingHeaderType.TRACECONTEXT) }
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
+        fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
+        fakeRequest = forgeRequest(forge)
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(false)
+        stubChain(mockChain, statusCode)
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(lastValue.header(TracingInterceptor.W3C_TRACEPARENT_KEY))
+            .isEqualTo("00-%s-%s-00".format(mockSpan.context().toTraceId(), mockSpan.context().toSpanId()))
         }
     }
 
@@ -504,6 +650,114 @@ internal open class TracingInterceptorNonDdTracerTest {
     }
 
     @Test
+    fun `𝕄 respect b3multi sampling decision 𝕎 intercept() {sampled in upstream interceptor}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int,
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(
+            TracingHeaderType.B3MULTI
+        ))
+        fakeRequest = forgeRequest(forge) {
+            it.addHeader(
+                TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY,
+                PrioritySampling.SAMPLER_KEEP.toString()
+            )
+        }
+        stubChain(mockChain, statusCode)
+        whenever(mockTraceSampler.sample()).thenReturn(false)
+        doAnswer { invocation ->
+            val carrier = invocation.arguments[2] as TextMapInject
+            carrier.put(key, value)
+        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(lastValue.header(key)).isEqualTo(value)
+        }
+    }
+
+    @Test
+    fun `𝕄 respect b3 sampling decision 𝕎 intercept() {sampled in upstream interceptor}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int,
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(
+            TracingHeaderType.B3
+        ))
+        fakeRequest = forgeRequest(forge) {
+            it.addHeader(
+                TracingInterceptor.B3_HEADER_KEY,
+                forge.aStringMatching("[a-f0-9]{32}\\-[a-f0-9]{16}\\-1")
+            )
+        }
+        stubChain(mockChain, statusCode)
+        whenever(mockTraceSampler.sample()).thenReturn(false)
+        doAnswer { invocation ->
+            val carrier = invocation.arguments[2] as TextMapInject
+            carrier.put(key, value)
+        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(lastValue.header(key)).isEqualTo(value)
+        }
+    }
+
+    @Test
+    fun `𝕄 respect tracecontext sampling decision 𝕎 intercept() {sampled in upstream interceptor}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int,
+        @StringForgery key: String,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(
+            TracingHeaderType.TRACECONTEXT
+        ))
+        fakeRequest = forgeRequest(forge) {
+            it.addHeader(
+                TracingInterceptor.W3C_TRACEPARENT_KEY,
+                forge.aStringMatching("00-[a-f0-9]{32}\\-[a-f0-9]{16}\\-01")
+            )
+        }
+        stubChain(mockChain, statusCode)
+        whenever(mockTraceSampler.sample()).thenReturn(false)
+        doAnswer { invocation ->
+            val carrier = invocation.arguments[2] as TextMapInject
+            carrier.put(key, value)
+        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(lastValue.header(key)).isEqualTo(value)
+        }
+    }
+
+    @Test
     fun `𝕄 respect sampling decision 𝕎 intercept() {sampled out in upstream interceptor}`(
         @IntForgery(min = 200, max = 600) statusCode: Int,
         forge: Forge
@@ -513,6 +767,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(
             TracingHeaderType.DATADOG
         ))
+
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
                 TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER,
@@ -537,24 +792,107 @@ internal open class TracingInterceptorNonDdTracerTest {
             assertThat(lastValue.header(TracingInterceptor.DATADOG_TRACE_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
         }
-        verifyZeroInteractions(mockTracer, mockLocalTracer, mockSpanBuilder, mockSpan)
     }
 
     @Test
-    fun `𝕄 not create a span 𝕎 intercept() { not sampled }`(
-        @IntForgery(min = 200, max = 600) statusCode: Int
+    fun `𝕄 respect b3multi sampling decision 𝕎 intercept() {sampled out in upstream interceptor}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int,
+        forge: Forge
     ) {
         // Given
-        whenever(mockTraceSampler.sample()).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(
+            TracingHeaderType.B3MULTI
+        ))
+
+        fakeRequest = forgeRequest(forge) {
+            it.addHeader(
+                TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY,
+                PrioritySampling.SAMPLER_DROP.toString()
+            )
+        }
         stubChain(mockChain, statusCode)
+        whenever(mockTraceSampler.sample()).thenReturn(true)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
 
         // Then
         assertThat(response).isSameAs(fakeResponse)
-        verifyZeroInteractions(mockTracer, mockSpan, mockSpanBuilder, mockLocalTracer)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(lastValue.header(TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY))
+                .isEqualTo("0")
+            assertThat(lastValue.header(TracingInterceptor.B3M_SPAN_ID_KEY)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.B3M_TRACE_ID_KEY)).isNull()
+        }
+    }
+
+    @Test
+    fun `𝕄 respect b3 sampling decision 𝕎 intercept() {sampled out in upstream interceptor}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(
+            TracingHeaderType.B3
+        ))
+
+        fakeRequest = forgeRequest(forge) {
+            it.addHeader(
+                TracingInterceptor.B3_HEADER_KEY,
+                forge.anElementFrom(
+                    PrioritySampling.SAMPLER_DROP.toString(),
+                    forge.aStringMatching("[a-f0-9]{32}\\-[a-f0-9]{16}\\-0")
+                )
+            )
+        }
+        stubChain(mockChain, statusCode)
+        whenever(mockTraceSampler.sample()).thenReturn(true)
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(lastValue.header(TracingInterceptor.B3_HEADER_KEY))
+                .isEqualTo("0")
+        }
+    }
+
+    @Test
+    fun `𝕄 respect tracecontext sampling decision 𝕎 intercept() {sampled out in upstream interceptor}`(
+        @IntForgery(min = 200, max = 600) statusCode: Int,
+        forge: Forge
+    ) {
+        // Given
+        whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(
+            TracingHeaderType.TRACECONTEXT
+        ))
+
+        fakeRequest = forgeRequest(forge) {
+            it.addHeader(
+                TracingInterceptor.W3C_TRACEPARENT_KEY,
+                forge.aStringMatching("00-[a-f0-9]{32}\\-[a-f0-9]{16}\\-00")
+            )
+        }
+        stubChain(mockChain, statusCode)
+        whenever(mockTraceSampler.sample()).thenReturn(true)
+
+        // When
+        val response = testedInterceptor.intercept(mockChain)
+
+        // Then
+        assertThat(response).isSameAs(fakeResponse)
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(lastValue.header(TracingInterceptor.W3C_TRACEPARENT_KEY))
+                .isEqualTo("00-%s-%s-00".format(mockSpan.context().toTraceId(), mockSpan.context().toSpanId()))
+        }
     }
 
     @Test

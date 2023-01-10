@@ -36,7 +36,7 @@ internal class FirstPartyHostHeaderTypeResolverTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeHosts = forge.aMap { forge.aStringMatching(HOST_REGEX) to listOf(TracingHeaderType.DATADOG) }
+        fakeHosts = forge.aMap { forge.aStringMatching(HOST_REGEX) to listOf(anElementFrom(listOf(TracingHeaderType.DATADOG, TracingHeaderType.B3, TracingHeaderType.B3MULTI, TracingHeaderType.TRACECONTEXT)))}
         testedDetector = FirstPartyHostHeaderTypeResolver(fakeHosts)
     }
 
@@ -292,6 +292,23 @@ internal class FirstPartyHostHeaderTypeResolverTest {
 
         // Then
         assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `𝕄 return header types 𝕎 headerTypesForUrl(String) {first party hosts}`(
+        @StringForgery(regex = "http(s?)") scheme: String,
+        @StringForgery(regex = "(/[a-zA-Z0-9_~\\.-]{1,9}){1,4}") path: String,
+    ) {
+        for ((host, tracingHeaders) in fakeHosts) {
+            // Given
+            val url = "$scheme://$host$path"
+
+            // When
+            val detectedHeader = testedDetector.headerTypesForUrl(url)
+
+            // Then
+            assertThat(detectedHeader).isEqualTo(tracingHeaders.toSet())
+        }
     }
 
     companion object {
