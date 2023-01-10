@@ -18,7 +18,7 @@ object AndroidConfig {
     const val MIN_SDK_FOR_COMPOSE = 21
     const val BUILD_TOOLS_VERSION = "33.0.0"
 
-    val VERSION = Version(1, 16, 0, Version.Type.Beta(1))
+    val VERSION = Version(1, 16, 0, Version.Type.Release)
 }
 
 @Suppress("UnstableApiUsage")
