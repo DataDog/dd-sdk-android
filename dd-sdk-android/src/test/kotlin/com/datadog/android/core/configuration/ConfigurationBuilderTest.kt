@@ -1343,7 +1343,13 @@ internal class ConfigurationBuilderTest {
 
         // Then
         assertThat(config.coreConfig).isEqualTo(
-            Configuration.DEFAULT_CORE_CONFIG.copy(firstPartyHostsWithHeaderTypes = hosts.associateWith { setOf(TracingHeaderType.DATADOG) })
+            Configuration.DEFAULT_CORE_CONFIG.copy(
+                firstPartyHostsWithHeaderTypes = hosts.associateWith {
+                    setOf(
+                        TracingHeaderType.DATADOG
+                    )
+                }
+            )
         )
         assertThat(config.logsConfig).isEqualTo(Configuration.DEFAULT_LOGS_CONFIG)
         assertThat(config.tracesConfig).isEqualTo(Configuration.DEFAULT_TRACING_CONFIG)
@@ -1407,7 +1413,18 @@ internal class ConfigurationBuilderTest {
         ) hosts: List<String>,
         forge: Forge
     ) {
-        val hostWithHeaderTypes = hosts.associateWith { setOf(forge.anElementFrom(setOf(TracingHeaderType.DATADOG, TracingHeaderType.B3MULTI, TracingHeaderType.B3, TracingHeaderType.TRACECONTEXT))) }
+        val hostWithHeaderTypes = hosts.associateWith {
+            setOf(
+                forge.anElementFrom(
+                    setOf(
+                        TracingHeaderType.DATADOG,
+                        TracingHeaderType.B3MULTI,
+                        TracingHeaderType.B3,
+                        TracingHeaderType.TRACECONTEXT
+                    )
+                )
+            )
+        }
 
         // When
         val config = testedBuilder

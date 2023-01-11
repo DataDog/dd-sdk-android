@@ -69,7 +69,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.util.*
+import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -163,7 +163,8 @@ internal open class TracingInterceptorTest {
 
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()
-        fakeLocalHosts = forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.DATADOG) }
+        fakeLocalHosts =
+            forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.DATADOG) }
         fakeMediaType = MediaType.parse(mediaType)
         fakeUrl = forgeUrlWithQueryParams(forge)
         fakeRequest = forgeRequest(forge)
@@ -249,7 +250,12 @@ internal open class TracingInterceptorTest {
         whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
             setOf(
                 forge.anElementFrom(
-                    setOf(TracingHeaderType.DATADOG, TracingHeaderType.B3, TracingHeaderType.B3MULTI, TracingHeaderType.TRACECONTEXT)
+                    setOf(
+                        TracingHeaderType.DATADOG,
+                        TracingHeaderType.B3,
+                        TracingHeaderType.B3MULTI,
+                        TracingHeaderType.TRACECONTEXT
+                    )
                 )
             )
         )
@@ -275,7 +281,11 @@ internal open class TracingInterceptorTest {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.DATADOG))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.DATADOG
+            )
+        )
         stubChain(mockChain, statusCode)
 
         // When
@@ -300,7 +310,11 @@ internal open class TracingInterceptorTest {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.B3MULTI))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.B3MULTI
+            )
+        )
         stubChain(mockChain, statusCode)
 
         // When
@@ -324,7 +338,11 @@ internal open class TracingInterceptorTest {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.B3))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.B3
+            )
+        )
         stubChain(mockChain, statusCode)
 
         // When
@@ -346,7 +364,11 @@ internal open class TracingInterceptorTest {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.TRACECONTEXT))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.TRACECONTEXT
+            )
+        )
         stubChain(mockChain, statusCode)
 
         // When
@@ -357,7 +379,12 @@ internal open class TracingInterceptorTest {
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.header(TracingInterceptor.W3C_TRACEPARENT_KEY))
-                .isEqualTo("00-%s-%s-00".format(mockSpan.context().toTraceId(), mockSpan.context().toSpanId()))
+                .isEqualTo(
+                    "00-%s-%s-00".format(
+                        mockSpan.context().toTraceId(),
+                        mockSpan.context().toSpanId()
+                    )
+                )
         }
     }
 
@@ -368,7 +395,14 @@ internal open class TracingInterceptorTest {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.DATADOG, TracingHeaderType.B3, TracingHeaderType.B3MULTI, TracingHeaderType.TRACECONTEXT))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.DATADOG,
+                TracingHeaderType.B3,
+                TracingHeaderType.B3MULTI,
+                TracingHeaderType.TRACECONTEXT
+            )
+        )
         stubChain(mockChain, statusCode)
 
         // When
@@ -390,7 +424,12 @@ internal open class TracingInterceptorTest {
             assertThat(lastValue.header(TracingInterceptor.B3_HEADER_KEY))
                 .isEqualTo("0")
             assertThat(lastValue.header(TracingInterceptor.W3C_TRACEPARENT_KEY))
-                .isEqualTo("00-%s-%s-00".format(mockSpan.context().toTraceId(), mockSpan.context().toSpanId()))
+                .isEqualTo(
+                    "00-%s-%s-00".format(
+                        mockSpan.context().toTraceId(),
+                        mockSpan.context().toSpanId()
+                    )
+                )
         }
     }
 
@@ -453,7 +492,8 @@ internal open class TracingInterceptorTest {
     ) {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
-        fakeLocalHosts = forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.B3MULTI) }
+        fakeLocalHosts =
+            forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.B3MULTI) }
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
         fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
@@ -481,7 +521,8 @@ internal open class TracingInterceptorTest {
     ) {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
-        fakeLocalHosts = forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.B3) }
+        fakeLocalHosts =
+            forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.B3) }
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
         fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
@@ -508,7 +549,8 @@ internal open class TracingInterceptorTest {
     ) {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
-        fakeLocalHosts = forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.TRACECONTEXT) }
+        fakeLocalHosts =
+            forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.TRACECONTEXT) }
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
 
         fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
@@ -525,7 +567,12 @@ internal open class TracingInterceptorTest {
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.header(TracingInterceptor.W3C_TRACEPARENT_KEY))
-                .isEqualTo("00-%s-%s-00".format(mockSpan.context().toTraceId(), mockSpan.context().toSpanId()))
+                .isEqualTo(
+                    "00-%s-%s-00".format(
+                        mockSpan.context().toTraceId(),
+                        mockSpan.context().toSpanId()
+                    )
+                )
         }
     }
 
@@ -536,7 +583,14 @@ internal open class TracingInterceptorTest {
     ) {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
-        fakeLocalHosts = forge.aMap { forge.aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.DATADOG, TracingHeaderType.B3, TracingHeaderType.B3MULTI, TracingHeaderType.TRACECONTEXT) }
+        fakeLocalHosts = forge.aMap {
+            forge.aStringMatching(HOSTNAME_PATTERN) to setOf(
+                TracingHeaderType.DATADOG,
+                TracingHeaderType.B3,
+                TracingHeaderType.B3MULTI,
+                TracingHeaderType.TRACECONTEXT
+            )
+        }
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
 
         fakeUrl = forgeUrlWithQueryParams(forge, forge.anElementFrom(fakeLocalHosts.keys))
@@ -564,7 +618,12 @@ internal open class TracingInterceptorTest {
             assertThat(lastValue.header(TracingInterceptor.B3_HEADER_KEY))
                 .isEqualTo("0")
             assertThat(lastValue.header(TracingInterceptor.W3C_TRACEPARENT_KEY))
-                .isEqualTo("00-%s-%s-00".format(mockSpan.context().toTraceId(), mockSpan.context().toSpanId()))
+                .isEqualTo(
+                    "00-%s-%s-00".format(
+                        mockSpan.context().toTraceId(),
+                        mockSpan.context().toSpanId()
+                    )
+                )
         }
     }
 
@@ -841,7 +900,11 @@ internal open class TracingInterceptorTest {
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.DATADOG))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.DATADOG
+            )
+        )
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
                 TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER,
@@ -875,7 +938,11 @@ internal open class TracingInterceptorTest {
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.B3MULTI))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.B3MULTI
+            )
+        )
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
                 TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY,
@@ -906,7 +973,11 @@ internal open class TracingInterceptorTest {
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.B3))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.B3
+            )
+        )
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
                 TracingInterceptor.B3_HEADER_KEY,
@@ -938,7 +1009,11 @@ internal open class TracingInterceptorTest {
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.TRACECONTEXT))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.TRACECONTEXT
+            )
+        )
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
                 TracingInterceptor.W3C_TRACEPARENT_KEY,
@@ -956,7 +1031,12 @@ internal open class TracingInterceptorTest {
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.header(TracingInterceptor.W3C_TRACEPARENT_KEY))
-                .isEqualTo("00-%s-%s-00".format(mockSpan.context().toTraceId(), mockSpan.context().toSpanId()))
+                .isEqualTo(
+                    "00-%s-%s-00".format(
+                        mockSpan.context().toTraceId(),
+                        mockSpan.context().toSpanId()
+                    )
+                )
         }
     }
 
@@ -992,7 +1072,8 @@ internal open class TracingInterceptorTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan as MutableSpan).resourceName = fakeUrlWithoutQueryParams.lowercase(Locale.US)
+        verify(mockSpan as MutableSpan).resourceName =
+            fakeUrlWithoutQueryParams.lowercase(Locale.US)
         verify(mockSpan).setTag("http.url", fakeUrlWithoutQueryParams.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
@@ -1298,7 +1379,8 @@ internal open class TracingInterceptorTest {
     @Test
     fun `M do not update the hostDetector W host list provided`(forge: Forge) {
         // GIVEN
-        val localHosts = forge.aMap { aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.DATADOG) }
+        val localHosts =
+            forge.aMap { aStringMatching(HOSTNAME_PATTERN) to setOf(TracingHeaderType.DATADOG) }
 
         // WHEN
         testedInterceptor = instantiateTestedInterceptor(localHosts) { mockLocalTracer }
@@ -1436,8 +1518,9 @@ internal open class TracingInterceptorTest {
     // endregion
 
     companion object {
-        const val HOSTNAME_PATTERN = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{1,4}[a-zA-Z0-9]{2,3})\\.)+" +
-            "([A-Za-z]|[A-Za-z][A-Za-z0-9-]{1,2}[A-Za-z0-9])"
+        const val HOSTNAME_PATTERN =
+            "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{1,4}[a-zA-Z0-9]{2,3})\\.)+" +
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]{1,2}[A-Za-z0-9])"
         val logger = LoggerTestConfiguration()
 
         @TestConfigurationsProvider

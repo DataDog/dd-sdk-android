@@ -70,7 +70,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.util.*
+import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -175,7 +175,11 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         } else {
             null
         }
-        fakeLocalHosts = forge.aMap { forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to setOf(TracingHeaderType.DATADOG) }
+        fakeLocalHosts = forge.aMap {
+            forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to setOf(
+                TracingHeaderType.DATADOG
+            )
+        }
         fakeUrl = forgeUrl(forge)
         fakeRequest = forgeRequest(forge)
         val mockCore = mock<DatadogCore>()
@@ -242,7 +246,11 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.DATADOG))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.DATADOG
+            )
+        )
         stubChain(mockChain, statusCode)
 
         // When
@@ -266,7 +274,11 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.B3MULTI))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.B3MULTI
+            )
+        )
         stubChain(mockChain, statusCode)
 
         // When
@@ -290,7 +302,11 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.B3))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.B3
+            )
+        )
         stubChain(mockChain, statusCode)
 
         // When
@@ -312,7 +328,11 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.TRACECONTEXT))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.TRACECONTEXT
+            )
+        )
         stubChain(mockChain, statusCode)
 
         // When
@@ -323,7 +343,12 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.header(TracingInterceptor.W3C_TRACEPARENT_KEY))
-                .isEqualTo("00-%s-%s-00".format(mockSpan.context().toTraceId(), mockSpan.context().toSpanId()))
+                .isEqualTo(
+                    "00-%s-%s-00".format(
+                        mockSpan.context().toTraceId(),
+                        mockSpan.context().toSpanId()
+                    )
+                )
         }
     }
 
@@ -385,7 +410,11 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     ) {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
-        fakeLocalHosts = forge.aMap { forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to setOf(TracingHeaderType.B3MULTI) }
+        fakeLocalHosts = forge.aMap {
+            forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to setOf(
+                TracingHeaderType.B3MULTI
+            )
+        }
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
         fakeUrl = forgeUrl(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
@@ -413,7 +442,11 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     ) {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
-        fakeLocalHosts = forge.aMap { forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to setOf(TracingHeaderType.B3) }
+        fakeLocalHosts = forge.aMap {
+            forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to setOf(
+                TracingHeaderType.B3
+            )
+        }
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
         fakeUrl = forgeUrl(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
@@ -439,7 +472,11 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     ) {
         // Given
         whenever(mockTraceSampler.sample()).thenReturn(false)
-        fakeLocalHosts = forge.aMap { forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to setOf(TracingHeaderType.TRACECONTEXT) }
+        fakeLocalHosts = forge.aMap {
+            forge.aStringMatching(TracingInterceptorTest.HOSTNAME_PATTERN) to setOf(
+                TracingHeaderType.TRACECONTEXT
+            )
+        }
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { mockLocalTracer }
         fakeUrl = forgeUrl(forge, forge.anElementFrom(fakeLocalHosts.keys))
         fakeRequest = forgeRequest(forge)
@@ -454,7 +491,12 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.header(TracingInterceptor.W3C_TRACEPARENT_KEY))
-                .isEqualTo("00-%s-%s-00".format(mockSpan.context().toTraceId(), mockSpan.context().toSpanId()))
+                .isEqualTo(
+                    "00-%s-%s-00".format(
+                        mockSpan.context().toTraceId(),
+                        mockSpan.context().toSpanId()
+                    )
+                )
         }
     }
 
@@ -659,7 +701,11 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.DATADOG))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.DATADOG
+            )
+        )
 
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
@@ -694,7 +740,11 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.B3MULTI))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.B3MULTI
+            )
+        )
 
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
@@ -726,7 +776,11 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.B3))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.B3
+            )
+        )
 
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
@@ -759,7 +813,11 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     ) {
         // Given
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(setOf(TracingHeaderType.TRACECONTEXT))
+        whenever(mockResolver.headerTypesForUrl(HttpUrl.get(fakeUrl))).thenReturn(
+            setOf(
+                TracingHeaderType.TRACECONTEXT
+            )
+        )
 
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
@@ -778,7 +836,12 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.header(TracingInterceptor.W3C_TRACEPARENT_KEY))
-                .isEqualTo("00-%s-%s-00".format(mockSpan.context().toTraceId(), mockSpan.context().toSpanId()))
+                .isEqualTo(
+                    "00-%s-%s-00".format(
+                        mockSpan.context().toTraceId(),
+                        mockSpan.context().toSpanId()
+                    )
+                )
         }
     }
 
@@ -1091,7 +1154,14 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         val localHosts = forge.aList { forge.aStringMatching(HOSTNAME_PATTERN) }
 
         // WHEN
-        testedInterceptor = instantiateTestedInterceptor(localHosts.associateWith { setOf(TracingHeaderType.DATADOG) }) { mockLocalTracer }
+        testedInterceptor =
+            instantiateTestedInterceptor(
+                localHosts.associateWith {
+                    setOf(TracingHeaderType.DATADOG)
+                }
+            ) {
+                mockLocalTracer
+            }
 
         // THEN
         verify(mockResolver, never()).addKnownHosts(localHosts)
@@ -1132,7 +1202,8 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     ) {
         // Given
         var called = 0
-        val tracedHosts = listOf(fakeHostIp, fakeHostName).associateWith { setOf(TracingHeaderType.DATADOG) }
+        val tracedHosts =
+            listOf(fakeHostIp, fakeHostName).associateWith { setOf(TracingHeaderType.DATADOG) }
         whenever(mockResolver.isFirstPartyUrl(HttpUrl.get(fakeUrl))).thenReturn(true)
         testedInterceptor = instantiateTestedInterceptor(tracedHosts) {
             called++
@@ -1227,8 +1298,9 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     // endregion
 
     companion object {
-        const val HOSTNAME_PATTERN = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{1,4}[a-zA-Z0-9]{2,3})\\.)+" +
-            "([A-Za-z]|[A-Za-z][A-Za-z0-9-]{1,2}[A-Za-z0-9])"
+        const val HOSTNAME_PATTERN =
+            "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{1,4}[a-zA-Z0-9]{2,3})\\.)+" +
+                "([A-Za-z]|[A-Za-z][A-Za-z0-9-]{1,2}[A-Za-z0-9])"
         const val IPV4_PATTERN =
             "(([0-9]|[1-9][0-9]|1[0-9]){2}\\.|(2[0-4][0-9]|25[0-5])\\.){3}" +
                 "([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])"

@@ -36,7 +36,18 @@ internal class FirstPartyHostHeaderTypeResolverTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeHosts = forge.aMap { forge.aStringMatching(HOST_REGEX) to setOf(anElementFrom(setOf(TracingHeaderType.DATADOG, TracingHeaderType.B3, TracingHeaderType.B3MULTI, TracingHeaderType.TRACECONTEXT))) }
+        fakeHosts = forge.aMap {
+            forge.aStringMatching(HOST_REGEX) to setOf(
+                anElementFrom(
+                    setOf(
+                        TracingHeaderType.DATADOG,
+                        TracingHeaderType.B3,
+                        TracingHeaderType.B3MULTI,
+                        TracingHeaderType.TRACECONTEXT
+                    )
+                )
+            )
+        }
         testedDetector = FirstPartyHostHeaderTypeResolver(fakeHosts)
     }
 

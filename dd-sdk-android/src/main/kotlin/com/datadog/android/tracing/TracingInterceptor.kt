@@ -80,7 +80,8 @@ internal constructor(
         NETWORK_REQUESTS_TRACKING_FEATURE_NAME
     )
 
-    private val localFirstPartyHostHeaderTypeResolver = FirstPartyHostHeaderTypeResolver(tracedHosts.filterKeys { sanitizedHosts.contains(it) })
+    private val localFirstPartyHostHeaderTypeResolver =
+        FirstPartyHostHeaderTypeResolver(tracedHosts.filterKeys { sanitizedHosts.contains(it) })
 
     init {
         if (localFirstPartyHostHeaderTypeResolver.isEmpty() && firstPartyHostResolver.isEmpty()) {
@@ -307,7 +308,8 @@ internal constructor(
 
     @Suppress("ReturnCount")
     private fun extractSamplingDecision(request: Request): Boolean? {
-        val datadogSamplingPriority = request.header(DATADOG_SAMPLING_PRIORITY_HEADER)?.toIntOrNull()
+        val datadogSamplingPriority =
+            request.header(DATADOG_SAMPLING_PRIORITY_HEADER)?.toIntOrNull()
         if (datadogSamplingPriority != null) {
             if (datadogSamplingPriority == PrioritySampling.UNSET) return null
             return datadogSamplingPriority == PrioritySampling.USER_KEEP ||
@@ -328,8 +330,8 @@ internal constructor(
                 return false
             }
             val b3HeaderParts = b3HeaderValue.split("-")
-            if (b3HeaderParts.size >= 3) {
-                return when (b3HeaderParts[2]) {
+            if (b3HeaderParts.size >= B3_SAMPLING_DECISION_INDEX + 1) {
+                return when (b3HeaderParts[B3_SAMPLING_DECISION_INDEX]) {
                     "1", "d" -> return true
                     "0" -> return false
                     else -> null
@@ -340,8 +342,8 @@ internal constructor(
         val w3cHeaderValue = request.header(W3C_TRACEPARENT_KEY)
         if (w3cHeaderValue != null) {
             val w3CHeaderParts = w3cHeaderValue.split("-")
-            if (w3CHeaderParts.size >= 4) {
-                return when (w3CHeaderParts[3].toIntOrNull()) {
+            if (w3CHeaderParts.size >= W3C_SAMPLING_DECISION_INDEX + 1) {
+                return when (w3CHeaderParts[W3C_SAMPLING_DECISION_INDEX].toIntOrNull()) {
                     1 -> return true
                     0 -> return false
                     else -> null
@@ -367,6 +369,58 @@ internal constructor(
         return headerContext ?: tagContext
     }
 
+    private fun setSampledOutHeaders(
+        requestBuilder: okhttp3.Request.Builder,
+        tracingHeaderTypes: Set<TracingHeaderType>,
+        span: Span
+    ) {
+        for (headerType in tracingHeaderTypes) {
+            when (headerType) {
+                TracingHeaderType.DATADOG -> {
+                    listOf(
+                        DATADOG_SAMPLING_PRIORITY_HEADER,
+                        DATADOG_TRACE_ID_HEADER,
+                        DATADOG_SPAN_ID_HEADER,
+                        DATADOG_ORIGIN_HEADER
+                    ).forEach {
+                        requestBuilder.removeHeader(it)
+                    }
+                    requestBuilder.addHeader(
+                        DATADOG_SAMPLING_PRIORITY_HEADER,
+                        DATADOG_DROP_SAMPLING_DECISION
+                    )
+                }
+
+                TracingHeaderType.B3 -> {
+                    requestBuilder.removeHeader(B3_HEADER_KEY)
+                    requestBuilder.addHeader(B3_HEADER_KEY, B3_DROP_SAMPLING_DECISION)
+                }
+
+                TracingHeaderType.B3MULTI -> {
+                    listOf(
+                        B3M_TRACE_ID_KEY,
+                        B3M_SPAN_ID_KEY,
+                        B3M_SAMPLING_PRIORITY_KEY
+                    ).forEach {
+                        requestBuilder.removeHeader(it)
+                    }
+                    requestBuilder.addHeader(B3M_SAMPLING_PRIORITY_KEY, B3M_DROP_SAMPLING_DECISION)
+                }
+
+                TracingHeaderType.TRACECONTEXT -> {
+                    requestBuilder.removeHeader(W3C_TRACEPARENT_KEY)
+                    requestBuilder.addHeader(
+                        W3C_TRACEPARENT_KEY,
+                        W3C_DROP_SAMPLING_DECISION.format(
+                            span.context().toTraceId(),
+                            span.context().toSpanId()
+                        )
+                    )
+                }
+            }
+        }
+    }
+
     private fun updateRequest(
         request: Request,
         tracer: Tracer,
@@ -374,46 +428,16 @@ internal constructor(
         isSampled: Boolean
     ): Request.Builder {
         val tracedRequestBuilder = request.newBuilder()
-        var tracingHeaderTypes = localFirstPartyHostHeaderTypeResolver.headerTypesForUrl(request.url())
-        tracingHeaderTypes = if (!tracingHeaderTypes.isEmpty()) tracingHeaderTypes else firstPartyHostResolver.headerTypesForUrl(request.url())
+        var tracingHeaderTypes =
+            localFirstPartyHostHeaderTypeResolver.headerTypesForUrl(request.url())
+        tracingHeaderTypes = if (!tracingHeaderTypes.isEmpty()) {
+            tracingHeaderTypes
+        } else {
+            firstPartyHostResolver.headerTypesForUrl(request.url())
+        }
 
         if (!isSampled) {
-            for (headerType in tracingHeaderTypes) {
-                when (headerType) {
-                    TracingHeaderType.DATADOG -> {
-                        listOf(
-                            DATADOG_SAMPLING_PRIORITY_HEADER,
-                            DATADOG_TRACE_ID_HEADER,
-                            DATADOG_SPAN_ID_HEADER,
-                            DATADOG_ORIGIN_HEADER
-                        ).forEach {
-                            tracedRequestBuilder.removeHeader(it)
-                        }
-                        tracedRequestBuilder.addHeader(DATADOG_SAMPLING_PRIORITY_HEADER, DATADOG_DROP_SAMPLING_DECISION)
-                    }
-
-                    TracingHeaderType.B3 -> {
-                        tracedRequestBuilder.removeHeader(B3_HEADER_KEY)
-                        tracedRequestBuilder.addHeader(B3_HEADER_KEY, B3_DROP_SAMPLING_DECISION)
-                    }
-
-                    TracingHeaderType.B3MULTI -> {
-                        listOf(
-                            B3M_TRACE_ID_KEY,
-                            B3M_SPAN_ID_KEY,
-                            B3M_SAMPLING_PRIORITY_KEY
-                        ).forEach {
-                            tracedRequestBuilder.removeHeader(it)
-                        }
-                        tracedRequestBuilder.addHeader(B3M_SAMPLING_PRIORITY_KEY, B3M_DROP_SAMPLING_DECISION)
-                    }
-
-                    TracingHeaderType.TRACECONTEXT -> {
-                        tracedRequestBuilder.removeHeader(W3C_TRACEPARENT_KEY)
-                        tracedRequestBuilder.addHeader(W3C_TRACEPARENT_KEY, W3C_DROP_SAMPLING_DECISION.format(span.context().toTraceId(), span.context().toSpanId()))
-                    }
-                }
-            }
+            setSampledOutHeaders(tracedRequestBuilder, tracingHeaderTypes, span)
         } else {
             tracer.inject(
                 span.context(),
@@ -434,7 +458,10 @@ internal constructor(
                         }
                         B3M_SPAN_ID_KEY,
                         B3M_TRACE_ID_KEY,
-                        B3M_SAMPLING_PRIORITY_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.B3MULTI)) {
+                        B3M_SAMPLING_PRIORITY_KEY -> if (tracingHeaderTypes.contains(
+                                TracingHeaderType.B3MULTI
+                            )
+                        ) {
                             tracedRequestBuilder.addHeader(key, value)
                         }
                         W3C_TRACEPARENT_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.TRACECONTEXT)) {
@@ -548,6 +575,7 @@ internal constructor(
         // taken from B3HttpCodec
         internal const val B3_HEADER_KEY = "b3"
         internal const val B3_DROP_SAMPLING_DECISION = "0"
+        internal const val B3_SAMPLING_DECISION_INDEX = 2
 
         // taken from B3MHttpCodec
         internal const val B3M_TRACE_ID_KEY = "X-B3-TraceId"
@@ -558,5 +586,6 @@ internal constructor(
         // taken from W3CHttpCodec
         internal const val W3C_TRACEPARENT_KEY = "traceparent"
         internal const val W3C_DROP_SAMPLING_DECISION = "00-%s-%s-00"
+        internal const val W3C_SAMPLING_DECISION_INDEX = 3
     }
 }

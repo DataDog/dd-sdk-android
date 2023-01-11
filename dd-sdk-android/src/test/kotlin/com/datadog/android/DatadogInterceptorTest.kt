@@ -58,7 +58,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 import java.io.IOException
-import java.util.*
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
