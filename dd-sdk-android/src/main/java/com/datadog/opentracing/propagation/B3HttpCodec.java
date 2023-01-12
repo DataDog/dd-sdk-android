@@ -87,7 +87,7 @@ class B3HttpCodec {
         BigInteger spanId = BigInteger.ZERO;
         int samplingPriority = PrioritySampling.UNSET;
 
-       for (final Map.Entry<String, String> entry : carrier) {
+        for (final Map.Entry<String, String> entry : carrier) {
           final String key = entry.getKey().toLowerCase(Locale.US);
           final String value = entry.getValue();
 

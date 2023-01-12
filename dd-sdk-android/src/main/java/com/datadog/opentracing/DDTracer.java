@@ -124,7 +124,7 @@ public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
                 Sampler.Builder.forConfig(config),
                 HttpCodec.createInjector(config),
                 HttpCodec.createExtractor(config, config.getHeaderTags()),
-                new ContextualScopeManager(config.get().getScopeDepthLimit(), createScopeEventFactory()),
+                new ContextualScopeManager(Config.get().getScopeDepthLimit(), createScopeEventFactory()),
                 random,
                 config.getLocalRootSpanTags(),
                 config.getMergedSpanTags(),

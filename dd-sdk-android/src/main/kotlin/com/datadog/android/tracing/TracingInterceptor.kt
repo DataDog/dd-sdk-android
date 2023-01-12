@@ -332,8 +332,8 @@ internal constructor(
             val b3HeaderParts = b3HeaderValue.split("-")
             if (b3HeaderParts.size >= B3_SAMPLING_DECISION_INDEX + 1) {
                 return when (b3HeaderParts[B3_SAMPLING_DECISION_INDEX]) {
-                    "1", "d" -> return true
-                    "0" -> return false
+                    "1", "d" -> true
+                    "0" -> false
                     else -> null
                 }
             }
@@ -344,8 +344,8 @@ internal constructor(
             val w3CHeaderParts = w3cHeaderValue.split("-")
             if (w3CHeaderParts.size >= W3C_SAMPLING_DECISION_INDEX + 1) {
                 return when (w3CHeaderParts[W3C_SAMPLING_DECISION_INDEX].toIntOrNull()) {
-                    1 -> return true
-                    0 -> return false
+                    1 -> true
+                    0 -> false
                     else -> null
                 }
             }
@@ -370,7 +370,7 @@ internal constructor(
     }
 
     private fun setSampledOutHeaders(
-        requestBuilder: okhttp3.Request.Builder,
+        requestBuilder: Request.Builder,
         tracingHeaderTypes: Set<TracingHeaderType>,
         span: Span
     ) {
