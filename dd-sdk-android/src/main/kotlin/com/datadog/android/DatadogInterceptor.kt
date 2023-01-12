@@ -116,7 +116,7 @@ internal constructor(
     ) : this(
         tracedHosts = firstPartyHostsWithHeaderType,
         tracedRequestListener = tracedRequestListener,
-        firstPartyHostResolver = getGlobalFirstPartyHostDetector(),
+        firstPartyHostResolver = getGlobalFirstPartyHostResolver(),
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = RateBasedSampler(traceSamplingRate.percent()),
         localTracerFactory = { AndroidTracer.Builder().setTracingHeaderTypes(it).build() }
@@ -152,7 +152,7 @@ internal constructor(
     ) : this(
         tracedHosts = firstPartyHosts.associateWith { setOf(TracingHeaderType.DATADOG) },
         tracedRequestListener = tracedRequestListener,
-        firstPartyHostResolver = getGlobalFirstPartyHostDetector(),
+        firstPartyHostResolver = getGlobalFirstPartyHostResolver(),
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = RateBasedSampler(traceSamplingRate.percent()),
         localTracerFactory = { AndroidTracer.Builder().setTracingHeaderTypes(it).build() }
@@ -179,7 +179,7 @@ internal constructor(
     ) : this(
         tracedHosts = emptyMap(),
         tracedRequestListener = tracedRequestListener,
-        firstPartyHostResolver = getGlobalFirstPartyHostDetector(),
+        firstPartyHostResolver = getGlobalFirstPartyHostResolver(),
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = RateBasedSampler(traceSamplingRate.percent()),
         localTracerFactory = { AndroidTracer.Builder().setTracingHeaderTypes(it).build() }

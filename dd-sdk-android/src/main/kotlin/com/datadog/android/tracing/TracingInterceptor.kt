@@ -109,7 +109,7 @@ internal constructor(
     ) : this(
         tracedHosts.associateWith { setOf(TracingHeaderType.DATADOG) },
         tracedRequestListener,
-        getGlobalFirstPartyHostDetector(),
+        getGlobalFirstPartyHostResolver(),
         null,
         RateBasedSampler(traceSamplingRate.percent()),
         { AndroidTracer.Builder().setTracingHeaderTypes(it).build() }
@@ -137,7 +137,7 @@ internal constructor(
     ) : this(
         tracedHostsWithHeaderType,
         tracedRequestListener,
-        getGlobalFirstPartyHostDetector(),
+        getGlobalFirstPartyHostResolver(),
         null,
         RateBasedSampler(traceSamplingRate.percent()),
         { AndroidTracer.Builder().setTracingHeaderTypes(it).build() }
@@ -158,7 +158,7 @@ internal constructor(
     ) : this(
         emptyMap(),
         tracedRequestListener,
-        getGlobalFirstPartyHostDetector(),
+        getGlobalFirstPartyHostResolver(),
         null,
         RateBasedSampler(traceSamplingRate.percent()),
         { AndroidTracer.Builder().setTracingHeaderTypes(it).build() }
@@ -553,7 +553,7 @@ internal constructor(
          * Temporary helper method for now, it'll be removed eventually.
          */
         @Suppress("FunctionMaxLength")
-        internal fun getGlobalFirstPartyHostDetector(): FirstPartyHostHeaderTypeResolver {
+        internal fun getGlobalFirstPartyHostResolver(): FirstPartyHostHeaderTypeResolver {
             return (
                 (Datadog.globalSdkCore as? DatadogCore)
                     ?.coreFeature

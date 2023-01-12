@@ -276,7 +276,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `𝕄 initializes first party hosts detector 𝕎 initialize`() {
+    fun `𝕄 initializes first party hosts resolver 𝕎 initialize`() {
         // When
         testedFeature.initialize(
             appContext.mockInstance,

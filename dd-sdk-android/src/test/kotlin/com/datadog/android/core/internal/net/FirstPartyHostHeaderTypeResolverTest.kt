@@ -287,10 +287,10 @@ internal class FirstPartyHostHeaderTypeResolverTest {
     @Test
     fun `𝕄 return true 𝕎 isEmpty() {empty host list}`() {
         // Given
-        val detector = FirstPartyHostHeaderTypeResolver(emptyMap())
+        val resolver = FirstPartyHostHeaderTypeResolver(emptyMap())
 
         // When
-        val result = detector.isEmpty()
+        val result = resolver.isEmpty()
 
         // Then
         assertThat(result).isTrue()
