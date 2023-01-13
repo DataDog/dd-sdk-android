@@ -7,7 +7,9 @@
 package com.datadog.android.tracing
 
 /**
- * Defines the list of tracing header types that can be injected into http requests
+ * Defines the list of tracing header types that can be injected into http requests.
+ * @property headerType Explicit header type property introduced in order to have a consistent value
+ * in case if enum values are renamed.
  */
 enum class TracingHeaderType(val headerType: String) {
     /**
@@ -26,7 +28,7 @@ enum class TracingHeaderType(val headerType: String) {
     B3MULTI("B3MULTI"),
 
     /**
-     * W3C [Trace Context header](https://www.w3.org/TR/trace-context/#tracestate-header)
+     * W3C [Trace Context header](https://www.w3.org/TR/trace-context/#tracestate-header).
      */
     TRACECONTEXT("TRACECONTEXT")
 }

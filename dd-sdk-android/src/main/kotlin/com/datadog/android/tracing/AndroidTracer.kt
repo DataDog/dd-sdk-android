@@ -140,7 +140,7 @@ class AndroidTracer internal constructor(
         }
 
         /**
-         * Sets the tracing header styles that may be injected by this tracer
+         * Sets the tracing header styles that may be injected by this tracer.
          * @param headerTypes the list of header types injected (default = datadog style headers)
          */
         fun setTracingHeaderTypes(headerTypes: Set<TracingHeaderType>): Builder {

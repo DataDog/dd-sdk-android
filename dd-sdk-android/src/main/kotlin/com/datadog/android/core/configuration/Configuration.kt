@@ -205,7 +205,8 @@ internal constructor(
          * - be considered a first party resource and categorised as such in your RUM dashboard;
          * - be wrapped in a Span and have trace id of the specified types injected to get a
          * full flame-graph in APM. Multiple header types are supported for each host.
-         * @param hosts a list of all the hosts that you own.
+         * @param hostsWithHeaderType a list of all the hosts that you own and the tracing headers
+         * to be used for each host.
          * See [DatadogInterceptor]
          */
         fun setFirstPartyHostsWithHeaderType(hostsWithHeaderType: Map<String, Set<TracingHeaderType>>): Builder {

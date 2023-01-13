@@ -89,7 +89,7 @@ internal constructor(
      * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s, and
      * track RUM Resources.
      *
-     * @param tracedHostsWithHeaderType the list of all the hosts and header types that you want to
+     * @param firstPartyHostsWithHeaderType the list of all the hosts and header types that you want to
      * be automatically tracked by this interceptor.
      * Requests made to a URL with any one of these hosts (or any subdomain) will:
      * - be considered a first party RUM Resource and categorised as such in your RUM dashboard;
