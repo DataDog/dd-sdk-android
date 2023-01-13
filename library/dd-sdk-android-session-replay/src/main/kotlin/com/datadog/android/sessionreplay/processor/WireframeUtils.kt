@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay.processor
 
 import com.datadog.android.sessionreplay.model.MobileSegment
-import java.util.Locale
+import com.datadog.android.sessionreplay.utils.hasOpaqueBackground
 import kotlin.math.max
 
 internal class WireframeUtils {
@@ -52,7 +52,7 @@ internal class WireframeUtils {
             return false
         }
         topWireframes.forEach {
-            if (it.bounds().isCovering(wireframeBounds) && it.isOpaque()) {
+            if (it.bounds().isCovering(wireframeBounds) && it.hasOpaqueBackground()) {
                 return false
             }
         }
@@ -71,23 +71,6 @@ internal class WireframeUtils {
             is MobileSegment.Wireframe.ShapeWireframe -> this.bounds()
             is MobileSegment.Wireframe.TextWireframe -> this.bounds()
         }
-    }
-
-    private fun MobileSegment.Wireframe.isOpaque(): Boolean {
-        return this.shapeStyle()?.isOpaque() ?: false
-    }
-
-    private fun MobileSegment.Wireframe.shapeStyle(): MobileSegment.ShapeStyle? {
-        return when (this) {
-            is MobileSegment.Wireframe.TextWireframe -> this.shapeStyle
-            is MobileSegment.Wireframe.ShapeWireframe -> this.shapeStyle
-        }
-    }
-
-    private fun MobileSegment.ShapeStyle.isOpaque(): Boolean {
-        return this.opacity == FULL_OPACITY_ALPHA &&
-            this.backgroundColor != null &&
-            this.backgroundColor.takeLast(2).lowercase(Locale.US) == FULL_OPACITY_STRING_HEXA
     }
 
     private fun MobileSegment.Wireframe.ShapeWireframe.bounds(): Bounds {
@@ -120,9 +103,4 @@ internal class WireframeUtils {
         val width: Long,
         val height: Long
     )
-
-    companion object {
-        private const val FULL_OPACITY_STRING_HEXA = "ff"
-        private const val FULL_OPACITY_ALPHA = 1f
-    }
 }

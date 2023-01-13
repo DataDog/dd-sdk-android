@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.recorder
 
-import com.datadog.android.sessionreplay.utils.ForgeConfigurator
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

@@ -8,7 +8,7 @@ package com.datadog.android.sessionreplay.recorder.callback
 
 import android.os.Build
 import android.view.MotionEvent
-import com.datadog.android.sessionreplay.utils.ForgeConfigurator
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.nhaarman.mockitokotlin2.whenever

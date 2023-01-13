@@ -8,11 +8,11 @@ package com.datadog.android.sessionreplay.recorder.callback
 
 import android.view.MotionEvent
 import android.view.Window
+import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.model.MobileSegment.MobileIncrementalData
 import com.datadog.android.sessionreplay.model.MobileSegment.MobileRecord
 import com.datadog.android.sessionreplay.processor.Processor
-import com.datadog.android.sessionreplay.utils.ForgeConfigurator
 import com.datadog.android.sessionreplay.utils.TimeProvider
 import com.datadog.tools.unit.forge.aThrowable
 import com.nhaarman.mockitokotlin2.argumentCaptor
