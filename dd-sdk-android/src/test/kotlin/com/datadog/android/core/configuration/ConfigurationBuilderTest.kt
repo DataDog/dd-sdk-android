@@ -1406,7 +1406,7 @@ internal class ConfigurationBuilderTest {
     }
 
     @Test
-    fun `𝕄 build config with first party hosts and header types 𝕎 setFirstPartyHosts() { host names }`(
+    fun `𝕄 build config with first party hosts and header types 𝕎 setFirstPartyHostsWithHeaderType() { host names }`(
         @StringForgery(
             regex = "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])\\.)+" +
                 "([A-Za-z]|[A-Za-z][A-Za-z0-9-]*[A-Za-z0-9])"
@@ -1414,16 +1414,7 @@ internal class ConfigurationBuilderTest {
         forge: Forge
     ) {
         val hostWithHeaderTypes = hosts.associateWith {
-            setOf(
-                forge.anElementFrom(
-                    setOf(
-                        TracingHeaderType.DATADOG,
-                        TracingHeaderType.B3MULTI,
-                        TracingHeaderType.B3,
-                        TracingHeaderType.TRACECONTEXT
-                    )
-                )
-            )
+            forge.aList { aValueFrom(TracingHeaderType::class.java) }.toSet()
         }
 
         // When
