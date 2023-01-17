@@ -74,8 +74,7 @@ internal class WorkManagerUtilsTest {
                 logsEnabled = true,
                 tracesEnabled = true,
                 crashReportsEnabled = true,
-                rumEnabled = true,
-                sessionReplayEnabled = true
+                rumEnabled = true
             ).build(),
             TrackingConsent.GRANTED
         )
