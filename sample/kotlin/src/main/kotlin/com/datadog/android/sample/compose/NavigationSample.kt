@@ -75,6 +75,7 @@ internal fun SimpleView(
     }
 }
 
+@Suppress("ThrowingInternalException") // not an issue in the sample
 @Composable
 internal fun ViewNavigation(
     navController: NavHostController
