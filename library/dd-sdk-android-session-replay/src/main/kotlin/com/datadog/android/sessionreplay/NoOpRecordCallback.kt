@@ -7,9 +7,7 @@
 package com.datadog.android.sessionreplay
 
 internal class NoOpRecordCallback : RecordCallback {
-    public override fun onStartRecording() {
-    }
 
-    public override fun onStopRecording() {
+    override fun onRecordForViewSent(viewId: String) {
     }
 }

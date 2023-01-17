@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.processor
 
+import com.datadog.android.sessionreplay.RecordCallback
 import com.datadog.android.sessionreplay.RecordWriter
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -17,9 +18,11 @@ import com.datadog.android.sessionreplay.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.utils.TimeProvider
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.argumentCaptor
+import com.nhaarman.mockitokotlin2.inOrder
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import fr.xgouchet.elmyr.Forge
@@ -78,6 +81,9 @@ internal class RecordedDataProcessorTest {
 
     lateinit var testedProcessor: RecordedDataProcessor
 
+    @Mock
+    lateinit var mockRecordCallback: RecordCallback
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockNodeFlattener.flattenNode(any()))
@@ -95,6 +101,7 @@ internal class RecordedDataProcessorTest {
             mockTimeProvider,
             mockExecutorService,
             mockWriter,
+            mockRecordCallback,
             mockMutationResolver,
             mockNodeFlattener
         )
@@ -142,6 +149,8 @@ internal class RecordedDataProcessorTest {
             as MobileSegment.MobileRecord.MobileFullSnapshotRecord
         assertThat(fullSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
         assertThat(fullSnapshotRecord.data.wireframes).isEqualTo(fakeFlattenedSnapshots)
+        verify(mockRecordCallback).onRecordForViewSent(fakeRumContext.viewId)
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     @Test
@@ -188,6 +197,11 @@ internal class RecordedDataProcessorTest {
             .isInstanceOf(MobileSegment.MobileRecord.ViewEndRecord::class.java)
         assertThat(captor.thirdValue.records[2])
             .isInstanceOf(MobileSegment.MobileRecord.MobileFullSnapshotRecord::class.java)
+        inOrder(mockRecordCallback) {
+            verify(mockRecordCallback).onRecordForViewSent(fakeRumContext.viewId)
+            verify(mockRecordCallback).onRecordForViewSent(fakeRumContext2.viewId)
+        }
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     @Test
@@ -224,6 +238,8 @@ internal class RecordedDataProcessorTest {
         val fullSnapshotRecord = captor.secondValue.records[0]
             as MobileSegment.MobileRecord.MobileFullSnapshotRecord
         assertThat(fullSnapshotRecord.data.wireframes).isEqualTo(fakeFlattenedSnapshot2)
+        verify(mockRecordCallback, times(2)).onRecordForViewSent(fakeRumContext.viewId)
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     @Test
@@ -267,6 +283,8 @@ internal class RecordedDataProcessorTest {
         val fullSnapshotRecord = captor.secondValue.records[0]
             as MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord
         assertThat(fullSnapshotRecord.data).isEqualTo(fakeMutationData)
+        verify(mockRecordCallback, times(2)).onRecordForViewSent(fakeRumContext.viewId)
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     @Test
@@ -295,6 +313,8 @@ internal class RecordedDataProcessorTest {
         assertThat(metaRecord.timestamp).isEqualTo(fakeTimestamp)
         assertThat(metaRecord.data.height).isEqualTo(fakeRootHeight)
         assertThat(metaRecord.data.width).isEqualTo(fakeRootWidth)
+        verify(mockRecordCallback).onRecordForViewSent(fakeRumContext.viewId)
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     @Test
@@ -325,6 +345,8 @@ internal class RecordedDataProcessorTest {
         val focusRecord = captor.firstValue.records[1] as MobileSegment.MobileRecord.FocusRecord
         assertThat(focusRecord.timestamp).isEqualTo(fakeTimestamp)
         assertThat(focusRecord.data.hasFocus).isTrue
+        verify(mockRecordCallback).onRecordForViewSent(fakeRumContext.viewId)
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     @Test
@@ -346,6 +368,8 @@ internal class RecordedDataProcessorTest {
             MobileSegment.MobileRecord
                 .MobileIncrementalSnapshotRecord::class.java
         )
+        verify(mockRecordCallback, times(2)).onRecordForViewSent(fakeRumContext.viewId)
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     @Test
@@ -366,6 +390,8 @@ internal class RecordedDataProcessorTest {
             MobileSegment.MobileRecord
                 .MobileIncrementalSnapshotRecord::class.java
         )
+        verify(mockRecordCallback, times(2)).onRecordForViewSent(fakeRumContext.viewId)
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     @Test
@@ -387,7 +413,9 @@ internal class RecordedDataProcessorTest {
 
         testedProcessor.processScreenSnapshots(fakeSnapshot1)
         testedProcessor.processScreenSnapshots(fakeSnapshot2)
-        whenever(mockRumContextProvider.getRumContext()).thenReturn(forge.getForgery())
+        val fakeRumContext2: SessionReplayRumContext = forge.getForgery()
+        whenever(mockRumContextProvider.getRumContext())
+            .thenReturn(fakeRumContext2)
 
         // When
         testedProcessor.processScreenSnapshots(fakeSnapshot3)
@@ -400,6 +428,12 @@ internal class RecordedDataProcessorTest {
         assertThat(metaRecord.timestamp).isEqualTo(fakeTimestamp)
         assertThat(metaRecord.data.height).isEqualTo(fakeRootHeight)
         assertThat(metaRecord.data.width).isEqualTo(fakeRootWidth)
+        inOrder(mockRecordCallback) {
+            verify(mockRecordCallback, times(2))
+                .onRecordForViewSent(fakeRumContext.viewId)
+            verify(mockRecordCallback).onRecordForViewSent(fakeRumContext2.viewId)
+        }
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     @Test
@@ -410,7 +444,8 @@ internal class RecordedDataProcessorTest {
         val fakeSnapshot3 = listOf(forge.aSingleLevelSnapshot())
         testedProcessor.processScreenSnapshots(fakeSnapshot1)
         testedProcessor.processScreenSnapshots(fakeSnapshot2)
-        whenever(mockRumContextProvider.getRumContext()).thenReturn(forge.getForgery())
+        val fakeRumContext2: SessionReplayRumContext = forge.getForgery()
+        whenever(mockRumContextProvider.getRumContext()).thenReturn(fakeRumContext2)
 
         // When
         testedProcessor.processScreenSnapshots(fakeSnapshot3)
@@ -422,6 +457,12 @@ internal class RecordedDataProcessorTest {
         val focusRecord = captor.lastValue.records[1] as MobileSegment.MobileRecord.FocusRecord
         assertThat(focusRecord.timestamp).isEqualTo(fakeTimestamp)
         assertThat(focusRecord.data.hasFocus).isTrue
+        inOrder(mockRecordCallback) {
+            verify(mockRecordCallback, times(2))
+                .onRecordForViewSent(fakeRumContext.viewId)
+            verify(mockRecordCallback).onRecordForViewSent(fakeRumContext2.viewId)
+        }
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     @Test
@@ -432,7 +473,8 @@ internal class RecordedDataProcessorTest {
         val fakeSnapshot3 = listOf(forge.aSingleLevelSnapshot())
         testedProcessor.processScreenSnapshots(fakeSnapshot1)
         testedProcessor.processScreenSnapshots(fakeSnapshot2)
-        whenever(mockRumContextProvider.getRumContext()).thenReturn(forge.getForgery())
+        val fakeRumContext2: SessionReplayRumContext = forge.getForgery()
+        whenever(mockRumContextProvider.getRumContext()).thenReturn(fakeRumContext2)
 
         // When
         testedProcessor.processScreenSnapshots(fakeSnapshot3)
@@ -446,6 +488,12 @@ internal class RecordedDataProcessorTest {
         assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
         val viewEndRecord = captor.thirdValue.records[0] as MobileSegment.MobileRecord.ViewEndRecord
         assertThat(viewEndRecord.timestamp).isEqualTo(fakeTimestamp)
+        inOrder(mockRecordCallback) {
+            verify(mockRecordCallback, times(2))
+                .onRecordForViewSent(fakeRumContext.viewId)
+            verify(mockRecordCallback).onRecordForViewSent(fakeRumContext2.viewId)
+        }
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     // endregion
@@ -494,6 +542,8 @@ internal class RecordedDataProcessorTest {
             as MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord
         assertThat(incrementalSnapshotRecord.timestamp).isEqualTo(fakeTimestamp)
         assertThat(incrementalSnapshotRecord.data).isEqualTo(fakeMutationData)
+        verify(mockRecordCallback, times(2)).onRecordForViewSent(fakeRumContext.viewId)
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     @Test
@@ -534,6 +584,8 @@ internal class RecordedDataProcessorTest {
         assertThat(captor.firstValue.records.size).isEqualTo(3)
         assertThat(captor.firstValue.records[2])
             .isInstanceOf(MobileSegment.MobileRecord.MobileFullSnapshotRecord::class.java)
+        verify(mockRecordCallback, times(2)).onRecordForViewSent(fakeRumContext.viewId)
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     // region TouchData
@@ -558,6 +610,8 @@ internal class RecordedDataProcessorTest {
         assertThat(captor.firstValue.sessionId).isEqualTo(fakeRumContext.sessionId)
         assertThat(captor.firstValue.viewId).isEqualTo(fakeRumContext.viewId)
         assertThat(captor.firstValue.records).isEqualTo(fakeTouchRecords)
+        verify(mockRecordCallback).onRecordForViewSent(fakeRumContext.viewId)
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     // endregion
@@ -587,6 +641,8 @@ internal class RecordedDataProcessorTest {
             MobileSegment.MobileIncrementalData.ViewportResizeData
         assertThat(viewportResizeData.height).isEqualTo(fakeOrientationChanged.height.toLong())
         assertThat(viewportResizeData.width).isEqualTo(fakeOrientationChanged.width.toLong())
+        verify(mockRecordCallback).onRecordForViewSent(fakeRumContext.viewId)
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     @Test
@@ -618,6 +674,8 @@ internal class RecordedDataProcessorTest {
 
         assertThat(captor.secondValue.records[1])
             .isInstanceOf(MobileSegment.MobileRecord.MobileFullSnapshotRecord::class.java)
+        verify(mockRecordCallback, times(2)).onRecordForViewSent(fakeRumContext.viewId)
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     @Test
@@ -656,6 +714,12 @@ internal class RecordedDataProcessorTest {
 
         assertThat(captor.thirdValue.records[3])
             .isInstanceOf(MobileSegment.MobileRecord.MobileFullSnapshotRecord::class.java)
+        inOrder(mockRecordCallback) {
+            verify(mockRecordCallback)
+                .onRecordForViewSent(fakeRumContext.viewId)
+            verify(mockRecordCallback).onRecordForViewSent(fakeRumContext2.viewId)
+        }
+        verifyNoMoreInteractions(mockRecordCallback)
     }
 
     // endregion

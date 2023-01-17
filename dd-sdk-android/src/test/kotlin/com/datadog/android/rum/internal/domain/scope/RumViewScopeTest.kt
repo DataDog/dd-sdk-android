@@ -36,6 +36,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -59,6 +60,7 @@ import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.reset
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
@@ -247,8 +249,6 @@ internal class RumViewScopeTest {
         whenever(mockActionScope.actionId) doReturn fakeActionId
         whenever(mockBuildSdkVersionProvider.version()) doReturn Build.VERSION_CODES.BASE
         whenever(mockViewUpdatePredicate.canUpdateView(any(), any())).thenReturn(true)
-        whenever(mockFeaturesContextResolver.resolveHasReplay(fakeDatadogContext))
-            .thenReturn(fakeHasReplay)
         whenever(mockSdkCore.getFeature(RumFeature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
@@ -273,6 +273,11 @@ internal class RumViewScopeTest {
             mockFeaturesContextResolver,
             trackFrustrations = true
         )
+        whenever(
+            mockFeaturesContextResolver
+                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
+        )
+            .thenReturn(fakeHasReplay)
     }
 
     // region Context
@@ -375,6 +380,11 @@ internal class RumViewScopeTest {
             type = fakeViewEventType,
             trackFrustrations = fakeTrackFrustrations
         )
+        whenever(
+            mockFeaturesContextResolver
+                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
+        )
+            .thenReturn(fakeHasReplay)
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
@@ -1293,6 +1303,11 @@ internal class RumViewScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
         )
+        whenever(
+            mockFeaturesContextResolver
+                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
+        )
+            .thenReturn(fakeHasReplay)
         fakeGlobalAttributes.keys.forEach { GlobalRum.removeAttribute(it) }
 
         // When
@@ -1450,6 +1465,11 @@ internal class RumViewScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
         )
+        whenever(
+            mockFeaturesContextResolver
+                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
+        )
+            .thenReturn(fakeHasReplay)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.put(fakeGlobalAttributeKey, fakeGlobalAttributeValue)
@@ -1541,6 +1561,11 @@ internal class RumViewScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
         )
+        whenever(
+            mockFeaturesContextResolver
+                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
+        )
+            .thenReturn(fakeHasReplay)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.put(fakeGlobalAttributeKey, fakeGlobalAttributeNewValue)
@@ -2865,6 +2890,29 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `𝕄 remove the hasReplay entry W handleEvent(any) on stopped view {no pending event}`(
+        forge: Forge
+    ) {
+        // Given
+        val argumentCaptor = argumentCaptor<(MutableMap<String, Any?>) -> Unit>()
+        val fakeSessionReplayContext = forge.exhaustiveAttributes()
+            .apply { put(testedScope.viewId, forge.aBool()) }
+        testedScope.stopped = true
+        fakeEvent = mock()
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(mockSdkCore).updateFeatureContext(
+            eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+            argumentCaptor.capture()
+        )
+        argumentCaptor.firstValue.invoke(fakeSessionReplayContext)
+        assertThat(fakeSessionReplayContext).doesNotContainKey(testedScope.viewId)
+    }
+
+    @Test
     fun `𝕄 returns self 𝕎 handleEvent(any) on stopped view {pending action event}`(
         @LongForgery(1, 32) pendingEvents: Long
     ) {
@@ -2879,6 +2927,10 @@ internal class RumViewScopeTest {
         // Then
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
+        verify(mockSdkCore, never()).updateFeatureContext(
+            eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+            any()
+        )
     }
 
     @Test
@@ -2896,6 +2948,10 @@ internal class RumViewScopeTest {
         // Then
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
+        verify(mockSdkCore, never()).updateFeatureContext(
+            eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+            any()
+        )
     }
 
     @Test
@@ -2913,6 +2969,10 @@ internal class RumViewScopeTest {
         // Then
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
+        verify(mockSdkCore, never()).updateFeatureContext(
+            eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+            any()
+        )
     }
 
     @Test
@@ -2930,6 +2990,10 @@ internal class RumViewScopeTest {
         // Then
         verifyZeroInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
+        verify(mockSdkCore, never()).updateFeatureContext(
+            eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+            any()
+        )
     }
 
     // endregion
@@ -5810,6 +5874,11 @@ internal class RumViewScopeTest {
             viewUpdatePredicate = mockViewUpdatePredicate,
             trackFrustrations = fakeTrackFrustrations
         )
+        whenever(
+            mockFeaturesContextResolver
+                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
+        )
+            .thenReturn(fakeHasReplay)
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
         }
@@ -5903,6 +5972,11 @@ internal class RumViewScopeTest {
             mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
         )
+        whenever(
+            mockFeaturesContextResolver
+                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
+        )
+            .thenReturn(fakeHasReplay)
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
         }
@@ -5998,6 +6072,11 @@ internal class RumViewScopeTest {
             mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
         )
+        whenever(
+            mockFeaturesContextResolver
+                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
+        )
+            .thenReturn(fakeHasReplay)
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
         }
@@ -6093,6 +6172,11 @@ internal class RumViewScopeTest {
             mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
         )
+        whenever(
+            mockFeaturesContextResolver
+                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
+        )
+            .thenReturn(fakeHasReplay)
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
         }
@@ -6189,6 +6273,11 @@ internal class RumViewScopeTest {
             mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
         )
+        whenever(
+            mockFeaturesContextResolver
+                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
+        )
+            .thenReturn(fakeHasReplay)
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
         }
@@ -6285,6 +6374,11 @@ internal class RumViewScopeTest {
             mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations
         )
+        whenever(
+            mockFeaturesContextResolver
+                .resolveHasReplay(fakeDatadogContext, testedScope.viewId)
+        )
+            .thenReturn(fakeHasReplay)
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
         }

@@ -158,6 +158,5 @@ internal class SessionReplayFeature(
         const val SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY = "type"
         const val RUM_SESSION_RENEWED_BUS_MESSAGE = "rum_session_renewed"
         const val RUM_KEEP_SESSION_BUS_MESSAGE_KEY = "keepSession"
-        const val IS_RECORDING_CONTEXT_KEY = "is_recording"
     }
 }

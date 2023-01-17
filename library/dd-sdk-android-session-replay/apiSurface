@@ -2,8 +2,7 @@ interface com.datadog.android.sessionreplay.LifecycleCallback : android.app.Appl
   fun register(android.app.Application)
   fun unregisterAndStopRecorders(android.app.Application)
 interface com.datadog.android.sessionreplay.RecordCallback
-  fun onStartRecording()
-  fun onStopRecording()
+  fun onRecordForViewSent(String)
 interface com.datadog.android.sessionreplay.RecordWriter
   fun write(com.datadog.android.sessionreplay.processor.EnrichedRecord)
 class com.datadog.android.sessionreplay.SessionReplayLifecycleCallback : LifecycleCallback

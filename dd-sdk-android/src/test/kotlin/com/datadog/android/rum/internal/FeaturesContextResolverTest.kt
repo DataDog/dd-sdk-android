@@ -20,6 +20,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -31,8 +32,11 @@ internal class FeaturesContextResolverTest {
 
     lateinit var testedFeaturesContextResolver: FeaturesContextResolver
 
+    lateinit var fakeViewId: String
+
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        fakeViewId = forge.getForgery<UUID>().toString()
         testedFeaturesContextResolver = FeaturesContextResolver()
     }
 
@@ -43,13 +47,16 @@ internal class FeaturesContextResolverTest {
             .copy(
                 featuresContext = mapOf(
                     SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME to
-                        mapOf(SessionReplayFeature.IS_RECORDING_CONTEXT_KEY to true)
+                        mapOf(fakeViewId.toString() to true)
                 )
 
             )
 
         // When
-        val hasReplay = testedFeaturesContextResolver.resolveHasReplay(fakeSdkContext)
+        val hasReplay = testedFeaturesContextResolver.resolveHasReplay(
+            fakeSdkContext,
+            fakeViewId
+        )
         assertThat(hasReplay).isTrue
     }
 
@@ -60,13 +67,16 @@ internal class FeaturesContextResolverTest {
             .copy(
                 featuresContext = mapOf(
                     SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME to
-                        mapOf(SessionReplayFeature.IS_RECORDING_CONTEXT_KEY to false)
+                        mapOf(fakeViewId.toString() to false)
                 )
 
             )
 
         // When
-        val hasReplay = testedFeaturesContextResolver.resolveHasReplay(fakeSdkContext)
+        val hasReplay = testedFeaturesContextResolver.resolveHasReplay(
+            fakeSdkContext,
+            fakeViewId
+        )
         assertThat(hasReplay).isFalse
     }
 
@@ -77,23 +87,28 @@ internal class FeaturesContextResolverTest {
             .copy(featuresContext = emptyMap())
 
         // When
-        val hasReplay = testedFeaturesContextResolver.resolveHasReplay(fakeSdkContext)
+        val hasReplay = testedFeaturesContextResolver.resolveHasReplay(
+            fakeSdkContext,
+            fakeViewId
+        )
         assertThat(hasReplay).isFalse
     }
 
     @Test
-    fun `M return false W resolveHasReplay {isRecording context key does not exist}`(forge: Forge) {
-        // Given
+    fun `M return false W resolveHasReplay {no entry for viewId}`(forge: Forge) {
         val fakeSdkContext = forge.getForgery<DatadogContext>()
             .copy(
                 featuresContext = mapOf(
                     SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME to
-                        emptyMap()
+                        forge.aMap { forge.aString() to forge.aString() }
                 )
             )
 
         // When
-        val hasReplay = testedFeaturesContextResolver.resolveHasReplay(fakeSdkContext)
+        val hasReplay = testedFeaturesContextResolver.resolveHasReplay(
+            fakeSdkContext,
+            fakeViewId
+        )
         assertThat(hasReplay).isFalse
     }
 }

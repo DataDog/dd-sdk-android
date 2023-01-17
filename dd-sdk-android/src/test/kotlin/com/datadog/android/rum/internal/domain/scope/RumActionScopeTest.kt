@@ -151,8 +151,12 @@ internal class RumActionScopeTest {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
-        whenever(mockFeaturesContextResolver.resolveHasReplay(fakeDatadogContext))
-            .thenReturn(fakeHasReplay)
+        whenever(
+            mockFeaturesContextResolver.resolveHasReplay(
+                fakeDatadogContext,
+                fakeParentContext.viewId.orEmpty()
+            )
+        ).thenReturn(fakeHasReplay)
 
         testedScope = RumActionScope(
             mockParentScope,
