@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.system.DefaultBuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.devLogger
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -120,6 +121,10 @@ internal class RumViewManagerScope(
         event: RumRawEvent,
         writer: DataWriter<Any>
     ) {
+        if (event is RumRawEvent.AddError && event.throwable is ANRException) {
+            // RUMM-2931 ignore ANR detected when the app is not in foreground
+            return
+        }
         val isValidBackgroundEvent = event.javaClass in validBackgroundEventTypes
         val isSilentOrphanEvent = event.javaClass in silentOrphanEventTypes
 

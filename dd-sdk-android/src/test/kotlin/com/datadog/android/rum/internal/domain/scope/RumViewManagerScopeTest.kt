@@ -12,7 +12,10 @@ import android.util.Log
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.FirstPartyHostDetector
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
+import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -347,6 +350,26 @@ internal class RumViewManagerScopeTest {
         // Given
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.invalidBackgroundEvent()
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        assertThat(testedScope.childrenScopes).hasSize(0)
+    }
+
+    @Test
+    fun `𝕄 not start a bg ViewScope 𝕎 handleEvent { app displayed, event is background ANR}`() {
+        // Given
+        testedScope.applicationDisplayed = true
+        val fakeEvent = RumRawEvent.AddError(
+            message = ANRDetectorRunnable.ANR_MESSAGE,
+            source = RumErrorSource.SOURCE,
+            stacktrace = null,
+            throwable = ANRException(Thread.currentThread()),
+            isFatal = false,
+            attributes = emptyMap()
+        )
 
         // When
         testedScope.handleEvent(fakeEvent, mockWriter)
