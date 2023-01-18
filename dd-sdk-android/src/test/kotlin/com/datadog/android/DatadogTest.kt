@@ -13,7 +13,6 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.Credentials
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.config.CoreFeatureTestConfiguration
 import com.datadog.android.utils.config.InternalLoggerTestConfiguration
@@ -180,8 +179,7 @@ internal class DatadogTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         ).build()
 
         // When
@@ -200,8 +198,7 @@ internal class DatadogTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         ).build()
 
         // When
@@ -282,8 +279,7 @@ internal class DatadogTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .build()
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
@@ -305,8 +301,7 @@ internal class DatadogTest {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = true,
-            rumEnabled = true,
-            sessionReplayEnabled = true
+            rumEnabled = true
         )
             .build()
         val credentials = Credentials(fakeToken, fakeEnvName, fakeVariant, null, null)
@@ -332,42 +327,6 @@ internal class DatadogTest {
 
         // Then
         verify(mockCore).clearAllData()
-    }
-
-    @Test
-    fun `M delegate to SessionReplayFeature W startSessionRecording()`() {
-        // Given
-        val mockSessionReplayFeature: SessionReplayFeature = mock()
-        val mockCore = mock<DatadogCore> {
-            whenever(it.sessionReplayFeature).thenReturn(mockSessionReplayFeature)
-        }
-        val previousCore = Datadog.globalSdkCore
-        Datadog.globalSdkCore = mockCore
-
-        // When
-        Datadog.startSessionRecording()
-
-        // Then
-        verify(mockSessionReplayFeature).startRecording()
-        Datadog.globalSdkCore = previousCore
-    }
-
-    @Test
-    fun `M delegate to SessionReplayFeature W stopSessionRecording()`() {
-        // Given
-        val mockSessionReplayFeature: SessionReplayFeature = mock()
-        val mockCore = mock<DatadogCore> {
-            whenever(it.sessionReplayFeature).thenReturn(mockSessionReplayFeature)
-        }
-        val previousCore = Datadog.globalSdkCore
-        Datadog.globalSdkCore = mockCore
-
-        // When
-        Datadog.stopSessionRecording()
-
-        // Then
-        verify(mockSessionReplayFeature).stopRecording()
-        Datadog.globalSdkCore = previousCore
     }
 
     companion object {

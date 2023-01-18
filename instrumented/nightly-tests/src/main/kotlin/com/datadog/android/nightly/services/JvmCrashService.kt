@@ -66,8 +66,7 @@ internal open class JvmCrashService : CrashService() {
             logsEnabled = true,
             tracesEnabled = true,
             crashReportsEnabled = crashReportsEnabled,
-            rumEnabled = rumEnabled,
-            sessionReplayEnabled = true
+            rumEnabled = rumEnabled
         ).sampleTelemetry(HUNDRED_PERCENT)
         Datadog.initialize(
             this,
